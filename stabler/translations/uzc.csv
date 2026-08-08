@@ -5633,6 +5633,7 @@ Indicative only — shipments are tracked per category,Фақат маълумо
 This category pool has no boxes left.,Бу категорияда қути қолмаган.
 {count} fully shipped lines hidden,{count} та тўлиқ жўнатилган қатор яширилди
 Every line of the selected proformas is already fully shipped.,Танланган проформаларнинг барча қаторлари аллақачон тўлиқ жўнатилган.
+A cancelled bill cannot be linked to an import: {0}.,Бекор қилинган ҳисобни импортга боғлаб бўлмайди: {0}.
 Attribute to,Боғлаш объекти
 Bills you can attach,Бириктириш мумкин бўлган ҳисоблар
 Failed to link.,Боғлаш амалга ошмади.
@@ -5644,7 +5645,7 @@ Import attribution,Импорт боғланиши
 Link {count} bill(s) to this CI,{count} та ҳисобни шу CI га боғлаш
 Linked to,Боғланган
 Linked.,Боғланди.
-No unlinked draft bills found company-wide.,Компания бўйича боғланмаган қоралама ҳисоблар топилмади.
+No unlinked transport bills found company-wide.,Компания бўйича боғланмаган транспорт ҳисоблари топилмади.
 Raised by the Import Expense automation — cannot be unlinked here.,Import Expense автоматикаси яратган — бу ерда узиб бўлмайди.
 Search container…,Контейнер қидириш…
 Search truck…,Юк машинасини қидириш…

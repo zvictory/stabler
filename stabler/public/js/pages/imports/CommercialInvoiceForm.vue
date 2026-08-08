@@ -2057,7 +2057,7 @@ watch(
 						</div>
 
 						<div v-if="!unlinkedBillRows.length" class="text-secondary small py-2">
-							{{ t("No unlinked draft bills found company-wide.") }}
+							{{ t("No unlinked transport bills found company-wide.") }}
 						</div>
 
 						<template v-else>

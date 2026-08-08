@@ -5628,6 +5628,7 @@ Indicative only — shipments are tracked per category,Yalnızca bilgi amaçlı 
 This category pool has no boxes left.,Bu kategoride kalan kutu yok.
 {count} fully shipped lines hidden,{count} tamamen sevk edilmiş satır gizlendi
 Every line of the selected proformas is already fully shipped.,Seçilen proformaların tüm satırları zaten tamamen sevk edilmiş.
+A cancelled bill cannot be linked to an import: {0}.,İptal edilmiş bir fatura bir ithalata bağlanamaz: {0}.
 Attribute to,İlişkilendir
 Bills you can attach,Ekleyebileceğiniz faturalar
 Failed to link.,Bağlanamadı.
@@ -5639,7 +5640,7 @@ Import attribution,İçe aktarma ilişkilendirmesi
 Link {count} bill(s) to this CI,{count} faturayı bu CI'ya bağla
 Linked to,Bağlı
 Linked.,Bağlandı.
-No unlinked draft bills found company-wide.,Şirket genelinde bağlanmamış taslak fatura bulunamadı.
+No unlinked transport bills found company-wide.,Şirket genelinde bağlanmamış nakliye faturası bulunamadı.
 Raised by the Import Expense automation — cannot be unlinked here.,Import Expense otomasyonu oluşturdu — burada bağlantısı kaldırılamaz.
 Search container…,Konteyner ara…
 Search truck…,Kamyon ara…

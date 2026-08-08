@@ -7630,14 +7630,14 @@ def set_bill_import_refs(
 	import_container: str | None = None,
 	import_truck: str | None = None,
 ) -> dict:
-	"""Attribute a draft transport/service bill to an import (W1).
+	"""Attribute a transport/service bill to an import (W1).
 
 	Seven gates, in this order — the list is the control, the UI's version of it
 	is decoration:
 
 	1. imports module access for the bill's company
 	2. record-level write permission on the bill
-	3. the bill is still a draft
+	3. the bill is not cancelled
 	4. all four v46 refs are currently empty (automation-owned bills stay locked)
 	5. the supplier is in a configured transport/service group
 	6. the supplier is not the Commercial Invoice's own supplier (CIF)
@@ -7669,14 +7669,21 @@ def set_bill_import_refs(
 
 	bill = frappe.db.get_value("Purchase Invoice", purchase_invoice, ["docstatus", "supplier"], as_dict=True)
 
-	# Gate 3 — draft only. A submitted bill is already in the GL; re-attributing
-	# it is a correction, not data entry, and does not belong on this path.
-	if cint(bill.docstatus) != 0:
-		frappe.throw(
-			_("Only a draft bill can be linked to an import. {0} is already submitted or cancelled.").format(
-				purchase_invoice
-			)
-		)
+	# Gate 3 — cancelled bills only are refused. Draft-only was the original rule
+	# and it was wrong in practice: a transporter's bill is routinely submitted
+	# and paid before anyone gets round to attributing it, and there was then no
+	# way back. Submitting changes nothing this endpoint cares about — the write
+	# sets a traceability Link with db.set_value and moves no GL or valuation
+	# figure (see the write's own note below), so the bill's accounting standing
+	# is not what makes attribution legitimate.
+	#
+	# Cancelled is a different case and stays refused: every read that consumes
+	# these refs filters `docstatus < 2` (_related_import_bills, the cost
+	# overview, the landed-cost lists), so a cancelled bill's link would be
+	# invisible everywhere while gate 4 below locked the bill against ever being
+	# linked again — a silent no-op that cannot be undone.
+	if cint(bill.docstatus) == 2:
+		frappe.throw(_("A cancelled bill cannot be linked to an import: {0}.").format(purchase_invoice))
 
 	# Gate 4 — ANY ref already set means some other path owns this bill: the
 	# import-expense automation, the truck-transport automation, the CI->PInv
@@ -7913,11 +7920,10 @@ def bill_import_link_state(purchase_invoice: str) -> dict:
 
 	bill = frappe.db.get_value("Purchase Invoice", purchase_invoice, ["docstatus", "supplier"], as_dict=True)
 
-	if cint(bill.docstatus) != 0:
+	# Mirrors gate 3: cancelled only. A submitted bill is eligible.
+	if cint(bill.docstatus) == 2:
 		return _not_eligible(
-			_("Only a draft bill can be linked to an import. {0} is already submitted or cancelled.").format(
-				purchase_invoice
-			)
+			_("A cancelled bill cannot be linked to an import: {0}.").format(purchase_invoice)
 		)
 
 	groups = imports_transport_supplier_groups_for(company)
@@ -7997,14 +8003,12 @@ def unlinked_transport_bills(commercial_invoice: str) -> dict:
 
 	conds = [
 		"pi.company = %(company)s",
-		# Draft only, to match gate 3 of ``set_bill_import_refs`` exactly. Listing
-		# submitted bills here would offer rows the write path then refuses with
-		# "Only a draft bill can be linked" — a picker whose entries fail on click.
-		# Consequence, stated rather than hidden: a transport bill that is
-		# submitted before anyone attributes it can no longer be linked. Widening
-		# this filter is not the fix; the two surfaces must move together, and
-		# that is a design change beyond what this work package covers.
-		"pi.docstatus = 0",
+		# Drafts and submitted bills, to match gate 3 of ``set_bill_import_refs``
+		# exactly — the two surfaces must move together, or the picker offers a
+		# row whose click the write path then refuses. Cancelled (2) is excluded
+		# for the same reason gate 3 refuses it: every read of these refs filters
+		# `docstatus < 2`, so such a link would be invisible everywhere.
+		"pi.docstatus < 2",
 		"s.supplier_group IN %(groups)s",
 	]
 	params: dict = {

@@ -145,12 +145,16 @@ class BillImportLinkStateGateOrderTest(unittest.TestCase):
 		# click throws — the one failure mode this endpoint exists to prevent.
 		self.assertIn("not _automation_owner_of_bill(purchase_invoice)", self.body)
 
-	def test_only_a_draft_bill_is_eligible(self):
+	def test_a_cancelled_bill_is_the_only_ineligible_docstatus(self):
 		# Same rule as set_bill_import_refs gate 3, expressed as a verdict
-		# instead of a throw — and it must name the bill so a submitted PI's
-		# owner understands why the picker will not offer linking.
-		self.assertIn("cint(bill.docstatus) != 0", self.body)
-		self.assertIn("Only a draft bill can be linked to an import.", self.body)
+		# instead of a throw — and it must name the bill so its owner understands
+		# why the picker will not offer linking. A SUBMITTED bill is eligible:
+		# pinning `!= 0` here again would put the picker back out of step with a
+		# write path that now accepts it, which is the mismatch this whole
+		# endpoint exists to prevent.
+		self.assertIn("cint(bill.docstatus) == 2", self.body)
+		self.assertNotIn("cint(bill.docstatus) != 0", self.body)
+		self.assertIn("A cancelled bill cannot be linked to an import: {0}.", self.body)
 
 	def test_unconfigured_transport_groups_is_silent(self):
 		# Same polarity as the write gate's _assert_hand_linkable_supplier: an

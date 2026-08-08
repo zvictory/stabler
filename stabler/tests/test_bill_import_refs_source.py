@@ -105,10 +105,22 @@ class SetBillImportRefsGateOrderTest(unittest.TestCase):
 		# endpoint writes any Purchase Invoice whose name the caller can guess.
 		self.assertIn('_assert_can_write("Purchase Invoice", purchase_invoice)', self.body)
 
-	def test_only_a_draft_bill_may_be_linked(self):
-		# A submitted bill is already in the GL. Re-attributing it is a
-		# correction with GL consequences, not data entry.
-		self.assertIn("cint(bill.docstatus) != 0", self.body)
+	def test_a_submitted_bill_may_still_be_linked(self):
+		# Draft-only was the original rule and it was wrong: a transporter's bill
+		# is routinely submitted and paid before anyone attributes it, and there
+		# was then no way back. Submitting changes nothing this endpoint cares
+		# about — the write is a db.set_value on a traceability Link and moves no
+		# GL or valuation figure. Re-narrowing the gate to `!= 0` would silently
+		# strand every bill that reached the ledger before the office got to it.
+		self.assertNotIn("cint(bill.docstatus) != 0", self.body)
+
+	def test_a_cancelled_bill_may_not_be_linked(self):
+		# The half of gate 3 that must survive. Every read of these refs filters
+		# `docstatus < 2`, so a cancelled bill's link renders nowhere — while
+		# gate 4 below would lock the bill against ever being linked again. That
+		# is an irreversible silent no-op, so it is refused at the door.
+		self.assertIn("cint(bill.docstatus) == 2", self.body)
+		self.assertIn("A cancelled bill cannot be linked to an import", self.body)
 
 	def test_all_four_refs_must_be_empty(self):
 		# GATE 4 — this is what keeps automation-created bills locked. The
@@ -428,15 +440,15 @@ class UnlinkedTransportBillsTest(unittest.TestCase):
 
 	def test_the_panel_offers_only_what_the_write_path_accepts(self):
 		# The panel's own contract is "every gate that can be expressed as a
-		# filter is one here". It shipped as `docstatus < 2` while gate 3 of
-		# set_bill_import_refs requires `docstatus == 0`, so a submitted transport
-		# bill was listed and then refused on click with "Only a draft bill can be
-		# linked" — the one failure mode the docstring promises cannot happen.
-		self.assertIn("pi.docstatus = 0", self.body)
-		self.assertNotIn("pi.docstatus < 2", self.body)
-		# And it is the SAME rule on both sides, not two numbers that happen to
-		# agree today: the write gate must still be draft-only.
-		self.assertIn("cint(bill.docstatus) != 0", body(read(IMPORTS), "set_bill_import_refs"))
+		# filter is one here". The two surfaces have to move together or the
+		# picker lists a row whose click the write path refuses — the one failure
+		# mode the docstring promises cannot happen. It has already happened once
+		# in the other direction (panel `< 2` against a draft-only write gate),
+		# which is why both halves are pinned in one test rather than two.
+		self.assertIn("pi.docstatus < 2", self.body)
+		self.assertNotIn("pi.docstatus = 0", self.body)
+		self.assertIn("cint(bill.docstatus) == 2", body(read(IMPORTS), "set_bill_import_refs"))
+		self.assertNotIn("cint(bill.docstatus) != 0", body(read(IMPORTS), "set_bill_import_refs"))
 
 	def test_unlink_stays_open_after_submission(self):
 		# Deliberate asymmetry, pinned so it cannot be "tidied" into symmetry:

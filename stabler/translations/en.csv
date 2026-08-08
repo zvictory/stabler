@@ -5632,6 +5632,7 @@ Indicative only — shipments are tracked per category,Indicative only — shipm
 This category pool has no boxes left.,This category pool has no boxes left.
 {count} fully shipped lines hidden,{count} fully shipped lines hidden
 Every line of the selected proformas is already fully shipped.,Every line of the selected proformas is already fully shipped.
+A cancelled bill cannot be linked to an import: {0}.,A cancelled bill cannot be linked to an import: {0}.
 Attribute to,Attribute to
 Bills you can attach,Bills you can attach
 Failed to link.,Failed to link.
@@ -5643,7 +5644,7 @@ Import attribution,Import attribution
 Link {count} bill(s) to this CI,Link {count} bill(s) to this CI
 Linked to,Linked to
 Linked.,Linked.
-No unlinked draft bills found company-wide.,No unlinked draft bills found company-wide.
+No unlinked transport bills found company-wide.,No unlinked transport bills found company-wide.
 Raised by the Import Expense automation — cannot be unlinked here.,Raised by the Import Expense automation — cannot be unlinked here.
 Search container…,Search container…
 Search truck…,Search truck…

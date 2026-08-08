@@ -316,7 +316,7 @@ async function loadDoc() {
 	}
 }
 
-// Import attribution (W1) — hand-link this draft bill to a Commercial Invoice,
+// Import attribution (W1) — hand-link this bill to a Commercial Invoice,
 // Import Container or Import Truck. Attribution only: never touches cost lines,
 // the landed cost voucher or any amount field. The server is the sole gate —
 // this panel only reflects `bill_import_link_state`, it never guesses.
