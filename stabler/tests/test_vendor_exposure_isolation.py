@@ -112,5 +112,60 @@ class TestSupplierExposureRaceGuard(unittest.TestCase):
 		)
 
 
+class TestSupplierQuotationsRaceGuard(unittest.TestCase):
+	"""Wiring guard (bead stabler-5cp): loadSuppQuotations carries the same
+	unguarded-await race as loadExposure -- click supplier A then B and A's slow
+	response paints A's quotations under B's name. Its finally clause needs the
+	guard too: a stale request clearing suppQuotationsLoading would drop the
+	skeleton while the current request is still in flight, so the table reads as
+	loaded while showing the previous supplier's rows."""
+
+	def setUp(self):
+		src = _suppliers_vue_src()
+		start = src.index("async function loadSuppQuotations(supplierName) {")
+		end = src.index("\n}\n", start)
+		self.body = src[start:end]
+		self.on_select_src = src[
+			src.index("function onSelect(row) {") : src.index("function onDetail(detail) {")
+		]
+
+	def test_takes_a_ticket_before_the_await(self):
+		self.assertIn("quotationsReq.take()", self.body)
+		self.assertLess(
+			self.body.index("quotationsReq.take()"),
+			self.body.index("await call("),
+			"the ticket must be taken BEFORE the await, not after",
+		)
+
+	def test_checks_the_ticket_between_the_await_and_the_write(self):
+		# Bounded window, deliberately: searching to the end of the body would also
+		# match the catch and finally guards, so dropping this one would stay green.
+		await_pos = self.body.index("await call(")
+		write_pos = self.body.index("suppQuotations.value = res?.rows || [];")
+		self.assertIn(
+			"if (!isCurrent()) return;",
+			self.body[await_pos:write_pos],
+			"the try branch must check the ticket before writing suppQuotations",
+		)
+
+	def test_the_catch_branch_checks_it_too(self):
+		# A stale request that FAILS must not blank the current supplier's rows.
+		catch_pos = self.body.index("catch")
+		finally_pos = self.body.index("finally")
+		self.assertIn("if (!isCurrent()) return;", self.body[catch_pos:finally_pos])
+
+	def test_a_stale_request_does_not_clear_the_loading_flag(self):
+		# finally runs even after the early return above, so the flag write is the
+		# one place a retired request can still reach shared state.
+		finally_pos = self.body.index("finally")
+		self.assertIn("if (isCurrent()) suppQuotationsLoading.value = false;", self.body[finally_pos:])
+
+	def test_on_select_deselect_invalidates_and_clears_the_flag(self):
+		self.assertIn("quotationsReq.invalidate()", self.on_select_src)
+		# The retired request's finally no longer owns the flag, so the deselect
+		# branch has to clear it or the skeleton spins forever.
+		self.assertIn("suppQuotationsLoading.value = false;", self.on_select_src)
+
+
 if __name__ == "__main__":
 	unittest.main()

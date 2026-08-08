@@ -123,6 +123,9 @@ function onSelect(row) {
 		selectedExposure.value = null;
 		exposureReq.invalidate();
 		suppQuotations.value = [];
+		quotationsReq.invalidate();
+		// The retired request's finally no longer owns the flag, so clear it here.
+		suppQuotationsLoading.value = false;
 		return;
 	}
 	loadExposure(row.name);
@@ -255,20 +258,29 @@ async function confirmConvert() {
 
 const suppQuotations = ref([]);
 const suppQuotationsLoading = ref(false);
+const quotationsReq = useLatestRequest();
 
+// Same ticket guard as loadExposure: a slow response for a previously-selected
+// supplier must not paint its quotations under the current supplier's name. The
+// finally is guarded too — a stale request clearing the loading flag would drop
+// the skeleton while the current request is still in flight, so the table would
+// read as "loaded" while showing the wrong supplier's rows.
 async function loadSuppQuotations(supplierName) {
 	if (!supplierName || !activeCompany.value) return;
 	suppQuotationsLoading.value = true;
+	const isCurrent = quotationsReq.take();
 	try {
 		const res = await call("stabler.api.purchasing.supplier_quotation_history", {
 			supplier: supplierName,
 			company: activeCompany.value,
 		});
+		if (!isCurrent()) return;
 		suppQuotations.value = res?.rows || [];
 	} catch {
+		if (!isCurrent()) return;
 		suppQuotations.value = [];
 	} finally {
-		suppQuotationsLoading.value = false;
+		if (isCurrent()) suppQuotationsLoading.value = false;
 	}
 }
 
