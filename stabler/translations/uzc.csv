@@ -5643,6 +5643,7 @@ Find bills to link,Боғлаш учун ҳисобларни топиш
 Import attribution,Импорт боғланиши
 Link {count} bill(s) to this CI,{count} та ҳисобни шу CI га боғлаш
 Linked to,Боғланган
+Linked.,Боғланди.
 No unlinked draft bills found company-wide.,Компания бўйича боғланмаган қоралама ҳисоблар топилмади.
 Raised by the Import Expense automation — cannot be unlinked here.,Import Expense автоматикаси яратган — бу ерда узиб бўлмайди.
 Search container…,Контейнер қидириш…

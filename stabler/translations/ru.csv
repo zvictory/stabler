@@ -5649,6 +5649,7 @@ Find bills to link,Найти счета для привязки
 Import attribution,Привязка к импорту
 Link {count} bill(s) to this CI,Привязать счетов: {count} к этому CI
 Linked to,Привязан к
+Linked.,Привязано.
 No unlinked draft bills found company-wide.,По компании не найдено непривязанных черновиков счетов.
 Raised by the Import Expense automation — cannot be unlinked here.,Создан автоматизацией Import Expense — отвязать здесь нельзя.
 Search container…,Поиск контейнера…

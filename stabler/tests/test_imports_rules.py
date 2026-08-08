@@ -440,6 +440,38 @@ class TestDeriveBillCategory(unittest.TestCase):
 		self.assertEqual(rules.derive_bill_category(bill_no="ACME-2026-001"), "product")
 		self.assertEqual(rules.derive_bill_category(), "product")
 
+	def test_a_hand_attributed_carrier_bill_is_transport_not_goods(self):
+		# A carrier's bill hand-linked (v47) to a CI or a container carries none
+		# of the markers above: no truck ref, no expense ref, ordinary item codes.
+		# Bucketed as "product" it would be summed into accounting.billed_goods —
+		# freight counted as goods — and dropped from the carriers' billed total,
+		# which is the very figure the attribution feature exists to feed.
+		self.assertEqual(
+			rules.derive_bill_category(bill_no="ACME-2026-001", transport_supplier=True),
+			"transport",
+		)
+
+	def test_an_import_expense_stays_an_expense_even_for_a_carrier(self):
+		# Deliberate order: the supplier group is a fallback, so a bill the
+		# expense automation owns keeps its own category regardless of where its
+		# vendor sits. Losing this would move automation bills between buckets.
+		self.assertEqual(
+			rules.derive_bill_category(expense_ref="IMP-EXP-1", transport_supplier=True),
+			"expense",
+		)
+
+	def test_the_supplier_group_never_overrides_an_explicit_marker(self):
+		self.assertEqual(
+			rules.derive_bill_category(bill_no="FREIGHT-1", transport_supplier=True),
+			"freight",
+		)
+
+	def test_the_flag_defaults_off_so_unconfigured_companies_are_unaffected(self):
+		# _transport_group_suppliers returns the empty set for a company with no
+		# configured groups, so every row arrives with the flag false and the
+		# pre-v47 bucketing is byte-identical.
+		self.assertEqual(rules.derive_bill_category(bill_no="ACME-2026-001"), "product")
+
 
 class TestLandedCostBillClauses(unittest.TestCase):
 	def test_no_ref_columns_yields_empty(self):

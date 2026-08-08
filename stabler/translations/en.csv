@@ -5642,6 +5642,7 @@ Find bills to link,Find bills to link
 Import attribution,Import attribution
 Link {count} bill(s) to this CI,Link {count} bill(s) to this CI
 Linked to,Linked to
+Linked.,Linked.
 No unlinked draft bills found company-wide.,No unlinked draft bills found company-wide.
 Raised by the Import Expense automation — cannot be unlinked here.,Raised by the Import Expense automation — cannot be unlinked here.
 Search container…,Search container…

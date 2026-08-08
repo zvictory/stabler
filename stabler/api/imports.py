@@ -3124,15 +3124,40 @@ def _pi_item_codes(names) -> dict:
 	return out
 
 
-def _enrich_bill_rows(rows, today_d) -> None:
+def _transport_group_suppliers(company: str | None, suppliers) -> set:
+	"""Which of *suppliers* sit in this company's configured transport groups.
+
+	One query for the whole page rather than one per row. An unconfigured
+	company returns the empty set, which is the same answer the link gate gives:
+	the feature is off, so no bill is categorized by supplier group.
+	"""
+	names = {s for s in suppliers if s}
+	if not company or not names:
+		return set()
+	groups = imports_transport_supplier_groups_for(company)
+	if not groups:
+		return set()
+	return {
+		r["name"]
+		for r in frappe.get_all(
+			"Supplier",
+			filters={"name": ["in", list(names)], "supplier_group": ["in", groups]},
+			fields=["name"],
+		)
+	}
+
+
+def _enrich_bill_rows(rows, today_d, company: str | None = None) -> None:
 	"""In-place: derive category, overdue flag, stringify due_date on bill rows."""
 	codes_by_pi = _pi_item_codes([r["name"] for r in rows])
+	carriers = _transport_group_suppliers(company, [r.get("supplier") for r in rows])
 	for r in rows:
 		r["category"] = rules.derive_bill_category(
 			truck_ref=r.get("custom_import_truck"),
 			expense_ref=r.get("custom_import_expense"),
 			item_codes=codes_by_pi.get(r["name"], []),
 			bill_no=r.get("bill_no"),
+			transport_supplier=r.get("supplier") in carriers,
 		)
 		r["grand_total"] = flt(r.get("grand_total"))
 		r["outstanding_amount"] = flt(r.get("outstanding_amount"))
@@ -3182,7 +3207,7 @@ def _related_import_bills(company, *, containers, ci, trucks, ref_cols, today_d)
 		params,
 		as_dict=True,
 	)
-	_enrich_bill_rows(rows, today_d)
+	_enrich_bill_rows(rows, today_d, company)
 	return rows
 
 
@@ -3380,7 +3405,7 @@ def list_landed_cost_bills(
 		params,
 		as_dict=True,
 	)
-	_enrich_bill_rows(rows, today())
+	_enrich_bill_rows(rows, today(), company)
 	rules.mask_named(rows, rules.LANDED_BILL_MASK_FIELDS, _cost_visible())
 	total = _count(rules.count_query("`tabPurchase Invoice` pi", where), params)
 	return {"rows": rows, "total_count": total}
@@ -7686,13 +7711,44 @@ def set_bill_import_refs(
 		_assert_can_read(doctype, value)
 		updates[col] = value
 
-	frappe.db.set_value("Purchase Invoice", purchase_invoice, updates, update_modified=True)
+	# update_modified=False, deliberately. This is an attribution stamp on ref
+	# columns the bill's own form never sends, but the form DOES send `modified`
+	# to `check_concurrency` (`purchasing.py`) when the user saves. Bumping the
+	# timestamp under an open draft turns the next Save into a concurrency
+	# failure whose only offered exit is Reload — discarding whatever the user
+	# had typed into a money document. The link is visible through
+	# `bill_import_link_state`, which the form refetches after this call.
+	frappe.db.set_value("Purchase Invoice", purchase_invoice, updates, update_modified=False)
 
 	return {
 		"name": purchase_invoice,
 		"refs": _bill_import_refs(purchase_invoice),
 		"linked": True,
 	}
+
+
+# Every doctype in the imports tree that raises a Purchase Invoice and keeps a
+# back-pointer to it. Measured across the doctype JSON: these two are the whole
+# set of ``*purchase_invoice`` Link fields pointing at Purchase Invoice.
+_AUTOMATION_BACK_REFS = (
+	("Import Truck", "transport_purchase_invoice"),
+	("Import Expense", "purchase_invoice"),
+)
+
+
+def _automation_owner_of_bill(purchase_invoice: str):
+	"""Which automation document, if any, raised this bill and still points at it.
+
+	An empty ``custom_import_expense`` does NOT prove the bill is hand-made: the
+	truck-transport automation raises tier-3 bills with no expense to consume
+	(``imports_module/hooks.py``, ``import_expense=None``). Ownership is whoever
+	holds the back-pointer, so that is what gets asked.
+	"""
+	for doctype, back_ref in _AUTOMATION_BACK_REFS:
+		owner = frappe.db.get_value(doctype, {back_ref: purchase_invoice}, "name")
+		if owner:
+			return doctype, owner
+	return None
 
 
 @frappe.whitelist()
@@ -7732,6 +7788,17 @@ def clear_bill_import_refs(purchase_invoice: str) -> dict:
 	if not any(refs[col] for col, _dt in _HAND_LINKABLE_REFS):
 		frappe.throw(_("{0} is not linked to an import.").format(purchase_invoice))
 
+	# The two rules above pass for a tier-3 automation transport bill: it carries
+	# no expense to consume, and its supplier is the carrier rather than the CI's.
+	# One click would then orphan a bill that `Import Truck` still points at.
+	owned_by = _automation_owner_of_bill(purchase_invoice)
+	if owned_by:
+		frappe.throw(
+			_("{0} was raised for {1} {2} and its link is owned there, not here.").format(
+				purchase_invoice, _(owned_by[0]), owned_by[1]
+			)
+		)
+
 	supplier = frappe.db.get_value("Purchase Invoice", purchase_invoice, "supplier")
 	ci_supplier = _ci_supplier_behind(refs)
 	if ci_supplier and supplier == ci_supplier:
@@ -7765,11 +7832,15 @@ def clear_bill_import_refs(purchase_invoice: str) -> dict:
 				)
 			)
 
+	# update_modified=False for the same reason as the link write above: these
+	# ref columns are not part of what the bill's form submits, but `modified`
+	# is, and bumping it under an open draft turns the user's next Save into a
+	# concurrency failure whose only exit is Reload.
 	frappe.db.set_value(
 		"Purchase Invoice",
 		purchase_invoice,
 		{col: None for col, _dt in _HAND_LINKABLE_REFS},
-		update_modified=True,
+		update_modified=False,
 	)
 
 	return {
@@ -7802,10 +7873,17 @@ def bill_import_link_state(purchase_invoice: str) -> dict:
 
 	company = _company_of("Purchase Invoice", purchase_invoice)
 
-	# Imports off => the feature does not exist for this bill. Silent (no
-	# reason), and linked/can_unlink both stay False so the picker renders
-	# nothing at all rather than showing a summary for a disabled module.
-	if not module_map_for(company).get("imports"):
+	# Imports off, or the user has no imports role => the feature does not exist
+	# for this bill. Silent (no reason), and linked/can_unlink both stay False so
+	# the picker renders nothing at all rather than a summary of a module the
+	# user cannot act on. The role half mirrors `_assert_imports_access`, which
+	# the write path calls: without it a purchasing-only user is offered a Link
+	# button whose click then throws — the exact mismatch this endpoint exists
+	# to prevent. It is mirrored rather than called because that helper raises,
+	# and this endpoint must stay quiet on the tenants that have no imports.
+	roles = set(frappe.get_roles())
+	has_imports_role = bool(roles.intersection(_ADMIN_ROLES) or roles.intersection(_IMPORTS_ROLES))
+	if not module_map_for(company).get("imports") or not has_imports_role:
 		return {
 			"eligible": False,
 			"reason": "",
@@ -7817,7 +7895,11 @@ def bill_import_link_state(purchase_invoice: str) -> dict:
 
 	refs = _bill_import_refs(purchase_invoice)
 	linked = any(refs[col] for col, _dt in _HAND_LINKABLE_REFS)
-	can_unlink = linked and not refs["custom_import_expense"]
+	# Mirrors both refusals of `clear_bill_import_refs`: an automation-owned ref
+	# and an automation-owned bill (the back-pointer) each make Unlink throw.
+	can_unlink = (
+		linked and not refs["custom_import_expense"] and not _automation_owner_of_bill(purchase_invoice)
+	)
 
 	def _not_eligible(reason: str) -> dict:
 		return {

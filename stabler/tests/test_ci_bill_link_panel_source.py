@@ -259,10 +259,15 @@ class ButtonAndTableHygieneTest(unittest.TestCase):
 		self.block = self.vue[start : self.vue.index('t("Expenses without bills")')]
 
 	def test_only_one_primary_button_in_this_regions_visual_scope(self):
-		# CLAUDE.md: max one .btn-primary per region. The trigger/refresh button
-		# is outline-primary; only "Link N bill(s)" is the solid primary.
+		# CLAUDE.md: max one .btn-primary per region, AND colour is never a
+		# second primary — so the neutral trigger/refresh button is
+		# outline-SECONDARY, not outline-primary. Only "Link N bill(s) to this
+		# CI" carries the primary colour, because it is the one action that
+		# writes. (This test used to accept outline-primary and so blessed the
+		# very thing the rule forbids.)
 		self.assertEqual(self.block.count("btn btn-primary"), 1)
-		self.assertIn("btn btn-outline-primary btn-sm", self.block)
+		self.assertIn("btn btn-outline-secondary btn-sm", self.block)
+		self.assertNotIn("btn-outline-primary", self.block)
 
 	def test_no_manual_table_striped_class(self):
 		# Striping is global (stabler.css); a manual class here would either be

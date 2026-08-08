@@ -270,6 +270,21 @@ class ClearBillImportRefsTest(unittest.TestCase):
 		guard = self.body.index('has_column("Container Cost Line", "purchase_invoice")')
 		self.assertLess(guard, self.body.index("SELECT cl.lcv_ref"))
 
+	def test_a_bill_an_automation_still_points_at_cannot_be_unlinked(self):
+		# The two refusals above both PASS for a tier-3 automation transport
+		# bill: it consumes no expense (so custom_import_expense is empty) and
+		# its supplier is the carrier, not the CI's. One click would then clear
+		# the refs of a bill that Import Truck.transport_purchase_invoice still
+		# points at — an orphan the truck can no longer explain. Ownership is the
+		# back-pointer, so that is what is asked, not the ref columns.
+		self.assertIn("_automation_owner_of_bill(purchase_invoice)", self.body)
+		self.assertIn("if owned_by:\n\t\tfrappe.throw(", self.body)
+		# And the gate runs before anything is written.
+		self.assertLess(
+			self.body.index("_automation_owner_of_bill("),
+			self.body.index("frappe.db.set_value("),
+		)
+
 	def test_only_the_three_hand_linkable_refs_are_cleared(self):
 		# custom_import_expense must never be nulled here: the bill carrying one
 		# is already refused above, and listing it would make a future edit to
@@ -277,6 +292,91 @@ class ClearBillImportRefsTest(unittest.TestCase):
 		write = self.body[self.body.index("frappe.db.set_value(") :]
 		self.assertIn("_HAND_LINKABLE_REFS", write)
 		self.assertNotIn('"custom_import_expense"', write)
+
+
+class AutomationOwnershipTest(unittest.TestCase):
+	"""Who owns a bill is decided by the back-pointer, not by a ref column."""
+
+	def setUp(self):
+		self.src = read(IMPORTS)
+		self.body = body(self.src, "_automation_owner_of_bill")
+
+	def test_both_back_pointer_fields_are_consulted(self):
+		# Measured across the doctype tree, these two are the whole set of
+		# Link-to-Purchase-Invoice fields in the imports module. Dropping either
+		# re-opens the orphan: the truck one is the tier-3 case that has no
+		# expense ref to give it away.
+		self.assertIn('("Import Truck", "transport_purchase_invoice")', self.src)
+		self.assertIn('("Import Expense", "purchase_invoice")', self.src)
+		self.assertIn("for doctype, back_ref in _AUTOMATION_BACK_REFS:", self.body)
+
+	def test_the_query_is_by_back_pointer_not_by_name(self):
+		# The question is "does any automation document point AT this bill", so
+		# the filter is on the back-ref column with the bill as its value.
+		self.assertIn('frappe.db.get_value(doctype, {back_ref: purchase_invoice}, "name")', self.body)
+
+	def test_no_owner_returns_none_rather_than_refusing(self):
+		# A hand-made bill has no owner and must stay unlinkable.
+		self.assertIn("return None", self.body)
+
+
+class LinkWritesDoNotBumpModifiedTest(unittest.TestCase):
+	"""Both ref writes must leave `modified` alone — it is the form's save token."""
+
+	def test_neither_write_touches_the_concurrency_timestamp(self):
+		# These ref columns are not part of what the Purchase Invoice form
+		# submits, but `modified` IS: purchasing.update_purchase_invoice passes
+		# it to check_concurrency before loading the doc. Bumping it under an
+		# open draft turns the user's next Save into a concurrency failure whose
+		# only offered exit is Reload — discarding whatever was typed into a
+		# money document. Asserted on both paths, since either one can run while
+		# the same draft is open on screen.
+		for fn in ("set_bill_import_refs", "clear_bill_import_refs"):
+			with self.subTest(fn=fn):
+				src = code(read(IMPORTS), fn)
+				self.assertIn("update_modified=False", src)
+				self.assertNotIn("update_modified=True", src)
+
+
+class HandLinkedCarrierBillIsNotGoodsTest(unittest.TestCase):
+	"""B1 — an attributed carrier bill must not be counted as goods."""
+
+	def setUp(self):
+		self.src = read(IMPORTS)
+
+	def test_the_category_is_driven_by_the_configured_transport_groups(self):
+		# A hand-linked carrier bill carries no truck ref, no expense ref and
+		# ordinary item codes, so it fell through to "product": freight summed
+		# into accounting.billed_goods, shrinking the gap, and dropped from the
+		# carriers' billed total — the exact figure this feature exists to feed.
+		# The flag comes from the SAME configured groups that authorize the link,
+		# so nothing is bucketed as transport that could not have been linked as
+		# transport (C3: config, never a tenant constant).
+		enrich = body(self.src, "_enrich_bill_rows")
+		self.assertIn('transport_supplier=r.get("supplier") in carriers', enrich)
+		groups = body(self.src, "_transport_group_suppliers")
+		self.assertIn("imports_transport_supplier_groups_for(company)", groups)
+
+	def test_an_unconfigured_company_is_bucketed_exactly_as_before(self):
+		# Empty set => every row arrives with the flag false, so the six tenants
+		# that never configure this see byte-identical categories.
+		groups = body(self.src, "_transport_group_suppliers")
+		self.assertIn("if not company or not names:\n\t\treturn set()", groups)
+		self.assertIn("if not groups:\n\t\treturn set()", groups)
+
+	def test_the_lookup_is_one_query_for_the_whole_page(self):
+		# Per-row it would be one Supplier read per bill on the CI cost overview.
+		groups = body(self.src, "_transport_group_suppliers")
+		self.assertIn('"name": ["in", list(names)]', groups)
+		self.assertEqual(groups.count("frappe.get_all("), 1)
+
+	def test_both_callers_pass_the_company_through(self):
+		# _enrich_bill_rows defaults company to None (=> feature off). A caller
+		# that forgets it silently restores the "product" bug for its whole page.
+		for caller in ("_related_import_bills", "list_landed_cost_bills"):
+			with self.subTest(caller=caller):
+				src = body(self.src, caller)
+				self.assertRegex(src, r"_enrich_bill_rows\(rows, .+, company\)")
 
 
 class UnlinkedTransportBillsTest(unittest.TestCase):

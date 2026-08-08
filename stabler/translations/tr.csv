@@ -5638,6 +5638,7 @@ Find bills to link,Bağlanacak faturaları bul
 Import attribution,İçe aktarma ilişkilendirmesi
 Link {count} bill(s) to this CI,{count} faturayı bu CI'ya bağla
 Linked to,Bağlı
+Linked.,Bağlandı.
 No unlinked draft bills found company-wide.,Şirket genelinde bağlanmamış taslak fatura bulunamadı.
 Raised by the Import Expense automation — cannot be unlinked here.,Import Expense otomasyonu oluşturdu — burada bağlantısı kaldırılamaz.
 Search container…,Konteyner ara…

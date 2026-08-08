@@ -96,17 +96,28 @@ class BillImportLinkStateGateOrderTest(unittest.TestCase):
 		# The Purchase Invoice form ships to every tenant, imports on or off.
 		# An exception here would be a console error on every bill of every
 		# non-imports company. Must return, not raise.
-		self.assertIn('if not module_map_for(company).get("imports"):', self.body)
-		branch = self.body[self.body.index('if not module_map_for(company).get("imports"):') :]
+		self.assertIn('if not module_map_for(company).get("imports")', self.body)
+		branch = self.body[self.body.index('if not module_map_for(company).get("imports")') :]
 		branch = branch[: branch.index("return {") + len("return {")]
 		self.assertNotIn("frappe.throw", branch)
+
+	def test_a_user_without_an_imports_role_is_treated_as_module_off(self):
+		# The write path calls _assert_imports_access, whose role half this
+		# mirrors. Without it a purchasing-only user is shown the picker and the
+		# Link click throws. It is mirrored rather than called because that
+		# helper RAISES, and this endpoint must stay silent on the tenants that
+		# have no imports at all — so the two halves share one silent branch.
+		self.assertIn("_ADMIN_ROLES", self.body)
+		self.assertIn("_IMPORTS_ROLES", self.body)
+		self.assertIn("or not has_imports_role:", self.body)
+		self.assertNotIn("_assert_imports_access(", self.body)
 
 	def test_module_off_reports_no_reason_and_empty_refs(self):
 		# Silent ineligibility: a reason string here would tell a user on a
 		# non-imports tenant that a feature they cannot see is "not configured"
 		# — a hint about functionality that does not exist for them.
 		off = self.body[
-			self.body.index('if not module_map_for(company).get("imports"):') : self.body.index(
+			self.body.index('if not module_map_for(company).get("imports")') : self.body.index(
 				"refs = _bill_import_refs(purchase_invoice)"
 			)
 		]
@@ -125,7 +136,14 @@ class BillImportLinkStateGateOrderTest(unittest.TestCase):
 		# Mirrors clear_bill_import_refs's own refusal: an expense-owned bill
 		# is linked (a ref is set) but must not offer an Unlink action that the
 		# write path would then refuse.
-		self.assertIn('can_unlink = linked and not refs["custom_import_expense"]', self.body)
+		self.assertIn('linked and not refs["custom_import_expense"]', self.body)
+
+	def test_can_unlink_excludes_a_bill_an_automation_points_at(self):
+		# The second refusal of clear_bill_import_refs. A tier-3 automation
+		# transport bill has an EMPTY custom_import_expense, so the rule above
+		# does not cover it: without this the picker shows an Unlink button whose
+		# click throws — the one failure mode this endpoint exists to prevent.
+		self.assertIn("not _automation_owner_of_bill(purchase_invoice)", self.body)
 
 	def test_only_a_draft_bill_is_eligible(self):
 		# Same rule as set_bill_import_refs gate 3, expressed as a verdict

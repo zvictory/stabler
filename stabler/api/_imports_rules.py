@@ -606,13 +606,27 @@ def per_kg(amount: float, total_kg: float) -> float:
 	return round(float(amount or 0) / tk, 4)
 
 
-def derive_bill_category(*, truck_ref=None, expense_ref=None, item_codes=(), bill_no=None) -> str:
+def derive_bill_category(
+	*, truck_ref=None, expense_ref=None, item_codes=(), bill_no=None, transport_supplier=False
+) -> str:
 	"""Bucket a Purchase Invoice into product / transport / expense / freight.
 
 	Transport wins first (a truck ref, the Cross-Border Transport item, or the
 	``XBORDER-`` bill marker), then expense (an expense ref, the Import Service
 	item, or the ``IMPEXP-`` marker), then an explicit ``FREIGHT-`` marker; a bill
 	with none of these — the goods invoice against the CI — is ``product``.
+
+	``transport_supplier`` is the last word before that fallback, and it exists
+	because hand-attribution (v47) created a population none of the markers
+	describe: a carrier's bill attached to a Commercial Invoice or a container
+	carries no truck ref, no expense ref and ordinary item codes, so it used to
+	fall through to ``product`` — freight counted as goods in
+	``accounting.billed_goods`` and dropped from the carriers' billed total,
+	which is the exact figure the attribution feature exists to feed. The caller
+	sets the flag from the same configured supplier groups that authorize the
+	link, so nothing is classified as transport that could not have been linked
+	as transport. It deliberately loses to ``expense_ref``: an Import Expense
+	bill stays an expense even when its vendor sits in a transport group.
 	"""
 	codes = {c for c in (item_codes or []) if c}
 	bill = (bill_no or "").upper()
@@ -622,6 +636,8 @@ def derive_bill_category(*, truck_ref=None, expense_ref=None, item_codes=(), bil
 		return "expense"
 	if bill.startswith("FREIGHT-"):
 		return "freight"
+	if transport_supplier:
+		return "transport"
 	return "product"
 
 

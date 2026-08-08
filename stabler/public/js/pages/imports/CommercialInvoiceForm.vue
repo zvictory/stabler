@@ -2021,7 +2021,7 @@ watch(
 						<h4 class="card-title mb-0">{{ t("Bills you can attach") }}</h4>
 						<button
 							type="button"
-							class="btn btn-outline-primary btn-sm"
+							class="btn btn-outline-secondary btn-sm"
 							:disabled="loadingUnlinkedBills"
 							@click="fetchUnlinkedBills({ clearResults: true })"
 						>
