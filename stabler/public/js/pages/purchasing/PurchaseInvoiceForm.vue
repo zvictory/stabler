@@ -4,6 +4,7 @@ import { storeToRefs } from "pinia";
 import { useRoute, useRouter } from "vue-router";
 import { useSession } from "../../stores/session.js";
 import { call } from "../../api/client.js";
+import { importsApi } from "../../api/imports.js";
 import { t } from "../../composables/i18n.js";
 import { itemSearcher } from "../../composables/items.js";
 import { formatMoney } from "../../composables/money.js";
@@ -274,6 +275,7 @@ const {
 	editable,
 	docstatus,
 	status,
+	modified,
 	load,
 	save,
 	submit,
@@ -312,6 +314,123 @@ async function loadDoc() {
 		showDiscounts.value = form.value.items.some(
 			(l) => Number(l.discount_percentage) > 0 || Number(l.discount_amount) > 0
 		);
+	}
+}
+
+// Import attribution (W1) — hand-link this draft bill to a Commercial Invoice,
+// Import Container or Import Truck. Attribution only: never touches cost lines,
+// the landed cost voucher or any amount field. The server is the sole gate —
+// this panel only reflects `bill_import_link_state`, it never guesses.
+const linkState = ref(null);
+const linkStateLoading = ref(false);
+const linkActionRunning = ref(false);
+const linkError = ref("");
+
+const showLinkPanel = computed(
+	() => !!linkState.value && (linkState.value.eligible || linkState.value.linked)
+);
+
+const linkedRefs = computed(() => {
+	const refs = linkState.value?.refs || {};
+	const out = [];
+	if (refs.custom_commercial_invoice) out.push({ label: t("Commercial Invoice"), name: refs.custom_commercial_invoice });
+	if (refs.custom_import_container) out.push({ label: t("Import Container"), name: refs.custom_import_container });
+	if (refs.custom_import_truck) out.push({ label: t("Import Truck"), name: refs.custom_import_truck });
+	return out;
+});
+
+async function fetchLinkState() {
+	if (!docName.value) {
+		linkState.value = null;
+		return;
+	}
+	linkStateLoading.value = true;
+	linkError.value = "";
+	try {
+		linkState.value = await importsApi.billImportLinkState(docName.value);
+	} catch (err) {
+		linkState.value = null;
+		linkError.value = err?.message || t("Failed to load import attribution.");
+	} finally {
+		linkStateLoading.value = false;
+	}
+}
+
+// `modified` bumps after every save/submit/cancel (the composable re-loads the
+// doc on each), which is the only moment a supplier or docstatus change could
+// have actually landed on the server — so it is the right refetch trigger,
+// not a raw watch on the in-memory form fields.
+watch([docName, modified], fetchLinkState);
+
+const linkKind = ref("commercial_invoice");
+const linkKindOptions = computed(() => [
+	{ name: "commercial_invoice", _label: t("Commercial Invoice") },
+	{ name: "import_container", _label: t("Import Container") },
+	{ name: "import_truck", _label: t("Import Truck") },
+]);
+const linkTargetPlaceholder = computed(() => {
+	if (linkKind.value === "import_container") return t("Search container…");
+	if (linkKind.value === "import_truck") return t("Search truck…");
+	return t("Search commercial invoice…");
+});
+
+const linkTargetName = ref("");
+const linkTargetLabel = ref("");
+
+function clearLinkTarget() {
+	linkTargetName.value = "";
+	linkTargetLabel.value = "";
+}
+
+watch(linkKind, clearLinkTarget);
+
+function searchLinkTargets(q) {
+	const params = { company: activeCompany.value, search: q, limit_page_length: 10 };
+	if (linkKind.value === "import_container") {
+		return importsApi.listImportContainers(params).then((r) => r.rows || []);
+	}
+	if (linkKind.value === "import_truck") {
+		return importsApi.listImportTrucks(params).then((r) => r.rows || []);
+	}
+	return importsApi.listCommercialInvoices(params).then((r) => r.rows || []);
+}
+
+function pickLinkTarget(item) {
+	linkTargetName.value = item.name;
+	if (linkKind.value === "import_container") linkTargetLabel.value = item.container_number || item.name;
+	else if (linkKind.value === "import_truck") linkTargetLabel.value = item.truck_number || item.name;
+	else linkTargetLabel.value = item.ci_number || item.name;
+}
+
+async function linkTarget() {
+	if (!linkTargetName.value) return;
+	linkActionRunning.value = true;
+	linkError.value = "";
+	try {
+		const payload = { purchase_invoice: docName.value };
+		if (linkKind.value === "import_container") payload.import_container = linkTargetName.value;
+		else if (linkKind.value === "import_truck") payload.import_truck = linkTargetName.value;
+		else payload.commercial_invoice = linkTargetName.value;
+		await importsApi.setBillImportRefs(payload);
+		clearLinkTarget();
+		await fetchLinkState();
+	} catch (err) {
+		linkError.value = err?.message || t("Failed to link.");
+	} finally {
+		linkActionRunning.value = false;
+	}
+}
+
+async function unlinkTarget() {
+	linkActionRunning.value = true;
+	linkError.value = "";
+	try {
+		await importsApi.clearBillImportRefs(docName.value);
+		await fetchLinkState();
+	} catch (err) {
+		linkError.value = err?.message || t("Failed to unlink.");
+	} finally {
+		linkActionRunning.value = false;
 	}
 }
 
@@ -669,6 +788,82 @@ async function submitDoc() {
 					<input class="form-check-input" type="checkbox" id="piUpdateStock" v-model="form.update_stock" />
 					<label class="form-check-label" for="piUpdateStock">{{ t("Update stock") }}</label>
 				</div>
+			</div>
+		</div>
+
+		<!-- Import attribution (W1) — attribution only, never a cost/valuation write -->
+		<div v-if="showLinkPanel" class="card mb-3">
+			<div class="card-header">
+				<h3 class="card-title">{{ t("Import attribution") }}</h3>
+			</div>
+			<div class="card-body">
+				<div v-if="linkStateLoading" class="text-secondary small">
+					<span class="spinner-border spinner-border-sm me-1"></span>{{ t("Loading…") }}
+				</div>
+				<template v-else>
+					<div v-if="linkError" class="alert alert-danger py-2 small mb-2">{{ linkError }}</div>
+
+					<div v-if="linkState?.linked" class="d-flex align-items-center gap-2 flex-wrap">
+						<span class="text-secondary small">{{ t("Linked to") }}:</span>
+						<span v-for="r in linkedRefs" :key="r.name" class="badge bg-blue-lt font-monospace">{{ r.label }}: {{ r.name }}</span>
+						<button
+							v-if="linkState.can_unlink"
+							type="button"
+							class="btn btn-outline-danger btn-sm ms-auto"
+							:disabled="linkActionRunning"
+							@click="unlinkTarget"
+						>
+							<span v-if="linkActionRunning" class="spinner-border spinner-border-sm me-1"></span>
+							{{ t("Unlink") }}
+						</button>
+					</div>
+
+					<div v-else-if="linkState?.eligible" class="row g-2 align-items-end">
+						<div class="col-md-4">
+							<label class="form-label small">{{ t("Attribute to") }}</label>
+							<Select v-model="linkKind" :options="linkKindOptions" value-key="name" label-key="_label" />
+						</div>
+						<div class="col-md-6">
+							<label class="form-label small">&nbsp;</label>
+							<Typeahead
+								v-model="linkTargetName"
+								:search="searchLinkTargets"
+								:display="linkTargetLabel"
+								:placeholder="linkTargetPlaceholder"
+								:no-results-text="t('No matches found')"
+								size="sm"
+								@pick="pickLinkTarget"
+								@clear="clearLinkTarget"
+							>
+								<template #option="{ item }">
+									<div v-if="linkKind === 'import_container'">
+										<div class="fw-semibold">{{ item.container_number || item.name }}</div>
+										<div class="small text-secondary">{{ item.ci_number || "—" }} · {{ item.name }}</div>
+									</div>
+									<div v-else-if="linkKind === 'import_truck'">
+										<div class="fw-semibold">{{ item.truck_number || item.name }}</div>
+										<div class="small text-secondary">{{ item.trucking_company || "—" }} · {{ item.name }}</div>
+									</div>
+									<div v-else>
+										<div class="fw-semibold">{{ item.ci_number || item.name }}</div>
+										<div class="small text-secondary">{{ item.supplier_name || item.supplier || "—" }} · {{ item.name }}</div>
+									</div>
+								</template>
+							</Typeahead>
+						</div>
+						<div class="col-md-2">
+							<button
+								type="button"
+								class="btn btn-primary w-100"
+								:disabled="!linkTargetName || linkActionRunning"
+								@click="linkTarget"
+							>
+								<span v-if="linkActionRunning" class="spinner-border spinner-border-sm me-1"></span>
+								{{ t("Link") }}
+							</button>
+						</div>
+					</div>
+				</template>
 			</div>
 		</div>
 

@@ -5633,3 +5633,21 @@ Indicative only — shipments are tracked per category,Faqat ma'lumot uchun — 
 This category pool has no boxes left.,Bu kategoriyada quti qolmagan.
 {count} fully shipped lines hidden,{count} ta to'liq jo'natilgan qator yashirildi
 Every line of the selected proformas is already fully shipped.,Tanlangan proformalarning barcha qatorlari allaqachon to'liq jo'natilgan.
+Attribute to,Bog'lash obyekti
+Bills you can attach,Biriktirish mumkin bo'lgan hisoblar
+Failed to link.,Bog'lash amalga oshmadi.
+Failed to load import attribution.,Import bog'lanishini yuklab bo'lmadi.
+Failed to unlink the bill.,Hisobni uzib bo'lmadi.
+Failed to unlink.,Uzib bo'lmadi.
+Find bills to link,Bog'lash uchun hisoblarni topish
+Import attribution,Import bog'lanishi
+Link {count} bill(s) to this CI,{count} ta hisobni shu CI ga bog'lash
+Linked to,Bog'langan
+No unlinked draft bills found company-wide.,Kompaniya bo'yicha bog'lanmagan qoralama hisoblar topilmadi.
+Raised by the Import Expense automation — cannot be unlinked here.,Import Expense avtomatikasi yaratgan — bu yerda uzib bo'lmaydi.
+Search container…,Konteyner qidirish…
+Search truck…,Yuk mashinasini qidirish…
+Showing only the first {limit} bills — narrow the picture before assuming a missing bill was never entered.,Faqat dastlabki {limit} ta hisob ko'rsatilmoqda — yo'q hisob umuman kiritilmagan deb hisoblashdan oldin tanlovni toraytiring.
+This is the goods invoice of this Commercial Invoice — its link cannot be cleared here.,Bu shu Commercial Invoice ning tovar hisobi — uning bog'lanishini bu yerda olib bo'lmaydi.
+{bill} unlinked.,{bill} uzildi.
+{count} of {total} selected,{total} tadan {count} tasi tanlandi

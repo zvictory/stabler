@@ -6,7 +6,8 @@
  "engine": "InnoDB",
  "field_order": [
   "company",
-  "ci_supplier_groups"
+  "ci_supplier_groups",
+  "imports_transport_supplier_groups"
  ],
  "fields": [
   {
@@ -26,6 +27,14 @@
    "fieldtype": "Small Text",
    "in_list_view": 1,
    "label": "CI Supplier Groups"
+  },
+  {
+   "columns": 6,
+   "description": "Supplier groups whose bills may be hand-linked to a Commercial Invoice — transporters, customs brokers, service providers, one group name per line (a JSON list is also accepted). Blank means the hand-linking feature is OFF for this company: no bill is offered and none can be linked. Deliberately the inverse of CI Supplier Groups, which is a picker restriction where blank means no restriction; here blank means no permission, because this list is what stops an arbitrary payable from being attributed to an import.",
+   "fieldname": "imports_transport_supplier_groups",
+   "fieldtype": "Small Text",
+   "in_list_view": 1,
+   "label": "Transport / Service Supplier Groups (hand-linkable to a CI)"
   }
  ],
  "index_web_pages_for_search": 1,

@@ -106,6 +106,17 @@ export const importsApi = {
 	setVetCertificateStatus: (name, status, reason) =>
 		call(`${P}.set_vet_certificate_status`, { name, status, reason }),
 
+	// Hand-linking a transport / service bill to a Commercial Invoice (W1/W2).
+	// Attribution only — these never capitalize a cost. Every rule lives on the
+	// server; a client-side check here is a hint, never the gate.
+	setBillImportRefs: (payload) => call(`${P}.set_bill_import_refs`, payload),
+	clearBillImportRefs: (purchase_invoice) =>
+		call(`${P}.clear_bill_import_refs`, { purchase_invoice }),
+	unlinkedTransportBills: (commercial_invoice) =>
+		call(`${P}.unlinked_transport_bills`, { commercial_invoice }),
+	billImportLinkState: (purchase_invoice) =>
+		call(`${P}.bill_import_link_state`, { purchase_invoice }),
+
 	// Month-end accrual + channel payment calendar (WP-I14 / WP-I16)
 	unbilledLandedCosts: (company) => call(`${P}.unbilled_landed_costs`, { company }),
 	paymentCalendar: (company, days = 30) => call(`${P}.payment_calendar`, { company, days }),

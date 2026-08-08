@@ -5639,3 +5639,21 @@ Indicative only — shipments are tracked per category,Только справо
 This category pool has no boxes left.,В этой категории не осталось коробок.
 {count} fully shipped lines hidden,{count} полностью отгруженных строк скрыто
 Every line of the selected proformas is already fully shipped.,Все строки выбранных проформ уже полностью отгружены.
+Attribute to,Отнести к
+Bills you can attach,"Счета, которые можно привязать"
+Failed to link.,Не удалось привязать.
+Failed to load import attribution.,Не удалось загрузить привязку к импорту.
+Failed to unlink the bill.,Не удалось отвязать счёт.
+Failed to unlink.,Не удалось отвязать.
+Find bills to link,Найти счета для привязки
+Import attribution,Привязка к импорту
+Link {count} bill(s) to this CI,Привязать счетов: {count} к этому CI
+Linked to,Привязан к
+No unlinked draft bills found company-wide.,По компании не найдено непривязанных черновиков счетов.
+Raised by the Import Expense automation — cannot be unlinked here.,Создан автоматизацией Import Expense — отвязать здесь нельзя.
+Search container…,Поиск контейнера…
+Search truck…,Поиск машины…
+Showing only the first {limit} bills — narrow the picture before assuming a missing bill was never entered.,"Показаны только первые {limit} счетов — сузьте выборку, прежде чем считать, что отсутствующий счёт не был введён."
+This is the goods invoice of this Commercial Invoice — its link cannot be cleared here.,Это товарный счёт данного Commercial Invoice — его привязку здесь снять нельзя.
+{bill} unlinked.,{bill} отвязан.
+{count} of {total} selected,Выбрано {count} из {total}

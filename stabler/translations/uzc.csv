@@ -5633,3 +5633,21 @@ Indicative only — shipments are tracked per category,Фақат маълумо
 This category pool has no boxes left.,Бу категорияда қути қолмаган.
 {count} fully shipped lines hidden,{count} та тўлиқ жўнатилган қатор яширилди
 Every line of the selected proformas is already fully shipped.,Танланган проформаларнинг барча қаторлари аллақачон тўлиқ жўнатилган.
+Attribute to,Боғлаш объекти
+Bills you can attach,Бириктириш мумкин бўлган ҳисоблар
+Failed to link.,Боғлаш амалга ошмади.
+Failed to load import attribution.,Импорт боғланишини юклаб бўлмади.
+Failed to unlink the bill.,Ҳисобни узиб бўлмади.
+Failed to unlink.,Узиб бўлмади.
+Find bills to link,Боғлаш учун ҳисобларни топиш
+Import attribution,Импорт боғланиши
+Link {count} bill(s) to this CI,{count} та ҳисобни шу CI га боғлаш
+Linked to,Боғланган
+No unlinked draft bills found company-wide.,Компания бўйича боғланмаган қоралама ҳисоблар топилмади.
+Raised by the Import Expense automation — cannot be unlinked here.,Import Expense автоматикаси яратган — бу ерда узиб бўлмайди.
+Search container…,Контейнер қидириш…
+Search truck…,Юк машинасини қидириш…
+Showing only the first {limit} bills — narrow the picture before assuming a missing bill was never entered.,Фақат дастлабки {limit} та ҳисоб кўрсатилмоқда — йўқ ҳисоб умуман киритилмаган деб ҳисоблашдан олдин танловни торайтиринг.
+This is the goods invoice of this Commercial Invoice — its link cannot be cleared here.,Бу шу Commercial Invoice нинг товар ҳисоби — унинг боғланишини бу ерда олиб бўлмайди.
+{bill} unlinked.,{bill} узилди.
+{count} of {total} selected,{total} тадан {count} таси танланди

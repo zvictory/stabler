@@ -8,6 +8,7 @@ import { call } from "../../api/client.js";
 import { t } from "../../composables/i18n.js";
 import { formatDate } from "../../composables/date.js";
 import { formatMoney } from "../../composables/money.js";
+import { getStatusBadgeClass } from "../../composables/status.js";
 import { blockerText, cascadeRows, recordRoute } from "../../composables/deleteImpact.js";
 import { buildAllocationPlan, rowCeiling } from "../../composables/piAllocation.js";
 import { useToast } from "../../composables/useToast.js";
@@ -187,6 +188,117 @@ async function fetchCostOverview() {
 		costOverviewData.value = null;
 	} finally {
 		loadingCostOverview.value = false;
+	}
+}
+
+// Hand-linking transport/service bills to this CI (W2). The panel is
+// on-demand and company-wide (`unlinked_transport_bills` ignores the CI's own
+// company scoping only insofar as it filters by it server-side) — nothing
+// fetches until the user asks, and a `configured:false` or permission failure
+// (no cost visibility) hides the whole panel rather than showing an error.
+const unlinkedBillsRequested = ref(false);
+const unlinkedBillsHidden = ref(false);
+const loadingUnlinkedBills = ref(false);
+const unlinkedBillsResult = ref(null);
+const selectedUnlinkedBills = ref([]);
+const linkingSelected = ref(false);
+const linkResults = ref([]);
+const unlinkingBill = ref(null);
+
+const unlinkedBillRows = computed(() => unlinkedBillsResult.value?.rows || []);
+const allUnlinkedSelected = computed(
+	() => unlinkedBillRows.value.length > 0 && selectedUnlinkedBills.value.length === unlinkedBillRows.value.length
+);
+
+async function fetchUnlinkedBills({ clearResults = false } = {}) {
+	if (isCreate.value || !docName.value) return;
+	if (clearResults) linkResults.value = [];
+	loadingUnlinkedBills.value = true;
+	try {
+		const res = await importsApi.unlinkedTransportBills(docName.value);
+		unlinkedBillsResult.value = res;
+		unlinkedBillsRequested.value = true;
+		// Silent, not an error state: unconfigured means the feature is off for
+		// this company and the panel must render nothing at all (C4).
+		unlinkedBillsHidden.value = !res?.configured;
+		selectedUnlinkedBills.value = selectedUnlinkedBills.value.filter((n) =>
+			(res?.rows || []).some((r) => r.name === n)
+		);
+	} catch (e) {
+		// Most likely a cost-visibility permission failure — fail quietly, no
+		// red banner, per the masking rule the rest of this page follows.
+		console.error("Failed to load unlinked bills", e);
+		unlinkedBillsResult.value = null;
+		unlinkedBillsRequested.value = true;
+		unlinkedBillsHidden.value = true;
+	} finally {
+		loadingUnlinkedBills.value = false;
+	}
+}
+
+function toggleUnlinkedBill(name, on) {
+	const set = new Set(selectedUnlinkedBills.value);
+	if (on) set.add(name);
+	else set.delete(name);
+	selectedUnlinkedBills.value = Array.from(set);
+}
+
+function toggleAllUnlinkedBills(on) {
+	selectedUnlinkedBills.value = on ? unlinkedBillRows.value.map((r) => r.name) : [];
+}
+
+async function linkSelectedBills() {
+	if (!selectedUnlinkedBills.value.length || linkingSelected.value) return;
+	linkingSelected.value = true;
+	const results = [];
+	for (const name of selectedUnlinkedBills.value) {
+		try {
+			await importsApi.setBillImportRefs({ purchase_invoice: name, commercial_invoice: docName.value });
+			results.push({ name, ok: true });
+		} catch (e) {
+			results.push({ name, ok: false, message: e?.message || t("Failed to link.") });
+		}
+	}
+	linkResults.value = results;
+	selectedUnlinkedBills.value = [];
+	linkingSelected.value = false;
+	// Re-fetch, never mutate optimistically — the CI's own cost figures always,
+	// and the candidate panel only if it is actually on screen (it must stay
+	// on-demand, not spring open from an unrelated action).
+	const refetches = [fetchCostOverview()];
+	if (unlinkedBillsRequested.value) refetches.push(fetchUnlinkedBills());
+	await Promise.all(refetches);
+}
+
+// What the already-fetched data tells us without another round trip. Both
+// checks mirror gates `clear_bill_import_refs` also enforces server-side —
+// this is a hint to greyed-out the button, never the actual gate. Whether the
+// bill is already vouchered into a Landed Cost Voucher is NOT knowable from
+// this data, so it is deliberately absent here: the button stays enabled and
+// the server's refusal reaches the user verbatim.
+function billUnlinkBlockedReason(bill) {
+	if (bill.custom_import_expense) {
+		return t("Raised by the Import Expense automation — cannot be unlinked here.");
+	}
+	if (form.value.supplier && bill.supplier === form.value.supplier) {
+		return t("This is the goods invoice of this Commercial Invoice — its link cannot be cleared here.");
+	}
+	return "";
+}
+
+async function unlinkBill(bill) {
+	if (unlinkingBill.value) return;
+	unlinkingBill.value = bill.name;
+	try {
+		await importsApi.clearBillImportRefs(bill.name);
+		toast.success(t("{bill} unlinked.", { bill: bill.name }));
+		const refetches = [fetchCostOverview()];
+		if (unlinkedBillsRequested.value) refetches.push(fetchUnlinkedBills());
+		await Promise.all(refetches);
+	} catch (e) {
+		toast.error(e?.message || t("Failed to unlink the bill."));
+	} finally {
+		unlinkingBill.value = null;
 	}
 }
 
@@ -1860,6 +1972,7 @@ watch(
 								<th class="text-end">{{ t("Amount") }}</th>
 								<th class="text-end">{{ t("Outstanding") }}</th>
 								<th>{{ t("Due date") }}</th>
+								<th>{{ t("Actions") }}</th>
 							</tr>
 						</thead>
 						<tbody>
@@ -1880,15 +1993,148 @@ watch(
 									<span v-if="b.overdue" class="badge bg-danger-lt text-danger">{{ t("overdue") }} {{ formatDate(b.due_date) }}</span>
 									<span v-else>{{ b.due_date ? formatDate(b.due_date) : '—' }}</span>
 								</td>
+								<td>
+									<button
+										v-if="!billUnlinkBlockedReason(b)"
+										type="button"
+										class="btn btn-outline-secondary btn-sm"
+										:disabled="unlinkingBill === b.name"
+										@click="unlinkBill(b)"
+									>
+										<span v-if="unlinkingBill === b.name" class="spinner-border spinner-border-sm"></span>
+										<template v-else>{{ t("Unlink") }}</template>
+									</button>
+									<span v-else class="text-secondary small" :title="billUnlinkBlockedReason(b)">
+										<i class="ti ti-lock"></i>
+									</span>
+								</td>
 							</tr>
 							<tr v-if="!costOverviewData?.bills?.length">
-								<td colspan="7" class="text-center text-secondary py-2">{{ t("No supplier bills linked yet.") }}</td>
+								<td colspan="8" class="text-center text-secondary py-2">{{ t("No supplier bills linked yet.") }}</td>
 							</tr>
 						</tbody>
 					</table>
 				</div>
 
-				<h4 class="card-title mb-2">{{ t("Expenses without bills") }}</h4>
+				<div class="mt-4 pt-3 border-top">
+					<div class="d-flex align-items-center justify-content-between mb-2">
+						<h4 class="card-title mb-0">{{ t("Bills you can attach") }}</h4>
+						<button
+							type="button"
+							class="btn btn-outline-primary btn-sm"
+							:disabled="loadingUnlinkedBills"
+							@click="fetchUnlinkedBills({ clearResults: true })"
+						>
+							<span v-if="loadingUnlinkedBills" class="spinner-border spinner-border-sm me-1"></span>
+							<i v-else class="ti ti-search me-1"></i>
+							{{ unlinkedBillsRequested ? t("Refresh") : t("Find bills to link") }}
+						</button>
+					</div>
+
+					<div v-if="loadingUnlinkedBills" class="table-responsive">
+						<table class="table table-sm table-bordered align-middle mb-0">
+							<thead class="table-light">
+								<tr>
+									<th style="width: 30px"></th>
+									<th>{{ t("Bill") }}</th>
+									<th>{{ t("Supplier") }}</th>
+									<th>{{ t("Supplier group") }}</th>
+									<th class="text-end">{{ t("Amount") }}</th>
+									<th class="text-end">{{ t("Outstanding") }}</th>
+									<th>{{ t("Posting date") }}</th>
+									<th>{{ t("Due date") }}</th>
+									<th>{{ t("Status") }}</th>
+								</tr>
+							</thead>
+							<SkeletonRows :rows="4" :cols="9" />
+						</table>
+					</div>
+
+					<template v-else-if="unlinkedBillsRequested && !unlinkedBillsHidden">
+						<div v-if="unlinkedBillsResult?.summary?.capped" class="alert alert-warning py-2 px-3 small mb-2">
+							<i class="ti ti-alert-triangle me-1"></i>
+							{{ t("Showing only the first {limit} bills — narrow the picture before assuming a missing bill was never entered.", { limit: unlinkedBillsResult.summary.limit }) }}
+						</div>
+
+						<div v-if="!unlinkedBillRows.length" class="text-secondary small py-2">
+							{{ t("No unlinked draft bills found company-wide.") }}
+						</div>
+
+						<template v-else>
+							<div class="table-responsive mb-2">
+								<table class="table table-sm table-bordered align-middle mb-0">
+									<thead class="table-light">
+										<tr>
+											<th style="width: 30px">
+												<input
+													type="checkbox"
+													class="form-check-input"
+													:checked="allUnlinkedSelected"
+													@change="toggleAllUnlinkedBills($event.target.checked)"
+												/>
+											</th>
+											<th>{{ t("Bill") }}</th>
+											<th>{{ t("Supplier") }}</th>
+											<th>{{ t("Supplier group") }}</th>
+											<th class="text-end">{{ t("Amount") }}</th>
+											<th class="text-end">{{ t("Outstanding") }}</th>
+											<th>{{ t("Posting date") }}</th>
+											<th>{{ t("Due date") }}</th>
+											<th>{{ t("Status") }}</th>
+										</tr>
+									</thead>
+									<tbody>
+										<tr v-for="r in unlinkedBillRows" :key="r.name">
+											<td>
+												<input
+													type="checkbox"
+													class="form-check-input"
+													:checked="selectedUnlinkedBills.includes(r.name)"
+													@change="toggleUnlinkedBill(r.name, $event.target.checked)"
+												/>
+											</td>
+											<td>
+												<router-link :to="'/purchasing/invoices/' + r.name" class="fw-bold font-monospace text-primary text-decoration-none">
+													{{ r.bill_no || r.name }}
+												</router-link>
+											</td>
+											<td>{{ r.supplier_name || r.supplier }}</td>
+											<td class="small text-secondary">{{ r.supplier_group || '—' }}</td>
+											<td class="text-end font-monospace">{{ fm(r.grand_total, r.currency) }}</td>
+											<td class="text-end font-monospace text-danger">{{ fm(r.outstanding_amount, r.currency) }}</td>
+											<td>{{ r.posting_date ? formatDate(r.posting_date) : '—' }}</td>
+											<td>{{ r.due_date ? formatDate(r.due_date) : '—' }}</td>
+											<td><span class="badge" :class="getStatusBadgeClass('Purchase Invoice', r.status)">{{ r.status }}</span></td>
+										</tr>
+									</tbody>
+								</table>
+							</div>
+
+							<div class="d-flex align-items-center gap-2 flex-wrap">
+								<button
+									type="button"
+									class="btn btn-primary btn-sm"
+									:disabled="!selectedUnlinkedBills.length || linkingSelected"
+									@click="linkSelectedBills"
+								>
+									<span v-if="linkingSelected" class="spinner-border spinner-border-sm me-1"></span>
+									{{ t("Link {count} bill(s) to this CI", { count: selectedUnlinkedBills.length }) }}
+								</button>
+								<span class="text-secondary small">
+									{{ t("{count} of {total} selected", { count: selectedUnlinkedBills.length, total: unlinkedBillRows.length }) }}
+								</span>
+							</div>
+
+							<div v-if="linkResults.length" class="mt-2">
+								<div v-for="o in linkResults" :key="o.name" class="small" :class="o.ok ? 'text-success' : 'text-danger'">
+									<i class="me-1" :class="o.ok ? 'ti ti-check' : 'ti ti-x'"></i>{{ o.name }} — {{ o.ok ? t('Linked.') : o.message }}
+								</div>
+							</div>
+						</template>
+					</template>
+				</div>
+
+				<h4 class="card-title mb-2 mt-4">{{ t("Expenses without bills") }}</h4>
 				<div class="table-responsive mb-3">
 					<table class="table table-sm table-bordered align-middle mb-0">
 						<thead class="table-light">

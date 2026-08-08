@@ -83,8 +83,10 @@ class DriftEndpointTest(unittest.TestCase):
 
 	def test_batched_never_per_invoice(self):
 		# Four queries total (invoices, CIs, CI lines, PInv lines) — none of
-		# them inside the per-invoice loop.
-		loop = self.body[self.body.index("for inv in invoices:") :]
+		# them inside the per-invoice loop. Anchored on the LAST such loop: the
+		# supplier-scope filter walks the same list earlier, and it is the drift
+		# loop (after the batched line queries) this guards.
+		loop = self.body[self.body.rindex("for inv in invoices:") :]
 		self.assertNotIn("frappe.get_all(", loop)
 		self.assertNotIn("frappe.db.", loop)
 

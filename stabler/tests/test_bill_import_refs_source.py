@@ -1,0 +1,433 @@
+"""Guards for hand-linking a transport/service bill to a Commercial Invoice (W1/W2).
+
+Linking a Purchase Invoice to an import is an ATTRIBUTION act: the bill then
+shows up in the CI's cost overview and its carriers-outstanding figure, because
+``_related_import_bills`` already reads the four v46 refs. That makes the write
+path the whole control surface — the four Link fields carry ``read_only: 1``,
+which is a Frappe Desk UI hint and blocks nothing on the server, and the SPA's
+copy of the rules is decoration.
+
+So the money-relevant properties are all structural, and each has a specific way
+of going wrong:
+
+* the module gate must run FIRST, or a tenant without imports can probe and
+  write through an imports endpoint;
+* a bill that already carries any ref is owned by the automation that stamped
+  it — re-linking detaches it from the document that created it;
+* a freight bill from the CI's own supplier is CIF, already inside the agreed
+  goods price, and would be counted twice;
+* an unlink after the cost reached a Landed Cost Voucher strands a capitalized
+  cost whose source bill is no longer attributable;
+* the candidate panel reports amounts, and amounts in this module are
+  permission-masked.
+
+Frappe-free: these assert structural properties of the source, so a refactor
+that quietly drops a guard fails CI rather than production.
+
+    cd /path/to/stabler && PYTHONPATH=$PWD python3 -m unittest stabler.tests.test_bill_import_refs_source -v
+"""
+
+from __future__ import annotations
+
+import os
+import re
+import unittest
+
+_HERE = os.path.dirname(os.path.abspath(__file__))
+_ROOT = os.path.normpath(os.path.join(_HERE, ".."))
+IMPORTS = os.path.join(_ROOT, "api", "imports.py")
+SETTINGS = os.path.join(_ROOT, "stabler", "doctype", "stabler_settings", "stabler_settings.py")
+SETTINGS_JSON = os.path.join(
+	_ROOT,
+	"stabler",
+	"doctype",
+	"stabler_imports_settings",
+	"stabler_imports_settings.json",
+)
+
+
+def read(path: str) -> str:
+	with open(path, encoding="utf-8") as fh:
+		return fh.read()
+
+
+def body(src: str, name: str) -> str:
+	"""Extract a top-level function body (up to the next top-level def/decorator)."""
+	m = re.search(rf"^def {name}\(", src, re.M)
+	assert m, f"function {name} not found"
+	tail = src[m.start() :]
+	nxt = re.search(r"\n(?:@frappe\.whitelist\(\)|def |#: |# ---)", tail[1:])
+	return tail[: nxt.start() + 1] if nxt else tail
+
+
+def code(src: str, name: str) -> str:
+	"""Function body with its docstring removed — for 'must NOT appear' assertions.
+
+	These functions document what they deliberately avoid, so a prose mention of
+	``doc.save()`` would otherwise fail the test that forbids calling it.
+	"""
+	text = body(src, name)
+	m = re.search(r'"""', text)
+	if not m:
+		return text
+	end = text.index('"""', m.end())
+	return text[end + 3 :]
+
+
+class SetBillImportRefsGateOrderTest(unittest.TestCase):
+	"""The seven gates of set_bill_import_refs, and the order they must run in."""
+
+	def setUp(self):
+		self.body = body(read(IMPORTS), "set_bill_import_refs")
+
+	def test_module_gate_runs_before_any_other_check(self):
+		# The imports module is opt-in per company and owned by one tenant. If
+		# any check ran before _assert_imports_access, a company with imports
+		# OFF would get a different error depending on the state of another
+		# tenant's bill — that is a probe, and the write that follows would be
+		# an imports write on a non-imports tenant.
+		gate = self.body.index("_assert_imports_access(company)")
+		for later in (
+			"_assert_can_write(",
+			"docstatus",
+			"_assert_hand_linkable_supplier(",
+			"_assert_not_ci_supplier(",
+			"frappe.db.set_value(",
+		):
+			self.assertLess(
+				gate,
+				self.body.index(later),
+				f"{later} runs before the imports module gate",
+			)
+
+	def test_record_level_write_permission_is_checked(self):
+		# @frappe.whitelist() gates the METHOD, not the record: without this the
+		# endpoint writes any Purchase Invoice whose name the caller can guess.
+		self.assertIn('_assert_can_write("Purchase Invoice", purchase_invoice)', self.body)
+
+	def test_only_a_draft_bill_may_be_linked(self):
+		# A submitted bill is already in the GL. Re-attributing it is a
+		# correction with GL consequences, not data entry.
+		self.assertIn("cint(bill.docstatus) != 0", self.body)
+
+	def test_all_four_refs_must_be_empty(self):
+		# GATE 4 — this is what keeps automation-created bills locked. The
+		# import-expense automation, the truck-transport automation, the
+		# CI->PInv conversion and the rebook path each stamp a ref as their own
+		# bookkeeping; overwriting one detaches the bill from the document that
+		# created it. Iterating _bill_import_refs (all four, including
+		# custom_import_expense) rather than only the three settable ones is
+		# the point: an expense bill is refused precisely because its ref is
+		# not one a human may set.
+		# Asserted as the whole loop header: iterating a SLICE of the four would
+		# still contain the call, and the ref that would drop off the end is
+		# custom_import_expense — the automation-owned one.
+		# Pinned as one contiguous block, loop + condition + throw: asserting the
+		# loop header alone leaves the gate neuterable (`if False:`) with the
+		# test still green — measured, this assertion is what turns that red.
+		self.assertIn(
+			"for col, value in _bill_import_refs(purchase_invoice).items():\n"
+			"\t\tif value:\n"
+			"\t\t\tfrappe.throw(",
+			self.body,
+		)
+		refs_body = body(read(IMPORTS), "_bill_import_refs")
+		self.assertIn("rules.PI_REF_COLUMNS", refs_body)
+
+	def test_ref_check_covers_a_column_absent_on_this_site(self):
+		# _existing_pi_ref_columns only returns columns that exist. A missing
+		# column must read as EMPTY, not vanish from the dict — otherwise gate
+		# 4 iterates fewer keys and the KeyError surfaces as a crash instead of
+		# a refusal.
+		refs_body = body(read(IMPORTS), "_bill_import_refs")
+		self.assertIn('(values.get(col) or "")', refs_body)
+
+	def test_supplier_group_gate_is_applied(self):
+		self.assertIn("_assert_hand_linkable_supplier(company, bill.supplier)", self.body)
+
+	def test_same_supplier_as_the_ci_is_refused(self):
+		# GATE 6 — freight billed by the seller is CIF: already inside the
+		# agreed goods price. Linking it counts that cost twice, and it also
+		# collides with the supplier-scoped reads that decide which Purchase
+		# Invoice is THE goods invoice of the CI (one of which CANCELS the
+		# invoice it picks).
+		self.assertIn("_assert_not_ci_supplier(", self.body)
+		self.assertIn("_ci_supplier_behind(targets)", self.body)
+
+	def test_targets_are_company_scoped_and_readable(self):
+		# A container name from another tenant is a perfectly valid name. The
+		# company equality is what stops it being attached to this tenant's
+		# payable; _assert_can_read is the row-level half of the same idea.
+		self.assertIn("_company_of(doctype, value) != company", self.body)
+		self.assertIn("_assert_can_read(doctype, value)", self.body)
+
+	def test_write_does_not_go_through_doc_save(self):
+		# doc.save() re-runs full Purchase Invoice validation over a draft the
+		# user is still editing: it can fail on unrelated grounds or silently
+		# recompute amounts. Setting a traceability Link touches no money field
+		# and must not risk either.
+		self.assertIn("frappe.db.set_value(", self.body)
+		self.assertNotIn(".save(", code(read(IMPORTS), "set_bill_import_refs"))
+
+	def test_endpoint_returns_no_monetary_amount(self):
+		# Attribution only. This endpoint is reachable without cost visibility
+		# (the refs themselves are permlevel 0), so its response must not become
+		# a side channel for the cost figures the module masks elsewhere.
+		returned = self.body[self.body.rindex("\treturn {") :]
+		for money in ("grand_total", "outstanding_amount", "amount"):
+			self.assertNotIn(money, returned)
+
+
+class SameSupplierGuardTest(unittest.TestCase):
+	"""The CIF guard must not be bypassable by linking the container instead."""
+
+	def test_ci_is_resolved_through_container_and_truck(self):
+		# A container or a truck implies its CI just as directly as the CI ref
+		# does. If the guard only looked at the CI argument, the identical
+		# double-count would be reachable by picking the container.
+		src = body(read(IMPORTS), "_ci_supplier_behind")
+		self.assertIn('frappe.db.get_value("Import Container"', src)
+		self.assertIn('frappe.db.get_value("Import Truck"', src)
+		self.assertIn('"commercial_invoice"', src)
+
+	def test_guard_compares_against_the_ci_supplier(self):
+		src = body(read(IMPORTS), "_assert_not_ci_supplier")
+		self.assertIn("supplier == ci_supplier", src)
+		self.assertIn("frappe.throw(", src)
+
+	def test_unresolvable_ci_does_not_silently_pass_as_a_match(self):
+		# No CI behind the targets => nothing to double-count against. The
+		# guard must skip, not throw: refusing here would block linking a bill
+		# to a bare container that carries no CI yet.
+		src = body(read(IMPORTS), "_assert_not_ci_supplier")
+		self.assertIn("if ci_supplier and supplier == ci_supplier:", src)
+
+
+class SupplierGroupGateTest(unittest.TestCase):
+	"""Unset configuration must mean OFF, never 'anything goes'."""
+
+	def setUp(self):
+		self.body = body(read(IMPORTS), "_assert_hand_linkable_supplier")
+
+	def test_empty_group_list_refuses(self):
+		# This predicate is the only thing between the import cost picture and
+		# an arbitrary payable. The sibling ci_supplier_groups reader treats an
+		# empty list as "no restriction"; copying that polarity here would let
+		# any supplier's bill be attributed to an import on every tenant that
+		# has not configured the field — which is all of them at go-live.
+		# The throw must be the FIRST statement under `if not groups:`. Asserting
+		# only that both strings appear would accept an early `return` with the
+		# refusal stranded further down — which is exactly the "unset means no
+		# restriction" polarity this test exists to forbid.
+		self.assertRegex(self.body, r"if not groups:\n\t\tfrappe\.throw\(")
+
+	def test_membership_is_required(self):
+		self.assertIn("supplier_group not in groups", self.body)
+
+	def test_groups_come_from_company_config_not_a_constant(self):
+		# C3: tenant variance lives in config. A literal group name here would
+		# ship one tenant's vocabulary to the other six.
+		self.assertIn("imports_transport_supplier_groups_for(company)", self.body)
+
+
+class ClearBillImportRefsTest(unittest.TestCase):
+	"""The unlink path may only undo what the link path could have done."""
+
+	def setUp(self):
+		self.body = body(read(IMPORTS), "clear_bill_import_refs")
+
+	def test_module_and_write_gates_come_first(self):
+		gate = self.body.index("_assert_imports_access(company)")
+		self.assertLess(gate, self.body.index("_assert_can_write("))
+		self.assertLess(gate, self.body.index("frappe.db.set_value("))
+
+	def test_expense_owned_bill_cannot_be_unlinked(self):
+		# A non-empty custom_import_expense means the Import Expense automation
+		# raised this bill. Clearing it would orphan the expense's own record of
+		# which invoice settles it.
+		self.assertIn('refs["custom_import_expense"]', self.body)
+
+	def test_goods_invoice_cannot_be_unlinked(self):
+		# Supplier == the CI's supplier means this is the goods invoice, owned
+		# by the conversion that created it — not a hand-link.
+		self.assertIn("ci_supplier and supplier == ci_supplier", self.body)
+
+	def test_vouchered_cost_refuses_and_names_the_voucher(self):
+		# Once the cost is inside a Landed Cost Voucher, unlinking strands a
+		# capitalized amount whose source bill is no longer attributable to the
+		# import. Naming the LCV is what makes the refusal actionable — mirrors
+		# the toggle_cost_line_include refusal.
+		self.assertIn("lcv_ref", self.body)
+		self.assertIn("already vouchered", self.body)
+		self.assertIn('vouchered[0]["lcv_ref"]', self.body)
+
+	def test_voucher_check_is_guarded_by_has_column(self):
+		# Container Cost Line has no purchase_invoice column today; that link is
+		# a later work package. Querying it unguarded would make EVERY unlink
+		# fail with a SQL error on all seven sites. The guard must wrap the
+		# query, so the check switches itself on the day the column lands.
+		self.assertIn('has_column("Container Cost Line", "purchase_invoice")', self.body)
+		guard = self.body.index('has_column("Container Cost Line", "purchase_invoice")')
+		self.assertLess(guard, self.body.index("SELECT cl.lcv_ref"))
+
+	def test_only_the_three_hand_linkable_refs_are_cleared(self):
+		# custom_import_expense must never be nulled here: the bill carrying one
+		# is already refused above, and listing it would make a future edit to
+		# that refusal silently destructive.
+		write = self.body[self.body.index("frappe.db.set_value(") :]
+		self.assertIn("_HAND_LINKABLE_REFS", write)
+		self.assertNotIn('"custom_import_expense"', write)
+
+
+class UnlinkedTransportBillsTest(unittest.TestCase):
+	"""The candidate panel must not offer a row the write path would refuse."""
+
+	def setUp(self):
+		self.body = body(read(IMPORTS), "unlinked_transport_bills")
+
+	def test_cost_visibility_is_asserted_before_any_amount_is_returned(self):
+		# The panel reports grand_total and outstanding_amount. Cost figures in
+		# this module are permission-masked (K3); without this gate the picker
+		# becomes the one place a user without cost visibility reads them.
+		self.assertIn("_assert_cost_visible()", self.body)
+		self.assertLess(self.body.index("_assert_cost_visible()"), self.body.index("frappe.db.sql("))
+
+	def test_module_gate_precedes_the_cost_gate(self):
+		self.assertLess(
+			self.body.index("_assert_imports_access(ci.company)"),
+			self.body.index("_assert_cost_visible()"),
+		)
+
+	def test_every_ref_column_must_be_empty(self):
+		# A bill already linked to ANOTHER Commercial Invoice must never appear
+		# here: offering it invites a user to try, and the attempt is refused by
+		# gate 4 with an error they cannot act on.
+		self.assertIn("for col in _existing_pi_ref_columns():", self.body)
+		self.assertIn("IS NULL OR pi.{col} = ''", self.body)
+
+	def test_ci_supplier_is_excluded(self):
+		self.assertIn("pi.supplier != %(ci_supplier)s", self.body)
+
+	def test_supplier_group_filter_mirrors_the_write_gate(self):
+		self.assertIn("s.supplier_group IN %(groups)s", self.body)
+		self.assertIn("imports_transport_supplier_groups_for(ci.company)", self.body)
+
+	def test_unconfigured_company_gets_no_candidates(self):
+		# Same polarity as the write gate: unset => the feature is off, so the
+		# panel is empty rather than listing every payable in the company.
+		self.assertIn("if not groups:", self.body)
+		self.assertIn('"configured": False', self.body)
+
+	def test_truncation_is_reported_not_silent(self):
+		# A capped list that looks complete is how a bill goes missing: the user
+		# concludes it was never entered and enters it twice. Fetching cap+1 is
+		# what makes the truncation detectable at all.
+		self.assertIn("_UNLINKED_BILL_LIMIT + 1", self.body)
+		self.assertIn("capped = len(rows) > _UNLINKED_BILL_LIMIT", self.body)
+		self.assertIn('"capped": capped', self.body)
+
+	def test_the_panel_offers_only_what_the_write_path_accepts(self):
+		# The panel's own contract is "every gate that can be expressed as a
+		# filter is one here". It shipped as `docstatus < 2` while gate 3 of
+		# set_bill_import_refs requires `docstatus == 0`, so a submitted transport
+		# bill was listed and then refused on click with "Only a draft bill can be
+		# linked" — the one failure mode the docstring promises cannot happen.
+		self.assertIn("pi.docstatus = 0", self.body)
+		self.assertNotIn("pi.docstatus < 2", self.body)
+		# And it is the SAME rule on both sides, not two numbers that happen to
+		# agree today: the write gate must still be draft-only.
+		self.assertIn("cint(bill.docstatus) != 0", body(read(IMPORTS), "set_bill_import_refs"))
+
+	def test_unlink_stays_open_after_submission(self):
+		# Deliberate asymmetry, pinned so it cannot be "tidied" into symmetry:
+		# linking creates an attribution, unlinking corrects a wrong one. A
+		# docstatus gate here would freeze a mis-attributed bill on submission
+		# with no way out. Money is protected by the voucher check instead.
+		self.assertNotIn("docstatus", code(read(IMPORTS), "clear_bill_import_refs"))
+
+
+class TransportSupplierGroupsSettingTest(unittest.TestCase):
+	"""B1 — the per-company setting the whole feature keys off."""
+
+	def setUp(self):
+		self.body = body(read(SETTINGS), "imports_transport_supplier_groups_for")
+
+	def test_reader_returns_empty_when_the_table_is_not_migrated(self):
+		# This ships as a new child-table FIELD. Between the code landing and
+		# `bench migrate` running on a site, reading it raises. Returning [] —
+		# which every caller reads as "feature off" — keeps that window safe;
+		# letting the exception escape would break the CI form for the tenants
+		# that do not use the feature at all.
+		# `return []` must be the handler's OWN body. The function has other
+		# `return []` statements further down, so asserting one merely exists
+		# somewhere after the except would still pass for a bare `raise`.
+		self.assertRegex(self.body, r"except Exception:\n(?:\t\t#[^\n]*\n)*\t\treturn \[\]")
+
+	def test_empty_company_short_circuits(self):
+		self.assertIn("if not company:", self.body)
+
+	def test_row_is_matched_per_company(self):
+		# The field lives on the CHILD table, not on the Stabler Settings
+		# Single: a Single field would give every company on a multi-company
+		# site one shared list, so one tenant's transporters would authorize
+		# another's bills.
+		self.assertIn("candidate.company == company", self.body)
+		self.assertIn("imports_transport_supplier_groups", self.body)
+
+	def test_json_list_and_newlines_are_both_accepted(self):
+		# Mirrors the sibling reader: an admin who pastes a JSON list must not
+		# silently configure a single group whose name is '["Transport",'.
+		self.assertIn('raw.startswith("[")', self.body)
+		self.assertIn("json.loads(raw)", self.body)
+		self.assertIn("raw.splitlines()", self.body)
+
+	def test_no_default_group_list_anywhere(self):
+		# Unset must mean OFF. A seeded default would authorize hand-linking on
+		# all seven tenants the moment this deploys.
+		self.assertNotIn("=  [", self.body)
+		self.assertNotRegex(self.body, r"return \[['\"]")
+
+	def test_field_exists_on_the_child_doctype(self):
+		raw = read(SETTINGS_JSON)
+		self.assertIn('"fieldname": "imports_transport_supplier_groups"', raw)
+		self.assertIn('"istable": 1', raw)
+
+
+class NoCapitalizationTest(unittest.TestCase):
+	"""C1 — linking is attribution, never capitalization."""
+
+	def test_link_path_touches_no_landed_cost_machinery(self):
+		# Attribution makes the bill VISIBLE against the import. Capitalizing it
+		# into stock valuation is a separate decision with its own double-count
+		# risk (the same cost can already arrive via a Container Cost Line), and
+		# it is a separate, unapproved work package.
+		src = body(read(IMPORTS), "set_bill_import_refs")
+		for forbidden in (
+			"Landed Cost Voucher",
+			"cost_lines",
+			"include_in_landed_cost",
+			"_collect_cost_lines",
+		):
+			self.assertNotIn(
+				forbidden,
+				src,
+				f"{forbidden} appears in the link path — this feature must not capitalize",
+			)
+
+	def test_no_hand_link_endpoint_creates_a_document(self):
+		# Everything from set_bill_import_refs to EOF is this feature. All three
+		# endpoints write with frappe.db.set_value on an existing bill; the
+		# moment one of them inserts a document it has stopped being an
+		# attribution act.
+		src = read(IMPORTS)
+		region = src[src.index("def set_bill_import_refs(") :]
+		for forbidden in ("frappe.new_doc(", ".insert(", ".submit("):
+			self.assertNotIn(
+				forbidden,
+				region,
+				f"{forbidden} appears in the hand-link region — attribution must create nothing",
+			)
+
+
+if __name__ == "__main__":
+	unittest.main()

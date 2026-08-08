@@ -5628,3 +5628,21 @@ Indicative only — shipments are tracked per category,Yalnızca bilgi amaçlı 
 This category pool has no boxes left.,Bu kategoride kalan kutu yok.
 {count} fully shipped lines hidden,{count} tamamen sevk edilmiş satır gizlendi
 Every line of the selected proformas is already fully shipped.,Seçilen proformaların tüm satırları zaten tamamen sevk edilmiş.
+Attribute to,İlişkilendir
+Bills you can attach,Ekleyebileceğiniz faturalar
+Failed to link.,Bağlanamadı.
+Failed to load import attribution.,İçe aktarma ilişkilendirmesi yüklenemedi.
+Failed to unlink the bill.,Fatura bağlantısı kaldırılamadı.
+Failed to unlink.,Bağlantı kaldırılamadı.
+Find bills to link,Bağlanacak faturaları bul
+Import attribution,İçe aktarma ilişkilendirmesi
+Link {count} bill(s) to this CI,{count} faturayı bu CI'ya bağla
+Linked to,Bağlı
+No unlinked draft bills found company-wide.,Şirket genelinde bağlanmamış taslak fatura bulunamadı.
+Raised by the Import Expense automation — cannot be unlinked here.,Import Expense otomasyonu oluşturdu — burada bağlantısı kaldırılamaz.
+Search container…,Konteyner ara…
+Search truck…,Kamyon ara…
+Showing only the first {limit} bills — narrow the picture before assuming a missing bill was never entered.,Yalnızca ilk {limit} fatura gösteriliyor — eksik bir faturanın hiç girilmediğini varsaymadan önce aramayı daraltın.
+This is the goods invoice of this Commercial Invoice — its link cannot be cleared here.,"Bu, bu Commercial Invoice'un mal faturasıdır — bağlantısı burada kaldırılamaz."
+{bill} unlinked.,{bill} bağlantısı kaldırıldı.
+{count} of {total} selected,{total} öğeden {count} tanesi seçildi

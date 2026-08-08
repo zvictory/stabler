@@ -38,7 +38,10 @@ from stabler.api import _imports_rules as rules
 from stabler.api._common import _assert_can_read, _assert_can_write, _require_company
 from stabler.api.organization import _ADMIN_ROLES, _MODULE_ROLES
 from stabler.api.permissions import cost_visible_for
-from stabler.stabler.doctype.stabler_settings.stabler_settings import module_map_for
+from stabler.stabler.doctype.stabler_settings.stabler_settings import (
+	imports_transport_supplier_groups_for,
+	module_map_for,
+)
 from stabler.stabler.imports_module import packing_service
 
 _IMPORTS_ROLES = tuple(_MODULE_ROLES["imports"])
@@ -5834,9 +5837,20 @@ def convert_ci_to_purchase_invoice(commercial_invoice: str, company: str, dry_ru
 		# (dry_run) stay lock-free — they never write.
 		if not cint(dry_run):
 			frappe.db.get_value("Commercial Invoice", commercial_invoice, "name", for_update=True)
+		# The CI ref alone no longer identifies THE goods invoice: a transporter's
+		# or a service provider's bill can be attributed to the same Commercial
+		# Invoice, and the truck-transport automation already books such a PI
+		# against the trucking company. Only the invoice raised by the CI's own
+		# supplier is the one this endpoint would otherwise duplicate — without
+		# the supplier filter a freight bill would be returned as "already
+		# linked" and the goods payable would never be opened at all.
 		existing = frappe.db.get_value(
 			"Purchase Invoice",
-			{"custom_commercial_invoice": commercial_invoice, "docstatus": ["<", 2]},
+			{
+				"custom_commercial_invoice": commercial_invoice,
+				"supplier": ci.supplier,
+				"docstatus": ["<", 2],
+			},
 			"name",
 		)
 		if existing:
@@ -5967,15 +5981,37 @@ def _ci_invoice_drift(company: str, commercial_invoice: str | None = None) -> di
 		return {"rows": [], "summary": {"checked": 0, "drifting": 0, "delta_total": 0.0}, "available": True}
 
 	ci_names = [inv["custom_commercial_invoice"] for inv in invoices]
+	ci_rows = frappe.get_all(
+		"Commercial Invoice",
+		filters={"name": ["in", ci_names]},
+		fields=["name", "agreed_total", "ci_number", "ci_date", "supplier"],
+		limit_page_length=0,
+	)
 	agreed_of = {
-		row["name"]: (flt(row["agreed_total"]), row.get("ci_number"), row.get("ci_date"))
-		for row in frappe.get_all(
-			"Commercial Invoice",
-			filters={"name": ["in", ci_names]},
-			fields=["name", "agreed_total", "ci_number", "ci_date"],
-			limit_page_length=0,
-		)
+		row["name"]: (flt(row["agreed_total"]), row.get("ci_number"), row.get("ci_date")) for row in ci_rows
 	}
+
+	# A Commercial Invoice can now carry bills raised by OTHER parties — a
+	# transporter's freight invoice, a service provider's fee — attributed to
+	# the same CI. Only the invoice from the CI's own supplier is the booked
+	# snapshot of the agreed deal, so only that one may be compared against
+	# agreed_total: a freight bill measured against the goods total reads as
+	# drifting by its entire value. This report is not merely cosmetic —
+	# rebook_ci_invoice acts on exactly these rows and would CANCEL that
+	# transporter's invoice and re-book it with the goods lines. Rows whose CI
+	# carries no supplier at all are kept: that is a separate defect, and
+	# dropping them would hide drift the report exists to surface.
+	ci_supplier_of = {row["name"]: row.get("supplier") for row in ci_rows}
+	kept = []
+	for inv in invoices:
+		ci_supplier = ci_supplier_of.get(inv["custom_commercial_invoice"])
+		if ci_supplier and inv.get("supplier") != ci_supplier:
+			continue
+		kept.append(inv)
+	invoices = kept
+	if not invoices:
+		return {"rows": [], "summary": {"checked": 0, "drifting": 0, "delta_total": 0.0}, "available": True}
+
 	# Line rows for both sides, one query each — never per invoice.
 	ci_lines: dict[str, list] = {}
 	for row in frappe.get_all(
@@ -7444,4 +7480,491 @@ def save_container_transport_cost(
 		"paid_cash": cash,
 		"paid_bank": bank,
 		"changed": True,
+	}
+
+
+# ---------------------------------------------------------------------------
+# W1/W2 — hand-linking a transport / service bill to a Commercial Invoice
+#
+# A carrier's or a broker's Purchase Invoice belongs to an import's cost picture,
+# but nothing ever put the v46 ref on it: the automations stamp only the bills
+# they themselves raise, so a manually entered freight bill stayed anonymous and
+# people typed the CI number into the item description instead. These three
+# endpoints are the missing hand-link, and nothing more.
+#
+# ATTRIBUTION ONLY. Linking makes the bill visible in the CI's cost overview and
+# its carriers-outstanding figure — both of which already read the v46 refs via
+# ``_related_import_bills``. It does NOT capitalize anything: no Container Cost
+# Line, no Landed Cost Voucher, no stock valuation. Capitalization is a separate
+# decision with a separate double-counting risk, and it is not this feature.
+#
+# The four v46 Link fields carry ``read_only: 1``, which is a Desk UI hint and
+# blocks nothing on the server. Every rule below is therefore enforced here, and
+# the client-side equivalents are decoration.
+# ---------------------------------------------------------------------------
+
+#: The three refs a human may set. ``custom_import_expense`` is deliberately
+#: absent: it is stamped by the Import Expense automation and identifies the
+#: bill as automation-owned, which is exactly what gate 4 refuses to overwrite.
+_HAND_LINKABLE_REFS: tuple[tuple[str, str], ...] = (
+	("custom_commercial_invoice", "Commercial Invoice"),
+	("custom_import_container", "Import Container"),
+	("custom_import_truck", "Import Truck"),
+)
+
+#: Fieldname -> the doctype it links to, for all four refs (error messages).
+_PI_REF_DOCTYPES: dict[str, str] = {
+	"custom_commercial_invoice": "Commercial Invoice",
+	"custom_import_container": "Import Container",
+	"custom_import_truck": "Import Truck",
+	"custom_import_expense": "Import Expense",
+}
+
+
+def _bill_import_refs(purchase_invoice: str) -> dict:
+	"""Current value of all four v46 refs on a bill; "" for absent columns.
+
+	A column that does not exist on this site is reported as empty rather than
+	omitted: the callers ask "is any ref set?", and a missing column can never
+	hold one.
+	"""
+	cols = _existing_pi_ref_columns()
+	values = (
+		frappe.db.get_value("Purchase Invoice", purchase_invoice, cols, as_dict=True) or {} if cols else {}
+	)
+	return {col: (values.get(col) or "") for col in rules.PI_REF_COLUMNS}
+
+
+def _ci_supplier_behind(refs: dict) -> str | None:
+	"""The goods supplier of the Commercial Invoice these refs point at.
+
+	A container or a truck implies its CI just as directly as the CI ref does,
+	so the same-supplier guard must resolve through them too — otherwise the
+	guard is bypassed by linking a CIF freight bill to the container instead of
+	to the invoice.
+	"""
+	ci = refs.get("custom_commercial_invoice") or ""
+	if not ci and refs.get("custom_import_container"):
+		ci = frappe.db.get_value("Import Container", refs["custom_import_container"], "commercial_invoice")
+	if not ci and refs.get("custom_import_truck"):
+		ci = frappe.db.get_value("Import Truck", refs["custom_import_truck"], "commercial_invoice")
+	if not ci:
+		return None
+	return frappe.db.get_value("Commercial Invoice", ci, "supplier")
+
+
+def _assert_hand_linkable_supplier(company: str, supplier: str) -> None:
+	"""Gate 5 — the bill's supplier must be a configured transport/service vendor.
+
+	Unset => the feature is OFF for this company. There is no default list and
+	no fallback: this predicate is the only thing standing between the import
+	cost picture and an arbitrary payable, so "not configured" must mean "not
+	permitted", never "anything goes".
+	"""
+	groups = imports_transport_supplier_groups_for(company)
+	if not groups:
+		frappe.throw(
+			_(
+				"Linking a bill to an import is not configured for this company. "
+				"Set the transport/service supplier groups in Stabler Settings first."
+			)
+		)
+	supplier_group = frappe.db.get_value("Supplier", supplier, "supplier_group")
+	if supplier_group not in groups:
+		frappe.throw(
+			_(
+				"Supplier {0} belongs to group {1}, which is not one of the "
+				"transport/service groups whose bills may be linked to an import."
+			).format(supplier, supplier_group or _("(none)"))
+		)
+
+
+def _assert_not_ci_supplier(supplier: str, ci_supplier: str | None) -> None:
+	"""Gate 6 — a freight bill from the goods vendor is CIF and already paid for.
+
+	When the carrier IS the seller, the transport is inside the agreed goods
+	price. Attributing the bill to the CI would count that transport a second
+	time in the cost picture, and it would collide with the supplier-scoped
+	reads that decide which Purchase Invoice is THE goods invoice of the CI —
+	one of which cancels the invoice it picks.
+	"""
+	if ci_supplier and supplier == ci_supplier:
+		frappe.throw(
+			_(
+				"{0} is the Commercial Invoice's own supplier. Freight billed by the "
+				"seller is already inside the agreed goods price (CIF); linking it "
+				"would count that cost twice."
+			).format(supplier)
+		)
+
+
+@frappe.whitelist()
+def set_bill_import_refs(
+	purchase_invoice: str,
+	commercial_invoice: str | None = None,
+	import_container: str | None = None,
+	import_truck: str | None = None,
+) -> dict:
+	"""Attribute a draft transport/service bill to an import (W1).
+
+	Seven gates, in this order — the list is the control, the UI's version of it
+	is decoration:
+
+	1. imports module access for the bill's company
+	2. record-level write permission on the bill
+	3. the bill is still a draft
+	4. all four v46 refs are currently empty (automation-owned bills stay locked)
+	5. the supplier is in a configured transport/service group
+	6. the supplier is not the Commercial Invoice's own supplier (CIF)
+	7. every passed target exists, is in the same company, and is readable
+
+	Writes with ``frappe.db.set_value`` rather than ``doc.save()`` on purpose:
+	saving re-runs full Purchase Invoice validation over a draft the user is
+	still editing, which can fail on unrelated grounds or silently recompute
+	amounts. Setting a traceability Link touches no money field.
+	"""
+	if not purchase_invoice or not frappe.db.exists("Purchase Invoice", purchase_invoice):
+		frappe.throw(_("Unknown Purchase Invoice: {0}").format(purchase_invoice))
+
+	# Gate 1 — the module gate runs before anything else. A tenant with imports
+	# off must not be able to probe, let alone write, through this endpoint.
+	company = _company_of("Purchase Invoice", purchase_invoice)
+	_assert_imports_access(company)
+
+	# Gate 2 — @frappe.whitelist() gates the method, not the record.
+	_assert_can_write("Purchase Invoice", purchase_invoice)
+
+	targets = {
+		"custom_commercial_invoice": (commercial_invoice or "").strip(),
+		"custom_import_container": (import_container or "").strip(),
+		"custom_import_truck": (import_truck or "").strip(),
+	}
+	if not any(targets.values()):
+		frappe.throw(_("Nothing to link: pass a Commercial Invoice, a container or a truck."))
+
+	bill = frappe.db.get_value("Purchase Invoice", purchase_invoice, ["docstatus", "supplier"], as_dict=True)
+
+	# Gate 3 — draft only. A submitted bill is already in the GL; re-attributing
+	# it is a correction, not data entry, and does not belong on this path.
+	if cint(bill.docstatus) != 0:
+		frappe.throw(
+			_("Only a draft bill can be linked to an import. {0} is already submitted or cancelled.").format(
+				purchase_invoice
+			)
+		)
+
+	# Gate 4 — ANY ref already set means some other path owns this bill: the
+	# import-expense automation, the truck-transport automation, the CI->PInv
+	# conversion or the rebook path. Those refs are that path's bookkeeping;
+	# hand-relinking would detach the bill from the document that created it.
+	for col, value in _bill_import_refs(purchase_invoice).items():
+		if value:
+			frappe.throw(
+				_("{0} is already linked to {1} {2} and cannot be re-linked by hand.").format(
+					purchase_invoice, _(_PI_REF_DOCTYPES[col]), value
+				)
+			)
+
+	# Gate 5 — configured transport/service supplier group (unset => feature off).
+	_assert_hand_linkable_supplier(company, bill.supplier)
+
+	# Gate 6 — never the CI's own supplier.
+	_assert_not_ci_supplier(bill.supplier, _ci_supplier_behind(targets))
+
+	# Gate 7 — each target must exist, live in the SAME company as the bill, and
+	# be readable. The company check is what stops a valid name from one tenant
+	# being attached to another tenant's payable.
+	updates = {}
+	for col, doctype in _HAND_LINKABLE_REFS:
+		value = targets[col]
+		if not value:
+			continue
+		if not frappe.db.exists(doctype, value):
+			frappe.throw(_("Unknown {0}: {1}").format(_(doctype), value))
+		if _company_of(doctype, value) != company:
+			frappe.throw(_("{0} {1} belongs to another company.").format(_(doctype), value))
+		_assert_can_read(doctype, value)
+		updates[col] = value
+
+	frappe.db.set_value("Purchase Invoice", purchase_invoice, updates, update_modified=True)
+
+	return {
+		"name": purchase_invoice,
+		"refs": _bill_import_refs(purchase_invoice),
+		"linked": True,
+	}
+
+
+@frappe.whitelist()
+def clear_bill_import_refs(purchase_invoice: str) -> dict:
+	"""Undo a hand-link (W2) — only for bills ``set_bill_import_refs`` could have made.
+
+	Two rules beyond the module + write gates keep this off automation-owned
+	bills: a non-empty ``custom_import_expense`` means the Import Expense
+	automation raised it, and a supplier equal to the CI's supplier means it is
+	the goods invoice. Neither may be unlinked here.
+
+	The third rule is about money rather than ownership: once the cost has been
+	pulled into a Landed Cost Voucher, unlinking would leave a capitalized cost
+	whose source bill is no longer attributable to the import.
+
+	There is deliberately NO docstatus gate here, and the asymmetry with
+	``set_bill_import_refs`` (draft only) is the point: linking is the act that
+	creates an attribution, unlinking is the escape hatch that corrects a wrong
+	one. Gating this on draft would freeze a mis-attributed bill the moment it is
+	submitted, with no way out. The gate that actually protects money is the
+	voucher check below, which does not care about docstatus either.
+	"""
+	if not purchase_invoice or not frappe.db.exists("Purchase Invoice", purchase_invoice):
+		frappe.throw(_("Unknown Purchase Invoice: {0}").format(purchase_invoice))
+
+	company = _company_of("Purchase Invoice", purchase_invoice)
+	_assert_imports_access(company)
+	_assert_can_write("Purchase Invoice", purchase_invoice)
+
+	refs = _bill_import_refs(purchase_invoice)
+	if refs["custom_import_expense"]:
+		frappe.throw(
+			_("{0} was raised by the Import Expense automation ({1}) and cannot be unlinked here.").format(
+				purchase_invoice, refs["custom_import_expense"]
+			)
+		)
+	if not any(refs[col] for col, _dt in _HAND_LINKABLE_REFS):
+		frappe.throw(_("{0} is not linked to an import.").format(purchase_invoice))
+
+	supplier = frappe.db.get_value("Purchase Invoice", purchase_invoice, "supplier")
+	ci_supplier = _ci_supplier_behind(refs)
+	if ci_supplier and supplier == ci_supplier:
+		frappe.throw(
+			_(
+				"{0} is the goods invoice of this Commercial Invoice — its link is owned "
+				"by the conversion that created it and cannot be cleared here."
+			).format(purchase_invoice)
+		)
+
+	# The cost may already have been capitalized. ``Container Cost Line`` has no
+	# ``purchase_invoice`` column today — that link is a later work package — so
+	# probe for it rather than assume it: on a site without the column there is
+	# no bill-to-cost-line relation to check, and the query would simply fail.
+	if frappe.db.has_column("Container Cost Line", "purchase_invoice"):
+		vouchered = frappe.db.sql(
+			"""
+            SELECT cl.lcv_ref
+            FROM `tabContainer Cost Line` cl
+            WHERE cl.purchase_invoice = %(pi)s
+              AND cl.lcv_ref IS NOT NULL AND cl.lcv_ref != ''
+            LIMIT 1
+            """,
+			{"pi": purchase_invoice},
+			as_dict=True,
+		)
+		if vouchered:
+			frappe.throw(
+				_("This bill is already vouchered ({0}) and can no longer be unlinked.").format(
+					vouchered[0]["lcv_ref"]
+				)
+			)
+
+	frappe.db.set_value(
+		"Purchase Invoice",
+		purchase_invoice,
+		{col: None for col, _dt in _HAND_LINKABLE_REFS},
+		update_modified=True,
+	)
+
+	return {
+		"name": purchase_invoice,
+		"refs": _bill_import_refs(purchase_invoice),
+		"linked": False,
+	}
+
+
+@frappe.whitelist()
+def bill_import_link_state(purchase_invoice: str) -> dict:
+	"""Read state for the PI-form picker (W1) — the server decides eligibility.
+
+	The picker must never offer an action the write path would then refuse: a
+	row that fails on click is the failure mode this endpoint exists to avoid.
+	So this mirrors every non-target-dependent gate of ``set_bill_import_refs``
+	and ``clear_bill_import_refs`` and returns a verdict instead of a guess.
+
+	Never throws when the imports module is off — the Purchase Invoice form
+	ships to tenants without imports, and an exception there would be a console
+	error on every bill. Only an unknown Purchase Invoice name is an error.
+
+	Returns no monetary amount: cost figures in this module are permission-
+	masked, and this state probe must not become a new amount surface.
+	"""
+	if not purchase_invoice or not frappe.db.exists("Purchase Invoice", purchase_invoice):
+		frappe.throw(_("Unknown Purchase Invoice: {0}").format(purchase_invoice))
+
+	_assert_can_read("Purchase Invoice", purchase_invoice)
+
+	company = _company_of("Purchase Invoice", purchase_invoice)
+
+	# Imports off => the feature does not exist for this bill. Silent (no
+	# reason), and linked/can_unlink both stay False so the picker renders
+	# nothing at all rather than showing a summary for a disabled module.
+	if not module_map_for(company).get("imports"):
+		return {
+			"eligible": False,
+			"reason": "",
+			"refs": dict.fromkeys(rules.PI_REF_COLUMNS, ""),
+			"linked": False,
+			"can_unlink": False,
+			"company": company,
+		}
+
+	refs = _bill_import_refs(purchase_invoice)
+	linked = any(refs[col] for col, _dt in _HAND_LINKABLE_REFS)
+	can_unlink = linked and not refs["custom_import_expense"]
+
+	def _not_eligible(reason: str) -> dict:
+		return {
+			"eligible": False,
+			"reason": reason,
+			"refs": refs,
+			"linked": linked,
+			"can_unlink": can_unlink,
+			"company": company,
+		}
+
+	bill = frappe.db.get_value("Purchase Invoice", purchase_invoice, ["docstatus", "supplier"], as_dict=True)
+
+	if cint(bill.docstatus) != 0:
+		return _not_eligible(
+			_("Only a draft bill can be linked to an import. {0} is already submitted or cancelled.").format(
+				purchase_invoice
+			)
+		)
+
+	groups = imports_transport_supplier_groups_for(company)
+	if not groups:
+		# Unconfigured => the hand-link feature is off for this company. Same
+		# silent polarity as the module-off branch above.
+		return _not_eligible("")
+
+	supplier_group = frappe.db.get_value("Supplier", bill.supplier, "supplier_group")
+	if supplier_group not in groups:
+		return _not_eligible(
+			_(
+				"Supplier {0} belongs to group {1}, which is not one of the "
+				"transport/service groups whose bills may be linked to an import."
+			).format(bill.supplier, supplier_group or _("(none)"))
+		)
+
+	# Any of the four refs already set — including custom_import_expense, which
+	# is automation-owned and not one of the three "linked" refs above. Naming
+	# the first one set is enough: gate 4 of set_bill_import_refs refuses on the
+	# same condition regardless of which ref it is.
+	for col in rules.PI_REF_COLUMNS:
+		if refs[col]:
+			return _not_eligible(
+				_("{0} is already linked to {1} {2}.").format(
+					purchase_invoice, _(_PI_REF_DOCTYPES[col]), refs[col]
+				)
+			)
+
+	return {
+		"eligible": True,
+		"reason": "",
+		"refs": refs,
+		"linked": False,
+		"can_unlink": False,
+		"company": company,
+	}
+
+
+#: Same cap as ``unbilled_landed_costs``. Reported in the response rather than
+#: applied silently — a truncated picker that looks complete is how a bill goes
+#: missing.
+_UNLINKED_BILL_LIMIT = 500
+
+
+@frappe.whitelist()
+def unlinked_transport_bills(commercial_invoice: str) -> dict:
+	"""Bills that ``set_bill_import_refs`` would accept for this CI (W2's panel).
+
+	Deliberately company-wide rather than CI-specific: an unlinked bill carries
+	no ref by definition, so nothing ties it to one import yet — that is the
+	choice the user is about to make. The CI is what supplies the company and
+	the supplier to exclude.
+
+	Every gate of ``set_bill_import_refs`` that can be expressed as a filter is
+	one here, so the panel cannot offer a row the write path would refuse.
+	"""
+	if not commercial_invoice or not frappe.db.exists("Commercial Invoice", commercial_invoice):
+		frappe.throw(_("Unknown Commercial Invoice: {0}").format(commercial_invoice))
+
+	ci = frappe.db.get_value("Commercial Invoice", commercial_invoice, ["company", "supplier"], as_dict=True)
+	_assert_imports_access(ci.company)
+	_assert_can_read("Commercial Invoice", commercial_invoice)
+	# This panel reports each candidate's grand total and outstanding amount.
+	# Cost figures in this module are permission-masked; a new picker must not
+	# become the one place a user without cost visibility can read them.
+	_assert_cost_visible()
+
+	groups = imports_transport_supplier_groups_for(ci.company)
+	if not groups:
+		# Not configured => the feature is off; there are no candidates at all.
+		return {
+			"rows": [],
+			"summary": {"rows": 0, "limit": _UNLINKED_BILL_LIMIT, "capped": False},
+			"configured": False,
+		}
+
+	conds = [
+		"pi.company = %(company)s",
+		# Draft only, to match gate 3 of ``set_bill_import_refs`` exactly. Listing
+		# submitted bills here would offer rows the write path then refuses with
+		# "Only a draft bill can be linked" — a picker whose entries fail on click.
+		# Consequence, stated rather than hidden: a transport bill that is
+		# submitted before anyone attributes it can no longer be linked. Widening
+		# this filter is not the fix; the two surfaces must move together, and
+		# that is a design change beyond what this work package covers.
+		"pi.docstatus = 0",
+		"s.supplier_group IN %(groups)s",
+	]
+	params: dict = {
+		"company": ci.company,
+		"groups": groups,
+		# One more than the cap: the extra row is how truncation is detected.
+		"limit": _UNLINKED_BILL_LIMIT + 1,
+	}
+	# All four refs empty — a bill already attributed to ANY import (including
+	# another CI) is not a candidate. A column absent on this site holds no ref.
+	for col in _existing_pi_ref_columns():
+		conds.append(f"(pi.{col} IS NULL OR pi.{col} = '')")
+	if ci.supplier:
+		conds.append("pi.supplier != %(ci_supplier)s")
+		params["ci_supplier"] = ci.supplier
+
+	rows = frappe.db.sql(
+		f"""
+        SELECT pi.name, pi.supplier, s.supplier_name, s.supplier_group, pi.bill_no,
+               pi.posting_date, pi.due_date, pi.currency, pi.grand_total,
+               pi.outstanding_amount, pi.status, pi.docstatus
+        FROM `tabPurchase Invoice` pi
+        INNER JOIN `tabSupplier` s ON s.name = pi.supplier
+        WHERE {" AND ".join(conds)}
+        ORDER BY pi.posting_date DESC, pi.name DESC
+        LIMIT %(limit)s
+        """,
+		params,
+		as_dict=True,
+	)
+	capped = len(rows) > _UNLINKED_BILL_LIMIT
+	rows = rows[:_UNLINKED_BILL_LIMIT]
+	for r in rows:
+		r["grand_total"] = flt(r.get("grand_total"))
+		r["outstanding_amount"] = flt(r.get("outstanding_amount"))
+		r["posting_date"] = str(r["posting_date"]) if r.get("posting_date") else None
+		r["due_date"] = str(r["due_date"]) if r.get("due_date") else None
+		r["supplier_name"] = r.get("supplier_name") or r.get("supplier")
+		r["docstatus"] = cint(r.get("docstatus"))
+
+	return {
+		"rows": rows,
+		"summary": {"rows": len(rows), "limit": _UNLINKED_BILL_LIMIT, "capped": capped},
+		"configured": True,
 	}

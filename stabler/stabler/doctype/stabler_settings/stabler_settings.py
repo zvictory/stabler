@@ -172,6 +172,51 @@ def imports_supplier_groups_for(company: str) -> list[str]:
 	return [line.strip() for line in raw.splitlines() if line.strip()]
 
 
+def imports_transport_supplier_groups_for(company: str) -> list[str]:
+	"""Nakliye/hizmet faturası elle bir Ticari Fatura'ya bağlanabilen tedarikçi grupları.
+
+	`imports_supplier_groups_for` ile aynı okuma biçimi (aynı satır, aynı
+	try/except, aynı JSON-ya-da-satır ayrıştırma) ama TERS anlam taşır ve bu
+	yüzden ayrı bir alan, ayrı bir okuyucu:
+
+	- `ci_supplier_groups` bir SEÇİCİ KISITIDIR — boş liste "kısıt yok" demektir.
+	- burası bir YETKİDİR — boş liste "bu şirkette özellik KAPALI" demektir.
+	  Hiçbir varsayılan, hiçbir yedek liste yok: ayarlanmamışsa hiçbir fatura
+	  elle bağlanamaz. Ters yönde bir varsayılan, keyfî bir borcun ithalat
+	  maliyetine iliştirilmesinin önündeki tek engeli kaldırırdı.
+
+	Çağıran tarafın boş listeyi "izin yok" diye okuması şarttır; buradan boş
+	dönmek bir hata değil, yapılandırılmamış olmanın normal sonucudur.
+	"""
+	if not company:
+		return []
+
+	raw = ""
+	try:
+		settings = frappe.get_single("Stabler Settings")
+		for candidate in settings.get("imports_settings") or []:
+			if candidate.company == company:
+				raw = (candidate.get("imports_transport_supplier_groups") or "").strip()
+				break
+	except Exception:
+		# Tablo/alan henüz senkronlanmamış olabilir (yama öncesi migrate).
+		return []
+
+	if not raw:
+		return []
+
+	if raw.startswith("["):
+		try:
+			parsed = json.loads(raw)
+			if isinstance(parsed, list):
+				return [str(item).strip() for item in parsed if str(item).strip()]
+		except ValueError:
+			# Bozuk JSON: satır satır okumaya düş, yönetici öyle yazmış olabilir.
+			pass
+
+	return [line.strip() for line in raw.splitlines() if line.strip()]
+
+
 def module_map_for(company: str) -> dict:
 	row = get_company_module_row(company) if company else None
 	if not row:

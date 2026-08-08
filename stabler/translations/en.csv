@@ -5632,3 +5632,21 @@ Indicative only — shipments are tracked per category,Indicative only — shipm
 This category pool has no boxes left.,This category pool has no boxes left.
 {count} fully shipped lines hidden,{count} fully shipped lines hidden
 Every line of the selected proformas is already fully shipped.,Every line of the selected proformas is already fully shipped.
+Attribute to,Attribute to
+Bills you can attach,Bills you can attach
+Failed to link.,Failed to link.
+Failed to load import attribution.,Failed to load import attribution.
+Failed to unlink the bill.,Failed to unlink the bill.
+Failed to unlink.,Failed to unlink.
+Find bills to link,Find bills to link
+Import attribution,Import attribution
+Link {count} bill(s) to this CI,Link {count} bill(s) to this CI
+Linked to,Linked to
+No unlinked draft bills found company-wide.,No unlinked draft bills found company-wide.
+Raised by the Import Expense automation — cannot be unlinked here.,Raised by the Import Expense automation — cannot be unlinked here.
+Search container…,Search container…
+Search truck…,Search truck…
+Showing only the first {limit} bills — narrow the picture before assuming a missing bill was never entered.,Showing only the first {limit} bills — narrow the picture before assuming a missing bill was never entered.
+This is the goods invoice of this Commercial Invoice — its link cannot be cleared here.,This is the goods invoice of this Commercial Invoice — its link cannot be cleared here.
+{bill} unlinked.,{bill} unlinked.
+{count} of {total} selected,{count} of {total} selected

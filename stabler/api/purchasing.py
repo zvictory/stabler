@@ -601,10 +601,16 @@ def supplier_import_exposure(supplier: str, company: str) -> dict:
 	# A CI drops out of virtual exposure once it has a linked Purchase Invoice
 	# (WP-I5): the agreed_total then lives on that PInv (draft = pending A/P,
 	# submitted = GL A/P), so counting it here too would double-count.
+	# The match is on supplier as well as CI: bills from other parties — a
+	# transporter's freight invoice, a service fee — can be attributed to the
+	# same CI, and one of those must not be mistaken for the goods payable. It
+	# would retire the CI's whole agreed_total from virtual exposure while the
+	# goods A/P has not been booked at all, silently erasing the commitment.
 	_has_pi_ref = frappe.db.has_column("Purchase Invoice", "custom_commercial_invoice")
 	converted_sel = (
 		"""EXISTS(SELECT 1 FROM `tabPurchase Invoice` pi
 		          WHERE pi.custom_commercial_invoice = ci.name
+		            AND pi.supplier = ci.supplier
 		            AND pi.docstatus < 2) AS has_purchase_invoice"""
 		if _has_pi_ref
 		else "0 AS has_purchase_invoice"

@@ -284,8 +284,11 @@ class TwoStepSmartFillUiTest(unittest.TestCase):
 		):
 			with self.subTest(key=key):
 				self.assertIn(f't("{key}")', self.vue)
-		# Step 1 loads behind SkeletonRows too — never a bare spinner.
-		self.assertEqual(self.vue.count("<SkeletonRows"), 2)
+		# Step 1 loads behind SkeletonRows too — never a bare spinner. Counted by
+		# the smart-fill gate, not over the whole file: this form now carries
+		# other loading regions (the bill-attachment panel), and a whole-file
+		# count would report their skeletons as a smart-fill defect.
+		self.assertEqual(self.vue.count('<SkeletonRows v-if="multiPiLoading"'), 2)
 
 	def test_changing_the_supplier_resets_both_steps(self):
 		self.assertRegex(self.vue, r"watch\(\s*\(\) => form\.value\.supplier")
@@ -645,7 +648,10 @@ class SmartFillItemGranularityTest(unittest.TestCase):
 		self.assertIn("multiPiPickedKeys.value.push(key)", clamp)
 
 	def test_the_split_did_not_add_a_third_skeleton_or_a_manual_stripe(self):
-		self.assertEqual(self.vue.count("<SkeletonRows"), 2)
+		# Scoped to the smart-fill gate for the reason given above: the claim is
+		# "the split added no skeleton", and an unrelated panel elsewhere in the
+		# file is not the split.
+		self.assertEqual(self.vue.count('<SkeletonRows v-if="multiPiLoading"'), 2)
 		self.assertNotIn("table-striped", self.vue)
 
 
