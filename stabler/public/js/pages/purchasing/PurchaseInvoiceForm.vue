@@ -270,7 +270,6 @@ const {
 	saving: actionRunning,
 	loadError,
 	error: actionError,
-	isDirty,
 	isCreate,
 	editable,
 	docstatus,
@@ -460,7 +459,7 @@ function clearSupplier() {
 const searchItems = itemSearcher("purchase");
 
 // Line Item Editor pick handler
-async function handlePickItem({ line, item, index, field }) {
+async function handlePickItem({ line, item, field }) {
 	if (field === "item") {
 		line.item_code = item.item_code || item.name;
 		line.item_name = item.item_name;
@@ -918,7 +917,7 @@ async function submitDoc() {
 				<th v-if="showDiscounts" style="width: 130px;">{{ t("Disc") }}</th>
 			</template>
 
-			<template #row-extra="{ line, index }">
+			<template #row-extra="{ line }">
 				<td v-if="!editable" class="align-top text-end font-monospace text-secondary small py-2">
 					{{ line.price_list_rate > 0 ? formatMoney(line.price_list_rate, modalCurrency, user.language) : "—" }}
 				</td>
