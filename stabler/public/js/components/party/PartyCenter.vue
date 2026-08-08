@@ -27,6 +27,7 @@ import { formatDate } from "../../composables/date.js";
 import { t } from "../../composables/i18n.js";
 import { useListViewState } from "../../composables/useListViewState.js";
 import { useEscapeBack } from "../../composables/useEscapeBack.js";
+import { useLatestRequest } from "../../composables/useLatestRequest.js";
 import PartyAvatar from "../PartyAvatar.vue";
 import ApexChart from "../ApexChart.vue";
 import PartyList from "./PartyList.vue";
@@ -121,6 +122,7 @@ useEscapeBack(() => {
 	if (selected.value) {
 		selected.value = null;
 		selectedName.value = ""; // composable c'yi URL + localStorage'dan siler
+		invalidatePartyRequests();
 		emit("select", null);
 		return true;
 	}
@@ -394,6 +396,7 @@ async function loadList() {
 			} else {
 				selected.value = null;
 				ledger.value = null;
+				invalidatePartyRequests();
 				emit("select", null);
 			}
 		}
@@ -425,6 +428,30 @@ const quotesLoading = ref(false);
 const includeChildren = ref(true);
 const currentTab = ref("ledger");
 const txRef = ref(null);
+
+// Dört yükleyicinin her biri KENDİ biletini alır (useLatestRequest.js). Tek bir
+// ortak sayaç işe yaramaz: `selectRow` / `prefetchSelection` dördünü peş peşe
+// çağırıyor, ortak sayaçta yalnız sonuncusu geçerli kalır ve diğer üç panel hiç
+// dolmazdı. Amaç, A kaydından B'ye geçildiğinde A'nın geç dönen yanıtının
+// B'nin adı altında boyanmasını engellemek.
+const ledgerReq = useLatestRequest();
+const ordersReq = useLatestRequest();
+const quotesReq = useLatestRequest();
+const detailReq = useLatestRequest();
+
+// Seçim kalkarken uçuştaki her istek emekliye ayrılmalı; aksi halde artık seçili
+// olmayan bir kayıt için dönen yanıt paneli yeniden doldurur. Yükleniyor
+// bayrakları da burada iner: yükleyicilerin `finally` blokları artık bilete
+// bakıyor, yani emekli isteğin `finally`'si onları temizlemeyecek.
+function invalidatePartyRequests() {
+	ledgerReq.invalidate();
+	ordersReq.invalidate();
+	quotesReq.invalidate();
+	detailReq.invalidate();
+	ledgerLoading.value = false;
+	ordersLoading.value = false;
+	quotesLoading.value = false;
+}
 // Ekstre kaydırılınca detay başlığı tek satıra çöker. Bayrağı PartyTransactions
 // üretir (kaydıran eleman orada); burada yalnızca sınıfa çevrilir.
 const headCondensed = ref(false);
@@ -452,6 +479,7 @@ async function loadLedger(row) {
 	if (!row) return;
 	ledgerLoading.value = true;
 	ledgerError.value = "";
+	const isCurrent = ledgerReq.take();
 	try {
 		const params = {
 			company: activeCompany.value,
@@ -461,56 +489,68 @@ async function loadLedger(row) {
 		};
 		if (ledgerFromDate.value) params.from_date = ledgerFromDate.value;
 		if (ledgerToDate.value) params.to_date = ledgerToDate.value;
-		ledger.value = await call(props.api.ledger, params);
+		const res = await call(props.api.ledger, params);
+		if (!isCurrent()) return;
+		ledger.value = res;
 	} catch (err) {
+		if (!isCurrent()) return;
 		ledger.value = null;
 		ledgerError.value = err?.message || t("Failed to load ledger.");
 	} finally {
-		ledgerLoading.value = false;
+		if (isCurrent()) ledgerLoading.value = false;
 	}
 }
 
 async function loadOrders(row) {
 	if (!row || !activeCompany.value || !props.api.orders) return;
 	ordersLoading.value = true;
+	const isCurrent = ordersReq.take();
 	try {
-		orders.value = await call(props.api.orders, {
+		const res = await call(props.api.orders, {
 			company: activeCompany.value,
 			[PARAM.value]: row.name,
 			include_children: includeChildren.value ? 1 : 0,
 			limit: 50,
 		});
+		if (!isCurrent()) return;
+		orders.value = res;
 	} catch {
+		if (!isCurrent()) return;
 		orders.value = [];
 	} finally {
-		ordersLoading.value = false;
+		if (isCurrent()) ordersLoading.value = false;
 	}
 }
 
 async function loadQuotes(row) {
 	if (!row || !activeCompany.value || !props.api.quotes) return;
 	quotesLoading.value = true;
+	const isCurrent = quotesReq.take();
 	try {
 		const res = await call(props.api.quotes, {
 			company: activeCompany.value,
 			[PARAM.value]: row.name,
 			limit: 50,
 		});
+		if (!isCurrent()) return;
 		quotes.value = Array.isArray(res) ? res : res?.rows || [];
 	} catch {
+		if (!isCurrent()) return;
 		quotes.value = [];
 	} finally {
-		quotesLoading.value = false;
+		if (isCurrent()) quotesLoading.value = false;
 	}
 }
 
 async function loadDetail(row) {
+	const isCurrent = detailReq.take();
 	try {
 		const detail = await call(props.api.detail, {
 			name: row.name,
 			company: activeCompany.value,
 			include_children: includeChildren.value ? 1 : 0,
 		});
+		if (!isCurrent()) return;
 		recentInvoices.value = detail.recent_invoices || [];
 		selectedDetail.value = detail;
 		emit("detail", detail);
@@ -766,6 +806,7 @@ watch(activeCompany, () => {
 	selectedDetail.value = null;
 	ledger.value = null;
 	selectedName.value = "";
+	invalidatePartyRequests();
 	emit("select", null);
 	loadList();
 	loadCockpit();
