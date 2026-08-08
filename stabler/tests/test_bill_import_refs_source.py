@@ -1,11 +1,12 @@
 """Guards for hand-linking a transport/service bill to a Commercial Invoice (W1/W2).
 
-Linking a Purchase Invoice to an import is an ATTRIBUTION act: the bill then
-shows up in the CI's cost overview and its carriers-outstanding figure, because
-``_related_import_bills`` already reads the four v46 refs. That makes the write
-path the whole control surface — the four Link fields carry ``read_only: 1``,
-which is a Frappe Desk UI hint and blocks nothing on the server, and the SPA's
-copy of the rules is decoration.
+Linking a Purchase Invoice to an import does two things: the bill shows up in the
+CI's cost overview and its carriers-outstanding figure (``_related_import_bills``
+already reads the four v46 refs), and since W3 its net total is capitalized onto
+the import's containers, so it reaches stock valuation. That makes the write path
+the whole control surface — the four Link fields carry ``read_only: 1``, which is
+a Frappe Desk UI hint and blocks nothing on the server, and the SPA's copy of the
+rules is decoration.
 
 So the money-relevant properties are all structural, and each has a specific way
 of going wrong:
@@ -44,6 +45,14 @@ SETTINGS_JSON = os.path.join(
 	"stabler_imports_settings",
 	"stabler_imports_settings.json",
 )
+COST_LINE_JSON = os.path.join(
+	_ROOT,
+	"stabler",
+	"doctype",
+	"container_cost_line",
+	"container_cost_line.json",
+)
+HOOKS = os.path.join(_ROOT, "stabler", "imports_module", "hooks.py")
 
 
 def read(path: str) -> str:
@@ -197,10 +206,14 @@ class SameSupplierGuardTest(unittest.TestCase):
 		# A container or a truck implies its CI just as directly as the CI ref
 		# does. If the guard only looked at the CI argument, the identical
 		# double-count would be reachable by picking the container.
-		src = body(read(IMPORTS), "_ci_supplier_behind")
+		#
+		# The resolution moved into _ci_behind when W3 needed the CI itself (to
+		# find the containers a bill is split over) and not only its supplier.
+		src = body(read(IMPORTS), "_ci_behind")
 		self.assertIn('frappe.db.get_value("Import Container"', src)
 		self.assertIn('frappe.db.get_value("Import Truck"', src)
 		self.assertIn('"commercial_invoice"', src)
+		self.assertIn("_ci_behind(refs)", body(read(IMPORTS), "_ci_supplier_behind"))
 
 	def test_guard_compares_against_the_ci_supplier(self):
 		src = body(read(IMPORTS), "_assert_not_ci_supplier")
@@ -505,40 +518,134 @@ class TransportSupplierGroupsSettingTest(unittest.TestCase):
 		self.assertIn('"istable": 1', raw)
 
 
-class NoCapitalizationTest(unittest.TestCase):
-	"""C1 — linking is attribution, never capitalization."""
+class CapitalizationTest(unittest.TestCase):
+	"""W3 — a linked bill reaches stock valuation, and only once.
 
-	def test_link_path_touches_no_landed_cost_machinery(self):
-		# Attribution makes the bill VISIBLE against the import. Capitalizing it
-		# into stock valuation is a separate decision with its own double-count
-		# risk (the same cost can already arrive via a Container Cost Line), and
-		# it is a separate, unapproved work package.
-		src = body(read(IMPORTS), "set_bill_import_refs")
-		for forbidden in (
-			"Landed Cost Voucher",
-			"cost_lines",
-			"include_in_landed_cost",
-			"_collect_cost_lines",
-		):
-			self.assertNotIn(
-				forbidden,
-				src,
-				f"{forbidden} appears in the link path — this feature must not capitalize",
-			)
+	Until W3 this class asserted the opposite: linking was attribution only, and
+	the whole landed-cost vocabulary was forbidden in the link path. That was the
+	right shape while the two halves were unconnected, and the owner has since
+	decided the carrier's invoice IS the cost. What the old tests were really
+	protecting — the same freight reaching valuation twice, once hand-typed and
+	once billed — is now protected by ``supersede_billed`` instead of by a wall,
+	so the guards below are about the supersede being wired in everywhere the cost
+	is computed, not about keeping the two sides apart.
+	"""
 
-	def test_no_hand_link_endpoint_creates_a_document(self):
-		# Everything from set_bill_import_refs to EOF is this feature. All three
-		# endpoints write with frappe.db.set_value on an existing bill; the
-		# moment one of them inserts a document it has stopped being an
-		# attribution act.
-		src = read(IMPORTS)
-		region = src[src.index("def set_bill_import_refs(") :]
-		for forbidden in ("frappe.new_doc(", ".insert(", ".submit("):
-			self.assertNotIn(
-				forbidden,
-				region,
-				f"{forbidden} appears in the hand-link region — attribution must create nothing",
-			)
+	def setUp(self):
+		self.src = read(IMPORTS)
+
+	def test_the_bill_never_writes_a_cost_the_user_may_not_see(self):
+		# C4: every cost figure in this module is permission-masked, and linking
+		# now AUTHORS one. Without this the masking is a display convention that
+		# any user can write around through the picker.
+		src = body(self.src, "set_bill_import_refs")
+		self.assertIn("_assert_cost_visible()", src)
+
+	def test_the_permission_and_currency_gates_run_before_the_write(self):
+		# A gate that fires after the ref write leaves the bill linked but never
+		# costed — the one state no screen in this feature can explain.
+		src = body(self.src, "set_bill_import_refs")
+		write = src.index('frappe.db.set_value("Purchase Invoice", purchase_invoice, updates')
+		self.assertLess(src.index("_assert_cost_visible()"), write)
+		self.assertLess(src.index("_assert_capitalizable_currency("), write)
+
+	def test_a_currency_the_valuation_cannot_convert_is_refused_not_guessed(self):
+		# lcv_math.line_company_amount has two branches: company currency, else
+		# multiply by the USD rate. A EUR bill would silently be valued at the
+		# dollar rate and be wrong by the cross rate (stabler-oe3).
+		src = body(self.src, "_assert_capitalizable_currency")
+		self.assertIn('currency not in (company_currency, "USD")', src)
+		self.assertIn("frappe.throw(", src)
+
+	def test_only_the_net_total_is_capitalized(self):
+		# VAT on a carrier's bill is a recoverable input credit and is excluded
+		# from the landed cost everywhere else; capitalizing the gross would
+		# inflate the cost of goods by the VAT rate.
+		src = code(self.src, "_capitalize_linked_bill")
+		self.assertIn('flt(bill.get("net_total"))', src)
+		self.assertNotIn("grand_total", src)
+
+	def test_the_component_comes_from_the_one_classifier(self):
+		# A second opinion about what a bill is would let the cost book and the
+		# bill list disagree about the same invoice.
+		src = body(self.src, "_capitalize_linked_bill")
+		self.assertIn("rules.bill_cost_component(", src)
+		self.assertIn("rules.derive_bill_category(", src)
+		# None means "this bill has no business in the valuation" — a fallback
+		# component here would capitalize the goods invoice itself.
+		self.assertIn("if not component:", src)
+		self.assertIn("return []", src)
+
+	def test_a_ci_level_bill_is_split_across_containers_by_weight(self):
+		src = body(self.src, "_capitalize_linked_bill")
+		# Both figures, named individually: pinning only "allocate_by_weight
+		# appears" let a mutation split the base amount by weight and hand every
+		# container the FULL transaction amount, which multiplies the bill by the
+		# container count in exactly the currency the LCV reads.
+		self.assertIn("parts = rules.allocate_by_weight(amount, containers)", src)
+		self.assertIn(
+			'base_parts = rules.allocate_by_weight(flt(bill.get("base_net_total")), containers)', src
+		)
+		resolver = body(self.src, "_containers_behind_refs")
+		self.assertIn("_ci_behind(refs)", resolver)
+		self.assertIn('"total_kg"', resolver)
+
+	def test_unlinking_removes_exactly_what_linking_wrote(self):
+		# A link that can be undone while its cost stays behind is how the same
+		# freight ends up capitalized twice: unlink, re-link, two cost lines.
+		src = body(self.src, "clear_bill_import_refs")
+		self.assertIn('frappe.db.delete("Container Cost Line", {"purchase_invoice": purchase_invoice})', src)
+
+	def test_the_vouchered_guard_still_precedes_the_delete(self):
+		# Once a Landed Cost Voucher consumed the line the money is in stock
+		# valuation; deleting the row would leave the valuation with no source.
+		src = body(self.src, "clear_bill_import_refs")
+		self.assertLess(
+			src.index("already vouchered"),
+			src.index('frappe.db.delete("Container Cost Line"'),
+		)
+
+	def test_the_hand_typed_line_is_superseded_wherever_the_cost_is_computed(self):
+		# The preview is where the accountant decides. A preview that still shows
+		# a line the voucher will drop is a preview of a document that does not
+		# exist, and the two screens would disagree about the same import.
+		self.assertIn("lcv_math.supersede_billed(", read(HOOKS))
+		self.assertIn("lcv_math.supersede_billed(", body(self.src, "get_landed_cost_review"))
+
+	def test_the_supersede_warnings_survive_a_gtd(self):
+		# `components, warnings = apply_gtd_customs_precedence(...)` would REBIND
+		# warnings and throw away every supersede message on any import that has
+		# a cleared GTD — which is most of them.
+		src = body(self.src, "get_landed_cost_review")
+		self.assertIn("warnings.extend(gtd_warnings)", src)
+
+	def test_the_two_server_owned_markers_survive_a_container_save(self):
+		# The SPA sends cost lines back as a flat list with neither marker on
+		# them. Losing lcv_ref re-vouchers a consumed line; losing
+		# purchase_invoice detaches the bill and lets the hand-typed figure be
+		# capitalized beside it — the double count this feature exists to stop.
+		src = body(self.src, "_apply_container_payload")
+		self.assertIn("existing_refs", src)
+		self.assertIn('cl.get("purchase_invoice")', src)
+		self.assertIn("line.purchase_invoice = purchase_invoice", src)
+
+	def test_two_identical_lines_keep_their_own_links(self):
+		# Keyed by (component, amount), two rows that share both would collapse
+		# onto one link and one of the two bills would be silently freed.
+		src = body(self.src, "_apply_container_payload")
+		self.assertIn(".append(", src)
+		self.assertIn(".pop(0)", src)
+
+	def test_the_client_can_never_claim_a_line_is_billed_or_vouchered(self):
+		src = body(self.src, "_clean_container_cost_lines")
+		self.assertNotIn('"purchase_invoice"', src)
+		self.assertNotIn('"lcv_ref"', src)
+
+	def test_the_column_exists_on_the_child_doctype(self):
+		raw = read(COST_LINE_JSON)
+		self.assertIn('"fieldname": "purchase_invoice"', raw)
+		# read_only, because the only legitimate author is the guarded endpoint.
+		self.assertRegex(raw, r'"fieldname": "purchase_invoice",[\s\S]{0,200}?"read_only": 1')
 
 
 if __name__ == "__main__":

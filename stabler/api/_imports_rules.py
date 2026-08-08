@@ -577,6 +577,19 @@ PI_REF_COLUMNS: tuple[str, ...] = (
 #: Derived bill categories (a PI is bucketed by which pipeline raised it).
 BILL_CATEGORIES: tuple[str, ...] = ("product", "transport", "expense", "freight")
 
+#: Which ``Container Cost Line.cost_component`` a bill-sourced line carries, by
+#: bill category. A carrier's invoice has to land on one of that Select's fixed
+#: options, and the category is the only thing known about a bill without reading
+#: its items. ``product`` is absent ON PURPOSE and its absence is the guard: the
+#: goods invoice IS the valuation base, so capitalizing it as a cost line on top
+#: of itself would double the goods value. A category with no entry here does not
+#: capitalize at all.
+BILL_CATEGORY_COST_COMPONENT: dict[str, str] = {
+	"transport": "Cross-Border Transport",
+	"freight": "Freight",
+	"expense": "Other",
+}
+
 #: Landed-cost bill money columns masked for users lacking cost visibility (K3).
 LANDED_BILL_MASK_FIELDS: tuple[str, ...] = ("grand_total", "outstanding_amount")
 
@@ -639,6 +652,59 @@ def derive_bill_category(
 	if transport_supplier:
 		return "transport"
 	return "product"
+
+
+def bill_cost_component(category) -> str | None:
+	"""Cost component a bill of *category* capitalizes as, or ``None`` for none.
+
+	``None`` is a refusal, not a fallback: an unknown category (or ``product``)
+	means "this bill has no business in the landed cost", and the caller must not
+	invent a component for it. See ``BILL_CATEGORY_COST_COMPONENT``.
+	"""
+	return BILL_CATEGORY_COST_COMPONENT.get(str(category or ""))
+
+
+def allocate_by_weight(amount, containers) -> list[dict]:
+	"""Split one bill's *amount* across *containers* in proportion to ``total_kg``.
+
+	A transport bill attached at Commercial Invoice level pays for every container
+	on that CI, but the cost lines live per container, so the money has to be cut
+	up. Weight is the basis the owner chose: a truck bill scales with what it
+	hauled, not with how many boxes the boxes were packed into.
+
+	*containers* is ``[{"name": ..., "total_kg": ...}]``. Returns
+	``[{"container": name, "amount": part}]`` in the same order.
+
+	The LAST container absorbs the rounding remainder, so the parts always sum
+	back to *amount* exactly. Without that, every multi-container bill would
+	under- or over-capitalize by a few tiyin silently, and the container ledger
+	would stop reconciling against the bill it came from.
+
+	Falls back to an equal split when no container carries a weight. The bill is
+	real and its cost has to land somewhere; refusing would strand it outside the
+	valuation entirely, which is the failure this whole feature exists to fix.
+	"""
+	names = [c.get("name") for c in (containers or [])]
+	if not names:
+		return []
+
+	total = round(float(amount or 0), 2)
+	weights = [max(float(c.get("total_kg") or 0), 0.0) for c in containers]
+	basis = sum(weights)
+	if basis <= 0:
+		weights = [1.0] * len(names)
+		basis = float(len(names))
+
+	out = []
+	running = 0.0
+	for idx, name in enumerate(names):
+		if idx == len(names) - 1:
+			part = round(total - running, 2)
+		else:
+			part = round(total * weights[idx] / basis, 2)
+			running = round(running + part, 2)
+		out.append({"container": name, "amount": part})
+	return out
 
 
 def container_cost_summary(*, product_cost, cost_lines, bills, advances) -> dict:

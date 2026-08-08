@@ -5653,3 +5653,6 @@ Showing only the first {limit} bills — narrow the picture before assuming a mi
 This is the goods invoice of this Commercial Invoice — its link cannot be cleared here.,Бу шу Commercial Invoice нинг товар ҳисоби — унинг боғланишини бу ерда олиб бўлмайди.
 {bill} unlinked.,{bill} узилди.
 {count} of {total} selected,{total} тадан {count} таси танланди
+Bill {0},Ҳисоб-фактура {0}
+This bill is already vouchered ({0}) and can no longer be unlinked.,Ушбу ҳисоб-фактура аллақачон ваучерга ўтказилган ({0}) ва энди узиб бўлмайди.
+{0} is in {1}. Only bills in {2} or USD can be added to an import's landed cost today.,{0} {1} валютасида. Бугун импорт таннархига фақат {2} ёки USD даги ҳисоб-фактураларни қўшиш мумкин.

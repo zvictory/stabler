@@ -113,6 +113,58 @@ def unconsumed(cost_lines) -> list[dict]:
 	return out
 
 
+def supersede_billed(cost_lines) -> tuple[list[dict], list[str]]:
+	"""Drop hand-typed lines that an attributed carrier bill already accounts for.
+
+	Same precedence shape as ``apply_gtd_customs_precedence``: when a more
+	authoritative source for a cost exists, it REPLACES the hand-typed figure
+	instead of adding to it. Here the authoritative source is the carrier's own
+	Purchase Invoice, carried on the line as ``purchase_invoice``.
+
+	This is the guard for the double-count that hand-attribution made possible.
+	The same freight can exist twice on one container — once typed in by an
+	operator so it reaches the landed cost, once as the transporter's bill so it
+	reaches A/P — and the moment the bill starts capitalizing, an unguarded
+	aggregate charges that money to valuation twice.
+
+	Scoped per ``(container, cost_component)``: a billed Freight line on one
+	container says nothing about a hand-typed Freight line on another, so callers
+	MUST put ``container`` on every dict. Omitting it collapses every container
+	into one bucket and supersedes across containers that never met.
+
+	Two bills of the same component on one container are both kept — they are two
+	real invoices, not a duplicate. Only the hand-typed line yields.
+
+	Returns ``(kept_lines, warnings)``; a warning names each dropped line so the
+	operator can confirm it was not meant as a separate charge.
+	"""
+	billed = {
+		(ln.get("container"), ln.get("cost_component"))
+		for ln in cost_lines
+		if (ln.get("purchase_invoice") or "").strip()
+	}
+	if not billed:
+		return list(cost_lines), []
+
+	kept: list[dict] = []
+	warnings: list[str] = []
+	for ln in cost_lines:
+		if (ln.get("purchase_invoice") or "").strip():
+			kept.append(ln)
+			continue
+		if (ln.get("container"), ln.get("cost_component")) in billed:
+			warnings.append(
+				"A hand-entered {0} cost line on container {1} was dropped: a linked "
+				"supplier bill already covers that component. Remove the bill link if "
+				"the cost line was meant as a separate charge.".format(
+					ln.get("cost_component") or "Other", ln.get("container") or "?"
+				)
+			)
+			continue
+		kept.append(ln)
+	return kept, warnings
+
+
 def aggregate_components(cost_lines, usd_rate, company_currency) -> dict:
 	"""Aggregate eligible cost lines into ``{component: company_amount}`` (>0).
 

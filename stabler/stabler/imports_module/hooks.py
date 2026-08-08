@@ -723,7 +723,18 @@ def _build_and_save_lcv(grn, note: str):
 		)
 		return None
 
-	cost_lines, source_rows = _collect_cost_lines(grn.commercial_invoice)
+	cost_lines = _collect_cost_lines(grn.commercial_invoice)
+
+	# A carrier's own bill supersedes the hand-typed guess of the same cost on the
+	# same container, exactly as the GTD supersedes the hand-typed duty below. The
+	# dropped rows are deliberately NOT stamped with the LCV name: they were never
+	# consumed, so they stay visible and unvouchered, and unlinking the bill brings
+	# them back into the next voucher.
+	cost_lines, bill_warnings = lcv_math.supersede_billed(cost_lines)
+	for warning in bill_warnings:
+		frappe.logger("stabler.imports").warning(f"GRN {grn.name}: {warning}")
+	source_rows = [ln["name"] for ln in cost_lines]
+
 	company_currency = frappe.get_cached_value("Company", grn.company, "default_currency")
 	usd_rate = _completion_usd_rate(company_currency, grn.completion_date)
 	components = lcv_math.aggregate_components(cost_lines, usd_rate, company_currency)
@@ -791,14 +802,20 @@ def _submitted_prs_for_grn(grn_name) -> list[str]:
 def _collect_cost_lines(commercial_invoice):
 	"""Unconsumed Container Cost Lines across the CI's Import Containers.
 
-	Returns ``(line_dicts, row_names)`` — the dicts feed ``lcv_math``; the row
-	names are stamped with the LCV name once consumed.
+	Returns the line dicts that feed ``lcv_math``. Each carries its own ``name``
+	so the caller can stamp exactly the rows an LCV consumed — it used to return a
+	parallel ``row_names`` list, which stopped being safe once ``supersede_billed``
+	could drop a line from the middle: the two lists would silently fall out of
+	step and stamp the wrong rows as vouchered.
+
+	``container`` and ``purchase_invoice`` are what make that supersede possible —
+	the first scopes it so containers cannot supersede each other, the second says
+	which line came from a carrier's bill rather than an operator's keyboard.
 	"""
 	containers = frappe.get_all(
 		"Import Container", filters={"commercial_invoice": commercial_invoice}, pluck="name"
 	)
 	line_dicts: list[dict] = []
-	row_names: list[str] = []
 	for container in containers:
 		doc = frappe.get_doc("Import Container", container)
 		for row in doc.cost_lines or []:
@@ -808,15 +825,17 @@ def _collect_cost_lines(commercial_invoice):
 				continue
 			line_dicts.append(
 				{
+					"name": row.name,
+					"container": container,
 					"cost_component": row.cost_component,
 					"currency": row.currency,
 					"amount": row.amount,
 					"include_in_landed_cost": row.include_in_landed_cost,
+					"purchase_invoice": row.get("purchase_invoice"),
 					"lcv_ref": row.get("lcv_ref"),
 				}
 			)
-			row_names.append(row.name)
-	return line_dicts, row_names
+	return line_dicts
 
 
 def _completion_usd_rate(company_currency, completion_date) -> float:

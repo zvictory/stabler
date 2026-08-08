@@ -5659,3 +5659,6 @@ Showing only the first {limit} bills — narrow the picture before assuming a mi
 This is the goods invoice of this Commercial Invoice — its link cannot be cleared here.,Это товарный счёт данного Commercial Invoice — его привязку здесь снять нельзя.
 {bill} unlinked.,{bill} отвязан.
 {count} of {total} selected,Выбрано {count} из {total}
+Bill {0},Счёт {0}
+This bill is already vouchered ({0}) and can no longer be unlinked.,Этот счёт уже оформлен в ваучер ({0}) и больше не отвязывается.
+{0} is in {1}. Only bills in {2} or USD can be added to an import's landed cost today.,{0} — в валюте {1}. В себестоимость импорта сегодня можно добавить только счета в {2} или USD.

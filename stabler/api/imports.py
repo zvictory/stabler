@@ -1929,7 +1929,12 @@ def _clean_container_items(items):
 
 
 def _clean_container_cost_lines(cost_lines):
-	"""Validate cost-line rows. ``lcv_ref`` is server-owned and never taken from the client."""
+	"""Validate cost-line rows.
+
+	``lcv_ref`` and ``purchase_invoice`` are server-owned and never taken from the
+	client: a browser must not be able to claim a line was already vouchered, nor
+	to attach it to a bill that was never linked through the guarded API.
+	"""
 	if isinstance(cost_lines, str):
 		try:
 			cost_lines = json.loads(cost_lines)
@@ -1990,15 +1995,29 @@ def _apply_container_payload(doc, values: dict, items, cost_lines, cost_lines_pr
 	# Cost lines are landed-cost data: writing them REQUIRES cost visibility.
 	if cost_lines_provided:
 		_assert_cost_visible()
-		existing_refs = {(cl.cost_component, flt(cl.amount)): cl.lcv_ref for cl in (doc.cost_lines or [])}
+		# Both markers are server-owned and absent from the client payload, so the
+		# rewrite below would wipe them: ``lcv_ref`` (this line was already
+		# vouchered) and ``purchase_invoice`` (this line came from a carrier's
+		# bill). Losing lcv_ref re-vouchers a consumed line; losing
+		# purchase_invoice silently detaches the bill and lets the hand-typed
+		# figure be capitalized alongside it — the double count this whole feature
+		# exists to prevent. Matched on component+amount, queued rather than keyed
+		# so two bills with identical component and amount each keep their OWN link
+		# instead of collapsing onto one.
+		existing_refs: dict[tuple, list] = {}
+		for cl in doc.cost_lines or []:
+			existing_refs.setdefault((cl.cost_component, flt(cl.amount)), []).append(
+				(cl.lcv_ref, cl.get("purchase_invoice"))
+			)
 		doc.set("cost_lines", [])
 		for row in _clean_container_cost_lines(cost_lines):
 			line = doc.append("cost_lines", {})
 			for key, value in row.items():
 				line.set(key, value)
-			# Preserve a consumed-marker for an unchanged component/amount pair so a
-			# save from the form never silently re-vouchers an already-consumed line.
-			line.lcv_ref = existing_refs.get((row["cost_component"], flt(row["amount"])))
+			queue = existing_refs.get((row["cost_component"], flt(row["amount"])))
+			lcv_ref, purchase_invoice = queue.pop(0) if queue else (None, None)
+			line.lcv_ref = lcv_ref
+			line.purchase_invoice = purchase_invoice
 
 
 @frappe.whitelist()
@@ -3047,13 +3066,18 @@ def get_landed_cost_review(grn_checklist: str, rate=None):
 		usd_rate, rate_as_of = _latest_exchange_rate("USD", company_currency, grn.completion_date)
 		rate_overridden = False
 
-	cost_lines, _rows = imports_hooks._collect_cost_lines(grn.commercial_invoice)
+	# Supersede before aggregating, the same way the build path does — a preview
+	# that shows a hand-typed line the voucher will drop is a preview of a document
+	# that does not exist, and this screen is where the accountant decides.
+	cost_lines = imports_hooks._collect_cost_lines(grn.commercial_invoice)
+	cost_lines, warnings = lcv_math.supersede_billed(cost_lines)
 	components = lcv_math.aggregate_components(cost_lines, usd_rate, company_currency)
-	warnings: list[str] = []
 	if gtd is not None:
-		components, warnings = lcv_math.apply_gtd_customs_precedence(
+		# extend, not reassign: the supersede warnings above must survive a GTD.
+		components, gtd_warnings = lcv_math.apply_gtd_customs_precedence(
 			components, gtd_duty=gtd[0], gtd_excise=gtd[1], gtd_present=True
 		)
+		warnings.extend(gtd_warnings)
 	preview_components = [{"component": k, "amount": round(v, 2)} for k, v in sorted(components.items())]
 	preview_total = round(sum(components.values()), 2)
 	if not pr_names:
@@ -7517,11 +7541,19 @@ def save_container_transport_cost(
 # people typed the CI number into the item description instead. These three
 # endpoints are the missing hand-link, and nothing more.
 #
-# ATTRIBUTION ONLY. Linking makes the bill visible in the CI's cost overview and
+# Linking does two things. It makes the bill visible in the CI's cost overview and
 # its carriers-outstanding figure — both of which already read the v46 refs via
-# ``_related_import_bills``. It does NOT capitalize anything: no Container Cost
-# Line, no Landed Cost Voucher, no stock valuation. Capitalization is a separate
-# decision with a separate double-counting risk, and it is not this feature.
+# ``_related_import_bills`` — and, since W3, it CAPITALIZES: the bill's net total
+# is written onto the import's containers as a ``Container Cost Line``, so it
+# reaches the Landed Cost Voucher and therefore stock valuation. Unlinking removes
+# those lines again, and is refused once a voucher has consumed them.
+#
+# That second half is where the double-count lives. The same freight can be typed
+# in by hand AND billed by the carrier, so a linked bill SUPERSEDES the hand-typed
+# line of the same component on the same container — see ``supersede_billed`` in
+# ``lcv_math``, which mirrors how a cleared GTD supersedes the hand-typed duty.
+# The supersede is computed at build time, never stored, so unlinking a bill
+# brings the hand-typed line straight back into the next voucher.
 #
 # The four v46 Link fields carry ``read_only: 1``, which is a Desk UI hint and
 # blocks nothing on the server. Every rule below is therefore enforced here, and
@@ -7560,19 +7592,29 @@ def _bill_import_refs(purchase_invoice: str) -> dict:
 	return {col: (values.get(col) or "") for col in rules.PI_REF_COLUMNS}
 
 
-def _ci_supplier_behind(refs: dict) -> str | None:
-	"""The goods supplier of the Commercial Invoice these refs point at.
+def _ci_behind(refs: dict) -> str | None:
+	"""The Commercial Invoice these refs point at, directly or through a ref that implies one.
 
-	A container or a truck implies its CI just as directly as the CI ref does,
-	so the same-supplier guard must resolve through them too — otherwise the
-	guard is bypassed by linking a CIF freight bill to the container instead of
-	to the invoice.
+	A container or a truck implies its CI just as directly as the CI ref does, so
+	every rule that is really about the invoice must resolve through them too —
+	otherwise the rule is bypassed by linking to the container instead.
 	"""
 	ci = refs.get("custom_commercial_invoice") or ""
 	if not ci and refs.get("custom_import_container"):
 		ci = frappe.db.get_value("Import Container", refs["custom_import_container"], "commercial_invoice")
 	if not ci and refs.get("custom_import_truck"):
 		ci = frappe.db.get_value("Import Truck", refs["custom_import_truck"], "commercial_invoice")
+	return ci or None
+
+
+def _ci_supplier_behind(refs: dict) -> str | None:
+	"""The goods supplier of the Commercial Invoice these refs point at.
+
+	Resolves through a container or truck ref for the reason in ``_ci_behind``:
+	otherwise the same-supplier guard is bypassed by linking a CIF freight bill to
+	the container instead of to the invoice.
+	"""
+	ci = _ci_behind(refs)
 	if not ci:
 		return None
 	return frappe.db.get_value("Commercial Invoice", ci, "supplier")
@@ -7623,6 +7665,119 @@ def _assert_not_ci_supplier(supplier: str, ci_supplier: str | None) -> None:
 		)
 
 
+def _assert_capitalizable_currency(purchase_invoice: str, currency: str, company_currency: str) -> None:
+	"""Gate 8 — refuse a bill in a currency the landed cost cannot value correctly.
+
+	``lcv_math.line_company_amount`` has exactly two branches: the company currency
+	passes through, and EVERYTHING else is multiplied by the USD rate. A EUR or RUB
+	bill would therefore be capitalized at the dollar rate and be wrong by the whole
+	cross rate (``stabler-oe3``). Refusing is the honest answer until that is fixed:
+	a refused link is a message on screen, a wrong valuation is permanent the moment
+	an accountant submits the voucher.
+	"""
+	if currency and currency not in (company_currency, "USD"):
+		frappe.throw(
+			_(
+				"{0} is in {1}. Only bills in {2} or USD can be added to an import's landed cost today."
+			).format(purchase_invoice, currency, company_currency)
+		)
+
+
+def _containers_behind_refs(refs: dict) -> list[dict]:
+	"""Containers a linked bill's cost is spread over, each with its ``total_kg``.
+
+	A container ref is the whole answer — the operator said which one. A CI ref, or
+	a truck ref (Import Truck carries a CI and no container), means the bill covers
+	the whole invoice, which is exactly the case the weight split exists for.
+	"""
+	container = refs.get("custom_import_container")
+	if container:
+		row = frappe.db.get_value("Import Container", container, ["name", "total_kg"], as_dict=True)
+		return [row] if row else []
+	ci = _ci_behind(refs)
+	if not ci:
+		return []
+	return frappe.get_all(
+		"Import Container",
+		filters={"commercial_invoice": ci},
+		fields=["name", "total_kg"],
+		order_by="name",
+	)
+
+
+def _capitalize_linked_bill(purchase_invoice: str, company: str, refs: dict, bill: dict) -> list[str]:
+	"""Write a linked bill's cost onto the containers it paid for. Returns row names.
+
+	Silent no-op, deliberately, whenever the bill has no business in the valuation:
+	an unclassifiable category (``bill_cost_component`` returns ``None``), no
+	container behind the refs, or nothing to charge. The link itself is still worth
+	having in those cases — it is what makes the bill visible in the cost overview —
+	so a missing cost line must not undo an otherwise legitimate attribution.
+
+	``net_total`` and not ``grand_total``: the VAT on a carrier's bill is a
+	recoverable input credit, and it is excluded from the landed cost everywhere
+	else in this module (``aggregate_components`` drops VAT components outright).
+	Capitalizing it would inflate the cost of goods by the VAT rate.
+	"""
+	component = rules.bill_cost_component(
+		rules.derive_bill_category(
+			truck_ref=refs.get("custom_import_truck"),
+			expense_ref=refs.get("custom_import_expense"),
+			item_codes=_pi_item_codes([purchase_invoice]).get(purchase_invoice, []),
+			bill_no=bill.get("bill_no"),
+			transport_supplier=bool(_transport_group_suppliers(company, [bill.get("supplier")])),
+		)
+	)
+	if not component:
+		return []
+
+	containers = _containers_behind_refs(refs)
+	if not containers:
+		return []
+
+	amount = flt(bill.get("net_total"))
+	if amount <= 0:
+		return []
+
+	currency = bill.get("currency") or frappe.get_cached_value("Company", company, "default_currency")
+	# Both splits conserve their own total (the last container absorbs the
+	# remainder), so the transaction figure and the company figure each still sum
+	# back to the bill even when they round apart on an individual container.
+	parts = rules.allocate_by_weight(amount, containers)
+	base_parts = rules.allocate_by_weight(flt(bill.get("base_net_total")), containers)
+
+	row_names = []
+	for part, base_part in zip(parts, base_parts, strict=True):
+		# Inserted as a child document rather than through ``doc.save()`` on the
+		# container, for the same reason the ref write uses db.set_value: a full
+		# save re-runs the container's validation over a document somebody may be
+		# editing, to add one row that carries no business logic of its own.
+		used = frappe.get_all(
+			"Container Cost Line",
+			filters={"parent": part["container"], "parenttype": "Import Container"},
+			pluck="idx",
+		)
+		row = frappe.get_doc(
+			{
+				"doctype": "Container Cost Line",
+				"parenttype": "Import Container",
+				"parentfield": "cost_lines",
+				"parent": part["container"],
+				"idx": max(used or [0]) + 1,
+				"cost_component": component,
+				"description": _("Bill {0}").format(bill.get("bill_no") or purchase_invoice),
+				"currency": currency,
+				"amount": part["amount"],
+				"amount_uzs": base_part["amount"],
+				"include_in_landed_cost": 1,
+				"purchase_invoice": purchase_invoice,
+			}
+		)
+		row.insert(ignore_permissions=True)
+		row_names.append(row.name)
+	return row_names
+
+
 @frappe.whitelist()
 def set_bill_import_refs(
 	purchase_invoice: str,
@@ -7630,9 +7785,9 @@ def set_bill_import_refs(
 	import_container: str | None = None,
 	import_truck: str | None = None,
 ) -> dict:
-	"""Attribute a transport/service bill to an import (W1).
+	"""Attribute a transport/service bill to an import, and capitalize it (W1/W3).
 
-	Seven gates, in this order — the list is the control, the UI's version of it
+	Nine gates, in this order — the list is the control, the UI's version of it
 	is decoration:
 
 	1. imports module access for the bill's company
@@ -7642,11 +7797,20 @@ def set_bill_import_refs(
 	5. the supplier is in a configured transport/service group
 	6. the supplier is not the Commercial Invoice's own supplier (CIF)
 	7. every passed target exists, is in the same company, and is readable
+	8. the session user may see cost figures
+	9. the bill's currency is one the landed cost can value
+
+	Gates 8 and 9 arrived with W3 and exist because linking stopped being pure
+	metadata: it now writes a money figure into the container cost book. Gate 8 is
+	the same masking the cost fields already carry — a user who may not see a
+	landed cost must not be able to author one. Both run BEFORE the ref write, so
+	a refusal leaves the bill exactly as it was rather than linked-but-uncosted.
 
 	Writes with ``frappe.db.set_value`` rather than ``doc.save()`` on purpose:
 	saving re-runs full Purchase Invoice validation over a draft the user is
 	still editing, which can fail on unrelated grounds or silently recompute
-	amounts. Setting a traceability Link touches no money field.
+	amounts. Setting a traceability Link touches no money field ON THE BILL — the
+	money this endpoint does write lands on the container, never on the payable.
 	"""
 	if not purchase_invoice or not frappe.db.exists("Purchase Invoice", purchase_invoice):
 		frappe.throw(_("Unknown Purchase Invoice: {0}").format(purchase_invoice))
@@ -7659,6 +7823,11 @@ def set_bill_import_refs(
 	# Gate 2 — @frappe.whitelist() gates the method, not the record.
 	_assert_can_write("Purchase Invoice", purchase_invoice)
 
+	# Gate 8 — linking authors a landed-cost figure, so it needs the same
+	# visibility the cost fields themselves are masked by (the bill picker already
+	# asserts this). Placed with the other permission checks, before any write.
+	_assert_cost_visible()
+
 	targets = {
 		"custom_commercial_invoice": (commercial_invoice or "").strip(),
 		"custom_import_container": (import_container or "").strip(),
@@ -7667,7 +7836,12 @@ def set_bill_import_refs(
 	if not any(targets.values()):
 		frappe.throw(_("Nothing to link: pass a Commercial Invoice, a container or a truck."))
 
-	bill = frappe.db.get_value("Purchase Invoice", purchase_invoice, ["docstatus", "supplier"], as_dict=True)
+	bill = frappe.db.get_value(
+		"Purchase Invoice",
+		purchase_invoice,
+		["docstatus", "supplier", "currency", "net_total", "base_net_total", "bill_no"],
+		as_dict=True,
+	)
 
 	# Gate 3 — cancelled bills only are refused. Draft-only was the original rule
 	# and it was wrong in practice: a transporter's bill is routinely submitted
@@ -7718,6 +7892,14 @@ def set_bill_import_refs(
 		_assert_can_read(doctype, value)
 		updates[col] = value
 
+	# Gate 9 — the currency the cost book can actually value. Before the write, so
+	# a refused bill stays unlinked instead of relying on the transaction rollback.
+	_assert_capitalizable_currency(
+		purchase_invoice,
+		bill.get("currency"),
+		frappe.get_cached_value("Company", company, "default_currency"),
+	)
+
 	# update_modified=False, deliberately. This is an attribution stamp on ref
 	# columns the bill's own form never sends, but the form DOES send `modified`
 	# to `check_concurrency` (`purchasing.py`) when the user saves. Bumping the
@@ -7727,10 +7909,17 @@ def set_bill_import_refs(
 	# `bill_import_link_state`, which the form refetches after this call.
 	frappe.db.set_value("Purchase Invoice", purchase_invoice, updates, update_modified=False)
 
+	# The refs are re-read rather than reused from ``updates``: a container ref
+	# resolves its CI through the database, and reading back is also what proves
+	# the write landed on this site's columns.
+	refs = _bill_import_refs(purchase_invoice)
+	cost_lines = _capitalize_linked_bill(purchase_invoice, company, refs, bill)
+
 	return {
 		"name": purchase_invoice,
-		"refs": _bill_import_refs(purchase_invoice),
+		"refs": refs,
 		"linked": True,
+		"cost_lines": cost_lines,
 	}
 
 
@@ -7816,10 +8005,12 @@ def clear_bill_import_refs(purchase_invoice: str) -> dict:
 			).format(purchase_invoice)
 		)
 
-	# The cost may already have been capitalized. ``Container Cost Line`` has no
-	# ``purchase_invoice`` column today — that link is a later work package — so
-	# probe for it rather than assume it: on a site without the column there is
-	# no bill-to-cost-line relation to check, and the query would simply fail.
+	# The cost has already been capitalized — linking wrote it (W3). Once a Landed
+	# Cost Voucher has consumed those lines the money is in stock valuation, and
+	# unlinking would leave a capitalized cost whose source bill is no longer
+	# attributable to the import; the voucher is the accountant's to reverse, not
+	# this endpoint's. The column is probed rather than assumed so a site that has
+	# not run the migrate yet gets "nothing capitalized" instead of a SQL error.
 	if frappe.db.has_column("Container Cost Line", "purchase_invoice"):
 		vouchered = frappe.db.sql(
 			"""
@@ -7838,6 +8029,13 @@ def clear_bill_import_refs(purchase_invoice: str) -> dict:
 					vouchered[0]["lcv_ref"]
 				)
 			)
+
+		# Un-do exactly what the link wrote. The guard above proved none of these
+		# rows reached a voucher, so nothing is being taken out of a valuation that
+		# has already been posted. Any hand-typed line this bill superseded comes
+		# back on its own: the supersede is computed when the voucher is built,
+		# never stored, so the operator's figure is still sitting there untouched.
+		frappe.db.delete("Container Cost Line", {"purchase_invoice": purchase_invoice})
 
 	# update_modified=False for the same reason as the link write above: these
 	# ref columns are not part of what the bill's form submits, but `modified`

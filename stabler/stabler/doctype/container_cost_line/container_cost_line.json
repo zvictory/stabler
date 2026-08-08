@@ -11,6 +11,7 @@
   "amount",
   "amount_uzs",
   "include_in_landed_cost",
+  "purchase_invoice",
   "lcv_ref"
  ],
  "fields": [
@@ -53,6 +54,14 @@
    "fieldtype": "Check",
    "in_list_view": 1,
    "label": "Include in Landed Cost"
+  },
+  {
+   "description": "The carrier's or service provider's Purchase Invoice this cost line came from. Set automatically when a bill is linked to the import; blank means an operator typed the figure in by hand. A billed line supersedes a hand-typed line of the same component on the same container, so the same money is never capitalized twice.",
+   "fieldname": "purchase_invoice",
+   "fieldtype": "Link",
+   "label": "Purchase Invoice",
+   "options": "Purchase Invoice",
+   "read_only": 1
   },
   {
    "description": "Name of the Landed Cost Voucher that consumed this cost line. Set automatically; a blank value means the line is still available for a (multi-)LCV.",

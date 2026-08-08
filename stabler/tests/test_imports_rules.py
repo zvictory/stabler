@@ -9,6 +9,7 @@ the list filter-clause builders.
 from __future__ import annotations
 
 import datetime
+import json
 import os
 import unittest
 
@@ -1472,6 +1473,105 @@ class TestAllocationGuardIsWiredIntoValidate(unittest.TestCase):
 		is_new = self._line_of("if self.is_new():")
 		self.assertGreater(guard, validate, "the guard must live inside validate()")
 		self.assertLess(guard, is_new, "the guard must run before the is_new() early return")
+
+
+class BillCostComponentTest(unittest.TestCase):
+	"""Which bills may become a landed-cost line, and as what.
+
+	The mapping is what lets a carrier's Purchase Invoice reach stock valuation
+	at all. Its danger is the ``product`` bucket: the goods invoice is already the
+	valuation base, so capitalizing it as a cost line on top of itself would
+	double the goods value on every import.
+	"""
+
+	def test_the_goods_invoice_never_capitalizes(self):
+		self.assertIsNone(rules.bill_cost_component("product"))
+		self.assertNotIn("product", rules.BILL_CATEGORY_COST_COMPONENT)
+
+	def test_an_unknown_category_refuses_rather_than_guessing(self):
+		# A silent fallback here would charge an unclassified bill to valuation.
+		self.assertIsNone(rules.bill_cost_component(""))
+		self.assertIsNone(rules.bill_cost_component(None))
+		self.assertIsNone(rules.bill_cost_component("something-new"))
+
+	def test_carrier_and_service_bills_map_to_their_own_components(self):
+		self.assertEqual(rules.bill_cost_component("transport"), "Cross-Border Transport")
+		self.assertEqual(rules.bill_cost_component("freight"), "Freight")
+		self.assertEqual(rules.bill_cost_component("expense"), "Other")
+
+	def test_every_category_the_classifier_emits_is_decided_here(self):
+		# derive_bill_category's four buckets must each have an answer — present in
+		# the map, or deliberately absent (product). A fifth bucket added without
+		# touching the map would otherwise silently stop capitalizing.
+		for category in rules.BILL_CATEGORIES:
+			with self.subTest(category=category):
+				expected_none = category == "product"
+				self.assertEqual(rules.bill_cost_component(category) is None, expected_none)
+
+	def test_every_mapped_component_really_exists_on_the_doctype(self):
+		# cost_component is a Select. A component the Select does not offer would
+		# be written to the child row and then fail validation at save time — or,
+		# worse, sail through and land in an LCV tax row nobody can trace back.
+		path = os.path.join(
+			_APP_ROOT, "stabler", "doctype", "container_cost_line", "container_cost_line.json"
+		)
+		with open(path, encoding="utf-8") as fh:
+			doctype = json.load(fh)
+		options = next(f for f in doctype["fields"] if f["fieldname"] == "cost_component")["options"]
+		allowed = {line.strip() for line in options.splitlines() if line.strip()}
+		for category, component in rules.BILL_CATEGORY_COST_COMPONENT.items():
+			with self.subTest(category=category):
+				self.assertIn(component, allowed)
+
+
+class AllocateByWeightTest(unittest.TestCase):
+	"""Splitting one CI-level bill across the containers it actually paid for.
+
+	Cost lines live per container but a transport bill can be attached at CI
+	level, so the money is cut by ``total_kg``. The invariant that matters is
+	conservation: the parts must add back up to the bill, or the container ledger
+	silently stops reconciling against the invoice it came from.
+	"""
+
+	def test_the_parts_always_sum_back_to_the_bill(self):
+		for amount, weights in (
+			(100.0, [1, 1, 1]),  # 33.33 + 33.33 + 33.34
+			(1000.0, [7, 3]),
+			(0.01, [1, 1]),
+			(2_500_000.0, [12_345.6, 9_876.5, 4_321.0]),
+		):
+			with self.subTest(amount=amount, weights=weights):
+				containers = [{"name": f"C{i}", "total_kg": w} for i, w in enumerate(weights)]
+				parts = rules.allocate_by_weight(amount, containers)
+				self.assertEqual(round(sum(p["amount"] for p in parts), 2), amount)
+
+	def test_the_split_is_proportional_to_weight(self):
+		parts = rules.allocate_by_weight(
+			1000.0, [{"name": "C1", "total_kg": 7000}, {"name": "C2", "total_kg": 3000}]
+		)
+		self.assertEqual(parts, [{"container": "C1", "amount": 700.0}, {"container": "C2", "amount": 300.0}])
+
+	def test_a_single_container_takes_the_whole_bill(self):
+		parts = rules.allocate_by_weight(1234.56, [{"name": "C1", "total_kg": 0}])
+		self.assertEqual(parts, [{"container": "C1", "amount": 1234.56}])
+
+	def test_weightless_containers_split_evenly_rather_than_stranding_the_cost(self):
+		# A container whose total_kg was never filled in is a data gap, not a
+		# reason to leave a real bill outside the valuation.
+		parts = rules.allocate_by_weight(
+			90.0, [{"name": "C1", "total_kg": 0}, {"name": "C2"}, {"name": "C3", "total_kg": None}]
+		)
+		self.assertEqual([p["amount"] for p in parts], [30.0, 30.0, 30.0])
+
+	def test_a_negative_weight_cannot_hand_a_container_a_negative_share(self):
+		parts = rules.allocate_by_weight(
+			100.0, [{"name": "C1", "total_kg": -5}, {"name": "C2", "total_kg": 5}]
+		)
+		self.assertEqual(parts, [{"container": "C1", "amount": 0.0}, {"container": "C2", "amount": 100.0}])
+
+	def test_no_containers_allocates_nothing(self):
+		self.assertEqual(rules.allocate_by_weight(500.0, []), [])
+		self.assertEqual(rules.allocate_by_weight(500.0, None), [])
 
 
 if __name__ == "__main__":
