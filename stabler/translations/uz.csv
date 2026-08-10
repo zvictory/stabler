@@ -5660,3 +5660,26 @@ Used only for rows where the category has no box weight.,Faqat kategoriyada quti
 Assign to sourcing,Sorsingga biriktirish
 Assigned to,Biriktirilgan
 Atama belge merkezini başlatır,Biriktirish hujjatlar markazini ishga tushiradi
+Total Agreed PI,Kelishilgan jami (PI)
+Official Docs Total,Rasmiy hujjatlar summasi
+Cash Difference,Naqd farqi
+Select percentage or enter custom value,Foizni tanlang yoki qiymat kiriting
+Payment Strategy Presets,To'lov strategiyasi shablonlari
+Docs Only,Faqat hujjat bo'yicha
+of Docs Total to Bank,hujjat summasidan bankka
+Split Bank + Cash,Taqsimlash (Bank + Naqd)
+of full Agreed Total via Bank,to'liq kelishilgan summadan bank orqali
+of full Agreed Total via Cash,to'liq kelishilgan summadan naqd orqali
+Official Bank Amount,Rasmiy bank summasi
+Paid From (Bank Account),Chiqim hisobvarag'i (Bank)
+Default Bank Account,Asosiy bank hisobvarag'i
+Cash Safe Amount,Naqd kassa summasi
+Paid From (Cash Account),Chiqim kassasi
+Default Cash Account,Asosiy kassa
+Creates DRAFT Payment Entry for bank account.,Bank hisobi uchun qoralama Payment Entry yaratadi.
+Creates DRAFT Payment Entry for cash desk/safe.,Kassa uchun qoralama Payment Entry yaratadi.
+Payment Reference / Memo,To'lov hujjati / Izoh
+Total Advance to Record,Rasmiylashtiriladigan jami avans
+of PI,PIdan
+Previously Recorded:,Oldin to'langan:
+Cumulative After Record:,Joriy bilan birga jami:

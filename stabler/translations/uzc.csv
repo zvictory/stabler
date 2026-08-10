@@ -5660,3 +5660,26 @@ Used only for rows where the category has no box weight.,Фақат катего
 Assign to sourcing,Сорсингга бириктириш
 Assigned to,Бириктирилган
 Atama belge merkezini başlatır,Бириктириш ҳужжатлар марказини ишга туширади
+Total Agreed PI,Келишилган жами (PI)
+Official Docs Total,Расмий ҳужжатлар суммаси
+Cash Difference,Нақд фарқи
+Select percentage or enter custom value,Фоизни танланг ёки қиймат киритинг
+Payment Strategy Presets,Тўлов стратегияси шаблонлари
+Docs Only,Фақат ҳужжат бўйича
+of Docs Total to Bank,ҳужжат суммасидан банкка
+Split Bank + Cash,Тақсимлаш (Банк + Нақд)
+of full Agreed Total via Bank,тўлиқ келишилган суммадан банк орқали
+of full Agreed Total via Cash,тўлиқ келишилган суммадан нақд орқали
+Official Bank Amount,Расмий банк суммаси
+Paid From (Bank Account),Чиқим ҳисобварағи (Банк)
+Default Bank Account,Асосий банк ҳисобварағи
+Cash Safe Amount,Нақд касса суммаси
+Paid From (Cash Account),Чиқим кассаси
+Default Cash Account,Асосий касса
+Creates DRAFT Payment Entry for bank account.,Банк ҳисоби учун қоралама Payment Entry яратади.
+Creates DRAFT Payment Entry for cash desk/safe.,Касса учун қоралама Payment Entry яратади.
+Payment Reference / Memo,Тўлов ҳужжати / Изоҳ
+Total Advance to Record,Расмийлаштириладиган жами аванс
+of PI,PIдан
+Previously Recorded:,Олдин тўланган:
+Cumulative After Record:,Жорий билан бирга жами:

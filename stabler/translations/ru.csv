@@ -5666,3 +5666,26 @@ Used only for rows where the category has no box weight.,"Используетс
 Assign to sourcing,Назначить на сорсинг
 Assigned to,Назначено
 Atama belge merkezini başlatır,Назначение запускает центр документов
+Total Agreed PI,Всего по соглашению (ПИ)
+Official Docs Total,Официальная сумма (документы)
+Cash Difference,Разница (наличные)
+Select percentage or enter custom value,Выберите процент или введите значение
+Payment Strategy Presets,Шаблоны стратегии оплаты
+Docs Only,Только по документам
+of Docs Total to Bank,от суммы по документам в банк
+Split Bank + Cash,Разделить (Банк + Касса)
+of full Agreed Total via Bank,от общей согласованной суммы через банк
+of full Agreed Total via Cash,от общей согласованной суммы через кассу
+Official Bank Amount,Официальная сумма (Банк)
+Paid From (Bank Account),Счет списания (Банк)
+Default Bank Account,Основной банковский счет
+Cash Safe Amount,Сумма наличными (Касса)
+Paid From (Cash Account),Касса списания
+Default Cash Account,Основная касса
+Creates DRAFT Payment Entry for bank account.,Создает черновик Payment Entry для банковского счета.
+Creates DRAFT Payment Entry for cash desk/safe.,Создает черновик Payment Entry для кассы.
+Payment Reference / Memo,Номер/описание платежа
+Total Advance to Record,Итого аванс к проведению
+of PI,от ПИ
+Previously Recorded:,Ранее проведено:
+Cumulative After Record:,Итого с учетом текущего:

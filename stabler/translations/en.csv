@@ -5659,3 +5659,26 @@ Used only for rows where the category has no box weight.,Used only for rows wher
 Assign to sourcing,Assign to sourcing
 Assigned to,Assigned to
 Atama belge merkezini başlatır,Assignment initializes the document center
+Total Agreed PI,Total Agreed PI
+Official Docs Total,Official Docs Total
+Cash Difference,Cash Difference
+Select percentage or enter custom value,Select percentage or enter custom value
+Payment Strategy Presets,Payment Strategy Presets
+Docs Only,Docs Only
+of Docs Total to Bank,of Docs Total to Bank
+Split Bank + Cash,Split Bank + Cash
+of full Agreed Total via Bank,of full Agreed Total via Bank
+of full Agreed Total via Cash,of full Agreed Total via Cash
+Official Bank Amount,Official Bank Amount
+Paid From (Bank Account),Paid From (Bank Account)
+Default Bank Account,Default Bank Account
+Cash Safe Amount,Cash Safe Amount
+Paid From (Cash Account),Paid From (Cash Account)
+Default Cash Account,Default Cash Account
+Creates DRAFT Payment Entry for bank account.,Creates DRAFT Payment Entry for bank account.
+Creates DRAFT Payment Entry for cash desk/safe.,Creates DRAFT Payment Entry for cash desk/safe.
+Payment Reference / Memo,Payment Reference / Memo
+Total Advance to Record,Total Advance to Record
+of PI,of PI
+Previously Recorded:,Previously Recorded:
+Cumulative After Record:,Cumulative After Record:

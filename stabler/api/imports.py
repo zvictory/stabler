@@ -4451,6 +4451,8 @@ def create_advance_payment(
 	payment_date: str | None = None,
 	reference_no: str | None = None,
 	prepayment_basis: str | None = None,
+	bank_account: str | None = None,
+	cash_account: str | None = None,
 ):
 	"""Record an advance against an import order or proforma as 1-2 DRAFT Payment Entries.
 
@@ -4514,6 +4516,11 @@ def create_advance_payment(
 			},
 		)
 		_apply_pay_accounts(pe, company, doc.supplier)
+		if stream == "Bank" and bank_account:
+			pe.paid_from = bank_account
+		elif stream == "Cash" and cash_account:
+			pe.paid_from = cash_account
+
 		pe.insert(ignore_permissions=False)  # DRAFT — never submitted here.
 		created.append({"name": pe.name, "stream": stream, "amount": amount})
 

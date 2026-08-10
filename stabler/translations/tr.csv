@@ -5655,3 +5655,26 @@ Used only for rows where the category has no box weight.,Yalnızca kategoride ku
 Assign to sourcing,Sourcing'e ata
 Assigned to,Atanan
 Atama belge merkezini başlatır,Atama belge merkezini başlatır
+Total Agreed PI,Toplam Anlaşılan PI
+Official Docs Total,Resmi Evrak Toplamı
+Cash Difference,Nakit Farkı
+Select percentage or enter custom value,Yüzde seçin veya özel değer girin
+Payment Strategy Presets,Ödeme Stratejisi Şablonları
+Docs Only,Yalnızca Evrak
+of Docs Total to Bank,Evrak Toplamından Bankaya
+Split Bank + Cash,Oransal Böl (Banka + Nakit)
+of full Agreed Total via Bank,Anlaşılan Toplamdan Banka ile
+of full Agreed Total via Cash,Anlaşılan Toplamdan Nakit ile
+Official Bank Amount,Resmi Banka Tutarı
+Paid From (Bank Account),Ödeme Hesabı (Banka)
+Default Bank Account,Varsayılan Banka Hesabı
+Cash Safe Amount,Kasa Nakit Tutarı
+Paid From (Cash Account),Ödeme Kasası (Nakit)
+Default Cash Account,Varsayılan Kasa Hesabı
+Creates DRAFT Payment Entry for bank account.,Banka hesabı için taslak Payment Entry oluşturur.
+Creates DRAFT Payment Entry for cash desk/safe.,Kasa için taslak Payment Entry oluşturur.
+Payment Reference / Memo,Ödeme Referansı / Açıklama
+Total Advance to Record,Kaydedilecek Toplam Avans
+of PI,PI Oranı
+Previously Recorded:,Önceden Kaydedilen:
+Cumulative After Record:,İşlem Sonrası Kümülatif:
