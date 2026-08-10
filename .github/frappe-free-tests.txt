@@ -165,3 +165,4 @@ stabler.tests.test_sourcing_decision
 stabler.tests.test_gl_party_index_matches_query
 stabler.tests.test_party_center_race_guard
 stabler.tests.test_ci_bill_link_panel_source
+stabler.tests.test_vendor_category_box_kg_source

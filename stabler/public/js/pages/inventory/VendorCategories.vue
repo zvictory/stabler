@@ -53,7 +53,7 @@ const saving = ref(false);
 const form = ref(null);
 
 function blankLine() {
-	return { item_code: "", item_name: "", stock_uom: "", boxes_per_container: 0 };
+	return { item_code: "", item_name: "", stock_uom: "", boxes_per_container: 0, box_kg: 0 };
 }
 
 function blankForm() {
@@ -86,7 +86,9 @@ async function openEdit(row) {
 			display_name: detail.display_name,
 			description: detail.description || "",
 			is_active: !!detail.is_active,
-			items: detail.items?.length ? detail.items.map((it) => ({ ...it })) : [blankLine()],
+			items: detail.items?.length
+				? detail.items.map((it) => ({ ...it, box_kg: Number(it.box_kg) || 0 }))
+				: [blankLine()],
 		};
 		modalOpen.value = true;
 	} catch (err) {
@@ -129,6 +131,18 @@ function removeLine(idx) {
 	form.value.items.splice(idx, 1);
 }
 
+// Kategori bir konteyner şablonu: "bu şablon bir konteyneri dolduruyor mu"
+// sorusu ancak toplam kutu ve toplam kilo yan yana görününce cevaplanır.
+// Sunucudan gelen toplamlar yalnız açılış anında doğru — kullanıcı satır
+// düzenlerken alt toplam canlı takip etmeli, o yüzden hesap burada.
+function lineKg(line) {
+	return (Number(line.boxes_per_container) || 0) * (Number(line.box_kg) || 0);
+}
+const totalBoxes = computed(() =>
+	(form.value?.items || []).reduce((s, l) => s + (Number(l.boxes_per_container) || 0), 0),
+);
+const totalKg = computed(() => (form.value?.items || []).reduce((s, l) => s + lineKg(l), 0));
+
 const canSave = computed(() => {
 	const f = form.value;
 	if (!f) return false;
@@ -151,6 +165,7 @@ async function saveCategory() {
 				items: form.value.items.filter((l) => l.item_code).map((l) => ({
 					item_code: l.item_code,
 					boxes_per_container: l.boxes_per_container,
+					box_kg: l.box_kg,
 				})),
 			},
 			company: activeCompany.value,
@@ -206,17 +221,21 @@ async function deleteCategory(row) {
 						<th>{{ t("Supplier") }}</th>
 						<th>{{ t("Description") }}</th>
 						<th class="text-end">{{ t("Items") }}</th>
+						<th class="text-end">{{ t("Boxes") }}</th>
+						<th class="text-end">{{ t("Kg") }}</th>
 						<th>{{ t("Status") }}</th>
 						<th></th>
 					</tr>
 				</thead>
 				<tbody>
-					<SkeletonRows v-if="loading" :cols="6" :rows="6" />
+					<SkeletonRows v-if="loading" :cols="8" :rows="6" />
 					<tr v-for="r in filteredRows" :key="r.name" style="cursor: pointer" @click="openEdit(r)">
 						<td class="fw-semibold">{{ r.display_name || r.category_name }}</td>
 						<td>{{ r.supplier_name || r.vendor }}</td>
 						<td class="text-secondary small">{{ r.description || "—" }}</td>
 						<td class="text-end font-monospace">{{ r.item_count }}</td>
+						<td class="text-end font-monospace">{{ r.total_boxes }}</td>
+						<td class="text-end font-monospace">{{ Number(r.total_kg || 0).toFixed(2) }}</td>
 						<td>
 							<span class="badge" :class="r.is_active ? 'bg-green-lt' : 'bg-secondary-lt'">
 								{{ r.is_active ? t("Active") : t("Inactive") }}
@@ -289,8 +308,10 @@ async function deleteCategory(row) {
 								<table class="table table-sm table-bordered align-middle">
 									<thead class="table-light">
 										<tr>
-											<th style="width: 60%">{{ t("Item") }}</th>
-											<th style="width: 30%">{{ t("Boxes per container") }}</th>
+											<th style="width: 40%">{{ t("Item") }}</th>
+											<th style="width: 15%">{{ t("Boxes per container") }}</th>
+											<th style="width: 15%">{{ t("Box kg") }}</th>
+											<th class="text-end" style="width: 20%">{{ t("Total kg") }}</th>
 											<th style="width: 36px"></th>
 										</tr>
 									</thead>
@@ -330,6 +351,17 @@ async function deleteCategory(row) {
 												/>
 											</td>
 											<td>
+												<input
+													v-model.number="line.box_kg"
+													type="number"
+													inputmode="decimal"
+													min="0"
+													step="0.01"
+													class="form-control form-control-sm text-end font-monospace"
+												/>
+											</td>
+											<td class="text-end font-monospace">{{ lineKg(line).toFixed(2) }}</td>
+											<td>
 												<button
 													type="button"
 													class="btn btn-icon btn-sm btn-ghost-secondary"
@@ -341,6 +373,15 @@ async function deleteCategory(row) {
 											</td>
 										</tr>
 									</tbody>
+									<tfoot>
+										<tr>
+											<td class="fw-semibold">{{ t("Total") }}</td>
+											<td class="text-end font-monospace fw-semibold">{{ totalBoxes }}</td>
+											<td></td>
+											<td class="text-end font-monospace fw-semibold">{{ totalKg.toFixed(2) }}</td>
+											<td></td>
+										</tr>
+									</tfoot>
 								</table>
 							</div>
 						</div>

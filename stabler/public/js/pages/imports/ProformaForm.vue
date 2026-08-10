@@ -440,14 +440,17 @@ async function applyFillCategory() {
 			const perContainer = Number(it.boxes_per_container) || 0;
 			const boxes = perContainer * containers;
 			const fcl = totalBoxes ? round2((perContainer / totalBoxes) * containers) : 0;
+			// Kutular eşit değil (18 kg, 20 kg …). Kategori satırı kendi kilosunu
+			// taşıyorsa o kazanır; taşımıyorsa yukarıdaki tek kutu değeri yedektir.
+			const rowWeight = Number(it.box_kg) || boxWeight;
 			form.value.items.push({
 				item: it.item_code,
 				category: categoryLabel,
 				description: it.item_name || "",
 				fcl,
 				boxes,
-				box_weight_kg: boxWeight,
-				qty: round2(boxes * boxWeight),
+				box_weight_kg: rowWeight,
+				qty: round2(boxes * rowWeight),
 				uom: it.stock_uom || "",
 				rate: Number(fillAgreedPrice.value) || 0,
 				docs_price: Number(fillDocsPrice.value) || 0,
@@ -1290,6 +1293,7 @@ watch(activeCompany, loadPiGroups);
 							<div class="col-md-6">
 								<label class="form-label small mb-1">{{ t("Box weight (kg)") }}</label>
 								<input v-model.number="fillBoxWeight" type="number" min="0" step="0.01" class="form-control form-control-sm">
+							<div class="form-hint small">{{ t("Used only for rows where the category has no box weight.") }}</div>
 							</div>
 							<div class="col-md-6">
 								<label class="form-label small mb-1">{{ t("Agreed price") }}</label>

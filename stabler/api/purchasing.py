@@ -2591,8 +2591,8 @@ def get_vendor_category_items(vendor: str, category: str) -> list[dict]:
 	RECONSTRUCTED (WP-310): the original uncommitted version of this function was
 	lost during a tooling accident and rebuilt from the doctype schema — review
 	against the caller before relying on it. Returns each mapped item's code,
-	name, stock UOM and boxes-per-container so the purchasing UI can pre-fill
-	lines for a known vendor category.
+	name, stock UOM, boxes-per-container and kg-per-box so the purchasing UI can
+	pre-fill lines for a known vendor category.
 	"""
 	if not frappe.has_permission("Stabler Vendor Category", "read"):
 		frappe.throw(_("Not permitted"), frappe.PermissionError)
@@ -2608,7 +2608,7 @@ def get_vendor_category_items(vendor: str, category: str) -> list[dict]:
 	rows = frappe.get_all(
 		"Stabler Vendor Category Item",
 		filters={"parent": parent, "parenttype": "Stabler Vendor Category"},
-		fields=["item_code", "boxes_per_container"],
+		fields=["item_code", "boxes_per_container", "box_kg"],
 		order_by="idx asc",
 	)
 	for r in rows:
