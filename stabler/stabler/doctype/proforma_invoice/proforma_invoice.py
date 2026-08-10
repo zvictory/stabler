@@ -12,10 +12,6 @@ class ProformaInvoice(Document):
 		self._compute_docs_totals()
 		self._default_and_check_earmark()
 
-	@property
-	def posting_date(self):
-		return self.pi_date
-
 	def _compute_lines(self):
 		"""MSA line math: qty defaults to boxes × box_weight_kg; amount = qty × rate
 		(agreed price); docs_amount = qty × docs_price. agreed_total defaults to
