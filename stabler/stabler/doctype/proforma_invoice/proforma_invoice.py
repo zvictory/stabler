@@ -6,6 +6,8 @@ from frappe.utils import flt
 
 class ProformaInvoice(Document):
 	def validate(self):
+		self.posting_date = self.pi_date
+		self.grand_total = self.agreed_total
 		self._compute_lines()
 		self._compute_docs_totals()
 		self._default_and_check_earmark()

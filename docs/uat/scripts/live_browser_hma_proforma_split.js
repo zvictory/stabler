@@ -15,6 +15,20 @@ async function runLiveHmaProformaSplitTest() {
 	const context = await browser.newContext({ viewport: { width: 1440, height: 900 } });
 	const page = await context.newPage();
 
+	// Enable browser log and network intercept
+	page.on('console', msg => console.log('BROWSER CONSOLE:', msg.text()));
+	page.on('response', async response => {
+		if (response.status() >= 400) {
+			console.log(`BROWSER HTTP ERROR ${response.status()}: ${response.url()}`);
+			try {
+				const text = await response.text();
+				console.log('HTTP RESPONSE BODY:', text);
+			} catch (e) {
+				console.log('Could not get response body:', e.message);
+			}
+		}
+	});
+
 	// Step 1: Login
 	console.log('Step 1: Logging in to https://msa.erpstable.com...');
 	await page.goto('https://msa.erpstable.com/stabler#/login', { waitUntil: 'domcontentloaded' });
