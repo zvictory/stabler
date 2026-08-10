@@ -10,6 +10,11 @@ __pycache__/
 .idea/
 .worktrees/
 .superpowers/
+# Agent scratch. .zcode/plans/ is one file per agent session -- it is a working
+# note, not a deliverable, and three of them were already tracked on main.
+.zcode/
+# Browser-driven test screenshots: evidence for one run, not source.
+gui-test-screenshots/
 *.swp
 *.swo
 
