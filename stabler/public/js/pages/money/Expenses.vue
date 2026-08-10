@@ -23,6 +23,8 @@ const { activeCompany, user } = storeToRefs(session);
 // Tender (Deal) picker is gated on the "tender" module — mirrors the pattern
 // used by crm/Deals.vue and the tender/* pages (router.js meta.module).
 const tenderOn = computed(() => session.canAccessModule("tender"));
+const importsOn = computed(() => session.canAccessModule("imports"));
+
 
 const { confirm } = useConfirm();
 const toast = useToast();
@@ -166,9 +168,13 @@ function blankForm() {
 		payment_from: "",
 		exchange_rate: null,
 		deal: "",
+		commercial_invoice: "",
+		import_truck: "",
+		import_container: "",
 		lines: [],
 	};
 }
+
 
 function materialGhost(item) {
 	form.value.lines.push({
@@ -431,8 +437,6 @@ function clearDeal() {
 	dealLabel.value = "";
 }
 
-// Resolve a display label for a deal id we already have (e.g. prefilled from
-// an amend) without requiring the user to re-search.
 async function loadDealLabel(dealName) {
 	if (!dealName) {
 		dealLabel.value = "";
@@ -445,6 +449,42 @@ async function loadDealLabel(dealName) {
 		dealLabel.value = dealName;
 	}
 }
+
+
+// --- Import (Commercial Invoice) picker — gated on imports module ----------
+const ciLabel = ref("");
+
+async function searchCommercialInvoices(q) {
+	const r = await call("stabler.api.imports.list_commercial_invoices", {
+		company: activeCompany.value,
+		search: q,
+		limit_page_length: 8,
+	});
+	return (r?.rows || []).map((ci) => ({
+		name: ci.name,
+		label: `${ci.ci_number || ci.name} (${ci.supplier_name || ci.supplier || "—"})`,
+		ci_number: ci.ci_number,
+	}));
+}
+
+function pickCI(item) {
+	form.value.commercial_invoice = item.name;
+	ciLabel.value = item.label;
+}
+
+function clearCI() {
+	form.value.commercial_invoice = "";
+	ciLabel.value = "";
+}
+
+async function loadCILabel(ciName) {
+	if (!ciName) {
+		ciLabel.value = "";
+		return;
+	}
+	ciLabel.value = ciName;
+}
+
 
 async function loadOptions() {
 	if (!activeCompany.value) return;
@@ -507,6 +547,9 @@ async function openEditFromDetail() {
 		payment_from: credit?.account || "",
 		exchange_rate: null,
 		deal: listRow?.crm_deal || "",
+		commercial_invoice: listRow?.commercial_invoice || "",
+		import_truck: listRow?.import_truck || "",
+		import_container: listRow?.import_container || "",
 		lines: debits.map((row) => ({
 			id: ++lineSeq,
 			account: row.account,
@@ -521,8 +564,10 @@ async function openEditFromDetail() {
 	cbuRate.value = null;
 	rateError.value = "";
 	dealLabel.value = "";
+	ciLabel.value = "";
 	// Skip the label round-trip when the picker itself is hidden (tender off).
 	if (tenderOn.value && form.value.deal) await loadDealLabel(form.value.deal);
+	if (importsOn.value && form.value.commercial_invoice) await loadCILabel(form.value.commercial_invoice);
 	detailOpen.value = false;
 	createOpen.value = true;
 	await fetchExchangeRate();
@@ -576,7 +621,13 @@ async function submitCreate(afterAction) {
 	};
 	if (form.value.payee?.trim()) payload.payee = form.value.payee.trim();
 	if (tenderOn.value && form.value.deal) payload.deal = form.value.deal;
+	if (importsOn.value && form.value.commercial_invoice) {
+		payload.commercial_invoice = form.value.commercial_invoice;
+		if (form.value.import_truck) payload.import_truck = form.value.import_truck;
+		if (form.value.import_container) payload.import_container = form.value.import_container;
+	}
 	if (isCrossCurrency.value) {
+
 		const rate = Number(form.value.exchange_rate);
 		payload.exchange_rate = rate > 0 ? 1 / rate : 0;
 	}
@@ -820,8 +871,16 @@ watch(activeCompany, () => {
 								>
 									<i class="ti ti-briefcase me-1"></i>{{ r.crm_deal }}
 								</span>
+								<span
+									v-if="r.commercial_invoice"
+									class="badge bg-purple-lt text-purple flex-shrink-0 font-monospace"
+									:title="t('Commercial Invoice')"
+								>
+									<i class="ti ti-file-invoice me-1"></i>{{ r.commercial_invoice }}
+								</span>
 							</div>
 						</td>
+
 						<td class="text-end font-monospace">
 							{{ formatMoney(r.total_amount ?? r.total_debit_base, r.currency || r.base_currency || baseCurrency, user.language) }}
 						</td>
@@ -1011,9 +1070,9 @@ watch(activeCompany, () => {
 							/>
 						</div>
 					</div>
-					<!-- Tender (Deal) picker: optional, only when the tender module is enabled -->
-					<div v-if="tenderOn" class="row g-2 mt-0">
-						<div class="col-md-4">
+					<!-- Tender (Deal) & Import CI pickers -->
+					<div v-if="tenderOn || importsOn" class="row g-2 mt-0">
+						<div v-if="tenderOn" class="col-md-4">
 							<label class="form-label small">{{ t("Tender (Deal)") }}</label>
 							<Typeahead
 								:model-value="form.deal"
@@ -1026,8 +1085,27 @@ watch(activeCompany, () => {
 								<template #option="{ item }">{{ item.label }}</template>
 							</Typeahead>
 						</div>
+						<div v-if="importsOn" class="col-md-4">
+							<label class="form-label small text-primary fw-semibold">
+								<i class="ti ti-file-invoice me-1"></i>{{ t("Commercial Invoice") }}
+							</label>
+							<Typeahead
+								:model-value="form.commercial_invoice"
+								:display="ciLabel"
+								:search="searchCommercialInvoices"
+								:placeholder="t('Search commercial invoice…')"
+								@pick="pickCI"
+								@clear="clearCI"
+							>
+								<template #option="{ item }">
+									<div class="fw-semibold font-monospace">{{ item.name }}</div>
+									<div class="small text-secondary">{{ item.label }}</div>
+								</template>
+							</Typeahead>
+						</div>
 					</div>
 						</div><!-- /Panel A body -->
+
 					</div><!-- /Panel A -->
 
 					<!-- Panel B: Expense / Asset lines (amber) -->

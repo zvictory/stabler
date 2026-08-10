@@ -2527,10 +2527,16 @@ def list_bank_entries(
 		if frappe.db.has_column("Journal Entry", "custom_crm_deal")
 		else "NULL AS crm_deal,"
 	)
+	ci_col = (
+		"je.custom_commercial_invoice AS commercial_invoice, je.custom_import_truck AS import_truck, je.custom_import_container AS import_container,"
+		if frappe.db.has_column("Journal Entry", "custom_commercial_invoice")
+		else "NULL AS commercial_invoice, NULL AS import_truck, NULL AS import_container,"
+	)
 	return frappe.db.sql(
 		f"""
-		SELECT je.name, je.posting_date, je.voucher_type, je.user_remark, {deal_col}
+		SELECT je.name, je.posting_date, je.voucher_type, je.user_remark, {deal_col} {ci_col}
 		       je.total_debit AS total_debit_base,
+
 		       je.total_credit AS total_credit_base,
 		       je.multi_currency,
 		       je.docstatus,
@@ -2566,6 +2572,9 @@ def submit_expense_entry(
 	submit: int = 1,
 	entry_kind: str = "Expense",
 	deal: str | None = None,
+	commercial_invoice: str | None = None,
+	import_truck: str | None = None,
+	import_container: str | None = None,
 ) -> dict:
 	"""Create (and optionally submit) an expense Journal Entry.
 
@@ -2574,10 +2583,9 @@ def submit_expense_entry(
 	anchored to a single base-currency total derived from `exchange_rate`
 	(payment-from → base) or 1.0 when currencies already match.
 
-	`deal` (optional, WP-K2): tag the entry with a CRM Deal (tender) so the
-	expense feeds the tender plan-vs-actual P&L. Stored on the Journal Entry's
-	`custom_crm_deal` field (patch v52); silently skipped when the field is
-	absent so mixed-version benches never crash."""
+	`deal` (optional, WP-K2): tag the entry with a CRM Deal (tender).
+	`commercial_invoice` (optional): tag the entry with an Import Commercial Invoice.
+	"""
 	_require_company(company)
 	_assert_company_scope(company)  # tenant isolation: reject a foreign company arg
 	if isinstance(lines, str):
@@ -2690,8 +2698,18 @@ def submit_expense_entry(
 			frappe.throw("Unknown deal.")
 		if frappe.get_meta("Journal Entry").has_field("custom_crm_deal"):
 			doc.custom_crm_deal = deal
+	if commercial_invoice:
+		if not frappe.db.exists("Commercial Invoice", commercial_invoice):
+			frappe.throw("Unknown Commercial Invoice.")
+		if frappe.get_meta("Journal Entry").has_field("custom_commercial_invoice"):
+			doc.custom_commercial_invoice = commercial_invoice
+		if import_truck and frappe.get_meta("Journal Entry").has_field("custom_import_truck"):
+			doc.custom_import_truck = import_truck
+		if import_container and frappe.get_meta("Journal Entry").has_field("custom_import_container"):
+			doc.custom_import_container = import_container
 	if remark:
 		doc.user_remark = remark
+
 	if payee:
 		doc.pay_to_recd_from = payee
 

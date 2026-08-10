@@ -11,14 +11,13 @@ const props = defineProps({
 
 const route = useRoute();
 const router = useRouter();
-const tabs = computed(() => [
-	{ key: "overview", label: t("Overview"), icon: "ti-layout-dashboard" },
-	{ key: "documents", label: t("Documents"), icon: "ti-files" },
-	{ key: "vendor-po", label: t("Vendor & PO"), icon: "ti-shopping-cart" },
-	{ key: "delivery", label: t("Delivery"), icon: "ti-truck-delivery" },
-	{ key: "documents", label: t("Documents"), icon: "ti-files" },
-	...(props.hasFinance ? [{ key: "finance", label: t("Finance"), icon: "ti-report-money" }] : []),
-]);
+	const tabs = computed(() => [
+		{ key: "overview", label: t("Overview"), icon: "ti-layout-dashboard" },
+		{ key: "documents", label: t("Documents"), icon: "ti-files" },
+		{ key: "vendor-po", label: t("Vendor & PO"), icon: "ti-shopping-cart" },
+		{ key: "delivery", label: t("Delivery"), icon: "ti-truck-delivery" },
+		...(props.hasFinance ? [{ key: "finance", label: t("Finance"), icon: "ti-report-money" }] : []),
+	]);
 const allowedTabs = computed(() => tabs.value.map((tab) => tab.key));
 const activeTab = computed(() => {
 	const requested = String(route.query.tab || "overview");

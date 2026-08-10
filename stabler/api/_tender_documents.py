@@ -18,6 +18,16 @@ from typing import Any
 # center can render per-role queues (customs desk, logistics desk, finance desk).
 VALID_DOC_ROLES = ("customs", "logistics", "finance", "general")
 
+#: Which tender role-windows may WRITE a requirement row, keyed by the row's
+#: ``role`` field.  ``director`` is the universal writer — the decision said
+#: "direktör hepsini yükleyebilir".
+DOC_ROLE_WRITER_VIEWS = {
+	"customs": ("declarant", "director"),
+	"logistics": ("logist", "director"),
+	"general": ("sourcing", "director"),
+	"finance": ("sourcing", "director"),
+}
+
 
 def parse_doc_requirements(raw: Any) -> list[dict[str, Any]]:
 	"""Parse and clean a raw document requirements payload or JSON string.

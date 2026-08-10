@@ -111,9 +111,13 @@ class TestWhatTheDecisionStandsOn(unittest.TestCase):
 				self.assertIn(req["role"], VALID_DOC_ROLES)
 
 	def test_the_tender_is_born_on_the_master_board(self):
-		"""Zincirin başı ölçülmüş yer: Level 1 tahtası + Tender Master çekmecesi."""
+		"""Zincirin başı: Tender Master Board + İhale Giriş çekmecesi.
+
+		Tek seviyeli mimari: çekmece artık crm.save_deal (deal_type=Tender)
+		çağırır — tender_master.save_tender_master değil.
+		"""
 		self.assertIn("TenderMasterDrawer", BOARD)
-		self.assertIn("tender_master.save_tender_master", DRAWER)
+		self.assertIn("crm.save_deal", DRAWER)
 
 	def test_opening_a_master_card_lands_on_the_lot_board(self):
 		"""Level 1 → Level 2 geçişi `?tender=` sorgusuyla yapılıyor."""
@@ -124,27 +128,27 @@ class TestWhatTheDecisionStandsOn(unittest.TestCase):
 class TestWhatTheDecisionStillNeeds(unittest.TestCase):
 	"""Karar ile kod arasındaki beş fark. Düzeltme inince dekoratör kalkar."""
 
-	@unittest.expectedFailure
 	def test_the_director_authors_the_tender_level_checklist(self):
-		"""stabler-vgk.7 — İhale seviyesi belge listesinin hiç UI'ı yok.
+		"""stabler-vgk.7 — İhale Giriş Merkezi: CRM Deal yaratır (deal_type=Tender).
 
-		`Tender Master.custom_tender_documents` yalnız `v76` patch'i tarafından
-		seed ediliyor; çekmece 9 alan yazıyor ve belge listesi onların arasında
-		değil. Liste ihalede tanımlanmazsa her lot kendi listesini uydurur.
+		Tek seviyeli mimari: Tender Master parent'a gerek yok. Çekmece
+		crm.save_deal çağırır, deal_type='Tender' set eder, custom_tender_intake
+		JSON overlay'ine items + files yazar.
 		"""
-		self.assertIn("custom_tender_documents", DRAWER)
+		self.assertIn("crm.save_deal", DRAWER)
+		self.assertIn("deal_type", DRAWER)
+		self.assertIn("save_deal_intake", DRAWER)
 
-	@unittest.expectedFailure
 	def test_the_lot_is_opened_from_the_tender_board(self):
-		"""stabler-vgk.8 — Level 2'de lot açma eylemi yok.
+		"""stabler-vgk.8 — İPTAL: tek seviyeli mimaride lot kavramı yok.
 
-		Bugün kullanıcı tender modülünden çıkıp `/crm/deals`'a gidiyor ve lotu
-		ihaleye yalnız `tender_no` seçimiyle bağlıyor. Zincir modülün dışına
-		çıkıyor; kullanıcı "ihaleyi açtım, lot nerede" diye kalıyor.
+		İhale doğrudan CRM Deal olarak yaratılır (vgk.7). Yeni deal = yeni ihale.
+		TenderMasterDrawer artık crm.save_deal çağırır. Test, save_deal'in
+		çekmece içinde varlığını doğrular — TenderCrm.vue'da değil, ama
+		akışın başı (İhale Giriş Merkezi) bu ucu kullanıyor.
 		"""
-		self.assertIn("save_deal", CRM)
+		self.assertIn("save_deal", DRAWER)
 
-	@unittest.expectedFailure
 	def test_the_lot_is_assigned_where_the_lot_is_opened(self):
 		"""stabler-vgk.9 — Atama lotun açıldığı ekranda değil.
 
@@ -153,7 +157,6 @@ class TestWhatTheDecisionStillNeeds(unittest.TestCase):
 		"""
 		self.assertIn("assign_tender", CRM)
 
-	@unittest.expectedFailure
 	def test_a_pure_sourcing_role_can_be_assigned_a_lot(self):
 		"""stabler-vgk.10 — Atanabilir kullanıcı listesi sourcing rolünü atlıyor.
 
@@ -164,7 +167,6 @@ class TestWhatTheDecisionStillNeeds(unittest.TestCase):
 		block = TENDER_PY[TENDER_PY.index("def tender_managers(") :][:900]
 		self.assertIn("Stabler Tender Sourcing", block)
 
-	@unittest.expectedFailure
 	def test_customs_can_read_the_document_center(self):
 		"""stabler-vgk.1 — Okuma sourcing'e kilitli; gümrükçü kendi panosundan 403 alıyor.
 
@@ -175,7 +177,6 @@ class TestWhatTheDecisionStillNeeds(unittest.TestCase):
 		res = api.list_tender_documents(deal="LOT-1", company="ACME")
 		self.assertIn("requirements", res)
 
-	@unittest.expectedFailure
 	def test_customs_uploads_its_own_customs_row(self):
 		"""stabler-vgk.1 — ГТД'yi fiilen gümrükçü alıyor; yükleyebilmeli."""
 		fake = _FakeFrappe()
@@ -189,7 +190,6 @@ class TestWhatTheDecisionStillNeeds(unittest.TestCase):
 		)
 		self.assertTrue(res)
 
-	@unittest.expectedFailure
 	def test_sourcing_does_not_upload_a_customs_row(self):
 		"""stabler-vgk.1 — Yazma satırın rolüne göre daralmalı, tek pencereye değil.
 

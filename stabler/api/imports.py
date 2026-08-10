@@ -3707,7 +3707,7 @@ def list_import_orders(
 
 
 def _po_advance_payment_entries(po_name: str, company: str):
-	"""Advance Payment Entries referencing a PO, split bank/cash (allocated amounts).
+	"""Advance Payment Entries referencing a PO or Proforma Invoice, split bank/cash (allocated amounts).
 
 	Bank vs cash comes from ``custom_payment_stream`` when that field exists;
 	otherwise it is inferred from the mode-of-payment / paid-from account name.
@@ -3722,7 +3722,7 @@ def _po_advance_payment_entries(po_name: str, company: str):
         FROM `tabPayment Entry` pe
         JOIN `tabPayment Entry Reference` per ON per.parent = pe.name
         WHERE pe.company = %(company)s AND pe.docstatus < 2
-          AND per.reference_doctype = 'Purchase Order'
+          AND per.reference_doctype IN ('Purchase Order', 'Proforma Invoice')
           AND per.reference_name = %(po)s
         GROUP BY pe.name
         ORDER BY pe.posting_date ASC, pe.name ASC
@@ -4450,25 +4450,35 @@ def create_advance_payment(
 	cash_amount=0,
 	payment_date: str | None = None,
 	reference_no: str | None = None,
+	prepayment_basis: str | None = None,
 ):
-	"""Record an advance against an import order as 1-2 DRAFT Payment Entries.
+	"""Record an advance against an import order or proforma as 1-2 DRAFT Payment Entries.
 
 	Mirrors the Django record-advance flow (financial_ops): one PE for the bank
 	stream, one for the cash stream, each a Pay to the supplier referencing the
-	PO. Payment Entries are NEVER submitted here — they stay drafts for Accounts
+	PO/PI. Payment Entries are NEVER submitted here — they stay drafts for Accounts
 	to post. Cost-visible only (bank/cash split is dual-pricing data, K3). Equal
 	split is not enforced; an unequal bank/cash split returns a soft warning.
 	"""
-	if not purchase_order or not frappe.db.exists("Purchase Order", purchase_order):
-		frappe.throw(_("Unknown Purchase Order: {0}").format(purchase_order))
-	company = _company_of("Purchase Order", purchase_order)
+	if not purchase_order:
+		frappe.throw(_("Missing Purchase Order / Proforma reference."))
+
+	ref_doctype = None
+	if frappe.db.exists("Purchase Order", purchase_order):
+		ref_doctype = "Purchase Order"
+	elif frappe.db.exists("Proforma Invoice", purchase_order):
+		ref_doctype = "Proforma Invoice"
+	else:
+		frappe.throw(_("Unknown Purchase Order or Proforma Invoice: {0}").format(purchase_order))
+
+	company = _company_of(ref_doctype, purchase_order)
 	_assert_imports_access(company)
 	_assert_cost_visible()
-	doc = frappe.get_doc("Purchase Order", purchase_order)
-	if doc.docstatus != 1:
+	doc = frappe.get_doc(ref_doctype, purchase_order)
+	if ref_doctype == "Purchase Order" and doc.docstatus != 1:
 		frappe.throw(_("Confirm (submit) the import order before recording an advance."))
 	if not doc.supplier:
-		frappe.throw(_("The import order has no supplier."))
+		frappe.throw(_("The document has no supplier."))
 
 	bank = round(flt(bank_amount), 2)
 	cash = round(flt(cash_amount), 2)
@@ -4498,7 +4508,7 @@ def create_advance_payment(
 		pe.append(
 			"references",
 			{
-				"reference_doctype": "Purchase Order",
+				"reference_doctype": ref_doctype,
 				"reference_name": purchase_order,
 				"allocated_amount": amount,
 			},
@@ -5029,18 +5039,13 @@ def proforma_detail(name: str) -> dict:
 
 	data["linked_cis"] = cis
 
-	advances = frappe.db.sql(
-		"""
-        SELECT pe.name, pe.posting_date, pe.paid_amount, pe.paid_amount_after_tax, pe.mode_of_payment, pe.docstatus
-        FROM `tabPayment Entry` pe
-        WHERE pe.party_type = 'Supplier' AND pe.party = %(supplier)s AND pe.docstatus < 2
-        ORDER BY pe.posting_date DESC
-        LIMIT 20
-        """,
-		{"supplier": doc.supplier},
-		as_dict=True,
-	)
+	advances, paid_bank, paid_cash = _po_advance_payment_entries(name, doc.company)
 	data["advance_payments"] = advances
+	data["advance_summary"] = {
+		"paid_bank": paid_bank,
+		"paid_cash": paid_cash,
+		"paid_total": round(paid_bank + paid_cash, 2),
+	}
 	data["invoiced_summary"] = get_pi_invoiced_summary(name)
 
 	return data

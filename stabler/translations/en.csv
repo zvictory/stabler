@@ -5655,3 +5655,6 @@ This is the goods invoice of this Commercial Invoice — its link cannot be clea
 Bill {0},Bill {0}
 This bill is already vouchered ({0}) and can no longer be unlinked.,This bill is already vouchered ({0}) and can no longer be unlinked.
 {0} is in {1}. Only bills in {2} or USD can be added to an import's landed cost today.,{0} is in {1}. Only bills in {2} or USD can be added to an import's landed cost today.
+Assign to sourcing,Assign to sourcing
+Assigned to,Assigned to
+Atama belge merkezini başlatır,Assignment initializes the document center

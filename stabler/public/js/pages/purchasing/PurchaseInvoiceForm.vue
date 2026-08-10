@@ -172,9 +172,13 @@ function blankForm() {
 		conversion_rate: 0,
 		price_list: "",
 		taxes_template: "",
+		custom_commercial_invoice: String(route.query.commercial_invoice || ""),
+		custom_import_truck: String(route.query.import_truck || ""),
+		custom_import_container: String(route.query.import_container || ""),
 		items: [blankLine()],
 	};
 }
+
 
 function fromDetail(d) {
 	// Detect phantom discounts: ERPNext stores price_list_rate in base currency for
@@ -198,9 +202,13 @@ function fromDetail(d) {
 		return_against: d.return_against || "",
 		amended_from: d.amended_from || "",
 		debit_notes: d.debit_notes || [],
+		custom_commercial_invoice: d.custom_commercial_invoice || "",
+		custom_import_truck: d.custom_import_truck || "",
+		custom_import_container: d.custom_import_container || "",
 		net_total: Number(d.net_total || 0),
 		total_taxes_and_charges: Number(d.total_taxes_and_charges || 0),
 		grand_total: Number(d.grand_total || 0),
+
 		base_net_total: Number(d.base_net_total || 0),
 		base_grand_total: Number(d.base_grand_total || 0),
 		outstanding_amount: Number(d.outstanding_amount || 0),
@@ -259,9 +267,13 @@ function toPayload(m) {
 		conversion_rate: isForeign.value ? Number(m.conversion_rate || 0) : undefined,
 		price_list: m.price_list || undefined,
 		taxes_template: m.taxes_template || undefined,
+		commercial_invoice: m.custom_commercial_invoice || undefined,
+		import_truck: m.custom_import_truck || undefined,
+		import_container: m.custom_import_container || undefined,
 		items: lines,
 	};
 }
+
 
 // Document engine hook
 const {
@@ -383,6 +395,11 @@ function clearLinkTarget() {
 
 watch(linkKind, clearLinkTarget);
 
+function searchCommercialInvoices(q) {
+	const params = { company: activeCompany.value, search: q, limit_page_length: 10 };
+	return importsApi.listCommercialInvoices(params).then((r) => r.rows || []);
+}
+
 function searchLinkTargets(q) {
 	const params = { company: activeCompany.value, search: q, limit_page_length: 10 };
 	if (linkKind.value === "import_container") {
@@ -393,6 +410,7 @@ function searchLinkTargets(q) {
 	}
 	return importsApi.listCommercialInvoices(params).then((r) => r.rows || []);
 }
+
 
 function pickLinkTarget(item) {
 	linkTargetName.value = item.name;
@@ -788,7 +806,85 @@ async function submitDoc() {
 					<label class="form-check-label" for="piUpdateStock">{{ t("Update stock") }}</label>
 				</div>
 			</div>
+
+			<!-- First-class Import / CI selector -->
+			<div class="col-12 border-top pt-3 mt-2" v-if="session.canAccessModule('imports')">
+				<div class="row g-2 align-items-center">
+					<div class="col-md-4">
+						<label class="form-label small mb-1 fw-semibold text-primary">
+							<i class="ti ti-file-invoice me-1"></i>{{ t("Commercial Invoice (Import Attribution)") }}
+						</label>
+						<Typeahead
+							v-if="editable"
+							v-model="form.custom_commercial_invoice"
+							:search="searchCommercialInvoices"
+							:display="form.custom_commercial_invoice"
+							:placeholder="t('Search commercial invoice…')"
+							:no-results-text="t('No matches found')"
+							size="sm"
+							@pick="(it) => { form.custom_commercial_invoice = it.name; }"
+							@clear="() => { form.custom_commercial_invoice = ''; form.custom_import_truck = ''; form.custom_import_container = ''; }"
+						>
+							<template #option="{ item }">
+								<div class="fw-semibold font-monospace">{{ item.ci_number || item.name }}</div>
+								<div class="small text-secondary">{{ item.supplier_name || item.supplier || '—' }} · {{ item.name }}</div>
+							</template>
+						</Typeahead>
+						<div v-else class="form-control-plaintext font-monospace py-1">
+							<span v-if="form.custom_commercial_invoice" class="badge bg-blue-lt">
+								{{ form.custom_commercial_invoice }}
+							</span>
+							<span v-else class="text-secondary">—</span>
+						</div>
+					</div>
+
+					<div class="col-md-4" v-if="form.custom_commercial_invoice">
+						<label class="form-label small mb-1">{{ t("Specific Import Truck (Optional)") }}</label>
+						<Typeahead
+							v-if="editable"
+							v-model="form.custom_import_truck"
+							:search="(q) => importsApi.listImportTrucks({ company: activeCompany, search: q, limit_page_length: 10 }).then(r => r.rows || [])"
+							:display="form.custom_import_truck"
+							:placeholder="t('Search truck…')"
+							size="sm"
+							@pick="(it) => { form.custom_import_truck = it.name; }"
+							@clear="form.custom_import_truck = ''"
+						>
+							<template #option="{ item }">
+								<div class="fw-semibold font-monospace">{{ item.truck_number || item.name }}</div>
+								<div class="small text-secondary">{{ item.trucking_company || '—' }}</div>
+							</template>
+						</Typeahead>
+						<div v-else class="form-control-plaintext font-monospace py-1">
+							{{ form.custom_import_truck || "—" }}
+						</div>
+					</div>
+
+					<div class="col-md-4" v-if="form.custom_commercial_invoice">
+						<label class="form-label small mb-1">{{ t("Specific Container (Optional)") }}</label>
+						<Typeahead
+							v-if="editable"
+							v-model="form.custom_import_container"
+							:search="(q) => importsApi.listImportContainers({ company: activeCompany, search: q, limit_page_length: 10 }).then(r => r.rows || [])"
+							:display="form.custom_import_container"
+							:placeholder="t('Search container…')"
+							size="sm"
+							@pick="(it) => { form.custom_import_container = it.name; }"
+							@clear="form.custom_import_container = ''"
+						>
+							<template #option="{ item }">
+								<div class="fw-semibold font-monospace">{{ item.container_number || item.name }}</div>
+								<div class="small text-secondary">{{ item.name }}</div>
+							</template>
+						</Typeahead>
+						<div v-else class="form-control-plaintext font-monospace py-1">
+							{{ form.custom_import_container || "—" }}
+						</div>
+					</div>
+				</div>
+			</div>
 		</div>
+
 
 		<!-- Import attribution (W1) — attribution only, never a cost/valuation write -->
 		<div v-if="showLinkPanel" class="card mb-3">

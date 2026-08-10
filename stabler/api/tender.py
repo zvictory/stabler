@@ -1786,12 +1786,18 @@ def _is_tender_oversight(user: str | None = None) -> bool:
 
 @frappe.whitelist()
 def tender_managers(company: str) -> dict:
-	"""Users a tender can be assigned to (sourcing roles), for the distribution UI."""
+	"""Users a tender can be assigned to (sourcing roles), for the distribution UI.
+
+	Rol kümesi ``_TENDER_VIEW_ROLES["sourcing"]``'ten türetilir — ikinci bir sabit
+	liste tutulmaz. Böylece rol penceresi değiştiğinde atama listesi kendiliğinden
+	takip eder (ör. ``Stabler Tender Sourcing`` eklendiğinde buraya da yansır).
+	"""
 	_require_tender_view("director", company)
+	sourcing_roles = list(_TENDER_VIEW_ROLES["sourcing"])
 	names: set[str] = set()
 	for r in frappe.get_all(
 		"Has Role",
-		filters={"role": ["in", ["Sales User", "Sales Manager"]], "parenttype": "User"},
+		filters={"role": ["in", sourcing_roles], "parenttype": "User"},
 		fields=["parent"],
 		distinct=True,
 		limit_page_length=1000,
