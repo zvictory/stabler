@@ -298,6 +298,9 @@ def _load_api(fake: _FakeFrappe):
 	tender_mod = types.ModuleType("stabler.api.tender")
 	tender_mod._require_tender = lambda _company=None: None
 	tender_mod._require_tender_view = lambda _view, _company: None
+	tender_mod._require_any_tender_view = lambda _views, _company: None
+	tender_mod._deal_label = lambda deal: deal
+	tender_mod._tender_deal_names = lambda company: set()
 	sys.modules["stabler.api.tender_master"] = tender_master_mod
 	sys.modules["stabler.api.tender"] = tender_mod
 	sys.modules["stabler.api._tender_documents"] = pure

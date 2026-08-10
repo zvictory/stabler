@@ -90,6 +90,8 @@ def _load_api(fake: _FakeFrappe, *, views=("sourcing",), user="sourcer@acme.test
 	tender_mod._require_any_tender_view = lambda wanted, _company: (
 		None if set(wanted) & set(views) else (_ for _ in ()).throw(PermissionError("Not permitted"))
 	)
+	tender_mod._deal_label = lambda deal: deal
+	tender_mod._tender_deal_names = lambda company: set()
 	sys.modules["stabler.api.tender_master"] = tender_master_mod
 	sys.modules["stabler.api.tender"] = tender_mod
 	sys.modules["stabler.api._tender_documents"] = pure
