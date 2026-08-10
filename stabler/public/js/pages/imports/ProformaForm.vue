@@ -305,8 +305,16 @@ function syncEarmark() {
 // ---- Smart Advance Payment Modal ----
 const advOpen = ref(false);
 const advSaving = ref(false);
-const advBasis = ref("AGREED"); // 'AGREED' | 'DOCS'
+const advAccountsLoading = ref(false);
+const companyBankAccounts = ref([]);
+const companyCashAccounts = ref([]);
+const advSelectedBank = ref("");
+const advSelectedCash = ref("");
+
+const advStrategy = ref("DOCS_ONLY"); // 'DOCS_ONLY' | 'SPLIT' | 'ALL_BANK' | 'ALL_CASH' | 'CUSTOM'
+const advBasis = ref("DOCS"); // 'AGREED' | 'DOCS'
 const advPct = ref(30);
+const customPct = ref("");
 const advBank = ref(0);
 const advCash = ref(0);
 const advDate = ref(todayIso());
@@ -316,46 +324,97 @@ const targetAgreedTotal = computed(() => itemsAgreedTotal.value || Number(form.v
 const targetDocsTotal = computed(() => itemsDocsTotal.value || Number(form.value.docs_total) || Number(form.value.bank_agreed) || 0);
 const targetCashDiff = computed(() => Math.max(0, targetAgreedTotal.value - targetDocsTotal.value));
 
-const targetBaseAmount = computed(() => advBasis.value === "DOCS" ? targetDocsTotal.value : targetAgreedTotal.value);
-const targetAdvanceAmount = computed(() => round2(targetBaseAmount.value * ((Number(advPct.value) || 0) / 100)));
+const calcDocsOnlyBank = computed(() => round2(targetDocsTotal.value * ((Number(advPct.value) || 0) / 100)));
+const calcFullAdvance = computed(() => round2(targetAgreedTotal.value * ((Number(advPct.value) || 0) / 100)));
+const calcSplitBank = computed(() => round2(calcFullAdvance.value * (targetDocsTotal.value / (targetAgreedTotal.value || 1))));
+const calcSplitCash = computed(() => round2(calcFullAdvance.value - calcSplitBank.value));
 
 const currentPaidBank = computed(() => form.value.advance_summary?.paid_bank || 0);
 const currentPaidCash = computed(() => form.value.advance_summary?.paid_cash || 0);
 const currentPaidTotal = computed(() => form.value.advance_summary?.paid_total || 0);
-const remainingAdvanceDue = computed(() => Math.max(0, targetAdvanceAmount.value - currentPaidTotal.value));
 
-function openAdvanceModal() {
-	advBasis.value = form.value.prepayment_type === "DOCS_TOTAL" ? "DOCS" : "AGREED";
+function applyStrategy(strat) {
+	advStrategy.value = strat;
+	if (strat === "DOCS_ONLY") {
+		advBasis.value = "DOCS";
+		advBank.value = calcDocsOnlyBank.value;
+		advCash.value = 0;
+	} else if (strat === "SPLIT") {
+		advBasis.value = "AGREED";
+		advBank.value = calcSplitBank.value;
+		advCash.value = calcSplitCash.value;
+	} else if (strat === "ALL_BANK") {
+		advBasis.value = "AGREED";
+		advBank.value = calcFullAdvance.value;
+		advCash.value = 0;
+	} else if (strat === "ALL_CASH") {
+		advBasis.value = "AGREED";
+		advBank.value = 0;
+		advCash.value = calcFullAdvance.value;
+	}
+}
+
+function setPercentage(pct) {
+	advPct.value = pct;
+	customPct.value = "";
+	if (advStrategy.value !== "CUSTOM") {
+		applyStrategy(advStrategy.value);
+	} else {
+		applyStrategy("DOCS_ONLY");
+	}
+}
+
+function onCustomPctInput() {
+	const val = Number(customPct.value);
+	if (!isNaN(val) && val >= 0 && val <= 100) {
+		advPct.value = val;
+		if (advStrategy.value !== "CUSTOM") {
+			applyStrategy(advStrategy.value);
+		} else {
+			applyStrategy("DOCS_ONLY");
+		}
+	}
+}
+
+function onManualAmountChange() {
+	advStrategy.value = "CUSTOM";
+}
+
+async function loadCompanyAccounts() {
+	if (!activeCompany.value) return;
+	advAccountsLoading.value = true;
+	try {
+		const accounts = await call("stabler.api.money.list_cash_bank_accounts", {
+			company: activeCompany.value,
+			limit: 100,
+		});
+		const cur = form.value.currency;
+		const bank = accounts.filter((a) => a.account_type === "Bank");
+		const cash = accounts.filter((a) => a.account_type === "Cash");
+		companyBankAccounts.value = bank;
+		companyCashAccounts.value = cash;
+
+		const defBank = bank.find((a) => a.account_currency === cur) || bank[0];
+		const defCash = cash.find((a) => a.account_currency === cur) || cash[0];
+		if (!advSelectedBank.value && defBank) advSelectedBank.value = defBank.name;
+		if (!advSelectedCash.value && defCash) advSelectedCash.value = defCash.name;
+	} catch {
+		companyBankAccounts.value = [];
+		companyCashAccounts.value = [];
+	} finally {
+		advAccountsLoading.value = false;
+	}
+}
+
+async function openAdvanceModal() {
 	advPct.value = Number(form.value.advance_pct) || 30;
+	customPct.value = "";
 	advDate.value = todayIso();
 	advRef.value = `ADV-${form.value.name || form.value.supplier_pi_ref || "PI"}`;
-	fillSplit();
+	const defaultStrat = form.value.prepayment_type === "DOCS_TOTAL" ? "DOCS_ONLY" : "SPLIT";
+	applyStrategy(defaultStrat);
+	loadCompanyAccounts();
 	advOpen.value = true;
-}
-
-function fillDocsOnly() {
-	advBasis.value = "DOCS";
-	const docsAdv = round2(targetDocsTotal.value * ((Number(advPct.value) || 30) / 100));
-	advBank.value = docsAdv;
-	advCash.value = 0;
-}
-
-function fillAllBank() {
-	advBank.value = targetAdvanceAmount.value;
-	advCash.value = 0;
-}
-
-function fillAllCash() {
-	advBank.value = 0;
-	advCash.value = targetAdvanceAmount.value;
-}
-
-function fillSplit() {
-	const total = targetAgreedTotal.value || 1;
-	const docsShare = targetDocsTotal.value / total;
-	const targetAdv = targetAdvanceAmount.value;
-	advBank.value = round2(targetAdv * docsShare);
-	advCash.value = round2(targetAdv - advBank.value);
 }
 
 async function submitAdvancePayment() {
@@ -372,6 +431,8 @@ async function submitAdvancePayment() {
 			payment_date: advDate.value || undefined,
 			reference_no: advRef.value || undefined,
 			prepayment_basis: advBasis.value,
+			bank_account: advSelectedBank.value || undefined,
+			cash_account: advSelectedCash.value || undefined,
 		});
 		if (res.warning) toast.info(res.warning);
 		toast.success(t("Advance recorded (draft Payment Entry)."));
@@ -1316,134 +1377,307 @@ watch(activeCompany, loadPiGroups);
 		</div>
 
 		<!-- Smart Advance Payment Modal (Dual-Pricing: Agreed vs Docs) -->
-		<div v-if="advOpen" class="modal d-block" tabindex="-1" style="background: rgba(0,0,0,0.5)">
+		<div v-if="advOpen" class="modal modal-blur fade show d-block" tabindex="-1" style="background: rgba(0, 0, 0, 0.55); z-index: 1055;">
 			<div class="modal-dialog modal-dialog-centered modal-lg">
-				<div class="modal-content">
-					<div class="modal-header">
+				<div class="modal-content shadow-lg border-0">
+					<!-- Header -->
+					<div class="modal-header bg-surface py-3 px-4 border-bottom">
 						<div>
-							<h5 class="modal-title mb-0">
-								<i class="ti ti-cash-banknote text-success me-2"></i>{{ t("Record Advance Payment") }}
-							</h5>
-							<div class="text-secondary small font-monospace">{{ form.supplier_pi_ref || form.name }} · {{ form.supplier_name || form.supplier }}</div>
+							<div class="d-flex align-items-center gap-2">
+								<span class="avatar avatar-sm bg-green-lt text-green rounded">
+									<i class="ti ti-cash-banknote fs-2"></i>
+								</span>
+								<div>
+									<h4 class="modal-title fw-bold mb-0 text-dark">{{ t("Record Advance Payment") }}</h4>
+									<div class="text-secondary small font-monospace">
+										{{ form.supplier_pi_ref || form.name }} · {{ form.supplier_name || form.supplier }}
+									</div>
+								</div>
+							</div>
 						</div>
 						<button type="button" class="btn-close" :disabled="advSaving" @click="advOpen = false"></button>
 					</div>
 
-					<div class="modal-body">
-						<!-- 1. Advance Basis & Percentage -->
-						<div class="card mb-3 bg-light-subtle border">
-							<div class="card-body">
-								<div class="row g-3 align-items-center">
-									<div class="col-md-6">
-										<label class="form-label fw-bold small text-uppercase mb-2">{{ t("Calculation Basis") }}</label>
-										<div class="btn-group w-100" role="group">
-											<input type="radio" class="btn-check" name="advBasisRadio" id="advBasisAgreed" value="AGREED" v-model="advBasis" @change="fillSplit" />
-											<label class="btn btn-outline-primary" for="advBasisAgreed">
-												{{ t("Agreed Total") }}<br><span class="small font-monospace">({{ fm(targetAgreedTotal, form.currency) }})</span>
-											</label>
-
-											<input type="radio" class="btn-check" name="advBasisRadio" id="advBasisDocs" value="DOCS" v-model="advBasis" @change="fillDocsOnly" />
-											<label class="btn btn-outline-primary" for="advBasisDocs">
-												{{ t("Docs Total") }}<br><span class="small font-monospace">({{ fm(targetDocsTotal, form.currency) }})</span>
-											</label>
-										</div>
+					<div class="modal-body p-4 bg-light-subtle">
+						<!-- Top Card: PI Context & Totals -->
+						<div class="card mb-3 border-0 shadow-sm">
+							<div class="card-body py-3 px-4">
+								<div class="row g-3 text-center text-sm-start align-items-center">
+									<div class="col-sm-4 border-end-sm">
+										<div class="text-secondary small text-uppercase fw-semibold">{{ t("Total Agreed PI") }}</div>
+										<div class="h3 mb-0 font-monospace text-primary fw-bold">{{ fm(targetAgreedTotal, form.currency) }}</div>
 									</div>
-
-									<div class="col-md-6">
-										<label class="form-label fw-bold small text-uppercase mb-2">
-											{{ t("Advance Percentage") }}: <span class="text-primary font-monospace">{{ advPct }}%</span>
-										</label>
-										<input v-model.number="advPct" type="range" min="5" max="100" step="5" class="form-range" @input="advBasis === 'DOCS' ? fillDocsOnly() : fillSplit()" />
-										<div class="d-flex justify-content-between small text-secondary">
-											<span>5%</span><span>30%</span><span>50%</span><span>100%</span>
+									<div class="col-sm-4 border-end-sm">
+										<div class="text-secondary small text-uppercase fw-semibold d-flex align-items-center gap-1">
+											<i class="ti ti-building-bank text-blue"></i> {{ t("Official Docs Total") }}
 										</div>
+										<div class="h3 mb-0 font-monospace text-dark fw-semibold">{{ fm(targetDocsTotal, form.currency) }}</div>
+									</div>
+									<div class="col-sm-4">
+										<div class="text-secondary small text-uppercase fw-semibold d-flex align-items-center gap-1">
+											<i class="ti ti-cash text-orange"></i> {{ t("Cash Difference") }}
+										</div>
+										<div class="h3 mb-0 font-monospace text-orange fw-semibold">{{ fm(targetCashDiff, form.currency) }}</div>
 									</div>
 								</div>
+							</div>
+						</div>
 
-								<!-- Context Banner -->
-								<div class="d-flex align-items-center justify-content-between p-2 mt-3 rounded bg-white border">
+						<!-- Section 1: Percentage & Strategy Selection -->
+						<div class="card mb-3 border-0 shadow-sm">
+							<div class="card-body p-3 p-md-4">
+								<!-- Percentage Selector -->
+								<div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3 pb-3 border-bottom">
 									<div>
-										<span class="text-secondary small">{{ t("Target Advance:") }}</span>
-										<strong class="font-monospace ms-1 text-dark">{{ fm(targetAdvanceAmount, form.currency) }}</strong>
-										<span v-if="currentPaidTotal > 0" class="text-muted small ms-2">
-											({{ t("Paid:") }} {{ fm(currentPaidBank, form.currency) }} 🏦 + {{ fm(currentPaidCash, form.currency) }} 💵 · {{ t("Due:") }} {{ fm(remainingAdvanceDue, form.currency) }})
-										</span>
+										<label class="form-label fw-bold text-uppercase small text-secondary mb-1">
+											{{ t("Advance Percentage") }}
+										</label>
+										<div class="text-muted small">
+											{{ t("Select percentage or enter custom value") }}
+										</div>
 									</div>
-									<div class="small">
-										<span class="badge bg-blue-lt me-1">{{ t("Official Docs:") }} {{ fm(targetDocsTotal, form.currency) }}</span>
-										<span class="badge bg-orange-lt">{{ t("Cash Diff:") }} {{ fm(targetCashDiff, form.currency) }}</span>
+									<div class="d-flex align-items-center gap-1 flex-wrap">
+										<button
+											v-for="p in [10, 20, 30, 50, 100]"
+											:key="p"
+											type="button"
+											class="btn btn-sm"
+											:class="advPct === p && !customPct ? 'btn-primary shadow-sm' : 'btn-outline-secondary bg-white'"
+											@click="setPercentage(p)"
+										>
+											{{ p }}%
+										</button>
+										<div class="input-group input-group-sm ms-1" style="width: 95px;">
+											<input
+												v-model="customPct"
+												type="number"
+												min="1"
+												max="100"
+												placeholder="Custom"
+												class="form-control text-center font-monospace"
+												@input="onCustomPctInput"
+											/>
+											<span class="input-group-text">%</span>
+										</div>
+									</div>
+								</div>
+
+								<!-- Strategy Preset Cards -->
+								<label class="form-label fw-bold text-uppercase small text-secondary mb-2">
+									{{ t("Payment Strategy Presets") }}
+								</label>
+								<div class="row g-2">
+									<!-- 1. Official Docs Only -->
+									<div class="col-sm-6 col-lg-3">
+										<div
+											class="card h-100 cursor-pointer p-3 border"
+											:class="advStrategy === 'DOCS_ONLY' ? 'border-primary bg-primary-lt shadow-sm' : 'border-light bg-white'"
+											@click="applyStrategy('DOCS_ONLY')"
+										>
+											<div class="d-flex align-items-center justify-content-between mb-1">
+												<span class="badge bg-blue-lt text-blue small fw-bold">
+													<i class="ti ti-building-bank me-1"></i>{{ t("Docs Only") }}
+												</span>
+												<i v-if="advStrategy === 'DOCS_ONLY'" class="ti ti-circle-check text-primary fs-3"></i>
+											</div>
+											<div class="h3 mb-1 font-monospace text-dark">{{ fm(calcDocsOnlyBank, form.currency) }}</div>
+											<div class="text-secondary small lh-sm">
+												{{ advPct }}% {{ t("of Docs Total to Bank") }} ($0 {{ t("Cash") }})
+											</div>
+										</div>
+									</div>
+
+									<!-- 2. Proportional Split -->
+									<div class="col-sm-6 col-lg-3">
+										<div
+											class="card h-100 cursor-pointer p-3 border"
+											:class="advStrategy === 'SPLIT' ? 'border-success bg-success-lt shadow-sm' : 'border-light bg-white'"
+											@click="applyStrategy('SPLIT')"
+										>
+											<div class="d-flex align-items-center justify-content-between mb-1">
+												<span class="badge bg-green-lt text-green small fw-bold">
+													<i class="ti ti-scale me-1"></i>{{ t("Split Bank + Cash") }}
+												</span>
+												<i v-if="advStrategy === 'SPLIT'" class="ti ti-circle-check text-success fs-3"></i>
+											</div>
+											<div class="h3 mb-1 font-monospace text-dark">{{ fm(calcFullAdvance, form.currency) }}</div>
+											<div class="text-secondary small lh-sm">
+												{{ fm(calcSplitBank, form.currency) }} 🏦 + {{ fm(calcSplitCash, form.currency) }} 💵
+											</div>
+										</div>
+									</div>
+
+									<!-- 3. 100% Bank -->
+									<div class="col-sm-6 col-lg-3">
+										<div
+											class="card h-100 cursor-pointer p-3 border"
+											:class="advStrategy === 'ALL_BANK' ? 'border-primary bg-primary-lt shadow-sm' : 'border-light bg-white'"
+											@click="applyStrategy('ALL_BANK')"
+										>
+											<div class="d-flex align-items-center justify-content-between mb-1">
+												<span class="badge bg-indigo-lt text-indigo small fw-bold">
+													<i class="ti ti-credit-card me-1"></i>{{ t("100% Bank") }}
+												</span>
+												<i v-if="advStrategy === 'ALL_BANK'" class="ti ti-circle-check text-indigo fs-3"></i>
+											</div>
+											<div class="h3 mb-1 font-monospace text-dark">{{ fm(calcFullAdvance, form.currency) }}</div>
+											<div class="text-secondary small lh-sm">
+												{{ advPct }}% {{ t("of full Agreed Total via Bank") }}
+											</div>
+										</div>
+									</div>
+
+									<!-- 4. 100% Cash -->
+									<div class="col-sm-6 col-lg-3">
+										<div
+											class="card h-100 cursor-pointer p-3 border"
+											:class="advStrategy === 'ALL_CASH' ? 'border-warning bg-warning-lt shadow-sm' : 'border-light bg-white'"
+											@click="applyStrategy('ALL_CASH')"
+										>
+											<div class="d-flex align-items-center justify-content-between mb-1">
+												<span class="badge bg-orange-lt text-orange small fw-bold">
+													<i class="ti ti-cash me-1"></i>{{ t("100% Cash") }}
+												</span>
+												<i v-if="advStrategy === 'ALL_CASH'" class="ti ti-circle-check text-warning fs-3"></i>
+											</div>
+											<div class="h3 mb-1 font-monospace text-dark">{{ fm(calcFullAdvance, form.currency) }}</div>
+											<div class="text-secondary small lh-sm">
+												{{ advPct }}% {{ t("of full Agreed Total via Cash") }}
+											</div>
+										</div>
 									</div>
 								</div>
 							</div>
 						</div>
 
+						<!-- Section 2: Bank & Cash Payment Entry Inputs -->
+						<div class="card mb-3 border-0 shadow-sm">
+							<div class="card-body p-3 p-md-4">
+								<div class="row g-3">
+									<!-- Bank Input Card -->
+									<div class="col-md-6">
+										<div class="p-3 rounded bg-blue-lt border border-blue-subtle h-100">
+											<div class="d-flex align-items-center justify-content-between mb-2">
+												<label class="form-label fw-bold text-blue mb-0 d-flex align-items-center gap-1">
+													<i class="ti ti-building-bank fs-3"></i> {{ t("Official Bank Amount") }}
+												</label>
+												<span class="badge bg-blue text-white">{{ form.currency }}</span>
+											</div>
+											<div class="mb-2">
+												<label class="form-label small text-secondary mb-1">{{ t("Paid From (Bank Account)") }}</label>
+												<select v-model="advSelectedBank" class="form-select form-select-sm font-monospace" :disabled="advSaving">
+													<option value="">{{ t("Default Bank Account") }}</option>
+													<option v-for="acc in companyBankAccounts" :key="acc.name" :value="acc.name">
+														{{ acc.account_name || acc.name }} ({{ acc.account_currency }})
+													</option>
+												</select>
+											</div>
+											<MoneyInput
+												v-model="advBank"
+												:currency="form.currency"
+												:language="user.language"
+												@update:model-value="onManualAmountChange"
+											/>
+											<div class="small text-secondary mt-2 d-flex align-items-center gap-1">
+												<i class="ti ti-info-circle"></i>
+												{{ t("Creates DRAFT Payment Entry for bank account.") }}
+											</div>
+										</div>
+									</div>
 
-						<!-- 2. Quick Fill Actions -->
-						<div class="mb-3">
-							<label class="form-label fw-bold small text-uppercase mb-1">{{ t("Quick Actions") }}</label>
-							<div class="d-flex gap-2 flex-wrap">
-								<button type="button" class="btn btn-sm btn-outline-info" @click="fillDocsOnly">
-									<i class="ti ti-bolt me-1"></i>{{ t("Docs Only 30%") }} ({{ fm(round2(targetDocsTotal * 0.3), form.currency) }} {{ t("Bank") }})
-								</button>
-								<button type="button" class="btn btn-sm btn-outline-primary" @click="fillAllBank">
-									<i class="ti ti-building-bank me-1"></i>{{ t("100% Bank") }} ({{ fm(targetAdvanceAmount, form.currency) }})
-								</button>
-								<button type="button" class="btn btn-sm btn-outline-warning" @click="fillAllCash">
-									<i class="ti ti-cash me-1"></i>{{ t("100% Cash") }} ({{ fm(targetAdvanceAmount, form.currency) }})
-								</button>
-								<button type="button" class="btn btn-sm btn-outline-success" @click="fillSplit">
-									<i class="ti ti-scale me-1"></i>{{ t("Proportional Split (Bank + Cash)") }}
-								</button>
+									<!-- Cash Input Card -->
+									<div class="col-md-6">
+										<div class="p-3 rounded bg-orange-lt border border-orange-subtle h-100">
+											<div class="d-flex align-items-center justify-content-between mb-2">
+												<label class="form-label fw-bold text-orange mb-0 d-flex align-items-center gap-1">
+													<i class="ti ti-cash fs-3"></i> {{ t("Cash Safe Amount") }}
+												</label>
+												<span class="badge bg-orange text-white">{{ form.currency }}</span>
+											</div>
+											<div class="mb-2">
+												<label class="form-label small text-secondary mb-1">{{ t("Paid From (Cash Account)") }}</label>
+												<select v-model="advSelectedCash" class="form-select form-select-sm font-monospace" :disabled="advSaving">
+													<option value="">{{ t("Default Cash Account") }}</option>
+													<option v-for="acc in companyCashAccounts" :key="acc.name" :value="acc.name">
+														{{ acc.account_name || acc.name }} ({{ acc.account_currency }})
+													</option>
+												</select>
+											</div>
+											<MoneyInput
+												v-model="advCash"
+												:currency="form.currency"
+												:language="user.language"
+												@update:model-value="onManualAmountChange"
+											/>
+											<div class="small text-secondary mt-2 d-flex align-items-center gap-1">
+												<i class="ti ti-info-circle"></i>
+												{{ t("Creates DRAFT Payment Entry for cash desk/safe.") }}
+											</div>
+										</div>
+									</div>
+
+									<!-- Payment Date & Reference No -->
+									<div class="col-md-6">
+										<label class="form-label small fw-semibold text-secondary mb-1">{{ t("Payment Date") }}</label>
+										<DateInput v-model="advDate" />
+									</div>
+
+									<div class="col-md-6">
+										<label class="form-label small fw-semibold text-secondary mb-1">{{ t("Payment Reference / Memo") }}</label>
+										<input v-model="advRef" type="text" class="form-control" placeholder="e.g. ADV-REF-001" />
+									</div>
+								</div>
 							</div>
 						</div>
 
-						<!-- 3. Payment Inputs (Bank & Cash) -->
-						<div class="row g-3 mb-3">
-							<div class="col-md-6">
-								<label class="form-label fw-bold text-primary">
-									<i class="ti ti-building-bank me-1"></i>{{ t("Bank Payment Amount") }}
-								</label>
-								<MoneyInput v-model="advBank" :currency="form.currency" :language="user.language" />
-								<div class="small text-secondary mt-1">{{ t("Creates a DRAFT Payment Entry for official bank account.") }}</div>
-							</div>
+						<!-- Section 3: Summary Banner -->
+						<div class="card border-0 shadow-sm bg-surface">
+							<div class="card-body py-3 px-4">
+								<div class="d-flex flex-wrap align-items-center justify-content-between gap-2">
+									<div>
+										<div class="text-secondary small fw-semibold text-uppercase">{{ t("Total Advance to Record") }}</div>
+										<div class="d-flex align-items-baseline gap-2">
+											<span class="font-monospace fw-bold fs-2 text-success">
+												{{ fm(Number(advBank || 0) + Number(advCash || 0), form.currency) }}
+											</span>
+											<span v-if="targetAgreedTotal > 0" class="badge bg-success-lt font-monospace">
+												{{ ((Number(advBank || 0) + Number(advCash || 0)) / targetAgreedTotal * 100).toFixed(1) }}% {{ t("of PI") }}
+											</span>
+										</div>
+									</div>
 
-							<div class="col-md-6">
-								<label class="form-label fw-bold text-orange">
-									<i class="ti ti-cash me-1"></i>{{ t("Cash Payment Amount") }}
-								</label>
-								<MoneyInput v-model="advCash" :currency="form.currency" :language="user.language" />
-								<div class="small text-secondary mt-1">{{ t("Creates a DRAFT Payment Entry for cash desk/safe.") }}</div>
+									<div v-if="currentPaidTotal > 0" class="text-sm-end small">
+										<div class="text-muted">
+											{{ t("Previously Recorded:") }}
+											<span class="font-monospace fw-semibold">{{ fm(currentPaidTotal, form.currency) }}</span>
+											({{ fm(currentPaidBank, form.currency) }} 🏦 + {{ fm(currentPaidCash, form.currency) }} 💵)
+										</div>
+										<div class="text-secondary mt-1">
+											{{ t("Cumulative After Record:") }}
+											<strong class="font-monospace text-dark">
+												{{ fm(currentPaidTotal + Number(advBank || 0) + Number(advCash || 0), form.currency) }}
+											</strong>
+										</div>
+									</div>
+								</div>
 							</div>
-
-							<div class="col-md-6">
-								<label class="form-label small mb-1">{{ t("Payment Date") }}</label>
-								<DateInput v-model="advDate" />
-							</div>
-
-							<div class="col-md-6">
-								<label class="form-label small mb-1">{{ t("Reference No") }}</label>
-								<input v-model="advRef" type="text" class="form-control" placeholder="e.g. ADV-REF-001" />
-							</div>
-						</div>
-
-						<div class="p-2 rounded bg-success-subtle border border-success-subtle d-flex justify-content-between align-items-center">
-							<span class="text-success-emphasis fw-semibold">{{ t("Total advance to record:") }}</span>
-							<span class="font-monospace fw-bold fs-3 text-success">{{ fm(Number(advBank || 0) + Number(advCash || 0), form.currency) }}</span>
 						</div>
 					</div>
 
-					<div class="modal-footer">
+					<!-- Footer -->
+					<div class="modal-footer bg-surface py-3 px-4 border-top">
 						<button type="button" class="btn btn-outline-secondary" :disabled="advSaving" @click="advOpen = false">
 							{{ t("Cancel") }}
 						</button>
 						<button
 							type="button"
-							class="btn btn-success"
+							class="btn btn-success px-4"
 							:disabled="advSaving || (Number(advBank || 0) <= 0 && Number(advCash || 0) <= 0)"
 							@click="submitAdvancePayment"
 						>
-							<span v-if="advSaving" class="spinner-border spinner-border-sm me-1"></span>
-							<i v-else class="ti ti-check me-1"></i>{{ t("Create Draft Payment Entries") }}
+							<span v-if="advSaving" class="spinner-border spinner-border-sm me-2"></span>
+							<i v-else class="ti ti-check me-2"></i>
+							{{ t("Create Draft Payment Entries") }}
 						</button>
 					</div>
 				</div>
