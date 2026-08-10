@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<title>CI формасы v3</title>
+<style>
+:root{--bg:#f5f7fa;--card:#fff;--ink:#16202e;--mut:#6b7a90;--line:#e5eaf1;
+--blue:#206bc4;--blue-l:#eaf2fd;--green:#2fb344;--green-l:#e9faee;--org:#f76707;--org-l:#fff1e6;
+--pur:#7048e8;--pur-l:#f0ebfd;--amb:#f59f00;--amb-l:#fff7e6;--red:#d63939;--red-l:#fdecec;--tl:#0ca678;--tl-l:#e6faf5}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif}
+.wrap{max-width:1240px;margin:0 auto;padding:18px 18px 70px}
+.note{background:#0f172a;color:#e2e8f0;border-radius:11px;padding:14px 16px;margin-bottom:16px;font-size:12.5px}
+.note b{color:#fff}.note ul{margin:7px 0 0;padding-left:18px}.note li{margin:3px 0}
+.card{background:var(--card);border:1px solid var(--line);border-radius:11px;margin-bottom:13px;box-shadow:0 1px 2px rgba(16,24,40,.04)}
+.ch{display:flex;align-items:center;gap:10px;padding:11px 15px;border-bottom:1px solid var(--line)}
+.ch h3{margin:0;font-size:14px;font-weight:650}
+.cb{padding:13px 15px}.sp{flex:1}
+.n{width:22px;height:22px;border-radius:6px;background:var(--blue);color:#fff;font-size:11.5px;font-weight:800;
+display:flex;align-items:center;justify-content:center;flex:none}
+.n.new{background:var(--pur)}.n.moved{background:var(--amb)}
+.bg{display:inline-block;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:650;white-space:nowrap}
+.g{background:var(--green-l);color:var(--green)}.a{background:var(--amb-l);color:#a37200}
+.r{background:var(--red-l);color:var(--red)}.s{background:#eef1f5;color:var(--mut)}
+.b{background:var(--blue-l);color:var(--blue)}.p{background:var(--pur-l);color:var(--pur)}.t{background:var(--tl-l);color:var(--tl)}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{font-size:10px;text-transform:uppercase;letter-spacing:.05em;color:var(--mut);font-weight:700;text-align:left;
+padding:8px 10px;border-bottom:1px solid var(--line);white-space:nowrap}
+td{padding:8px 10px;border-bottom:1px solid #f2f5f8;vertical-align:top}
+tr:last-child td{border-bottom:0}
+.num{text-align:right;font-variant-numeric:tabular-nums;font-family:ui-monospace,Menlo,monospace}
+.tf td{border-top:2px solid var(--line);font-weight:700;background:#fbfcfe}
+.a2{color:var(--blue);text-decoration:none;font-weight:650}.a2:hover{text-decoration:underline}
+.mut{color:var(--mut)}.sm{font-size:12px}.xs{font-size:11px}
+.grid{display:grid;gap:10px}.g3{grid-template-columns:repeat(3,1fr)}.g4{grid-template-columns:repeat(4,1fr)}
+.g5{grid-template-columns:repeat(5,1fr)}
+.tile{border:1px solid var(--line);border-radius:9px;padding:11px 12px;background:#fff}
+.tile .k{font-size:10px;text-transform:uppercase;letter-spacing:.05em;color:var(--mut);font-weight:700}
+.tile .v{font-size:20px;font-weight:750;font-family:ui-monospace,Menlo,monospace;margin-top:3px}
+.hdr{display:flex;align-items:center;gap:11px;flex-wrap:wrap;margin:4px 0 12px}
+.hdr h1{margin:0;font-size:21px;font-weight:750}
+.kv{display:grid;grid-template-columns:repeat(4,1fr);gap:11px 18px}
+.kv .k{font-size:10px;text-transform:uppercase;letter-spacing:.05em;color:var(--mut);font-weight:700}
+.kv .v{font-weight:650;margin-top:2px}
+.btn{border:1px solid var(--line);background:#fff;border-radius:7px;padding:6px 11px;font-size:12.5px;font-weight:650;
+color:var(--ink);cursor:pointer}
+.btn.pri{background:var(--blue);border-color:var(--blue);color:#fff}
+.btn.gh{border-color:transparent;color:var(--blue)}
+.bar{height:6px;background:#eef1f5;border-radius:20px;overflow:hidden;margin-top:6px}
+.bar i{display:block;height:100%}
+.lbl{font-size:10px;text-transform:uppercase;letter-spacing:.05em;color:var(--mut);font-weight:700;margin:0 0 6px}
+.split{display:grid;grid-template-columns:1fr 1fr;gap:13px}
+.gapbox{border:1px dashed #cbb6f5;background:#faf7ff;border-radius:8px;padding:9px 11px;font-size:12.5px}
+.foot{color:var(--mut);font-size:12px;text-align:center;padding-top:10px}
+@media(max-width:900px){.split,.g4,.g5,.g3,.kv{grid-template-columns:1fr 1fr}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<div class="note">
+  <b>v3 — alınan kararlar</b>
+  <ul>
+    <li>Miktar izleme <b>PI'da kalıyor</b>, kategori+item kırılımında. CI'da yeni icra tablosu yok — sadece bu sevkiyatın dokunduğu anahtarların tek satırı ve PI linki.</li>
+    <li><b>Fiyat doğrulama CI'da</b> — kalem satırında, sözleşme fiyatıyla karşılaştırmalı.</li>
+    <li><b>Alarm şeridi yok.</b> Uyarı ait olduğu satırda: demurrage konteyner satırında, ödenmemiş avans o satırda, fiyat sapması kalem satırında.</li>
+    <li><b>Готовность paneli ikiye bölündü:</b> butonlar statü çubuğunda, detay en altta.</li>
+    <li>Maliyet bloğunda <b>operasyonel ve muhasebe rakamı yan yana</b> — ikisi ayrışabiliyor.</li>
+  </ul>
+</div>
+
+<div class="hdr">
+  <h1>MH/3054/2025-26</h1>
+  <span class="bg b">В ПУТИ</span>
+  <span class="mut sm">HMA AGRO INDUSTRIES LIMITED · 3 контейнера · 84 000 кг</span>
+</div>
+
+<!-- STATÜ + AKSİYON ÇUBUĞU (готовность butonları buraya taşındı) -->
+<div class="card"><div class="cb" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:11px 15px">
+  <span class="lbl" style="margin:0">Статус</span>
+  <span class="bg b">DISCHARGED</span>
+  <button class="btn pri">Продвинуть статус →</button>
+  <span style="width:8px"></span>
+  <button class="btn">Создать GRN</button>
+  <button class="btn">Продвинуть контейнеры</button>
+  <button class="btn gh">Обновить ожидаемые кол-ва</button>
+  <span class="sp"></span>
+  <span class="sm mut">ETD 28.04 · ETA 19.05 · факт 22.05 <b style="color:var(--red)">+3 дня</b></span>
+</div></div>
+
+<!-- ÖZET -->
+<div class="grid g4" style="margin-bottom:13px">
+  <div class="tile"><div class="k">Товар · согласовано</div><div class="v" style="color:var(--blue)">351 400 $</div>
+    <div class="xs mut">докум. 289 800 · разница 61 600</div></div>
+  <div class="tile"><div class="k">Логистика и пошлины</div><div class="v" style="color:var(--org)">44 210 $</div>
+    <div class="xs mut">транспорт 20 070 · пошлины 24 140</div></div>
+  <div class="tile"><div class="k">Себестоимость / кг</div><div class="v" style="color:var(--pur)">4,71 $</div>
+    <div class="xs mut">в учёте пока 4,18 · разрыв 0,53</div></div>
+  <div class="tile"><div class="k">Не оплачено</div><div class="v" style="color:var(--red)">35 340 $</div>
+    <div class="xs mut">поставщик 27 720 · перевозчики 7 620</div></div>
+</div>
+
+<!-- 1 ŞAPKA -->
+<div class="card">
+  <div class="ch"><span class="n">1</span><h3>Шапка счёта</h3><span class="sp"></span><span class="bg s">как было</span></div>
+  <div class="cb"><div class="kv">
+    <div><div class="k">Поставщик</div><div class="v">HMA AGRO INDUSTRIES LIMITED</div></div>
+    <div><div class="k">Инкотермс</div><div class="v">CIF · Tashkent</div></div>
+    <div><div class="k">Порт погрузки → выгрузки</div><div class="v">Nhava Sheva → Bandar Abbas</div></div>
+    <div><div class="k">Валюта</div><div class="v">USD</div></div>
+  </div></div>
+</div>
+
+<!-- 2 TOVARY: fiyat doğrulama burada -->
+<div class="card">
+  <div class="ch"><span class="n">2</span><h3>Товары</h3>
+    <span class="bg a">1 строка: цена ниже договорной</span>
+    <span class="sp"></span><span class="bg p">+ проверка цены · себест./кг</span></div>
+  <table>
+    <thead><tr><th>Категория</th><th>Реф. ПИ</th><th>Отруб</th><th class="num">Кор.</th><th class="num">Кг</th>
+      <th class="num">Согл. цена</th><th>Против договора</th><th class="num">Докум.</th><th class="num">Сумма</th>
+      <th class="num">Себест./кг</th></tr></thead>
+    <tbody>
+      <tr><td>BUFFALO COMPENSATED_2</td><td><a class="a2" href="#">HMA/PI/2229</a></td><td>41 — TOPSIDE</td>
+        <td class="num">1 400</td><td class="num">28 000</td><td class="num">4,35</td>
+        <td><span class="bg g">= 4,35</span></td>
+        <td class="num">3,45</td><td class="num">121 800</td><td class="num" style="color:var(--pur)">4,88</td></tr>
+      <tr><td>BUFFALO COMPENSATED_2</td><td><a class="a2" href="#">HMA/PI/2229</a></td><td>44 — SILVER SIDE</td>
+        <td class="num">1 400</td><td class="num">28 000</td><td class="num">4,80</td>
+        <td><span class="bg g">= 4,80</span><div class="xs mut">договор: 4,35 / 4,80</div></td>
+        <td class="num">3,45</td><td class="num">134 400</td><td class="num" style="color:var(--pur)">5,33</td></tr>
+      <tr style="background:#fffdf7"><td>HQ CUTS</td><td><a class="a2" href="#">HMA/PI/2231</a></td><td>15-17 — NECK</td>
+        <td class="num">1 400</td><td class="num">28 000</td><td class="num" style="color:var(--amb)">3,40</td>
+        <td><span class="bg a">≠ 3,45 · −1 400 $</span></td>
+        <td class="num">3,45</td><td class="num">95 200</td><td class="num" style="color:var(--pur)">3,93</td></tr>
+      <tr class="tf"><td colspan="3">Итого</td><td class="num">4 200</td><td class="num">84 000</td>
+        <td class="num"></td><td></td><td class="num"></td><td class="num">351 400</td>
+        <td class="num" style="color:var(--pur)">4,71</td></tr>
+    </tbody>
+  </table>
+  <div class="cb sm" style="border-top:1px solid var(--line);display:flex;gap:14px;align-items:center">
+    <span class="mut">Договорная цена берётся со строки ПИ по ключу (ПИ + категория); ключ может нести несколько цен — совпадение с любой считается нормой (допуск 0,005).</span>
+    <span class="sp"></span><a class="a2" href="#">Отчёт по отклонениям →</a>
+  </div>
+</div>
+
+<!-- 3 SÖZLEŞME ÖZETİ: tablo değil, tek satır + link -->
+<div class="card">
+  <div class="ch"><span class="n">3</span><h3>По каким договорам идёт этот груз</h3>
+    <span class="sp"></span><span class="bg s">свод — детали в ПИ</span></div>
+  <div class="cb sm">
+    <div style="display:flex;gap:10px;align-items:center;padding:6px 0;border-bottom:1px solid #f2f5f8">
+      <a class="a2" href="#">HMA/PI/2229/2025-26</a>
+      <span class="bg s">BUFFALO COMPENSATED_2</span>
+      <span class="mut">в этом инвойсе <b style="color:var(--ink)">2 800 кор.</b></span>
+      <span class="sp"></span>
+      <span class="bg r">перегруз по ключу: −200 кор.</span>
+      <a class="a2 xs" href="#">открыть ПИ →</a>
+    </div>
+    <div style="display:flex;gap:10px;align-items:center;padding:6px 0">
+      <a class="a2" href="#">HMA/PI/2231/2025-26</a>
+      <span class="bg s">HQ CUTS</span>
+      <span class="mut">в этом инвойсе <b style="color:var(--ink)">1 400 кор.</b></span>
+      <span class="sp"></span>
+      <span class="bg t">остаток 4 200 кор.</span>
+      <a class="a2 xs" href="#">открыть ПИ →</a>
+    </div>
+  </div>
+</div>
+
+<!-- 4 KONTEYNERLER: eksik kolonlar eklendi -->
+<div class="card">
+  <div class="ch"><span class="n">4</span><h3>Контейнеры</h3><span class="bg s">3</span>
+    <span class="sp"></span><span class="bg p">+ аванс · телекс · сроки · себест.</span></div>
+  <table>
+    <thead><tr><th>Контейнер</th><th>Статус</th><th class="num">Кор. / кг</th><th>Аванс 70%</th>
+      <th>Телекс / BL</th><th>Gate-in → ГТД</th><th class="num">Логистика</th><th class="num">Себест./кг</th></tr></thead>
+    <tbody>
+      <tr><td><a class="a2" href="#">SEKU9408532</a><div class="xs mut">40HC · RF · пломба 118427</div></td>
+        <td><span class="bg b">DISCHARGED</span></td><td class="num">1 400 / 28 000</td>
+        <td><span class="bg g">27 720 · 04.05</span></td>
+        <td><span class="bg g">TELEX · 19.05</span></td>
+        <td class="sm">19.05 → 21.05<div class="xs mut">2 дня</div></td>
+        <td class="num">6 690</td><td class="num" style="color:var(--pur)">4,68</td></tr>
+      <tr style="background:#fffdf7"><td><a class="a2" href="#">SEGU9401430</a><div class="xs mut">40HC · RF · пломба 118431</div></td>
+        <td><span class="bg b">DISCHARGED</span></td><td class="num">1 400 / 28 000</td>
+        <td><span class="bg g">27 720 · 04.05</span></td>
+        <td><span class="bg g">TELEX · 19.05</span></td>
+        <td class="sm" style="color:var(--red)">19.05 → не подана<div class="xs" style="color:var(--red)">12 дней · демередж</div></td>
+        <td class="num">6 690</td><td class="num" style="color:var(--pur)">4,71</td></tr>
+      <tr style="background:#fff9f9"><td><a class="a2" href="#">PCIU6066788</a><div class="xs mut">40HC · RF</div></td>
+        <td><span class="bg s">ON BOARD</span></td><td class="num">1 400 / 28 000</td>
+        <td><span class="bg r">не оплачен · 27 720</span></td>
+        <td><span class="bg s">ORIGINAL BL</span></td>
+        <td class="sm mut">—</td>
+        <td class="num">6 690</td><td class="num" style="color:var(--pur)">4,74</td></tr>
+      <tr class="tf"><td colspan="2">Итого</td><td class="num">4 200 / 84 000</td>
+        <td><span class="bg a">2 из 3 оплачено</span></td><td></td><td></td>
+        <td class="num">20 070</td><td class="num" style="color:var(--pur)">4,71</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- 5 TRANSPORT + GİDERLER + VENDOR BILLS -->
+<div class="card" style="border-color:#f4c58a">
+  <div class="ch" style="background:#fffaf4"><span class="n new" style="background:var(--org)">5</span>
+    <h3>Транспорт, расходы и счета поставщиков</h3><span class="bg a">новый блок</span>
+    <span class="sp"></span><span class="sm mut">расходы&nbsp;</span>
+    <b style="font-family:ui-monospace,monospace;color:#a35b00">20 070 $</b>
+    <span class="sm mut">&nbsp;· выставлено счетами&nbsp;</span>
+    <b style="font-family:ui-monospace,monospace">18 650 $</b></div>
+
+  <div class="cb" style="padding-bottom:4px">
+    <div class="lbl">Счета поставщиков (Purchase Invoice) — по этому инвойсу, его контейнерам и фурам</div>
+    <table class="sm">
+      <thead><tr><th>Счёт</th><th>Поставщик</th><th>Тип</th><th>Привязан к</th>
+        <th class="num">Сумма</th><th class="num">Остаток</th><th>Срок</th></tr></thead>
+      <tbody>
+        <tr><td><a class="a2" href="#">PINV-2025-01175</a><div class="xs mut">MH/3054/2025-26</div></td>
+          <td>HMA AGRO INDUSTRIES</td><td><span class="bg b">товар</span></td>
+          <td class="xs">инвойс CI-2026-03932</td>
+          <td class="num">351 400</td><td class="num" style="color:var(--red)">27 720</td>
+          <td class="xs">04.06.2025</td></tr>
+        <tr><td><a class="a2" href="#">PINV-2025-01188</a><div class="xs mut">FRT-2025-0418</div></td>
+          <td>SEA LINE SHIPPING LLC</td><td><span class="bg p">фрахт</span></td>
+          <td class="xs">инвойс · 3 контейнера</td>
+          <td class="num">8 400</td><td class="num mut">—</td><td class="xs mut">оплачен</td></tr>
+        <tr><td><a class="a2" href="#">PINV-2025-01206</a><div class="xs mut">CMR-71204</div></td>
+          <td>DAVRON TRANS MCHJ</td><td><span class="bg p">транспорт</span></td>
+          <td class="xs"><a class="a2" href="#">SEKU9408532</a></td>
+          <td class="num">6 200</td><td class="num" style="color:var(--red)">4 100</td>
+          <td class="xs" style="color:var(--red)">просрочен 6 дн.</td></tr>
+        <tr><td><a class="a2" href="#">PINV-2025-01230</a><div class="xs mut">THC-9928</div></td>
+          <td>BANDAR ABBAS PORT SRV</td><td><span class="bg t">расход</span></td>
+          <td class="xs">инвойс · 3 контейнера</td>
+          <td class="num">1 950</td><td class="num mut">—</td><td class="xs mut">оплачен</td></tr>
+        <tr class="tf"><td>4 счёта</td><td></td><td></td><td></td>
+          <td class="num">367 950</td><td class="num" style="color:var(--red)">31 820</td><td></td></tr>
+      </tbody>
+    </table>
+    <div class="xs mut" style="margin:6px 0 2px">
+      Связь берётся из полей счёта: <code>custom_commercial_invoice</code>, <code>custom_import_container</code>,
+      <code>custom_import_truck</code> — то есть счета контейнеров сюда попадают сами.
+      Тип определяется автоматически (товар / фрахт / транспорт / расход).
+    </div>
+  </div>
+
+  <div class="cb" style="padding-top:6px;padding-bottom:4px;border-top:1px solid var(--line)">
+    <div class="lbl">Расходы, по которым счёта ещё нет</div>
+    <table class="sm">
+      <thead><tr><th>Расход</th><th>Поставщик</th><th>Привязка</th><th class="num">Сумма</th><th>Статус</th></tr></thead>
+      <tbody>
+        <tr><td>Трансграничная перевозка<div class="xs mut">CMR-71219 · IE-2025-00357</div></td>
+          <td>DAVRON TRANS MCHJ</td><td class="xs"><a class="a2" href="#">SEGU9401430</a> · прямая</td>
+          <td class="num">3 100</td><td><span class="bg a">счёт не заведён</span></td></tr>
+        <tr><td>Страхование груза<div class="xs mut">INS-2025-3311 · IE-2025-00344</div></td>
+          <td>UZBEKINVEST</td><td class="xs">на весь инвойс</td>
+          <td class="num">420</td><td><span class="bg a">счёт не заведён</span></td></tr>
+        <tr class="tf"><td>Без счёта</td><td></td><td></td><td class="num">3 520</td><td></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="cb" style="border-top:1px solid var(--line);display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+    <span class="sm"><b>Сверка:</b> расходы 20 070 − счета на логистику 16 550 = <b style="color:var(--amb)">3 520 без счёта</b></span>
+    <span class="sp"></span>
+    <a class="a2 sm" href="#">+ Добавить расход</a><span class="mut sm">·</span>
+    <a class="a2 sm" href="#">Привязать счёт</a><span class="mut sm">·</span>
+    <a class="a2 sm" href="#">Неразнесённые затраты →</a>
+  </div>
+</div>
+
+<!-- 6 MALİYET: operasyonel vs muhasebe -->
+<div class="card" style="border-color:#c4b5fd">
+  <div class="ch" style="background:var(--pur-l)"><span class="n new">6</span><h3>Себестоимость партии</h3>
+    <span class="bg p">новый блок</span><span class="sp"></span>
+    <b style="font-family:ui-monospace,monospace;color:var(--pur)">4,71 $/кг</b></div>
+  <div class="cb">
+    <div class="split">
+      <div>
+        <div class="lbl">Операционно — что реально стоило</div>
+        <table class="sm">
+          <tbody>
+            <tr><td>Товар (согласованная цена)</td><td class="num">351 400</td><td class="num mut">4,183</td></tr>
+            <tr><td>Морской фрахт · трансграничная</td><td class="num">17 700</td><td class="num mut">0,211</td></tr>
+            <tr><td>Порт, THC, страхование</td><td class="num">2 370</td><td class="num mut">0,028</td></tr>
+            <tr><td>Пошлины и НДС <span class="bg s xs">расчёт, ГТД не выпущена</span></td>
+              <td class="num">24 140</td><td class="num mut">0,287</td></tr>
+            <tr class="tf"><td>Итого</td><td class="num">395 610</td><td class="num">4,710</td></tr>
+          </tbody>
+        </table>
+        <div class="xs mut" style="margin-top:6px">Источник: Container Cost Line (3 конт.) + Import Expense + ГТД.</div>
+      </div>
+      <div>
+        <div class="lbl">В учёте — что попало в оценку запасов</div>
+        <table class="sm">
+          <tbody>
+            <tr><td>Инвойс поставщика (проведён)</td><td class="num">351 400</td><td class="num mut">4,183</td></tr>
+            <tr><td>LCV · разнос затрат</td><td class="num mut">—</td><td class="num mut">0,000</td></tr>
+            <tr class="tf"><td>Итого в учёте</td><td class="num">351 400</td><td class="num">4,183</td></tr>
+          </tbody>
+        </table>
+        <div class="gapbox" style="margin-top:9px">
+          <b style="color:var(--pur)">Разрыв 44 210 $ · 0,527 $/кг</b> ещё не разнесён на запасы.
+          LCV создаётся после приёмки (GRN). Пока цена продажи, поставленная от учётной себестоимости,
+          будет занижена на полдоллара за килограмм.
+          <div style="margin-top:6px"><a class="a2 sm" href="#">Неразнесённые затраты →</a></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 7 BELGELER -->
+<div class="card">
+  <div class="ch"><span class="n">7</span><h3>Документы и приёмка</h3><span class="sp"></span>
+    <span class="bg a">сведено в полосу</span></div>
+  <div class="cb"><div class="grid g5">
+    <div class="tile"><div class="k">Упаковочный</div><div class="v" style="font-size:14px;color:var(--green)">Готов</div>
+      <div class="xs mut">4 200 / 4 200</div></div>
+    <div class="tile"><div class="k">Вет-сертификат</div><div class="v" style="font-size:14px;color:var(--green)">VET-2025-1187</div>
+      <div class="xs mut">до 12.06.2025</div></div>
+    <div class="tile"><div class="k">ГТД</div><div class="v" style="font-size:14px;color:var(--amb)">Не подана</div>
+      <div class="xs mut">1 контейнер ждёт</div></div>
+    <div class="tile"><div class="k">GRN</div><div class="v" style="font-size:14px;color:var(--mut)">Не начата</div>
+      <div class="xs mut">ожидается 26.05</div></div>
+    <div class="tile"><div class="k">LCV</div><div class="v" style="font-size:14px;color:var(--mut)">—</div>
+      <div class="xs mut">после GRN</div></div>
+  </div></div>
+</div>
+
+<!-- 8 FURALAR -->
+<div class="card">
+  <div class="ch"><span class="n">8</span><h3>Фуры / наземный транспорт</h3><span class="sp"></span><span class="bg s">как было</span></div>
+  <div class="cb sm mut">01A234BC · DAVRON TRANS · Ш. Каримов · в пути · 1 400 кор. / 28 000 кг</div>
+</div>
+
+<!-- 9 GOTOVNOST — detay -->
+<div class="card" style="border-color:#f0d79a">
+  <div class="ch" style="background:var(--amb-l)"><span class="n moved">9</span><h3>Логистическая готовность — детали</h3>
+    <span class="bg a">кнопки ушли наверх</span><span class="sp"></span>
+    <span class="sm mut">чек-лист по контейнерам и позициям</span></div>
+  <div class="cb sm mut">Построчная готовность упаковочных листов, расхождения по контейнерам, статусы приёмки.
+    Действия (создать GRN, продвинуть контейнеры, обновить ожидаемые) — в верхней панели.</div>
+</div>
+
+<div class="foot">Макет v3 · данные условные</div>
+</div>
+</body>
+</html>

@@ -9,6 +9,7 @@
   "supplier",
   "company",
   "pi_date",
+  "posting_date",
   "supplier_pi_ref",
   "import_pi_group",
   "commercial_invoice",
@@ -19,6 +20,7 @@
   "port_of_discharge",
   "section_amount",
   "agreed_total",
+  "grand_total",
   "docs_total",
   "cash_difference",
   "prepayment_type",
@@ -55,6 +57,13 @@
    "fieldtype": "Date",
    "in_list_view": 1,
    "label": "PI Date"
+  },
+  {
+   "fieldname": "posting_date",
+   "fieldtype": "Date",
+   "hidden": 1,
+   "label": "Posting Date",
+   "read_only": 1
   },
   {
    "fieldname": "supplier_pi_ref",
@@ -101,6 +110,14 @@
    "in_list_view": 1,
    "label": "Agreed Total",
    "options": "currency"
+  },
+  {
+   "fieldname": "grand_total",
+   "fieldtype": "Currency",
+   "hidden": 1,
+   "label": "Grand Total",
+   "options": "currency",
+   "read_only": 1
   },
   {
    "default": "30",

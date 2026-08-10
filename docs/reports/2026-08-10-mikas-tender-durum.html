@@ -1,0 +1,577 @@
+<title>mikas · İhale modülü uçtan uca durum — 10.08.2026</title>
+<style>
+  :root {
+    --paper:   #EFEFEA;
+    --surface: #F7F7F3;
+    --ink:     #191C17;
+    --muted:   #5D6157;
+    --rule:    #D3D4CB;
+    --seal:    #2A6B58;
+    --dormant: #8A8F82;
+    --rust:    #B4482E;
+    --seal-bg: #E1EDE6;
+    --rust-bg: #F3E3DD;
+    --dorm-bg: #E7E8E1;
+
+    --measure: 72ch;
+    --s1: .35rem; --s2: .6rem; --s3: 1rem; --s4: 1.6rem;
+    --s5: 2.5rem; --s6: 4rem;
+
+    --serif: ui-serif, "Iowan Old Style", "Hoefler Text", Palatino, "Palatino Linotype", Georgia, serif;
+    --sans:  ui-sans-serif, -apple-system, "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+    --mono:  ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, monospace;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --paper:   #14170F;
+      --surface: #1C201A;
+      --ink:     #E8E9E1;
+      --muted:   #9DA294;
+      --rule:    #333830;
+      --seal:    #63AC90;
+      --dormant: #8F9487;
+      --rust:    #DD7A5C;
+      --seal-bg: #1D3129;
+      --rust-bg: #33211B;
+      --dorm-bg: #24281F;
+    }
+  }
+  :root[data-theme="dark"] {
+    --paper:   #14170F;
+    --surface: #1C201A;
+    --ink:     #E8E9E1;
+    --muted:   #9DA294;
+    --rule:    #333830;
+    --seal:    #63AC90;
+    --dormant: #8F9487;
+    --rust:    #DD7A5C;
+    --seal-bg: #1D3129;
+    --rust-bg: #33211B;
+    --dorm-bg: #24281F;
+  }
+  :root[data-theme="light"] {
+    --paper:   #EFEFEA;
+    --surface: #F7F7F3;
+    --ink:     #191C17;
+    --muted:   #5D6157;
+    --rule:    #D3D4CB;
+    --seal:    #2A6B58;
+    --dormant: #8A8F82;
+    --rust:    #B4482E;
+    --seal-bg: #E1EDE6;
+    --rust-bg: #F3E3DD;
+    --dorm-bg: #E7E8E1;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: var(--sans);
+    font-size: 16px;
+    line-height: 1.62;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .wrap {
+    max-width: 62rem;
+    margin: 0 auto;
+    padding: var(--s5) var(--s4) var(--s6);
+    display: flex;
+    flex-direction: column;
+    gap: var(--s5);
+  }
+
+  /* ---------- typography ---------- */
+  h1, h2, h3 { font-family: var(--serif); font-weight: 600; text-wrap: balance; margin: 0; }
+  h1 { font-size: clamp(1.9rem, 4.4vw, 2.9rem); line-height: 1.12; letter-spacing: -.02em; }
+  h2 { font-size: clamp(1.35rem, 2.6vw, 1.75rem); line-height: 1.2; letter-spacing: -.012em; }
+  h3 { font-size: 1.05rem; line-height: 1.3; }
+  p  { margin: 0; max-width: var(--measure); }
+  a  { color: inherit; text-underline-offset: .18em; text-decoration-color: var(--dormant); }
+  a:focus-visible, summary:focus-visible { outline: 2px solid var(--seal); outline-offset: 3px; border-radius: 2px; }
+
+  .eyebrow {
+    font-family: var(--sans);
+    font-size: .72rem;
+    text-transform: uppercase;
+    letter-spacing: .13em;
+    color: var(--muted);
+    font-weight: 600;
+  }
+  .lede { font-size: 1.1rem; color: var(--muted); max-width: 62ch; }
+  .note { font-size: .875rem; color: var(--muted); max-width: var(--measure); }
+  code, .mono { font-family: var(--mono); font-size: .84em; font-variant-numeric: tabular-nums; }
+  code { background: var(--surface); border: 1px solid var(--rule); border-radius: 3px; padding: .05em .3em; }
+
+  /* ---------- masthead ---------- */
+  .masthead { display: flex; flex-direction: column; gap: var(--s3); border-bottom: 2px solid var(--ink); padding-bottom: var(--s4); }
+  .masthead .meta { display: flex; flex-wrap: wrap; gap: var(--s1) var(--s3); font-size: .78rem; color: var(--muted); font-family: var(--mono); }
+
+  /* ---------- verdict tiles ---------- */
+  .verdict { display: grid; grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr)); gap: var(--s3); }
+  .tile { background: var(--surface); border: 1px solid var(--rule); padding: var(--s3); display: flex; flex-direction: column; gap: var(--s1); }
+  .tile .k { font-size: .7rem; text-transform: uppercase; letter-spacing: .12em; color: var(--muted); font-weight: 600; }
+  .tile .v { font-family: var(--serif); font-size: 1.9rem; line-height: 1; font-variant-numeric: tabular-nums; }
+  .tile .d { font-size: .82rem; color: var(--muted); }
+  .tile.ok    { border-left: 4px solid var(--seal); }
+  .tile.idle  { border-left: 4px solid var(--dormant); }
+  .tile.open  { border-left: 4px solid var(--rust); }
+
+  /* ---------- sections ---------- */
+  .section { display: flex; flex-direction: column; gap: var(--s4); border-top: 1px solid var(--rule); padding-top: var(--s4); }
+  .section > .head { display: flex; flex-direction: column; gap: var(--s2); }
+  .section .q { font-family: var(--mono); font-size: .74rem; letter-spacing: .06em; color: var(--seal); text-transform: uppercase; font-weight: 600; }
+  .block { display: flex; flex-direction: column; gap: var(--s3); }
+
+  /* ---------- tables ---------- */
+  .scroll { overflow-x: auto; border: 1px solid var(--rule); background: var(--surface); }
+  table { border-collapse: collapse; width: 100%; font-size: .88rem; min-width: 34rem; }
+  caption { text-align: left; font-size: .78rem; color: var(--muted); padding: var(--s2) var(--s3); border-bottom: 1px solid var(--rule); }
+  th, td { text-align: left; padding: .52rem var(--s3); border-bottom: 1px solid var(--rule); vertical-align: top; }
+  thead th { font-size: .7rem; text-transform: uppercase; letter-spacing: .1em; color: var(--muted); font-weight: 600; white-space: nowrap; }
+  tbody tr:last-child td { border-bottom: 0; }
+  td.num { font-family: var(--mono); font-variant-numeric: tabular-nums; text-align: right; white-space: nowrap; }
+  td.path { font-family: var(--mono); font-size: .78rem; word-break: break-word; }
+
+  /* ---------- pills ---------- */
+  .pill { display: inline-block; font-size: .7rem; font-weight: 600; letter-spacing: .05em; text-transform: uppercase; padding: .12rem .45rem; border-radius: 2px; white-space: nowrap; }
+  .pill.ok   { background: var(--seal-bg);  color: var(--seal); }
+  .pill.idle { background: var(--dorm-bg);  color: var(--muted); }
+  .pill.open { background: var(--rust-bg);  color: var(--rust); }
+
+  /* ---------- the cassette (signature element) ---------- */
+  .cassette { display: grid; grid-template-columns: repeat(auto-fit, minmax(9.5rem, 1fr)); gap: var(--s2); }
+  .slot {
+    border: 1px solid var(--rule);
+    background:
+      repeating-linear-gradient(135deg, transparent 0 7px, color-mix(in srgb, var(--dormant) 13%, transparent) 7px 8px);
+    padding: var(--s2) var(--s3) var(--s3);
+    display: flex; flex-direction: column; gap: var(--s1);
+    min-height: 6.5rem;
+  }
+  .slot .key { font-family: var(--mono); font-size: .7rem; color: var(--muted); }
+  .slot .label { font-family: var(--serif); font-size: 1rem; line-height: 1.25; }
+  .slot .foot { margin-top: auto; display: flex; align-items: center; justify-content: space-between; gap: var(--s1); font-size: .7rem; color: var(--muted); text-transform: uppercase; letter-spacing: .07em; }
+  .slot.req { border-color: var(--dormant); }
+  .slot .count { font-family: var(--mono); font-size: .72rem; color: var(--rust); font-weight: 600; }
+
+  /* ---------- callout ---------- */
+  .callout { border: 1px solid var(--rule); border-left: 4px solid var(--rust); background: var(--surface); padding: var(--s3); display: flex; flex-direction: column; gap: var(--s2); }
+  .callout.fix { border-left-color: var(--seal); }
+  .callout h3 { font-family: var(--sans); font-size: .78rem; text-transform: uppercase; letter-spacing: .1em; color: var(--muted); font-weight: 600; }
+
+  /* ---------- lists ---------- */
+  ul.plain { margin: 0; padding-left: 1.15rem; display: flex; flex-direction: column; gap: var(--s2); max-width: var(--measure); }
+  ul.plain li::marker { color: var(--dormant); }
+
+  footer { border-top: 2px solid var(--ink); padding-top: var(--s3); display: flex; flex-direction: column; gap: var(--s2); }
+
+  @media (max-width: 40rem) {
+    .wrap { padding: var(--s4) var(--s3) var(--s5); }
+  }
+</style>
+
+<div class="wrap">
+
+  <header class="masthead">
+    <span class="eyebrow">mikas · ihale modülü · uçtan uca durum</span>
+    <h1>Kod bitti, prod'a indi — saha henüz başlamadı</h1>
+    <p class="lede">
+      24 ekran, 8 API modülü ve 37 test dosyası canlıda; belge merkezi dahil her şey
+      prod ile bit bit aynı. Buna karşılık mikas'ta 2 ihale, 3 lot, 0 satış siparişi ve
+      belge slotlarından geçmiş 0 dosya var. Bu rapor bu iki cümlenin arasındaki mesafeyi ölçüyor.
+    </p>
+    <div class="meta">
+      <span>Ölçüm: 10.08.2026</span>
+      <span>Kaynak: yerel depo + <span class="mono">mikas.erpstable.com</span> canlı sorgu</span>
+      <span>Ekran: <span class="mono">/#/tender/portfolio</span></span>
+    </div>
+  </header>
+
+  <section class="verdict" aria-label="Özet göstergeler">
+    <div class="tile ok">
+      <span class="k">Yazılan</span>
+      <span class="v">123</span>
+      <span class="d">tender commit'i · 24 Vue ekranı · 14 route · 37 test dosyası</span>
+    </div>
+    <div class="tile ok">
+      <span class="k">Prod eşitliği</span>
+      <span class="v">6/6</span>
+      <span class="d">kritik dosyanın md5'i prod ↔ git aynı. Belge merkezi dahil canlıda.</span>
+    </div>
+    <div class="tile idle">
+      <span class="k">Gerçek kullanım</span>
+      <span class="v">2</span>
+      <span class="d">ihale (ikisi de 03.08 UAT tohumu) · 3 lot · 12 tedarikçi teklifi · 0 RFQ · 0 SO</span>
+    </div>
+    <div class="tile open">
+      <span class="k">Belge slotundan geçen dosya</span>
+      <span class="v">0</span>
+      <span class="d">14 slotun tamamı boş. Sitedeki 3 dosya doğrudan deal'e iliştirilmiş.</span>
+    </div>
+  </section>
+
+  <!-- ============ 1 ============ -->
+  <section class="section">
+    <div class="head">
+      <span class="q">Soru 1 — Uçtan uca ne planladık?</span>
+      <h2>Dokuz plan belgesi, iki yapısal dönüş, bir bilinçli erteleme</h2>
+      <p>
+        Planlama 12 Haziran'da tek bir omurga fikriyle başladı: <strong>kazanmadan önce CRM Deal
+        kanban'ı, kazandıktan sonra Satış Siparişi karşılama panosu</strong> — ve her aşama gerçek bir
+        ERPNext belgesine çakılı (Tedarik→PO, Sevkiyat→DN, Faturalandı→SI, Ödendi→Payment Entry).
+        Yol boyunca iki kez yapı değişti: 30 Temmuz'da düz liste yerine <em>Tender Master → lot →
+        lot çalışma alanı</em> hiyerarşisine geçildi, 2 Ağustos'ta belge merkezi işaret kutucuğu
+        olmaktan çıkıp gerçek dosya deposuna dönüştü.
+      </p>
+    </div>
+
+    <div class="block">
+      <div class="scroll">
+        <table>
+          <caption>Plan belgeleri, tarih sırasıyla — her satır depoda duran bir dosya</caption>
+          <thead>
+            <tr><th>Tarih</th><th>Belge</th><th>Ne söylüyor</th><th>Durum</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="num">12.06</td>
+              <td class="path">docs/plans/2026-06-12-tender-orders-board.md</td>
+              <td>Kurucu şartname. İki panolu omurga, B1–B5 yapım sırası. Dosya paylaşımının depodaki ilk izi burada: teslim edilen irsaliyeye kabul aktı eklenmeden kart “Faturalandı”ya geçemez.</td>
+              <td><span class="pill ok">B1–B2 yapıldı</span> <span class="pill open">B3–B5 yok</span></td>
+            </tr>
+            <tr>
+              <td class="num">08.07</td>
+              <td class="path">docs/plans/2026-07-08-uzex-tender-integration.md</td>
+              <td>G1 boşluğu: UZEX portalıyla sıfır entegrasyon. WP-300…WP-309 iş paketleri.</td>
+              <td><span class="pill open">açık</span></td>
+            </tr>
+            <tr>
+              <td class="num">17.07</td>
+              <td class="path">docs/plans/2026-07-17-kassa-tender-PROD-deploy-runbook.md</td>
+              <td>rsync deploy + 7 sitede migrate (yama v52); modül yalnız mikas'ta yanıyor.</td>
+              <td><span class="pill ok">uygulandı</span></td>
+            </tr>
+            <tr>
+              <td class="num">19.07</td>
+              <td class="path">docs/plans/2026-07-19-kassabot-shadow-mode.md</td>
+              <td>Bot muhasebe kaydına asla yazmaz; <code>Kassa Shadow Entry</code>'ye yazar, insan mutabakat yapar.</td>
+              <td><span class="pill open">tasarlandı, yazılmadı</span></td>
+            </tr>
+            <tr>
+              <td class="num">23.07</td>
+              <td class="path">docs/superpowers/…/2026-07-23-mikas-tender-control-tower-design.md</td>
+              <td>Kontrol kulesi tasarımı (onaylı) + 728 satırlık uygulama planı.</td>
+              <td><span class="pill ok">kod bitti</span> <span class="pill idle">42 kutu boş</span></td>
+            </tr>
+            <tr>
+              <td class="num">28.07</td>
+              <td class="path">docs/superpowers/plans/2026-07-28-executive-tender-dashboard.md</td>
+              <td>Yönetici KPI paneli; <code>TenderExecutiveKpis.vue</code>'yi doğuran plan.</td>
+              <td><span class="pill idle">bileşen öksüz</span></td>
+            </tr>
+            <tr>
+              <td class="num">29.07</td>
+              <td class="path">docs/plans/2026-07-29-crm-tender-to-cash.md</td>
+              <td>Teklften tahsilata 7 görev; 5–7 tamamlanmadan sonraki tasarımla aşıldı.</td>
+              <td><span class="pill ok">aşıldı</span></td>
+            </tr>
+            <tr>
+              <td class="num">30.07</td>
+              <td class="path">docs/superpowers/…/2026-07-30-hierarchical-tender-crm-design.md</td>
+              <td><strong>Yapısal dönüş:</strong> ihale = Tender Master, her lot = CRM Deal. §5'te belge zinciri — Belge Merkezi'nin tasarım kökeni.</td>
+              <td><span class="pill ok">uygulandı</span></td>
+            </tr>
+            <tr>
+              <td class="num">30.07</td>
+              <td class="path">docs/superpowers/plans/2026-07-30-tender-sourcing-rfq-award.md</td>
+              <td><strong>Kritik erteleme:</strong> kapsam dışı bırakılanlar — RFQ e-posta/portal gönderimi, tedarikçi self-servis portalı, <em>Evrak Merkezi (DMS)</em>.</td>
+              <td><span class="pill ok">Faz 2 bitti</span></td>
+            </tr>
+            <tr>
+              <td class="num">02.08</td>
+              <td class="path">docs/uat/tender/ (6 rol dosyası)</td>
+              <td>177 senaryoluk kabul testi: UI/UX, ihale uzmanı, sourcing, direktör, lojistik, deklarant.</td>
+              <td><span class="pill open">bulgular kapatılmadı</span></td>
+            </tr>
+            <tr>
+              <td class="num">—</td>
+              <td class="path">.zcode/plans/…-tender-document-vault.md</td>
+              <td>Dosya kasası v1: VueFinder değerlendirildi ve reddedildi, hafif slot bileşeni tercih edildi.</td>
+              <td><span class="pill ok">daha fazlası yapıldı</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="callout fix">
+        <h3>Planların ilerleme kaydı olarak okunmaması gerekiyor</h3>
+        <p class="note">
+          Superpowers planlarındaki 42 onay kutusunun hepsi boş, ama karşılık gelen kodun tamamı yazılmış
+          ve prod'da. Devir belgesi <code>docs/prompts/PROMPT_resume_tender_master.md</code> bunu açıkça
+          yazıyor: “plandaki checkbox'lar güvenilmez, <strong>kod gerçeği söylüyor</strong>.” Bu raporda
+          ilerleme kutucuklardan değil, dosyalardan ve canlı sorgulardan okundu.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 2 ============ -->
+  <section class="section">
+    <div class="head">
+      <span class="q">Soru 2 — Neler yapıldı?</span>
+      <h2>14 route, 8 API modülü, 3 doctype — ve hepsi prod'da</h2>
+      <p>
+        Modül üç kapıdan geçiyor: şirket bayrağı <code>enable_tender</code>, rol→modül haritası
+        (<code>stabler/api/organization.py</code>) ve her ekranın kendi sunucu tarafı rol penceresi
+        (<code>_require_tender_view("director" | "sourcing" | "customs" | "logistics" | "finance")</code>).
+        Bayrak yalnız mikas'ta açık — smartbox'ınki 07.08'deki kiracı temizliğinde kapatıldı.
+      </p>
+    </div>
+
+    <div class="block">
+      <div class="scroll">
+        <table>
+          <caption>Ekran haritası — <code>stabler/public/js/router.js</code>, 14 route'un hepsinde <code>meta.module = "tender"</code></caption>
+          <thead><tr><th>Yol</th><th>Ekran</th><th>Ne yapar</th></tr></thead>
+          <tbody>
+            <tr><td class="path">/tender/portfolio</td><td class="path">DirectorBoard.vue</td><td>Direktör panosu — 6 KPI (adet, kazanma oranı, riskli, toplam değer, ortalama marj, ostatok), her biri kendi hesap kuralını basıyor. <strong>Kullanıcının açtığı ekran.</strong></td></tr>
+            <tr><td class="path">/tender/desk</td><td class="path">OperationsDesk.vue</td><td>Role göre günlük iş planı</td></tr>
+            <tr><td class="path">/tender/crm</td><td class="path">TenderCrmWrapper.vue</td><td>Lot kanban'ı (CRM Deal)</td></tr>
+            <tr><td class="path">/tender/sourcing</td><td class="path">SourcingWorkspace.vue</td><td>Teklif toplama, karşılaştırma, seçim kararı</td></tr>
+            <tr><td class="path">/tender/po-control</td><td class="path">PoControlBoard.vue</td><td>Satınalma siparişi + landed cost kontrolü</td></tr>
+            <tr><td class="path">/tender/documents</td><td class="path">TenderDocuments.vue</td><td>Belge merkezi</td></tr>
+            <tr><td class="path">/tender/customs</td><td class="path">DeclarantQueue.vue</td><td>Gümrük kuyruğu (ГТД)</td></tr>
+            <tr><td class="path">/tender/logistics</td><td class="path">LogistBoard.vue</td><td>Lojistik panosu (CMR, sevkiyat)</td></tr>
+            <tr><td class="path">/tender/flow</td><td class="path">TenderFlow.vue</td><td>Süreç akış şeması</td></tr>
+            <tr><td class="path">/tender/overview · /board · /my-tenders</td><td class="path">3 ekran</td><td>Genel bakış, sözleşme panosu, bana atananlar</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="scroll">
+        <table>
+          <caption>Prod ↔ git md5 karşılaştırması — 6/6 eşit, 10.08.2026</caption>
+          <thead><tr><th>Dosya</th><th>Boyut / rol</th><th>Durum</th></tr></thead>
+          <tbody>
+            <tr><td class="path">stabler/api/tender.py</td><td>120 KB — panolar, çalışma alanı, teklif fiyatlama, landed cost, rol pencereleri</td><td><span class="pill ok">eşit</span></td></tr>
+            <tr><td class="path">stabler/api/tender_documents.py</td><td>11,9 KB — belge merkezinin 5 endpoint'i</td><td><span class="pill ok">eşit</span></td></tr>
+            <tr><td class="path">stabler/api/tender_master.py</td><td>17,7 KB — şirket-güvenli Tender Master CRUD</td><td><span class="pill ok">eşit</span></td></tr>
+            <tr><td class="path">stabler/api/tender_desk.py</td><td>13,0 KB — operasyon masası</td><td><span class="pill ok">eşit</span></td></tr>
+            <tr><td class="path">…/pages/tender/TenderDocumentsPanel.vue</td><td>belge listesi paneli</td><td><span class="pill ok">eşit</span></td></tr>
+            <tr><td class="path">…/components/files/FileSlot.vue</td><td>uygulamadaki tek yükleme kontrolü</td><td><span class="pill ok">eşit</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <p class="note">
+        Veri modeli kasıtlı olarak doctype-fakiri: yalnız 3 doctype var — <strong>Tender Master</strong>
+        (<code>TND-.YYYY.-.#####</code>), <strong>Tender Sourcing Decision</strong> (ihale kararı kaydı) ve
+        <strong>Stabler Tender Stage SLA</strong> (tek alt tablo). Lot, teklif fiyatlaması, intake ve belge
+        gereklilikleri mevcut doctype'lara <em>JSON katmanı</em> olarak biniyor
+        (<code>custom_bid_pricing</code>, <code>custom_tender_intake</code>, <code>custom_parent_tender</code>,
+        <code>custom_tender_documents</code>). Bunun bedeli: hiçbir yerleşik ERPNext raporu lot verisini
+        göremez — her okuma <code>stabler.api.*</code> üzerinden geçer.
+      </p>
+    </div>
+  </section>
+
+  <!-- ============ 3 ============ -->
+  <section class="section">
+    <div class="head">
+      <span class="q">Soru 3 — Hangi aşamadayız?</span>
+      <h2>Yapım bitti; devreye alma başlamadı</h2>
+      <p>
+        Aşağıdaki sayılar 10.08.2026'da mikas veritabanından doğrudan okundu. Tender Master'ların ikisi de
+        03.08.2026'da, aynı UAT oturumunda oluşturulmuş; sonrasında kayıt açılmamış. Zincirin ilk halkasından
+        (teklif toplama) sonrası hiç çalışmamış: <strong>0 RFQ, 0 satış siparişi</strong>.
+      </p>
+    </div>
+
+    <div class="block">
+      <div class="scroll">
+        <table>
+          <caption>mikas canlı veri — 10.08.2026</caption>
+          <thead><tr><th>Kayıt</th><th class="num">Adet</th><th>Ayrıntı</th></tr></thead>
+          <tbody>
+            <tr><td>Tender Master</td><td class="num">2</td><td><code>TND-2026-00036</code> “UAT Railway Bearing Supply” (New), <code>TND-2026-00037</code> “UTY Demiryolu Rulman Tedariği 2026” (Sourcing) — ikisi de taslak, 03.08.2026</td></tr>
+            <tr><td>CRM Deal (lot)</td><td class="num">3</td><td>00097 → TND-36; 00098 ve 00099 → TND-37. Üçü de <code>Qualification</code>, üçü de bir ihaleye bağlı</td></tr>
+            <tr><td>Supplier Quotation</td><td class="num">12</td><td>tek gerçekten kullanılmış halka</td></tr>
+            <tr><td>Tender Sourcing Decision</td><td class="num">1</td><td>tek karar kaydı</td></tr>
+            <tr><td>Request for Quotation</td><td class="num">0</td><td>RFQ akışı hiç çalışmadı</td></tr>
+            <tr><td>Sales Order</td><td class="num">0</td><td>kazanç sonrası pano hiç beslenmedi</td></tr>
+            <tr><td>Stage SLA satırı</td><td class="num">0</td><td>süre ölçümü devrede değil</td></tr>
+            <tr><td>Belge slotundan geçen dosya</td><td class="num">0</td><td>2 ihale × 7 slot = 14 slot, hepsi boş</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <p>
+        İş takibi tarafında da tablo aynı yönü gösteriyor: 116 kayıttan <strong>58'i açık, 0'ı devam eden</strong>.
+        Açık ihale işlerinin tamamı <code>stabler-ajg</code> epic'i altına park edilmiş durumda — yani
+        “bu tur yapılmayacak, görünürlük için duruyor”. En kritikleri:
+      </p>
+
+      <ul class="plain">
+        <li><strong>ajg.8</strong> — UZEX WP-309 devreye alma <span class="pill open">P2</span>; portal entegrasyonu hâlâ sıfır.</li>
+        <li><strong>ajg.40</strong> — 3 öksüz panel bileşeni (<code>TenderTrendChart</code>, <code>TenderExecutionFlow</code>, <code>TenderExecutiveKpis</code>) hiçbir route'tan erişilemiyor ama testler varlıklarını doğruluyor. <em>Bağla ya da sil — sahip kararı bekliyor.</em></li>
+        <li><strong>ajg.17</strong> — Haziran şartnamesinin B2–B5 kalemleri (takvim, milestone + landed hook, kabul aktı çıktısı).</li>
+        <li><strong>ajg.7</strong> — teklif paketi; <strong>ajg.39</strong> — belge merkezi terimlerinin 5 dilde tutarlılığı.</li>
+      </ul>
+
+      <div class="callout">
+        <h3>Devreye almadan önce kapatılması gereken UAT bulguları</h3>
+        <ul class="plain">
+          <li><code>tender_flow</code> ve <code>crm_board</code> endpoint'lerinde rol geçidi yok — modül açık olan her kullanıcı çağırabiliyor.</li>
+          <li>Operasyon masası, hiçbir yerin yazmadığı kolonları okuyor; demo verisi 4 panodan yalnız 2'sini besliyor.</li>
+          <li><code>python-docx</code> kurulu değilse <code>bid_package</code> sessizce dosyasız dönüyor — uyarı yok.</li>
+          <li>Tohum verisi lojistik kaydı üretmediği için <code>/tender/customs</code> her zaman boş ve iki ekran iki farklı kazanma oranı gösteriyor.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 4 ============ -->
+  <section class="section">
+    <div class="head">
+      <span class="q">Soru 4 — Dosya paylaşımı için planımız var mı?</span>
+      <h2>Plan vardı, plandan fazlası yapıldı — ama içinden hiç dosya geçmedi</h2>
+      <p>
+        Kısa cevap: <strong>evet, hem plan var hem de inşa edildi ve prod'da.</strong> İhtiyacın kendisi
+        devir belgesinde şöyle tarif edilmişti: “teslim aktı, sertifika, ГТД — hepsi WhatsApp'ta ve
+        masaüstünde duruyor, ERP'de yalnız işaretleri var; denetim, devir ve arama imkânsız.” Bir başka
+        deyişle <em>“ГТД ✓” demek biri kutuyu işaretledi demekti, dosya burada demek değil.</em>
+      </p>
+    </div>
+
+    <div class="block">
+      <h3>Tasarım kararları — neden bu şekilde</h3>
+      <div class="scroll">
+        <table>
+          <caption><code>docs/prompts/PROMPT_belge_merkezi.md</code> · K1–K6</caption>
+          <thead><tr><th>Karar</th><th>İçerik</th></tr></thead>
+          <tbody>
+            <tr><td><strong>K1</strong></td><td>Yeni doctype yok. Standart Frappe <code>File</code> + <code>attached_to_doctype</code>/<code>attached_to_name</code>, <code>is_private = 1</code>.</td></tr>
+            <tr><td><strong>K2</strong></td><td><code>done</code> artık el ile işaretlenen bir kutu değil, <em>türetilmiş</em>: en az bir dosya <strong>veya</strong> yazılı bir muafiyet.</td></tr>
+            <tr><td><strong>K3</strong></td><td>Eski el ile işaretlenmiş kayıtlar sıfırlanmıyor, <code>unverified</code> rozetiyle işaretleniyor.</td></tr>
+            <tr><td><strong>K4</strong></td><td>İki seviyeli kapsam: ihale seviyesindeki dosya bir kez saklanır, tüm lotlardan görünür. Yama <code>v76_tender_master_documents.py</code>.</td></tr>
+            <tr><td><strong>K5</strong></td><td>SPA'da ham <code>/files/…</code> bağlantısı yok — her indirme şirket kapsamı denetleyen kapıdan geçer.</td></tr>
+            <tr><td><strong>K6</strong></td><td>Dosya silinmez, yerine yenisi konur.</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <p class="note">
+        Hazır çözüm de değerlendirildi: <strong>VueFinder</strong> (MIT, aktif) — ama dosya-sistemi ağacı
+        modeliyle tasarlandığı, ihtiyaç ise <em>yapısal uyumluluk kaseti</em> (her slot kendi
+        <code>required</code> bayrağıyla) olduğu için v1'de reddedildi; v2 tırmanma yolu olarak belgede duruyor.
+      </p>
+
+      <h3>Yapılan — 5 endpoint</h3>
+      <div class="scroll">
+        <table>
+          <caption><code>stabler/api/tender_documents.py</code></caption>
+          <thead><tr><th>Satır</th><th>Endpoint</th><th>İş</th></tr></thead>
+          <tbody>
+            <tr><td class="num">51</td><td class="path">list_tender_documents</td><td>ihale + lot gerekliliklerini birleştirip döndürür</td></tr>
+            <tr><td class="num">149</td><td class="path">upload_tender_document</td><td>dosyayı slota bağlar; yüklenmiş <code>File</code> yoksa hata verir</td></tr>
+            <tr><td class="num">200</td><td class="path">waive_tender_document</td><td>gerekçeli muafiyet (kim, ne zaman, neden)</td></tr>
+            <tr><td class="num">232</td><td class="path">remove_tender_document</td><td>bağı kaldırır</td></tr>
+            <tr><td class="num">280</td><td class="path">download_tender_document</td><td>tek indirme kapısı; yerel dosya yolu doğrulanır</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>Kaset — mikas'taki gerçek durum</h3>
+      <p class="note">
+        Her iki Tender Master da 7 slotluk gereklilik kasetini taşıyor (5'i zorunlu, hepsi
+        <code>scope = lot</code>, her biri bir role yönlendirilmiş). Aşağıdaki tarama deseni boşluğu
+        gösteriyor: <strong>14 slotun 14'ünde de <code>file_count = 0</code></strong>.
+      </p>
+
+      <div class="cassette">
+        <div class="slot req"><span class="key">gtd</span><span class="label">ГТД</span><span class="foot"><span>zorunlu · gümrük</span><span class="count">0</span></span></div>
+        <div class="slot"><span class="key">origin_cert</span><span class="label">Menşe şahadetnamesi</span><span class="foot"><span>opsiyonel · gümrük</span><span class="count">0</span></span></div>
+        <div class="slot req"><span class="key">cmr</span><span class="label">CMR</span><span class="foot"><span>zorunlu · lojistik</span><span class="count">0</span></span></div>
+        <div class="slot"><span class="key">packing_list</span><span class="label">Çeki listesi</span><span class="foot"><span>opsiyonel · lojistik</span><span class="count">0</span></span></div>
+        <div class="slot req"><span class="key">invoice</span><span class="label">Fatura</span><span class="foot"><span>zorunlu · finans</span><span class="count">0</span></span></div>
+        <div class="slot req"><span class="key">tech_spec</span><span class="label">Teknik şartname</span><span class="foot"><span>zorunlu · genel</span><span class="count">0</span></span></div>
+        <div class="slot req"><span class="key">price_offer</span><span class="label">Fiyat teklifi</span><span class="foot"><span>zorunlu · genel</span><span class="count">0</span></span></div>
+      </div>
+
+      <p class="note">
+        Sitedeki tek 3 dosya — <code>Teknik_Sartname_UTY_2026.txt</code>,
+        <code>Idari_Sartname_UTY_2026.txt</code>, <code>Birim_Fiyat_Cetveli_UTY_2026.csv</code> —
+        03.08.2026'da UAT tohumu tarafından doğrudan <code>CRM-DEAL-2026-00098</code>'e iliştirilmiş,
+        yani bir belge slotundan geçmemiş. Mekanizma çalışıyor; kimse henüz kullanmadı.
+      </p>
+
+      <div class="callout">
+        <h3>Sınırı net çizelim: bu “belge toplama”, henüz “dosya paylaşımı” değil</h3>
+        <p class="note">
+          <strong>Var:</strong> slot bazlı toplama, çok dosyalı slot, muafiyet akışı, rol yönlendirmesi,
+          denetim alanları (kim/ne zaman), şirket kapsamlı indirme kapısı, ihale↔lot iki seviyeli görünürlük.
+          <strong>Yok:</strong> paylaşım bağlantısı, müşteri/tedarikçi için dış taraf portalı, dosya bazlı
+          yetkilendirme (özel dosya + şirket kapsamı dışında), sürüm geçmişi, toplu indirme/zip, klasör yapısı.
+          Ayrıca mobil/deklarant kamera yakalama v1.5'e, sürümleme v2'ye, saklama politikası kapsam dışına
+          bırakılmıştı — üçü de hâlâ açık.
+        </p>
+      </div>
+
+      <div class="callout fix">
+        <h3>Bu raporda düzeltilen iki yanlış kayıt</h3>
+        <ul class="plain">
+          <li>
+            Bu oturumun ilk ölçümü “ihalede hiç dosya eki yok” diyordu. O sorgu
+            <code>attached_to_doctype LIKE '%Tender%'</code> filtresini kullanıyordu; dosyalar tasarım gereği
+            <strong>CRM Deal</strong>'e bağlanıyor. Doğrusu: 3 dosya var, ama hiçbiri slottan geçmemiş.
+          </li>
+          <li>
+            <code>.zcode/plans/…-document-vault.md</code> belgesindeki “Adım 0 — kritik” uyarısı
+            (<code>_tender_documents.py</code> yalnız <code>.pyc</code> olarak var, önce kurtarılmalı)
+            <strong>bayat</strong>. Kasa 02–06.08 arasında yazıldı
+            (<code>042bf01 → a0944ec → b2311b8 → ce9f721 → 3338ef3</code>); her iki dosya da kaynak olarak
+            depoda ve md5 eşleşmesiyle prod'da.
+          </li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ açık kalemler ============ -->
+  <section class="section">
+    <div class="head">
+      <span class="q">Sırada ne var</span>
+      <h2>Bir sonraki tur için açık kalemler</h2>
+    </div>
+    <div class="scroll">
+      <table>
+        <thead><tr><th>Kalem</th><th>Kaynak</th><th>Neden bekliyor</th></tr></thead>
+        <tbody>
+          <tr><td>Finans rol kuyruğu <span class="pill open">bilinçli</span></td><td class="path">PROMPT_rol_kuyruklari.md</td><td>“belge bekliyor → kaydedildi → vadesi geldi → tahsil edildi → marj sapması”. Ek yetki geçidi gerektirdiği için kapsam dışı bırakıldı — belgelerdeki tek açık “sonraki iş”.</td></tr>
+          <tr><td>RFQ e-posta / portal gönderimi</td><td class="path">2026-07-30-tender-sourcing-rfq-award.md</td><td>Faz 3+'a ertelendi; canlıda 0 RFQ olmasının sebebi de bu.</td></tr>
+          <tr><td>Tedarikçi self-servis portalı</td><td class="path">aynı plan</td><td>ertelendi</td></tr>
+          <tr><td>Teklif paketinin UZEX'e gönderimi</td><td class="path">2026-07-08-uzex-tender-integration.md · ajg.8</td><td>E-İMZO yalnız fizibilite düzeyinde; resmî API başvurusu (ajg.9) açık.</td></tr>
+          <tr><td>B3 takvim · B4 milestone + landed hook · B5 kabul aktı çıktısı</td><td class="path">2026-06-12-tender-orders-board.md · ajg.17</td><td>Haziran şartnamesinden hiç yapılmadı. B5 tam da “teslim aktı” akışı — belge merkezinin doğal devamı.</td></tr>
+          <tr><td>3 öksüz panel bileşeni</td><td class="path">ajg.40</td><td>Sahip kararı: route'a bağla ya da testleriyle birlikte sil.</td></tr>
+          <tr><td>UAT bulgularının kapatılması</td><td class="path">docs/uat/tender/00-OZET.md</td><td>Rol geçidi eksikleri devreye almadan önce kapatılmalı.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <footer>
+    <p class="note">
+      <strong>Sayıların kaynağı.</strong> Kod hacmi ve dosya yolları yerel depodan
+      (<code>apps/stabler</code>, <code>main</code>); prod eşitliği 6 dosyanın md5 karşılaştırmasından;
+      kayıt sayıları, modül bayrağı ve belge slotlarının içeriği mikas veritabanına doğrudan SQL
+      sorgusuyla; iş takibi sayıları <code>bd</code> kayıtlarından. Ölçülmemiş hiçbir değer yazılmadı.
+    </p>
+    <p class="note">Rapor dosyası: <code>docs/reports/2026-08-10-mikas-tender-durum.html</code> · 10.08.2026</p>
+  </footer>
+
+</div>
