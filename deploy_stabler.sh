@@ -37,6 +37,43 @@ SITE="anjan.erpstable.com"
 say() { printf "\n\033[1;36m==> %s\033[0m\n" "$*"; }
 confirm() { read -r -p "$1 [y/N] " a; [[ "$a" == "y" || "$a" == "Y" ]]; }
 
+# 0) Branch gate — BEFORE anything touches prod, including the step below's ssh
+#    and step 2's backup tarball. Step 3 ships `git archive HEAD`, and HEAD is
+#    whatever is checked out: run this from a feature branch and half-finished
+#    work lands on ALL 7 tenants at once. rsync has no --delete, so a file that
+#    reaches prod that way stays there forever. Until 2026-08-10 nothing in this
+#    script mentioned a branch at all.
+#
+#    Two separate failures, so two separate checks: the wrong branch, and the
+#    right branch that nobody pushed (prod would then run commits that exist on
+#    no remote -- unreviewable and unrecoverable if this laptop dies).
+#
+#    ALLOW_BRANCH_DEPLOY=1 is a deliberate escape hatch for a hotfix branch. It
+#    prints the branch name rather than going quiet: shipping off-main should be
+#    a thing you read out loud, not a thing you get away with.
+say "0/7  Branch gate"
+BRANCH="$(git -C "$APP_DIR" rev-parse --abbrev-ref HEAD)"
+if [ "$BRANCH" != "main" ]; then
+  if [ "${ALLOW_BRANCH_DEPLOY:-0}" = "1" ]; then
+    echo "    WARNING: deploying from branch '$BRANCH', NOT main (ALLOW_BRANCH_DEPLOY=1)."
+    echo "             Every stabler tenant gets this code. There is no --delete to undo it."
+  else
+    echo "    ABORT: on branch '$BRANCH', not main. Merge to main first,"
+    echo "           or set ALLOW_BRANCH_DEPLOY=1 to ship this branch deliberately."
+    exit 1
+  fi
+else
+  git -C "$APP_DIR" fetch origin main --quiet
+  AHEAD="$(git -C "$APP_DIR" rev-list --count origin/main..main)"
+  BEHIND="$(git -C "$APP_DIR" rev-list --count main..origin/main)"
+  if [ "$AHEAD" != "0" ] || [ "$BEHIND" != "0" ]; then
+    echo "    ABORT: main is $AHEAD ahead / $BEHIND behind origin/main."
+    echo "           Push or pull first -- prod must never run commits no remote has."
+    exit 1
+  fi
+  echo "    OK: on main, in sync with origin/main"
+fi
+
 # 0) Confirm prod target actually has stabler (never assume the site).
 say "0/7  Confirming $SITE has stabler installed"
 ssh "$PROD" "cd /home/frappe/frappe-bench && sudo -u frappe bench --site $SITE list-apps | grep -qw stabler" \
