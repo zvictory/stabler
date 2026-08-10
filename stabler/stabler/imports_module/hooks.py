@@ -25,6 +25,72 @@ from stabler.stabler.imports_module import customs_fee_math, lcv_math, packing_s
 from stabler.stabler.imports_module import payment_math as pm
 
 
+def patch_payment_entry_references():
+	"""Ensure PaymentEntry accepts Proforma Invoice as a valid reference doctype for Supplier.
+
+	ERPNext/HRMS EmployeePaymentEntry strictly validates get_valid_reference_doctypes
+	and requires ref_doc.docstatus == 1 / latest_data outstanding checks. Proforma
+	Invoice is a non-submittable custom Stabler doctype. This patch allows
+	Proforma Invoice references to pass Payment Entry validation smoothly.
+	"""
+	try:
+		from erpnext.accounts.doctype.payment_entry.payment_entry import PaymentEntry
+
+		classes = [PaymentEntry]
+		try:
+			from hrms.overrides.employee_payment_entry import EmployeePaymentEntry
+
+			classes.append(EmployeePaymentEntry)
+		except ImportError:
+			pass
+
+		for cls in classes:
+			if getattr(cls, "_stabler_pi_patched", False):
+				continue
+			cls._stabler_pi_patched = True
+
+			_orig_get_valid = cls.get_valid_reference_doctypes
+
+			def _make_get_valid(orig):
+				def new_get_valid(self):
+					res = list(orig(self) or ())
+					if self.party_type == "Supplier" and "Proforma Invoice" not in res:
+						res.append("Proforma Invoice")
+					return tuple(res)
+
+				return new_get_valid
+
+			cls.get_valid_reference_doctypes = _make_get_valid(_orig_get_valid)
+
+			def _make_pop_wrapper(orig):
+				def wrapper(self):
+					pi_refs = [
+						r for r in (self.get("references") or []) if r.reference_doctype == "Proforma Invoice"
+					]
+					if pi_refs:
+						self.references = [
+							r for r in self.references if r.reference_doctype != "Proforma Invoice"
+						]
+					try:
+						return orig(self)
+					finally:
+						if pi_refs:
+							self.references.extend(pi_refs)
+
+				return wrapper
+
+			if hasattr(cls, "validate_reference_documents"):
+				cls.validate_reference_documents = _make_pop_wrapper(cls.validate_reference_documents)
+			if hasattr(cls, "validate_allocated_amount"):
+				cls.validate_allocated_amount = _make_pop_wrapper(cls.validate_allocated_amount)
+
+	except Exception:
+		pass
+
+
+patch_payment_entry_references()
+
+
 def _imports_enabled(company) -> bool:
 	from stabler.stabler.doctype.stabler_settings.stabler_settings import module_map_for
 
