@@ -4521,6 +4521,7 @@ def create_advance_payment(
 		elif stream == "Cash" and cash_account:
 			pe.paid_from = cash_account
 
+		pe.set_missing_values()
 		pe.insert(ignore_permissions=False)  # DRAFT — never submitted here.
 		created.append({"name": pe.name, "stream": stream, "amount": amount})
 
