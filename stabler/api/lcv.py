@@ -292,3 +292,20 @@ def create_additional_lcv(document_type: str, document_name: str):
 		frappe.db.set_value("Purchase Receipt", document_name, "custom_landed_cost_vouchered", 1)
 
 		return {"status": "ok", "lcv": lcv.name}
+
+
+@frappe.whitelist()
+def submit_landed_cost_voucher(name: str):
+	"""Submit a draft Landed Cost Voucher directly from Stabler SPA."""
+	_assert_can_write("Landed Cost Voucher", name, "submit")
+	_assert_cost_visible()
+
+	if not name or not frappe.db.exists("Landed Cost Voucher", name):
+		frappe.throw(_("Unknown Landed Cost Voucher: {0}").format(name))
+
+	lcv = frappe.get_doc("Landed Cost Voucher", name)
+	if lcv.docstatus != 0:
+		frappe.throw(_("Only draft Landed Cost Vouchers can be submitted."))
+
+	lcv.submit()
+	return {"status": "ok", "name": lcv.name, "docstatus": lcv.docstatus}

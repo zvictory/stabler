@@ -337,10 +337,28 @@ onMounted(() => load());
 									<!-- The endpoint refuses this write without the cost gate, so an
 									     always-visible Edit would only ever open a form that throws
 									     on save with figures rendered as "—". -->
+									<router-link
+										v-if="costVisible && r.transporter"
+										:to="{
+											path: '/purchasing/invoices/new',
+											query: {
+												supplier: r.transporter,
+												commercial_invoice: r.ci_number || r.commercial_invoice,
+												import_truck: r.vehicle_number || '',
+												import_container: r.container || ''
+											}
+										}"
+										class="btn btn-sm btn-ghost-primary me-1"
+										:title="t('Create Bill')"
+									>
+										<i class="ti ti-file-plus me-1"></i> {{ t("Bill") }}
+									</router-link>
+
 									<button v-if="costVisible" class="btn btn-sm btn-ghost-secondary" @click="openEdit(r)">
 										<i class="ti ti-edit me-1"></i> {{ t("Edit") }}
 									</button>
 								</td>
+
 							</tr>
 						</tbody>
 					</table>

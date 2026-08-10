@@ -1,0 +1,1450 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mikas Belge Merkezi — İş Akışı Draft (vgk.7 → .4)</title>
+<style>
+:root{
+	--bg:#f5f7fa;--card:#fff;--ink:#16202e;--mut:#6b7a90;--line:#e5eaf1;
+	--blue:#206bc4;--blue-l:#eaf2fd;--green:#2fb344;--green-l:#e9faee;
+	--org:#f76707;--org-l:#fff1e6;--pur:#7048e8;--pur-l:#f0ebfd;
+	--amb:#f59f00;--amb-l:#fff7e6;--red:#d63939;--red-l:#fdecec;
+	--tl:#0ca678;--tl-l:#e6faf5;--dark:#0f172a;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);
+	font:14px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif}
+.wrap{max-width:1280px;margin:0 auto;padding:24px 20px 100px}
+
+/* ── Header ── */
+.hdr{background:var(--dark);color:#e2e8f0;border-radius:14px;padding:20px 24px;margin-bottom:20px}
+.hdr h1{margin:0 0 6px;font-size:22px;font-weight:750;color:#fff}
+.hdr p{margin:0;font-size:13px;color:#94a3b8;max-width:780px}
+.hdr .tag{display:inline-block;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700;margin-right:6px}
+.hdr .branch{background:#1e293b;color:#60a5fa;border:1px solid #334155}
+.hdr .tenant{background:#1e293b;color:#fbbf24;border:1px solid #334155}
+
+/* ── Akış diyagramı ── */
+.flow{display:flex;align-items:stretch;gap:0;margin-bottom:28px;flex-wrap:wrap}
+.flow-step{flex:1;min-width:180px;background:var(--card);border:1px solid var(--line);
+	border-radius:11px;padding:14px 16px;position:relative;margin-right:28px}
+.flow-step:last-child{margin-right:0}
+.flow-step::after{content:"→";position:absolute;right:-22px;top:50%;transform:translateY(-50%);
+	font-size:22px;color:var(--mut);font-weight:300}
+.flow-step:last-child::after{display:none}
+.flow-step .fn{font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:var(--mut);font-weight:700}
+.flow-step .ft{font-size:14px;font-weight:750;margin:4px 0 6px}
+.flow-step .fd{font-size:12px;color:var(--mut);line-height:1.4}
+.flow-step .fb{margin-top:8px;display:flex;gap:4px;flex-wrap:wrap}
+.flow-step.s1{border-top:3px solid var(--blue)}
+.flow-step.s2{border-top:3px solid var(--pur)}
+.flow-step.s3{border-top:3px solid var(--amb)}
+.flow-step.s4{border-top:3px solid var(--green)}
+
+/* ── Bölüm ── */
+.sec{margin-bottom:32px}
+.sec-head{display:flex;align-items:center;gap:12px;margin-bottom:14px;flex-wrap:wrap}
+.sec-num{width:30px;height:30px;border-radius:8px;background:var(--dark);color:#fff;
+	font-size:14px;font-weight:800;display:flex;align-items:center;justify-content:center;flex:none}
+.sec-head h2{margin:0;font-size:17px;font-weight:750}
+.sec-head .bead{font-family:ui-monospace,Menlo,monospace;font-size:11px;color:var(--mut);
+	background:#eef1f5;padding:3px 8px;border-radius:6px}
+.sec-head .ptype{font-size:11px;font-weight:700;padding:3px 9px;border-radius:20px}
+.ptype.feature{background:var(--blue-l);color:var(--blue)}
+.ptype.bug{background:var(--red-l);color:var(--red)}
+
+/* ── Karşılaştırma kartları ── */
+.cmp{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media(max-width:820px){.cmp{grid-template-columns:1fr}}
+.panel{background:var(--card);border:1px solid var(--line);border-radius:11px;overflow:hidden}
+.panel.now{border-top:3px solid var(--red)}
+.panel.target{border-top:3px solid var(--green)}
+.panel-head{display:flex;align-items:center;gap:8px;padding:10px 14px;border-bottom:1px solid var(--line);
+	background:#fbfcfe;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.04em}
+.panel.now .panel-head{color:var(--red)}
+.panel.target .panel-head{color:var(--green)}
+.panel-body{padding:14px}
+
+/* ── UI mock elements ── */
+.mock-drawer{background:var(--bg);border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.mock-drawer-head{background:#fbfcfe;padding:9px 13px;border-bottom:1px solid var(--line);
+	font-size:12.5px;font-weight:700;display:flex;justify-content:space-between;align-items:center}
+.mock-drawer-body{padding:13px}
+.mock-field{margin-bottom:11px}
+.mock-field:last-child{margin-bottom:0}
+.mock-label{font-size:10px;text-transform:uppercase;letter-spacing:.05em;color:var(--mut);font-weight:700;margin-bottom:3px}
+.mock-input{background:#fff;border:1px solid var(--line);border-radius:6px;padding:6px 9px;font-size:12.5px;
+	color:var(--ink);display:block;width:100%}
+.mock-input.mono{font-family:ui-monospace,Menlo,monospace}
+.mock-input.disabled{background:#f8f9fb;color:var(--mut)}
+.mock-row{display:grid;gap:8px}
+.mock-row.r2{grid-template-columns:1fr 1fr}
+.mock-row.r3{grid-template-columns:1fr auto auto auto}
+.mock-row.r4{grid-template-columns:1.5fr auto auto auto auto}
+.mock-select{background:#fff;border:1px solid var(--line);border-radius:6px;padding:6px 9px;font-size:12px;color:var(--ink)}
+.mock-btn{border:1px solid var(--line);background:#fff;border-radius:7px;padding:6px 13px;font-size:12.5px;
+	font-weight:650;color:var(--ink);cursor:pointer;display:inline-flex;align-items:center;gap:5px}
+.mock-btn.pri{background:var(--blue);border-color:var(--blue);color:#fff}
+.mock-btn.gh-blue{border-color:transparent;color:var(--blue);background:transparent}
+.mock-btn.gh-red{border-color:transparent;color:var(--red);background:transparent}
+.mock-btn.sm{padding:3px 8px;font-size:11.5px}
+.mock-btn.disabled{opacity:.5;cursor:not-allowed}
+.mock-ck{width:15px;height:15px;border:1.5px solid var(--line);border-radius:4px;display:inline-block;vertical-align:middle}
+.mock-ck.on{background:var(--blue);border-color:var(--blue);position:relative}
+.mock-ck.on::after{content:"✓";position:absolute;top:-2px;left:1px;color:#fff;font-size:11px;font-weight:700}
+
+/* ── Badge ── */
+.bg{display:inline-block;padding:2px 8px;border-radius:20px;font-size:10.5px;font-weight:650;white-space:nowrap}
+.bg.b{background:var(--blue-l);color:var(--blue)}
+.bg.g{background:var(--green-l);color:var(--green)}
+.bg.a{background:var(--amb-l);color:#a37200}
+.bg.r{background:var(--red-l);color:var(--red)}
+.bg.s{background:#eef1f5;color:var(--mut)}
+.bg.p{background:var(--pur-l);color:var(--pur)}
+
+/* ── Table ── */
+table{width:100%;border-collapse:collapse;font-size:12.5px}
+th{font-size:9.5px;text-transform:uppercase;letter-spacing:.05em;color:var(--mut);font-weight:700;
+	text-align:left;padding:7px 9px;border-bottom:1px solid var(--line);white-space:nowrap}
+td{padding:7px 9px;border-bottom:1px solid #f2f5f8;vertical-align:top}
+tr:last-child td{border-bottom:0}
+.mono{font-family:ui-monospace,Menlo,monospace}
+.mut{color:var(--mut)}
+.sm{font-size:11.5px}
+.xs{font-size:10.5px}
+
+/* ── Callout ── */
+.callout{border-radius:9px;padding:11px 14px;margin-bottom:14px;font-size:12.5px;line-height:1.5}
+.callout.decision{background:var(--dark);color:#cbd5e1;border:1px solid #1e293b}
+.callout.decision b{color:#fff}
+.callout.warn{background:var(--amb-l);border:1px solid #fde68a;color:#92400e}
+.callout.info{background:var(--blue-l);border:1px solid #bfdbfe;color:#1e40af}
+.callout code{font-family:ui-monospace,Menlo,monospace;font-size:11px;background:rgba(0,0,0,.06);padding:1px 5px;border-radius:4px}
+.callout.decision code{background:#1e293b;color:#60a5fa}
+
+/* ── Kanban mini ── */
+.kanban-mini{display:flex;gap:6px;overflow-x:auto;padding-bottom:4px}
+.kcol{flex:0 0 130px;background:#fbfcfe;border:1px solid var(--line);border-radius:8px;padding:8px}
+.kcol-h{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:var(--mut);margin-bottom:7px}
+.kcard{background:#fff;border:1px solid var(--line);border-radius:6px;padding:7px 8px;margin-bottom:5px;cursor:pointer;font-size:11.5px}
+.kcard:hover{border-color:var(--blue)}
+.kcard .kt{font-weight:700;font-size:11.5px;line-height:1.2}
+.kcard .kid{font-family:ui-monospace,Menlo,monospace;font-size:9.5px;color:var(--blue);margin-top:2px}
+
+/* ── Progress ── */
+.bar{height:5px;background:#eef1f5;border-radius:20px;overflow:hidden;margin-top:5px}
+.bar i{display:block;height:100%;border-radius:20px}
+
+/* ── Role mapping table ── */
+.rolemap td:nth-child(1),.rolemap td:nth-child(2){white-space:nowrap}
+.rolemap tr:nth-child(even){background:#fbfcfe}
+
+/* ── Nav tabs mock ── */
+.navtabs{display:flex;gap:0;border-bottom:1px solid var(--line);margin-bottom:14px}
+.navtab{padding:8px 16px;font-size:12.5px;font-weight:600;color:var(--mut);border-bottom:2px solid transparent;cursor:pointer}
+.navtab.active{color:var(--blue);border-bottom-color:var(--blue)}
+.navtab.dup{color:var(--red);border-bottom-color:var(--red);position:relative}
+.navtab.dup::after{content:"DUP";position:absolute;top:-2px;right:-12px;background:var(--red);color:#fff;
+	font-size:8px;padding:1px 4px;border-radius:8px;font-weight:800}
+.strike{text-decoration:line-through;color:var(--red);opacity:.6}
+
+/* ── Empty state mock ── */
+.empty{text-align:center;padding:40px 20px;color:var(--mut)}
+.empty i{font-size:36px;display:block;margin-bottom:8px;opacity:.3}
+
+/* ── Selectors ── */
+.lot-list-item{display:flex;align-items:center;gap:10px;padding:9px 12px;border:1px solid var(--line);
+	border-radius:8px;margin-bottom:6px;cursor:pointer;background:#fff;transition:.15s}
+.lot-list-item:hover{border-color:var(--blue);background:var(--blue-l)}
+.lot-list-item .lli-main{flex:1;min-width:0}
+.lot-list-item .lli-t{font-weight:650;font-size:13px}
+.lot-list-item .lli-s{font-size:11px;color:var(--mut);margin-top:1px}
+.lot-list-item .lli-miss{font-family:ui-monospace,Menlo,monospace;font-size:12px;font-weight:700;color:var(--red)}
+
+/* ── Annotations ── */
+.ann{position:relative}
+.ann-mark{display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;
+	border-radius:50%;background:var(--blue);color:#fff;font-size:10px;font-weight:800;margin-right:5px;vertical-align:middle}
+.ann-mark.red{background:var(--red)}
+.ann-mark.green{background:var(--green)}
+.ann-mark.pur{background:var(--pur)}
+
+/* ── Tender form (vgk.7 genişletilmiş) ── */
+.tender-form{background:var(--card);border:1px solid var(--line);border-radius:12px;
+	overflow:hidden;box-shadow:0 2px 8px rgba(16,24,40,.06);max-width:900px}
+.tf-head{display:flex;justify-content:space-between;align-items:center;
+	padding:14px 18px;border-bottom:1px solid var(--line);background:#fbfcfe}
+.tf-kicker{font-size:10.5px;font-family:ui-monospace,Menlo,monospace;color:var(--mut);font-weight:700;
+	text-transform:uppercase;letter-spacing:.05em}
+.tf-title{font-size:18px;font-weight:800;margin-top:2px}
+.tf-close{font-size:16px;color:var(--mut);cursor:pointer;width:28px;height:28px;
+	display:flex;align-items:center;justify-content:center;border-radius:6px}
+.tf-close:hover{background:#eef1f5}
+.tf-body{padding:0}
+.tf-section{border-bottom:1px solid var(--line)}
+.tf-section:last-child{border-bottom:0}
+.tf-sec-head{display:flex;align-items:center;gap:8px;padding:10px 18px;
+	background:#f8f9fb;border-bottom:1px solid var(--line)}
+.tf-sec-num{width:22px;height:22px;border-radius:6px;background:var(--blue);color:#fff;
+	font-size:11px;font-weight:800;display:flex;align-items:center;justify-content:center}
+.tf-sec-title{font-size:13px;font-weight:700}
+.tf-sec-body{padding:14px 18px}
+.tf-row{display:grid;gap:10px;margin-bottom:0}
+.tf-row.r2{grid-template-columns:1fr 1fr}
+.tf-row.r3{grid-template-columns:1fr 1fr 1fr}
+.tf-row.r4{grid-template-columns:1fr 1fr 1fr 1fr}
+.tf-items{width:100%;border-collapse:collapse;font-size:12.5px}
+.tf-items th{font-size:9.5px;text-transform:uppercase;letter-spacing:.05em;color:var(--mut);
+	font-weight:700;text-align:left;padding:8px 10px;border-bottom:1px solid var(--line)}
+.tf-items td{padding:7px 10px;border-bottom:1px solid #f2f5f8;vertical-align:middle}
+.tf-items tr:last-child td{border-bottom:1px solid var(--line)}
+.tf-foot{display:flex;justify-content:space-between;align-items:center;
+	padding:12px 18px;border-top:1px solid var(--line);background:#fbfcfe}
+
+/* Typeahead mock */
+.typeahead-mock{position:relative}
+.typeahead-input{border:1px solid var(--blue);border-radius:6px;padding:6px 9px;font-size:12.5px;
+	background:#fff;display:flex;justify-content:space-between;align-items:center;min-height:32px}
+.typeahead-dropdown{position:absolute;top:100%;left:0;right:0;background:#fff;
+	border:1px solid var(--blue);border-top:0;border-radius:0 0 6px 6px;z-index:10;
+	box-shadow:0 4px 14px rgba(0,0,0,.1);max-width:420px}
+.ta-item{padding:7px 10px;font-size:12px;cursor:pointer;border-bottom:1px solid #f2f5f8;
+	display:flex;align-items:center;gap:6px}
+.ta-item.selected{background:var(--blue-l)}
+.ta-item:hover{background:#f8f9fb}
+.ta-new{padding:8px 10px;font-size:12px;cursor:pointer;background:var(--green-l);
+	border-radius:0 0 6px 6px;color:#166534;display:flex;align-items:center;gap:6px}
+
+/* Upload slot */
+.upload-slot{border:1px solid var(--line);border-radius:8px;overflow:hidden;background:#fff}
+.upload-slot.empty{border:2px dashed var(--line);background:#fbfcfe}
+.upload-slot-head{display:flex;align-items:center;gap:6px;padding:6px 10px;
+	border-bottom:1px solid var(--line);background:#fbfcfe;font-size:11px}
+.upload-slot-name{font-family:ui-monospace,Menlo,monospace;font-weight:600;font-size:11px;
+	overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1}
+.upload-slot-body{padding:14px 10px;display:flex;flex-direction:column;align-items:center;gap:3px;text-align:center}
+.upload-slot-icon{font-size:24px}
+
+/* Dropzone (tek basit upload) */
+.dropzone{border:2px dashed var(--line);border-radius:10px;padding:24px;text-align:center;
+	background:#fbfcfe;cursor:pointer;transition:.15s}
+.dropzone:hover{border-color:var(--blue);background:var(--blue-l)}
+.dropzone-icon{font-size:28px;margin-bottom:4px}
+.file-chip{display:flex;align-items:center;gap:6px;padding:6px 10px;background:#fff;
+	border:1px solid var(--line);border-radius:7px;font-size:12px}
+.file-chip-name{flex:1;font-weight:600}
+.file-chip-rm{cursor:pointer;color:var(--mut);width:18px;height:18px;display:flex;
+	align-items:center;justify-content:center;border-radius:4px}
+.file-chip-rm:hover{background:var(--red-l);color:var(--red)}
+
+/* Inline form (yeni müşteri / yeni item) */
+.inline-form{background:var(--green-l);border:1px solid #86efac;border-radius:8px;padding:12px;margin-top:10px}
+.inline-form-head{display:flex;align-items:center;gap:6px;font-size:12.5px;font-weight:700;
+	color:#166534;margin-bottom:10px}
+
+/* ── Lifecycle visual ── */
+.lifecycle{display:flex;gap:0;flex-wrap:wrap}
+.lc-phase{flex:1;min-width:360px}
+.lc-phase-head{font-size:10px;text-transform:uppercase;letter-spacing:.06em;font-weight:800;
+	padding:5px 12px;border-radius:6px 6px 0 0;text-align:center}
+.lc-phase-head.pre{background:var(--blue-l);color:var(--blue)}
+.lc-phase-head.post{background:var(--amb-l);color:#a37200}
+.lc-steps{display:flex;gap:0;padding:14px 8px;background:#fbfcfe;border:1px solid var(--line);
+	border-top:0;border-radius:0 0 8px 8px;overflow-x:auto}
+.lc-step{flex:0 0 auto;min-width:80px;text-align:center;position:relative;padding:0 4px}
+.lc-step:not(:last-child)::after{content:"";position:absolute;top:10px;right:-50%;width:100%;
+	height:2px;background:var(--line);z-index:0}
+.lc-step.done:not(:last-child)::after{background:var(--green)}
+.lc-step.current:not(:last-child)::after{background:var(--amb)}
+.lc-step-dot{width:20px;height:20px;border-radius:50%;margin:0 auto 4px;position:relative;z-index:1;
+	border:2px solid var(--line);background:#fff;display:flex;align-items:center;justify-content:center}
+.lc-step-dot.done{background:var(--green);border-color:var(--green)}
+.lc-step-dot.done::after{content:"✓";color:#fff;font-size:10px;font-weight:800}
+.lc-step-dot.current{background:var(--amb);border-color:var(--amb)}
+.lc-step-dot.current::after{content:"•";color:#fff;font-size:14px;font-weight:800}
+.lc-step-dot.active{background:#fff;border-color:var(--amb);border-width:2px}
+.lc-step-dot.active::after{content:"";width:8px;height:8px;border-radius:50%;background:var(--amb)}
+.lc-step-dot.milestone{background:var(--green);border-color:var(--green);font-size:11px}
+.lc-step-label{font-size:10.5px;font-weight:700}
+.lc-step.milestone .lc-step-label{color:var(--green);font-weight:800}
+.lc-step.current .lc-step-label{color:#a37200}
+.lc-step-sub{font-size:9px;color:var(--mut);margin-top:1px}
+
+/* ── Footer ── */
+.ftr{margin-top:32px;padding-top:16px;border-top:1px solid var(--line);font-size:12px;color:var(--mut);text-align:center}
+
+/* ── Stamp ── */
+.stamp{display:inline-block;padding:4px 12px;border-radius:6px;font-size:11px;font-weight:700;
+	text-transform:uppercase;letter-spacing:.05em;border:1px dashed}
+.stamp.new{color:var(--green);border-color:var(--green);background:var(--green-l)}
+.stamp.chg{color:var(--amb);border-color:var(--amb);background:var(--amb-l)}
+.stamp.fix{color:var(--blue);border-color:var(--blue);background:var(--blue-l)}
+.stamp.rm{color:var(--red);border-color:var(--red);background:var(--red-l)}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<!-- ═══════════════ HEADER ═══════════════ -->
+<div class="hdr">
+	<h1>Mikas Belge Merkezi — İş Akışı UI Draft</h1>
+	<p>
+		<span class="tag branch">feat/mikas-belge-merkezi</span>
+		<span class="tag tenant">kiracı: mikas</span>
+	</p>
+	<p style="margin-top:10px">
+		Bu draft, 7 bead'in (<code style="background:#1e293b;color:#60a5fa;padding:1px 5px;border-radius:4px;font-size:11px">vgk.7</code> →
+		<code style="background:#1e293b;color:#60a5fa;padding:1px 5px;border-radius:4px;font-size:11px">.8</code> →
+		<code style="background:#1e293b;color:#60a5fa;padding:1px 5px;border-radius:4px;font-size:11px">.10</code> →
+		<code style="background:#1e293b;color:#60a5fa;padding:1px 5px;border-radius:4px;font-size:11px">.9</code> →
+		<code style="background:#1e293b;color:#60a5fa;padding:1px 5px;border-radius:4px;font-size:11px">.1</code> →
+		<code style="background:#1e293b;color:#60a5fa;padding:1px 5px;border-radius:4px;font-size:11px">.2</code> →
+		<code style="background:#1e293b;color:#60a5fa;padding:1px 5px;border-radius:4px;font-size:11px">.4</code>)
+		UI etkisini kod yazmadan önce gösterir. Her bölümde <b style="color:#f87171">MEVCUT</b> ve
+		<b style="color:#4ade80">HEDEF</b> yan yana karşılaştırma var.
+	</p>
+</div>
+
+<!-- ═══════════════ KARAR — AKIŞ ═══════════════ -->
+<div class="callout decision">
+	<b>📌 Karar (2026-08-10 — güncellendi):</b>
+	Tek seviyeli mimari. İhale = CRM Deal (<code>deal_type="Tender"</code>). Ayrı bir Tender Master
+	parent'a gerek yok — çoğunlukla tek lotlu ihaleler için iki doctype bakımı overkill.
+	İhale girilir, kanbana Intake aşamasında düşer, tek kart olarak yaşar.
+	Atama belge merkezinin başladığı andır. Yükleme satırın <code>role</code> alanına göre daralır.
+	Okuma dört tender görünümüne de açıktır.
+</div>
+
+<div class="flow">
+	<div class="flow-step s1">
+		<div class="fn">vgk.7</div>
+		<div class="ft">İhaleyi Gir</div>
+		<div class="fd">CRM Deal yarat (deal_type=Tender) — müşteri, dosyalar, itemlar. Kanbana Intake'te düşer</div>
+		<div class="fb"><span class="bg b">feature</span> <span class="bg s">P2</span></div>
+	</div>
+	<div class="flow-step s2" style="opacity:.4">
+		<div class="fn">vgk.8</div>
+		<div class="ft" style="text-decoration:line-through">Lot Aç</div>
+		<div class="fd">İPTAL — tek seviyede lot kavramı yok. Yeni deal = yeni ihale</div>
+		<div class="fb"><span class="bg s">iptal</span></div>
+	</div>
+	<div class="flow-step s3">
+		<div class="fn">vgk.10 → vgk.9</div>
+		<div class="ft">Sourcing'e Ata</div>
+		<div class="fd">Deal kartında sourcing kullanıcısına ata → belge merkezi başlar</div>
+		<div class="fb"><span class="bg r">bug</span> <span class="bg b">feature</span></div>
+	</div>
+	<div class="flow-step s4">
+		<div class="fn">vgk.1 → vgk.2</div>
+		<div class="ft">Belge Yükle</div>
+		<div class="fd">Her rol kendi satırını yükler, lot seçici ile ekrana gelir</div>
+		<div class="fb"><span class="bg r">bug</span> <span class="bg b">feature</span></div>
+	</div>
+</div>
+
+<!-- ═══════════════ İŞ 1 — vgk.7 (TEK SEVİYE: CRM Deal) ═══════════════ -->
+<div class="sec">
+	<div class="sec-head">
+		<div class="sec-num">1</div>
+		<h2>İhale Giriş Merkezi — CRM Deal (deal_type=Tender)</h2>
+		<span class="bead">stabler-vgk.7</span>
+		<span class="ptype feature">feature · P2</span>
+	</div>
+
+	<div class="callout decision">
+		<b>🎯 Mimari karar (2026-08-10):</b>
+		Tek seviyeli mimari — Tender Master parent'a gerek yok. İhale doğrudan CRM Deal olarak
+		yaratılır (<code>deal_type="Tender"</code>), kanban Intake aşamasında belirir.
+		Dosyalar, itemlar ve ihale bilgisi Deal'in <code>custom_tender_intake</code> JSON overlay'inde yaşar
+		(zaten var olan kalıp). Form kaydedilince tek kart olarak kanbanda devam eder —
+		atama, belge merkezi, sourcing hepsi aynı Deal üzerinden.
+	</div>
+
+	<!-- ─── 1A: MEVCUT DURUM ─── -->
+	<div style="margin-bottom:20px">
+		<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+			<span class="stamp fix" style="border-color:var(--red);color:var(--red);background:var(--red-l)">MEVCUT</span>
+			<span class="sm mut">480px dar çekmece, 9 düz alan, item yok, müşteri serbest metin, dosya yok</span>
+		</div>
+		<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;max-width:800px">
+			<div style="border:1px solid var(--red);background:var(--red-l);border-radius:8px;padding:10px;text-align:center">
+				<div style="font-size:22px">📦</div>
+				<div class="sm" style="font-weight:700;color:var(--red);margin-top:4px">Item/talep satırı YOK</div>
+				<div class="xs mut">İhalede ne istendiği girilemiyor</div>
+			</div>
+			<div style="border:1px solid var(--red);background:var(--red-l);border-radius:8px;padding:10px;text-align:center">
+				<div style="font-size:22px">👤</div>
+				<div class="sm" style="font-weight:700;color:var(--red);margin-top:4px">Müşteri serbest metin</div>
+				<div class="xs mut">Customer doctype'ına bağlı değil</div>
+			</div>
+			<div style="border:1px solid var(--red);background:var(--red-l);border-radius:8px;padding:10px;text-align:center">
+				<div style="font-size:22px">📎</div>
+				<div class="sm" style="font-weight:700;color:var(--red);margin-top:4px">İhale dosyası YOK</div>
+				<div class="xs mut">Tender dokümanı/snap yükleme yok</div>
+			</div>
+		</div>
+	</div>
+
+	<!-- ─── 1B: HEDEF — İHALE GİRİŞ (CRM Deal) ─── -->
+	<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+		<span class="stamp new">HEDEF</span>
+		<span class="sm mut">Tam ekran sayfa · 4 bölüm: Müşteri + İhale Bilgisi + Dosyalar + Talep Itemları → CRM Deal yaratır</span>
+	</div>
+
+	<div class="tender-form">
+		<!-- Header -->
+		<div class="tf-head">
+			<div>
+				<div class="tf-kicker">Yeni İhale · CRM Deal · kanban: Intake</div>
+				<div class="tf-title">İhale Giriş Merkezi</div>
+			</div>
+			<div style="display:flex;gap:8px;align-items:center">
+				<span class="bg s">mikas</span>
+				<span class="bg b">deal_type: Tender</span>
+				<span class="tf-close">✕</span>
+			</div>
+		</div>
+
+		<div class="tf-body">
+
+		<!-- ═══ BÖLÜM A: KİMDEN GELİYOR (Müşteri) ═══ -->
+		<div class="tf-section">
+			<div class="tf-sec-head">
+				<span class="tf-sec-num">A</span>
+				<span class="tf-sec-title">İhale Kimden Geliyor?</span>
+				<span class="bg b">mevcut müşteri seç</span>
+			</div>
+			<div class="tf-sec-body">
+				<div class="tf-row" style="grid-template-columns:1fr auto">
+					<div>
+						<div class="mock-label">
+							Müşteri / Alıcı
+							<span style="color:var(--red)">*</span>
+						</div>
+						<div class="typeahead-mock">
+							<div class="typeahead-input">
+								<span>Navoi Mining & Smelting Combine</span>
+								<span class="xs mut">⌄</span>
+							</div>
+							<div class="typeahead-dropdown">
+								<div class="ta-item selected">
+									<span class="bg g">mevcut</span>
+									Navoi Mining & Smelting Combine
+									<span class="xs mut">Customer · cust-001</span>
+								</div>
+								<div class="ta-item">
+									<span class="bg g">mevcut</span>
+									Almalyk Mining MMC
+									<span class="xs mut">cust-014</span>
+								</div>
+								<div class="ta-item">
+									<span class="bg g">mevcut</span>
+									Quvasoy Cement JSC
+									<span class="xs mut">cust-022</span>
+								</div>
+							</div>
+						</div>
+						<div class="xs mut" style="margin-top:4px">
+							Typeahead ile mevcut müşterilerden seç
+						</div>
+					</div>
+					<div style="align-self:flex-end">
+						<span class="mock-btn sm">
+							+ Yeni Müşteri
+							<span class="xs mut" style="margin-left:4px">↗ Sales</span>
+						</span>
+					</div>
+				</div>
+				<div class="callout info sm" style="margin-top:8px;margin-bottom:0">
+					Müşteri listede yoksa <b>Sales → Customers</b> sayfasındaki mevcut "New Customer" formunu kullan.
+					Oluşturduktan sonra buraya dön, Typeahead'den seç.
+					<code>router.push({ name: "sales-customers" })</code>
+				</div>
+			</div>
+		</div>
+
+		<!-- ═══ BÖLÜM B: İHALE BİLGİSİ ═══ -->
+		<div class="tf-section">
+			<div class="tf-sec-head">
+				<span class="tf-sec-num">B</span>
+				<span class="tf-sec-title">İhale Bilgileri</span>
+			</div>
+			<div class="tf-sec-body">
+				<div class="mock-field">
+					<div class="mock-label">İhale Başlığı <span style="color:var(--red)">*</span></div>
+					<div class="mock-input">UZEX Supply Tender 2026 — Construction Materials</div>
+				</div>
+				<div class="tf-row r3">
+					<div class="mock-field">
+						<div class="mock-label">İhale No</div>
+						<div class="mock-input mono">UZEX-2026-CM-042</div>
+					</div>
+					<div class="mock-field">
+						<div class="mock-label">Kaynak</div>
+						<div class="mock-select">UZEX</div>
+					</div>
+					<div class="mock-field">
+						<div class="mock-label">Para Birimi</div>
+						<div class="mock-select">USD</div>
+					</div>
+				</div>
+				<div class="tf-row r3">
+					<div class="mock-field">
+						<div class="mock-label">Yayın Tarihi</div>
+						<div class="mock-input mono">2026-08-10</div>
+					</div>
+					<div class="mock-field">
+						<div class="mock-label">Son Başvuru Tarihi</div>
+						<div class="mock-input mono">2026-08-25 18:00</div>
+					</div>
+					<div class="mock-field">
+						<div class="mock-label">Tahmini Toplam</div>
+						<div class="tf-row" style="grid-template-columns:1fr 80px;gap:6px">
+							<div class="mock-input mono">250,000.00</div>
+							<div class="mock-select">USD ⌄</div>
+						</div>
+						<div class="xs mut" style="margin-top:3px">Para birimi seçilebilir</div>
+					</div>
+				</div>
+			</div>
+		</div>
+
+		<!-- ═══ BÖLÜM C: İHALE DOSYALARI ═══ -->
+		<div class="tf-section">
+			<div class="tf-sec-head">
+				<span class="tf-sec-num">C</span>
+				<span class="tf-sec-title">İhale Dosyaları</span>
+			</div>
+			<div class="tf-sec-body">
+				<!-- Tek basit drag&drop alanı -->
+				<div class="dropzone">
+					<div class="dropzone-icon">📎</div>
+					<div class="sm" style="font-weight:650">İhale dokümanını sürükle veya tıkla</div>
+					<div class="xs mut">PDF, PNG, JPG, XLSX — birden fazla dosya</div>
+				</div>
+				<!-- Yüklenen dosyalar listesi -->
+				<div style="margin-top:8px;display:flex;flex-direction:column;gap:5px">
+					<div class="file-chip">
+						<span>📄</span>
+						<span class="file-chip-name mono">tender_uzex_2026_cm.pdf</span>
+						<span class="xs mut">2.4 MB</span>
+						<span class="file-chip-rm">✕</span>
+					</div>
+					<div class="file-chip">
+						<span>🖼️</span>
+						<span class="file-chip-name mono">uzex_portal_screenshot.png</span>
+						<span class="xs mut">850 KB</span>
+						<span class="file-chip-rm">✕</span>
+					</div>
+				</div>
+				<div class="callout info sm" style="margin-top:8px;margin-bottom:0">
+					<code>FileSlot.vue</code> → <code>/api/method/upload_file</code> (private) →
+					file_url'ler <code>Tender Master</code>'a yazılır
+				</div>
+			</div>
+		</div>
+
+		<!-- ═══ BÖLÜM D: TALEP ITEM'LARI ═══ -->
+		<div class="tf-section">
+			<div class="tf-sec-head">
+				<span class="tf-sec-num">D</span>
+				<span class="tf-sec-title">Talep Edilen Itemlar</span>
+				<div style="margin-left:auto;display:flex;align-items:center;gap:6px">
+					<span class="xs mut">Para birimi:</span>
+					<span class="mock-select" style="padding:3px 8px">USD ⌄</span>
+				</div>
+			</div>
+			<div class="tf-sec-body" style="padding:0">
+				<div style="padding:10px 14px;border-bottom:1px solid var(--line)">
+					<div class="xs mut">
+						İhalede hangi itemlar isteniyor — merkezî item havuzundan seç.
+						Item listede yoksa <b>Inventory → Items</b> sayfasındaki mevcut formu kullan,
+						sonra buraya dön.
+					</div>
+				</div>
+				<table class="tf-items">
+					<thead>
+						<tr>
+							<th style="width:30px">#</th>
+							<th>Item</th>
+							<th style="width:70px;text-align:right">Qty</th>
+							<th style="width:60px">UOM</th>
+							<th style="width:90px;text-align:right">Fiyat</th>
+							<th style="width:100px;text-align:right">Tutar</th>
+							<th style="width:30px"></th>
+						</tr>
+					</thead>
+					<tbody>
+						<!-- Satır 1 — mevcut item -->
+						<tr>
+							<td class="mut mono xs">1</td>
+							<td>
+								<div style="font-weight:650">Çimento M-400</div>
+								<div class="xs mut mono">CEM-400 · Stock Group</div>
+							</td>
+							<td class="mono" style="text-align:right">5,000</td>
+							<td><span class="bg s">ton</span></td>
+							<td class="mono" style="text-align:right">85.00</td>
+							<td class="mono" style="text-align:right;font-weight:700">425,000.00</td>
+							<td><span class="mock-btn gh-red xs">✕</span></td>
+						</tr>
+						<!-- Satır 2 — mevcut item -->
+						<tr>
+							<td class="mut mono xs">2</td>
+							<td>
+								<div style="font-weight:650">Armatura A-III Ø12mm</div>
+								<div class="xs mut mono">ARM-D12 · All Item Groups</div>
+							</td>
+							<td class="mono" style="text-align:right">120</td>
+							<td><span class="bg s">ton</span></td>
+							<td class="mono" style="text-align:right">620.00</td>
+							<td class="mono" style="text-align:right;font-weight:700">74,400.00</td>
+							<td><span class="mock-btn gh-red xs">✕</span></td>
+						</tr>
+						<!-- Satır 3 — önceki yeni oluşturulmuş item -->
+						<tr>
+							<td class="mut mono xs">3</td>
+							<td>
+								<div style="font-weight:650">Geotextile 200g/m²</div>
+								<div class="xs mut mono">GEO-200 · All Item Groups</div>
+							</td>
+							<td class="mono" style="text-align:right">8,000</td>
+							<td><span class="bg s">m²</span></td>
+							<td class="mono" style="text-align:right">1.20</td>
+							<td class="mono" style="text-align:right;font-weight:700">9,600.00</td>
+							<td><span class="mock-btn gh-red xs">✕</span></td>
+						</tr>
+						<!-- Typeahead arama satırı -->
+						<tr>
+							<td class="mut mono xs">4</td>
+							<td colspan="6">
+								<div class="typeahead-mock">
+									<div class="typeahead-input">
+										<span class="mut">Item ara… "çiment" yazıldı</span>
+										<span class="xs mut">⌄</span>
+									</div>
+									<div class="typeahead-dropdown">
+										<div class="ta-item">
+											<span class="bg g">stokta</span>
+											Çimento M-400 · CEM-400
+											<span class="xs mut">Tashkent WH · 12,000 ton</span>
+										</div>
+										<div class="ta-item">
+											<span class="bg g">stokta</span>
+											Çimento M-500 · CEM-500
+											<span class="xs mut">Tashkent WH · 8,500 ton</span>
+										</div>
+									</div>
+								</div>
+							</td>
+						</tr>
+					</tbody>
+				</table>
+
+				<!-- Toplam + yeni item yönlendirme -->
+				<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 14px;
+					border-top:2px solid var(--line);background:#fbfcfe">
+					<div style="display:flex;gap:8px">
+						<span class="mock-btn gh-blue sm">+ Item Ekle</span>
+						<span class="mock-btn sm">
+							Yeni Item
+							<span class="xs mut" style="margin-left:4px">↗ Inventory</span>
+						</span>
+					</div>
+					<div style="text-align:right">
+						<span class="xs mut">3 item · Toplam: </span>
+						<span class="mono" style="font-size:18px;font-weight:800">509,000.00</span>
+						<span class="xs mut"> USD</span>
+					</div>
+				</div>
+
+				<div class="callout info sm" style="margin:0 14px 12px">
+					<b>Altyapı hazır:</b> <code>itemSearcher("all", {warehouse})</code> +
+					<code>LineItemsEditor</code> + <code>inventory.create_item</code> +
+					<code>list_stock_warehouses</code>. Item listede yoksa
+					<code>router.push({ name: "inventory-items" })</code> ile Inventory'de oluştur,
+					sonra dön. Item satırları CRM Deal'ın <code>custom_tender_intake</code> JSON overlay'inde saklanır.
+				</div>
+			</div>
+		</div>
+
+		</div><!-- /tf-body -->
+
+		<!-- Footer -->
+		<div class="tf-foot">
+			<div class="xs mut">
+				<span class="bg g">✓ Müşteri: mevcut</span>
+				<span class="bg g">✓ İhale bilgisi</span>
+				<span class="bg g">✓ Dosya (2)</span>
+				<span class="bg g">✓ Item (3) · USD</span>
+			</div>
+			<div style="display:flex;gap:8px">
+				<span class="mock-btn">İptal</span>
+				<span class="mock-btn pri">İhaleyi Kaydet →</span>
+			</div>
+		</div>
+	</div>
+
+	<!-- ─── 1C: ALTYAPI ÖZETİ ─── -->
+	<div class="callout info" style="margin-top:16px">
+		<b>📋 Altyapı durumu — tek seviyeli mimari:</b>
+		<div style="display:grid;grid-template-columns:1fr 1fr;gap:4px 20px;margin-top:8px;font-size:12px">
+			<div>✅ <b>Kanal:</b> <code>crm.save_deal</code> + <code>deal_type="Tender"</code> — zaten var</div>
+			<div>✅ <b>Depolama:</b> <code>custom_tender_intake</code> JSON overlay — zaten var</div>
+			<div>✅ <b>Müşteri arama:</b> <code>Typeahead</code> + <code>sales.list_customers</code></div>
+			<div>✅ <b>Müşteri oluşturma:</b> <code>sales-customers</code> sayfası (mevcut)</div>
+			<div>✅ <b>Item arama:</b> <code>itemSearcher</code> + <code>inventory.list_items</code></div>
+			<div>✅ <b>Item oluşturma:</b> <code>inventory-items</code> sayfası (mevcut)</div>
+			<div>✅ <b>Dosya yükleme:</b> <code>FileSlot.vue</code> → <code>upload_file</code></div>
+			<div>✅ <b>Line items:</b> <code>LineItemsEditor.vue</code> — hazır</div>
+			<div>✅ <b>Kanban:</b> <code>crm_board</code> Intake → GO → Sourcing → … — hazır</div>
+			<div>📋 <b>Zorunlu belge listesi:</b> kazanıldıktan sonraki aşamada (vgk.1) — şimdi değil</div>
+		</div>
+		<div style="margin-top:8px;padding-top:8px;border-top:1px solid #bfdbfe;font-size:11.5px">
+			<b>Avantaj:</b> İhale = tek kart. Yarat → kanbanda yaşar → ata → belge topla.
+			Tender Master parent ve "Yeni Lot" dansı yok.
+			Tender Master doctype'ıolduğu gibi kalır (veri kaybı yok), ama aktif akıştan çıkarılır.
+		</div>
+	</div>
+</div>
+
+<!-- ═══════════════ İŞ 2 — vgk.8 (İPTAL) ═══════════════ -->
+<div class="sec">
+	<div class="sec-head">
+		<div class="sec-num" style="background:var(--mut)">2</div>
+		<h2 style="text-decoration:line-through;color:var(--mut)">Level 2'de "Yeni Lot"</h2>
+		<span class="bead">stabler-vgk.8</span>
+		<span class="ptype bug" style="background:var(--mut);color:#fff">İPTAL · tek seviye</span>
+	</div>
+
+	<div class="callout warn">
+		<b>İptal sebebi (2026-08-10):</b> Tek seviyeli mimaride "lot" kavramı yok.
+		İhale doğrudan CRM Deal olarak yaratılır (vgk.7). Yeni ihale = yeni deal.
+		Tender Master parent'a lot bağlamak gereksiz — "Yeni Lot" butonu ve modalı gerekmez.
+	</div>
+
+	<div style="background:#fbfcfe;border:1px dashed var(--line);border-radius:11px;padding:20px;text-align:center">
+		<div style="font-size:28px;opacity:.3">🚫</div>
+		<div class="sm mut" style="margin-top:6px">
+			Bu işin UI mock'ları kaldırıldı — tek seviyeli mimaride yer yok.
+			vgk.7 (İhale Giriş Merkezi) bu işin yerini aldı.
+		</div>
+	</div>
+</div>
+
+<!-- ═══════════════ İŞ 3 — vgk.10 ═══════════════ -->
+<div class="sec">
+	<div class="sec-head">
+		<div class="sec-num">3</div>
+		<h2>Atanabilir Kullanıcı Listesi — Sourcing Rolü</h2>
+		<span class="bead">stabler-vgk.10</span>
+		<span class="ptype bug">bug · P2</span>
+	</div>
+
+	<div class="callout info">
+		<code>tender_managers()</code> yalnız <code>Sales User</code> / <code>Sales Manager</code> tarıyor.
+		Oysa <code>_TENDER_VIEW_ROLES["sourcing"]</code> <code>Stabler Tender Sourcing</code>'i de içeriyor.
+		Sourcing ekranlarını <b>görebilen</b> bir kullanıcı direktörün atama listesinde <b>çıkmıyor</b>.
+	</div>
+
+	<div class="cmp">
+		<!-- MEVCUT -->
+		<div class="panel now">
+			<div class="panel-head">❌ Mevcut — Sourcing kullanıcı eksik</div>
+			<div class="panel-body">
+				<div class="mock-label">Assign Manager — dropdown</div>
+				<div class="mock-select" style="display:block;margin-bottom:12px">— Unassigned —</div>
+				<div style="background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:10px">
+					<div class="xs mut" style="margin-bottom:6px">Görünen kullanıcılar:</div>
+					<div style="font-size:12.5px;line-height:2">
+						<span class="bg s">Sales User</span> Zafar K.<br>
+						<span class="bg s">Sales Manager</span> Akmal R.<br>
+						<span class="bg s">Sales User</span> Dilshod T.
+					</div>
+					<div style="border:2px dashed var(--red);border-radius:6px;padding:8px;margin-top:8px;
+						color:var(--red);font-size:11.5px">
+						<span class="ann-mark red">!</span>
+						<b>Eksik:</b> "Stabler Tender Sourcing" rolüne sahip kullanıcılar listede YOK<br>
+						<span class="xs">Sourcing ekranlarını görüyor ama atanamıyor</span>
+					</div>
+				</div>
+			</div>
+		</div>
+
+		<!-- HEDEF -->
+		<div class="panel target">
+			<div class="panel-head">✅ Hedef — Sourcing rolü listede</div>
+			<div class="panel-body">
+				<div class="mock-label">Assign Manager — dropdown</div>
+				<div class="mock-select" style="display:block;margin-bottom:12px">— Unassigned —</div>
+				<div style="background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:10px">
+					<div class="xs mut" style="margin-bottom:6px">Görünen kullanıcılar:</div>
+					<div style="font-size:12.5px;line-height:2">
+						<span class="bg s">Sales User</span> Zafar K.<br>
+						<span class="bg s">Sales Manager</span> Akmal R.<br>
+						<span class="bg s">Sales User</span> Dilshod T.<br>
+						<span class="bg p">Tender Sourcing</span> Sardor M.
+						<span class="stamp new" style="margin-left:4px">NEW</span><br>
+						<span class="bg p">Tender Sourcing</span> Jasur B.
+						<span class="stamp new" style="margin-left:4px">NEW</span>
+					</div>
+					<div style="border:1px solid var(--green);background:var(--green-l);border-radius:6px;
+						padding:8px;margin-top:8px;color:#166534;font-size:11.5px">
+						<span class="ann-mark green">✓</span>
+						Rol kümesi <code>_TENDER_VIEW_ROLES["sourcing"]</code>'ten türetiliyor —
+						ikinci sabit liste yok
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+</div>
+
+<!-- ═══════════════ İŞ 4 — vgk.9 ═══════════════ -->
+<div class="sec">
+	<div class="sec-head">
+		<div class="sec-num">4</div>
+		<h2>Atama, Lotun Açıldığı Ekranda</h2>
+		<span class="bead">stabler-vgk.9</span>
+		<span class="ptype feature">feature · P2</span>
+	</div>
+
+	<div class="callout info">
+		<code>assign_tender</code> yalnız <code>DirectorBoard.vue</code>'dan çağrılıyor.
+		Atama belge merkezini <b>başlatan olay</b> olduğu için lotun görüldüğü yerde olmalı.
+		<b>Çözüm:</b> <code>TenderCrm.vue</code> çekmecesine atama kontrolü ekle.
+	</div>
+
+	<div class="cmp">
+		<!-- MEVCUT -->
+		<div class="panel now">
+			<div class="panel-head">❌ Mevcut — Drawer'da atama yok</div>
+			<div class="panel-body">
+				<div class="mock-drawer">
+					<div class="mock-drawer-head">
+						<span>CRM-DEAL-042 · Intake</span>
+						<span style="color:var(--mut)">✕</span>
+					</div>
+					<div class="mock-drawer-body">
+						<table>
+							<tr><th>Buyer</th><td>UZEX Lot #1</td></tr>
+							<tr><th>Value</th><td class="mono">$ 45,000</td></tr>
+							<tr><th>Owner</th><td class="mut">—</td></tr>
+						</table>
+						<!-- Boşluk: Atama kontrolü yok -->
+						<div style="border:2px dashed var(--red);border-radius:8px;padding:10px;text-align:center;
+							color:var(--red);font-size:12px;margin:10px 0">
+							<span class="ann-mark red">!</span>
+							Atama kontrolü YOK<br>
+							<span class="xs">assign_tender burada değil</span>
+						</div>
+						<div style="display:flex;gap:6px;flex-wrap:wrap">
+							<span class="mock-btn sm pri">Sourcing comparison</span>
+							<span class="mock-btn sm">Doc Center</span>
+							<span class="mock-btn sm">PO Control</span>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+
+		<!-- HEDEF -->
+		<div class="panel target">
+			<div class="panel-head">✅ Hedef — Drawer'da atama select'i</div>
+			<div class="panel-body">
+				<div class="mock-drawer">
+					<div class="mock-drawer-head">
+						<span>CRM-DEAL-042 · Intake</span>
+						<span style="color:var(--mut)">✕</span>
+					</div>
+					<div class="mock-drawer-body">
+						<table>
+							<tr><th>Buyer</th><td>UZEX Lot #1</td></tr>
+							<tr><th>Value</th><td class="mono">$ 45,000</td></tr>
+						</table>
+
+						<!-- ✨ YENİ: Atama kontrolü -->
+						<div style="border-top:1px solid var(--line);margin-top:8px;padding-top:10px">
+							<div class="mock-label">
+								<span class="ann-mark">+</span>Assign to Sourcing
+								<span class="bg a" style="margin-left:4px">belge merkezini başlatır</span>
+							</div>
+							<div class="mock-select" style="display:block;margin-top:3px">
+								Sardor M. (Tender Sourcing)
+							</div>
+							<div class="xs mut" style="margin-top:4px">
+								Atandı: 2026-08-10 · Atayan: direktör@…
+							</div>
+						</div>
+
+						<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:10px">
+							<span class="mock-btn sm pri">Sourcing comparison</span>
+							<span class="mock-btn sm">Doc Center</span>
+							<span class="mock-btn sm">PO Control</span>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+</div>
+
+<!-- ═══════════════ İŞ 5 — vgk.1 ═══════════════ -->
+<div class="sec">
+	<div class="sec-head">
+		<div class="sec-num">5</div>
+		<h2>Rol Kapısı — Okuma 4 Görünüme Açık, Yazma Satırın Rolüne Göre</h2>
+		<span class="bead">stabler-vgk.1</span>
+		<span class="ptype bug">bug · P2</span>
+	</div>
+
+	<div class="callout warn">
+		<b>Kapsam değişti (2026-08-10).</b> Önceki metin "yazma uçlarında sıkı kapı korunsun" diyordu;
+		kullanıcının kararı bunu geçersiz kıldı. <code>_get_deal_and_master</code> satır 33'teki
+		<code>_require_tender_view("sourcing", …)</code> beş ucun <b>hepsini</b> sourcing'e kapatıyor.
+		Gümrükçü ve lojistikçi kendi panosundan <code>/tender/documents</code>'a linklenince
+		<code>403 Not permitted</code> alıyor.
+	</div>
+
+	<!-- Role mapping table -->
+	<div class="panel" style="margin-bottom:16px;border-top:3px solid var(--blue)">
+		<div class="panel-head">🔑 Rol → Yazma İzni Mapping (DOC_ROLE_WRITER_VIEWS)</div>
+		<div class="panel-body" style="padding:0">
+			<table class="rolemap">
+				<thead>
+					<tr>
+						<th>Satırın role alanı</th>
+						<th>Yazabilen view'lar</th>
+						<th>Örnek</th>
+					</tr>
+				</thead>
+				<tbody>
+					<tr>
+						<td><span class="bg p">customs</span></td>
+						<td><span class="bg b">declarant</span> + <span class="bg b">director</span></td>
+						<td class="sm">ГТД'yi gümrükçü yükler</td>
+					</tr>
+					<tr>
+						<td><span class="bg p">logistics</span></td>
+						<td><span class="bg b">logist</span> + <span class="bg b">director</span></td>
+						<td class="sm">CMR'yi lojistikçi yükler</td>
+					</tr>
+					<tr>
+						<td><span class="bg p">general</span></td>
+						<td><span class="bg b">sourcing</span> + <span class="bg b">director</span></td>
+						<td class="sm">Texnik spetsifikatsiya — sourcing</td>
+					</tr>
+					<tr>
+						<td><span class="bg p">finance</span></td>
+						<td><span class="bg b">sourcing</span> + <span class="bg b">director</span></td>
+						<td class="sm">Invoys — sourcing</td>
+					</tr>
+				</tbody>
+			</table>
+			<div style="padding:10px 14px;border-top:1px solid var(--line)" class="sm mut">
+				<b>director</b> hepsini yükleyebilir · Okuma (list/download) dört görünümden herhangi biri yeterli
+			</div>
+		</div>
+	</div>
+
+	<div class="cmp">
+		<!-- MEVCUT -->
+		<div class="panel now">
+			<div class="panel-head">❌ Mevcut — Sourcing kapısı her şeyi kapatıyor</div>
+			<div class="panel-body">
+				<div class="mock-drawer-body" style="background:var(--bg);border:1px solid var(--line);border-radius:8px">
+					<div class="mock-label">Gümrükçü (declarant) belge merkezini açar:</div>
+					<div style="border:2px solid var(--red);background:var(--red-l);border-radius:8px;
+						padding:14px;text-align:center;margin-top:6px">
+						<div style="font-size:28px;font-weight:800;color:var(--red)">403</div>
+						<div style="font-size:12px;color:var(--red);font-weight:700">Not permitted</div>
+						<div class="xs mut" style="margin-top:4px">
+							_require_tender_view("sourcing") → declarant değil
+						</div>
+					</div>
+					<div style="margin-top:10px;font-size:12px;line-height:1.6">
+						<div>📤 <b class="mut">upload</b> → <span class="bg r">sourcing gerekli</span></div>
+						<div>📋 <b class="mut">list</b> → <span class="bg r">sourcing gerekli</span></div>
+						<div>⬇️ <b class="mut">download</b> → <span class="bg r">sourcing gerekli</span></div>
+						<div>✍️ <b class="mut">waive</b> → <span class="bg r">sourcing gerekli</span></div>
+						<div>🗑️ <b class="mut">remove</b> → <span class="bg r">sourcing gerekli</span></div>
+					</div>
+					<div class="callout warn sm" style="margin-top:10px;margin-bottom:0">
+						Sourcing penceresi bütün satırlara yazıyor: rol alanı taşınıyor ama
+						<b>hiçbir yerde okunmuyor</b>.
+					</div>
+				</div>
+			</div>
+		</div>
+
+		<!-- HEDEF -->
+		<div class="panel target">
+			<div class="panel-head">✅ Hedef — Rol bazlı kapı</div>
+			<div class="panel-body">
+				<div class="mock-drawer-body" style="background:var(--bg);border:1px solid var(--line);border-radius:8px">
+					<div class="mock-label">Gümrükçü (declarant) belge merkezini açar:</div>
+					<table style="margin-top:6px">
+						<thead>
+							<tr>
+								<th>Requirement</th>
+								<th>Role</th>
+								<th>Durum</th>
+								<th>Yükleyebilir?</th>
+							</tr>
+						</thead>
+						<tbody>
+							<tr>
+								<td>ГТД</td>
+								<td><span class="bg p">customs</span></td>
+								<td><span class="bg r">eksik</span></td>
+								<td><span class="bg g">✓ evet</span></td>
+							</tr>
+							<tr>
+								<td>CMR</td>
+								<td><span class="bg p">logistics</span></td>
+								<td><span class="bg r">eksik</span></td>
+								<td><span class="bg s">✕ hayır</span></td>
+							</tr>
+							<tr>
+								<td>Invoys</td>
+								<td><span class="bg p">finance</span></td>
+								<td><span class="bg r">eksik</span></td>
+								<td><span class="bg s">✕ hayır</span></td>
+							</tr>
+						</tbody>
+					</table>
+					<div style="margin-top:10px;font-size:12px;line-height:1.6">
+						<div>📋 <b class="mut">list</b> → <span class="bg g">any view ✓</span></div>
+						<div>⬇️ <b class="mut">download</b> → <span class="bg g">any view ✓</span></div>
+						<div>📤 <b class="mut">upload (customs satırı)</b> → <span class="bg g">declarant ✓</span></div>
+						<div>📤 <b class="mut">upload (logistics satırı)</b> → <span class="bg r">✕ declarant değil</span></div>
+					</div>
+					<div class="callout info sm" style="margin-top:10px;margin-bottom:0">
+						Okuma = <code>_require_any_tender_view(("director","sourcing","declarant","logist"))</code><br>
+						Yazma = satırın <code>role</code>'ünden izin verilen view'lara <code>_require_any_tender_view</code>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+</div>
+
+<!-- ═══════════════ İŞ 6 — vgk.2 ═══════════════ -->
+<div class="sec">
+	<div class="sec-head">
+		<div class="sec-num">6</div>
+		<h2>Lot Seçici — ?deal= Yokken</h2>
+		<span class="bead">stabler-vgk.2</span>
+		<span class="ptype feature">feature · P2</span>
+	</div>
+
+	<div class="callout info">
+		<code>TenderDocuments.vue</code> <code>?deal=</code> yoksa <code>EmptyState</code> çiziyor —
+		ekranda lot seçmenin yolu yok. Menüden gelen kullanıcı çıkmaz sokağa düşer.
+		<b>Çözüm:</b> yeni <code>tender_document_targets(company)</code> ucu + seçilebilir liste.
+	</div>
+
+	<div class="cmp">
+		<!-- MEVCUT -->
+		<div class="panel now">
+			<div class="panel-head">❌ Mevcut — Çıkmaz sokak</div>
+			<div class="panel-body">
+				<div style="border:1px solid var(--line);border-radius:8px;overflow:hidden">
+					<div style="padding:9px 13px;border-bottom:1px solid var(--line);font-weight:700;
+						font-size:12.5px;background:#fbfcfe">Document Center</div>
+					<div class="empty">
+						<div style="font-size:36px;opacity:.2">🔍</div>
+						<div style="font-weight:600;margin-top:4px">Pick a tender deal to view its document center.</div>
+						<div class="xs mut" style="margin-top:6px">Ama lot seçmenin hiçbir yolu yok</div>
+					</div>
+				</div>
+				<div class="callout warn sm" style="margin-top:10px;margin-bottom:0">
+					Sidebar'dan gelen gümrükçü/lojistikçi bu ekrana düşer ve takılır.
+				</div>
+			</div>
+		</div>
+
+		<!-- HEDEF -->
+		<div class="panel target">
+			<div class="panel-head">✅ Hedef — Lot seçici liste</div>
+			<div class="panel-body">
+				<div style="border:1px solid var(--line);border-radius:8px;overflow:hidden">
+					<div style="padding:9px 13px;border-bottom:1px solid var(--line);font-weight:700;
+						font-size:12.5px;background:#fbfcfe;display:flex;justify-content:space-between;align-items:center">
+						<span>Document Center — Lot Seç</span>
+						<span class="xs mut">tender_document_targets(company)</span>
+					</div>
+					<div style="padding:12px">
+						<div class="mock-label">Şirket kapsamlı lot listesi — eksik zorunlu belge sayısıyla</div>
+
+						<div class="lot-list-item">
+							<div class="lli-main">
+								<div class="lli-t">UZEX Lot #1 — Navoi Mining</div>
+								<div class="lli-s">TND-1001 · Sourcing · <span class="bg b">declarant</span></div>
+							</div>
+							<div class="lli-miss">3 eksik</div>
+							<span class="mock-btn pri sm">Aç →</span>
+						</div>
+
+						<div class="lot-list-item">
+							<div class="lli-main">
+								<div class="lli-t">UZEX Lot #2 — Almalyk MMC</div>
+								<div class="lli-s">TND-1001 · Submitted · <span class="bg b">logist</span></div>
+							</div>
+							<div class="lli-miss">1 eksik</div>
+							<span class="mock-btn pri sm">Aç →</span>
+						</div>
+
+						<div class="lot-list-item">
+							<div class="lli-main">
+								<div class="lli-t">UZEX Lot #3 — Quvasoy Cement</div>
+								<div class="lli-s">TND-1002 · Won · <span class="bg g">tamam ✓</span></div>
+							</div>
+							<div style="font-family:ui-monospace,monospace;font-size:12px;font-weight:700;color:var(--green)">0 eksik</div>
+							<span class="mock-btn pri sm">Aç →</span>
+						</div>
+					</div>
+				</div>
+				<div class="callout info sm" style="margin-top:10px;margin-bottom:0">
+					Seçim → <code>documentsLocation(dealId)</code> ile route'a yazılır.
+					<code>if company == "mikas"</code> yasak — şirket + modül kapısı.
+				</div>
+			</div>
+		</div>
+	</div>
+</div>
+
+<!-- ═══════════════ İŞ 7 — vgk.4 ═══════════════ -->
+<div class="sec">
+	<div class="sec-head">
+		<div class="sec-num">7</div>
+		<h2>Yinelenen Sekme</h2>
+		<span class="bead">stabler-vgk.4</span>
+		<span class="ptype bug">bug · P3</span>
+	</div>
+
+	<div class="callout info">
+		<code>TenderWorkspaceTabs.vue</code> satır 16 ve 19 byte-byte aynı
+		<code>{ key: "documents", label: t("Documents"), icon: "ti-files" }</code> satırını taşıyor.
+		Vue <code>:key</code> uyarısı + ekranda iki "Documents" sekmesi.
+	</div>
+
+	<div class="cmp">
+		<!-- MEVCUT -->
+		<div class="panel now">
+			<div class="panel-head">❌ Mevcut — İki Documents sekmesi</div>
+			<div class="panel-body">
+				<div class="navtabs">
+					<div class="navtab">📊 Overview</div>
+					<div class="navtab dup">📄 Documents</div>
+					<div class="navtab">🛒 Vendor & PO</div>
+					<div class="navtab">🚚 Delivery</div>
+					<div class="navtab dup">📄 Documents</div>
+					<div class="navtab">💰 Finance</div>
+				</div>
+				<div class="callout warn sm" style="margin-bottom:0">
+					Vue <code>:key="tab.key"</code> — duplicate key uyarısı. İkisi aynı sekme.
+				</div>
+			</div>
+		</div>
+
+		<!-- HEDEF -->
+		<div class="panel target">
+			<div class="panel-head">✅ Hedef — Tek Documents sekmesi</div>
+			<div class="panel-body">
+				<div class="navtabs">
+					<div class="navtab">📊 Overview</div>
+					<div class="navtab active">📄 Documents</div>
+					<div class="navtab">🛒 Vendor & PO</div>
+					<div class="navtab">🚚 Delivery</div>
+					<span class="navtab strike">📄 Documents</span>
+					<span class="stamp rm" style="margin-left:4px">SİLİNİR</span>
+					<div class="navtab">💰 Finance</div>
+				</div>
+				<div class="callout info sm" style="margin-bottom:0">
+					Satır 19 silinir. Tek import eden <code>PoControlBoard.vue</code> — etkisi yok.
+				</div>
+			</div>
+		</div>
+	</div>
+</div>
+
+<!-- ═══════════════ LIFECYCLE KANBAN (PRE-WIN → POST-WIN) ═══════════════ -->
+<div class="sec">
+	<div class="sec-head">
+		<div class="sec-num" style="background:var(--green)">✓</div>
+		<h2>Tender Lifecycle Kanban — Won Bir Duvar Değil, Bir Geçiş</h2>
+	</div>
+
+	<div class="callout warn">
+		<b>🔴 Mevcut sorun:</b> <code>crm_board</code> <code>Won</code>'da durur — sonrası 3 ayrı ekrana
+		dağılır (DeclarantQueue 5 lane, LogistBoard 6 lane, SO Execution ayrı).
+		Direktör "bu ihale nerede?" diye sorduğunda 3 sayfa gezmek zorunda.
+		Ayrıca Customs Declaration ve Freight Booking'de <code>custom_crm_deal</code> link alanı YOK —
+		bağlantı PO üzerinden DoLaylı.
+	</div>
+
+	<div class="callout decision">
+		<b>🎯 Hedef:</b> Tek birleşik lifecycle kanban — pre-win ve post-win aynı board'da.
+		Post-win aşamalar <b>elle set edilmez</b>, altındaki operasyonel kayıtlardan türetilir
+		(PO var mı, Customs ne durumda, Freight ne aşamada) — tıpkı Tender Master'ın status'ünün
+		child lot'lardan türetilmesi gibi.
+	</div>
+
+	<!-- ── LIFECYCLE GÖRSELİ ── -->
+	<div class="panel" style="margin-bottom:16px;border-top:3px solid var(--green)">
+		<div class="panel-head">📊 Tender Lifecycle — İki Bölüm, Tek Akış</div>
+		<div class="panel-body" style="padding:16px">
+			<div class="lifecycle">
+				<!-- PRE-WIN -->
+				<div class="lc-phase">
+					<div class="lc-phase-head pre">PRE-WIN · Sourcing Kararı</div>
+					<div class="lc-steps">
+						<div class="lc-step done">
+							<div class="lc-step-dot done"></div>
+							<div class="lc-step-label">Intake</div>
+							<div class="lc-step-sub">İhale girildi</div>
+						</div>
+						<div class="lc-step done">
+							<div class="lc-step-dot done"></div>
+							<div class="lc-step-label">GO Decision</div>
+							<div class="lc-step-sub">Katılma kararı</div>
+						</div>
+						<div class="lc-step done">
+							<div class="lc-step-dot done"></div>
+							<div class="lc-step-label">Sourcing</div>
+							<div class="lc-step-sub">5 teklif toplandı</div>
+						</div>
+						<div class="lc-step done">
+							<div class="lc-step-dot done"></div>
+							<div class="lc-step-label">Priced</div>
+							<div class="lc-step-sub">Bid fiyatlandı</div>
+						</div>
+						<div class="lc-step done">
+							<div class="lc-step-dot done"></div>
+							<div class="lc-step-label">Submitted</div>
+							<div class="lc-step-sub">Teklif sunuldu</div>
+						</div>
+						<div class="lc-step milestone">
+							<div class="lc-step-dot milestone">🏆</div>
+							<div class="lc-step-label">WON</div>
+							<div class="lc-step-sub">Geçiş noktası</div>
+						</div>
+					</div>
+				</div>
+
+				<!-- POST-WIN -->
+				<div class="lc-phase">
+					<div class="lc-phase-head post">POST-WIN · Operasyonel Tedarik</div>
+					<div class="lc-steps">
+						<div class="lc-step current">
+							<div class="lc-step-dot current"></div>
+							<div class="lc-step-label">PO Created</div>
+							<div class="lc-step-sub">PO-2026-042 ✓</div>
+						</div>
+						<div class="lc-step current">
+							<div class="lc-step-dot current"></div>
+							<div class="lc-step-label">Customs</div>
+							<div class="lc-step-sub">GTD: Approved</div>
+						</div>
+						<div class="lc-step active">
+							<div class="lc-step-dot active"></div>
+							<div class="lc-step-label">In Transit</div>
+							<div class="lc-step-sub">Freight: In Transit</div>
+						</div>
+						<div class="lc-step">
+							<div class="lc-step-dot"></div>
+							<div class="lc-step-label">Delivered</div>
+							<div class="lc-step-sub">Teslim bekleniyor</div>
+						</div>
+						<div class="lc-step">
+							<div class="lc-step-dot"></div>
+							<div class="lc-step-label">Invoiced</div>
+							<div class="lc-step-sub">Fatura bekleniyor</div>
+						</div>
+						<div class="lc-step">
+							<div class="lc-step-dot"></div>
+							<div class="lc-step-label">Done</div>
+							<div class="lc-step-sub">Tamamlandı</div>
+						</div>
+					</div>
+				</div>
+			</div>
+
+			<!-- Aşama türetme tablosu -->
+			<div style="margin-top:16px;border-top:1px solid var(--line);padding-top:12px">
+				<div class="mock-label" style="margin-bottom:8px">Post-win aşamalar operasyonel kayıtlardan türetilir:</div>
+				<table class="rolemap">
+					<thead>
+						<tr>
+							<th>Lane</th>
+							<th>Türetme kuralı</th>
+							<th>Veri kaynağı</th>
+						</tr>
+					</thead>
+					<tbody>
+						<tr>
+							<td><span class="bg g">PO Created</span></td>
+							<td class="sm">Won + en az bir PO var</td>
+							<td class="sm mono">Purchase Order.custom_crm_deal</td>
+						</tr>
+						<tr>
+							<td><span class="bg a">Customs</span></td>
+							<td class="sm">PO var + Customs Declaration Submitted/Approved</td>
+							<td class="sm mono">Customs Declaration → PO → Deal <span class="bg r" style="margin-left:4px">link yok!</span></td>
+						</tr>
+						<tr>
+							<td><span class="bg b">In Transit</span></td>
+							<td class="sm">Customs Approved + Freight Booking "In Transit"</td>
+							<td class="sm mono">Freight Booking → PO → Deal <span class="bg r" style="margin-left:4px">link yok!</span></td>
+						</tr>
+						<tr>
+							<td><span class="bg b">Delivered</span></td>
+							<td class="sm">Freight "Delivered" veya per_received ≥ 100%</td>
+							<td class="sm mono">Freight Booking.status + PO receipt</td>
+						</tr>
+						<tr>
+							<td><span class="bg p">Invoiced</span></td>
+							<td class="sm">Sales Invoice oluşturuldu</td>
+							<td class="sm mono">Sales Invoice → SO → Deal</td>
+						</tr>
+						<tr>
+							<td><span class="bg g">Done</span></td>
+							<td class="sm">Invoiced + teslim onayı</td>
+							<td class="sm">Terminal — kapanış</td>
+						</tr>
+					</tbody>
+				</table>
+			</div>
+		</div>
+	</div>
+
+	<!-- ── KANBAN MOCKUP ── -->
+	<div class="cmp">
+		<!-- MEVCUT -->
+		<div class="panel now">
+			<div class="panel-head">❌ Mevcut — Won'da duvar</div>
+			<div class="panel-body">
+				<div class="kanban-mini">
+					<div class="kcol">
+						<div class="kcol-h">Intake</div>
+						<div class="kcard"><div class="kt">UZEX-2026-CM</div><div class="kid">CRM-042</div></div>
+					</div>
+					<div class="kcol">
+						<div class="kcol-h">Sourcing</div>
+						<div class="kcard"><div class="kt">Almalyk</div><div class="kid">CRM-043</div></div>
+					</div>
+					<div class="kcol">
+						<div class="kcol-h" style="color:var(--green)">Won ✓</div>
+						<div class="kcard" style="border-color:var(--green)">
+							<div class="kt">UZEX-2026-CM</div>
+							<div class="kid">CRM-042 · BİTTİ</div>
+						</div>
+					</div>
+					<div class="kcol" style="border:2px dashed var(--red);min-height:80px;display:flex;align-items:center;justify-content:center">
+						<div class="xs" style="color:var(--red);text-align:center">
+							<span class="ann-mark red">!</span><br>
+							Sonrası<br>
+							3 ayrı<br>
+							ekranda
+						</div>
+					</div>
+				</div>
+				<div class="callout warn sm" style="margin-top:10px;margin-bottom:0">
+					<b>Kırıklık:</b> DeclarantQueue (gümrük), LogistBoard (lojistik),
+					SO Execution (satış) — üçü de ayrı sayfada, üçü de farklı lane yapısı.
+				</div>
+			</div>
+		</div>
+
+		<!-- HEDEF -->
+		<div class="panel target">
+			<div class="panel-head">✅ Hedef — Tek lifecycle kanban</div>
+			<div class="panel-body">
+				<div style="display:flex;gap:12px;margin-bottom:8px">
+					<div style="flex:1;background:var(--blue-l);border-radius:6px;padding:4px 8px;text-align:center">
+						<span class="xs" style="color:var(--blue);font-weight:700">PRE-WIN</span>
+					</div>
+					<div style="flex:0 0 auto;background:var(--green-l);border-radius:6px;padding:4px 8px;text-align:center">
+						<span class="xs" style="color:var(--green);font-weight:700">🏆 WON</span>
+					</div>
+					<div style="flex:1;background:var(--amb-l);border-radius:6px;padding:4px 8px;text-align:center">
+						<span class="xs" style="color:#a37200;font-weight:700">POST-WIN</span>
+					</div>
+				</div>
+				<div class="kanban-mini">
+					<div class="kcol">
+						<div class="kcol-h">Sourcing</div>
+						<div class="kcard"><div class="kt">Almalyk</div><div class="kid">CRM-043</div></div>
+					</div>
+					<div class="kcol">
+						<div class="kcol-h" style="color:var(--green)">Won</div>
+						<div class="kcard" style="border-color:var(--green)">
+							<div class="kt">Quvasoy</div><div class="kid">CRM-044</div>
+						</div>
+					</div>
+					<div class="kcol">
+						<div class="kcol-h">PO Created</div>
+						<div class="kcard" style="border-color:var(--amb)">
+							<div class="kt">UZEX-2026</div>
+							<div class="kid">CRM-042 · PO ✓</div>
+						</div>
+					</div>
+					<div class="kcol">
+						<div class="kcol-h">Customs</div>
+						<div class="kcard" style="border-color:var(--amb)">
+							<div class="kt">Navoi</div>
+							<div class="kid">CRM-045 · GTD ✓</div>
+						</div>
+					</div>
+					<div class="kcol">
+						<div class="kcol-h" style="color:var(--amb)">▶ In Transit</div>
+						<div class="kcard" style="border-color:var(--amb);border-width:2px">
+							<div class="kt">UZEX-2026</div>
+							<div class="kid">CRM-042 · Transit</div>
+						</div>
+					</div>
+					<div class="kcol">
+						<div class="kcol-h">Delivered</div>
+						<div style="font-size:11px;color:var(--mut);text-align:center;padding:8px 0">—</div>
+					</div>
+					<div class="kcol">
+						<div class="kcol-h" style="color:var(--green)">Done</div>
+						<div class="kcard" style="border-color:var(--green);opacity:.6">
+							<div class="kt">Bekzod</div>
+							<div class="kid">CRM-038 · bitti</div>
+						</div>
+					</div>
+				</div>
+				<div class="callout info sm" style="margin-top:10px;margin-bottom:0">
+					Direktör <b>tek bakışta</b> görür: 1 sourcing, 1 won, 2 operasyonda, 1 tamamlandı.
+					Post-win lane'ler drag edilemez — operasyonel kayıt durumu belirler.
+				</div>
+			</div>
+		</div>
+	</div>
+
+	<!-- ── GEREKEN BAĞLANTI ── -->
+	<div class="callout warn" style="margin-top:14px">
+		<b>⚠️ Engineksik wiring:</b> Customs Declaration ve Freight Booking'de <code>custom_crm_deal</code>
+		link alanı yok. Post-win lane türetmesi için bu iki doctype'a patch ile link alanı eklenmesi gerekir
+		(veya PO üzerinden DoLaylı traversal — yavaş ve kırılGaN).
+		Bu <b>ayrı bir bead</b> olarak planlanmalı — vgk.7'nin kapsamı dışında.
+	</div>
+</div>
+
+<!-- ═══════════════ FOOTER ═══════════════ -->
+<div class="ftr">
+	<p><b>Draft</b> — kod yazılmadan önce UI kararlarını doğrulamak için.
+	Onay sonrası gerçek implementasyona geçilir.</p>
+	<p style="margin-top:4px">
+		<code>feat/mikas-belge-merkezi</code> ·
+		kiracı: mikas ·
+		7 bead: vgk.7 → .8 → .10 → .9 → .1 → .2 → .4
+	</p>
+</div>
+
+</div><!-- /wrap -->
+</body>
+</html>

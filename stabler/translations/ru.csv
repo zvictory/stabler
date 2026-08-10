@@ -5663,3 +5663,6 @@ Bill {0},Счёт {0}
 This bill is already vouchered ({0}) and can no longer be unlinked.,Этот счёт уже оформлен в ваучер ({0}) и больше не отвязывается.
 {0} is in {1}. Only bills in {2} or USD can be added to an import's landed cost today.,{0} — в валюте {1}. В себестоимость импорта сегодня можно добавить только счета в {2} или USD.
 Used only for rows where the category has no box weight.,"Используется только для строк, где в категории не указан вес коробки."
+Assign to sourcing,Назначить на сорсинг
+Assigned to,Назначено
+Atama belge merkezini başlatır,Назначение запускает центр документов

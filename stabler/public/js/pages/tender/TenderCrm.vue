@@ -59,7 +59,38 @@ async function load() {
 	}
 }
 
-onMounted(load);
+// ── Atama (assign_tender) — belge merkezini başlatan olay ─────────────────
+const managers = ref([]);
+
+async function loadManagers() {
+	try {
+		const r = await call("stabler.api.tender.tender_managers", { company: activeCompany.value });
+		managers.value = r?.managers || [];
+	} catch { /* assignment is optional */ }
+}
+
+async function assign(deal, user) {
+	try {
+		const r = await call("stabler.api.tender.assign_tender", { deal, user: user || "" });
+		const card = cards.value.find((c) => c.name === deal);
+		if (card) {
+			card.assigned_to = r.assigned_to;
+			card.assigned_to_name = r.assigned_to_name;
+		}
+		if (selectedDeal.value?.name === deal) {
+			selectedDeal.value.assigned_to = r.assigned_to;
+			selectedDeal.value.assigned_to_name = r.assigned_to_name;
+		}
+		toast.success(t("Assigned."));
+	} catch (err) {
+		toast.error(err?.message || t("Could not assign."));
+	}
+}
+
+onMounted(() => {
+	load();
+	loadManagers();
+});
 watch(activeCompany, load);
 
 const activeKpi = ref("");
@@ -526,6 +557,23 @@ function riskLabel(risk) {
 							<tr>
 								<th>{{ t("Owner") }}</th>
 								<td>{{ selectedDeal.owner_name || selectedDeal.owner || "—" }}</td>
+							</tr>
+							<tr>
+								<th>{{ t("Assigned to") }}</th>
+								<td @click.stop>
+									<select
+										class="ds-input board-select"
+										:value="selectedDeal.assigned_to || ''"
+										:aria-label="t('Assign to sourcing')"
+										@change="assign(selectedDeal.name, $event.target.value)"
+									>
+										<option value="">— {{ t("Unassigned") }} —</option>
+										<option v-for="m in managers" :key="m.name" :value="m.name">{{ m.full_name }}</option>
+									</select>
+									<div v-if="selectedDeal.assigned_to" class="xs mut mt-1">
+										{{ t("Atama belge merkezini başlatır") }}
+									</div>
+								</td>
 							</tr>
 						</tbody>
 					</table>

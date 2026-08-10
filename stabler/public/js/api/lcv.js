@@ -22,4 +22,8 @@ export const lcvApi = {
 			document_type,
 			document_name,
 		}),
+
+	submitLandedCostVoucher: (name) =>
+		call("stabler.stabler.api.lcv.submit_landed_cost_voucher", { name }),
 };
+

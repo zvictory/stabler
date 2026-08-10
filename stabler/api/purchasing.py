@@ -1100,6 +1100,9 @@ def _apply_invoice_payload(
 	rate: float,
 	price_list,
 	taxes_template,
+	commercial_invoice: str | None = None,
+	import_truck: str | None = None,
+	import_container: str | None = None,
 ):
 	"""Write validated PI fields + item/tax rows onto `doc` (new or draft)."""
 	doc.posting_date = getdate(posting_date or today())
@@ -1113,6 +1116,13 @@ def _apply_invoice_payload(
 		doc.currency = currency
 		doc.conversion_rate = rate
 	doc.buying_price_list = price_list or ""
+
+	if frappe.db.has_column("Purchase Invoice", "custom_commercial_invoice"):
+		doc.custom_commercial_invoice = (commercial_invoice or "").strip() or None
+	if frappe.db.has_column("Purchase Invoice", "custom_import_truck"):
+		doc.custom_import_truck = (import_truck or "").strip() or None
+	if frappe.db.has_column("Purchase Invoice", "custom_import_container"):
+		doc.custom_import_container = (import_container or "").strip() or None
 
 	doc.set("items", [])
 	for row in cleaned:
@@ -1159,6 +1169,9 @@ def create_purchase_invoice(
 	conversion_rate=None,
 	price_list: str | None = None,
 	taxes_template: str | None = None,
+	commercial_invoice: str | None = None,
+	import_truck: str | None = None,
+	import_container: str | None = None,
 ):
 	"""Create a Purchase Invoice as Draft (docstatus=0).
 
@@ -1197,6 +1210,9 @@ def create_purchase_invoice(
 		rate,
 		price_list,
 		taxes_template,
+		commercial_invoice,
+		import_truck,
+		import_container,
 	)
 	doc.insert(ignore_permissions=False)
 	return {
@@ -1223,6 +1239,9 @@ def update_purchase_invoice(
 	price_list: str | None = None,
 	taxes_template: str | None = None,
 	modified: str | None = None,
+	commercial_invoice: str | None = None,
+	import_truck: str | None = None,
+	import_container: str | None = None,
 ):
 	"""Replace a draft Purchase Invoice's fields and rows (full-row replace).
 
@@ -1264,6 +1283,9 @@ def update_purchase_invoice(
 		rate,
 		price_list,
 		taxes_template,
+		commercial_invoice,
+		import_truck,
+		import_container,
 	)
 	doc.save(ignore_permissions=False)
 	return {

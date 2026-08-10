@@ -302,8 +302,91 @@ function syncEarmark() {
 	toast.success(t("Prepayment bank & cash totals synced to items total."));
 }
 
+// ---- Smart Advance Payment Modal ----
+const advOpen = ref(false);
+const advSaving = ref(false);
+const advBasis = ref("AGREED"); // 'AGREED' | 'DOCS'
+const advPct = ref(30);
+const advBank = ref(0);
+const advCash = ref(0);
+const advDate = ref(todayIso());
+const advRef = ref("");
+
+const targetAgreedTotal = computed(() => itemsAgreedTotal.value || Number(form.value.agreed_total) || 0);
+const targetDocsTotal = computed(() => itemsDocsTotal.value || Number(form.value.docs_total) || Number(form.value.bank_agreed) || 0);
+const targetCashDiff = computed(() => Math.max(0, targetAgreedTotal.value - targetDocsTotal.value));
+
+const targetBaseAmount = computed(() => advBasis.value === "DOCS" ? targetDocsTotal.value : targetAgreedTotal.value);
+const targetAdvanceAmount = computed(() => round2(targetBaseAmount.value * ((Number(advPct.value) || 0) / 100)));
+
+const currentPaidBank = computed(() => form.value.advance_summary?.paid_bank || 0);
+const currentPaidCash = computed(() => form.value.advance_summary?.paid_cash || 0);
+const currentPaidTotal = computed(() => form.value.advance_summary?.paid_total || 0);
+const remainingAdvanceDue = computed(() => Math.max(0, targetAdvanceAmount.value - currentPaidTotal.value));
+
+function openAdvanceModal() {
+	advBasis.value = form.value.prepayment_type === "DOCS_TOTAL" ? "DOCS" : "AGREED";
+	advPct.value = Number(form.value.advance_pct) || 30;
+	advDate.value = todayIso();
+	advRef.value = `ADV-${form.value.name || form.value.supplier_pi_ref || "PI"}`;
+	fillSplit();
+	advOpen.value = true;
+}
+
+function fillDocsOnly() {
+	advBasis.value = "DOCS";
+	const docsAdv = round2(targetDocsTotal.value * ((Number(advPct.value) || 30) / 100));
+	advBank.value = docsAdv;
+	advCash.value = 0;
+}
+
+function fillAllBank() {
+	advBank.value = targetAdvanceAmount.value;
+	advCash.value = 0;
+}
+
+function fillAllCash() {
+	advBank.value = 0;
+	advCash.value = targetAdvanceAmount.value;
+}
+
+function fillSplit() {
+	const total = targetAgreedTotal.value || 1;
+	const docsShare = targetDocsTotal.value / total;
+	const targetAdv = targetAdvanceAmount.value;
+	advBank.value = round2(targetAdv * docsShare);
+	advCash.value = round2(targetAdv - advBank.value);
+}
+
+async function submitAdvancePayment() {
+	if (Number(advBank.value || 0) <= 0 && Number(advCash.value || 0) <= 0) {
+		toast.error(t("Enter a bank and/or cash amount."));
+		return;
+	}
+	advSaving.value = true;
+	try {
+		const res = await call("stabler.api.imports.create_advance_payment", {
+			purchase_order: docName.value,
+			bank_amount: Number(advBank.value || 0),
+			cash_amount: Number(advCash.value || 0),
+			payment_date: advDate.value || undefined,
+			reference_no: advRef.value || undefined,
+			prepayment_basis: advBasis.value,
+		});
+		if (res.warning) toast.info(res.warning);
+		toast.success(t("Advance recorded (draft Payment Entry)."));
+		advOpen.value = false;
+		await loadDoc();
+	} catch (err) {
+		toast.error(err?.message || t("Could not record advance payment."));
+	} finally {
+		advSaving.value = false;
+	}
+}
+
 // ---- Fill items from a vendor category ----
 const fillModalOpen = ref(false);
+
 const fillCategoriesLoading = ref(false);
 const fillCategories = ref([]);
 const fillCategory = ref("");
@@ -600,12 +683,22 @@ watch(activeCompany, loadPiGroups);
 						· {{ form.advance_pct }}% / {{ 100 - form.advance_pct }}%
 					</div>
 				</div>
+				<button
+					v-if="!isCreate && form.name"
+					type="button"
+					class="btn btn-outline-success"
+					:disabled="loading || saving"
+					@click="openAdvanceModal"
+				>
+					<i class="ti ti-cash me-1"></i>{{ t("Record Advance") }}
+				</button>
 				<button type="button" class="btn btn-primary" :disabled="saving || loading || !earmarkOk" @click="saveProforma">
 					<span v-if="saving" class="spinner-border spinner-border-sm me-1"></span>
 					<i v-else class="ti ti-device-floppy me-1"></i>{{ t("Save") }}
 				</button>
 			</div>
 		</div>
+
 
 		<div v-if="error" class="alert alert-danger">{{ error }}</div>
 
@@ -1023,26 +1116,68 @@ watch(activeCompany, loadPiGroups);
 		</div>
 
 		<!-- Linked Advance Payments -->
-		<div v-if="form.advance_payments && form.advance_payments.length" class="card mb-3">
-			<div class="card-header">
-				<h3 class="card-title"><i class="ti ti-cash me-2"></i>{{ t("Advance Payments") }}</h3>
+		<div class="card mb-3">
+			<div class="card-header d-flex align-items-center justify-content-between">
+				<h3 class="card-title mb-0"><i class="ti ti-cash me-2 text-success"></i>{{ t("Advance Payments & Deposit Tracking") }}</h3>
+				<button
+					v-if="!isCreate && form.name"
+					type="button"
+					class="btn btn-sm btn-outline-success"
+					@click="openAdvanceModal"
+				>
+					<i class="ti ti-plus me-1"></i>{{ t("New Advance Payment") }}
+				</button>
+			</div>
+			<div v-if="form.advance_summary" class="card-body border-bottom bg-light-subtle py-2">
+				<div class="row g-3 text-center">
+					<div class="col-4">
+						<div class="text-secondary small">{{ t("Paid via Bank") }}</div>
+						<div class="fw-bold font-monospace text-primary">{{ fm(form.advance_summary.paid_bank, form.currency) }}</div>
+					</div>
+					<div class="col-4">
+						<div class="text-secondary small">{{ t("Paid via Cash") }}</div>
+						<div class="fw-bold font-monospace text-orange">{{ fm(form.advance_summary.paid_cash, form.currency) }}</div>
+					</div>
+					<div class="col-4">
+						<div class="text-secondary small">{{ t("Total Advance Paid") }}</div>
+						<div class="fw-bold font-monospace text-success">{{ fm(form.advance_summary.paid_total, form.currency) }}</div>
+					</div>
+				</div>
 			</div>
 			<div class="table-responsive">
-				<table class="table table-vcenter">
+				<table class="table table-vcenter table-hover mb-0">
 					<thead>
 						<tr>
 							<th>{{ t("Payment Entry") }}</th>
 							<th>{{ t("Date") }}</th>
-							<th>{{ t("Mode of Payment") }}</th>
+							<th>{{ t("Stream") }}</th>
+							<th>{{ t("Status") }}</th>
+							<th>{{ t("Reference") }}</th>
 							<th class="text-end">{{ t("Paid Amount") }}</th>
 						</tr>
 					</thead>
 					<tbody>
-						<tr v-for="pe in form.advance_payments" :key="pe.name">
+						<tr v-for="pe in (form.advance_payments || [])" :key="pe.name">
 							<td class="font-monospace fw-bold text-primary">{{ pe.name }}</td>
 							<td>{{ formatDate(pe.posting_date) }}</td>
-							<td><span class="badge bg-secondary-lt">{{ pe.mode_of_payment || 'Bank' }}</span></td>
-							<td class="text-end font-monospace fw-semibold text-success">{{ fm(pe.paid_amount, form.currency) }}</td>
+							<td>
+								<span v-if="pe.payment_stream === 'Cash' || (pe.mode_of_payment || '').toLowerCase().includes('cash')" class="badge bg-orange-lt">
+									<i class="ti ti-cash me-1"></i>{{ t("Cash") }}
+								</span>
+								<span v-else class="badge bg-blue-lt">
+									<i class="ti ti-building-bank me-1"></i>{{ t("Bank") }}
+								</span>
+							</td>
+							<td>
+								<span v-if="pe.docstatus === 1" class="badge bg-success-lt">{{ t("Submitted") }}</span>
+								<span v-else-if="pe.docstatus === 0" class="badge bg-warning-lt">{{ t("Draft") }}</span>
+								<span v-else class="badge bg-secondary-lt">{{ t("Cancelled") }}</span>
+							</td>
+							<td class="font-monospace small text-secondary">{{ pe.reference_no || "—" }}</td>
+							<td class="text-end font-monospace fw-semibold text-success">{{ fm(pe.paid_amount || pe.allocated_to_po, form.currency) }}</td>
+						</tr>
+						<tr v-if="!form.advance_payments || !form.advance_payments.length">
+							<td colspan="6" class="text-center text-secondary py-3">{{ t("No advance payments recorded yet.") }}</td>
 						</tr>
 					</tbody>
 				</table>
@@ -1179,5 +1314,141 @@ watch(activeCompany, loadPiGroups);
 				</div>
 			</div>
 		</div>
+
+		<!-- Smart Advance Payment Modal (Dual-Pricing: Agreed vs Docs) -->
+		<div v-if="advOpen" class="modal d-block" tabindex="-1" style="background: rgba(0,0,0,0.5)">
+			<div class="modal-dialog modal-dialog-centered modal-lg">
+				<div class="modal-content">
+					<div class="modal-header">
+						<div>
+							<h5 class="modal-title mb-0">
+								<i class="ti ti-cash-banknote text-success me-2"></i>{{ t("Record Advance Payment") }}
+							</h5>
+							<div class="text-secondary small font-monospace">{{ form.supplier_pi_ref || form.name }} · {{ form.supplier_name || form.supplier }}</div>
+						</div>
+						<button type="button" class="btn-close" :disabled="advSaving" @click="advOpen = false"></button>
+					</div>
+
+					<div class="modal-body">
+						<!-- 1. Advance Basis & Percentage -->
+						<div class="card mb-3 bg-light-subtle border">
+							<div class="card-body">
+								<div class="row g-3 align-items-center">
+									<div class="col-md-6">
+										<label class="form-label fw-bold small text-uppercase mb-2">{{ t("Calculation Basis") }}</label>
+										<div class="btn-group w-100" role="group">
+											<input type="radio" class="btn-check" name="advBasisRadio" id="advBasisAgreed" value="AGREED" v-model="advBasis" @change="fillSplit" />
+											<label class="btn btn-outline-primary" for="advBasisAgreed">
+												{{ t("Agreed Total") }}<br><span class="small font-monospace">({{ fm(targetAgreedTotal, form.currency) }})</span>
+											</label>
+
+											<input type="radio" class="btn-check" name="advBasisRadio" id="advBasisDocs" value="DOCS" v-model="advBasis" @change="fillDocsOnly" />
+											<label class="btn btn-outline-primary" for="advBasisDocs">
+												{{ t("Docs Total") }}<br><span class="small font-monospace">({{ fm(targetDocsTotal, form.currency) }})</span>
+											</label>
+										</div>
+									</div>
+
+									<div class="col-md-6">
+										<label class="form-label fw-bold small text-uppercase mb-2">
+											{{ t("Advance Percentage") }}: <span class="text-primary font-monospace">{{ advPct }}%</span>
+										</label>
+										<input v-model.number="advPct" type="range" min="5" max="100" step="5" class="form-range" @input="advBasis === 'DOCS' ? fillDocsOnly() : fillSplit()" />
+										<div class="d-flex justify-content-between small text-secondary">
+											<span>5%</span><span>30%</span><span>50%</span><span>100%</span>
+										</div>
+									</div>
+								</div>
+
+								<!-- Context Banner -->
+								<div class="d-flex align-items-center justify-content-between p-2 mt-3 rounded bg-white border">
+									<div>
+										<span class="text-secondary small">{{ t("Target Advance:") }}</span>
+										<strong class="font-monospace ms-1 text-dark">{{ fm(targetAdvanceAmount, form.currency) }}</strong>
+										<span v-if="currentPaidTotal > 0" class="text-muted small ms-2">
+											({{ t("Paid:") }} {{ fm(currentPaidBank, form.currency) }} 🏦 + {{ fm(currentPaidCash, form.currency) }} 💵 · {{ t("Due:") }} {{ fm(remainingAdvanceDue, form.currency) }})
+										</span>
+									</div>
+									<div class="small">
+										<span class="badge bg-blue-lt me-1">{{ t("Official Docs:") }} {{ fm(targetDocsTotal, form.currency) }}</span>
+										<span class="badge bg-orange-lt">{{ t("Cash Diff:") }} {{ fm(targetCashDiff, form.currency) }}</span>
+									</div>
+								</div>
+							</div>
+						</div>
+
+
+						<!-- 2. Quick Fill Actions -->
+						<div class="mb-3">
+							<label class="form-label fw-bold small text-uppercase mb-1">{{ t("Quick Actions") }}</label>
+							<div class="d-flex gap-2 flex-wrap">
+								<button type="button" class="btn btn-sm btn-outline-info" @click="fillDocsOnly">
+									<i class="ti ti-bolt me-1"></i>{{ t("Docs Only 30%") }} ({{ fm(round2(targetDocsTotal * 0.3), form.currency) }} {{ t("Bank") }})
+								</button>
+								<button type="button" class="btn btn-sm btn-outline-primary" @click="fillAllBank">
+									<i class="ti ti-building-bank me-1"></i>{{ t("100% Bank") }} ({{ fm(targetAdvanceAmount, form.currency) }})
+								</button>
+								<button type="button" class="btn btn-sm btn-outline-warning" @click="fillAllCash">
+									<i class="ti ti-cash me-1"></i>{{ t("100% Cash") }} ({{ fm(targetAdvanceAmount, form.currency) }})
+								</button>
+								<button type="button" class="btn btn-sm btn-outline-success" @click="fillSplit">
+									<i class="ti ti-scale me-1"></i>{{ t("Proportional Split (Bank + Cash)") }}
+								</button>
+							</div>
+						</div>
+
+						<!-- 3. Payment Inputs (Bank & Cash) -->
+						<div class="row g-3 mb-3">
+							<div class="col-md-6">
+								<label class="form-label fw-bold text-primary">
+									<i class="ti ti-building-bank me-1"></i>{{ t("Bank Payment Amount") }}
+								</label>
+								<MoneyInput v-model="advBank" :currency="form.currency" :language="user.language" />
+								<div class="small text-secondary mt-1">{{ t("Creates a DRAFT Payment Entry for official bank account.") }}</div>
+							</div>
+
+							<div class="col-md-6">
+								<label class="form-label fw-bold text-orange">
+									<i class="ti ti-cash me-1"></i>{{ t("Cash Payment Amount") }}
+								</label>
+								<MoneyInput v-model="advCash" :currency="form.currency" :language="user.language" />
+								<div class="small text-secondary mt-1">{{ t("Creates a DRAFT Payment Entry for cash desk/safe.") }}</div>
+							</div>
+
+							<div class="col-md-6">
+								<label class="form-label small mb-1">{{ t("Payment Date") }}</label>
+								<DateInput v-model="advDate" />
+							</div>
+
+							<div class="col-md-6">
+								<label class="form-label small mb-1">{{ t("Reference No") }}</label>
+								<input v-model="advRef" type="text" class="form-control" placeholder="e.g. ADV-REF-001" />
+							</div>
+						</div>
+
+						<div class="p-2 rounded bg-success-subtle border border-success-subtle d-flex justify-content-between align-items-center">
+							<span class="text-success-emphasis fw-semibold">{{ t("Total advance to record:") }}</span>
+							<span class="font-monospace fw-bold fs-3 text-success">{{ fm(Number(advBank || 0) + Number(advCash || 0), form.currency) }}</span>
+						</div>
+					</div>
+
+					<div class="modal-footer">
+						<button type="button" class="btn btn-outline-secondary" :disabled="advSaving" @click="advOpen = false">
+							{{ t("Cancel") }}
+						</button>
+						<button
+							type="button"
+							class="btn btn-success"
+							:disabled="advSaving || (Number(advBank || 0) <= 0 && Number(advCash || 0) <= 0)"
+							@click="submitAdvancePayment"
+						>
+							<span v-if="advSaving" class="spinner-border spinner-border-sm me-1"></span>
+							<i v-else class="ti ti-check me-1"></i>{{ t("Create Draft Payment Entries") }}
+						</button>
+					</div>
+				</div>
+			</div>
+		</div>
 	</div>
 </template>
+

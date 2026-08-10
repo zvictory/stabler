@@ -6,8 +6,10 @@ import { useSession } from "../../stores/session.js";
 import { importsApi } from "../../api/imports.js";
 import { call } from "../../api/client.js";
 import { t } from "../../composables/i18n.js";
-import { formatDate } from "../../composables/date.js";
+import { formatDate, todayIso } from "../../composables/date.js";
 import { formatMoney } from "../../composables/money.js";
+
+
 import { useToast } from "../../composables/useToast.js";
 import { useConfirm } from "../../composables/useConfirm.js";
 import { useEscapeBack } from "../../composables/useEscapeBack.js";
@@ -34,6 +36,13 @@ const saving = ref(false);
 const submitting = ref(false);
 const error = ref("");
 const form = ref(blankForm());
+
+
+function round2(v) {
+	return Math.round((Number(v) || 0) * 100) / 100;
+}
+
+
 
 const currencies = ref([]);
 const currencyOptions = computed(() => currencies.value.map((c) => ({ value: c.name, label: c.name })));
@@ -160,12 +169,9 @@ function addItem() {
 function removeItem(i) {
 	form.value.items.splice(i, 1);
 }
-function pickItem(row, item) {
-	row.item_code = item.name;
-	row.item_name = item.item_name || item.name;
-}
 
 async function quickCreateGroup() {
+
 	const title = window.prompt(t("New PI group title:"));
 	if (!title || !title.trim()) return;
 	try {
@@ -311,11 +317,40 @@ function openAdvance() {
 	const remaining = form.value.advance_summary ? form.value.advance_summary.remaining : 0;
 	advBank.value = remaining || 0;
 	advCash.value = 0;
-	advDate.value = "";
-	advRef.value = "";
+	advDate.value = todayIso();
+	advRef.value = `ADV-${docName.value || "PO"}`;
+	fillSplit();
 	advOpen.value = true;
 }
+
+function fillDocsOnly() {
+	const docsExp = form.value.advance_summary?.expected_bank || round2((docsTotal.value || 0) * ((Number(form.value.advance_pct) || 30) / 100));
+	advBank.value = docsExp;
+	advCash.value = 0;
+}
+
+function fillAllBank() {
+	const totalExp = form.value.advance_summary?.expected_advance || round2((agreedTotal.value || 0) * ((Number(form.value.advance_pct) || 30) / 100));
+	advBank.value = totalExp;
+	advCash.value = 0;
+}
+
+function fillAllCash() {
+	const totalExp = form.value.advance_summary?.expected_advance || round2((agreedTotal.value || 0) * ((Number(form.value.advance_pct) || 30) / 100));
+	advBank.value = 0;
+	advCash.value = totalExp;
+}
+
+function fillSplit() {
+	const totalExp = form.value.advance_summary?.expected_advance || round2((agreedTotal.value || 0) * ((Number(form.value.advance_pct) || 30) / 100));
+	const total = agreedTotal.value || 1;
+	const docsShare = (docsTotal.value || 0) / total;
+	advBank.value = round2(totalExp * docsShare);
+	advCash.value = round2(totalExp - advBank.value);
+}
+
 async function recordAdvance() {
+
 	if (Number(advBank.value || 0) <= 0 && Number(advCash.value || 0) <= 0) {
 		toast.error(t("Enter a bank and/or cash amount."));
 		return;
@@ -602,13 +637,29 @@ watch(activeCompany, loadRefData);
 
 						<!-- Record-advance panel -->
 						<div v-if="advOpen" class="mt-3 p-3 border rounded bg-light">
+							<!-- Quick action buttons -->
+							<div class="mb-2 d-flex gap-1 flex-wrap">
+								<button type="button" class="btn btn-xs btn-outline-info" @click="fillDocsOnly">
+									<i class="ti ti-bolt me-1"></i>{{ t("Docs Only") }}
+								</button>
+								<button type="button" class="btn btn-xs btn-outline-primary" @click="fillAllBank">
+									<i class="ti ti-building-bank me-1"></i>{{ t("100% Bank") }}
+								</button>
+								<button type="button" class="btn btn-xs btn-outline-warning" @click="fillAllCash">
+									<i class="ti ti-cash me-1"></i>{{ t("100% Cash") }}
+								</button>
+								<button type="button" class="btn btn-xs btn-outline-success" @click="fillSplit">
+									<i class="ti ti-scale me-1"></i>{{ t("Proportional Split") }}
+								</button>
+							</div>
+
 							<div class="row g-2">
 								<div class="col-md-6">
-									<label class="form-label small">{{ t("Bank amount") }}</label>
+									<label class="form-label small fw-bold text-primary">{{ t("Bank amount") }}</label>
 									<MoneyInput v-model="advBank" :currency="form.currency" :language="user.language" size="sm" />
 								</div>
 								<div class="col-md-6">
-									<label class="form-label small">{{ t("Cash amount") }}</label>
+									<label class="form-label small fw-bold text-orange">{{ t("Cash amount") }}</label>
 									<MoneyInput v-model="advCash" :currency="form.currency" :language="user.language" size="sm" />
 								</div>
 								<div class="col-md-6">
@@ -629,6 +680,7 @@ watch(activeCompany, loadRefData);
 								</button>
 							</div>
 						</div>
+
 
 						<div v-if="form.advances.length" class="table-responsive mt-3">
 							<table class="table table-sm table-vcenter">

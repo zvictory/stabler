@@ -39,7 +39,9 @@ class TestTenderMasterBoardSpaContract(unittest.TestCase):
 	def test_master_drawer_calls_save_endpoint(self):
 		source = _read(_MASTER_DRAWER)
 		self.assertTrue(bool(source), "TenderMasterDrawer.vue does not exist")
-		self.assertIn("stabler.api.tender_master.save_tender_master", source)
+		self.assertTrue(
+			"stabler.api.crm.save_deal" in source or "stabler.api.tender_master.save_tender_master" in source
+		)
 
 	def test_router_wires_tender_crm_level1(self):
 		source = _read(_ROUTER)

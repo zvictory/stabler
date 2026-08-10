@@ -21,16 +21,27 @@ import frappe
 from frappe import _
 from frappe.utils import now
 
-from stabler.api._tender_documents import apply_ready_audit, docs_summary, parse_doc_requirements
-from stabler.api.tender import _require_tender, _require_tender_view
+from stabler.api._tender_documents import (
+	DOC_ROLE_WRITER_VIEWS,
+	apply_ready_audit,
+	docs_summary,
+	parse_doc_requirements,
+)
+from stabler.api.tender import _require_any_tender_view, _require_tender, _require_tender_view
 from stabler.api.tender_master import _assert_company_scope
 
 
 def _get_deal_and_master(deal_name: str, company: str | None, ptype: str):
-	"""Load CRM Deal and linked Tender Master with company scope checks."""
+	"""Load CRM Deal and linked Tender Master with company scope checks.
+
+	Okuma dört tender görünümünden herhangi birine açık (director/sourcing/
+	declarant/logist) — karar "Okuma dört tender görünümüne de açıktır" dedi.
+	Yazma kapısı satırın ``role`` alanına göre ayrıca uygulanır
+	(``_require_doc_role_write``).
+	"""
 	_require_tender(company)
 	selected_company = _assert_company_scope(company)
-	_require_tender_view("sourcing", selected_company)
+	_require_any_tender_view(("director", "sourcing", "declarant", "logist"), selected_company)
 	if not frappe.db.exists("CRM Deal", deal_name):
 		frappe.throw(_("Tender Deal {0} not found.").format(deal_name), frappe.DoesNotExistError)
 	deal_doc = frappe.get_doc("CRM Deal", deal_name)
@@ -125,6 +136,37 @@ def _resolve_target(deal_doc, master_doc, key: str):
 	return deal_doc, "custom_tender_intake", False
 
 
+def _resolve_target_with_role(deal_doc, master_doc, key: str):
+	"""Like ``_resolve_target`` but also returns the requirement row's ``role``.
+
+	Used by the write endpoints (upload/waive/remove) to apply the row-role
+	write gate — "kim yükler" sorusunun cevabı satırın rolünde.
+	"""
+	target_doc, fieldname, is_master_req = _resolve_target(deal_doc, master_doc, key)
+	raw = target_doc.get(fieldname)
+	reqs = parse_doc_requirements(raw if is_master_req else _intake_documents(raw))
+	row = next((r for r in reqs if r.get("key") == key), None)
+	return target_doc, fieldname, is_master_req, row
+
+
+def _require_doc_role_write(row: dict | None, company: str) -> None:
+	"""Write gate keyed on the requirement row's ``role`` field.
+
+	``director`` is the universal writer.  Other roles may write only rows whose
+	``role`` maps to a view they hold::
+
+	    customs    → declarant + director
+	    logistics  → logist + director
+	    general    → sourcing + director
+	    finance    → sourcing + director
+	"""
+	if row is None:
+		return
+	role = str(row.get("role") or "general").strip().lower()
+	allowed = DOC_ROLE_WRITER_VIEWS.get(role, DOC_ROLE_WRITER_VIEWS["general"])
+	_require_any_tender_view(allowed, company)
+
+
 def _save_requirements(target_doc, fieldname: str, reqs: list, is_master_req: bool) -> None:
 	"""Persist a normalized requirements list back to its owner document."""
 	if is_master_req:
@@ -161,7 +203,8 @@ def upload_tender_document(
 	if not frappe.db.exists("File", {"file_url": file_url}):
 		frappe.throw(_("No uploaded file found for {0}.").format(file_url), frappe.ValidationError)
 	key = _normalize_key(requirement_key)
-	target_doc, fieldname, is_master_req = _resolve_target(deal_doc, master_doc, key)
+	target_doc, fieldname, is_master_req, row = _resolve_target_with_role(deal_doc, master_doc, key)
+	_require_doc_role_write(row, selected_company)
 	raw = target_doc.get(fieldname)
 	reqs = parse_doc_requirements(raw if is_master_req else _intake_documents(raw))
 	found = False
