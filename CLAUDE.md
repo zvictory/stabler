@@ -145,6 +145,10 @@ git status --porcelain            # must be empty
 git branch --no-merged main       # must be empty (bar deliberately open branches)
 ```
 
+When two agents/IDEs work the repo at the same time, the file-ownership split,
+the merge protocol and the branch gate in `deploy_stabler.sh` are written out in
+`docs/runbooks/parallel-development.md`.
+
 ### Prod site
 - **Primary prod = `anjan.erpstable.com`.** Stabler is actually installed on
   **7 sites** on the shared bench (`/home/frappe/frappe-bench`, ~22 tenants):
