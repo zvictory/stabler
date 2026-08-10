@@ -5688,16 +5688,25 @@ def list_vendor_categories(company: str, vendor: str | None = None) -> list[dict
 		params,
 		as_dict=True,
 	)
-	counts = dict(
-		frappe.db.sql(
+	# Boxes and kg travel with the count: the list is where "does this category
+	# fill a container?" gets answered, and opening 20 modals to add up 20 rows
+	# is the same question asked the slow way.
+	totals = {
+		r[0]: r
+		for r in frappe.db.sql(
 			"""
-            SELECT parent, COUNT(*) FROM `tabStabler Vendor Category Item`
+            SELECT parent, COUNT(*), SUM(boxes_per_container),
+                   SUM(boxes_per_container * COALESCE(box_kg, 0))
+            FROM `tabStabler Vendor Category Item`
             GROUP BY parent
             """
 		)
-	)
+	}
 	for r in rows:
-		r["item_count"] = cint(counts.get(r["name"], 0))
+		row_totals = totals.get(r["name"])
+		r["item_count"] = cint(row_totals[1]) if row_totals else 0
+		r["total_boxes"] = cint(row_totals[2]) if row_totals else 0
+		r["total_kg"] = flt(row_totals[3], 2) if row_totals else 0.0
 	return rows
 
 
@@ -5716,6 +5725,7 @@ def vendor_category_detail(name: str) -> dict:
 				"item_name": meta.get("item_name"),
 				"stock_uom": meta.get("stock_uom"),
 				"boxes_per_container": cint(it.boxes_per_container),
+				"box_kg": flt(it.box_kg, 2),
 			}
 		)
 	return {
@@ -5727,6 +5737,8 @@ def vendor_category_detail(name: str) -> dict:
 		"is_active": cint(doc.is_active),
 		"items": items,
 		"total_boxes_per_container": sum(i["boxes_per_container"] for i in items),
+		# Never stored — the row total is boxes × box_kg, derived wherever it is shown.
+		"total_kg": flt(sum(i["boxes_per_container"] * i["box_kg"] for i in items), 2),
 	}
 
 
@@ -5768,6 +5780,7 @@ def save_vendor_category(payload, company: str) -> dict:
 			{
 				"item_code": row["item_code"],
 				"boxes_per_container": cint(row.get("boxes_per_container")),
+				"box_kg": flt(row.get("box_kg")),
 			},
 		)
 	doc.save(ignore_permissions=False)

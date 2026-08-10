@@ -7,7 +7,8 @@
  "engine": "InnoDB",
  "field_order": [
   "item_code",
-  "boxes_per_container"
+  "boxes_per_container",
+  "box_kg"
  ],
  "fields": [
   {
@@ -24,6 +25,14 @@
    "in_list_view": 1,
    "label": "Boxes Per Container",
    "reqd": 1
+  },
+  {
+   "description": "Weight of one box for this cut. Boxes differ (18 kg, 20 kg, …), so the weight belongs to the row, not to the category.",
+   "fieldname": "box_kg",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "label": "Box Kg",
+   "precision": "2"
   }
  ],
  "index_web_pages_for_search": 1,
