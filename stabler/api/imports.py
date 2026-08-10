@@ -4488,7 +4488,9 @@ def create_advance_payment(
 		frappe.throw(_("Enter a bank and/or cash amount."))
 	on_date = getdate(payment_date) if payment_date else getdate(today())
 
-	from stabler.stabler.imports_module.hooks import _apply_pay_accounts
+	from stabler.stabler.imports_module.hooks import _apply_pay_accounts, patch_payment_entry_references
+
+	patch_payment_entry_references()
 
 	has_stream = frappe.db.has_column("Payment Entry", "custom_payment_stream")
 	created = []
@@ -4521,6 +4523,7 @@ def create_advance_payment(
 		elif stream == "Cash" and cash_account:
 			pe.paid_from = cash_account
 
+		pe.setup_party_account_field()
 		pe.set_missing_values()
 		pe.insert(ignore_permissions=False)  # DRAFT — never submitted here.
 		created.append({"name": pe.name, "stream": stream, "amount": amount})

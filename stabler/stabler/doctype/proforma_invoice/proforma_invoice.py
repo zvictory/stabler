@@ -5,6 +5,14 @@ from frappe.utils import flt
 
 
 class ProformaInvoice(Document):
+	@property
+	def posting_date(self):
+		return self.get("posting_date") or self.get("pi_date")
+
+	@posting_date.setter
+	def posting_date(self, value):
+		self.set("posting_date", value)
+
 	def validate(self):
 		self.posting_date = self.pi_date
 		self.grand_total = self.agreed_total
