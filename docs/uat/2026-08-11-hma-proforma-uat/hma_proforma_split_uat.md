@@ -87,4 +87,26 @@ Fatura detay alanlarında ve sağlanan özet panelinde aşağıdaki hesaplamalar
 | 2 | Top Context Card | Toplam tutarlar, evrak tutarı ve nakit farkı hatasız listelenmeli. | |
 | 3 | Strategy Preset (%30 Split) | Banka ve kasa kutuları oransal formüle göre otomatik hesaplanmalı. | |
 | 4 | Source Accounts | Banka ve Kasa dropdownları şirketin aktif hesaplarını listelemeli ve seçime izin vermeli. | |
-| 5 | Draft Entries Creation | Biri banka ödemesi, diğeri nakit ödemesi olmak üzere 2 adet taslak Payment Entry başarıyla açılmalı. | |
+| 5 | Draft Entries Creation | Biri banka ödemesi, diğeri nakit ödemesi olmak üzere 2 adet taslak Payment Entry başarıyla açılmalı. | **PASS** |
+
+---
+
+## 🤖 4. E2E Playwright Otomatik Test Kanıtları (Automated Browser Evidence)
+
+Test senaryosu [live_browser_hma_proforma_split.js](file:///Users/zafar/frappe-bench-local/apps/stabler/docs/uat/scripts/live_browser_hma_proforma_split.js) otomasyon scripti ile Playwright Chromium üzerinden çalıştırılmış ve aşağıdaki ekran görüntüleri kaydedilmiştir:
+
+### Ekran Görüntüsü 1: Kategori ile Fatura Kalemlerini Doldurma Modalı
+![Kategori Doldurma](/Users/zafar/frappe-bench-local/apps/stabler/docs/uat/2026-08-11-hma-proforma-uat/screenshots/01_fill_category_modal.png)
+
+### Ekran Görüntüsü 2: Kaydedilen Proforma Faturası (33 Konteyner, Agreed $5.00, Docs $4.50)
+![Proforma Kaydedildi](/Users/zafar/frappe-bench-local/apps/stabler/docs/uat/2026-08-11-hma-proforma-uat/screenshots/02_proforma_saved.png)
+
+### Ekran Görüntüsü 3: Yeni Avans Ödeme Modalı Açılış Görünümü
+![Avans Modalı Açılış](/Users/zafar/frappe-bench-local/apps/stabler/docs/uat/2026-08-11-hma-proforma-uat/screenshots/03_record_advance_modal_open.png)
+
+### Ekran Görüntüsü 4: %30 Oransal Böl (Split Bank + Cash) Seçimi ve Otomatik Hesaplama
+![Oransal Bölüm Seçimi](/Users/zafar/frappe-bench-local/apps/stabler/docs/uat/2026-08-11-hma-proforma-uat/screenshots/04_split_strategy_selected.png)
+
+### Ekran Görüntüsü 5: Taslak Belgelerin Kaydedilmesi
+![Taslak Ödemeler Kaydedildi](/Users/zafar/frappe-bench-local/apps/stabler/docs/uat/2026-08-11-hma-proforma-uat/screenshots/05_advance_payments_recorded.png)
+
