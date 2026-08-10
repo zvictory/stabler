@@ -264,6 +264,10 @@ const hasItems = computed(() => (form.value.items || []).some((r) => r.item));
 const itemsAgreedTotal = computed(() => (form.value.items || []).reduce((s, r) => s + rowAmount(r), 0));
 const itemsDocsTotal = computed(() => (form.value.items || []).reduce((s, r) => s + rowDocsAmount(r), 0));
 const itemsCashDiff = computed(() => itemsAgreedTotal.value - itemsDocsTotal.value);
+const itemsTotalBoxes = computed(() => (form.value.items || []).reduce((s, r) => s + (Number(r.boxes) || 0), 0));
+const itemsTotalQty = computed(() => (form.value.items || []).reduce((s, r) => s + (Number(r.qty) || 0), 0));
+const itemsTotalInvoiced = computed(() => (form.value.items || []).reduce((s, r) => s + (Number(getSummaryRow(r)?.invoiced_qty || 0)), 0));
+const itemsTotalRemaining = computed(() => (form.value.items || []).reduce((s, r) => s + (Number(r.qty) || 0) - (Number(getSummaryRow(r)?.invoiced_qty || 0)), 0));
 const itemCategories = computed(() => [
 	...new Set((form.value.items || []).map((r) => r.category).filter(Boolean)),
 ]);
@@ -1013,10 +1017,16 @@ watch(activeCompany, loadPiGroups);
 					</tbody>
 					<tfoot v-if="form.items.length">
 						<tr>
-							<td colspan="7" class="text-end fw-semibold small">{{ t("Totals") }}</td>
+							<td colspan="2" class="text-end fw-semibold small bg-light-subtle">{{ t("Totals") }}</td>
+							<td class="text-end font-monospace fw-bold text-dark bg-light-subtle">{{ fn(itemsTotalBoxes) }}</td>
+							<td class="text-end text-muted small bg-light-subtle">—</td>
+							<td class="text-end font-monospace fw-bold text-dark bg-light-subtle">{{ fn(itemsTotalQty) }}</td>
+							<td colspan="2" class="text-end text-muted small bg-light-subtle">—</td>
 							<td class="text-end font-monospace fw-semibold text-blue bg-blue-lt">{{ fm(itemsAgreedTotal, form.currency) }}</td>
 							<td class="text-end font-monospace fw-semibold text-green bg-green-lt">{{ fm(itemsDocsTotal, form.currency) }}</td>
-							<td colspan="4"></td>
+							<td class="text-end font-monospace fw-semibold text-purple bg-purple-lt">{{ fn(itemsTotalInvoiced) }}</td>
+							<td class="text-end font-monospace fw-semibold text-warning bg-warning-lt">{{ fn(itemsTotalRemaining) }}</td>
+							<td class="bg-light-subtle"></td>
 						</tr>
 					</tfoot>
 				</table>
