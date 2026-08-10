@@ -41,6 +41,13 @@ SITE="anjan.erpstable.com"
 say() { printf "\n\033[1;36m==> %s\033[0m\n" "$*"; }
 confirm() { read -r -p "$1 [y/N] " a; [[ "$a" == "y" || "$a" == "Y" ]]; }
 
+# Every ssh below is `ssh -n`. ssh forwards its stdin to the remote command, so
+# an ssh that does not need input still drains whatever the script was given --
+# and the two confirm() prompts then read EOF and answer "no". Measured
+# 2026-08-10: a piped `y` run aborted at step 3 with the file list already
+# printed and correct. -n is also what makes this script safe to feed answers
+# non-interactively at all.
+
 # 0) Branch gate — BEFORE anything touches prod, including the step below's ssh
 #    and step 2's backup tarball. Step 3 ships `git archive HEAD`, and HEAD is
 #    whatever is checked out: run this from a feature branch and half-finished
@@ -80,7 +87,7 @@ fi
 
 # 0) Confirm prod target actually has stabler (never assume the site).
 say "0/7  Confirming $SITE has stabler installed"
-ssh "$PROD" "cd /home/frappe/frappe-bench && sudo -u frappe bench --site $SITE list-apps | grep -qw stabler" \
+ssh -n "$PROD" "cd /home/frappe/frappe-bench && sudo -u frappe bench --site $SITE list-apps | grep -qw stabler" \
   && echo "    OK: stabler is installed on $SITE" \
   || { echo "    ABORT: stabler not found on $SITE"; exit 1; }
 
@@ -107,7 +114,7 @@ fi
 #    A backup step that prints someone else's backup is worse than printing nothing:
 #    it names a rollback point that does not contain what you just replaced.
 say "2/7  Backup current prod app -> /root/stabler-app-<ts>.tgz"
-ssh "$PROD" "TS=\$(date +%F-%H%M) && tar czf /root/stabler-app-\$TS.tgz -C $PROD_APPS stabler && ls -lh /root/stabler-app-\$TS.tgz"
+ssh -n "$PROD" "TS=\$(date +%F-%H%M) && tar czf /root/stabler-app-\$TS.tgz -C $PROD_APPS stabler && ls -lh /root/stabler-app-\$TS.tgz"
 
 # 3) rsync the COMMITTED tree -> prod (NO --delete). The exclude list lives ENTIRELY
 #    in .rsync-exclude -- no inline flags here. This script and deploy_full.sh
@@ -170,7 +177,7 @@ say "3/7  rsync source -> $PROD:$PROD_APPS/stabler/"
 rsync -rltz --no-owner --no-group \
   --exclude-from="$APP_DIR/.rsync-exclude" \
   "$EXPORT_DIR/" "$PROD:$PROD_APPS/stabler/"
-ssh "$PROD" "chown -R frappe:frappe $PROD_APPS/stabler"
+ssh -n "$PROD" "chown -R frappe:frappe $PROD_APPS/stabler"
 
 # 4) Node deps, then build on prod, then drop the sourcemaps.
 #
@@ -195,7 +202,7 @@ ssh "$PROD" "chown -R frappe:frappe $PROD_APPS/stabler"
 #    here and is not usable yet -- package-lock.json is out of sync with
 #    package.json (stabler-qee) -- so switch to it when that lands.
 say "4/7  node deps on prod (only if missing or the manifests changed)"
-ssh "$PROD" "set -e
+ssh -n "$PROD" "set -e
   cd $PROD_APPS/stabler
   STAMP=node_modules/.stabler-deps-md5
   WANT=\$(cat package.json package-lock.json | md5sum | cut -d' ' -f1)
@@ -214,7 +221,7 @@ ssh "$PROD" "set -e
 #    unminified Vue source of a 7-tenant ERP. Nothing in prod reads it; only a
 #    devtools session would, and that 404 is harmless.
 say "4/7  bench build --app stabler (on prod) + strip sourcemaps"
-ssh "$PROD" "cd /home/frappe/frappe-bench && sudo -u frappe bench build --app stabler \
+ssh -n "$PROD" "cd /home/frappe/frappe-bench && sudo -u frappe bench build --app stabler \
   && find sites/assets/stabler/dist -name '*.map' -print -delete"
 
 # 5) Migrate — REQUIRED whenever patches.txt / doctypes changed, and it is
@@ -222,7 +229,7 @@ ssh "$PROD" "cd /home/frappe/frappe-bench && sudo -u frappe bench build --app st
 #    the code; only the sites you migrate get the DDL. Sites are DISCOVERED, not
 #    hardcoded — a hardcoded list goes stale the moment a tenant is added.
 say "5/7  migrate EVERY stabler-bearing site (per-site DDL)"
-ssh "$PROD" 'cd /home/frappe/frappe-bench && for s in $(ls sites); do
+ssh -n "$PROD" 'cd /home/frappe/frappe-bench && for s in $(ls sites); do
   [ -f "sites/$s/site_config.json" ] || continue
   sudo -u frappe bench --site "$s" list-apps 2>/dev/null | grep -qw stabler || continue
   echo "    --- migrate $s"
@@ -233,7 +240,7 @@ done'
 #    blip for ALL tenants, not just anjan. Run at low traffic.
 say "6/7  bench restart  (brief blip for ALL ~22 tenants)"
 if confirm "Proceed with bench restart now?"; then
-  ssh "$PROD" "cd /home/frappe/frappe-bench && sudo -u frappe bench restart"
+  ssh -n "$PROD" "cd /home/frappe/frappe-bench && sudo -u frappe bench restart"
 else
   echo "    Skipped. Run later:  ssh $PROD 'cd /home/frappe/frappe-bench && sudo -u frappe bench restart'"
 fi
@@ -244,7 +251,7 @@ fi
 #    answers. It counts rows in a doctype stabler itself owns, so a failed
 #    migrate or a broken import surfaces here instead of under the first user.
 say "7/7  Post-deploy probe (stabler code + DB reachable on $SITE)"
-ssh "$PROD" "cd /home/frappe/frappe-bench && sudo -u frappe bench --site $SITE \
+ssh -n "$PROD" "cd /home/frappe/frappe-bench && sudo -u frappe bench --site $SITE \
   execute frappe.client.get_count --args '[\"Stabler Company Modules\", {}]'" \
   && echo "    ^ >=1 means stabler's own doctypes are live on $SITE"
 
