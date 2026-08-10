@@ -179,18 +179,67 @@
 			</div>
 		</div>
 
-		<EmptyState v-else icon="ti-search" :title="t('Pick a tender deal to view its document center.')" />
+		<!-- Lot seçici — ?deal= yokken -->
+	<div v-else class="card">
+		<div class="card-header py-2 fw-semibold d-flex justify-content-between align-items-center">
+			<span><i class="ti ti-search me-1"></i>{{ t("Lot seç — Belge Merkezi") }}</span>
+			<span v-if="targets.length" class="text-muted small">{{ targets.length }} lot</span>
+		</div>
+		<div class="card-body p-0">
+			<SkeletonRows v-if="targetsLoading" :rows="4" />
+			<table v-else-if="targets.length" class="table table-sm align-middle mb-0">
+				<thead>
+					<tr>
+						<th>{{ t("Lot / Deal") }}</th>
+						<th>{{ t("Parent Tender") }}</th>
+						<th>{{ t("Aşama") }}</th>
+						<th class="text-end">{{ t("Eksik zorunlu") }}</th>
+						<th>{{ t("Hazırlık") }}</th>
+						<th></th>
+					</tr>
+				</thead>
+				<tbody>
+					<tr v-for="t in targets" :key="t.deal" role="button" @click="pickLot(t.deal)">
+						<td>
+							<div class="fw-semibold">{{ t.label }}</div>
+							<div class="text-secondary small font-monospace">{{ t.deal }}</div>
+						</td>
+						<td class="text-secondary small">{{ t.parent_tender || "—" }}</td>
+						<td><span class="badge bg-secondary-lt">{{ t.stage }}</span></td>
+						<td class="text-end">
+							<span v-if="t.missing_required" class="badge bg-red-lt text-red fw-bold">{{ t.missing_required }}</span>
+							<span v-else class="badge bg-green-lt text-green">✓</span>
+						</td>
+						<td>
+							<div class="d-flex align-items-center gap-2">
+								<div class="progress flex-grow-1" style="height: 5px; min-width: 60px">
+									<div class="progress-bar" :class="(t.readiness_pct || 0) === 100 ? 'bg-success' : 'bg-warning'"
+										:style="{ width: (t.readiness_pct || 0) + '%' }"></div>
+								</div>
+								<span class="font-monospace small">{{ t.readiness_pct || 0 }}%</span>
+							</div>
+						</td>
+						<td class="text-end">
+							<button type="button" class="btn btn-ghost-primary btn-sm">{{ t("Aç") }} →</button>
+						</td>
+					</tr>
+				</tbody>
+			</table>
+			<EmptyState v-else icon="ti-files-off" :title="t('Hiç tender lot bulunamadı.')" />
+		</div>
+	</div>
 	</TenderPage>
 </template>
 
 <script setup>
 import { ref, watch, onMounted } from "vue";
-import { useRoute } from "vue-router";
+import { useRoute, useRouter } from "vue-router";
 import { storeToRefs } from "pinia";
 import { useSession } from "../../stores/session";
 import { call } from "../../api/client";
 import { t } from "../../composables/i18n";
 import { useToast } from "../../composables/useToast.js";
+import { useTenderContext } from "../../composables/useTenderContext.js";
 import EmptyState from "../../components/EmptyState.vue";
 import SkeletonRows from "../../components/SkeletonRows.vue";
 import TenderPage from "./TenderPage.vue";
@@ -199,12 +248,18 @@ import TenderWorkspaceTabs from "./TenderWorkspaceTabs.vue";
 const session = useSession();
 const { activeCompany } = storeToRefs(session);
 const route = useRoute();
+const router = useRouter();
 const toast = useToast();
+const { documentsLocation } = useTenderContext(route);
 
 const deal = ref(route.query.deal ? String(route.query.deal) : "");
 const loading = ref(false);
 const requirements = ref([]);
 const summary = ref(null);
+
+// Lot seçici — ?deal= yokken yüklenir
+const targets = ref([]);
+const targetsLoading = ref(false);
 
 const uploadOpen = ref(false);
 const uploadSaving = ref(false);
@@ -214,6 +269,25 @@ const uploadForm = ref({ file_name: "", file_url: "" });
 const waiveOpen = ref(false);
 const waiveSaving = ref(false);
 const waiveForm = ref({ reason: "" });
+
+async function loadTargets() {
+	if (deal.value) return;
+	targetsLoading.value = true;
+	try {
+		const res = await call("stabler.api.tender_documents.tender_document_targets", {
+			company: activeCompany.value,
+		});
+		targets.value = res?.targets || [];
+	} catch (err) {
+		toast.error(err.message || t("Failed to load lots"));
+	} finally {
+		targetsLoading.value = false;
+	}
+}
+
+function pickLot(dealId) {
+	router.push(documentsLocation(dealId));
+}
 
 async function load() {
 	if (!deal.value) return;
@@ -289,6 +363,21 @@ function getGatedDownloadUrl(key, fileUrl) {
 	return `/api/method/stabler.api.tender_documents.download_tender_document?deal=${encodeURIComponent(deal.value)}&requirement_key=${encodeURIComponent(key)}&file_url=${encodeURIComponent(fileUrl)}&company=${encodeURIComponent(activeCompany.value || '')}`;
 }
 
-watch([deal, activeCompany], load);
-onMounted(load);
+// route.query.deal değişince deal ref'ini senkronize tut (lot seçicide navigasyon)
+watch(() => route.query.deal, (newDeal) => {
+	deal.value = newDeal ? String(newDeal) : "";
+});
+
+// deal boşken targets yükle, doluyken belgeleri yükle
+watch([deal, activeCompany], () => {
+	if (deal.value) {
+		load();
+	} else {
+		loadTargets();
+	}
+});
+onMounted(() => {
+	if (deal.value) load();
+	else loadTargets();
+});
 </script>

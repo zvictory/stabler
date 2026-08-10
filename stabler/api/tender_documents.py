@@ -27,7 +27,13 @@ from stabler.api._tender_documents import (
 	docs_summary,
 	parse_doc_requirements,
 )
-from stabler.api.tender import _require_any_tender_view, _require_tender, _require_tender_view
+from stabler.api.tender import (
+	_deal_label,
+	_require_any_tender_view,
+	_require_tender,
+	_require_tender_view,
+	_tender_deal_names,
+)
 from stabler.api.tender_master import _assert_company_scope
 
 
@@ -252,7 +258,8 @@ def waive_tender_document(
 	if not reason_clean:
 		frappe.throw(_("Waiver reason is mandatory."), frappe.ValidationError)
 	key = _normalize_key(requirement_key)
-	target_doc, fieldname, is_master_req = _resolve_target(deal_doc, master_doc, key)
+	target_doc, fieldname, is_master_req, row = _resolve_target_with_role(deal_doc, master_doc, key)
+	_require_doc_role_write(row, selected_company)
 	raw = target_doc.get(fieldname)
 	reqs = parse_doc_requirements(raw if is_master_req else _intake_documents(raw))
 	found = False
@@ -291,7 +298,8 @@ def remove_tender_document(
 	"""
 	deal_doc, master_doc, selected_company = _get_deal_and_master(deal, company, "write")
 	key = _normalize_key(requirement_key)
-	target_doc, fieldname, is_master_req = _resolve_target(deal_doc, master_doc, key)
+	target_doc, fieldname, is_master_req, row = _resolve_target_with_role(deal_doc, master_doc, key)
+	_require_doc_role_write(row, selected_company)
 	raw = target_doc.get(fieldname)
 	reqs = parse_doc_requirements(raw if is_master_req else _intake_documents(raw))
 	found = False
@@ -347,3 +355,43 @@ def download_tender_document(
 	frappe.response["type"] = "redirect"
 	frappe.response["location"] = _assert_local_file_url(file_url)
 	return None
+
+
+@frappe.whitelist()
+def tender_document_targets(company: str | None = None) -> dict:
+	"""Selectable lot list for the document center's lot picker.
+
+	When the user arrives at ``/tender/documents`` with no ``?deal=`` selected,
+	this endpoint feeds the picker.  Returns the company's tender deals with
+	missing-required-document counts so the user can see at a glance which lot
+	needs attention.
+
+	Company + module gated (never branches on tenant name — CLAUDE.md hard rule).
+	"""
+	_require_tender(company)
+	selected_company = _assert_company_scope(company)
+	_require_any_tender_view(("director", "sourcing", "declarant", "logist"), selected_company)
+
+	deal_names = _tender_deal_names(selected_company)
+	targets: list[dict] = []
+	for deal in sorted(deal_names):
+		if not frappe.has_permission("CRM Deal", "read", doc=deal):
+			continue
+		# Read the merged requirements to count missing required docs.
+		try:
+			res = list_tender_documents(deal=deal, company=selected_company)
+			summary = res.get("summary", {})
+		except Exception:
+			summary = {}
+		targets.append(
+			{
+				"deal": deal,
+				"label": _deal_label(deal),
+				"parent_tender": frappe.db.get_value("CRM Deal", deal, "custom_parent_tender") or "",
+				"stage": frappe.db.get_value("CRM Deal", deal, "status") or "",
+				"missing_required": len(summary.get("missing", [])),
+				"readiness_pct": summary.get("readiness_pct", 0),
+			}
+		)
+	targets.sort(key=lambda r: (r["missing_required"], r["readiness_pct"]))
+	return {"targets": targets}

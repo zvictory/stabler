@@ -1,0 +1,1 @@
+Tek seviyeli mimariye geçiş: akış diyagramı + ihale giriş formu başlığı CRM Deal'a çevriliyor, vgk.8 iptal ediliyor.
