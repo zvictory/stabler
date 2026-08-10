@@ -29,7 +29,11 @@
 set -euo pipefail
 
 LOCAL_BENCH="/Users/zafar/frappe-bench-local"
-APP_DIR="$LOCAL_BENCH/apps/stabler"
+# The checkout that gets shipped. Overridable because main is not always the
+# tree the bench serves: parallel work keeps a feature branch in apps/stabler
+# and main in a worktree (docs/runbooks/parallel-development.md). This widens
+# WHERE main may live, not WHAT may ship -- the branch gate below is unchanged.
+APP_DIR="${APP_DIR:-$LOCAL_BENCH/apps/stabler}"
 PROD="ice-production"
 PROD_APPS="/home/frappe/frappe-bench/apps"
 SITE="anjan.erpstable.com"
@@ -84,8 +88,17 @@ ssh "$PROD" "cd /home/frappe/frappe-bench && sudo -u frappe bench --site $SITE l
 #    place, i.e. the WORKING TREE -- so on a dirty tree this proves the working
 #    copy compiles, not HEAD. It is a fast local canary, not the gate; step 4
 #    rebuilds the exported HEAD on prod and that build is the authoritative one.
+#    bench can only build the app dir it serves, so when APP_DIR points
+#    elsewhere this canary would compile a DIFFERENT branch than the one being
+#    shipped -- and abort the deploy on that branch's errors. Skip it loudly
+#    rather than report a green light for the wrong tree.
 say "1/7  Local build (bench build --app stabler)"
-( cd "$LOCAL_BENCH" && bench build --app stabler )
+if [ "$APP_DIR" = "$LOCAL_BENCH/apps/stabler" ]; then
+  ( cd "$LOCAL_BENCH" && bench build --app stabler )
+else
+  echo "    SKIPPED: APP_DIR is $APP_DIR, but bench builds $LOCAL_BENCH/apps/stabler"
+  echo "             (a different branch). Step 4's prod build is the real gate."
+fi
 
 # 2) Backup prod app dir first (rollback point).
 #    Echo back the archive this run just wrote, by name -- not `ls *.tgz | tail -1`,
