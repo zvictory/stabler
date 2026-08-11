@@ -159,6 +159,18 @@ watch(
 	{ immediate: true }
 );
 
+// Çekmece kapanınca bileşen sökülmüyor, sadece gizleniyor. Tahta "Yeni İhale"de
+// `editingTender`'ı null yapıyor — ama zaten null'sa yukarıdaki izleyici (referans
+// değişmediği için) hiç tetiklenmiyor. Sonuç: iptal edilen bir giriş bir sonraki
+// açılışta olduğu gibi geri geliyordu; kullanıcı yeni ihale açtığını sanırken
+// önceki müşteri ve item satırları formda duruyordu. Açılışta deal yoksa sıfırla.
+watch(
+	() => props.open,
+	(open) => {
+		if (open && !props.deal) reset();
+	}
+);
+
 function close() {
 	emit("update:open", false);
 	emit("close");
