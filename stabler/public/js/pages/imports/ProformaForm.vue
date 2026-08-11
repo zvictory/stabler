@@ -16,6 +16,7 @@ import Typeahead from "../../components/Typeahead.vue";
 import MoneyInput from "../../components/MoneyInput.vue";
 import DateInput from "../../components/DateInput.vue";
 import Select from "../../components/Select.vue";
+import PiAdvanceLedger from "../../components/PiAdvanceLedger.vue";
 
 const session = useSession();
 const { activeCompany, user } = storeToRefs(session);
@@ -80,6 +81,7 @@ function blankForm() {
 		items: [],
 		linked_cis: [],
 		advance_payments: [],
+		advance_ledger: null,
 	};
 }
 
@@ -1184,6 +1186,7 @@ watch(activeCompany, loadPiGroups);
 					</tbody>
 				</table>
 			</div>
+			<PiAdvanceLedger v-if="form.advance_ledger" :ledger="form.advance_ledger" />
 		</div>
 
 		<!-- Linked Advance Payments -->
@@ -1695,4 +1698,3 @@ watch(activeCompany, loadPiGroups);
 		</div>
 	</div>
 </template>
-

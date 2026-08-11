@@ -20,6 +20,8 @@ import Typeahead from "../../components/Typeahead.vue";
 import MoneyInput from "../../components/MoneyInput.vue";
 import StatusBadge from "../../components/StatusBadge.vue";
 import SkeletonRows from "../../components/SkeletonRows.vue";
+import PartyPaymentModal from "../../components/PartyPaymentModal.vue";
+import PiAdvanceLedger from "../../components/PiAdvanceLedger.vue";
 import CiLogisticsOverview from "./CiLogisticsOverview.vue";
 
 const session = useSession();
@@ -138,7 +140,46 @@ function blankForm() {
 			reconciliation: [],
 		},
 		grn: null,
+		vendor_settlement: null,
 	};
+}
+
+const settlement = computed(() => form.value.vendor_settlement || null);
+const settlementBusy = ref(false);
+const settlementPayOpen = ref(false);
+
+async function createSettlementInvoice() {
+	if (!docName.value || settlementBusy.value) return;
+	const ok = await confirm({
+		title: t("Create draft Purchase Invoice?"),
+		body: t("The proportional PI advance will be reserved for this CI. Accounts must review and submit the invoice."),
+		confirmLabel: t("Create draft invoice"),
+	});
+	if (!ok) return;
+	settlementBusy.value = true;
+	try {
+		const result = await call("stabler.api.imports.convert_ci_to_purchase_invoice", {
+			commercial_invoice: docName.value,
+			company: activeCompany.value,
+			dry_run: 0,
+		});
+		toast.success(t("Draft Purchase Invoice created: {0}").replace("{0}", result.purchase_invoice));
+		await loadDoc();
+	} catch (err) {
+		toast.error(err?.message || t("Could not create the Purchase Invoice."));
+	} finally {
+		settlementBusy.value = false;
+	}
+}
+
+function reviewSettlementInvoice() {
+	if (!settlement.value?.purchase_invoice) return;
+	router.push(`/purchasing/invoices/${settlement.value.purchase_invoice}`);
+}
+
+async function refreshAfterSettlementPayment() {
+	settlementPayOpen.value = false;
+	await loadDoc();
 }
 
 const round2 = (n) => Math.round((Number(n) || 0) * 100) / 100;
@@ -2124,6 +2165,45 @@ watch(
 			</div>
 		</div>
 
+		<!-- Vendor settlement: operational CI -> supplier payable -> targeted payment -->
+		<div v-if="!isCreate && settlement" class="card mb-3">
+			<div class="card-header align-items-center">
+				<div>
+					<h3 class="card-title mb-1"><i class="ti ti-building-bank me-2 text-blue"></i>{{ t("Vendor Settlement") }}</h3>
+					<div class="text-secondary small">{{ t("PI advances are reserved on draft bills and posted only when Accounts submits the Purchase Invoice.") }}</div>
+				</div>
+				<div class="card-actions d-flex flex-wrap gap-2">
+					<button v-if="settlement.can_create_purchase_invoice" type="button" class="btn btn-primary btn-sm" :disabled="settlementBusy" @click="createSettlementInvoice">
+						<span v-if="settlementBusy" class="spinner-border spinner-border-sm me-1"></span>
+						<i v-else class="ti ti-file-plus me-1"></i>{{ t("Create Draft Purchase Invoice") }}
+					</button>
+					<button v-if="settlement.purchase_invoice" type="button" class="btn btn-outline-primary btn-sm" @click="reviewSettlementInvoice">
+						<i class="ti ti-file-invoice me-1"></i>{{ t("Review Purchase Invoice") }}
+					</button>
+					<button v-if="settlement.can_pay_remaining" type="button" class="btn btn-success btn-sm" @click="settlementPayOpen = true">
+						<i class="ti ti-cash me-1"></i>{{ t("Pay Remaining") }} <span class="font-monospace ms-1">{{ fm(settlement.remaining_to_pay, form.currency) }}</span>
+					</button>
+				</div>
+			</div>
+			<div class="card-body border-bottom">
+				<div class="row g-3">
+					<div class="col-6 col-lg"><div class="text-secondary small">{{ t("Commercial Invoice Total") }}</div><div class="h3 mb-0 font-monospace">{{ fm(settlement.commercial_invoice_total, form.currency) }}</div></div>
+					<div class="col-6 col-lg"><div class="text-secondary small">{{ t("Advance Applied") }}</div><div class="h3 mb-0 font-monospace text-success">{{ fm(settlement.advance_applied, form.currency) }}</div></div>
+					<div class="col-6 col-lg"><div class="text-secondary small">{{ t("Available to Apply") }}</div><div class="h3 mb-0 font-monospace text-blue">{{ fm(settlement.advance_available_to_apply, form.currency) }}</div></div>
+					<div class="col-6 col-lg"><div class="text-secondary small">{{ t("Remaining to Pay") }}</div><div class="h3 mb-0 font-monospace text-orange">{{ fm(settlement.remaining_to_pay, form.currency) }}</div></div>
+					<div class="col-12 col-lg">
+						<div class="text-secondary small">{{ t("Purchase Invoice") }}</div>
+						<div v-if="settlement.purchase_invoice" class="d-flex align-items-center gap-2">
+							<router-link :to="`/purchasing/invoices/${settlement.purchase_invoice}`" class="font-monospace fw-bold">{{ settlement.purchase_invoice }}</router-link>
+							<span class="badge" :class="settlement.purchase_invoice_docstatus === 1 ? 'bg-success-lt text-success' : 'bg-warning-lt text-warning'">{{ settlement.purchase_invoice_docstatus === 1 ? t("Posted") : t("Planned") }}</span>
+						</div>
+						<div v-else class="fw-semibold text-secondary">{{ t("Not Created") }}</div>
+					</div>
+				</div>
+			</div>
+			<PiAdvanceLedger v-for="ledger in settlement.pi_ledgers" :key="ledger.proforma_invoice" :ledger="ledger" />
+		</div>
+
 		<!-- 2 Items — colour-banded grid with Vendor Category dropdown -->
 		<div class="card mb-3">
 			<div class="card-header">
@@ -3440,5 +3520,18 @@ watch(
 				</div>
 			</div>
 		</div>
+
+		<PartyPaymentModal
+			v-if="settlementPayOpen && settlement?.purchase_invoice"
+			:open="settlementPayOpen"
+			party-type="Supplier"
+			:party="form.supplier"
+			:party-name="form.supplier_name"
+			:company="activeCompany"
+			:target-voucher="settlement.purchase_invoice"
+			:account-currency="form.currency"
+			@close="settlementPayOpen = false"
+			@paid="refreshAfterSettlementPayment"
+		/>
 	</div>
 </template>

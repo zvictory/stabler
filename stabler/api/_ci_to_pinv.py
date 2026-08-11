@@ -67,28 +67,157 @@ def plan_advance_allocation(invoice_total, advances) -> dict:
 
 	``advances`` = iterable of {name, unallocated_amount}. Each advance
 	contributes up to its unallocated amount, capped so the running allocation
-	never exceeds ``invoice_total``. Returns the per-advance plan plus the
-	remaining outstanding the supplier must still be paid.
+	never exceeds ``invoice_total``. When rows carry ``proforma_invoice``,
+	``ci_amount`` and ``advance_percentage``, every PI gets one proportional cap
+	shared by all of its bank/cash Payment Entries. Returns the per-advance plan
+	plus the remaining outstanding the supplier must still be paid.
 	"""
 	remaining = round(_amt(invoice_total), 2)
 	allocations: list[dict] = []
+	pi_remaining: dict[str, float] = {}
+	for adv in advances or []:
+		a = adv or {}
+		pi = str(a.get("proforma_invoice") or "").strip()
+		if not pi or pi in pi_remaining:
+			continue
+		pct = _amt(a.get("advance_percentage"))
+		ci_amount = _amt(a.get("ci_amount"))
+		pi_remaining[pi] = round(max(ci_amount * pct / 100.0, 0.0), 2)
 	for adv in advances or []:
 		a = adv or {}
 		if remaining <= 0:
 			break
-		avail = _amt(a.get("unallocated_amount"))
+		avail = max(_amt(a.get("unallocated_amount")) - _amt(a.get("reserved_amount")), 0.0)
 		if avail <= 0:
 			continue
-		alloc = round(min(avail, remaining), 2)
+		pi = str(a.get("proforma_invoice") or "").strip()
+		pi_cap = pi_remaining.get(pi) if pi else None
+		if pi_cap is not None and pi_cap <= 0:
+			continue
+		alloc = round(min(avail, remaining, pi_cap if pi_cap is not None else remaining), 2)
 		if alloc <= 0:
 			continue
 		allocations.append({"payment_entry": a.get("name"), "amount": alloc})
 		remaining = round(remaining - alloc, 2)
+		if pi_cap is not None:
+			pi_remaining[pi] = round(pi_cap - alloc, 2)
 	total_allocated = round(sum(x["amount"] for x in allocations), 2)
 	return {
 		"allocations": allocations,
 		"total_allocated": total_allocated,
 		"outstanding_after": round(_amt(invoice_total) - total_allocated, 2),
+	}
+
+
+def build_pi_advance_ledger(*, pi_total, advance_percentage, payments, ci_movements) -> dict:
+	"""Build the audit-friendly running ledger shown on PI and CI screens.
+
+	Draft Payment Entries stay visible but contribute no available credit. Draft
+	Purchase Invoices reserve their proportional share; submitted invoices move
+	the same amount into the posted allocation bucket.
+	"""
+	total = round(_amt(pi_total), 2)
+	pct = round(_amt(advance_percentage), 2)
+	events: list[dict] = []
+	advance_paid = 0.0
+	for payment in payments or []:
+		row = payment or {}
+		posted = int(_amt(row.get("docstatus"))) == 1
+		paid_amount = round(_amt(row.get("paid_amount")), 2) if posted else 0.0
+		usable_amount = row.get("usable_amount") if "usable_amount" in row else paid_amount
+		usable_amount = round(_amt(usable_amount), 2) if posted else 0.0
+		advance_paid = round(advance_paid + paid_amount, 2)
+		events.append(
+			{
+				"posting_date": row.get("posting_date"),
+				"entry_type": "Advance Payment",
+				"reference": row.get("name"),
+				"status": row.get("ledger_status") or ("Posted" if posted else "Pending Approval"),
+				"ci_amount": 0.0,
+				"advance_in": usable_amount,
+				"requested_advance_out": 0.0,
+				"sort_order": 0,
+			}
+		)
+
+	for movement in ci_movements or []:
+		row = movement or {}
+		ci_amount = round(_amt(row.get("ci_amount")), 2)
+		status = row.get("status") if row.get("status") in {"Posted", "Planned"} else "Unallocated"
+		requested = row.get("advance_out")
+		if requested is None:
+			requested = ci_amount * pct / 100.0 if status != "Unallocated" else 0.0
+		events.append(
+			{
+				"posting_date": row.get("posting_date"),
+				"entry_type": {
+					"Posted": "CI Allocation",
+					"Planned": "CI Reservation",
+					"Unallocated": "CI Created",
+				}[status],
+				"reference": row.get("ci_name"),
+				"purchase_invoice": row.get("purchase_invoice"),
+				"status": status,
+				"ci_amount": ci_amount,
+				"advance_in": 0.0,
+				"requested_advance_out": round(_amt(requested), 2),
+				"sort_order": 1,
+			}
+		)
+
+	events.sort(
+		key=lambda row: (
+			str(row.get("posting_date") or ""),
+			row["sort_order"],
+			str(row.get("reference") or ""),
+		)
+	)
+	running_advance = 0.0
+	running_pi = total
+	allocated = reserved = total_ci = 0.0
+	rows: list[dict] = []
+	for event in events:
+		running_advance = round(running_advance + event["advance_in"], 2)
+		advance_out = round(min(event["requested_advance_out"], running_advance), 2)
+		running_advance = round(running_advance - advance_out, 2)
+		ci_amount = event["ci_amount"]
+		if ci_amount > 0:
+			total_ci = round(total_ci + ci_amount, 2)
+			running_pi = round(max(total - total_ci, 0.0), 2)
+			if event["status"] == "Posted":
+				allocated = round(allocated + advance_out, 2)
+			elif event["status"] == "Planned":
+				reserved = round(reserved + advance_out, 2)
+		rows.append(
+			{
+				"posting_date": event.get("posting_date"),
+				"entry_type": event["entry_type"],
+				"reference": event.get("reference"),
+				"purchase_invoice": event.get("purchase_invoice"),
+				"status": event["status"],
+				"pi_total_cost": total,
+				"ci_amount": ci_amount,
+				"advance_in": event["advance_in"],
+				"advance_out": advance_out,
+				"running_advance_balance": running_advance,
+				"running_pi_cost": running_pi,
+				"ci_outstanding": round(max(ci_amount - advance_out, 0.0), 2),
+			}
+		)
+
+	return {
+		"summary": {
+			"pi_total_cost": total,
+			"advance_percentage": pct,
+			"advance_paid": advance_paid,
+			"advance_allocated": allocated,
+			"advance_reserved": reserved,
+			"advance_available": round(max(running_advance, 0.0), 2),
+			"total_ci_amount": total_ci,
+			"remaining_pi_cost": round(max(total - total_ci, 0.0), 2),
+			"remaining_vendor_payments": round(max(total - advance_paid, 0.0), 2),
+		},
+		"rows": rows,
 	}
 
 

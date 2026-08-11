@@ -1537,6 +1537,7 @@ def create_payment_entry(
 	reference_no: str | None = None,
 	reference_date: str | None = None,
 	references: list | str | None = None,
+	target_purchase_invoice: str | None = None,
 	exchange_rate: float | str | None = None,
 	submit: int = 0,
 ) -> dict:
@@ -1559,18 +1560,42 @@ def create_payment_entry(
 	if not frappe.db.exists(party_type, party):
 		frappe.throw(f"{party_type} '{party}' does not exist.")
 
+	accounts = {}
 	for acct_field, acct in (("paid_from", paid_from), ("paid_to", paid_to)):
-		row = frappe.db.get_value("Account", acct, ["company", "is_group"], as_dict=True)
+		row = frappe.db.get_value(
+			"Account", acct, ["company", "is_group", "account_currency", "account_type"], as_dict=True
+		)
 		if not row:
 			frappe.throw(f"{acct_field}: account '{acct}' does not exist.")
 		if row.company != company:
 			frappe.throw(f"{acct_field}: account '{acct}' is not in company '{company}'.")
 		if row.is_group:
 			frappe.throw(f"{acct_field}: '{acct}' is a group account.")
+		accounts[acct_field] = row
 
 	company_currency = frappe.get_cached_value("Company", company, "default_currency") or "UZS"
-	paid_from_currency = frappe.db.get_value("Account", paid_from, "account_currency") or company_currency
-	paid_to_currency = frappe.db.get_value("Account", paid_to, "account_currency") or company_currency
+	paid_from_currency = accounts["paid_from"].account_currency or company_currency
+	paid_to_currency = accounts["paid_to"].account_currency or company_currency
+	target_invoice = None
+	if target_purchase_invoice:
+		if payment_type != "Pay" or party_type != "Supplier":
+			frappe.throw("A target Purchase Invoice can only be paid to a supplier.")
+		target_invoice = frappe.db.get_value(
+			"Purchase Invoice",
+			target_purchase_invoice,
+			["company", "supplier", "currency", "docstatus", "outstanding_amount"],
+			as_dict=True,
+		)
+		if not target_invoice or target_invoice.company != company or target_invoice.supplier != party:
+			frappe.throw("The target Purchase Invoice does not belong to this supplier and company.")
+		if cint(target_invoice.docstatus) != 1:
+			frappe.throw("The target Purchase Invoice must be submitted before it can be paid.")
+		if accounts["paid_from"].account_type not in {"Bank", "Cash"}:
+			frappe.throw("The Purchase Invoice must be paid from a bank or cash account.")
+		if paid_from_currency != target_invoice.currency:
+			frappe.throw(
+				f"The payment account uses {paid_from_currency}; this Purchase Invoice requires {target_invoice.currency}."
+			)
 
 	# Capture exactly what the user typed BEFORE any validation can reject it —
 	# this is the row that explains "Paid amount must be greater than zero" and the
@@ -1656,9 +1681,18 @@ def create_payment_entry(
 		doc.reference_no = reference_no
 	if reference_date:
 		doc.reference_date = getdate(reference_date)
-	if references:
-		refs = json.loads(references) if isinstance(references, str) else references
+	refs = json.loads(references) if isinstance(references, str) else (references or [])
+	if target_purchase_invoice:
+		if (
+			len(refs) != 1
+			or refs[0].get("reference_doctype") != "Purchase Invoice"
+			or refs[0].get("reference_name") != target_purchase_invoice
+		):
+			frappe.throw("The payment must be allocated only to the selected Purchase Invoice.")
+	if refs:
 		party_amt = paid if payment_type == "Receive" else recv
+		if target_invoice and abs(party_amt - flt(target_invoice.outstanding_amount)) > 0.01:
+			frappe.throw("Pay Remaining must equal the target Purchase Invoice's outstanding amount.")
 		eps = money_epsilon(
 			frappe.db.get_value(
 				"Account", paid_from if payment_type == "Receive" else paid_to, "account_currency"

@@ -32,6 +32,8 @@ const props = defineProps({
 	party: { type: String, required: true },
 	partyName: { type: String, default: "" },
 	company: { type: String, required: true },
+	targetVoucher: { type: String, default: "" },
+	accountCurrency: { type: String, default: "" },
 });
 
 const emit = defineEmits(["close", "paid"]);
@@ -68,6 +70,22 @@ const modeOptions = computed(() => [
 ]);
 
 const currency = computed(() => defaults.value?.party_account_currency || "");
+const outstandingInvoices = computed(() => {
+	const invoices = defaults.value?.outstanding_invoices || [];
+	if (!props.targetVoucher) return invoices;
+	return invoices.filter((invoice) => invoice.voucher_no === props.targetVoucher);
+});
+const paymentOutstanding = computed(() =>
+	outstandingInvoices.value.reduce(
+		(sum, invoice) => sum + Number(invoice.outstanding_amount || 0),
+		0
+	)
+);
+const cashBankAccounts = computed(() => {
+	const accounts = defaults.value?.cash_bank_accounts || [];
+	if (!props.accountCurrency) return accounts;
+	return accounts.filter((account) => account.account_currency === props.accountCurrency);
+});
 
 // Build the oldest-first allocation list for references[].
 function buildRefs(invoices, amount) {
@@ -138,7 +156,8 @@ watch(
 			exchangeRate.value = Number(defaults.value.effective_rate || 1.0);
 			cbuRate.value = Number(defaults.value.effective_rate || 1.0);
 			rateDate.value = defaults.value.rate_date || "";
-			bankAmount.value = Math.round(Number(form.value.paid_amount || 0) * exchangeRate.value * 100) / 100;
+			bankAmount.value =
+				Math.round(Number(form.value.paid_amount || 0) * exchangeRate.value * 100) / 100;
 			return;
 		}
 
@@ -157,7 +176,8 @@ watch(
 			exchangeRate.value = Number(rate || 1.0);
 			cbuRate.value = Number(rate || 1.0);
 			rateDate.value = newDate || today;
-			bankAmount.value = Math.round(Number(form.value.paid_amount || 0) * exchangeRate.value * 100) / 100;
+			bankAmount.value =
+				Math.round(Number(form.value.paid_amount || 0) * exchangeRate.value * 100) / 100;
 		} catch (err) {
 			exchangeRate.value = 1.0;
 			cbuRate.value = 1.0;
@@ -217,10 +237,27 @@ watch(
 			]);
 			defaults.value = d;
 			modes.value = m || [];
+			const invoices = props.targetVoucher
+				? (d.outstanding_invoices || []).filter(
+						(invoice) => invoice.voucher_no === props.targetVoucher
+					)
+				: d.outstanding_invoices || [];
+			const amount = invoices.reduce(
+				(sum, invoice) => sum + Number(invoice.outstanding_amount || 0),
+				0
+			);
+			const accounts = props.accountCurrency
+				? (d.cash_bank_accounts || []).filter(
+						(account) => account.account_currency === props.accountCurrency
+					)
+				: d.cash_bank_accounts || [];
+			const suggested = accounts.some((account) => account.name === d.suggested_cash_bank_account)
+				? d.suggested_cash_bank_account
+				: accounts[0]?.name || "";
 			form.value = {
-				bank_account: d.suggested_cash_bank_account || "",
+				bank_account: suggested,
 				mode_of_payment: "",
-				paid_amount: Number(d.total_outstanding || 0),
+				paid_amount: amount,
 				posting_date: today,
 				reference_no: "",
 				reference_date: "",
@@ -229,7 +266,7 @@ watch(
 				exchangeRate.value = Number(d.effective_rate || 1.0);
 				cbuRate.value = Number(d.effective_rate || 1.0);
 				rateDate.value = d.rate_date || "";
-				bankAmount.value = Math.round(Number(d.total_outstanding || 0) * exchangeRate.value * 100) / 100;
+				bankAmount.value = Math.round(amount * exchangeRate.value * 100) / 100;
 			} else {
 				exchangeRate.value = 1.0;
 				cbuRate.value = 1.0;
@@ -262,12 +299,22 @@ async function submit() {
 		error.value = t("Amount must be greater than zero.");
 		return;
 	}
+	if (props.targetVoucher) {
+		if (!outstandingInvoices.value.length) {
+			error.value = t("The selected Purchase Invoice no longer has an outstanding balance.");
+			return;
+		}
+		if (Math.abs(amount - paymentOutstanding.value) > 0.01) {
+			error.value = t("Pay Remaining must use the selected Purchase Invoice's exact outstanding amount.");
+			return;
+		}
+	}
 
 	const partyAccount = defaults.value?.party_account || "";
 	const paidFrom = isReceive.value ? partyAccount : form.value.bank_account;
 	const paidTo = isReceive.value ? form.value.bank_account : partyAccount;
 
-	const references = buildRefs(defaults.value?.outstanding_invoices || [], amount);
+	const references = buildRefs(outstandingInvoices.value, amount);
 
 	submitting.value = true;
 
@@ -283,7 +330,9 @@ async function submit() {
 	}
 	const payloadReceivedAmount = isReceive.value ? Number(bankAmount.value || 0) : amount;
 	if (!(payloadPaidAmount > 0)) {
-		error.value = t("Couldn't work out the cash amount to pay — check the exchange rate and the paying account.");
+		error.value = t(
+			"Couldn't work out the cash amount to pay — check the exchange rate and the paying account."
+		);
 		submitting.value = false;
 		return;
 	}
@@ -304,6 +353,7 @@ async function submit() {
 			reference_no: form.value.reference_no || undefined,
 			reference_date: form.value.reference_date || undefined,
 			references: references.length ? references : undefined,
+			target_purchase_invoice: props.targetVoucher || undefined,
 			submit: 1,
 		});
 		if (created.pending_approval) {
@@ -342,20 +392,22 @@ async function submit() {
 								<div class="datagrid-title">{{ isReceive ? t("Customer") : t("Supplier") }}</div>
 								<div class="datagrid-content">
 									<span class="fw-medium">{{ partyName || party }}</span>
-									<span v-if="partyName" class="text-secondary small font-monospace ms-1">{{ party }}</span>
+									<span v-if="partyName" class="text-secondary small font-monospace ms-1">{{
+										party
+									}}</span>
 								</div>
 							</div>
 							<div class="datagrid-item">
 								<div class="datagrid-title">{{ t("Outstanding") }}</div>
 								<div class="datagrid-content font-monospace text-red">
-									{{ formatMoney(defaults.total_outstanding, currency, user.language) }}
+									{{ formatMoney(paymentOutstanding, currency, user.language) }}
 								</div>
 							</div>
 						</div>
 
-						<details v-if="defaults.outstanding_invoices?.length" class="mb-3">
+						<details v-if="outstandingInvoices.length" class="mb-3">
 							<summary class="small text-secondary" style="cursor: pointer">
-								{{ t("{n} outstanding invoice(s)", { n: defaults.outstanding_invoices.length }) }}
+								{{ t("{n} outstanding invoice(s)", { n: outstandingInvoices.length }) }}
 							</summary>
 							<div class="table-responsive mt-2">
 								<table class="table table-sm table-no-stripe small">
@@ -367,10 +419,12 @@ async function submit() {
 										</tr>
 									</thead>
 									<tbody>
-										<tr v-for="inv in defaults.outstanding_invoices" :key="inv.voucher_no">
+										<tr v-for="inv in outstandingInvoices" :key="inv.voucher_no">
 											<td class="font-monospace">{{ inv.voucher_no }}</td>
 											<td>{{ formatDate(inv.posting_date) }}</td>
-											<td class="text-end font-monospace">{{ formatMoney(inv.outstanding_amount, currency, user.language) }}</td>
+											<td class="text-end font-monospace">
+												{{ formatMoney(inv.outstanding_amount, currency, user.language) }}
+											</td>
 										</tr>
 									</tbody>
 								</table>
@@ -384,7 +438,7 @@ async function submit() {
 								<label class="form-label required">{{ bankLabel }}</label>
 								<Select
 									v-model="form.bank_account"
-									:options="defaults.cash_bank_accounts"
+									:options="cashBankAccounts"
 									value-key="name"
 									:placeholder="t('— pick account —')"
 									:disabled="submitting"
@@ -411,7 +465,7 @@ async function submit() {
 									v-model="form.paid_amount"
 									:currency="currency"
 									:language="user.language"
-									:disabled="submitting"
+									:disabled="submitting || Boolean(targetVoucher)"
 								/>
 							</div>
 							<div class="col-md-3">
@@ -428,18 +482,14 @@ async function submit() {
 									:disabled="submitting"
 								/>
 							</div>
-							
+
 							<div v-if="needsExchange" class="col-12 mt-2 pt-2 border-top">
 								<div class="row g-2 align-items-center">
 									<div class="col-sm-6">
 										<label class="form-label required">
 											{{ t("Exchange rate ({0})", [exchangeLabel]) }}
 										</label>
-										<MoneyInput
-											v-model="exchangeRate"
-											:disabled="submitting"
-											size="sm"
-										/>
+										<MoneyInput v-model="exchangeRate" :disabled="submitting" size="sm" />
 										<div v-if="rateDate" class="text-secondary small mt-1">
 											{{ t("CBU rate: {rate} ({date})", { rate: cbuRate, date: rateDate }) }}
 										</div>
@@ -459,17 +509,25 @@ async function submit() {
 									<div v-if="hasWarning" class="col-12 mt-1">
 										<div class="alert alert-warning py-1 px-2 m-0 small">
 											<i class="ti ti-alert-triangle me-1"></i>
-											{{ t("Entered rate deviates by {pct}% from CBU rate.", { pct: (rateDeviation * 100).toFixed(1) }) }}
+											{{
+												t("Entered rate deviates by {pct}% from CBU rate.", {
+													pct: (rateDeviation * 100).toFixed(1),
+												})
+											}}
 										</div>
 									</div>
 								</div>
 							</div>
-
 						</div>
 					</div>
 				</div>
 				<div class="modal-footer">
-					<button type="button" class="btn btn-link link-secondary" :disabled="submitting" @click="close">
+					<button
+						type="button"
+						class="btn btn-link link-secondary"
+						:disabled="submitting"
+						@click="close"
+					>
 						{{ t("Cancel") }}
 					</button>
 					<button

@@ -527,6 +527,7 @@ def get_commercial_invoice(name: str):
 		"grn": grn_rows[0] if grn_rows else None,
 		"customs_fee_breakdown": _safe_customs_breakdown(name),
 		"pi_tracking": get_pi_tracking_for_ci(doc),
+		"vendor_settlement": _ci_vendor_settlement(doc) if _cost_visible() else None,
 	}
 	rules.mask_named(payload, rules.CI_MASK_FIELDS, _cost_visible())
 	return payload
@@ -3919,23 +3920,31 @@ def list_import_orders(
 
 
 def _po_advance_payment_entries(po_name: str, company: str):
-	"""Advance Payment Entries referencing a PO or Proforma Invoice, split bank/cash (allocated amounts).
+	"""Advance Payment Entries linked to a PO/PI, split bank/cash.
 
 	Bank vs cash comes from ``custom_payment_stream`` when that field exists;
 	otherwise it is inferred from the mode-of-payment / paid-from account name.
+	Only submitted rows contribute to the paid totals; drafts remain visible as
+	pending approval.
 	"""
 	has_stream = frappe.db.has_column("Payment Entry", "custom_payment_stream")
 	stream_col = "pe.custom_payment_stream" if has_stream else "NULL"
+	has_pi_ref = frappe.db.has_column("Payment Entry", "custom_proforma_invoice")
+	pi_match = " OR pe.custom_proforma_invoice = %(po)s" if has_pi_ref else ""
 	rows = frappe.db.sql(
 		f"""
-        SELECT pe.name, pe.paid_amount, pe.posting_date, pe.docstatus, pe.mode_of_payment,
+        SELECT pe.name, pe.paid_amount, pe.unallocated_amount, pe.posting_date,
+               pe.docstatus, pe.mode_of_payment,
                pe.paid_from, pe.reference_no, {stream_col} AS payment_stream,
-               COALESCE(SUM(per.allocated_amount), 0) AS allocated_to_po
+               COALESCE(SUM(CASE
+                 WHEN per.reference_doctype IN ('Purchase Order', 'Proforma Invoice')
+                  AND per.reference_name = %(po)s THEN per.allocated_amount ELSE 0 END), 0)
+                 AS allocated_to_po
         FROM `tabPayment Entry` pe
-        JOIN `tabPayment Entry Reference` per ON per.parent = pe.name
+        LEFT JOIN `tabPayment Entry Reference` per ON per.parent = pe.name
         WHERE pe.company = %(company)s AND pe.docstatus < 2
-          AND per.reference_doctype IN ('Purchase Order', 'Proforma Invoice')
-          AND per.reference_name = %(po)s
+          AND ((per.reference_doctype IN ('Purchase Order', 'Proforma Invoice')
+                AND per.reference_name = %(po)s){pi_match})
         GROUP BY pe.name
         ORDER BY pe.posting_date ASC, pe.name ASC
         """,
@@ -3950,16 +3959,24 @@ def _po_advance_payment_entries(po_name: str, company: str):
 		if not stream:
 			hint = f"{r.get('mode_of_payment') or ''} {r.get('paid_from') or ''}".lower()
 			stream = "Cash" if "cash" in hint else "Bank"
-		amt = flt(r["allocated_to_po"]) or flt(r["paid_amount"])
-		if stream == "Cash":
-			paid_cash += amt
-		else:
-			paid_bank += amt
+		amt = flt(r["paid_amount"])
+		if cint(r["docstatus"]) == 1:
+			if stream == "Cash":
+				paid_cash += amt
+			else:
+				paid_bank += amt
 		out.append(
 			{
 				"name": r["name"],
 				"paid_amount": flt(r["paid_amount"]),
+				"unallocated_amount": flt(r["unallocated_amount"]),
 				"allocated_to_po": flt(r["allocated_to_po"]),
+				"usable_amount": 0.0
+				if cint(r["docstatus"]) == 1 and flt(r["allocated_to_po"]) > 0
+				else flt(r["paid_amount"]),
+				"ledger_status": "Migration Required"
+				if cint(r["docstatus"]) == 1 and flt(r["allocated_to_po"]) > 0
+				else None,
 				"posting_date": str(r["posting_date"]) if r["posting_date"] else None,
 				"docstatus": cint(r["docstatus"]),
 				"mode_of_payment": r.get("mode_of_payment"),
@@ -4655,6 +4672,25 @@ def assign_pis_to_group(group: str, pi_names, company: str) -> dict:
 # ---------------------------------------------------------------------------
 
 
+def _validate_advance_source_account(account: str | None, *, company: str, currency: str, stream: str):
+	"""Require the selected bank/cash account to match the PI currency."""
+	if not account:
+		return
+	row = frappe.db.get_value(
+		"Account", account, ["company", "account_currency", "account_type"], as_dict=True
+	)
+	if not row or row.company != company:
+		frappe.throw(_("Unknown payment account for this company: {0}").format(account))
+	if row.account_type != stream:
+		frappe.throw(_("{0} must be a {1} account.").format(account, stream))
+	if currency and row.account_currency != currency:
+		frappe.throw(
+			_("{0} uses {1}; this {2} advance must be paid from a {2} account.").format(
+				account, row.account_currency, currency
+			)
+		)
+
+
 @frappe.whitelist()
 def create_advance_payment(
 	purchase_order: str,
@@ -4702,7 +4738,15 @@ def create_advance_payment(
 
 	from stabler.stabler.imports_module.hooks import _apply_pay_accounts, patch_payment_entry_references
 
-	patch_payment_entry_references()
+	patch_payment_entry_references()  # Legacy PI-reference rows remain readable.
+	if ref_doctype == "Proforma Invoice" and not frappe.db.has_column(
+		"Payment Entry", "custom_proforma_invoice"
+	):
+		frappe.throw(
+			_(
+				"PI advance traceability is not installed yet. Run the Stabler migration before recording this advance."
+			)
+		)
 
 	has_stream = frappe.db.has_column("Payment Entry", "custom_payment_stream")
 	created = []
@@ -4721,14 +4765,21 @@ def create_advance_payment(
 		pe.reference_date = on_date
 		if has_stream:
 			pe.custom_payment_stream = stream
-		pe.append(
-			"references",
-			{
-				"reference_doctype": ref_doctype,
-				"reference_name": purchase_order,
-				"allocated_amount": amount,
-			},
-		)
+		# Purchase Orders are native ERPNext advance references. A Stabler
+		# Proforma is not: attaching an allocated reference would make the whole
+		# payment look consumed before a Purchase Invoice exists. Keep it as an
+		# unallocated supplier advance and retain the PI through a durable link.
+		if ref_doctype == "Purchase Order":
+			pe.append(
+				"references",
+				{
+					"reference_doctype": ref_doctype,
+					"reference_name": purchase_order,
+					"allocated_amount": amount,
+				},
+			)
+		elif frappe.db.has_column("Payment Entry", "custom_proforma_invoice"):
+			pe.custom_proforma_invoice = purchase_order
 		_apply_pay_accounts(pe, company, doc.supplier)
 		if stream == "Bank" and bank_account:
 			pe.paid_from = bank_account
@@ -4737,6 +4788,12 @@ def create_advance_payment(
 
 		pe.setup_party_account_field()
 		pe.set_missing_values()
+		_validate_advance_source_account(
+			pe.paid_from,
+			company=company,
+			currency=doc.currency or pe.paid_from_account_currency,
+			stream=stream,
+		)
 		pe.insert(ignore_permissions=False)  # DRAFT — never submitted here.
 		created.append({"name": pe.name, "stream": stream, "amount": amount})
 
@@ -5268,10 +5325,113 @@ def proforma_detail(name: str) -> dict:
 		"paid_bank": paid_bank,
 		"paid_cash": paid_cash,
 		"paid_total": round(paid_bank + paid_cash, 2),
+		"pending_approval": round(
+			sum(flt(row["paid_amount"]) for row in advances if cint(row["docstatus"]) == 0), 2
+		),
+		"available_credit": round(
+			sum(flt(row["unallocated_amount"]) for row in advances if cint(row["docstatus"]) == 1), 2
+		),
 	}
+	data["advance_ledger"] = _build_proforma_advance_ledger(doc, advances) if _cost_visible() else None
 	data["invoiced_summary"] = get_pi_invoiced_summary(name)
 
 	return data
+
+
+def _proforma_ci_movements(pi_name: str, supplier: str) -> list[dict]:
+	"""CI rows charged to one PI, enriched with their goods Purchase Invoice."""
+	effective_pi = _ci_item_effective_pi_expr()
+	ci_rows = frappe.db.sql(
+		f"""
+		SELECT ci.name AS ci_name, ci.ci_date, ci.creation,
+		       ROUND(COALESCE(SUM(cii.amount), 0), 2) AS ci_amount
+		FROM `tabCommercial Invoice Item` cii
+		JOIN `tabCommercial Invoice` ci ON ci.name = cii.parent
+		WHERE {effective_pi} = %(pi)s AND ci.status != 'Cancelled'
+		GROUP BY ci.name, ci.ci_date, ci.creation
+		ORDER BY COALESCE(ci.ci_date, DATE(ci.creation)), ci.name
+		""",
+		{"pi": pi_name},
+		as_dict=True,
+	)
+	has_ci_ref = frappe.db.has_column("Purchase Invoice", "custom_commercial_invoice")
+	has_pe_pi_ref = frappe.db.has_column("Payment Entry", "custom_proforma_invoice")
+	movements: list[dict] = []
+	for row in ci_rows:
+		invoice = None
+		if has_ci_ref:
+			invoices = frappe.get_all(
+				"Purchase Invoice",
+				filters={
+					"custom_commercial_invoice": row["ci_name"],
+					"supplier": supplier,
+					"docstatus": ["<", 2],
+				},
+				fields=["name", "docstatus", "posting_date", "outstanding_amount"],
+				order_by="docstatus desc, creation desc",
+				limit=1,
+			)
+			invoice = invoices[0] if invoices else None
+		status = "Unallocated"
+		advance_out = 0.0
+		if invoice:
+			status = "Posted" if cint(invoice["docstatus"]) == 1 else "Planned"
+			if has_pe_pi_ref:
+				advance_out = flt(
+					frappe.db.sql(
+						"""
+						SELECT COALESCE(SUM(pia.allocated_amount), 0)
+						FROM `tabPurchase Invoice Advance` pia
+						JOIN `tabPayment Entry` pe
+						  ON pe.name = pia.reference_name
+						 AND pia.reference_type = 'Payment Entry'
+						WHERE pia.parent = %(pinv)s
+						  AND pe.custom_proforma_invoice = %(pi)s
+						""",
+						{"pinv": invoice["name"], "pi": pi_name},
+					)[0][0]
+				)
+		movements.append(
+			{
+				"ci_name": row["ci_name"],
+				"posting_date": str(
+					invoice["posting_date"] if invoice else row["ci_date"] or row["creation"]
+				),
+				"ci_amount": flt(row["ci_amount"]),
+				"status": status,
+				"purchase_invoice": invoice["name"] if invoice else None,
+				"purchase_invoice_outstanding": flt(invoice["outstanding_amount"]) if invoice else None,
+				"advance_out": advance_out,
+			}
+		)
+	return movements
+
+
+def _build_proforma_advance_ledger(doc, advances: list[dict]) -> dict:
+	ledger = _ci_to_pinv.build_pi_advance_ledger(
+		pi_total=flt(doc.agreed_total),
+		advance_percentage=flt(doc.advance_pct),
+		payments=advances,
+		ci_movements=_proforma_ci_movements(doc.name, doc.supplier),
+	)
+	ledger["proforma_invoice"] = doc.name
+	ledger["supplier_pi_ref"] = doc.supplier_pi_ref
+	ledger["currency"] = doc.currency
+	ledger["docs_total"] = flt(doc.docs_total)
+	ledger["cash_difference"] = flt(doc.cash_difference)
+	return ledger
+
+
+@frappe.whitelist()
+def pi_advance_ledger(name: str) -> dict:
+	"""Cost-visible PI advance ledger for the Stabler SPA."""
+	if not name or not frappe.db.exists("Proforma Invoice", name):
+		frappe.throw(_("Unknown Proforma Invoice: {0}").format(name))
+	doc = frappe.get_doc("Proforma Invoice", name)
+	_assert_imports_access(doc.company)
+	_assert_cost_visible()
+	advances, _paid_bank, _paid_cash = _po_advance_payment_entries(name, doc.company)
+	return _build_proforma_advance_ledger(doc, advances)
 
 
 def get_pi_invoiced_summary(name: str) -> dict:
@@ -6044,13 +6204,107 @@ def _single_container_of(ci_name: str) -> str | None:
 	return names[0] if len(names) == 1 else None
 
 
-def _ci_import_advances(company: str, ci) -> list[dict]:
-	"""Submitted advance Payment Entries for a CI, across its containers.
+def _ci_pi_amounts(ci) -> dict[str, float]:
+	"""Agreed CI amount attributed to each source Proforma Invoice."""
+	amounts: dict[str, float] = {}
+	for item in ci.items or []:
+		pi_name = item.get("custom_proforma_invoice") or ci.get("custom_proforma_invoice")
+		if not pi_name:
+			continue
+		amounts[pi_name] = round(amounts.get(pi_name, 0.0) + flt(item.amount), 2)
+	if not amounts and ci.get("custom_proforma_invoice"):
+		amounts[ci.custom_proforma_invoice] = round(flt(ci.agreed_total), 2)
+	return amounts
 
-	Only submitted PEs (docstatus=1) with an unallocated balance and matching
-	the CI's supplier can be allocated to the invoice. Deduped by PE name.
+
+def _draft_advance_reservations(payment_entries: list[str]) -> dict[str, float]:
+	"""Amounts already reserved by non-cancelled draft Purchase Invoices."""
+	if not payment_entries:
+		return {}
+	rows = frappe.db.sql(
+		"""
+		SELECT pia.reference_name, COALESCE(SUM(pia.allocated_amount), 0) AS reserved
+		FROM `tabPurchase Invoice Advance` pia
+		JOIN `tabPurchase Invoice` pi ON pi.name = pia.parent
+		WHERE pi.docstatus = 0
+		  AND pia.reference_type = 'Payment Entry'
+		  AND pia.reference_name IN %(payments)s
+		GROUP BY pia.reference_name
+		""",
+		{"payments": tuple(payment_entries)},
+		as_dict=True,
+	)
+	return {row["reference_name"]: flt(row["reserved"]) for row in rows}
+
+
+def _lock_ci_pi_advances(company: str, ci) -> None:
+	"""Serialize draft reservations across different CIs sharing one PI credit."""
+	pi_names = sorted(_ci_pi_amounts(ci))
+	if not pi_names or not frappe.db.has_column("Payment Entry", "custom_proforma_invoice"):
+		return
+	frappe.db.sql(
+		"""
+		SELECT name
+		FROM `tabPayment Entry`
+		WHERE company = %(company)s
+		  AND party_type = 'Supplier'
+		  AND party = %(supplier)s
+		  AND custom_proforma_invoice IN %(proformas)s
+		  AND docstatus = 1
+		FOR UPDATE
+		""",
+		{"company": company, "supplier": ci.supplier, "proformas": tuple(pi_names)},
+	)
+
+
+def _ci_import_advances(company: str, ci) -> list[dict]:
+	"""Submitted supplier advances eligible for one CI.
+
+	PI-linked advances carry their attributed CI amount and contractual percent
+	so allocation is capped independently per PI. Container advances remain a
+	legacy fallback. Only submitted, unallocated, same-supplier rows qualify.
 	"""
 	seen: dict[str, dict] = {}
+	pi_amounts = _ci_pi_amounts(ci)
+	if pi_amounts and frappe.db.has_column("Payment Entry", "custom_proforma_invoice"):
+		pi_docs = {
+			row["name"]: row
+			for row in frappe.get_all(
+				"Proforma Invoice",
+				filters={"name": ["in", list(pi_amounts)]},
+				fields=["name", "advance_pct"],
+			)
+		}
+		payment_rows = frappe.get_all(
+			"Payment Entry",
+			filters={
+				"company": company,
+				"party_type": "Supplier",
+				"party": ci.supplier,
+				"custom_proforma_invoice": ["in", list(pi_amounts)],
+				"docstatus": 1,
+				"unallocated_amount": [">", 0],
+			},
+			fields=[
+				"name",
+				"unallocated_amount",
+				"party",
+				"posting_date",
+				"custom_proforma_invoice",
+			],
+			order_by="posting_date asc, name asc",
+		)
+		for adv in payment_rows:
+			pi_name = adv["custom_proforma_invoice"]
+			seen[adv["name"]] = {
+				"name": adv["name"],
+				"unallocated_amount": flt(adv["unallocated_amount"]),
+				"party": adv["party"],
+				"proforma_invoice": pi_name,
+				"ci_amount": flt(pi_amounts[pi_name]),
+				"advance_percentage": flt((pi_docs.get(pi_name) or {}).get("advance_pct")),
+				"posting_date": str(adv["posting_date"]) if adv["posting_date"] else None,
+			}
 	containers = frappe.get_all(
 		"Import Container",
 		filters={"commercial_invoice": ci.name},
@@ -6064,18 +6318,38 @@ def _ci_import_advances(company: str, ci) -> list[dict]:
 				continue
 			if (adv.get("party") or "") != (ci.supplier or ""):
 				continue
-			seen[adv["name"]] = {
-				"name": adv["name"],
-				"unallocated_amount": flt(adv.get("unallocated_amount")),
-				"party": adv.get("party"),
-			}
-	return [seen[k] for k in sorted(seen)]
+			# A PI-linked advance may also be the container's legacy advance.
+			# Preserve the PI metadata in that case: replacing it with the generic
+			# fallback would remove the contractual proportional-allocation cap.
+			seen.setdefault(
+				adv["name"],
+				{
+					"name": adv["name"],
+					"unallocated_amount": flt(adv.get("unallocated_amount")),
+					"party": adv.get("party"),
+				},
+			)
+	reservations = _draft_advance_reservations(list(seen))
+	for name, row in seen.items():
+		row["reserved_amount"] = flt(reservations.get(name))
+	return sorted(seen.values(), key=lambda row: (row.get("posting_date") or "", row["name"]))
 
 
-def _restrict_advances_to_import(doc, import_pe_names: set) -> float:
+def _restrict_advances_to_import(doc, import_allocations) -> float:
 	"""Populate the PInv's advances via ERPNext, then keep only this CI's import
-	advances. Returns the total allocated. Degrades safely: if set_advances
-	can't run, the draft simply carries no advances (Accounts adds them)."""
+	advances and cap them to the reviewed plan. ``set`` input is retained for
+	the re-book path; conversion passes ``[{payment_entry, amount}]``. Returns
+	the total allocated. Degrades safely when ERPNext cannot load advances."""
+	if isinstance(import_allocations, set):
+		wanted = import_allocations
+		caps = None
+	else:
+		caps = {
+			row["payment_entry"]: flt(row["amount"])
+			for row in (import_allocations or [])
+			if row.get("payment_entry")
+		}
+		wanted = set(caps)
 	try:
 		doc.set_advances()
 	except Exception:
@@ -6084,11 +6358,82 @@ def _restrict_advances_to_import(doc, import_pe_names: set) -> float:
 	kept = []
 	total = 0.0
 	for row in doc.get("advances") or []:
-		if row.reference_type == "Payment Entry" and row.reference_name in import_pe_names:
+		if row.reference_type == "Payment Entry" and row.reference_name in wanted:
+			if caps is not None:
+				row.allocated_amount = min(flt(row.allocated_amount), caps[row.reference_name])
 			kept.append(row)
 			total += flt(row.allocated_amount)
 	doc.set("advances", kept)
 	return round(total, 2)
+
+
+def _ci_vendor_settlement(ci) -> dict:
+	"""One CI's goods payable plus the independent ledgers of its source PIs."""
+	pi_names = sorted(_ci_pi_amounts(ci))
+	ledgers = []
+	for pi_name in pi_names:
+		if not frappe.db.exists("Proforma Invoice", pi_name):
+			continue
+		pi_doc = frappe.get_doc("Proforma Invoice", pi_name)
+		payments, _paid_bank, _paid_cash = _po_advance_payment_entries(pi_name, ci.company)
+		ledgers.append(_build_proforma_advance_ledger(pi_doc, payments))
+
+	invoice = None
+	if frappe.db.has_column("Purchase Invoice", "custom_commercial_invoice"):
+		rows = frappe.get_all(
+			"Purchase Invoice",
+			filters={
+				"custom_commercial_invoice": ci.name,
+				"supplier": ci.supplier,
+				"docstatus": ["<", 2],
+			},
+			fields=["name", "docstatus", "status", "grand_total", "outstanding_amount"],
+			order_by="docstatus desc, creation desc",
+			limit=1,
+		)
+		invoice = rows[0] if rows else None
+
+	advances = _ci_import_advances(ci.company, ci)
+	plan = _ci_to_pinv.plan_advance_allocation(flt(ci.agreed_total), advances)
+	applied = 0.0
+	if invoice and pi_names and frappe.db.has_column("Payment Entry", "custom_proforma_invoice"):
+		# Submitted Payment Entries no longer have an unallocated balance, so
+		# deriving eligibility from `_ci_import_advances` would make a real $90k
+		# allocation disappear from the settlement card after Accounts posts it.
+		applied = flt(
+			frappe.db.sql(
+				"""
+				SELECT COALESCE(SUM(pia.allocated_amount), 0)
+				FROM `tabPurchase Invoice Advance` pia
+				JOIN `tabPayment Entry` pe
+				  ON pe.name = pia.reference_name
+				 AND pia.reference_type = 'Payment Entry'
+				WHERE pia.parent = %(purchase_invoice)s
+				  AND pe.custom_proforma_invoice IN %(proformas)s
+				""",
+				{"purchase_invoice": invoice["name"], "proformas": tuple(pi_names)},
+			)[0][0]
+		)
+	remaining = (
+		flt(invoice["outstanding_amount"])
+		if invoice and cint(invoice["docstatus"]) == 1
+		else max(flt(ci.agreed_total) - applied, 0.0)
+	)
+	return {
+		"commercial_invoice_total": flt(ci.agreed_total),
+		"advance_applied": applied,
+		"advance_available_to_apply": flt(plan["total_allocated"]) if not invoice else 0.0,
+		"remaining_to_pay": round(remaining, 2),
+		"purchase_invoice": invoice["name"] if invoice else None,
+		"purchase_invoice_docstatus": cint(invoice["docstatus"]) if invoice else None,
+		"purchase_invoice_status": invoice["status"] if invoice else "Not Created",
+		"can_create_purchase_invoice": not bool(invoice),
+		"can_pay_remaining": bool(
+			invoice and cint(invoice["docstatus"]) == 1 and flt(invoice["outstanding_amount"]) > 0
+		),
+		"advance_plan": plan,
+		"pi_ledgers": ledgers,
+	}
 
 
 @frappe.whitelist()
@@ -6156,6 +6501,8 @@ def convert_ci_to_purchase_invoice(commercial_invoice: str, company: str, dry_ru
 	agreed = flt(ci.agreed_total)
 	reconciled = _ci_to_pinv.reconciles(total, agreed)
 
+	if not cint(dry_run):
+		_lock_ci_pi_advances(company, ci)
 	advances = _ci_import_advances(company, ci)
 	plan = _ci_to_pinv.plan_advance_allocation(agreed if reconciled else total, advances)
 
@@ -6216,7 +6563,7 @@ def convert_ci_to_purchase_invoice(commercial_invoice: str, company: str, dry_ru
 			)
 		)
 
-	allocated = _restrict_advances_to_import(doc, {a["name"] for a in advances})
+	allocated = _restrict_advances_to_import(doc, plan["allocations"])
 	doc.save(ignore_permissions=False)
 
 	return {
