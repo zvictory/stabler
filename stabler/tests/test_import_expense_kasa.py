@@ -194,22 +194,16 @@ class ImportExpenseKasaTest(FrappeTestCase):
 	def test_supplier_and_cash_desk_together_are_rejected(self):
 		"""Supplier = billed (draft PI); cash desk = paid. Both would bill it twice."""
 		with self.assertRaises(frappe.ValidationError):
-			imports_api.create_import_expense(
-				self.company, self._cash_expense_values(supplier=self.supplier)
-			)
+			imports_api.create_import_expense(self.company, self._cash_expense_values(supplier=self.supplier))
 
 	def test_expense_account_without_a_cash_desk_is_rejected(self):
 		"""A debit leg with nothing to credit would post nowhere — catch it early."""
 		with self.assertRaises(frappe.ValidationError):
-			imports_api.create_import_expense(
-				self.company, self._cash_expense_values(paid_from_account=None)
-			)
+			imports_api.create_import_expense(self.company, self._cash_expense_values(paid_from_account=None))
 
 	def test_cash_desk_without_an_expense_account_is_rejected(self):
 		with self.assertRaises(frappe.ValidationError):
-			imports_api.create_import_expense(
-				self.company, self._cash_expense_values(expense_account=None)
-			)
+			imports_api.create_import_expense(self.company, self._cash_expense_values(expense_account=None))
 
 	def test_currency_other_than_the_desk_currency_is_rejected(self):
 		"""money.submit_expense_entry throws too; here the message names the field."""

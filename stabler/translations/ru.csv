@@ -5688,3 +5688,74 @@ Total Advance to Record,Итого аванс к проведению
 of PI,от ПИ
 Previously Recorded:,Ранее проведено:
 Cumulative After Record:,Итого с учетом текущего:
+Add import expense,Добавить импортный расход
+Added {count} item lines from selected PIs.,Добавлено строк товаров из выбранных проформ: {count}.
+Advance status →,Статус аванса →
+Agreed price is matched against PI line key (PI + category); key can carry multiple prices — matching any is compliant (tolerance 0.005).,"Согласованная цена сверяется с ключом строки проформы (проформа + категория); ключ может содержать несколько цен — совпадение с любой считается соответствием (допуск 0,005)."
+Allocated costs (UZS/kg),Распределённые затраты (UZS/кг)
+Allocated costs come from this invoice's container cost lines and recorded import expenses — the columns are empty until those exist.,"Распределённые затраты берутся из строк затрат по контейнерам этого инвойса и записанных импортных расходов — пока их нет, столбцы остаются пустыми."
+Boxes / kg,Коробки / кг
+By quantity,По количеству
+By value,По стоимости
+By weight,По весу
+Container created and linked.,Контейнер создан и привязан.
+Container linked.,Контейнер привязан.
+Container unlinked.,Контейнер отвязан.
+Discrepancies Report →,Отчёт о расхождениях →
+Expense account,Счёт расходов
+Expense date,Дата расхода
+Expense recorded.,Расход записан.
+Expense recorded. Journal Entry {je} posted.,Расход записан. Проведена проводка {je}.
+Expense saved and sent for approval — no money has left the cash desk yet.,Расход сохранён и отправлен на утверждение — деньги из кассы ещё не списаны.
+Failed to load proforma details.,Не удалось загрузить данные проформы.
+Invoice rate,Цена по инвойсу
+Invoice rate (UZS/kg),Цена по инвойсу (UZS/кг)
+Landed cost (UZS),Себестоимость с доставкой (UZS)
+Landed rate (UZS/kg),Себестоимость с доставкой (UZS/кг)
+Line total (UZS),Итого по строке (UZS)
+Lines where agreed price differs from contract,"Строки, где согласованная цена отличается от контракта"
+Link an existing container…,Привязать существующий контейнер…
+Link an existing truck…,Привязать существующую машину…
+Linked Trucks,Привязанные машины
+New container no.,Номер нового контейнера
+New plate no.,Новый гос. номер
+No expenses recorded for this invoice yet.,По этому инвойсу расходы ещё не записаны.
+No trucks linked yet.,Машины ещё не привязаны.
+Nothing to allocate yet — add invoice items and costs first.,Пока нечего распределять — сначала добавьте товары и затраты.
+Packing List,Упаковочный лист
+Paid from (cash desk),Оплачено из (касса)
+Pick a cash desk first,Сначала выберите кассу
+Please select a supplier first.,Сначала выберите поставщика.
+Posted,Проведено
+Price differs from contract,Цена отличается от контракта
+Record expense,Записать расход
+Saving posts a Journal Entry that takes the money out of the selected cash desk.,"При сохранении будет проведена проводка, которая спишет деньги из выбранной кассы."
+Select a cash desk,Выберите кассу
+Select an expense account,Выберите счёт расходов
+Smart Fill items and quantities from supplier Proforma Invoices,Умное заполнение товаров и количеств из проформ поставщика
+Split equally,Поровну
+Taken from the cash desk — never chosen by hand.,Берётся из кассы — вручную не выбирается.
+The expense account and the cash desk are in different currencies. Pick an account in {currency}.,Счёт расходов и касса в разных валютах. Выберите счёт в {currency}.
+Total expenses,Итого расходов
+"Transport, expenses & supplier bills","Транспорт, расходы и счета поставщиков"
+Truck created and linked.,Машина создана и привязана.
+Truck linked.,Машина привязана.
+Truck unlinked.,Машина отвязана.
+USD rate,Курс USD
+Unallocated expenses →,Нераспределённые расходы →
+Unlink container,Отвязать контейнер
+Unlink this container?,Отвязать этот контейнер?
+Unlink this truck?,Отвязать эту машину?
+Unlink truck,Отвязать машину
+Whole invoice,Весь инвойс
+contract,контракт
+diff,разница
+duties,пошлины
+estimate,оценка
+fact,факт
+not submitted,не подано
+transport,транспорт
+unpaid,не оплачено
+{container} is already linked to {ci}. Unlink it there first.,{container} уже привязан к {ci}. Сначала отвяжите его там.
+{container} stays in the system but is no longer part of this commercial invoice.,"{container} остаётся в системе, но больше не относится к этому инвойсу."
+{truck} stays in the system but is no longer part of this commercial invoice.,"{truck} остаётся в системе, но больше не относится к этому инвойсу."

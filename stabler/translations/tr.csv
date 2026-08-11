@@ -5678,3 +5678,74 @@ Total Advance to Record,Kaydedilecek Toplam Avans
 of PI,PI Oranı
 Previously Recorded:,Önceden Kaydedilen:
 Cumulative After Record:,İşlem Sonrası Kümülatif:
+Add import expense,İthalat masrafı ekle
+Added {count} item lines from selected PIs.,Seçilen proformalardan {count} kalem satırı eklendi.
+Advance status →,Avans durumu →
+Agreed price is matched against PI line key (PI + category); key can carry multiple prices — matching any is compliant (tolerance 0.005).,"Anlaşılan fiyat, proforma satır anahtarına (proforma + kategori) göre eşleştirilir; anahtar birden çok fiyat taşıyabilir — herhangi biriyle eşleşmesi uygundur (tolerans 0,005)."
+Allocated costs (UZS/kg),Dağıtılan masraflar (UZS/kg)
+Allocated costs come from this invoice's container cost lines and recorded import expenses — the columns are empty until those exist.,Dağıtılan masraflar bu faturanın konteyner masraf satırlarından ve kaydedilmiş ithalat masraflarından gelir — bunlar oluşana kadar sütunlar boş kalır.
+Boxes / kg,Koli / kg
+By quantity,Miktara göre
+By value,Değere göre
+By weight,Ağırlığa göre
+Container created and linked.,Konteyner oluşturuldu ve bağlandı.
+Container linked.,Konteyner bağlandı.
+Container unlinked.,Konteyner bağlantısı kaldırıldı.
+Discrepancies Report →,Farklar raporu →
+Expense account,Gider hesabı
+Expense date,Masraf tarihi
+Expense recorded.,Masraf kaydedildi.
+Expense recorded. Journal Entry {je} posted.,Masraf kaydedildi. {je} yevmiye kaydı işlendi.
+Expense saved and sent for approval — no money has left the cash desk yet.,Masraf kaydedildi ve onaya gönderildi — kasadan henüz para çıkmadı.
+Failed to load proforma details.,Proforma ayrıntıları yüklenemedi.
+Invoice rate,Fatura fiyatı
+Invoice rate (UZS/kg),Fatura fiyatı (UZS/kg)
+Landed cost (UZS),Toplam maliyet (UZS)
+Landed rate (UZS/kg),Toplam maliyet (UZS/kg)
+Line total (UZS),Satır toplamı (UZS)
+Lines where agreed price differs from contract,Anlaşılan fiyatın sözleşmeden farklı olduğu satırlar
+Link an existing container…,Mevcut bir konteyneri bağla…
+Link an existing truck…,Mevcut bir tırı bağla…
+Linked Trucks,Bağlı tırlar
+New container no.,Yeni konteyner no.
+New plate no.,Yeni plaka no.
+No expenses recorded for this invoice yet.,Bu fatura için henüz masraf kaydedilmedi.
+No trucks linked yet.,Henüz tır bağlanmadı.
+Nothing to allocate yet — add invoice items and costs first.,Dağıtılacak bir şey yok — önce fatura kalemlerini ve masrafları ekleyin.
+Packing List,Çeki listesi
+Paid from (cash desk),Ödeme kaynağı (kasa)
+Pick a cash desk first,Önce bir kasa seçin
+Please select a supplier first.,Lütfen önce bir tedarikçi seçin.
+Posted,İşlendi
+Price differs from contract,Fiyat sözleşmeden farklı
+Record expense,Masrafı kaydet
+Saving posts a Journal Entry that takes the money out of the selected cash desk.,"Kaydettiğinizde, parayı seçilen kasadan çıkaran bir yevmiye kaydı işlenir."
+Select a cash desk,Kasa seçin
+Select an expense account,Gider hesabı seçin
+Smart Fill items and quantities from supplier Proforma Invoices,Kalem ve miktarları tedarikçi proformalarından akıllı doldur
+Split equally,Eşit paylaştır
+Taken from the cash desk — never chosen by hand.,Kasadan alınır — elle seçilmez.
+The expense account and the cash desk are in different currencies. Pick an account in {currency}.,Gider hesabı ile kasa farklı para birimlerinde. {currency} cinsinden bir hesap seçin.
+Total expenses,Toplam masraf
+"Transport, expenses & supplier bills","Nakliye, masraflar ve tedarikçi faturaları"
+Truck created and linked.,Tır oluşturuldu ve bağlandı.
+Truck linked.,Tır bağlandı.
+Truck unlinked.,Tır bağlantısı kaldırıldı.
+USD rate,USD kuru
+Unallocated expenses →,Dağıtılmamış masraflar →
+Unlink container,Konteyner bağlantısını kaldır
+Unlink this container?,Bu konteynerin bağlantısı kaldırılsın mı?
+Unlink this truck?,Bu tırın bağlantısı kaldırılsın mı?
+Unlink truck,Tır bağlantısını kaldır
+Whole invoice,Faturanın tamamı
+contract,sözleşme
+diff,fark
+duties,gümrük vergisi
+estimate,tahmini
+fact,gerçekleşen
+not submitted,verilmedi
+transport,nakliye
+unpaid,ödenmedi
+{container} is already linked to {ci}. Unlink it there first.,{container} zaten {ci} faturasına bağlı. Önce oradan ayırın.
+{container} stays in the system but is no longer part of this commercial invoice.,"{container} sistemde kalır, ancak artık bu ticari faturanın parçası değildir."
+{truck} stays in the system but is no longer part of this commercial invoice.,"{truck} sistemde kalır, ancak artık bu ticari faturanın parçası değildir."

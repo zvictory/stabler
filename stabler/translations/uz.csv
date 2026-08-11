@@ -5683,3 +5683,74 @@ Total Advance to Record,Rasmiylashtiriladigan jami avans
 of PI,PIdan
 Previously Recorded:,Oldin to'langan:
 Cumulative After Record:,Joriy bilan birga jami:
+Add import expense,Import xarajati qo'shish
+Added {count} item lines from selected PIs.,Tanlangan proformalardan {count} ta tovar qatori qo'shildi.
+Advance status →,Avans holati →
+Agreed price is matched against PI line key (PI + category); key can carry multiple prices — matching any is compliant (tolerance 0.005).,"Kelishilgan narx proforma qatori kaliti (proforma + toifa) bo'yicha solishtiriladi; kalitda bir nechta narx bo'lishi mumkin — ularning istalganiga mos kelishi muvofiq hisoblanadi (chegara 0,005)."
+Allocated costs (UZS/kg),Taqsimlangan xarajatlar (UZS/kg)
+Allocated costs come from this invoice's container cost lines and recorded import expenses — the columns are empty until those exist.,Taqsimlangan xarajatlar shu invoysning konteyner xarajat qatorlari va qayd etilgan import xarajatlaridan olinadi — ular paydo bo'lmaguncha ustunlar bo'sh bo'ladi.
+Boxes / kg,Quti / kg
+By quantity,Miqdor bo'yicha
+By value,Qiymat bo'yicha
+By weight,Og'irlik bo'yicha
+Container created and linked.,Konteyner yaratildi va bog'landi.
+Container linked.,Konteyner bog'landi.
+Container unlinked.,Konteyner ajratildi.
+Discrepancies Report →,Nomuvofiqliklar hisoboti →
+Expense account,Xarajat hisobi
+Expense date,Xarajat sanasi
+Expense recorded.,Xarajat qayd etildi.
+Expense recorded. Journal Entry {je} posted.,Xarajat qayd etildi. {je} jurnal yozuvi o'tkazildi.
+Expense saved and sent for approval — no money has left the cash desk yet.,Xarajat saqlandi va tasdiqlashga yuborildi — pul kassadan hali chiqmadi.
+Failed to load proforma details.,Proforma ma'lumotlarini yuklab bo'lmadi.
+Invoice rate,Invoys narxi
+Invoice rate (UZS/kg),Invoys narxi (UZS/kg)
+Landed cost (UZS),Yakuniy tannarx (UZS)
+Landed rate (UZS/kg),Yakuniy tannarx (UZS/kg)
+Line total (UZS),Qator jami (UZS)
+Lines where agreed price differs from contract,Kelishilgan narx shartnomadan farq qiladigan qatorlar
+Link an existing container…,Mavjud konteynerni bog'lash…
+Link an existing truck…,Mavjud yuk mashinasini bog'lash…
+Linked Trucks,Bog'langan yuk mashinalari
+New container no.,Yangi konteyner raqami
+New plate no.,Yangi davlat raqami
+No expenses recorded for this invoice yet.,Bu invoys bo'yicha hali xarajat qayd etilmagan.
+No trucks linked yet.,Hali yuk mashinasi bog'lanmagan.
+Nothing to allocate yet — add invoice items and costs first.,Hozircha taqsimlanadigan narsa yo'q — avval tovar va xarajatlarni qo'shing.
+Packing List,Qadoqlash varaqasi
+Paid from (cash desk),Qaysi kassadan to'landi
+Pick a cash desk first,Avval kassani tanlang
+Please select a supplier first.,Avval yetkazib beruvchini tanlang.
+Posted,O'tkazilgan
+Price differs from contract,Narx shartnomadan farq qiladi
+Record expense,Xarajatni qayd etish
+Saving posts a Journal Entry that takes the money out of the selected cash desk.,Saqlanganda tanlangan kassadan pulni chiqaradigan jurnal yozuvi o'tkaziladi.
+Select a cash desk,Kassani tanlang
+Select an expense account,Xarajat hisobini tanlang
+Smart Fill items and quantities from supplier Proforma Invoices,Yetkazib beruvchi proformalaridan tovar va miqdorlarni aqlli to'ldirish
+Split equally,Teng taqsimlash
+Taken from the cash desk — never chosen by hand.,Kassadan olinadi — qo'lda tanlanmaydi.
+The expense account and the cash desk are in different currencies. Pick an account in {currency}.,Xarajat hisobi va kassa turli valyutada. {currency} dagi hisobni tanlang.
+Total expenses,Jami xarajatlar
+"Transport, expenses & supplier bills","Transport, xarajatlar va ta'minotchi hisoblari"
+Truck created and linked.,Yuk mashinasi yaratildi va bog'landi.
+Truck linked.,Yuk mashinasi bog'landi.
+Truck unlinked.,Yuk mashinasi ajratildi.
+USD rate,USD kursi
+Unallocated expenses →,Taqsimlanmagan xarajatlar →
+Unlink container,Konteynerni ajratish
+Unlink this container?,Bu konteyner ajratilsinmi?
+Unlink this truck?,Bu yuk mashinasi ajratilsinmi?
+Unlink truck,Yuk mashinasini ajratish
+Whole invoice,Butun invoys
+contract,shartnoma
+diff,farq
+duties,bojlar
+estimate,taxminiy
+fact,fakt
+not submitted,topshirilmagan
+transport,transport
+unpaid,to'lanmagan
+{container} is already linked to {ci}. Unlink it there first.,{container} allaqachon {ci} ga bog'langan. Avval o'sha yerdan ajrating.
+{container} stays in the system but is no longer part of this commercial invoice.,"{container} tizimda qoladi, lekin bu tijorat invoysiga kirmaydi."
+{truck} stays in the system but is no longer part of this commercial invoice.,"{truck} tizimda qoladi, lekin bu tijorat invoysiga kirmaydi."

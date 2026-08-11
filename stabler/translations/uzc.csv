@@ -5683,3 +5683,74 @@ Total Advance to Record,Расмийлаштириладиган жами ава
 of PI,PIдан
 Previously Recorded:,Олдин тўланган:
 Cumulative After Record:,Жорий билан бирга жами:
+Add import expense,Импорт харажати қўшиш
+Added {count} item lines from selected PIs.,Танланган проформалардан {count} та товар қатори қўшилди.
+Advance status →,Аванс ҳолати →
+Agreed price is matched against PI line key (PI + category); key can carry multiple prices — matching any is compliant (tolerance 0.005).,"Келишилган нарх проформа қатори калити (проформа + тоифа) бўйича солиштирилади; калитда бир нечта нарх бўлиши мумкин — уларнинг исталганига мос келиши мувофиқ ҳисобланади (чегара 0,005)."
+Allocated costs (UZS/kg),Тақсимланган харажатлар (UZS/кг)
+Allocated costs come from this invoice's container cost lines and recorded import expenses — the columns are empty until those exist.,Тақсимланган харажатлар шу инвойснинг контейнер харажат қаторлари ва қайд этилган импорт харажатларидан олинади — улар пайдо бўлмагунча устунлар бўш бўлади.
+Boxes / kg,Қути / кг
+By quantity,Миқдор бўйича
+By value,Қиймат бўйича
+By weight,Оғирлик бўйича
+Container created and linked.,Контейнер яратилди ва боғланди.
+Container linked.,Контейнер боғланди.
+Container unlinked.,Контейнер ажратилди.
+Discrepancies Report →,Номувофиқликлар ҳисоботи →
+Expense account,Харажат ҳисоби
+Expense date,Харажат санаси
+Expense recorded.,Харажат қайд этилди.
+Expense recorded. Journal Entry {je} posted.,Харажат қайд этилди. {je} журнал ёзуви ўтказилди.
+Expense saved and sent for approval — no money has left the cash desk yet.,Харажат сақланди ва тасдиқлашга юборилди — пул кассадан ҳали чиқмади.
+Failed to load proforma details.,Проформа маълумотларини юклаб бўлмади.
+Invoice rate,Инвойс нархи
+Invoice rate (UZS/kg),Инвойс нархи (UZS/кг)
+Landed cost (UZS),Якуний таннарх (UZS)
+Landed rate (UZS/kg),Якуний таннарх (UZS/кг)
+Line total (UZS),Қатор жами (UZS)
+Lines where agreed price differs from contract,Келишилган нарх шартномадан фарқ қиладиган қаторлар
+Link an existing container…,Мавжуд контейнерни боғлаш…
+Link an existing truck…,Мавжуд юк машинасини боғлаш…
+Linked Trucks,Боғланган юк машиналари
+New container no.,Янги контейнер рақами
+New plate no.,Янги давлат рақами
+No expenses recorded for this invoice yet.,Бу инвойс бўйича ҳали харажат қайд этилмаган.
+No trucks linked yet.,Ҳали юк машинаси боғланмаган.
+Nothing to allocate yet — add invoice items and costs first.,Ҳозирча тақсимланадиган нарса йўқ — аввал товар ва харажатларни қўшинг.
+Packing List,Қадоқлаш варақаси
+Paid from (cash desk),Қайси кассадан тўланди
+Pick a cash desk first,Аввал кассани танланг
+Please select a supplier first.,Аввал етказиб берувчини танланг.
+Posted,Ўтказилган
+Price differs from contract,Нарх шартномадан фарқ қилади
+Record expense,Харажатни қайд этиш
+Saving posts a Journal Entry that takes the money out of the selected cash desk.,Сақланганда танланган кассадан пулни чиқарадиган журнал ёзуви ўтказилади.
+Select a cash desk,Кассани танланг
+Select an expense account,Харажат ҳисобини танланг
+Smart Fill items and quantities from supplier Proforma Invoices,Етказиб берувчи проформаларидан товар ва миқдорларни ақлли тўлдириш
+Split equally,Тенг тақсимлаш
+Taken from the cash desk — never chosen by hand.,Кассадан олинади — қўлда танланмайди.
+The expense account and the cash desk are in different currencies. Pick an account in {currency}.,Харажат ҳисоби ва касса турли валютада. {currency} даги ҳисобни танланг.
+Total expenses,Жами харажатлар
+"Transport, expenses & supplier bills","Транспорт, харажатлар ва таъминотчи ҳисоблари"
+Truck created and linked.,Юк машинаси яратилди ва боғланди.
+Truck linked.,Юк машинаси боғланди.
+Truck unlinked.,Юк машинаси ажратилди.
+USD rate,USD курси
+Unallocated expenses →,Тақсимланмаган харажатлар →
+Unlink container,Контейнерни ажратиш
+Unlink this container?,Бу контейнер ажратилсинми?
+Unlink this truck?,Бу юк машинаси ажратилсинми?
+Unlink truck,Юк машинасини ажратиш
+Whole invoice,Бутун инвойс
+contract,шартнома
+diff,фарқ
+duties,божлар
+estimate,тахминий
+fact,факт
+not submitted,топширилмаган
+transport,транспорт
+unpaid,тўланмаган
+{container} is already linked to {ci}. Unlink it there first.,{container} аллақачон {ci} га боғланган. Аввал ўша ердан ажратинг.
+{container} stays in the system but is no longer part of this commercial invoice.,"{container} тизимда қолади, лекин бу тижорат инвойсига кирмайди."
+{truck} stays in the system but is no longer part of this commercial invoice.,"{truck} тизимда қолади, лекин бу тижорат инвойсига кирмайди."

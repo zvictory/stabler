@@ -5682,3 +5682,73 @@ Total Advance to Record,Total Advance to Record
 of PI,of PI
 Previously Recorded:,Previously Recorded:
 Cumulative After Record:,Cumulative After Record:
+Add import expense,Add import expense
+Added {count} item lines from selected PIs.,Added {count} item lines from selected PIs.
+Advance status →,Advance status →
+Agreed price is matched against PI line key (PI + category); key can carry multiple prices — matching any is compliant (tolerance 0.005).,Agreed price is matched against PI line key (PI + category); key can carry multiple prices — matching any is compliant (tolerance 0.005).
+Allocated costs (UZS/kg),Allocated costs (UZS/kg)
+Allocated costs come from this invoice's container cost lines and recorded import expenses — the columns are empty until those exist.,Allocated costs come from this invoice's container cost lines and recorded import expenses — the columns are empty until those exist.
+Boxes / kg,Boxes / kg
+By quantity,By quantity
+By value,By value
+By weight,By weight
+Container created and linked.,Container created and linked.
+Container linked.,Container linked.
+Container unlinked.,Container unlinked.
+Discrepancies Report →,Discrepancies Report →
+Expense account,Expense account
+Expense date,Expense date
+Expense recorded.,Expense recorded.
+Expense recorded. Journal Entry {je} posted.,Expense recorded. Journal Entry {je} posted.
+Expense saved and sent for approval — no money has left the cash desk yet.,Expense saved and sent for approval — no money has left the cash desk yet.
+Failed to load proforma details.,Failed to load proforma details.
+Invoice rate,Invoice rate
+Invoice rate (UZS/kg),Invoice rate (UZS/kg)
+Landed cost (UZS),Landed cost (UZS)
+Landed rate (UZS/kg),Landed rate (UZS/kg)
+Line total (UZS),Line total (UZS)
+Lines where agreed price differs from contract,Lines where agreed price differs from contract
+Link an existing container…,Link an existing container…
+Link an existing truck…,Link an existing truck…
+Linked Trucks,Linked Trucks
+New container no.,New container no.
+New plate no.,New plate no.
+No expenses recorded for this invoice yet.,No expenses recorded for this invoice yet.
+No trucks linked yet.,No trucks linked yet.
+Nothing to allocate yet — add invoice items and costs first.,Nothing to allocate yet — add invoice items and costs first.
+Packing List,Packing List
+Paid from (cash desk),Paid from (cash desk)
+Pick a cash desk first,Pick a cash desk first
+Please select a supplier first.,Please select a supplier first.
+Posted,Posted
+Price differs from contract,Price differs from contract
+Record expense,Record expense
+Saving posts a Journal Entry that takes the money out of the selected cash desk.,Saving posts a Journal Entry that takes the money out of the selected cash desk.
+Select a cash desk,Select a cash desk
+Select an expense account,Select an expense account
+Smart Fill items and quantities from supplier Proforma Invoices,Smart Fill items and quantities from supplier Proforma Invoices
+Split equally,Split equally
+Taken from the cash desk — never chosen by hand.,Taken from the cash desk — never chosen by hand.
+The expense account and the cash desk are in different currencies. Pick an account in {currency}.,The expense account and the cash desk are in different currencies. Pick an account in {currency}.
+Total expenses,Total expenses
+Truck created and linked.,Truck created and linked.
+Truck linked.,Truck linked.
+Truck unlinked.,Truck unlinked.
+USD rate,USD rate
+Unallocated expenses →,Unallocated expenses →
+Unlink container,Unlink container
+Unlink this container?,Unlink this container?
+Unlink this truck?,Unlink this truck?
+Unlink truck,Unlink truck
+Whole invoice,Whole invoice
+contract,contract
+diff,diff
+duties,duties
+estimate,estimate
+fact,fact
+not submitted,not submitted
+transport,transport
+unpaid,unpaid
+{container} is already linked to {ci}. Unlink it there first.,{container} is already linked to {ci}. Unlink it there first.
+{container} stays in the system but is no longer part of this commercial invoice.,{container} stays in the system but is no longer part of this commercial invoice.
+{truck} stays in the system but is no longer part of this commercial invoice.,{truck} stays in the system but is no longer part of this commercial invoice.
