@@ -279,8 +279,9 @@ async function save() {
 									<div class="flex-grow-1">
 										<label class="form-label required">{{ t("Müşteri / Alıcı") }}</label>
 										<Typeahead
+											v-model="form.organization"
 											:search="searchCustomers"
-											:display="(c) => c.customer_name || c.name || ''"
+											:display="form.organization"
 											placeholder="Müşteri ara…"
 											@pick="pickCustomer"
 										/>
@@ -397,10 +398,12 @@ async function save() {
 										<tr v-for="(line, i) in form.items" :key="i">
 											<td>
 												<Typeahead
+													v-model="line.item_code"
 													:search="searchItems"
-													:display="() => line.item_name || line.item_code || ''"
+													:display="line.item_name || line.item_code"
 													placeholder="Item ara…"
 													@pick="(item) => handlePickItem({ line, item })"
+													@clear="line.item_name = ''"
 												/>
 											</td>
 											<td class="text-end">
