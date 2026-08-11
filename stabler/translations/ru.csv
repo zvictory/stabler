@@ -4466,7 +4466,6 @@ Create your first PI group to bundle proformas together.,"Создайте пе�
 Delete PI Group,Удалить группу PI
 Delete group,Удалить группу
 Edit PI Group,Изменить группу PI
-Failed to load PI groups.,Не удалось загрузить группы PI.
 Failed to load eligible proformas.,Не удалось загрузить доступные проформы.
 Failed to load the PI group.,Не удалось загрузить группу PI.
 Leave empty to allow proformas from any vendor.,"Оставьте пустым, чтобы разрешить проформы от любого поставщика."
@@ -5663,3 +5662,6 @@ Bill {0},Счёт {0}
 This bill is already vouchered ({0}) and can no longer be unlinked.,Этот счёт уже оформлен в ваучер ({0}) и больше не отвязывается.
 {0} is in {1}. Only bills in {2} or USD can be added to an import's landed cost today.,{0} — в валюте {1}. В себестоимость импорта сегодня можно добавить только счета в {2} или USD.
 Used only for rows where the category has no box weight.,"Используется только для строк, где в категории не указан вес коробки."
+Assign to sourcing,Назначить отделу закупок
+Assigned to,Назначено
+Atama belge merkezini başlatır,Atama belge merkezini başlatır
