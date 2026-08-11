@@ -161,6 +161,7 @@ def _apply_tender_parent_link(updates: dict, company: str) -> None:
 		master.company = company
 		master.tender_number = tender_no
 		master.title = updates.get("title") or updates.get("organization") or tender_no
+		master.buyer_name = updates.get("organization") or updates.get("buyer_name") or "Unknown Buyer"
 		if updates.get("source"):
 			master.source = updates["source"]
 		master.insert(ignore_permissions=True)
