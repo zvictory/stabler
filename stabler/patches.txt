@@ -80,4 +80,5 @@ stabler.patches.v75_repair_shadowed_docperms
 stabler.patches.v76_tender_master_documents
 stabler.patches.v77_gl_entry_party_indexes
 stabler.patches.v78_je_import_refs
+stabler.patches.v79_supplier_import_details
 

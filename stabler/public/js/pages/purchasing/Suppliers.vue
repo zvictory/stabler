@@ -14,6 +14,8 @@ import { useLatestRequest } from "../../composables/useLatestRequest.js";
 import EmptyState from "../../components/EmptyState.vue";
 import SkeletonRows from "../../components/SkeletonRows.vue";
 import Select from "../../components/Select.vue";
+import DateInput from "../../components/DateInput.vue";
+import MoneyInput from "../../components/MoneyInput.vue";
 import PartyPaymentModal from "../../components/PartyPaymentModal.vue";
 import PartyCenter from "../../components/party/PartyCenter.vue";
 import PartyKpiStrip from "../../components/party/PartyKpiStrip.vue";
@@ -33,6 +35,9 @@ const partyPayOpen = ref(false);
 const SUPPLIER_TYPES = ["Company", "Individual", "Partnership"];
 const supplierTypeOptions = computed(() => SUPPLIER_TYPES.map((st) => ({ value: st, label: t(st) })));
 
+const IMPORTER_COMPANIES = ["MSA", "TQFM", "Fresh"];
+const importerCompanyOptions = computed(() => IMPORTER_COMPANIES.map((c) => ({ value: c, label: c })));
+
 function blankSupplier() {
 	return {
 		supplier_name: "",
@@ -44,6 +49,19 @@ function blankSupplier() {
 		tax_id: "",
 		default_currency: "",
 		default_price_list: "",
+		custom_apeda: "",
+		custom_contact_person: "",
+		custom_manufacturer: "",
+		custom_place_of_origin: "",
+		custom_brand: "",
+		custom_contract_number: "",
+		custom_date_of_contract: "",
+		custom_amount_of_contract: 0,
+		custom_importer_company: "MSA",
+		custom_idn_bank: "",
+		custom_bank_details: "",
+		custom_address: "",
+		custom_notes: "",
 	};
 }
 
@@ -588,34 +606,59 @@ async function deleteSupplier() {
 					<input v-model="form.tax_id" type="text" class="form-control" />
 				</div>
 				<div class="col-md-6">
-					<label class="form-label">{{ t("Supplier group") }}</label>
-					<Select v-model="form.supplier_group" :options="groupOptions" value-key="name" label-key="name" :placeholder="t('— default —')" />
+					<label class="form-label">{{ t("APEDA Reg No") }}</label>
+					<input v-model="form.custom_apeda" type="text" class="form-control" placeholder="e.g. APEDA-12345" />
 				</div>
 				<div class="col-md-6">
-					<label class="form-label">{{ t("Country") }}</label>
-					<input v-model="form.country" type="text" class="form-control" />
+					<label class="form-label">{{ t("Contact Person") }}</label>
+					<input v-model="form.custom_contact_person" type="text" class="form-control" />
 				</div>
 				<div class="col-md-6">
 					<label class="form-label">{{ t("Email") }}</label>
 					<input v-model="form.email_id" type="email" class="form-control" />
 				</div>
 				<div class="col-md-6">
-					<label class="form-label">{{ t("Mobile") }}</label>
+					<label class="form-label">{{ t("Contact Number (Mobile)") }}</label>
 					<input v-model="form.mobile_no" type="tel" class="form-control" />
 				</div>
 				<div class="col-md-6">
-					<label class="form-label">{{ t("Default price list") }}</label>
-					<Select v-model="form.default_price_list" :options="priceListOptions" value-key="name" :placeholder="t('— global default —')">
-						<template #option="{ option: p }">
-							{{ p.name }}<span v-if="p.currency"> ({{ p.currency }})</span>
-						</template>
-						<template #selected="{ option: p }">
-							{{ p.name }}<span v-if="p.currency"> ({{ p.currency }})</span>
-						</template>
-					</Select>
+					<label class="form-label">{{ t("Manufacturer / Plant") }}</label>
+					<input v-model="form.custom_manufacturer" type="text" class="form-control" placeholder="e.g. Plant Est. No." />
 				</div>
 				<div class="col-md-6">
-					<label class="form-label">{{ t("Default currency") }}</label>
+					<label class="form-label">{{ t("Place of Origin") }}</label>
+					<input v-model="form.custom_place_of_origin" type="text" class="form-control" placeholder="e.g. India / Brazil" />
+				</div>
+				<div class="col-md-6">
+					<label class="form-label">{{ t("Brand Name") }}</label>
+					<input v-model="form.custom_brand" type="text" class="form-control" placeholder="e.g. Black Gold / Al Super" />
+				</div>
+				<div class="col-md-6">
+					<label class="form-label">{{ t("Contract Number") }}</label>
+					<input v-model="form.custom_contract_number" type="text" class="form-control" placeholder="e.g. MSA-2026-001" />
+				</div>
+				<div class="col-md-6">
+					<label class="form-label">{{ t("Date of Contract") }}</label>
+					<DateInput v-model="form.custom_date_of_contract" />
+				</div>
+				<div class="col-md-6">
+					<label class="form-label">{{ t("Amount of Contract ($ USD)") }}</label>
+					<MoneyInput v-model="form.custom_amount_of_contract" currency="USD" />
+				</div>
+				<div class="col-md-6">
+					<label class="form-label">{{ t("Importer Company") }}</label>
+					<Select v-model="form.custom_importer_company" :options="importerCompanyOptions" />
+				</div>
+				<div class="col-md-6">
+					<label class="form-label">{{ t("IDN / Intermediary Bank") }}</label>
+					<input v-model="form.custom_idn_bank" type="text" class="form-control" placeholder="Intermediary bank swift / address" />
+				</div>
+				<div class="col-md-6">
+					<label class="form-label">{{ t("Supplier Group") }}</label>
+					<Select v-model="form.supplier_group" :options="groupOptions" value-key="name" label-key="name" :placeholder="t('— default —')" />
+				</div>
+				<div class="col-md-6">
+					<label class="form-label">{{ t("Default Currency") }}</label>
 					<Select v-model="form.default_currency" class="font-monospace" :options="currencyOptions" value-key="name" :placeholder="t('— company default —')">
 						<template #option="{ option: c }">
 							{{ c.name }}<template v-if="c.symbol"> ({{ c.symbol }})</template>
@@ -624,6 +667,18 @@ async function deleteSupplier() {
 							{{ c.name }}<template v-if="c.symbol"> ({{ c.symbol }})</template>
 						</template>
 					</Select>
+				</div>
+				<div class="col-12">
+					<label class="form-label">{{ t("Bank Details") }}</label>
+					<textarea v-model="form.custom_bank_details" class="form-control" rows="2" placeholder="Beneficiary name, IBAN, Swift code..."></textarea>
+				</div>
+				<div class="col-12">
+					<label class="form-label">{{ t("Supplier Address") }}</label>
+					<textarea v-model="form.custom_address" class="form-control" rows="2" placeholder="Full legal registered address..."></textarea>
+				</div>
+				<div class="col-12">
+					<label class="form-label">{{ t("Notes / Comments") }}</label>
+					<textarea v-model="form.custom_notes" class="form-control" rows="2" placeholder="Internal notes, contract terms..."></textarea>
 				</div>
 			</div>
 		</template>
