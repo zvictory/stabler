@@ -24,6 +24,7 @@ ile kod arasındaki fark böylece sessizce yaşayamaz.
 from __future__ import annotations
 
 import importlib
+import re
 import sys
 import types
 import unittest
@@ -140,6 +141,34 @@ class TestWhatTheDecisionStillNeeds(unittest.TestCase):
 		self.assertIn("crm.save_deal", DRAWER)
 		self.assertIn("deal_type", DRAWER)
 		self.assertIn("save_deal_intake", DRAWER)
+
+	def test_the_intake_form_can_actually_be_filled_in(self):
+		"""stabler-vgk.7 — "kaydediyor" yetmez; form doldurulabilir olmalı.
+
+		vgk.7 "tamamlandı" kapandı ve ekran canlıda kullanılamaz haldeydi:
+		müşteri dropdown'ı hep boş, item tablosuna item eklenemiyor, mevcut
+		bir ihale düzenlemek için açılınca form boş geliyordu. Üç hata da
+		veri bağlama hatasıydı ve üçü de sessizdi — hiçbiri hata üretmiyor,
+		hepsi "sonuç yok" gibi görünüyor. Bu testin işi, aynı sessiz sınıfın
+		geri gelmesini engellemek.
+		"""
+		# 1) Müşteri: list_customers_with_balances bir {rows: …} zarfı döner,
+		#    Typeahead diziyi olmayan her şeyi sessizce [] yapar → sonsuz boş
+		#    dropdown. Typeahead'e giden tek doğru uç düz dizi döndürendir.
+		self.assertNotIn("list_customers_with_balances", DRAWER)
+		self.assertIn("customerSearcher", DRAWER)
+
+		# 2) Item: itemSearcher'a depo geçilirse backend `tabBin.actual_qty > 0`
+		#    filtreler. İhale girişi satış öncesi bir ekran — talep edilen item'ın
+		#    stokta olması beklenmez, dolayısıyla depo geçilmemeli.
+		item_search = re.search(r"itemSearcher\((.*?)\)\s*;", DRAWER, re.S)
+		self.assertIsNotNone(item_search, "çekmece itemSearcher kullanmalı")
+		self.assertNotIn("warehouse", item_search.group(1))
+
+		# 3) Düzenleme: tahta çekmecenin bildirdiği prop adını geçmeli. Vue
+		#    tanımsız prop'u sessizce yutar → `deal` null kalır → mevcut ihale
+		#    boş "yeni ihale" formu olarak açılır.
+		self.assertIn(':deal="editingTender"', BOARD)
 
 	def test_the_lot_is_opened_from_the_tender_board(self):
 		"""stabler-vgk.8 — İPTAL: tek seviyeli mimaride lot kavramı yok.
