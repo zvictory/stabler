@@ -26,6 +26,13 @@
 - Lists of records use `.table` (or list-group) — striped by default.
 - Currency cells use `font-monospace` for alignment.
 
+### Language & Translation Discipline (English-First Implementation)
+- **Prototypes and Design**: Mockups, design drafts (e.g. `docs/uat/...`), requirements, and discussions may be in Turkish or English.
+- **English-First Code**: All production code, Vue components, Python backend endpoints, error messages, docstrings, UI labels, and `t("...")` translation keys MUST be English-first. Never use Turkish or other non-English literals as canonical code identifiers or `t()` source keys.
+- **Translation Timing**:
+  1. During active development, update only `en.csv` if needed so that English unit tests and feature tests stay green. Do NOT spend time translating into `tr`, `ru`, `uz`, `uzc` while code and UI are still iterating.
+  2. Once feature implementation and test logic are complete and passing, backfill the translations for the other 4 language catalogs (`tr.csv`, `ru.csv`, `uz.csv`, `uzc.csv`) before final `make check` and `git push`.
+
 <!-- BEGIN BEADS INTEGRATION -->
 ## Issue Tracking with bd (beads)
 

@@ -259,9 +259,13 @@ the merge protocol and the branch gate in `deploy_stabler.sh` are written out in
   trailers that match neither convention.
 
 ## i18n workflow
-- Five languages: **en, ru, uz, uzc, tr**. Source strings live in `t()` (Vue) / `__()` (py).
+- **Prototypes vs. Code**: Mockups, drafts (e.g. `docs/uat/...`), and discussions can be in Turkish or English. Real implementation code (Vue components, Python backend, error messages, docstrings, UI labels, `t("...")` keys) MUST be English-first.
+- **Five languages**: **en, ru, uz, uzc, tr**. Source strings live in `t()` (Vue) / `__()` (py).
+- **Translation Timing**:
+  1. During active feature development, only update `en.csv` if needed to keep English tests green. Do not translate into `tr/ru/uz/uzc` while code is still changing.
+  2. Once the feature is finished and unit/feature tests pass, backfill the other 4 language catalogs (`tr.csv`, `ru.csv`, `uz.csv`, `uzc.csv`) before `make check` and `git push`.
 - Harvest new keys: `bench --site <site> execute stabler.translations.harvest.run`
   (scans .vue/.js/.py, appends missing keys to `{lang}.csv`, sorted). `en` target =
-  source; `ru/uz/uzc` are filled in manually.
+  source; `ru/uz/uzc/tr` are filled in.
 - Reviewers reject PRs that leave new user-facing strings untranslated in any of
-  the five languages.
+  the five languages when landing the feature.
