@@ -2717,6 +2717,87 @@ def ci_transport_costs(commercial_invoice: str) -> dict:
 
 
 @frappe.whitelist()
+def calculate_ci_landed_cost_uzs(
+	commercial_invoice: str, exchange_rate: float = 12800.0, allocation_method: str = "By Weight"
+) -> dict:
+	"""Calculate UZS Landed Cost allocation per product line item for a CI."""
+	if not commercial_invoice or not frappe.db.exists("Commercial Invoice", commercial_invoice):
+		frappe.throw(_("Unknown Commercial Invoice: {0}").format(commercial_invoice))
+
+	ci_doc = frappe.get_doc("Commercial Invoice", commercial_invoice)
+	_assert_imports_access(ci_doc.company)
+	_assert_can_read("Commercial Invoice", commercial_invoice)
+
+	rate = flt(exchange_rate) or 12800.0
+	ci_items = ci_doc.items or []
+
+	total_weight_kg = flt(ci_doc.total_kg) or sum(flt(it.qty) for it in ci_items) or 1.0
+	total_boxes = cint(ci_doc.total_boxes) or sum(cint(it.boxes) for it in ci_items) or 1
+	total_agreed_usd = flt(ci_doc.agreed_total) or sum(flt(it.amount) for it in ci_items) or 1.0
+
+	try:
+		overview = ci_cost_overview(commercial_invoice)
+		operational_transport_usd = flt(overview.get("operational", {}).get("transport", 0))
+		operational_duties_uzs = flt(overview.get("operational", {}).get("duties", 0))
+		other_expenses_uzs = flt(overview.get("operational", {}).get("other", 0))
+	except Exception:
+		operational_transport_usd = 0.0
+		operational_duties_uzs = 0.0
+		other_expenses_uzs = 0.0
+
+	total_extra_uzs = (operational_transport_usd * rate) + operational_duties_uzs + other_expenses_uzs
+
+	items_result = []
+	for it in ci_items:
+		item_qty_kg = flt(it.qty) or (flt(it.boxes) * flt(it.box_weight_kg)) or 1.0
+		item_boxes = cint(it.boxes) or 1
+		item_amount_usd = flt(it.amount)
+		item_rate_usd = flt(it.rate)
+		item_base_uzs = item_rate_usd * rate
+
+		if allocation_method == "By Value":
+			factor = item_amount_usd / total_agreed_usd if total_agreed_usd else 0
+		elif allocation_method == "By Quantity":
+			factor = item_boxes / total_boxes if total_boxes else 0
+		elif allocation_method == "Equal":
+			factor = 1.0 / len(ci_items) if ci_items else 0
+		else:  # Default "By Weight"
+			factor = item_qty_kg / total_weight_kg if total_weight_kg else 0
+
+		allocated_extra_uzs = total_extra_uzs * factor
+		allocated_extra_per_kg_uzs = allocated_extra_uzs / item_qty_kg if item_qty_kg else 0
+
+		final_landed_rate_per_kg_uzs = item_base_uzs + allocated_extra_per_kg_uzs
+		line_total_landed_uzs = final_landed_rate_per_kg_uzs * item_qty_kg
+
+		items_result.append(
+			{
+				"item": it.item,
+				"description": it.description or it.item,
+				"category": it.category,
+				"boxes": item_boxes,
+				"qty_kg": item_qty_kg,
+				"rate_usd": item_rate_usd,
+				"amount_usd": item_amount_usd,
+				"base_rate_uzs": item_base_uzs,
+				"allocated_extra_uzs": allocated_extra_uzs,
+				"allocated_extra_per_kg_uzs": allocated_extra_per_kg_uzs,
+				"final_landed_rate_per_kg_uzs": final_landed_rate_per_kg_uzs,
+				"line_total_landed_uzs": line_total_landed_uzs,
+			}
+		)
+
+	return {
+		"commercial_invoice": commercial_invoice,
+		"exchange_rate": rate,
+		"allocation_method": allocation_method,
+		"total_extra_uzs": total_extra_uzs,
+		"total_landed_uzs": (total_agreed_usd * rate) + total_extra_uzs,
+		"items": items_result,
+	}
+
+
+@frappe.whitelist()
 def ci_cost_overview(commercial_invoice: str) -> dict:
 	"""Single-source overview endpoint for Blocks 5 & 6 of CI Form v4."""
 	if not commercial_invoice or not frappe.db.exists("Commercial Invoice", commercial_invoice):

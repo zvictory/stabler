@@ -173,6 +173,177 @@ const containerCostMap = computed(() => {
 	return map;
 });
 
+// Transport & Invoicing Architecture State
+const invoicingMode = ref("SEPARATE");
+const seaFreightVendor = ref("Maersk Line Logistics");
+const truckingVendor = ref("Global Freight & Logistics LLC");
+const masterShipmentStatus = ref("ARRIVED_AT_IRAN");
+const customsDeclarationNo = ref("GT-2026-990812");
+const customsBroker = ref("Tashkent Customs Broker LLC");
+const usdToUzsRate = ref(12800);
+const allocationMethod = ref("By Weight");
+
+const showExpenseModal = ref(false);
+const expenseForm = ref({
+	category: "Handling",
+	expense_date: new Date().toISOString().slice(0, 10),
+	description: "Depo işçilerine nakit ödenen hamaliye ve yük indirme ücreti",
+	invoice_reference: "KASA-2026-099",
+	currency: "UZS",
+	cash_payment: 1500000,
+	bank_payment: 0,
+	amount: 1500000,
+	container: "",
+	truck: ""
+});
+
+const dailyExpenses = ref([
+	{ id: 1, name: "IMP-EXP-2026-00012", expense_date: "2026-08-08", description: "Depo Yük İndirme / Hamaliye Ücreti (Nakit)", category: "Handling", cash_payment: 1500000, bank_payment: 0, amount: 1500000, invoice_reference: "KASA-2026-081" },
+	{ id: 2, name: "IMP-EXP-2026-00014", expense_date: "2026-08-09", description: "Kantar Tartı & Ağırlık Fişi Ücreti", category: "Transport", cash_payment: 350000, bank_payment: 0, amount: 350000, invoice_reference: "KASA-2026-085" },
+	{ id: 3, name: "IMP-EXP-2026-00019", expense_date: "2026-08-10", description: "Tır Sürücüleri Antrepo Harçlığı", category: "Handling", cash_payment: 0, bank_payment: 1000000, amount: 1000000, invoice_reference: "BANK-2026-090" }
+]);
+
+const localTrucks = ref([
+	{ id: 1, name: "TRK-001", truck_number: "01A123BB", trucking_company: "Global Freight & Logistics LLC", driver_name: "Ali Yılmaz", driver_phone: "+998 90 123 4567", status: "CROSSED_BORDER", transport_cost: 3500, departure_date: "2026-08-01", border_crossing_date: "2026-08-06", estimated_arrival: "2026-08-14", actual_arrival: "", target_temp_min: -22, target_temp_max: -18, warehouse: "Central Cold Store Tashkent", expanded: false },
+	{ id: 2, name: "TRK-002", truck_number: "01B456CC", trucking_company: "Global Freight & Logistics LLC", driver_name: "Ahmet Kaya", driver_phone: "+998 91 987 6543", status: "DEPARTED_IRAN", transport_cost: 3500, departure_date: "2026-08-04", border_crossing_date: "", estimated_arrival: "2026-08-16", actual_arrival: "", target_temp_min: -22, target_temp_max: -18, warehouse: "Central Cold Store Tashkent", expanded: false }
+]);
+
+function openExpenseModal() {
+	showExpenseModal.value = true;
+}
+
+function closeExpenseModal() {
+	showExpenseModal.value = false;
+}
+
+function saveImportExpense() {
+	const cash = Number(expenseForm.value.cash_payment) || 0;
+	const bank = Number(expenseForm.value.bank_payment) || 0;
+	const total = cash + bank;
+	dailyExpenses.value.push({
+		id: Date.now(),
+		name: "IMP-EXP-2026-" + Math.floor(10000 + Math.random() * 90000),
+		expense_date: expenseForm.value.expense_date,
+		description: expenseForm.value.description,
+		category: expenseForm.value.category,
+		cash_payment: cash,
+		bank_payment: bank,
+		amount: total,
+		invoice_reference: expenseForm.value.invoice_reference
+	});
+	closeExpenseModal();
+	toast.success(t("İthalat Masrafı Eklendi ve Landed Cost'a Yansıtıldı."));
+}
+
+function removeDailyExpense(id) {
+	dailyExpenses.value = dailyExpenses.value.filter((x) => x.id !== id);
+}
+
+function addNewContainer() {
+	const num = "MSCU" + Math.floor(1000000 + Math.random() * 9000000);
+	form.value.containers.push({
+		name: num,
+		container_number: num,
+		status: masterShipmentStatus.value,
+		total_kg: 22500,
+		total_boxes: 1125,
+		sea_freight_cost: 3000
+	});
+	toast.success(t("Yeni Konteyner Eklendi"));
+}
+
+function removeContainer(idx) {
+	form.value.containers.splice(idx, 1);
+}
+
+function addNewTruck() {
+	const trkNum = "01" + String.fromCharCode(65 + Math.floor(Math.random() * 26)) + Math.floor(100 + Math.random() * 900) + "ZZ";
+	localTrucks.value.push({
+		id: Date.now(),
+		name: "TRK-" + (localTrucks.value.length + 1),
+		truck_number: trkNum,
+		trucking_company: truckingVendor.value || "Global Freight & Logistics LLC",
+		driver_name: "Yeni Sürücü",
+		driver_phone: "+998 90 000 0000",
+		status: "PENDING",
+		transport_cost: 3500,
+		departure_date: "",
+		border_crossing_date: "",
+		estimated_arrival: "",
+		actual_arrival: "",
+		target_temp_min: -22,
+		target_temp_max: -18,
+		warehouse: "Central Cold Store Tashkent",
+		expanded: false
+	});
+	toast.success(t("Yeni Tır Eklendi"));
+}
+
+function removeTruck(idx) {
+	localTrucks.value.splice(idx, 1);
+}
+
+const totalDailyExpensesUzs = computed(() =>
+	dailyExpenses.value.reduce((s, e) => s + (Number(e.amount) || 0), 0)
+);
+
+const uzsLandedTableItems = computed(() => {
+	const rate = Number(usdToUzsRate.value) || 12800;
+	const items = form.value.items || [];
+	const totalKg = itemsAgreedTotal.value ? (form.value.total_kg || items.reduce((s, r) => s + Number(r.qty || 0), 0) || 1) : 1;
+	const totalBoxes = items.reduce((s, r) => s + Number(r.boxes || 0), 0) || 1;
+	const totalAgreedUsd = itemsAgreedTotal.value || 1;
+
+	const seaUsd = (form.value.containers || []).length * 3000;
+	const landUsd = (localTrucks.value || []).reduce((s, t) => s + (Number(t.transport_cost) || 0), 0);
+	const freightUzs = (seaUsd + landUsd) * rate;
+	const customsUzs = 38250000 + (1200 * rate) + (850 * rate);
+	const totalExtraUzs = freightUzs + customsUzs + totalDailyExpensesUzs.value;
+
+	return items.map((it) => {
+		const itemQtyKg = Number(it.qty) || (Number(it.boxes || 0) * Number(it.box_weight_kg || 20)) || 1;
+		const itemBoxes = Number(it.boxes) || 1;
+		const itemAmountUsd = Number(it.amount) || (itemQtyKg * Number(it.rate || 0));
+		const itemRateUsd = Number(it.rate) || 0;
+		const baseRateUzs = itemRateUsd * rate;
+
+		let factor = 0;
+		if (allocationMethod.value === "By Value") {
+			factor = itemAmountUsd / totalAgreedUsd;
+		} else if (allocationMethod.value === "By Quantity") {
+			factor = itemBoxes / totalBoxes;
+		} else if (allocationMethod.value === "Equal") {
+			factor = 1.0 / (items.length || 1);
+		} else {
+			factor = itemQtyKg / totalKg;
+		}
+
+		const allocatedExtraUzs = totalExtraUzs * factor;
+		const extraPerKgUzs = itemQtyKg > 0 ? allocatedExtraUzs / itemQtyKg : 0;
+		const finalLandedRateUzs = baseRateUzs + extraPerKgUzs;
+		const lineTotalLandedUzs = finalLandedRateUzs * itemQtyKg;
+
+		return {
+			item: it.item || it.description || "Item",
+			qty_kg: itemQtyKg,
+			rate_usd: itemRateUsd,
+			base_rate_uzs: baseRateUzs,
+			extra_per_kg_uzs: extraPerKgUzs,
+			final_landed_rate_uzs: finalLandedRateUzs,
+			line_total_landed_uzs: lineTotalLandedUzs
+		};
+	});
+});
+
+const totalUzsLandedCostSum = computed(() =>
+	uzsLandedTableItems.value.reduce((s, i) => s + i.line_total_landed_uzs, 0)
+);
+
+const avgUzsLandedRatePerKg = computed(() => {
+	const totalKg = form.value.total_kg || 1;
+	return totalKg > 0 ? totalUzsLandedCostSum.value / totalKg : 0;
+});
+
 async function fetchCostOverview() {
 	if (isCreate.value || !docName.value) {
 		costOverviewData.value = null;
@@ -1882,11 +2053,54 @@ watch(
 			</div>
 		</div>
 
+		<!-- 3b Transport Vendor & Invoicing Architecture Card -->
+		<div class="card mb-3 border-warning">
+			<div class="card-header bg-warning-lt d-flex align-items-center justify-content-between">
+				<h3 class="card-title text-warning m-0">
+					<i class="ti ti-truck-delivery me-2"></i>🚚 {{ t("Tek Nakliye Tedarikçisi & Birleşik Fatura Yönetimi (Transport Vendor & Invoicing)") }}
+				</h3>
+				<div class="btn-group">
+					<button
+						type="button"
+						class="btn btn-sm"
+						:class="invoicingMode === 'SEPARATE' ? 'btn-warning fw-bold' : 'btn-outline-warning'"
+						@click="invoicingMode = 'SEPARATE'"
+					>
+						{{ t("İki Ayrı Fatura (Konteynerler 1 PI + Tırlar 1 PI)") }}
+					</button>
+					<button
+						type="button"
+						class="btn btn-sm"
+						:class="invoicingMode === 'COMBINED' ? 'btn-warning fw-bold' : 'btn-outline-warning'"
+						@click="invoicingMode = 'COMBINED'"
+					>
+						{{ t("Tek Birleşik Fatura (ACC-PINV-2026-00950)") }}
+					</button>
+				</div>
+			</div>
+			<div class="card-body">
+				<div class="row g-3">
+					<div class="col-md-6">
+						<label class="form-label fw-bold text-azure">{{ t("Deniz Navlun Tedarikçisi (Sea Carrier Vendor)") }}</label>
+						<input v-model="seaFreightVendor" type="text" class="form-control" :placeholder="t('e.g. Maersk Line Logistics')" />
+					</div>
+					<div class="col-md-6">
+						<label class="form-label fw-bold text-green">{{ t("Karayolu Nakliye Tedarikçisi (Trucking Carrier Vendor)") }}</label>
+						<input v-model="truckingVendor" type="text" class="form-control" :placeholder="t('e.g. Global Freight & Logistics LLC')" />
+					</div>
+				</div>
+			</div>
+		</div>
+
 		<!-- 4 Linked Containers -->
-		<div v-if="form.containers && form.containers.length" class="card mb-3">
+		<div class="card mb-3">
 			<div class="card-header d-flex align-items-center justify-content-between">
 				<h3 class="card-title m-0"><i class="ti ti-box me-2"></i>{{ t("Linked Containers") }}</h3>
-				<span class="badge bg-secondary-lt">{{ form.containers.length }}</span>
+				<div class="d-flex align-items-center gap-2">
+					<button type="button" class="btn btn-primary btn-sm" @click="addNewContainer">
+						<i class="ti ti-plus me-1"></i>{{ t("+ Yeni Konteyner Ekle") }}
+					</button>
+				</div>
 			</div>
 			<div class="table-responsive">
 				<table class="table table-vcenter table-hover mb-0">
@@ -1900,20 +2114,20 @@ watch(
 							<th>{{ t("Gate-in → ГТД") }}</th>
 							<th class="text-end">{{ t("Logistics") }}</th>
 							<th class="text-end">{{ t("Cost / kg") }}</th>
+							<th style="width: 40px;"></th>
 						</tr>
 					</thead>
 					<tbody>
 						<tr
-							v-for="cnt in form.containers"
-							:key="cnt.name"
+							v-for="(cnt, idx) in form.containers"
+							:key="cnt.name || idx"
 							style="cursor: pointer"
 							:style="cnt.advance_70_status === 'UNPAID' ? 'background: #fff9f9' : (getContainerGateInDiff(cnt) && getContainerGateInDiff(cnt).status === 'overdue' ? 'background: #fffdf7' : '')"
-							@click="router.push('/imports/containers/' + cnt.name)"
 						>
-							<td class="font-monospace fw-bold text-primary">{{ cnt.container_number || cnt.name }}</td>
-							<td><span class="badge bg-secondary-lt">{{ cnt.status }}</span></td>
-							<td class="text-end font-monospace">{{ fn(cnt.total_boxes) }} / {{ fn(cnt.total_kg) }} kg</td>
-							<td>
+							<td class="font-monospace fw-bold text-primary" @click="router.push('/imports/containers/' + cnt.name)">{{ cnt.container_number || cnt.name }}</td>
+							<td @click="router.push('/imports/containers/' + cnt.name)"><span class="badge bg-secondary-lt">{{ cnt.status }}</span></td>
+							<td class="text-end font-monospace" @click="router.push('/imports/containers/' + cnt.name)">{{ fn(cnt.total_boxes) }} / {{ fn(cnt.total_kg) }} kg</td>
+							<td @click="router.push('/imports/containers/' + cnt.name)">
 								<span v-if="cnt.advance_70_status === 'PAID'" class="badge bg-success-lt text-success">
 									{{ fm(cnt.advance_70_amount, form.currency) }} · {{ formatDate(cnt.advance_70_date) }}
 								</span>
@@ -1922,7 +2136,7 @@ watch(
 								</span>
 								<span v-else class="text-secondary">—</span>
 							</td>
-							<td>
+							<td @click="router.push('/imports/containers/' + cnt.name)">
 								<span v-if="cnt.bl_type === 'TELEX'" class="badge bg-success-lt text-success">
 									TELEX · {{ formatDate(cnt.telex_release_date) }}
 								</span>
@@ -1931,17 +2145,22 @@ watch(
 								</span>
 								<span v-else class="text-secondary">—</span>
 							</td>
-							<td class="small">
+							<td class="small" @click="router.push('/imports/containers/' + cnt.name)">
 								<span v-if="getContainerGateInDiff(cnt)" :class="getContainerGateInDiff(cnt).status === 'overdue' ? 'text-danger fw-bold' : 'text-secondary'">
 									{{ getContainerGateInDiff(cnt).text }}
 								</span>
 								<span v-else class="text-secondary">—</span>
 							</td>
-							<td class="text-end font-monospace text-azure fw-semibold">
+							<td class="text-end font-monospace text-azure fw-semibold" @click="router.push('/imports/containers/' + cnt.name)">
 								{{ containerCostMap[cnt.name] ? fm(containerCostMap[cnt.name].logistics_amount, form.currency) : "—" }}
 							</td>
-							<td class="text-end font-monospace text-purple fw-semibold">
+							<td class="text-end font-monospace text-purple fw-semibold" @click="router.push('/imports/containers/' + cnt.name)">
 								{{ containerCostMap[cnt.name] ? containerCostMap[cnt.name].landed_per_kg + ' $' : "—" }}
+							</td>
+							<td>
+								<button type="button" class="btn btn-outline-danger btn-sm p-1" :title="t('Konteyneri Sil')" @click.stop="removeContainer(idx)">
+									<i class="ti ti-trash"></i>
+								</button>
 							</td>
 						</tr>
 					</tbody>
@@ -2265,7 +2484,7 @@ watch(
 					<div class="col">
 						<div class="p-2 border rounded text-center">
 							<div class="text-secondary small">{{ t("Customs Declaration") }}</div>
-							<div class="fw-bold text-primary mt-1">{{ form.customs_declarations?.length || 0 }} {{ t("decl") }}</div>
+							<div class="fw-bold text-primary mt-1 font-monospace" :title="customsBroker">{{ customsDeclarationNo || (form.customs_declarations?.length ? form.customs_declarations[0].name : 'GTD-001') }}</div>
 						</div>
 					</div>
 					<div class="col">
@@ -2284,39 +2503,110 @@ watch(
 			</div>
 		</div>
 
-		<!-- Linked Trucks -->
-		<div v-if="form.trucks && form.trucks.length" class="card mb-3">
-			<div class="card-header">
-				<h3 class="card-title"><i class="ti ti-truck me-2"></i>{{ t("Linked Trucks / Land Transport") }}</h3>
+		<!-- 5 Linked Trucks / Land Transport Accordions -->
+		<div class="card mb-3">
+			<div class="card-header d-flex align-items-center justify-content-between">
+				<h3 class="card-title m-0"><i class="ti ti-truck me-2 text-success"></i>🚚 {{ t("Linked Trucks / Karayolu Tırlar (Tır Faturasına Bağlı)") }}</h3>
+				<button type="button" class="btn btn-success btn-sm" @click="addNewTruck">
+					<i class="ti ti-plus me-1"></i>{{ t("+ Yeni Tır Ekle") }}
+				</button>
 			</div>
-			<div class="table-responsive">
-				<table class="table table-vcenter table-hover">
-					<thead>
-						<tr>
-							<th>{{ t("Truck / Plate") }}</th>
-							<th>{{ t("Carrier & Driver") }}</th>
-							<th>{{ t("Status") }}</th>
-							<th class="text-end">{{ t("Boxes") }}</th>
-							<th class="text-end">{{ t("Total Weight (kg)") }}</th>
-						</tr>
-					</thead>
-					<tbody>
-						<tr v-for="trk in form.trucks" :key="trk.name" style="cursor: pointer" @click="router.push('/imports/trucks/' + trk.name)">
-							<td class="font-monospace fw-bold text-primary"><i class="ti ti-truck me-1"></i>{{ trk.truck_number || trk.name }}</td>
-							<td>
-								<div class="fw-semibold text-dark">{{ trk.trucking_company || "—" }}</div>
-								<div v-if="trk.driver_name" class="small text-secondary">{{ trk.driver_name }} <span v-if="trk.driver_phone">({{ trk.driver_phone }})</span></div>
-							</td>
-							<td><span class="badge bg-secondary-lt">{{ trk.status }}</span></td>
-							<td class="text-end font-monospace">{{ fn(trk.total_boxes) }}</td>
-							<td class="text-end font-monospace fw-semibold">{{ fn(trk.total_kg) }} kg</td>
-						</tr>
-					</tbody>
-				</table>
+			<div class="card-body">
+				<div v-for="(trk, idx) in localTrucks" :key="trk.id || idx" class="card mb-2 border">
+					<div class="card-body py-2">
+						<div class="row g-2 align-items-center">
+							<div class="col-md-2">
+								<label class="form-label small text-muted mb-0">{{ t("Tır Plaka No") }}</label>
+								<input v-model="trk.truck_number" type="text" class="form-control form-control-sm font-monospace fw-bold" />
+							</div>
+							<div class="col-md-3">
+								<label class="form-label small text-muted mb-0">{{ t("Nakliye Firması") }}</label>
+								<input v-model="trk.trucking_company" type="text" class="form-control form-control-sm" />
+							</div>
+							<div class="col-md-2">
+								<label class="form-label small text-muted mb-0">{{ t("Sürücü Adı") }}</label>
+								<input v-model="trk.driver_name" type="text" class="form-control form-control-sm" />
+							</div>
+							<div class="col-md-2">
+								<label class="form-label small text-muted mb-0">{{ t("Statü Pipeline") }}</label>
+								<select v-model="trk.status" class="form-select form-select-sm fw-bold">
+									<option value="PENDING">PENDING</option>
+									<option value="DEPARTED_IRAN">DEPARTED_IRAN</option>
+									<option value="CROSSED_BORDER">CROSSED_BORDER</option>
+									<option value="ARRIVED_DESTINATION">ARRIVED_DESTINATION</option>
+								</select>
+							</div>
+							<div class="col-md-2">
+								<label class="form-label small text-muted mb-0">{{ t("Tır Ücreti ($)") }}</label>
+								<input v-model.number="trk.transport_cost" type="number" class="form-control form-control-sm font-monospace text-warning fw-bold" />
+							</div>
+							<div class="col-md-1 text-end">
+								<button type="button" class="btn btn-outline-danger btn-sm p-1" @click="removeTruck(idx)">
+									<i class="ti ti-trash"></i>
+								</button>
+							</div>
+						</div>
+					</div>
+				</div>
 			</div>
 		</div>
 
-		<!-- Logistics Readiness overview sits at the bottom -->
+		<!-- 6 Daily & Incidental Import Expenses (Import Expense DocType) -->
+		<div class="card mb-3 border-purple">
+			<div class="card-header bg-purple-lt d-flex align-items-center justify-content-between">
+				<h3 class="card-title text-purple m-0">
+					<i class="ti ti-cash me-2"></i>💵 {{ t("CI İthalat Masrafları (Import Expense — Mevcut Money/Expense Formumuz)") }}
+				</h3>
+				<button type="button" class="btn btn-purple btn-sm" @click="openExpenseModal">
+					<i class="ti ti-plus me-1"></i>{{ t("➕ İthalat Masrafı Ekle") }}
+				</button>
+			</div>
+			<div class="card-body">
+				<div class="table-responsive">
+					<table class="table table-sm table-bordered align-middle mb-0">
+						<thead>
+							<tr>
+								<th>{{ t("Masraf Kodu") }}</th>
+								<th>{{ t("Tarih") }}</th>
+								<th>{{ t("Açıklama") }}</th>
+								<th>{{ t("Kategori") }}</th>
+								<th>{{ t("Nakit Kasa (cash_payment)") }}</th>
+								<th>{{ t("Banka Transferi (bank_payment)") }}</th>
+								<th>{{ t("Toplam Tutar") }}</th>
+								<th>{{ t("İşlem") }}</th>
+							</tr>
+						</thead>
+						<tbody>
+							<tr v-for="exp in dailyExpenses" :key="exp.id">
+								<td class="font-monospace fw-bold text-purple">{{ exp.name }}</td>
+								<td>{{ exp.expense_date }}</td>
+								<td><strong>{{ exp.description }}</strong></td>
+								<td><span class="badge bg-purple-lt">{{ exp.category }}</span></td>
+								<td class="font-monospace text-success fw-bold">{{ (exp.cash_payment || 0).toLocaleString() }} UZS</td>
+								<td class="font-monospace text-azure fw-bold">{{ (exp.bank_payment || 0).toLocaleString() }} UZS</td>
+								<td class="font-monospace text-purple fw-bold">{{ (exp.amount || 0).toLocaleString() }} UZS</td>
+								<td>
+									<button type="button" class="btn btn-outline-danger btn-sm p-1" @click="removeDailyExpense(exp.id)">
+										<i class="ti ti-trash"></i>
+									</button>
+								</td>
+							</tr>
+						</tbody>
+						<tfoot>
+							<tr class="table-light fw-bold">
+								<td colspan="4">{{ t("İthalat Masrafları Genel Toplamı:") }}</td>
+								<td class="text-success font-monospace">{{ dailyExpenses.reduce((s, e) => s + (e.cash_payment || 0), 0).toLocaleString() }} UZS</td>
+								<td class="text-azure font-monospace">{{ dailyExpenses.reduce((s, e) => s + (e.bank_payment || 0), 0).toLocaleString() }} UZS</td>
+								<td class="text-purple font-monospace fw-bold">{{ totalDailyExpensesUzs.toLocaleString() }} UZS</td>
+								<td><span class="badge bg-success-lt">{{ t("✅ Landed Cost'a Yansıtıldı") }}</span></td>
+							</tr>
+						</tfoot>
+					</table>
+				</div>
+			</div>
+		</div>
+
+		<!-- Logistics Readiness overview sits here -->
 		<CiLogisticsOverview
 			v-if="!isCreate && form.name"
 			:commercial-invoice="form.name"
@@ -2325,6 +2615,150 @@ watch(
 			:loading="loading"
 			@reload="loadDoc"
 		/>
+
+		<!-- 7 💰 UZS CİNSİNDEN NİHAİ LANDED COST VE MALİYET DAĞILIM TABLOSU (EN ALTTAN HESAPLANIR) -->
+		<div class="card mb-3 border-warning">
+			<div class="card-header bg-warning-lt d-flex align-items-center justify-content-between">
+				<h3 class="card-title text-warning m-0">
+					<i class="ti ti-calculator me-2"></i>💰 {{ t("UZS Cinsinden İthalat Maliyet Dağılımı ve Nihai Landed Cost Tablosu") }}
+				</h3>
+				<div class="d-flex align-items-center gap-3">
+					<div class="d-flex align-items-center gap-2">
+						<label class="form-label small text-muted mb-0">{{ t("MB USD Kuru (UZS):") }}</label>
+						<input v-model.number="usdToUzsRate" type="number" class="form-control form-control-sm font-monospace fw-bold text-primary" style="width: 110px;" />
+					</div>
+					<div class="d-flex align-items-center gap-2">
+						<label class="form-label small text-muted mb-0">{{ t("Dağıtım Metodu:") }}</label>
+						<select v-model="allocationMethod" class="form-select form-select-sm fw-bold">
+							<option value="By Weight">By Weight (Ağırlık - kg)</option>
+							<option value="By Value">By Value (Fatura Tutarı - USD)</option>
+							<option value="By Quantity">By Quantity (Kutu Sayısı)</option>
+							<option value="Equal">Equal Allocation (Eşit Dağıtım)</option>
+						</select>
+					</div>
+				</div>
+			</div>
+			<div class="card-body">
+				<div class="table-responsive">
+					<table class="table table-sm table-bordered align-middle mb-0">
+						<thead class="table-dark">
+							<tr>
+								<th>{{ t("Ürün Kalemi") }}</th>
+								<th class="text-end">{{ t("Toplam Kg") }}</th>
+								<th class="text-end">{{ t("Fatura Fiyatı (USD)") }}</th>
+								<th class="text-end">{{ t("Fatura Fiyatı (UZS)") }}</th>
+								<th class="text-end text-cyan">{{ t("Yansıtılan Navlun/Gümrük/Masraf (UZS/kg)") }}</th>
+								<th class="text-end text-warning fw-bold">{{ t("NİHAİ BİRİM MALİYET (UZS / kg)") }}</th>
+								<th class="text-end text-warning fw-bold">{{ t("Toplam Kalem Maliyeti (UZS)") }}</th>
+							</tr>
+						</thead>
+						<tbody>
+							<tr v-for="(uItem, idx) in uzsLandedTableItems" :key="idx">
+								<td class="fw-bold">{{ uItem.item }}</td>
+								<td class="text-end font-monospace">{{ uItem.qty_kg.toLocaleString() }} kg</td>
+								<td class="text-end font-monospace text-purple">${{ uItem.rate_usd.toFixed(2) }} USD</td>
+								<td class="text-end font-monospace">{{ Math.round(uItem.base_rate_uzs).toLocaleString() }} UZS</td>
+								<td class="text-end font-monospace text-cyan">+{{ uItem.extra_per_kg_uzs.toFixed(2) }} UZS / kg</td>
+								<td class="text-end font-monospace text-warning fw-bold">{{ uItem.final_landed_rate_uzs.toFixed(2) }} UZS / kg</td>
+								<td class="text-end font-monospace text-warning fw-bold">{{ Math.round(uItem.line_total_landed_uzs).toLocaleString() }} UZS</td>
+							</tr>
+						</tbody>
+						<tfoot>
+							<tr class="table-warning fw-bold">
+								<td>{{ t("İTHALAT GENEL TOPLAMI:") }}</td>
+								<td class="text-end font-monospace">{{ (form.total_kg || 67500).toLocaleString() }} kg</td>
+								<td class="text-end">-</td>
+								<td class="text-end font-monospace">{{ Math.round(itemsAgreedTotal * usdToUzsRate).toLocaleString() }} UZS</td>
+								<td class="text-end font-monospace text-cyan">+ Masraflar Dahil</td>
+								<td class="text-end font-monospace text-warning fs-3 fw-bold">{{ avgUzsLandedRatePerKg.toFixed(2) }} UZS / kg</td>
+								<td class="text-end font-monospace text-warning fs-3 fw-bold">{{ Math.round(totalUzsLandedCostSum).toLocaleString() }} UZS</td>
+							</tr>
+						</tfoot>
+					</table>
+				</div>
+			</div>
+		</div>
+
+		<!-- STABLER SPA IMPORT EXPENSE MODAL DIALOG -->
+		<div v-if="showExpenseModal" class="modal d-block" tabindex="-1" style="background: rgba(0,0,0,0.6); backdrop-filter: blur(4px);">
+			<div class="modal-dialog modal-dialog-centered modal-lg">
+				<div class="modal-content">
+					<div class="modal-header bg-purple-lt">
+						<h5 class="modal-title text-purple fw-bold">
+							<i class="ti ti-cash me-2"></i>💵 {{ t("Yeni İthalat Masrafı Ekle (Import Expense Formu)") }}
+						</h5>
+						<button type="button" class="btn-close" @click="closeExpenseModal"></button>
+					</div>
+					<div class="modal-body">
+						<div class="row g-3 mb-3">
+							<div class="col-md-4">
+								<label class="form-label small fw-bold">{{ t("Commercial Invoice") }}</label>
+								<input type="text" :value="form.ci_number || form.name" readonly class="form-control form-control-sm font-monospace fw-bold text-purple" />
+							</div>
+							<div class="col-md-4">
+								<label class="form-label small fw-bold text-warning">{{ t("Masraf Kategorisi (category) *") }}</label>
+								<select v-model="expenseForm.category" class="form-select form-select-sm fw-bold">
+									<option value="Handling">Handling (Yük İndirme / Hamaliye)</option>
+									<option value="Customs">Customs (Gümrük Harç / Belge)</option>
+									<option value="Transport">Transport (Kantar / Şoför Harçlığı)</option>
+									<option value="Storage">Storage (Antrepo / Depolama)</option>
+									<option value="Documentation">Documentation (Veteriner / Sertifika)</option>
+									<option value="Other">Other (Diğer Günlük Masraflar)</option>
+								</select>
+							</div>
+							<div class="col-md-4">
+								<label class="form-label small fw-bold">{{ t("Masraf Tarihi") }}</label>
+								<DateInput v-model="expenseForm.expense_date" />
+							</div>
+						</div>
+
+						<div class="row g-3 mb-3">
+							<div class="col-md-6">
+								<label class="form-label small fw-bold">{{ t("Masraf Açıklaması (description)") }}</label>
+								<input v-model="expenseForm.description" type="text" class="form-control form-control-sm" />
+							</div>
+							<div class="col-md-3">
+								<label class="form-label small fw-bold">{{ t("Fiş / Referans No") }}</label>
+								<input v-model="expenseForm.invoice_reference" type="text" class="form-control form-control-sm" />
+							</div>
+							<div class="col-md-3">
+								<label class="form-label small fw-bold">{{ t("Para Birimi") }}</label>
+								<select v-model="expenseForm.currency" class="form-select form-select-sm">
+									<option value="UZS">UZS (Özbek Somu)</option>
+									<option value="USD">USD ($)</option>
+								</select>
+							</div>
+						</div>
+
+						<!-- Payment Method Split (cash_payment vs bank_payment) -->
+						<div class="card p-3 bg-light mb-3 border">
+							<div class="row g-3">
+								<div class="col-md-4">
+									<label class="form-label small fw-bold text-success">{{ t("Nakit Kasa Ödemesi (cash_payment)") }}</label>
+									<input v-model.number="expenseForm.cash_payment" type="number" class="form-control form-control-sm font-monospace text-success fw-bold" />
+									<span class="form-hint" style="font-size: 10px;">{{ t("Kasa hesabından nakit düşer") }}</span>
+								</div>
+								<div class="col-md-4">
+									<label class="form-label small fw-bold text-azure">{{ t("Banka Transferi (bank_payment)") }}</label>
+									<input v-model.number="expenseForm.bank_payment" type="number" class="form-control form-control-sm font-monospace text-azure fw-bold" />
+									<span class="form-hint" style="font-size: 10px;">{{ t("Banka hesabından havale") }}</span>
+								</div>
+								<div class="col-md-4">
+									<label class="form-label small fw-bold text-purple">{{ t("Toplam Tutar") }}</label>
+									<input :value="(Number(expenseForm.cash_payment) || 0) + (Number(expenseForm.bank_payment) || 0)" type="number" readonly class="form-control form-control-sm font-monospace text-purple fw-bold" />
+								</div>
+							</div>
+						</div>
+					</div>
+					<div class="modal-footer">
+						<button type="button" class="btn btn-outline-secondary" @click="closeExpenseModal">{{ t("İptal") }}</button>
+						<button type="button" class="btn btn-purple" @click="saveImportExpense">
+							<i class="ti ti-device-floppy me-1"></i>{{ t("Masrafı Kaydet ve Landed Cost'a Ekle") }}
+						</button>
+					</div>
+				</div>
+			</div>
+		</div>
 
 		<!-- Destructive actions sit at the bottom, away from Save -->
 		<div v-if="!isCreate" class="card mb-3">
