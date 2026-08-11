@@ -507,6 +507,7 @@ def get_commercial_invoice(name: str):
 				"total_kg",
 				"total_boxes",
 				"transport_cost",
+				"transport_currency",
 			],
 			order_by="creation asc",
 		),
@@ -2601,6 +2602,9 @@ _IE_HEADER_FIELDS = (
 	"currency",
 )
 _IE_DATE_FIELDS = ("expense_date",)
+#: Cash-desk fields. Writing them means "this expense leaves a real kassa", so
+#: they carry the same cost-visibility gate as the bank/cash split.
+_IE_KASA_FIELDS = ("expense_account", "paid_from_account")
 
 
 def _apply_ie_payload(doc, values: dict):
@@ -2620,6 +2624,127 @@ def _apply_ie_payload(doc, values: dict):
 		for field in ("bank_payment", "cash_payment"):
 			if field in values and values[field] not in (None, ""):
 				doc.set(field, flt(values[field]))
+	# Cash-desk (kassa) pair — cost-visible users only.
+	if any(f in values for f in _IE_KASA_FIELDS):
+		_assert_cost_visible()
+		for field in _IE_KASA_FIELDS:
+			if field in values:
+				doc.set(field, values[field] or None)
+
+
+def _assert_ie_payment_route(doc) -> None:
+	"""One expense, one settlement route.
+
+	A supplier means the expense is billed — ``imports_module.hooks`` opens a draft
+	service Purchase Invoice for it. A cash desk means the money leaves a kassa now.
+	Accepting both would debit the same cost twice, so the pair is rejected here
+	instead of being left to whoever reconciles the ledger later.
+	"""
+	kasa = doc.get("paid_from_account")
+	if not kasa:
+		if doc.get("expense_account"):
+			frappe.throw(_("Select the cash desk this expense is paid from, or clear the expense account."))
+		return
+	if doc.get("supplier"):
+		frappe.throw(
+			_(
+				"An expense is either billed to a supplier or paid from a cash desk, not both. "
+				"Clear the supplier to pay this expense in cash."
+			)
+		)
+	if not doc.get("expense_account"):
+		frappe.throw(_("Select the expense account to debit for the cash-desk payment."))
+	kasa_currency = frappe.db.get_value("Account", kasa, "account_currency")
+	if doc.get("currency") and kasa_currency and doc.currency != kasa_currency:
+		# money.submit_expense_entry throws on this too; catching it here keeps the
+		# error on the field the user can actually fix.
+		frappe.throw(
+			_("Expense currency ({0}) must match the cash desk currency ({1}).").format(
+				doc.currency, kasa_currency
+			)
+		)
+
+
+def _post_expense_kasa_entry(doc) -> dict:
+	"""Post the real Bank Entry behind a cash-desk-paid Import Expense.
+
+	Returns the money-layer result (it carries ``pending_approval``) or ``{}`` when
+	the expense is not a cash payment. ``journal_entry`` doubles as the idempotency
+	key: a second save never posts a second voucher.
+	"""
+	if doc.get("journal_entry") or not doc.get("paid_from_account"):
+		return {}
+	amount = flt(doc.amount)
+	if amount <= 0:
+		return {}
+	_assert_cost_visible()
+
+	from stabler.api.money import submit_expense_entry
+	from stabler.stabler.imports_module import payment_math as pm
+
+	posting_date = str(doc.expense_date or today())
+	base_currency = frappe.db.get_value("Company", doc.company, "default_currency")
+	kasa_currency = frappe.db.get_value("Account", doc.paid_from_account, "account_currency")
+	rate = 1.0
+	if kasa_currency and base_currency and kasa_currency != base_currency:
+		rate = flt(_latest_exchange_rate(kasa_currency, base_currency, posting_date)[0])
+		if rate <= 0 or rate == 1.0:
+			# _latest_exchange_rate falls back to 1.0 when it finds nothing, which for
+			# two different currencies means "no rate", not "parity".
+			frappe.throw(
+				_(
+					"No exchange rate found for {0} to {1} on {2}. Add one before paying from this cash desk."
+				).format(kasa_currency, base_currency, posting_date)
+			)
+
+	res = (
+		submit_expense_entry(
+			company=doc.company,
+			posting_date=posting_date,
+			payment_from=doc.paid_from_account,
+			lines=[
+				{
+					"account": doc.expense_account,
+					"amount": amount,
+					"memo": doc.get("description") or doc.name,
+				}
+			],
+			exchange_rate=rate,
+			commercial_invoice=doc.get("commercial_invoice"),
+			import_container=doc.get("container"),
+			import_truck=doc.get("truck"),
+		)
+		or {}
+	)
+	journal_entry = res.get("name")
+	if not journal_entry:
+		return res
+
+	updates = {"journal_entry": journal_entry}
+	if not res.get("pending_approval"):
+		# Only a submitted voucher means the money actually left the desk; an entry
+		# waiting for approval leaves the expense Pending on purpose.
+		account_type = frappe.db.get_value("Account", doc.paid_from_account, "account_type")
+		is_cash = account_type == "Cash"
+		updates["cash_payment"] = amount if is_cash else 0.0
+		updates["bank_payment"] = 0.0 if is_cash else amount
+		updates["status"] = pm.expense_status(amount, updates["bank_payment"], updates["cash_payment"])
+	# db_set, not save(): bank/cash are permlevel-1 on a doctype that carries no
+	# permlevel-1 permission row, so a normal save would reset them; and `status`
+	# is only derived inside validate(), which has already run.
+	doc.db_set(updates)
+	return res
+
+
+def _ie_result(doc, posted: dict) -> dict:
+	"""Save response — the caller has to know whether a voucher was actually posted."""
+	out = {"name": doc.name, "status": doc.status}
+	if doc.get("journal_entry"):
+		out["journal_entry"] = doc.journal_entry
+	if posted.get("pending_approval"):
+		out["pending_approval"] = True
+		out["approval_request"] = posted.get("approval_request")
+	return out
 
 
 @frappe.whitelist()
@@ -2644,7 +2769,8 @@ def list_import_expenses(
         SELECT ie.name, ie.commercial_invoice, ie.container, ie.truck, ie.category,
                ie.expense_date, ie.supplier, ie.invoice_reference, ie.description,
                ie.amount, ie.currency, ie.bank_payment, ie.cash_payment, ie.status,
-               ie.purchase_invoice
+               ie.purchase_invoice, ie.expense_account, ie.paid_from_account,
+               ie.journal_entry
         FROM `tabImport Expense` ie
         WHERE {where}
         ORDER BY ie.creation DESC, ie.name DESC
@@ -2933,8 +3059,11 @@ def get_import_expense(name: str):
 		"currency": doc.currency,
 		"bank_payment": flt(doc.bank_payment),
 		"cash_payment": flt(doc.cash_payment),
+		"expense_account": doc.expense_account,
+		"paid_from_account": doc.paid_from_account,
 		"status": doc.status,
 		"purchase_invoice": doc.purchase_invoice,
+		"journal_entry": doc.journal_entry,
 	}
 	rules.mask_named(payload, rules.EXPENSE_MASK_FIELDS, _cost_visible())
 	return payload
@@ -2952,8 +3081,9 @@ def create_import_expense(company: str, values=None):
 	doc = frappe.new_doc("Import Expense")
 	doc.company = company
 	_apply_ie_payload(doc, values)
+	_assert_ie_payment_route(doc)
 	doc.insert(ignore_permissions=False)
-	return {"name": doc.name, "status": doc.status}
+	return _ie_result(doc, _post_expense_kasa_entry(doc))
 
 
 @frappe.whitelist()
@@ -2970,8 +3100,9 @@ def update_import_expense(name: str, values=None, modified: str | None = None):
 	values = values or {}
 	doc = frappe.get_doc("Import Expense", name)
 	_apply_ie_payload(doc, values)
+	_assert_ie_payment_route(doc)
 	doc.save(ignore_permissions=False)
-	return {"name": doc.name, "status": doc.status}
+	return _ie_result(doc, _post_expense_kasa_entry(doc))
 
 
 # ===========================================================================
