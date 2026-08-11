@@ -2717,7 +2717,9 @@ def ci_transport_costs(commercial_invoice: str) -> dict:
 
 
 @frappe.whitelist()
-def calculate_ci_landed_cost_uzs(commercial_invoice: str, exchange_rate: float = 12800.0, allocation_method: str = "By Weight") -> dict:
+def calculate_ci_landed_cost_uzs(
+	commercial_invoice: str, exchange_rate: float = 12800.0, allocation_method: str = "By Weight"
+) -> dict:
 	"""Calculate UZS Landed Cost allocation per product line item for a CI."""
 	if not commercial_invoice or not frappe.db.exists("Commercial Invoice", commercial_invoice):
 		frappe.throw(_("Unknown Commercial Invoice: {0}").format(commercial_invoice))
@@ -2768,20 +2770,22 @@ def calculate_ci_landed_cost_uzs(commercial_invoice: str, exchange_rate: float =
 		final_landed_rate_per_kg_uzs = item_base_uzs + allocated_extra_per_kg_uzs
 		line_total_landed_uzs = final_landed_rate_per_kg_uzs * item_qty_kg
 
-		items_result.append({
-			"item": it.item,
-			"description": it.description or it.item,
-			"category": it.category,
-			"boxes": item_boxes,
-			"qty_kg": item_qty_kg,
-			"rate_usd": item_rate_usd,
-			"amount_usd": item_amount_usd,
-			"base_rate_uzs": item_base_uzs,
-			"allocated_extra_uzs": allocated_extra_uzs,
-			"allocated_extra_per_kg_uzs": allocated_extra_per_kg_uzs,
-			"final_landed_rate_per_kg_uzs": final_landed_rate_per_kg_uzs,
-			"line_total_landed_uzs": line_total_landed_uzs,
-		})
+		items_result.append(
+			{
+				"item": it.item,
+				"description": it.description or it.item,
+				"category": it.category,
+				"boxes": item_boxes,
+				"qty_kg": item_qty_kg,
+				"rate_usd": item_rate_usd,
+				"amount_usd": item_amount_usd,
+				"base_rate_uzs": item_base_uzs,
+				"allocated_extra_uzs": allocated_extra_uzs,
+				"allocated_extra_per_kg_uzs": allocated_extra_per_kg_uzs,
+				"final_landed_rate_per_kg_uzs": final_landed_rate_per_kg_uzs,
+				"line_total_landed_uzs": line_total_landed_uzs,
+			}
+		)
 
 	return {
 		"commercial_invoice": commercial_invoice,
@@ -2789,7 +2793,7 @@ def calculate_ci_landed_cost_uzs(commercial_invoice: str, exchange_rate: float =
 		"allocation_method": allocation_method,
 		"total_extra_uzs": total_extra_uzs,
 		"total_landed_uzs": (total_agreed_usd * rate) + total_extra_uzs,
-		"items": items_result
+		"items": items_result,
 	}
 
 
