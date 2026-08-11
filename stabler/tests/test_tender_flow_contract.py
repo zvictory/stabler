@@ -184,6 +184,18 @@ class TestWhatTheDecisionStillNeeds(unittest.TestCase):
 			self.assertIsNotNone(display, f"Typeahead display geçmiyor:\n{block}")
 			self.assertNotIn("=>", display.group(1), "display String olmalı, fonksiyon değil")
 
+		# 5) "Yeni İhale" gerçekten yeni olmalı. Çekmece kapanınca sökülmüyor ve
+		#    tahta `editingTender`'ı null yapıyor; zaten null'sa `deal` izleyicisi
+		#    referans değişmediği için tetiklenmiyor. Yalnız `deal` izlenirse iptal
+		#    edilen bir giriş bir sonraki açılışta olduğu gibi geri geliyor —
+		#    kullanıcı boş sandığı forma önceki müşteriyle kayıt atıyor. Bu yüzden
+		#    açılışın kendisi de izlenmek zorunda.
+		self.assertRegex(
+			DRAWER,
+			r"watch\(\s*\(\)\s*=>\s*props\.open",
+			"Çekmece `props.open`'ı izlemiyor: iptal edilen giriş yeni ihalede geri gelir",
+		)
+
 	def test_the_lot_is_opened_from_the_tender_board(self):
 		"""stabler-vgk.8 — İPTAL: tek seviyeli mimaride lot kavramı yok.
 
