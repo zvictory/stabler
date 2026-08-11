@@ -5749,3 +5749,5 @@ unpaid,ödenmedi
 {container} is already linked to {ci}. Unlink it there first.,{container} zaten {ci} faturasına bağlı. Önce oradan ayırın.
 {container} stays in the system but is no longer part of this commercial invoice.,"{container} sistemde kalır, ancak artık bu ticari faturanın parçası değildir."
 {truck} stays in the system but is no longer part of this commercial invoice.,"{truck} sistemde kalır, ancak artık bu ticari faturanın parçası değildir."
+Post-win stages are derived automatically and cannot be set manually.,Kazanım sonrası aşamalar otomatik olarak türetilir ve manuel ayarlanamaz.
+Post-win stages are updated automatically from operational records.,Kazanım sonrası aşamalar operasyonel kayıtlardan otomatik olarak güncellenir.

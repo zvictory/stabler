@@ -82,3 +82,4 @@ stabler.patches.v77_gl_entry_party_indexes
 stabler.patches.v78_je_import_refs
 stabler.patches.v79_supplier_import_details
 stabler.patches.v80_pe_proforma_advance_ref
+stabler.patches.v81_crm_deal_customs_freight_refs

@@ -2550,13 +2550,19 @@ def crm_board(company: str) -> dict:
 	_require_any_tender_view(("director", "sourcing"), company)
 
 	lanes = [
-		{"id": "seen", "label": _("Intake"), "color": "#6c757d"},
-		{"id": "go", "label": _("GO Decision"), "color": "#206bc4"},
-		{"id": "sourcing", "label": _("Sourcing"), "color": "#f59f00"},
-		{"id": "priced", "label": _("Bid Pricing"), "color": "#4299e1"},
-		{"id": "submitted", "label": _("Submitted"), "color": "#ae3ec9"},
-		{"id": "won", "label": _("Won"), "color": "#2fb344"},
-		{"id": "lost", "label": _("Lost"), "color": "#d63939"},
+		{"id": "seen", "label": _("Intake"), "color": "#6c757d", "phase": "pre"},
+		{"id": "go", "label": _("GO Decision"), "color": "#206bc4", "phase": "pre"},
+		{"id": "sourcing", "label": _("Sourcing"), "color": "#f59f00", "phase": "pre"},
+		{"id": "priced", "label": _("Bid Pricing"), "color": "#4299e1", "phase": "pre"},
+		{"id": "submitted", "label": _("Submitted"), "color": "#ae3ec9", "phase": "pre"},
+		{"id": "won", "label": _("Won"), "color": "#2fb344", "phase": "pre"},
+		{"id": "lost", "label": _("Lost"), "color": "#d63939", "phase": "pre"},
+		{"id": "po_created", "label": _("PO Created"), "color": "#0ca678", "phase": "post"},
+		{"id": "customs", "label": _("Customs"), "color": "#f76707", "phase": "post"},
+		{"id": "transit", "label": _("In Transit"), "color": "#4299e1", "phase": "post"},
+		{"id": "delivered", "label": _("Delivered"), "color": "#2fb344", "phase": "post"},
+		{"id": "invoiced", "label": _("Invoiced"), "color": "#7048e8", "phase": "post"},
+		{"id": "done", "label": _("Done"), "color": "#166534", "phase": "post"},
 	]
 
 	deal_names = _tender_deal_names(company)
@@ -2597,6 +2603,86 @@ def crm_board(company: str) -> dict:
 			c_set = {supp_country[s] for s in supps if supp_country.get(s)}
 			country_counts[d] = len(c_set)
 
+	# Operational records for post-win classification
+	po_by_deal: dict[str, list[dict]] = {}
+	if frappe.db.has_column("Purchase Order", "custom_crm_deal"):
+		pos = frappe.get_all(
+			"Purchase Order",
+			filters={"company": company, "custom_crm_deal": ["in", list(deal_names)], "docstatus": ["<", 2]},
+			fields=["name", "custom_crm_deal", "status", "per_received", "per_billed", "docstatus"],
+			limit_page_length=0,
+		)
+		for po in pos:
+			po_by_deal.setdefault(po["custom_crm_deal"], []).append(po)
+
+	customs_by_deal: dict[str, list[dict]] = {}
+	if frappe.db.exists("DocType", "Customs Declaration"):
+		try:
+			fields = ["name", "status", "docstatus"]
+			if frappe.db.has_column("Customs Declaration", "custom_crm_deal"):
+				fields.append("custom_crm_deal")
+			if frappe.db.has_column("Customs Declaration", "purchase_order"):
+				fields.append("purchase_order")
+			cds = frappe.get_all(
+				"Customs Declaration",
+				filters={"company": company, "docstatus": ["<", 2]},
+				fields=fields,
+				limit_page_length=0,
+			)
+			for cd in cds:
+				d = cd.get("custom_crm_deal")
+				if d and d in deal_names:
+					customs_by_deal.setdefault(d, []).append(cd)
+				elif cd.get("purchase_order"):
+					for deal_n, po_list in po_by_deal.items():
+						if any(p["name"] == cd["purchase_order"] for p in po_list):
+							customs_by_deal.setdefault(deal_n, []).append(cd)
+		except Exception:
+			pass
+
+	freight_by_deal: dict[str, list[dict]] = {}
+	if frappe.db.exists("DocType", "Freight Booking"):
+		try:
+			fields = ["name", "status", "docstatus"]
+			if frappe.db.has_column("Freight Booking", "custom_crm_deal"):
+				fields.append("custom_crm_deal")
+			if frappe.db.has_column("Freight Booking", "purchase_order"):
+				fields.append("purchase_order")
+			fbs = frappe.get_all(
+				"Freight Booking",
+				filters={"company": company, "docstatus": ["<", 2]},
+				fields=fields,
+				limit_page_length=0,
+			)
+			for fb in fbs:
+				d = fb.get("custom_crm_deal")
+				if d and d in deal_names:
+					freight_by_deal.setdefault(d, []).append(fb)
+				elif fb.get("purchase_order"):
+					for deal_n, po_list in po_by_deal.items():
+						if any(p["name"] == fb["purchase_order"] for p in po_list):
+							freight_by_deal.setdefault(deal_n, []).append(fb)
+		except Exception:
+			pass
+
+	invoices_by_deal: dict[str, list[dict]] = {}
+	if frappe.db.has_column("Sales Invoice", "custom_crm_deal"):
+		try:
+			sis = frappe.get_all(
+				"Sales Invoice",
+				filters={
+					"company": company,
+					"custom_crm_deal": ["in", list(deal_names)],
+					"docstatus": ["<", 2],
+				},
+				fields=["name", "custom_crm_deal", "status", "docstatus"],
+				limit_page_length=0,
+			)
+			for si in sis:
+				invoices_by_deal.setdefault(si["custom_crm_deal"], []).append(si)
+		except Exception:
+			pass
+
 	has_pricing_col = frappe.db.has_column("CRM Deal", "custom_bid_pricing")
 	has_stage_col = frappe.db.has_column("CRM Deal", "custom_tender_stage")
 	base_ccy = frappe.get_cached_value("Company", company, "default_currency")
@@ -2620,6 +2706,33 @@ def crm_board(company: str) -> dict:
 			}
 		)
 		eff_stage = custom_stage or classified
+
+		# Automatically derive post-win stages from operational documents
+		if eff_stage in ("won", *_funnel.POST_WIN_ORDER):
+			po_list = po_by_deal.get(deal, [])
+			cd_list = customs_by_deal.get(deal, [])
+			fb_list = freight_by_deal.get(deal, [])
+			si_list = invoices_by_deal.get(deal, [])
+
+			has_po = len(po_list) > 0
+			po_cleared = any(flt(p.get("per_received")) >= 100 for p in po_list)
+			has_customs = len(cd_list) > 0
+			freight_in_transit = any(
+				f.get("status") in ("In Transit", "Customs Cleared", "En Route") for f in fb_list
+			)
+			freight_delivered = any(f.get("status") == "Delivered" for f in fb_list)
+			has_invoice = len(si_list) > 0 or any(flt(p.get("per_billed")) >= 100 for p in po_list)
+
+			op_facts = {
+				"has_po": has_po,
+				"delivered": po_cleared or freight_delivered,
+				"in_transit": freight_in_transit,
+				"has_customs": has_customs,
+				"has_invoice": has_invoice,
+			}
+			post_win_stage = _funnel.classify_post_win(op_facts)
+			if post_win_stage != "won":
+				eff_stage = post_win_stage
 
 		owner = frappe.db.get_value("CRM Deal", deal, "owner") or ""
 		owner_name = frappe.db.get_value("User", owner, "full_name") or owner if owner else ""

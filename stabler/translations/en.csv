@@ -5752,3 +5752,5 @@ unpaid,unpaid
 {container} is already linked to {ci}. Unlink it there first.,{container} is already linked to {ci}. Unlink it there first.
 {container} stays in the system but is no longer part of this commercial invoice.,{container} stays in the system but is no longer part of this commercial invoice.
 {truck} stays in the system but is no longer part of this commercial invoice.,{truck} stays in the system but is no longer part of this commercial invoice.
+Post-win stages are derived automatically and cannot be set manually.,Post-win stages are derived automatically and cannot be set manually.
+Post-win stages are updated automatically from operational records.,Post-win stages are updated automatically from operational records.

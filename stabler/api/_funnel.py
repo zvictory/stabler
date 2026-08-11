@@ -20,6 +20,9 @@ from __future__ import annotations
 #: Pipeline stages, in business order. Position = how far the deal has come.
 ORDER = ["seen", "go", "sourcing", "priced", "submitted", "won"]
 
+#: Post-win operational stages in business order. Position = how far fulfillment has come.
+POST_WIN_ORDER = ["po_created", "customs", "transit", "delivered", "invoiced", "done"]
+
 #: Funnel rungs — "reached at least this stage". `lost` deals still reached
 #: `submitted`, so the funnel never undercounts participation.
 FUNNEL_STEPS = ["seen", "go", "sourcing", "submitted", "won"]
@@ -29,11 +32,11 @@ FUNNEL_STEPS = ["seen", "go", "sourcing", "submitted", "won"]
 #: şeride konulmaları kaybı ilerleme gibi gösterirdi.
 PIPELINE_PHASES = ["seen", "go", "sourcing", "priced", "submitted"]
 
-#: Her geçerli aşama. ORDER ilerlemeyi anlatıyor ve `lost`u dışarıda bırakıyor
-#: (kaybetmek ilerleme değil); oysa "bu bir aşama mı" sorusunun cevabı `lost`u
-#: da içeriyor. İki liste ayrı, çünkü iki ayrı soruya cevap veriyorlar —
-#: birleştirmek funnel'ı kayıplarla şişirirdi.
-STAGES = frozenset(ORDER) | {"lost"}
+#: Pre-win pipeline stages including lost
+PIPELINE_STAGES = frozenset(ORDER) | {"lost"}
+
+#: Her geçerli aşama (pre-win + post-win + lost).
+STAGES = frozenset(ORDER) | frozenset(POST_WIN_ORDER) | {"lost"}
 
 
 def classify(facts: dict) -> str:
@@ -55,6 +58,32 @@ def classify(facts: dict) -> str:
 	if str(facts.get("go_no_go") or "") == "go":
 		return "go"
 	return "seen"
+
+
+def classify_post_win(facts: dict) -> str:
+	"""Map a won deal's operational facts to its post-win execution stage.
+
+	``facts``: {
+		"has_invoice": bool,
+		"delivered": bool,
+		"in_transit": bool,
+		"has_customs": bool,
+		"has_po": bool,
+	}
+	"""
+	if facts.get("has_invoice") and facts.get("delivered"):
+		return "done"
+	if facts.get("has_invoice"):
+		return "invoiced"
+	if facts.get("delivered"):
+		return "delivered"
+	if facts.get("in_transit"):
+		return "transit"
+	if facts.get("has_customs"):
+		return "customs"
+	if facts.get("has_po"):
+		return "po_created"
+	return "won"
 
 
 def rank(stage: str) -> int:

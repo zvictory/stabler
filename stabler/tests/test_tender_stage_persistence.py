@@ -69,7 +69,7 @@ class TestTheStageIsValidatedBeforeItIsStored(unittest.TestCase):
 		self.assertRegex(MOVE, r'frappe\.throw\(_\("Unknown stage: \{0\}"\)')
 
 	def test_the_valid_set_lives_in_one_place(self):
-		self.assertIn('STAGES = frozenset(ORDER) | {"lost"}', FUNNEL)
+		self.assertIn('STAGES = frozenset(ORDER) | frozenset(POST_WIN_ORDER) | {"lost"}', FUNNEL)
 
 	def test_lost_is_a_stage_but_not_a_step_forward(self):
 		"""ORDER ilerlemeyi anlatıyor ve `lost`u dışarıda bırakıyor; STAGES

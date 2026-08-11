@@ -5754,3 +5754,5 @@ unpaid,тўланмаган
 {container} is already linked to {ci}. Unlink it there first.,{container} аллақачон {ci} га боғланган. Аввал ўша ердан ажратинг.
 {container} stays in the system but is no longer part of this commercial invoice.,"{container} тизимда қолади, лекин бу тижорат инвойсига кирмайди."
 {truck} stays in the system but is no longer part of this commercial invoice.,"{truck} тизимда қолади, лекин бу тижорат инвойсига кирмайди."
+Post-win stages are derived automatically and cannot be set manually.,Ютуқдан keyingi босқичлар автоматик равишда олинади ва қўлда ўрнатилмайди.
+Post-win stages are updated automatically from operational records.,Ютуқдан keyingi босқичлар операцион ёзувлардан автоматик равишда янгиланади.

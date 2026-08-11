@@ -5759,3 +5759,5 @@ unpaid,не оплачено
 {container} is already linked to {ci}. Unlink it there first.,{container} уже привязан к {ci}. Сначала отвяжите его там.
 {container} stays in the system but is no longer part of this commercial invoice.,"{container} остаётся в системе, но больше не относится к этому инвойсу."
 {truck} stays in the system but is no longer part of this commercial invoice.,"{truck} остаётся в системе, но больше не относится к этому инвойсу."
+Post-win stages are derived automatically and cannot be set manually.,Поствыигрышные этапы формируются автоматически и не могут быть установлены вручную.
+Post-win stages are updated automatically from operational records.,Поствыигрышные этапы автоматически обновляются на основе операционных записей.

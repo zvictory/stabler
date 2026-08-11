@@ -203,8 +203,18 @@ const stageLabel = (id) => {
 /* Beş kutucuklu ölçer: politika 5 teklif istiyor, o yüzden 5 kare. */
 const quoteMarks = (count) => [0, 1, 2, 3, 4].map((i) => i < Number(count || 0));
 
+// Post-win operational stages
+const POST_WIN_LANES = new Set(["po_created", "customs", "transit", "delivered", "invoiced", "done"]);
+const isPostWinLane = (id) => POST_WIN_LANES.has(id);
+
 // Drag and drop handlers
 function onCardDragStart(cardName, e) {
+	const card = cards.value.find((c) => c.name === cardName);
+	if (card && isPostWinLane(card.stage)) {
+		e.preventDefault();
+		toast.info(t("Post-win stages are updated automatically from operational records."));
+		return;
+	}
 	dragCardName.value = cardName;
 	e.dataTransfer.effectAllowed = "move";
 }
@@ -214,6 +224,11 @@ async function onDrop(targetLaneId) {
 	const name = dragCardName.value;
 	dragCardName.value = "";
 	if (!name) return;
+
+	if (isPostWinLane(targetLaneId)) {
+		toast.error(t("Post-win stages are derived automatically and cannot be set manually."));
+		return;
+	}
 
 	const card = cards.value.find((c) => c.name === name);
 	if (!card || card.stage === targetLaneId) return;

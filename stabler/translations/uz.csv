@@ -5754,3 +5754,5 @@ unpaid,to'lanmagan
 {container} is already linked to {ci}. Unlink it there first.,{container} allaqachon {ci} ga bog'langan. Avval o'sha yerdan ajrating.
 {container} stays in the system but is no longer part of this commercial invoice.,"{container} tizimda qoladi, lekin bu tijorat invoysiga kirmaydi."
 {truck} stays in the system but is no longer part of this commercial invoice.,"{truck} tizimda qoladi, lekin bu tijorat invoysiga kirmaydi."
+Post-win stages are derived automatically and cannot be set manually.,Yutuqdan keyingi bosqichlar avtomatik ravishda olinadi va qo'lda o'rnatilmaydi.
+Post-win stages are updated automatically from operational records.,Yutuqdan keyingi bosqichlar operatsion yozuvlardan avtomatik ravishda yangilanadi.

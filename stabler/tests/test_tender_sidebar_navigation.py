@@ -44,14 +44,17 @@ class TestTheSidebarCarriesModulesNotScreens(unittest.TestCase):
 		self.sidebar = _read(_SIDEBAR)
 
 	def test_tender_is_in_operations_group(self):
-		self.assertIn('names: ["purchasing", "imports", "tender", "inventory"', self.sidebar)
+		self.assertIn(
+			'names: ["purchasing", "imports", "tender", "tender-documents", "inventory"', self.sidebar
+		)
 
 	def test_no_tender_sub_path_is_listed_in_the_sidebar(self):
-		"""`/tender/portfolio` modülün giriş kapısı — kalan her `/tender/...` yolu
-		bir EKRAN ve modül çubuğuna aittir."""
+		"""`/tender/portfolio` modülün giriş kapısı; `/tender/documents` ise
+		dört rolün (direktör, sourcing, declarant, logist) ortak çalışma alanı
+		istisnasıdır. Kalan her `/tender/...` yolu TenderNav'a aittir."""
 		paths = set(re.findall(r'"(/tender/[a-z-]+)"', self.sidebar))
 		self.assertEqual(
-			paths - {"/tender/portfolio"},
+			paths - {"/tender/portfolio", "/tender/documents"},
 			set(),
 			"kenar çubuğu modül ekranı listeliyor — bunlar TenderNav'a ait",
 		)

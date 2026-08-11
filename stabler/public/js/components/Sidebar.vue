@@ -47,14 +47,14 @@ const isActive = (path) => computed(() => route.path === path || route.path.star
  *
  * Burada tender'ın sekiz alt yolu listeleniyordu ve Stabler'daki on beş
  * modülün on dördü öyle çalışmıyor: her birinin `/modul` kökünde bir hub'ı
- * var, kenar çubuğunda tek maddesi. Tender'ın iki gezinme yeri olması ikisini
- * de eksik bıraktı — Direktör panosu kenar çubuğunda HİÇ yoktu (yalnız üst
- * çubukta), buna karşılık "Kontrol Kulesi" maddesi `/tender/director`'a
- * gidiyordu ve o rota panoya redirect: menüden tıklayan kullanıcı sessizce
- * panoya düşüyordu.
+ * var, kenar çubuğunda tek maddesi.
  *
- * Alt ekranlar artık modülün kendi üst çubuğunda (`TenderNav.vue`), rol
- * kapıları oraya taşındı. Burada kalan tek şey modülün kendisi.
+ * İSTİSNA: Belge Merkezi (`/tender/documents`), dört tender rolünün de
+ * (direktör, sourcing, gümrükçü, lojistikçi) akış dışından doğrudan ulaştığı
+ * tek ortak çalışma alanıdır. Bu nedenle Operasyonlar altında müstakil bir
+ * giriş noktası olarak yer alır.
+ *
+ * Alt ekranlar modülün kendi üst çubuğunda (`TenderNav.vue`) yer alır.
  *
  * `ensureTenderViews()` yine burada çağrılıyor: üst çubuk yalnız tender
  * sayfalarında render ediliyor, oysa kenar çubuğu her sayfada var — görünüm
@@ -78,6 +78,7 @@ const items = computed(() => {
 		{ name: "marketing", path: "/marketing", label: t("Trade Marketing"), icon: "ti-target-arrow", show: session.canAccessModule("marketing") },
 		{ name: "crm", path: "/crm", label: t("CRM"), icon: "ti-address-book", show: session.canAccessModule("crm") },
 		{ name: "tender", path: "/tender/portfolio", label: t("Tender"), icon: "ti-gavel", show: session.canAccessModule("tender") },
+		{ name: "tender-documents", path: "/tender/documents", label: t("Document Center"), icon: "ti-folders", show: session.canAccessModule("tender") },
 		{ name: "service", path: "/service", label: t("Service"), icon: "ti-tool", show: session.canAccessModule("service") },
 		{ name: "bpm", path: "/bpm", label: t("Processes"), icon: "ti-sitemap", show: session.canAccessModule("bpm") },
 		{ name: "remittance", path: "/remittance", label: t("Remittance"), icon: "ti-send", show: session.canAccessModule("remittance") },
@@ -101,7 +102,7 @@ const sections = computed(() => {
 	const groups = [
 		{ label: "", names: ["dashboard"] },
 		{ label: t("Commerce"), names: ["pos", "sales", "crm", "sfa", "marketing"] },
-		{ label: t("Operations"), names: ["purchasing", "imports", "tender", "inventory", "manufacturing", "service", "bpm"] },
+		{ label: t("Operations"), names: ["purchasing", "imports", "tender", "tender-documents", "inventory", "manufacturing", "service", "bpm"] },
 		{ label: t("Finance"), names: ["money", "remittance", "installment"] },
 		{ label: t("Company"), names: ["hr", "reports", "admin"] },
 	];

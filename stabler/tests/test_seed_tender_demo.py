@@ -91,10 +91,10 @@ class TestTheDataExercisesEveryScreenState(unittest.TestCase):
 	]
 
 	def test_every_pipeline_stage_has_a_deal(self):
-		from stabler.api._funnel import STAGES
+		from stabler.api._funnel import PIPELINE_STAGES
 
 		present = set(re.findall(r'",\s*"(\w+)",\s*(?:None|\d+),', "\n".join(self.LOTS)))
-		self.assertEqual(STAGES - present, set(), f"aşamasız kalan: {STAGES - present}")
+		self.assertEqual(PIPELINE_STAGES - present, set(), f"aşamasız kalan: {PIPELINE_STAGES - present}")
 
 	def test_some_deals_deliberately_have_no_stage_stamp(self):
 		"""Süreç akışının "ölçülemiyor" satırı gerçek sitede de olacak (v66
