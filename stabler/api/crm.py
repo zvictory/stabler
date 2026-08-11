@@ -136,10 +136,16 @@ def _resolve_crm_source(value: str | None) -> str:
 
 
 def _apply_tender_parent_link(updates: dict, company: str) -> None:
-	"""Classify tender-form deals and bind an unambiguous matching master."""
+	"""Classify tender-form deals and bind an unambiguous matching master, creating one if missing."""
+	deal_type = str(updates.get("deal_type") or "").strip()
 	tender_no = str(updates.get("tender_no") or "").strip()
-	if not tender_no:
+	if deal_type != "Tender" and not tender_no:
 		return
+	updates["deal_type"] = "Tender"
+	if not tender_no:
+		tender_no = f"TND-{now_datetime().year}-{frappe.generate_hash(length=6).upper()}"
+		updates["tender_no"] = tender_no
+
 	parents = frappe.get_list(
 		"Tender Master",
 		filters={"company": company, "tender_number": tender_no},
@@ -148,8 +154,19 @@ def _apply_tender_parent_link(updates: dict, company: str) -> None:
 	)
 	if len(parents) > 1:
 		frappe.throw(_("Multiple Parent Tenders match tender number {0}.").format(tender_no), ValueError)
-	updates["deal_type"] = "Tender"
-	updates["custom_parent_tender"] = parents[0]["name"] if parents else ""
+	if parents:
+		updates["custom_parent_tender"] = parents[0]["name"]
+	elif frappe.db.exists("DocType", "Tender Master"):
+		master = frappe.new_doc("Tender Master")
+		master.company = company
+		master.tender_number = tender_no
+		master.title = updates.get("title") or updates.get("organization") or tender_no
+		if updates.get("source"):
+			master.source = updates["source"]
+		master.insert(ignore_permissions=True)
+		updates["custom_parent_tender"] = master.name
+	else:
+		updates["custom_parent_tender"] = ""
 
 
 def _crm_list(
