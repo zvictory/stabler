@@ -117,6 +117,24 @@ def _resolve_crm_organization(value: str | None) -> str:
 	return organization.name or organization_name
 
 
+def _resolve_crm_source(value: str | None) -> str:
+	"""Resolve the SPA's source field to a CRM Lead Source link, creating it if missing."""
+	source_name = str(value or "").strip()
+	if not source_name:
+		return ""
+	if frappe.db.exists("CRM Lead Source", source_name):
+		return source_name
+	if frappe.db.exists("DocType", "CRM Lead Source"):
+		try:
+			doc = frappe.new_doc("CRM Lead Source")
+			doc.source_name = source_name
+			doc.insert(ignore_permissions=True)
+			return doc.name or source_name
+		except Exception:
+			pass
+	return source_name
+
+
 def _apply_tender_parent_link(updates: dict, company: str) -> None:
 	"""Classify tender-form deals and bind an unambiguous matching master."""
 	tender_no = str(updates.get("tender_no") or "").strip()
@@ -290,7 +308,10 @@ def save_lead(data: str | dict, company=""):
 		if not frappe.has_permission("CRM Lead", "create"):
 			frappe.throw(_("Not permitted"), frappe.PermissionError)
 		doc = frappe.new_doc("CRM Lead")
-	doc.update(_mutable_payload(payload, _LEAD_MUTABLE_FIELDS))
+	updates = _mutable_payload(payload, _LEAD_MUTABLE_FIELDS)
+	if updates.get("source"):
+		updates["source"] = _resolve_crm_source(updates["source"])
+	doc.update(updates)
 	doc.company = company
 	doc.save()
 	return doc.as_dict()
@@ -395,6 +416,8 @@ def save_deal(data: str | dict, company=""):
 	updates = _mutable_payload(payload, _DEAL_MUTABLE_FIELDS)
 	if "organization" in updates:
 		updates["organization"] = _resolve_crm_organization(updates["organization"])
+	if updates.get("source"):
+		updates["source"] = _resolve_crm_source(updates["source"])
 	_apply_tender_parent_link(updates, company)
 	if is_existing and requested_status:
 		return _transition_deal(

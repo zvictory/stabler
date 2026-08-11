@@ -791,6 +791,11 @@ class TestCrmCompanyScope(unittest.TestCase):
 		self.assertEqual(result["company"], "Mikas")
 		self.assertNotIn("owner", result)
 
+	def test_save_deal_resolves_missing_crm_lead_source(self):
+		"""Deal creation with a source like 'Portal' or 'UZEX' resolves via _resolve_crm_source."""
+		resolved = self.crm._resolve_crm_source("Portal")
+		self.assertEqual(resolved, "Portal")
+
 
 if __name__ == "__main__":
 	unittest.main()

@@ -79,4 +79,17 @@ def execute() -> None:
 					"Import Container", r["name"], fieldname, r["custom_crm_deal"], update_modified=False
 				)
 
+	# Seed default tender sources in CRM Lead Source if missing
+	if frappe.db.exists("DocType", "CRM Lead Source"):
+		for src in ("UZEX", "Direct", "Portal", "Other"):
+			if not frappe.db.exists("CRM Lead Source", {"source_name": src}) and not frappe.db.exists(
+				"CRM Lead Source", src
+			):
+				try:
+					doc = frappe.new_doc("CRM Lead Source")
+					doc.source_name = src
+					doc.insert(ignore_permissions=True)
+				except Exception:
+					pass
+
 	frappe.db.commit()
