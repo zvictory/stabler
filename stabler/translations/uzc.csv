@@ -801,7 +801,7 @@ Could not resolve payroll period: {0},
 Could not save bid pricing.,Нарх режасини сақлаб бўлмади.
 Could not save landed charges.,Харажатларни сақлаб бўлмади.
 Could not save period.,Даврни сақлаб бўлмади.
-Could not save tender intake.,Тендер маълумотини сақлаб бўлмади.
+Could not save tender intake.,Тендер қабулини сақлаб бўлмади.
 Could not start setup.,Созлашни бошлаб бўлмади.
 Could not start the online payment.,Онлайн тўловни бошлаб бўлмади.
 Could not start the processor.,Процессорни ишга тушириб бўлмади.
@@ -867,7 +867,7 @@ Cumulative,Жами
 Cumulative %,Жамланган %
 Currency,Валюта
 Currency Exchange as of {date},{date} ҳолатига курс
-Currency risk (foreign purchase),Валюта риски (чет эл хариди)
+Currency risk (foreign purchase),Валюта хавфи (хорижий харид)
 Current AR balance per customer — click a row to see the ledger behind the balance.,
 Current AR balance per customer — ties to the Customer Center.,Ҳар мижознинг жорий қарзи — Customer Center билан мос.
 Current Return,
@@ -940,7 +940,7 @@ Days is unreasonably large.,
 Days left,Қолган кун
 Days of cover,Захира кунлари
 Deadline control,Муддат назорати
-Deadline near,Муддат яқин
+Deadline near,Муддат яқинлашмоқда
 Deal Owner,Шартнома эгаси
 Deal Value,Шартнома суммаси
 Deal has no organization or name to create a customer from.,
@@ -1312,11 +1312,11 @@ F.I.O.,Ф.И.Ш.
 FG Whse,
 FX Revaluation,
 FX accounts as of {0},
-FX favorable,Курс фойдали
-FX open,Валюта: очиқ
+FX favorable,Ижобий курс
+FX open,Очиқ валюта
 FX rate looks correct,FX курси тўғри
 FX rate looks wrong,FX курси нотўғри
-FX risk,Валюта риски
+FX risk,Валюта хавфи
 Failed,Хатолик
 Failed to assign ticket.,Мурожаатни белгилаб бўлмади.
 Failed to build Landed Cost Voucher payload.,
@@ -2467,7 +2467,7 @@ On Leave,Таътилда
 On hand,Қўлда
 On leave,
 On leave today,Бугун таътилда
-On track,Вақтида
+On track,Режада
 On-Shelf-Availability audits compare expected vs actual facings during visits.,Ўринда сотувга ҳозирлик аудитлари қариндашликлар давомида кутилган ва ҳақиқий ҷойлашув ўрнини солиштиради.
 On-hand batches at risk: expired and expiring soon.,Хавф остидаги партиялар: муддати ўтган ва тугаётган.
 On-hand value vs sales velocity. Flags slow-moving and dead stock.,Захира қиймати савдо тезлигига нисбатан. Секин ва ўлик захира белгиланади.
@@ -2637,7 +2637,7 @@ Party,Томон
 Party account not resolved — re-select the party.,Томон ҳисоби ечилмади — томонни қайта танланг.
 Party is required.,Томон керак.
 Past day,Ўтган кун
-Paste UZEX lot URL,UZEX лот ҳаволасини жойланг
+Paste UZEX lot URL,UZEX лот ҳаволасини киритинг
 Paste a direct image URL or leave blank to use initials.,
 Paste access token JWT…,
 Paste new token to replace…,
@@ -3302,7 +3302,7 @@ Search customer,Мижозни қидириш
 Search customer name…,Муштери номини қидириш…
 "Search customers, suppliers, items, invoices…","Муштериларни, етказиб берувчиларни, товарларни, ҳисобномаларни қидириш…"
 Search customers…,Харидорларни қидириш…
-Search customer…,Муштериро қидириш…
+Search customer…,Мижоз қидириш…
 Search deals…,Битимларни қидириш…
 Search employees…,Ходимларни қидириш…
 Search employee…,Ходимни қидириш…
@@ -3310,7 +3310,7 @@ Search employee… ⌘K,Ходимни қидириш… ⌘K
 Search item code or name…,Товар кодини ёки номини қидириш…
 Search item...,
 Search items…,Товарларни қидириш…
-Search item…,Товарро қидириш…
+Search item…,Товар қидириш…
 Search leads…,Лидларни қидириш…
 Search name…,Ном бўйича қидириш…
 Search name… ⌘K,Ном бўйича қидириш… ⌘K
@@ -3409,7 +3409,7 @@ Set Reports-To on employees to build the positions hierarchy.,"Лавозимл�
 Set a Google Drive folder ID first.,Аввал Google Drive папка ID'сини киритинг.
 Set as company default,Компания стандарти қилиш
 Set as company default.,Компания стандарти қилиб ўрнатилди.
-Set deadlines in Tender details.,Муддатларни тендер тафсилотларида киритинг.
+Set deadlines in Tender details.,Муддатларни Тендер тафсилотларида белгиланг.
 Set exactly one of Commercial Invoice or Container on a Freight Booking.,Юк ташиш бронида Тижорий ҳисоб-фактура ёки Контейнердан айнан биттасини белгиланг.
 Set exactly one of Commercial Invoice or Container.,Тижорат инвойси ёки контейнердан айнан биттасини белгиланг.
 "Set the Google Drive folder ID in Stabler Settings, and share that Shared-Drive folder with the service account email.",
@@ -3635,7 +3635,7 @@ Tender PO control,Тендер PO назорати
 Tender Source,Тендер манбаи
 Tender bid pricing,Тендер таклиф нархи
 Tender details,Тендер тафсилотлари
-Tender intake saved.,Тендер маълумоти сақланди.
+Tender intake saved.,Тендер қабули сақланди.
 Tender module is not enabled for {0}.,
 Tender: {0}.,
 Tenure,Иш стажи
@@ -4086,7 +4086,7 @@ Win/Loss Reason,Ютуқ/ютқазиқ сабаби
 Withdrawal,Ечиб олиш
 Withheld,Ушлаб қолинган
 Won,Ютдик
-Won price,Ютуқ нархи
+Won price,Ютилган нарх
 Won this month,Шу ойда ютилган
 Work From Home,Уйдан иш
 Work Order,Ишлаб чиқариш буюртмаси
@@ -5428,7 +5428,7 @@ No document requirements set.,Ҳужжат талаблари белгиланм
 Failed to load documents,Ҳужжатларни юклаб бўлмади
 Document uploaded successfully,Ҳужжат муваффақиятли юкланди
 Requirement waived,Талабдан муаф қилинди
-Manage document files in Document Center,Ҳужжатлар файлларини Ҳужжатлар марказида бошқариш
+Manage document files in Document Center,Ҳужжат файлларини Ҳужжатлар марказида бошқаринг
 Justification / Reason,Асослаш / Сабаб
 Enter protocol / authorization reason…,Баённома рақами ёки сабабни киритинг…
 Pick a tender deal to view its document center.,Ҳужжатлар марказини кўриш учун тендер битимини танланг.
@@ -5450,7 +5450,7 @@ Link to Tender,Тендерга боғлаш
 No tenders in this stage,Ушбу босқичда тендерлар йўқ
 Edit Tender Master,Асосий тендерни таҳрирлаш
 Create Tender Master,Асосий тендер яратиш
-Tender Title,Тендер номи
+Tender Title,Тендер сарлавҳаси
 e.g. UZEX Supply Tender 2026,"масалан, UZEX етказиб бериш тендери 2026"
 Tender / Lot No,Тендер / Лот №
 Source / Portal,Манба / Портал
@@ -5502,7 +5502,7 @@ Customs charges,Божхона харажатлари
 Open PO,Буюртмани очиш
 PO Control,Буюртмалар назорати
 Transport expenses,Ташиш харажатлари
-"Transport costs belong to third-party carriers. Expenses linked directly to a container are allocated directly; unassigned costs are distributed by weight.","Ташиш харажатлари учинчи томон ташувчиларига тегишли. Контейнерга тўғридан-тўғри бириктирилганлари тўғридан-тўғри, қолганлари вазн бўйича тақсимланади."
+Transport costs belong to third-party carriers. Expenses linked directly to a container are allocated directly; unassigned costs are distributed by weight.,"Ташиш харажатлари учинчи томон ташувчиларига тегишли. Контейнерга тўғридан-тўғри бириктирилганлари тўғридан-тўғри, қолганлари вазн бўйича тақсимланади."
 Total transport,Жами ташиш
 Per container,Контейнерга
 paid {pct}% · {outstanding} to pay,{pct}% тўланган · {outstanding} тўланиши керак
@@ -5561,20 +5561,20 @@ Document status,Ҳужжатлар ҳолати
 Vet Certificate,Вет сертификати
 over-shipped,ортиқча юкланган
 Attach file,Fayl biriktiriw
-Could not attach document.,Hujjattı biriktirip bolmadı.
+Could not attach document.,Ҳужжатни бириктириб бўлмади.
 Could not load documents.,Hujjatlardı júklew bolmadı.
-Could not remove document.,Hujjattı alıp taslaw bolmadı.
-Could not waive document.,Hujjattan waz kechiw bolmadı.
-Document removed.,Hujjat alıp taslandı.
+Could not remove document.,Ҳужжатни ўчириб бўлмади.
+Could not waive document.,Ҳужжатни истисно қилиб бўлмади.
+Document removed.,Ҳужжат ўчирилди.
 Document requirements,Hujjat talapları
-Document waived.,Hujjattan waz kechildi.
+Document waived.,Ҳужжат истисно қилинди.
 File,Fayl
 General,Umumiy
 No document requirements yet. Add them in Tender details.,Hárshe hujjat talapları joq. Olardı Tender tolıqlıqlarında qosıń.
 Req.,Májb.
 Tender documents,Tender hujjatları
 Upload returned no file URL.,Júklew fayl URL'ın qaytarmadı.
-Waiver reason is mandatory.,Waz kechiw sebebi májbúriy.
+Waiver reason is mandatory.,Истисно сабаби мажбурий.
 files,fayllar
 required,májbúriy
 unverified,tastıqlanbaǵan
@@ -5584,9 +5584,9 @@ Marked done but no file,Faylsız orınlandı dep belgilengen
 Missing required,Májbúriy hújjet jetispeydi
 Remove file,Fayldı alıp taslaw
 Shared across all lots of this tender,Bul tenderdiń barlıq lotları ushın ulwmaq
-Waive with reason…,Sebep menen waz kechiw…
+Waive with reason…,Сабаб кўрсатиб истисно қилиш…
 Waived,Waz kechildi
-Waived by,Waz kechken
+Waived by,Истисно қилган:
 remove,alıp taslaw
 Visible,Кўрсатилган
 Overdue only,Фақат муддати ўтганлар
@@ -5717,7 +5717,7 @@ New plate no.,Янги давлат рақами
 No expenses recorded for this invoice yet.,Бу инвойс бўйича ҳали харажат қайд этилмаган.
 No trucks linked yet.,Ҳали юк машинаси боғланмаган.
 Nothing to allocate yet — add invoice items and costs first.,Ҳозирча тақсимланадиган нарса йўқ — аввал товар ва харажатларни қўшинг.
-Packing List,Қадоқлаш варақаси
+Packing List,Ўрам варақаси
 Paid from (cash desk),Қайси кассадан тўланди
 Pick a cash desk first,Аввал кассани танланг
 Please select a supplier first.,Аввал етказиб берувчини танланг.
@@ -5756,3 +5756,21 @@ unpaid,тўланмаган
 {truck} stays in the system but is no longer part of this commercial invoice.,"{truck} тизимда қолади, лекин бу тижорат инвойсига кирмайди."
 Post-win stages are derived automatically and cannot be set manually.,Ютуқдан keyingi босқичлар автоматик равишда олинади ва қўлда ўрнатилмайди.
 Post-win stages are updated automatically from operational records.,Ютуқдан keyingi босқичлар операцион ёзувлардан автоматик равишда янгиланади.
+Tender Intake Center,Тендер қабул маркази
+Who is the Tender From?,Тендер кимдан келмоқда?
+Customer / Buyer,Мижоз / Харидор
+Tender Information,Тендер маълумотлари
+Tender Files,Тендер файллари
+Requested Items,Сўралган товарлар
+Select Lot — Document Center,Лотни танланг — Ҳужжат маркази
+Missing Required,Мажбурий етишмайди
+No tender lots found.,Ҳеч қандай тендер лоти топилмади.
+Assignment initializes document center,Бириктириш ҳужжат марказини ишга туширади
+Customs Declaration (GTD),Божхона декларацияси (ГТД)
+Certificate of Origin,Келиб чиқиш сертификати
+CMR / Waybill,CMR / Юк хати
+Technical Specification,Техник спецификация
+Price Offer,Нарх таклифи
+Guarantee Letter,Кафолат хати
+License Copy / Certificate,Лицензия нусхаси / Сертификат
+Price Offer / Commercial Invoice,Нарх таклифи / Тижорат инвойси

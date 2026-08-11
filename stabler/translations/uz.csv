@@ -801,7 +801,7 @@ Could not resolve payroll period: {0},
 Could not save bid pricing.,Narx rejasini saqlab bo‘lmadi.
 Could not save landed charges.,Xarajatlarni saqlab bo‘lmadi.
 Could not save period.,Davrni saqlab bo'lmadi.
-Could not save tender intake.,Tender ma'lumotini saqlab bo‘lmadi.
+Could not save tender intake.,Tender qabulini saqlab bo‘lmadi.
 Could not start setup.,Sozlashni boshlab bo'lmadi.
 Could not start the online payment.,Onlayn to‘lovni boshlab bo‘lmadi.
 Could not start the processor.,Protsessorni ishga tushirib bo'lmadi.
@@ -867,7 +867,7 @@ Cumulative,Jami
 Cumulative %,Jamlangan %
 Currency,Valyuta
 Currency Exchange as of {date},{date} holatiga kurs
-Currency risk (foreign purchase),Valyuta riski (chet el xaridi)
+Currency risk (foreign purchase),Valyuta xavfi (xorijiy xarid)
 Current AR balance per customer — click a row to see the ledger behind the balance.,
 Current AR balance per customer — ties to the Customer Center.,Har mijozning joriy qarzi — Customer Center bilan mos.
 Current Return,
@@ -940,7 +940,7 @@ Days is unreasonably large.,
 Days left,Qolgan kun
 Days of cover,Zaxira kunlari
 Deadline control,Muddat nazorati
-Deadline near,Muddat yaqin
+Deadline near,Muddat yaqinlashmoqda
 Deal Owner,Shartnoma egasi
 Deal Value,Shartnoma summasi
 Deal has no organization or name to create a customer from.,
@@ -1312,11 +1312,11 @@ F.I.O.,F.I.Sh.
 FG Whse,
 FX Revaluation,
 FX accounts as of {0},
-FX favorable,Kurs foydali
-FX open,Valyuta: ochiq
+FX favorable,Ijobiy kurs
+FX open,Ochiq valyuta
 FX rate looks correct,FX kursi to'g'ri
 FX rate looks wrong,FX kursi noto'g'ri
-FX risk,Valyuta riski
+FX risk,Valyuta xavfi
 Failed,Xatolik
 Failed to assign ticket.,Murojaatni belgilab bo'lmadi.
 Failed to build Landed Cost Voucher payload.,
@@ -2467,7 +2467,7 @@ On Leave,Ta'tilda
 On hand,Qo'lda
 On leave,
 On leave today,Bugun ta'tilda
-On track,Vaqtida
+On track,Rejada
 On-Shelf-Availability audits compare expected vs actual facings during visits.,On-Shelf-Availability auditlari tashrif paytida kutilgan va haqiqiy yuzlarni solishtiradi.
 On-hand batches at risk: expired and expiring soon.,Xavf ostidagi partiyalar: muddati o‘tgan va tugayotgan.
 On-hand value vs sales velocity. Flags slow-moving and dead stock.,Zaxira qiymati savdo tezligiga nisbatan. Sekin va o‘lik zaxira belgilanadi.
@@ -2637,7 +2637,7 @@ Party,Tomon
 Party account not resolved — re-select the party.,Tomon hisobi aniqlanmadi — tomonni qayta tanlang.
 Party is required.,Tomon talab qilinadi.
 Past day,O'tgan kun
-Paste UZEX lot URL,UZEX lot havolasini joylang
+Paste UZEX lot URL,UZEX lot havolasini kiriting
 Paste a direct image URL or leave blank to use initials.,
 Paste access token JWT…,
 Paste new token to replace…,
@@ -3302,7 +3302,7 @@ Search customer,Mijozni qidirish
 Search customer name…,Mijoz nomini qidirish…
 "Search customers, suppliers, items, invoices…","Mijozlar, ta'minotchilar, tovarlar, hisob-fakturalarni qidirish…"
 Search customers…,Xaridorlarni qidirish…
-Search customer…,Mijozni qidirish…
+Search customer…,Mijoz qidirish…
 Search deals…,Bitimlarni qidirish…
 Search employees…,Xodimlarni qidirish…
 Search employee…,Xodimni qidirish…
@@ -3310,7 +3310,7 @@ Search employee… ⌘K,Xodimni qidirish… ⌘K
 Search item code or name…,Tovar kodini yoki nomini qidirish…
 Search item...,
 Search items…,Tovarlarni qidirish…
-Search item…,Tovarni qidirish…
+Search item…,Tovar qidirish…
 Search leads…,Lidlarni qidirish…
 Search name…,Nom bo'yicha qidirish…
 Search name… ⌘K,Nom bo'yicha qidirish… ⌘K
@@ -3409,7 +3409,7 @@ Set Reports-To on employees to build the positions hierarchy.,Lavozimlar ierarxi
 Set a Google Drive folder ID first.,Avval Google Drive papka ID'sini kiriting.
 Set as company default,Kompaniya standarti qilish
 Set as company default.,Kompaniya standarti qilib o'rnatildi.
-Set deadlines in Tender details.,Muddatlarni tender tafsilotlarida kiriting.
+Set deadlines in Tender details.,Muddatlarni Tender tafsilotlarida belgilang.
 Set exactly one of Commercial Invoice or Container on a Freight Booking.,Yuk tashish bronida Tijoriy hisob-faktura yoki Konteynerdan aynan bittasini belgilang.
 Set exactly one of Commercial Invoice or Container.,Tijorat invoysi yoki konteynerdan aynan bittasini belgilang.
 "Set the Google Drive folder ID in Stabler Settings, and share that Shared-Drive folder with the service account email.",
@@ -3635,7 +3635,7 @@ Tender PO control,Tender PO nazorati
 Tender Source,Tender manbai
 Tender bid pricing,Tender taklif narxi
 Tender details,Tender tafsilotlari
-Tender intake saved.,Tender ma'lumoti saqlandi.
+Tender intake saved.,Tender qabuli saqlandi.
 Tender module is not enabled for {0}.,
 Tender: {0}.,
 Tenure,Ish staji
@@ -4086,7 +4086,7 @@ Win/Loss Reason,Yutuq/yutqaziq sababi
 Withdrawal,Yechib olish
 Withheld,Ushlab qolingan
 Won,Yutdik
-Won price,Yutuq narxi
+Won price,Yutilgan narx
 Won this month,Shu oyda yutilgan
 Work From Home,Uydan ish
 Work Order,Ishlab chiqarish buyurtmasi
@@ -5428,7 +5428,7 @@ No document requirements set.,Hujjat talablari belgilanmagan.
 Failed to load documents,Hujjatlarni yuklab boʻlmadi
 Document uploaded successfully,Hujjat muvaffaqiyatli yuklandi
 Requirement waived,Talabdan muaf qilindi
-Manage document files in Document Center,Hujjatlar fayllarini Hujjatlar markazida boshqarish
+Manage document files in Document Center,Hujjat fayllarini Hujjatlar markazida boshqaring
 Justification / Reason,Asoslash / Sabab
 Enter protocol / authorization reason…,Bayonnoma raqami yoki sababni kiriting…
 Pick a tender deal to view its document center.,Hujjatlar markazini koʻrish uchun tender bitimini tanlang.
@@ -5450,7 +5450,7 @@ Link to Tender,Tenderga bogʻlash
 No tenders in this stage,Ushbu bosqichda tenderlar yoʻq
 Edit Tender Master,Asosiy tenderni tahrirlash
 Create Tender Master,Asosiy tender yaratish
-Tender Title,Tender nomi
+Tender Title,Tender sarlavhasi
 e.g. UZEX Supply Tender 2026,"masalan, UZEX yetkazib berish tenderi 2026"
 Tender / Lot No,Tender / Lot №
 Source / Portal,Manba / Portal
@@ -5502,7 +5502,7 @@ Customs charges,Bojxona xarajatlari
 Open PO,Buyurtmani ochish
 PO Control,Buyurtmalar nazorati
 Transport expenses,Tashish xarajatlari
-"Transport costs belong to third-party carriers. Expenses linked directly to a container are allocated directly; unassigned costs are distributed by weight.","Tashish xarajatlari uchinchi tomon tashuvchilariga tegishli. Konteynerga to'g'ridan-to'g'ri biriktirilganlari to'g'ridan-to'g'ri, qolganlari vazn bo'yicha taqsimlanadi."
+Transport costs belong to third-party carriers. Expenses linked directly to a container are allocated directly; unassigned costs are distributed by weight.,"Tashish xarajatlari uchinchi tomon tashuvchilariga tegishli. Konteynerga to'g'ridan-to'g'ri biriktirilganlari to'g'ridan-to'g'ri, qolganlari vazn bo'yicha taqsimlanadi."
 Total transport,Jami tashish
 Per container,Konteynerga
 paid {pct}% · {outstanding} to pay,{pct}% to'langan · {outstanding} to'lanishi kerak
@@ -5561,20 +5561,20 @@ Document status,Hujjatlar holati
 Vet Certificate,Vet sertifikati
 over-shipped,ortiqcha yuklangan
 Attach file,Fayl biriktirish
-Could not attach document.,Hujjatni biriktirib bo'lmadi.
+Could not attach document.,Hujjatni biriktirib bo‘lmadi.
 Could not load documents.,Hujjatlarni yuklab bo'lmadi.
-Could not remove document.,Hujjatni o'chirib bo'lmadi.
-Could not waive document.,Hujjatdan voz kechib bo'lmadi.
-Document removed.,Hujjat o'chirildi.
+Could not remove document.,Hujjatni o‘chirib bo‘lmadi.
+Could not waive document.,Hujjatni istisno qilib bo‘lmadi.
+Document removed.,Hujjat o‘chirildi.
 Document requirements,Hujjat talablari
-Document waived.,Hujjatdan voz kechildi.
+Document waived.,Hujjat istisno qilindi.
 File,Fayl
 General,Umumiy
 No document requirements yet. Add them in Tender details.,Hozircha hujjat talablari yo'q. Ularni Tender tafsilotlarida qo'shing.
 Req.,Majb.
 Tender documents,Tender hujjatlari
 Upload returned no file URL.,Yuklash fayl URL'ini qaytarmadi.
-Waiver reason is mandatory.,Voz kechish sababi majburiy.
+Waiver reason is mandatory.,Istisno sababi majburiy.
 files,fayllar
 required,majburiy
 unverified,tasdiqlanmagan
@@ -5584,9 +5584,9 @@ Marked done but no file,Faylsiz bajarilgan deb belgilangan
 Missing required,Majburiy hujjat yetishmayapti
 Remove file,Faylni o'chirish
 Shared across all lots of this tender,Ushbu tenderning barcha lotlari uchun umumiy
-Waive with reason…,Sabab bilan voz kechish…
+Waive with reason…,Sabab ko‘rsatib istisno qilish…
 Waived,Voz kechildi
-Waived by,Voz kechgan
+Waived by,Istisno qilgan:
 remove,o'chirish
 Visible,Koʻrsatilgan
 Overdue only,Faqat muddati oʻtganlar
@@ -5717,7 +5717,7 @@ New plate no.,Yangi davlat raqami
 No expenses recorded for this invoice yet.,Bu invoys bo'yicha hali xarajat qayd etilmagan.
 No trucks linked yet.,Hali yuk mashinasi bog'lanmagan.
 Nothing to allocate yet — add invoice items and costs first.,Hozircha taqsimlanadigan narsa yo'q — avval tovar va xarajatlarni qo'shing.
-Packing List,Qadoqlash varaqasi
+Packing List,O‘ram varaqasi
 Paid from (cash desk),Qaysi kassadan to'landi
 Pick a cash desk first,Avval kassani tanlang
 Please select a supplier first.,Avval yetkazib beruvchini tanlang.
@@ -5756,3 +5756,21 @@ unpaid,to'lanmagan
 {truck} stays in the system but is no longer part of this commercial invoice.,"{truck} tizimda qoladi, lekin bu tijorat invoysiga kirmaydi."
 Post-win stages are derived automatically and cannot be set manually.,Yutuqdan keyingi bosqichlar avtomatik ravishda olinadi va qo'lda o'rnatilmaydi.
 Post-win stages are updated automatically from operational records.,Yutuqdan keyingi bosqichlar operatsion yozuvlardan avtomatik ravishda yangilanadi.
+Tender Intake Center,Tender qabul markazi
+Who is the Tender From?,Tender kimdan kelmoqda?
+Customer / Buyer,Mijoz / Xaridor
+Tender Information,Tender ma'lumotlari
+Tender Files,Tender fayllari
+Requested Items,So‘ralgan tovarlar
+Select Lot — Document Center,Lotni tanlang — Hujjat markazi
+Missing Required,Majburiy yetishmaydi
+No tender lots found.,Hech qanday tender loti topilmadi.
+Assignment initializes document center,Biriktirish hujjat markazini ishga tushiradi
+Customs Declaration (GTD),Bojxona deklaratsiyasi (GTD)
+Certificate of Origin,Kelib chiqish sertifikati
+CMR / Waybill,CMR / Yuk xati
+Technical Specification,Texnik spetsifikatsiya
+Price Offer,Narx taklifi
+Guarantee Letter,Kafolat xati
+License Copy / Certificate,Litsenziya nusxasi / Sertifikat
+Price Offer / Commercial Invoice,Narx taklifi / Tijorat invoysi

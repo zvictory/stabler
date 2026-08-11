@@ -342,7 +342,7 @@ At least one received item line is required.,En az bir alınan ürün satırı g
 At least one visit purpose is required.,
 At least one voucher is required.,
 At least two account lines are required.,En az iki hesap satırı gereklidir.
-At risk,Riskte
+At risk,Risk altında
 At-risk,Risk altında
 Attendance,Devam
 Attendance Dashboard,
@@ -796,7 +796,7 @@ Could not resolve payroll period: {0},
 Could not save bid pricing.,Fiyatlandırma kaydedilemedi.
 Could not save landed charges.,Masraflar kaydedilemedi.
 Could not save period.,Dönem kaydedilemedi.
-Could not save tender intake.,Tender verisi kaydedilemedi.
+Could not save tender intake.,İhale girişi kaydedilemedi.
 Could not start setup.,Kurulum başlatılamadı.
 Could not start the online payment.,Çevrimiçi ödeme başlatılamadı.
 Could not start the processor.,İşlemci başlatılamadı.
@@ -862,7 +862,7 @@ Cumulative,Kümülatif
 Cumulative %,Kümülatif %
 Currency,Para Birimi
 Currency Exchange as of {date},{date} tarihli döviz kuru
-Currency risk (foreign purchase),Kur riski (ithalat)
+Currency risk (foreign purchase),Kur riski (yabancı alım)
 Current AR balance per customer — click a row to see the ledger behind the balance.,
 Current AR balance per customer — ties to the Customer Center.,Müşteri başına güncel alacak — Müşteri Merkezi ile eşleşir.
 Current Return,
@@ -935,7 +935,7 @@ Days is unreasonably large.,
 Days left,Kalan gün
 Days of cover,Kapsama günü
 Deadline control,Süre kontrolü
-Deadline near,Süre yakın
+Deadline near,Süre yaklaşıyor
 Deal Owner,Anlaşma Sahibi
 Deal Value,Anlaşma Değeri
 Deal has no organization or name to create a customer from.,
@@ -1305,11 +1305,11 @@ F.I.O.,"Soyad, Ad, Baba Adı"
 FG Whse,
 FX Revaluation,
 FX accounts as of {0},
-FX favorable,Kur lehte
-FX open,Kur: açık
+FX favorable,Döviz olumlu
+FX open,Döviz açık
 FX rate looks correct,FX kuru doğru
 FX rate looks wrong,FX kuru hatalı
-FX risk,Kur riski
+FX risk,Döviz riski
 Failed,Başarısız
 Failed to assign ticket.,Talep atanamadı.
 Failed to build Landed Cost Voucher payload.,
@@ -2627,7 +2627,7 @@ Party,Taraf
 Party account not resolved — re-select the party.,Taraf hesabı çözümlenemedi — tarafı yeniden seçin.
 Party is required.,Taraf zorunludur.
 Past day,Geçmiş gün
-Paste UZEX lot URL,UZEX lot bağlantısını yapıştırın
+Paste UZEX lot URL,UZEX lot URL'sini yapıştırın
 Paste a direct image URL or leave blank to use initials.,
 Paste access token JWT…,
 Paste new token to replace…,
@@ -3298,7 +3298,7 @@ Search employee… ⌘K,Çalışan ara… ⌘K
 Search item code or name…,Ürün kodu veya adı ara…
 Search item...,
 Search items…,Ürün ara…
-Search item…,Ürün ara…
+Search item…,Kalem ara…
 Search leads…,Potansiyel ara…
 Search name…,İsimle ara…
 Search name… ⌘K,İsimle ara… ⌘K
@@ -3396,7 +3396,7 @@ Set Reports-To on employees to build the positions hierarchy.,Pozisyon hiyerarş
 Set a Google Drive folder ID first.,Önce bir Google Drive klasör kimliği ayarlayın.
 Set as company default,Şirket varsayılanı yap
 Set as company default.,Şirket varsayılanı olarak ayarlandı.
-Set deadlines in Tender details.,Süreleri tender detaylarında girin.
+Set deadlines in Tender details.,Süreleri İhale Detaylarında belirleyin.
 Set exactly one of Commercial Invoice or Container on a Freight Booking.,Nakliye Rezervasyonunda Ticari Fatura veya Konteynerden tam olarak birini belirtin.
 Set exactly one of Commercial Invoice or Container.,Ticari Fatura veya Konteynerden tam olarak birini belirtin.
 "Set the Google Drive folder ID in Stabler Settings, and share that Shared-Drive folder with the service account email.",
@@ -3622,7 +3622,7 @@ Tender PO control,Tender PO kontrolü
 Tender Source,İhale kaynağı
 Tender bid pricing,Tender teklif fiyatlandırması
 Tender details,Tender detayları
-Tender intake saved.,Tender verisi kaydedildi.
+Tender intake saved.,İhale girişi kaydedildi.
 Tender module is not enabled for {0}.,
 Tender: {0}.,
 Tenure,Kıdem
@@ -5423,7 +5423,7 @@ No document requirements set.,Belge gereksinimi belirlenmedi.
 Failed to load documents,Belgeler yüklenemedi
 Document uploaded successfully,Belge başarıyla yüklendi
 Requirement waived,Gereksinimden muaf tutuldu
-Manage document files in Document Center,Belge dosyalarını Belge Merkezinde yönet
+Manage document files in Document Center,Belge dosyalarını Belge Merkezinde yönetin
 Justification / Reason,Gerekçe / Neden
 Enter protocol / authorization reason…,Protokol no veya yetki nedenini girin…
 Pick a tender deal to view its document center.,Belge merkezini görüntülemek için bir ihale fırsatı seçin.
@@ -5497,7 +5497,7 @@ Customs charges,Gümrük masrafları
 Open PO,Siparişi Aç
 PO Control,Sipariş Kontrolü
 Transport expenses,Taşıma giderleri
-"Transport costs belong to third-party carriers. Expenses linked directly to a container are allocated directly; unassigned costs are distributed by weight.","Taşıma giderleri üçüncü taraf taşıyıcılara aittir. Konteynere doğrudan bağlı giderler doğrudan, diğerleri ağırlığa göre dağıtılır."
+Transport costs belong to third-party carriers. Expenses linked directly to a container are allocated directly; unassigned costs are distributed by weight.,"Taşıma giderleri üçüncü taraf taşıyıcılara aittir. Konteynere doğrudan bağlı giderler doğrudan, diğerleri ağırlığa göre dağıtılır."
 Total transport,Toplam taşıma
 Per container,Konteyner başına
 paid {pct}% · {outstanding} to pay,%{pct} ödendi · {outstanding} ödenecek
@@ -5559,17 +5559,17 @@ Attach file,Dosya ekle
 Could not attach document.,Belge eklenemedi.
 Could not load documents.,Belgeler yüklenemedi.
 Could not remove document.,Belge kaldırılamadı.
-Could not waive document.,Belge feragat edilemedi.
+Could not waive document.,Belge muaf tutulamadı.
 Document removed.,Belge kaldırıldı.
 Document requirements,Belge gereksinimleri
-Document waived.,Belge feragat edildi.
+Document waived.,Belge muaf tutuldu.
 File,Dosya
 General,Genel
 No document requirements yet. Add them in Tender details.,Henüz belge gereksinimi yok. İhale detaylarında ekleyin.
 Req.,Zor.
 Tender documents,İhale belgeleri
 Upload returned no file URL.,Yükleme dosya URL'si döndürmedi.
-Waiver reason is mandatory.,Feragat gerekçesi zorunludur.
+Waiver reason is mandatory.,Muafiyet gerekçesi zorunludur.
 files,dosya
 required,zorunlu
 unverified,doğrulanmamış
@@ -5579,9 +5579,9 @@ Marked done but no file,Dosyasız bitti işaretli
 Missing required,Zorunlu eksik
 Remove file,Dosyayı kaldır
 Shared across all lots of this tender,Bu ihalenin tüm lotları için ortak
-Waive with reason…,Gerekçeyle feragat et…
+Waive with reason…,Gerekçe ile muaf tut…
 Waived,Feragat edildi
-Waived by,Feragat eden
+Waived by,Muafiyet veren:
 remove,kaldır
 Visible,Görünen
 Overdue only,Sadece vadesi geçenler
@@ -5712,7 +5712,7 @@ New plate no.,Yeni plaka no.
 No expenses recorded for this invoice yet.,Bu fatura için henüz masraf kaydedilmedi.
 No trucks linked yet.,Henüz tır bağlanmadı.
 Nothing to allocate yet — add invoice items and costs first.,Dağıtılacak bir şey yok — önce fatura kalemlerini ve masrafları ekleyin.
-Packing List,Çeki listesi
+Packing List,Çeki Listesi
 Paid from (cash desk),Ödeme kaynağı (kasa)
 Pick a cash desk first,Önce bir kasa seçin
 Please select a supplier first.,Lütfen önce bir tedarikçi seçin.
@@ -5751,3 +5751,21 @@ unpaid,ödenmedi
 {truck} stays in the system but is no longer part of this commercial invoice.,"{truck} sistemde kalır, ancak artık bu ticari faturanın parçası değildir."
 Post-win stages are derived automatically and cannot be set manually.,Kazanım sonrası aşamalar otomatik olarak türetilir ve manuel ayarlanamaz.
 Post-win stages are updated automatically from operational records.,Kazanım sonrası aşamalar operasyonel kayıtlardan otomatik olarak güncellenir.
+Tender Intake Center,İhale Giriş Merkezi
+Who is the Tender From?,İhale Kimden Geliyor?
+Customer / Buyer,Müşteri / Alıcı
+Tender Information,İhale Bilgileri
+Tender Files,İhale Dosyaları
+Requested Items,Talep Edilen Kalemler
+Select Lot — Document Center,Lot Seç — Belge Merkezi
+Missing Required,Eksik Zorunlu
+No tender lots found.,Hiç ihale lotu bulunamadı.
+Assignment initializes document center,Atama belge merkezini başlatır
+Customs Declaration (GTD),Gümrük Beyannamesi (GTD)
+Certificate of Origin,Menşe Şahadetnamesi
+CMR / Waybill,CMR / Sevk İrsaliyesi
+Technical Specification,Teknik Şartname
+Price Offer,Fiyat Teklifi
+Guarantee Letter,Teminat Mektubu
+License Copy / Certificate,Lisans Kopyası / Sertifika
+Price Offer / Commercial Invoice,Fiyat Teklifi / Ticari Fatura

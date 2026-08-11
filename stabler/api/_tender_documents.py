@@ -195,46 +195,46 @@ def default_doc_requirements() -> list[dict[str, Any]]:
 	raw = [
 		{
 			"key": "gtd",
-			"label": "ГТД / Gümrük beyannamesi",
+			"label": "Customs Declaration (GTD)",
 			"required": True,
 			"scope": "lot",
 			"role": "customs",
 		},
 		{
 			"key": "origin_cert",
-			"label": "Kelib chiqish sertifikati",
+			"label": "Certificate of Origin",
 			"required": False,
 			"scope": "lot",
 			"role": "customs",
 		},
 		{
 			"key": "cmr",
-			"label": "CMR / Transport nakladnoyasi",
+			"label": "CMR / Waybill",
 			"required": True,
 			"scope": "lot",
 			"role": "logistics",
 		},
 		{
 			"key": "packing_list",
-			"label": "Qadoqlash varaqasi",
+			"label": "Packing List",
 			"required": False,
 			"scope": "lot",
 			"role": "logistics",
 		},
 		{
 			"key": "invoice",
-			"label": "Invoys / Commercial Invoice",
+			"label": "Commercial Invoice",
 			"required": True,
 			"scope": "lot",
 			"role": "finance",
 		},
 		{
 			"key": "tech_spec",
-			"label": "Texnik spetsifikatsiya",
+			"label": "Technical Specification",
 			"required": True,
 			"scope": "lot",
 			"role": "general",
 		},
-		{"key": "price_offer", "label": "Narx taklifi", "required": True, "scope": "lot", "role": "general"},
+		{"key": "price_offer", "label": "Price Offer", "required": True, "scope": "lot", "role": "general"},
 	]
 	return parse_doc_requirements(raw)

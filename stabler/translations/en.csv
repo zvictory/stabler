@@ -5428,75 +5428,75 @@ Manage document files in Document Center,Manage document files in Document Cente
 Justification / Reason,Justification / Reason
 Enter protocol / authorization reason…,Enter protocol / authorization reason…
 Pick a tender deal to view its document center.,Pick a tender deal to view its document center.
-"Level 1: Tender Master oversight","Level 1: Tender Master oversight"
-"One card per published tender — click to open child lots","One card per published tender — click to open child lots"
-"New Tender","New Tender"
-"Tender Masters","Tender Masters"
-"active parent tenders","active parent tenders"
-"Total Lots","Total Lots"
-"child lots under tenders","child lots under tenders"
-"Pipeline Value","Pipeline Value"
-"derived from child lots","derived from child lots"
-"Unlinked Lots","Unlinked Lots"
-"migration queue backlog","migration queue backlog"
-"Unlinked Lots Migration Queue ({0})","Unlinked Lots Migration Queue ({0})"
-"Lots created without a parent tender link","Lots created without a parent tender link"
-"Lot Name","Lot Name"
-"Link to Tender","Link to Tender"
-"No tenders in this stage","No tenders in this stage"
-"Edit Tender Master","Edit Tender Master"
-"Create Tender Master","Create Tender Master"
-"Tender Title","Tender Title"
-"e.g. UZEX Supply Tender 2026","e.g. UZEX Supply Tender 2026"
-"Tender / Lot No","Tender / Lot No"
-"Source / Portal","Source / Portal"
-"Publication Date","Publication Date"
-"Submission Deadline","Submission Deadline"
-"Estimated Total Value","Estimated Total Value"
-"Unlinked lot {0} will be attached to this tender upon creation.","Unlinked lot {0} will be attached to this tender upon creation."
-"Save Tender","Save Tender"
-"Title is required","Title is required"
-"Tender updated","Tender updated"
-"Tender created","Tender created"
-"Could not save tender","Could not save tender"
-"Could not load tender board","Could not load tender board"
-"Lot {0} linked to tender {1}","Lot {0} linked to tender {1}"
-"Could not link lot","Could not link lot"
-"Unallocated quotations in Purchasing","Unallocated quotations in Purchasing"
-"Attach to this lot","Attach to this lot"
-"Quotation attached to lot.","Quotation attached to lot."
-"Could not attach quotation.","Could not attach quotation."
-"Quotation detached from lot.","Quotation detached from lot."
-"Could not detach quotation.","Could not detach quotation."
-"Cannot detach quotation '{0}': it is part of an approved sourcing decision for this tender.","Cannot detach quotation '{0}': it is part of an approved sourcing decision for this tender."
-"Search supplier or quotation…","Search supplier or quotation…"
-"Detach from this lot","Detach from this lot"
-"No default warehouse configured for {0}. Set a default warehouse in Company settings.","No default warehouse configured for {0}. Set a default warehouse in Company settings."
-"Search supplier or quotation… ⌘K","Search supplier or quotation… ⌘K"
-"Valid till date cannot be before transaction date.","Valid till date cannot be before transaction date."
-"Document Missing","Document Missing"
-"Ready for GTD","Ready for GTD"
-"Declared","Declared"
-"Under Inspection","Under Inspection"
-"Released","Released"
-"No active customs declarations or won lots in the pipeline.","No active customs declarations or won lots in the pipeline."
+Level 1: Tender Master oversight,Level 1: Tender Master oversight
+One card per published tender — click to open child lots,One card per published tender — click to open child lots
+New Tender,New Tender
+Tender Masters,Tender Masters
+active parent tenders,active parent tenders
+Total Lots,Total Lots
+child lots under tenders,child lots under tenders
+Pipeline Value,Pipeline Value
+derived from child lots,derived from child lots
+Unlinked Lots,Unlinked Lots
+migration queue backlog,migration queue backlog
+Unlinked Lots Migration Queue ({0}),Unlinked Lots Migration Queue ({0})
+Lots created without a parent tender link,Lots created without a parent tender link
+Lot Name,Lot Name
+Link to Tender,Link to Tender
+No tenders in this stage,No tenders in this stage
+Edit Tender Master,Edit Tender Master
+Create Tender Master,Create Tender Master
+Tender Title,Tender Title
+e.g. UZEX Supply Tender 2026,e.g. UZEX Supply Tender 2026
+Tender / Lot No,Tender / Lot No
+Source / Portal,Source / Portal
+Publication Date,Publication Date
+Submission Deadline,Submission Deadline
+Estimated Total Value,Estimated Total Value
+Unlinked lot {0} will be attached to this tender upon creation.,Unlinked lot {0} will be attached to this tender upon creation.
+Save Tender,Save Tender
+Title is required,Title is required
+Tender updated,Tender updated
+Tender created,Tender created
+Could not save tender,Could not save tender
+Could not load tender board,Could not load tender board
+Lot {0} linked to tender {1},Lot {0} linked to tender {1}
+Could not link lot,Could not link lot
+Unallocated quotations in Purchasing,Unallocated quotations in Purchasing
+Attach to this lot,Attach to this lot
+Quotation attached to lot.,Quotation attached to lot.
+Could not attach quotation.,Could not attach quotation.
+Quotation detached from lot.,Quotation detached from lot.
+Could not detach quotation.,Could not detach quotation.
+Cannot detach quotation '{0}': it is part of an approved sourcing decision for this tender.,Cannot detach quotation '{0}': it is part of an approved sourcing decision for this tender.
+Search supplier or quotation…,Search supplier or quotation…
+Detach from this lot,Detach from this lot
+No default warehouse configured for {0}. Set a default warehouse in Company settings.,No default warehouse configured for {0}. Set a default warehouse in Company settings.
+Search supplier or quotation… ⌘K,Search supplier or quotation… ⌘K
+Valid till date cannot be before transaction date.,Valid till date cannot be before transaction date.
+Document Missing,Document Missing
+Ready for GTD,Ready for GTD
+Declared,Declared
+Under Inspection,Under Inspection
+Released,Released
+No active customs declarations or won lots in the pipeline.,No active customs declarations or won lots in the pipeline.
 "When a tender deal is awarded or a purchase order is raised, customs requirements will appear here.","When a tender deal is awarded or a purchase order is raised, customs requirements will appear here."
-"docs missing","docs missing"
-"Doc Center","Doc Center"
-"No items in this stage","No items in this stage"
-"Lanes","Lanes"
-"Table","Table"
-"Planning","Planning"
-"Booking","Booking"
-"In Transit","In Transit"
-"Border Crossed","Border Crossed"
-"Delivered","Delivered"
-"Accepted","Accepted"
-"No active shipments or won lots in the pipeline.","No active shipments or won lots in the pipeline."
+docs missing,docs missing
+Doc Center,Doc Center
+No items in this stage,No items in this stage
+Lanes,Lanes
+Table,Table
+Planning,Planning
+Booking,Booking
+In Transit,In Transit
+Border Crossed,Border Crossed
+Delivered,Delivered
+Accepted,Accepted
+No active shipments or won lots in the pipeline.,No active shipments or won lots in the pipeline.
 "When a tender deal is awarded or a purchase order is raised, shipment requirements will appear here.","When a tender deal is awarded or a purchase order is raised, shipment requirements will appear here."
-"Customs charges","Customs charges"
-"Open PO","Open PO"
-"PO Control","PO Control"
+Customs charges,Customs charges
+Open PO,Open PO
+PO Control,PO Control
 Transport expenses,Transport expenses
 Transport costs belong to third-party carriers. Expenses linked directly to a container are allocated directly; unassigned costs are distributed by weight.,Transport costs belong to third-party carriers. Expenses linked directly to a container are allocated directly; unassigned costs are distributed by weight.
 Total transport,Total transport
@@ -5532,8 +5532,8 @@ Against contract,Against contract
 Contracts for this shipment,Contracts for this shipment
 summary — details in PI,summary — details in PI
 in this invoice,in this invoice
-"over-shipped by key: -{count} boxes","over-shipped by key: -{count} boxes"
-"remaining {count} boxes","remaining {count} boxes"
+over-shipped by key: -{count} boxes,over-shipped by key: -{count} boxes
+remaining {count} boxes,remaining {count} boxes
 open PI →,open PI →
 Advance 70%,Advance 70%
 Telex / BL,Telex / BL
@@ -5543,7 +5543,7 @@ Supplier bills,Supplier bills
 Expenses without bills,Expenses without bills
 All expenses are billed.,All expenses are billed.
 No supplier bills linked yet.,No supplier bills linked yet.
-"Reconciliation: expenses {exp} − bills {bills} = {unbilled} unbilled","Reconciliation: expenses {exp} − bills {bills} = {unbilled} unbilled"
+Reconciliation: expenses {exp} − bills {bills} = {unbilled} unbilled,Reconciliation: expenses {exp} − bills {bills} = {unbilled} unbilled
 Shipment Cost Breakdown,Shipment Cost Breakdown
 Operational,Operational
 In Accounting,In Accounting
@@ -5554,7 +5554,7 @@ Total operational,Total operational
 Billed goods,Billed goods
 LCV (Landed Cost Vouchers),LCV (Landed Cost Vouchers)
 Total accounting,Total accounting
-"Gap {amount} · {per_kg} $/kg not allocated to inventory yet","Gap {amount} · {per_kg} $/kg not allocated to inventory yet"
+Gap {amount} · {per_kg} $/kg not allocated to inventory yet,Gap {amount} · {per_kg} $/kg not allocated to inventory yet
 Document status,Document status
 Vet Certificate,Vet Certificate
 Customs Declaration,Customs Declaration
@@ -5754,3 +5754,21 @@ unpaid,unpaid
 {truck} stays in the system but is no longer part of this commercial invoice.,{truck} stays in the system but is no longer part of this commercial invoice.
 Post-win stages are derived automatically and cannot be set manually.,Post-win stages are derived automatically and cannot be set manually.
 Post-win stages are updated automatically from operational records.,Post-win stages are updated automatically from operational records.
+Tender Intake Center,Tender Intake Center
+Who is the Tender From?,Who is the Tender From?
+Customer / Buyer,Customer / Buyer
+Tender Information,Tender Information
+Tender Files,Tender Files
+Requested Items,Requested Items
+Select Lot — Document Center,Select Lot — Document Center
+Missing Required,Missing Required
+No tender lots found.,No tender lots found.
+Assignment initializes document center,Assignment initializes document center
+Customs Declaration (GTD),Customs Declaration (GTD)
+Certificate of Origin,Certificate of Origin
+CMR / Waybill,CMR / Waybill
+Technical Specification,Technical Specification
+Price Offer,Price Offer
+Guarantee Letter,Guarantee Letter
+License Copy / Certificate,License Copy / Certificate
+Price Offer / Commercial Invoice,Price Offer / Commercial Invoice

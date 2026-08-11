@@ -179,11 +179,11 @@
 			</div>
 		</div>
 
-		<!-- Lot seçici — ?deal= yokken -->
+		<!-- Lot selector — when ?deal= is not present -->
 	<div v-else class="card">
 		<div class="card-header py-2 fw-semibold d-flex justify-content-between align-items-center">
-			<span><i class="ti ti-search me-1"></i>{{ t("Lot seç — Belge Merkezi") }}</span>
-			<span v-if="targets.length" class="text-muted small">{{ targets.length }} lot</span>
+			<span><i class="ti ti-search me-1"></i>{{ t("Select Lot — Document Center") }}</span>
+			<span v-if="targets.length" class="text-muted small">{{ targets.length }} {{ t("lots") }}</span>
 		</div>
 		<div class="card-body p-0">
 			<SkeletonRows v-if="targetsLoading" :rows="4" />
@@ -192,9 +192,9 @@
 					<tr>
 						<th>{{ t("Lot / Deal") }}</th>
 						<th>{{ t("Parent Tender") }}</th>
-						<th>{{ t("Aşama") }}</th>
-						<th class="text-end">{{ t("Eksik zorunlu") }}</th>
-						<th>{{ t("Hazırlık") }}</th>
+						<th>{{ t("Stage") }}</th>
+						<th class="text-end">{{ t("Missing Required") }}</th>
+						<th>{{ t("Readiness") }}</th>
 						<th></th>
 					</tr>
 				</thead>
@@ -220,12 +220,12 @@
 							</div>
 						</td>
 						<td class="text-end">
-							<button type="button" class="btn btn-ghost-primary btn-sm">{{ t("Aç") }} →</button>
+							<button type="button" class="btn btn-ghost-primary btn-sm">{{ t("Open") }} →</button>
 						</td>
 					</tr>
 				</tbody>
 			</table>
-			<EmptyState v-else icon="ti-files-off" :title="t('Hiç tender lot bulunamadı.')" />
+			<EmptyState v-else icon="ti-files-off" :title="t('No tender lots found.')" />
 		</div>
 	</div>
 	</TenderPage>

@@ -104,13 +104,13 @@ const fxLabel = (s) => ({ good: t("FX favorable"), warn: t("FX risk"), risk: t("
 // Standard import-tender document requirements (seed once). Mirrors the backend
 // default_doc_requirements() — keys + role assignments drive the document center.
 const STD_DOCS = [
-	{ key: "gtd", label: "ГТД / Gümrük beyannamesi", required: 1, role: "customs" },
-	{ key: "origin_cert", label: "Kelib chiqish sertifikati", required: 0, role: "customs" },
-	{ key: "cmr", label: "CMR / Transport nakladnoyasi", required: 1, role: "logistics" },
-	{ key: "packing_list", label: "Qadoqlash varaqasi", required: 0, role: "logistics" },
-	{ key: "invoice", label: "Invoys / Commercial Invoice", required: 1, role: "finance" },
-	{ key: "tech_spec", label: "Texnik spetsifikatsiya", required: 1, role: "general" },
-	{ key: "price_offer", label: "Narx taklifi", required: 1, role: "general" },
+	{ key: "gtd", label: t("Customs Declaration (GTD)"), required: 1, role: "customs" },
+	{ key: "origin_cert", label: t("Certificate of Origin"), required: 0, role: "customs" },
+	{ key: "cmr", label: t("CMR / Waybill"), required: 1, role: "logistics" },
+	{ key: "packing_list", label: t("Packing List"), required: 0, role: "logistics" },
+	{ key: "invoice", label: t("Commercial Invoice"), required: 1, role: "finance" },
+	{ key: "tech_spec", label: t("Technical Specification"), required: 1, role: "general" },
+	{ key: "price_offer", label: t("Price Offer"), required: 1, role: "general" },
 ];
 function seedDocs() {
 	const have = new Set(intake.documents.map((d) => d.key || d.label));

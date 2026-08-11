@@ -347,7 +347,7 @@ At least one received item line is required.,Требуется хотя бы о
 At least one visit purpose is required.,
 At least one voucher is required.,
 At least two account lines are required.,Требуется минимум две строки счета.
-At risk,Риск
+At risk,Под риском
 At-risk,Под угрозой
 Attendance,Посещаемость
 Attendance Dashboard,
@@ -806,7 +806,7 @@ Could not resolve payroll period: {0},
 Could not save bid pricing.,Не удалось сохранить ценообразование.
 Could not save landed charges.,Не удалось сохранить расходы.
 Could not save period.,Не удалось сохранить период.
-Could not save tender intake.,Не удалось сохранить данные тендера.
+Could not save tender intake.,Не удалось сохранить приём тендера.
 Could not start setup.,Не удалось начать настройку.
 Could not start the online payment.,Не удалось начать онлайн-оплату.
 Could not start the processor.,Не удалось запустить процессор.
@@ -872,7 +872,7 @@ Cumulative,Совокупный
 Cumulative %,Накопит. %
 Currency,Валюта
 Currency Exchange as of {date},Курс на {date}
-Currency risk (foreign purchase),Валютный риск (импорт)
+Currency risk (foreign purchase),Валютный риск (импортные закупки)
 Current AR balance per customer — click a row to see the ledger behind the balance.,
 Current AR balance per customer — ties to the Customer Center.,Текущая задолженность по каждому клиенту — совпадает с Центром клиентов.
 Current Return,
@@ -945,7 +945,7 @@ Days is unreasonably large.,
 Days left,Дней осталось
 Days of cover,Дней запаса
 Deadline control,Контроль сроков
-Deadline near,Срок близко
+Deadline near,Срок приближается
 Deal Owner,Владелец сделки
 Deal Value,Сумма сделки
 Deal has no organization or name to create a customer from.,
@@ -1074,7 +1074,7 @@ Docs total,Сумма по документам
 Document,Документ
 Document & notes,Документ и заметки
 Document Type,Тип документа
-Document attached.,Документ прикреплён.
+Document attached.,Документ прикреплен.
 Document cancelled successfully.,
 Document changed,
 Document checklist,Чек-лист документов
@@ -1318,8 +1318,8 @@ F.I.O.,Ф.И.О.
 FG Whse,
 FX Revaluation,
 FX accounts as of {0},
-FX favorable,Курс в плюс
-FX open,Валюта: открыто
+FX favorable,Благоприятный курс
+FX open,Открытая валютная позиция
 FX rate looks correct,Курс FX верный
 FX rate looks wrong,Курс FX некорректный
 FX risk,Валютный риск
@@ -2643,7 +2643,7 @@ Party,Контрагент
 Party account not resolved — re-select the party.,Счёт контрагента не найден — повторно выберите контрагента.
 Party is required.,Контрагент обязателен.
 Past day,Прошедший день
-Paste UZEX lot URL,Вставьте ссылку на лот UZEX
+Paste UZEX lot URL,Вставьте URL лота UZEX
 Paste a direct image URL or leave blank to use initials.,
 Paste access token JWT…,
 Paste new token to replace…,
@@ -3316,7 +3316,7 @@ Search employee… ⌘K,Поиск сотрудника… ⌘K
 Search item code or name…,Поиск кода или названия товара…
 Search item...,
 Search items…,Поиск товаров…
-Search item…,Поиск товара…
+Search item…,Поиск позиции…
 Search leads…,Поиск лидов…
 Search name…,Поиск по имени…
 Search name… ⌘K,Поиск по имени… ⌘K
@@ -3415,7 +3415,7 @@ Set Reports-To on employees to build the positions hierarchy.,"Установи�
 Set a Google Drive folder ID first.,Сначала укажите ID папки Google Drive.
 Set as company default,Сделать стандартом компании
 Set as company default.,Установлено как стандарт компании.
-Set deadlines in Tender details.,Задайте сроки в деталях тендера.
+Set deadlines in Tender details.,Укажите сроки в деталях тендера.
 Set exactly one of Commercial Invoice or Container on a Freight Booking.,Укажите ровно одно из значений: коммерческий инвойс или контейнер в бронировании перевозки.
 Set exactly one of Commercial Invoice or Container.,Укажите ровно одно: коммерческий инвойс или контейнер.
 "Set the Google Drive folder ID in Stabler Settings, and share that Shared-Drive folder with the service account email.",
@@ -3641,7 +3641,7 @@ Tender PO control,Контроль PO тендера
 Tender Source,Источник тендера
 Tender bid pricing,Ценообразование для тендера
 Tender details,Детали тендера
-Tender intake saved.,Данные тендера сохранены.
+Tender intake saved.,Приём тендера сохранен.
 Tender module is not enabled for {0}.,
 Tender: {0}.,
 Tenure,Стаж
@@ -4092,7 +4092,7 @@ Win/Loss Reason,Причина выигрыша/проигрыша
 Withdrawal,Списание
 Withheld,Удержано
 Won,Выиграли
-Won price,Цена выигрыша
+Won price,Выигранная цена
 Won this month,Выиграно в этом месяце
 Work From Home,Удалённо
 Work Order,Производственный заказ
@@ -5507,7 +5507,7 @@ Customs charges,Таможенные расходы
 Open PO,Открыть PO
 PO Control,Контроль заказов
 Transport expenses,Транспортные расходы
-"Transport costs belong to third-party carriers. Expenses linked directly to a container are allocated directly; unassigned costs are distributed by weight.","Расходы относятся к сторонним перевозчикам. Прямо привязанные к контейнеру распределяются напрямую, остальные — по весу."
+Transport costs belong to third-party carriers. Expenses linked directly to a container are allocated directly; unassigned costs are distributed by weight.,"Расходы относятся к сторонним перевозчикам. Прямо привязанные к контейнеру распределяются напрямую, остальные — по весу."
 Total transport,Всего транспорт
 Per container,На контейнер
 paid {pct}% · {outstanding} to pay,оплачено {pct}% · {outstanding} к оплате
@@ -5547,7 +5547,7 @@ Advance 70%,Аванс 70%
 Telex / BL,Телекс / BL
 Gate-in → ГТД,Gate-in → ГТД
 Supplier bills,Счета поставщиков
-"Expenses without bills","Расходы, по которым счёта ещё нет"
+Expenses without bills,"Расходы, по которым счёта ещё нет"
 All expenses are billed.,Все расходы уже со счетами.
 No supplier bills linked yet.,Счета поставщиков пока не привязаны.
 Reconciliation: expenses {exp} − bills {bills} = {unbilled} unbilled,Сверка: расходы {exp} − счета на логистику {bills} = {unbilled} без счёта
@@ -5570,16 +5570,16 @@ Could not attach document.,Не удалось прикрепить докуме
 Could not load documents.,Не удалось загрузить документы.
 Could not remove document.,Не удалось удалить документ.
 Could not waive document.,Не удалось освободить документ.
-Document removed.,Документ удалён.
+Document removed.,Документ удален.
 Document requirements,Требования к документам
-Document waived.,Документ освобождён.
+Document waived.,Документ освобожден.
 File,Файл
 General,Общее
 No document requirements yet. Add them in Tender details.,Пока нет требований к документам. Добавьте их в деталях тендера.
 Req.,Обяз.
 Tender documents,Документы тендера
 Upload returned no file URL.,Загрузка не вернула URL файла.
-Waiver reason is mandatory.,Указание причины освобождения обязательно.
+Waiver reason is mandatory.,Причина освобождения обязательна.
 files,файлы
 required,обязательный
 unverified,не подтверждён
@@ -5589,9 +5589,9 @@ Marked done but no file,"Отмечено готово, но без файла"
 Missing required,Не хватает обязательного
 Remove file,Удалить файл
 Shared across all lots of this tender,Общее для всех лотов тендера
-Waive with reason…,Освободить с причиной…
+Waive with reason…,Освободить с указанием причины…
 Waived,Освобождено
-Waived by,Освободил
+Waived by,Освобождено кем:
 remove,удалить
 Visible,Показано
 Overdue only,Только просроченные
@@ -5761,3 +5761,21 @@ unpaid,не оплачено
 {truck} stays in the system but is no longer part of this commercial invoice.,"{truck} остаётся в системе, но больше не относится к этому инвойсу."
 Post-win stages are derived automatically and cannot be set manually.,Поствыигрышные этапы формируются автоматически и не могут быть установлены вручную.
 Post-win stages are updated automatically from operational records.,Поствыигрышные этапы автоматически обновляются на основе операционных записей.
+Tender Intake Center,Центр приёма тендеров
+Who is the Tender From?,От кого тендер?
+Customer / Buyer,Клиент / Покупатель
+Tender Information,Информация о тендере
+Tender Files,Файлы тендера
+Requested Items,Запрошенные позиции
+Select Lot — Document Center,Выбрать лот — Центр документов
+Missing Required,Не хватает обязательных
+No tender lots found.,Тендерные лоты не найдены.
+Assignment initializes document center,Назначение инициализирует центр документов
+Customs Declaration (GTD),Таможенная декларация (ГТД)
+Certificate of Origin,Сертификат происхождения
+CMR / Waybill,CMR / Транспортная накладная
+Technical Specification,Техническая спецификация
+Price Offer,Ценовое предложение
+Guarantee Letter,Гарантийное письмо
+License Copy / Certificate,Копия лицензии / Сертификат
+Price Offer / Commercial Invoice,Ценовое предложение / Коммерческий инвойс

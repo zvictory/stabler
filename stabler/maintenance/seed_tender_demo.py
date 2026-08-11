@@ -569,29 +569,29 @@ def _intake(lot_no: str, buyer: str, stage: str, value: int, owner: str, assigne
 		"bid_deadline": add_days(nowdate(), DEADLINE_OFFSETS.get(lot_no, 21)),
 		"delivery_deadline": add_days(nowdate(), DELIVERY_OFFSETS.get(lot_no, 90)),
 		"documents": [
-			{"name": "Texnik spetsifikatsiya", "status": "ready", "role": "general"},
+			{"name": "Technical Specification", "status": "ready", "role": "general"},
 			{
-				"name": "Kafolat xati",
+				"name": "Guarantee Letter",
 				"status": "ready" if stage in ("priced", "submitted", "won", "lost") else "pending",
 				"role": "general",
 			},
 			{
-				"name": "Litsenziya nusxasi / Сертификат",
+				"name": "License Copy / Certificate",
 				"status": "ready" if stage != "seen" else "pending",
 				"role": "customs",
 			},
 			{
-				"name": "Narx taklifi / Инвойс",
+				"name": "Price Offer / Commercial Invoice",
 				"status": "ready" if stage in ("submitted", "won", "lost") else "pending",
 				"role": "finance",
 			},
 			{
-				"name": "ГТД / Gümrük beyannamesi",
+				"name": "Customs Declaration (GTD)",
 				"status": "ready" if stage in ("won", "done") else "pending",
 				"role": "customs",
 			},
 			{
-				"name": "CMR / Transport nakladnoyasi",
+				"name": "CMR / Waybill",
 				"status": "ready" if stage in ("won", "done") else "pending",
 				"role": "logistics",
 			},

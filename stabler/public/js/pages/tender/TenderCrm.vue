@@ -586,7 +586,7 @@ function riskLabel(risk) {
 										<option v-for="m in managers" :key="m.name" :value="m.name">{{ m.full_name }}</option>
 									</select>
 									<div v-if="selectedDeal.assigned_to" class="xs mut mt-1">
-										{{ t("Atama belge merkezini başlatır") }}
+										{{ t("Assignment initializes document center") }}
 									</div>
 								</td>
 							</tr>

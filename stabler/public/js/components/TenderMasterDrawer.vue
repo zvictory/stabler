@@ -270,7 +270,7 @@ async function save() {
 							{{ form.name ? t("Edit") : t("New") }} · CRM Deal · deal_type: Tender
 						</div>
 						<h3 class="tgm-drawer-title">
-							{{ t("İhale Giriş Merkezi") }}
+							{{ t("Tender Intake Center") }}
 						</h3>
 					</div>
 					<button type="button" class="btn-close" @click="close"></button>
@@ -280,52 +280,52 @@ async function save() {
 				<div class="tgm-drawer-body">
 					<form @submit.prevent="save">
 
-						<!-- ═══ A: Müşteri ═══ -->
+						<!-- ═══ A: Customer ═══ -->
 						<div class="tgm-section">
 							<div class="tgm-sec-head">
 								<span class="tgm-sec-num">A</span>
-								{{ t("İhale Kimden Geliyor?") }}
+								{{ t("Who is the Tender From?") }}
 							</div>
 							<div class="tgm-sec-body">
 								<div class="d-flex gap-2 align-items-end">
 									<div class="flex-grow-1">
-										<label class="form-label required">{{ t("Müşteri / Alıcı") }}</label>
+										<label class="form-label required">{{ t("Customer / Buyer") }}</label>
 										<Typeahead
 											v-model="form.organization"
 											:search="searchCustomers"
 											:display="form.organization"
-											placeholder="Müşteri ara…"
+											:placeholder="t('Search customer…')"
 											@pick="pickCustomer"
 										/>
 									</div>
 									<button type="button" class="btn btn-outline-secondary btn-sm whitespace-nowrap" @click="goToNewCustomer">
-										+ {{ t("Yeni") }}
+										+ {{ t("New") }}
 										<span class="text-muted ms-1">↗ Sales</span>
 									</button>
 								</div>
 							</div>
 						</div>
 
-						<!-- ═══ B: İhale Bilgisi ═══ -->
+						<!-- ═══ B: Tender Information ═══ -->
 						<div class="tgm-section">
 							<div class="tgm-sec-head">
 								<span class="tgm-sec-num">B</span>
-								{{ t("İhale Bilgileri") }}
+								{{ t("Tender Information") }}
 							</div>
 							<div class="tgm-sec-body">
 								<div class="mb-2">
-									<label class="form-label required">{{ t("İhale Başlığı") }}</label>
+									<label class="form-label required">{{ t("Tender Title") }}</label>
 									<input v-model="form.title" type="text" class="form-control"
 										placeholder="UZEX Supply Tender 2026 — Construction Materials" required />
 								</div>
 								<div class="row g-2 mb-2">
 									<div class="col-6">
-										<label class="form-label">{{ t("İhale No") }}</label>
+										<label class="form-label">{{ t("Tender No") }}</label>
 										<input v-model="form.tender_no" type="text" class="form-control mono"
 											placeholder="UZEX-2026-CM-042" />
 									</div>
 									<div class="col-6">
-										<label class="form-label">{{ t("Kaynak") }}</label>
+										<label class="form-label">{{ t("Source") }}</label>
 										<select v-model="form.source" class="form-select">
 											<option value="UZEX">UZEX</option>
 											<option value="Direct">Direct</option>
@@ -336,22 +336,22 @@ async function save() {
 								</div>
 								<div class="row g-2 mb-2">
 									<div class="col-6">
-										<label class="form-label">{{ t("Yayın Tarihi") }}</label>
+										<label class="form-label">{{ t("Publication Date") }}</label>
 										<DateInput v-model="form.publication_date" />
 									</div>
 									<div class="col-6">
-										<label class="form-label">{{ t("Son Başvuru") }}</label>
+										<label class="form-label">{{ t("Submission Deadline") }}</label>
 										<DateInput v-model="form.submission_deadline" />
 									</div>
 								</div>
 								<div class="row g-2 align-items-end">
 									<div class="col-8">
-										<label class="form-label">{{ t("Tahmini Toplam") }}</label>
+										<label class="form-label">{{ t("Estimated Total") }}</label>
 										<MoneyInput v-model="form.estimated_total"
 											:currency="form.currency" :language="user.language" />
 									</div>
 									<div class="col-4">
-										<label class="form-label">{{ t("Para Birimi") }}</label>
+										<label class="form-label">{{ t("Currency") }}</label>
 										<select v-model="form.currency" class="form-select">
 											<option v-for="c in currencies" :key="c" :value="c">{{ c }}</option>
 										</select>
@@ -360,11 +360,11 @@ async function save() {
 							</div>
 						</div>
 
-						<!-- ═══ C: İhale Dosyaları ═══ -->
+						<!-- ═══ C: Tender Files ═══ -->
 						<div class="tgm-section">
 							<div class="tgm-sec-head">
 								<span class="tgm-sec-num">C</span>
-								{{ t("İhale Dosyaları") }}
+								{{ t("Tender Files") }}
 							</div>
 							<div class="tgm-sec-body">
 								<div class="tgm-file-list">
@@ -382,13 +382,13 @@ async function save() {
 							</div>
 						</div>
 
-						<!-- ═══ D: Talep Itemları ═══ -->
+						<!-- ═══ D: Requested Items ═══ -->
 						<div class="tgm-section">
 							<div class="tgm-sec-head">
 								<span class="tgm-sec-num">D</span>
-								{{ t("Talep Edilen Itemlar") }}
+								{{ t("Requested Items") }}
 								<div class="ms-auto d-flex align-items-center gap-1">
-									<span class="text-muted small">{{ t("Para Birimi") }}:</span>
+									<span class="text-muted small">{{ t("Currency") }}:</span>
 									<select v-model="form.currency" class="form-select form-select-sm" style="width:80px">
 										<option v-for="c in currencies" :key="c" :value="c">{{ c }}</option>
 									</select>
@@ -401,8 +401,8 @@ async function save() {
 											<th>{{ t("Item") }}</th>
 											<th class="text-end" style="width:80px">{{ t("Qty") }}</th>
 											<th style="width:70px">{{ t("UOM") }}</th>
-											<th class="text-end" style="width:100px">{{ t("Fiyat") }}</th>
-											<th class="text-end" style="width:110px">{{ t("Tutar") }}</th>
+											<th class="text-end" style="width:100px">{{ t("Price") }}</th>
+											<th class="text-end" style="width:110px">{{ t("Amount") }}</th>
 											<th style="width:30px"></th>
 										</tr>
 									</thead>
@@ -413,7 +413,7 @@ async function save() {
 													v-model="line.item_code"
 													:search="searchItems"
 													:display="line.item_name || line.item_code"
-													placeholder="Item ara…"
+													:placeholder="t('Search item…')"
 													@pick="(item) => handlePickItem({ line, item })"
 													@clear="line.item_name = ''"
 												/>
@@ -444,9 +444,9 @@ async function save() {
 								</table>
 								<div class="d-flex justify-content-between align-items-center mt-2">
 									<div class="d-flex gap-2">
-										<button type="button" class="btn btn-ghost-primary btn-sm" @click="addItem">+ {{ t("Item Ekle") }}</button>
+										<button type="button" class="btn btn-ghost-primary btn-sm" @click="addItem">+ {{ t("Add Item") }}</button>
 										<button type="button" class="btn btn-outline-secondary btn-sm" @click="goToNewItem">
-											{{ t("Yeni Item") }} <span class="text-muted ms-1">↗ Inventory</span>
+											{{ t("New Item") }} <span class="text-muted ms-1">↗ Inventory</span>
 										</button>
 									</div>
 									<div class="text-end">
@@ -468,7 +468,7 @@ async function save() {
 					</button>
 					<button type="submit" class="btn btn-primary" :disabled="saving" @click="save">
 						<span v-if="saving" class="spinner-border spinner-border-sm me-1"></span>
-						{{ t("İhaleyi Kaydet") }}
+						{{ t("Save Tender") }}
 					</button>
 				</div>
 			</div>
