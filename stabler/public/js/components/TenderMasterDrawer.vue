@@ -22,6 +22,7 @@ import { call } from "../api/client.js";
 import { t } from "../composables/i18n.js";
 import { useToast } from "../composables/useToast.js";
 import { itemSearcher } from "../composables/items.js";
+import { customerSearcher } from "../composables/customers.js";
 import MoneyInput from "./MoneyInput.vue";
 import DateInput from "./DateInput.vue";
 import Typeahead from "./Typeahead.vue";
@@ -42,7 +43,6 @@ const { activeCompany, user } = storeToRefs(session);
 const toast = useToast();
 
 const saving = ref(false);
-const warehouses = ref([]);
 const currencies = ref(["USD", "UZS", "RUB", "EUR"]);
 
 
@@ -61,19 +61,10 @@ const form = reactive({
 });
 
 // ── Müşteri arama (Typeahead) ──────────────────────────────────────────────
-async function searchCustomers(q) {
-	if (!q || q.length < 2) return [];
-	try {
-		const res = await call("stabler.api.sales.list_customers_with_balances", {
-			search: q,
-			company: activeCompany.value,
-			limit: 15,
-		});
-		return res?.customers || res || [];
-	} catch {
-		return [];
-	}
-}
+// customerSearcher her zaman düz dizi döndürür. Buradaki eski elle yazılmış arama
+// müşteri LİSTE sayfasının ucunu çağırıyordu; o uç bir {rows: …} zarfı döndürüyor,
+// Typeahead diziyi olmayan her şeyi sessizce [] yapıyor — dropdown hep boş kalıyordu.
+const searchCustomers = customerSearcher(() => activeCompany.value);
 
 function pickCustomer(c) {
 	if (!c) return;
@@ -81,9 +72,10 @@ function pickCustomer(c) {
 }
 
 // ── Item arama (itemSearcher) ───────────────────────────────────────────────
-const searchItems = computed(() =>
-	itemSearcher("all", { warehouse: () => warehouses.value[0]?.name || "" })
-);
+// Depo GEÇİLMEZ: depo verilince backend `tabBin.actual_qty > 0` filtresi uygular.
+// İhale girişi satış öncesi bir ekran — talep edilen item'ın stokta olması
+// beklenmez. QuotationForm / PurchaseOrderForm / StockEntries ile aynı desen.
+const searchItems = itemSearcher("all");
 
 function blankItemLine() {
 	return {
@@ -162,23 +154,6 @@ watch(
 			form.files = [];
 		} else {
 			reset();
-		}
-	},
-	{ immediate: true }
-);
-
-// ── Warehouses + currencies yükle ───────────────────────────────────────────
-watch(
-	() => props.open,
-	async (isOpen) => {
-		if (!isOpen) return;
-		try {
-			const wh = await call("stabler.api.inventory.list_stock_warehouses", {
-				company: activeCompany.value,
-			});
-			warehouses.value = wh || [];
-		} catch {
-			warehouses.value = [];
 		}
 	},
 	{ immediate: true }

@@ -274,7 +274,7 @@ async function linkOrphanToMaster(lot, tenderName) {
 		<!-- Drawer component -->
 		<TenderMasterDrawer
 			v-model:open="drawerOpen"
-			:tender="editingTender"
+			:deal="editingTender"
 			:initial-lot="selectedOrphanLot"
 			@saved="load"
 		/>
