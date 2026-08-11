@@ -2114,20 +2114,20 @@ watch(
 							<th>{{ t("Gate-in → ГТД") }}</th>
 							<th class="text-end">{{ t("Logistics") }}</th>
 							<th class="text-end">{{ t("Cost / kg") }}</th>
+							<th style="width: 40px;"></th>
 						</tr>
 					</thead>
 					<tbody>
 						<tr
-							v-for="cnt in form.containers"
-							:key="cnt.name"
+							v-for="(cnt, idx) in form.containers"
+							:key="cnt.name || idx"
 							style="cursor: pointer"
 							:style="cnt.advance_70_status === 'UNPAID' ? 'background: #fff9f9' : (getContainerGateInDiff(cnt) && getContainerGateInDiff(cnt).status === 'overdue' ? 'background: #fffdf7' : '')"
-							@click="router.push('/imports/containers/' + cnt.name)"
 						>
-							<td class="font-monospace fw-bold text-primary">{{ cnt.container_number || cnt.name }}</td>
-							<td><span class="badge bg-secondary-lt">{{ cnt.status }}</span></td>
-							<td class="text-end font-monospace">{{ fn(cnt.total_boxes) }} / {{ fn(cnt.total_kg) }} kg</td>
-							<td>
+							<td class="font-monospace fw-bold text-primary" @click="router.push('/imports/containers/' + cnt.name)">{{ cnt.container_number || cnt.name }}</td>
+							<td @click="router.push('/imports/containers/' + cnt.name)"><span class="badge bg-secondary-lt">{{ cnt.status }}</span></td>
+							<td class="text-end font-monospace" @click="router.push('/imports/containers/' + cnt.name)">{{ fn(cnt.total_boxes) }} / {{ fn(cnt.total_kg) }} kg</td>
+							<td @click="router.push('/imports/containers/' + cnt.name)">
 								<span v-if="cnt.advance_70_status === 'PAID'" class="badge bg-success-lt text-success">
 									{{ fm(cnt.advance_70_amount, form.currency) }} · {{ formatDate(cnt.advance_70_date) }}
 								</span>
@@ -2136,7 +2136,7 @@ watch(
 								</span>
 								<span v-else class="text-secondary">—</span>
 							</td>
-							<td>
+							<td @click="router.push('/imports/containers/' + cnt.name)">
 								<span v-if="cnt.bl_type === 'TELEX'" class="badge bg-success-lt text-success">
 									TELEX · {{ formatDate(cnt.telex_release_date) }}
 								</span>
@@ -2145,17 +2145,22 @@ watch(
 								</span>
 								<span v-else class="text-secondary">—</span>
 							</td>
-							<td class="small">
+							<td class="small" @click="router.push('/imports/containers/' + cnt.name)">
 								<span v-if="getContainerGateInDiff(cnt)" :class="getContainerGateInDiff(cnt).status === 'overdue' ? 'text-danger fw-bold' : 'text-secondary'">
 									{{ getContainerGateInDiff(cnt).text }}
 								</span>
 								<span v-else class="text-secondary">—</span>
 							</td>
-							<td class="text-end font-monospace text-azure fw-semibold">
+							<td class="text-end font-monospace text-azure fw-semibold" @click="router.push('/imports/containers/' + cnt.name)">
 								{{ containerCostMap[cnt.name] ? fm(containerCostMap[cnt.name].logistics_amount, form.currency) : "—" }}
 							</td>
-							<td class="text-end font-monospace text-purple fw-semibold">
+							<td class="text-end font-monospace text-purple fw-semibold" @click="router.push('/imports/containers/' + cnt.name)">
 								{{ containerCostMap[cnt.name] ? containerCostMap[cnt.name].landed_per_kg + ' $' : "—" }}
+							</td>
+							<td>
+								<button type="button" class="btn btn-outline-danger btn-sm p-1" :title="t('Konteyneri Sil')" @click.stop="removeContainer(idx)">
+									<i class="ti ti-trash"></i>
+								</button>
 							</td>
 						</tr>
 					</tbody>
@@ -2479,7 +2484,7 @@ watch(
 					<div class="col">
 						<div class="p-2 border rounded text-center">
 							<div class="text-secondary small">{{ t("Customs Declaration") }}</div>
-							<div class="fw-bold text-primary mt-1">{{ form.customs_declarations?.length || 0 }} {{ t("decl") }}</div>
+							<div class="fw-bold text-primary mt-1 font-monospace" :title="customsBroker">{{ customsDeclarationNo || (form.customs_declarations?.length ? form.customs_declarations[0].name : 'GTD-001') }}</div>
 						</div>
 					</div>
 					<div class="col">
@@ -2703,7 +2708,7 @@ watch(
 							</div>
 							<div class="col-md-4">
 								<label class="form-label small fw-bold">{{ t("Masraf Tarihi") }}</label>
-								<input v-model="expenseForm.expense_date" type="date" class="form-control form-control-sm" />
+								<DateInput v-model="expenseForm.expense_date" />
 							</div>
 						</div>
 
