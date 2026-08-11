@@ -34,6 +34,8 @@ export const importsApi = {
 	setCiStatus: (name, status, reason) =>
 		call(`${P}.set_ci_status`, { name, status, reason }),
 	computeCustomsFee: (params) => call(`${P}.compute_customs_fee`, params),
+	calculateCiLandedCostUzs: (commercial_invoice, exchange_rate, allocation_method) =>
+		call(`${P}.calculate_ci_landed_cost_uzs`, { commercial_invoice, exchange_rate, allocation_method }),
 
 	// Import Containers
 	listImportContainers: (params) => call(`${P}.list_import_containers`, params),
