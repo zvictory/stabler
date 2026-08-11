@@ -21,11 +21,14 @@
   "amount",
   "currency",
   "column_break_amount",
+  "expense_account",
+  "paid_from_account",
   "bank_payment",
   "cash_payment",
   "status",
   "section_link",
-  "purchase_invoice"
+  "purchase_invoice",
+  "journal_entry"
  ],
  "fields": [
   {
@@ -117,6 +120,20 @@
    "fieldtype": "Column Break"
   },
   {
+   "description": "Debit leg of the cash Journal Entry. Leave empty to bill the expense through a supplier Purchase Invoice instead.",
+   "fieldname": "expense_account",
+   "fieldtype": "Link",
+   "label": "Expense Account",
+   "options": "Account"
+  },
+  {
+   "description": "Cash desk (kassa) the expense is paid out of. Setting it posts a real Bank Entry; mutually exclusive with Supplier.",
+   "fieldname": "paid_from_account",
+   "fieldtype": "Link",
+   "label": "Paid From (Cash Desk)",
+   "options": "Account"
+  },
+  {
    "description": "Amount paid via bank transfer (Счёт).",
    "fieldname": "bank_payment",
    "fieldtype": "Currency",
@@ -152,11 +169,19 @@
    "label": "Purchase Invoice",
    "options": "Purchase Invoice",
    "read_only": 1
+  },
+  {
+   "description": "Bank Entry posted when the expense is paid from a cash desk. Also the idempotency key — a second save never posts twice.",
+   "fieldname": "journal_entry",
+   "fieldtype": "Link",
+   "label": "Journal Entry",
+   "options": "Journal Entry",
+   "read_only": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-07-11 12:00:00.000000",
+ "modified": "2026-08-11 12:00:00.000000",
  "modified_by": "Administrator",
  "module": "Stabler",
  "name": "Import Expense",
