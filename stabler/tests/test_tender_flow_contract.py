@@ -170,6 +170,20 @@ class TestWhatTheDecisionStillNeeds(unittest.TestCase):
 		#    boş "yeni ihale" formu olarak açılır.
 		self.assertIn(':deal="editingTender"', BOARD)
 
+		# 4) Seçim görünmeli. Typeahead düzenlenebilir kutu ile seçili değeri
+		#    `modelValue` üzerinden ayırır (`hasSelection`), ve `display`
+		#    prop'u String'dir — fonksiyon geçilirse Vue onu basmaz. Bağlama
+		#    yoksa seçim yapılır, forma da düşer, ama alan boş görünmeye devam
+		#    eder: düzenleme modunda kayıtlı müşteri kaybolmuş gibi durur.
+		for block in re.findall(r"<Typeahead\b(.*?)/>", DRAWER, re.S):
+			self.assertTrue(
+				"v-model" in block or ":model-value" in block,
+				f"Typeahead modelValue bağlamıyor:\n{block}",
+			)
+			display = re.search(r':display="([^"]*)"', block)
+			self.assertIsNotNone(display, f"Typeahead display geçmiyor:\n{block}")
+			self.assertNotIn("=>", display.group(1), "display String olmalı, fonksiyon değil")
+
 	def test_the_lot_is_opened_from_the_tender_board(self):
 		"""stabler-vgk.8 — İPTAL: tek seviyeli mimaride lot kavramı yok.
 
