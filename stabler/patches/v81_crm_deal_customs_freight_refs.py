@@ -53,18 +53,23 @@ def execute() -> None:
 				for r in rows:
 					frappe.db.set_value(dt, r["name"], fieldname, r["custom_crm_deal"], update_modified=False)
 
-		# Backfill Import Container custom_crm_deal from Commercial Invoice -> Purchase Order / Proforma Invoice
-		if frappe.db.exists("DocType", "Import Container") and frappe.db.has_column(
-			"Import Container", "commercial_invoice"
+		# Backfill Import Container custom_crm_deal from Commercial Invoice -> Proforma Invoice -> Deal (if columns exist)
+		if (
+			frappe.db.exists("DocType", "Import Container")
+			and frappe.db.has_column("Import Container", "commercial_invoice")
+			and frappe.db.exists("DocType", "Commercial Invoice Item")
+			and frappe.db.has_column("Commercial Invoice Item", "custom_proforma_invoice")
+			and frappe.db.exists("DocType", "Proforma Invoice")
+			and frappe.db.has_column("Proforma Invoice", "custom_crm_deal")
 		):
 			ic_rows = frappe.db.sql(
 				"""
-				SELECT ic.name, po.custom_crm_deal
+				SELECT ic.name, pi.custom_crm_deal
 				FROM `tabImport Container` ic
 				JOIN `tabCommercial Invoice Item` cii ON cii.parent = ic.commercial_invoice
-				JOIN `tabPurchase Order` po ON po.name = cii.purchase_order
+				JOIN `tabProforma Invoice` pi ON pi.name = cii.custom_proforma_invoice
 				WHERE (ic.custom_crm_deal IS NULL OR ic.custom_crm_deal = '')
-				  AND po.custom_crm_deal IS NOT NULL AND po.custom_crm_deal != ''
+				  AND pi.custom_crm_deal IS NOT NULL AND pi.custom_crm_deal != ''
 				GROUP BY ic.name
 				""",
 				as_dict=True,
