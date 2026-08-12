@@ -54,6 +54,11 @@ DEFAULT_MODULE_ENABLED = {
 	# yeni tasarımı isteyen kiracı bunu kendi açar. Bir izin değil, bir tercih.
 	"modern_sales_order": False,
 	"valuation_guard": False,
+	# Tedarikçi ödemesinin kaynak hesabı, tedarikçinin borç hesabıyla aynı para
+	# biriminde olmak zorunda mı. Varsayılan KAPALI: anjan yabancı para
+	# tedarikçilerini bilerek UZS hesaptan ödüyor (2026-08-13 ölçümü: 211 kayıt).
+	# Tek para biriminde alım yapan kiracı bunu kendi açar.
+	"supplier_payment_currency_guard": False,
 }
 
 

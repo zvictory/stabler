@@ -5826,3 +5826,5 @@ No {0} account is set for this advance. Choose one before recording it.,No {0} a
 {0} has no payable account for {1}. Set the supplier's default payable account first.,{0} has no payable account for {1}. Set the supplier's default payable account first.
 "No usable {0} to {1} exchange rate on {2}, so {3} cannot be posted.","No usable {0} to {1} exchange rate on {2}, so {3} cannot be posted."
 Advance recorded and posted.,Advance recorded and posted.
+Supplier Payment Currency Guard,Supplier Payment Currency Guard
+This supplier is paid in {0}. Select a {0} account: the selected payment account is in {1}.,This supplier is paid in {0}. Select a {0} account: the selected payment account is in {1}.

@@ -28,7 +28,8 @@
   "enable_dimensional_lines",
   "enable_sales_box_uom",
   "enable_modern_sales_order",
-  "enable_valuation_guard"
+  "enable_valuation_guard",
+  "enable_supplier_payment_currency_guard"
  ],
  "fields": [
   {
@@ -207,6 +208,14 @@
    "fieldtype": "Check",
    "in_list_view": 1,
    "label": "Valuation Guard"
+  },
+  {
+   "default": "0",
+   "description": "Refuse a supplier payment whose bank/cash account is in a different currency than the supplier's payable account. OFF by default: tenants that pay foreign-currency suppliers from a local-currency account rely on the conversion. Turn on per tenant that buys in one currency only.",
+   "fieldname": "enable_supplier_payment_currency_guard",
+   "fieldtype": "Check",
+   "in_list_view": 1,
+   "label": "Supplier Payment Currency Guard"
   }
  ],
  "index_web_pages_for_search": 1,
