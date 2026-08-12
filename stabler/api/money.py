@@ -16,6 +16,7 @@ from frappe.utils import cint, flt, getdate, today
 
 from stabler.api._money import money_epsilon
 from stabler.api.approvals import _assert_company_scope
+from stabler.api.supplier_payment_guard import assert_supplier_payment_currency
 
 EXPORT_FORMATS = {"Excel", "CSV"}
 
@@ -1620,6 +1621,11 @@ def create_payment_entry(
 		},
 	)
 
+	# Opt-in per company, OFF everywhere by default. Runs after the input log so a
+	# rejected attempt is still on record, and before any FX maths — the point of
+	# the rule is that this payment must not be converted at all.
+	assert_supplier_payment_currency(company, payment_type, party_type, paid_from_currency, paid_to_currency)
+
 	paid = flt(paid_amount)
 	if paid <= 0:
 		_log_payment("reject", {"fn": "create_payment_entry", "reason": "paid<=0", "paid": paid})
@@ -2064,6 +2070,17 @@ def create_payment_for_invoice(
 			"exchange_rate_in": exchange_rate,
 			"submit": int(submit or 0),
 		},
+	)
+
+	# Same company policy as create_payment_entry — this is the other endpoint that
+	# creates a supplier Payment Entry, so leaving it out would make the rule
+	# bypassable from the invoice screen.
+	assert_supplier_payment_currency(
+		company,
+		defaults["payment_type"],
+		defaults["party_type"],
+		paid_from_currency,
+		paid_to_currency,
 	)
 
 	paid = flt(paid_amount)

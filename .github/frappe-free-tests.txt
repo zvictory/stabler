@@ -168,3 +168,4 @@ stabler.tests.test_ci_bill_link_panel_source
 stabler.tests.test_vendor_category_box_kg_source
 stabler.tests.test_ci_expense_kasa_source
 stabler.tests.test_pay_remaining_tolerance
+stabler.tests.test_supplier_payment_currency

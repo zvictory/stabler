@@ -5823,3 +5823,5 @@ No {0} account is set for this advance. Choose one before recording it.,Bu avans
 {0} has no payable account for {1}. Set the supplier's default payable account first.,{0} için {1} şirketinde borç hesabı yok. Önce tedarikçinin varsayılan borç hesabını tanımlayın.
 "No usable {0} to {1} exchange rate on {2}, so {3} cannot be posted.","{2} tarihinde {0} → {1} için kullanılabilir kur yok, bu yüzden {3} muhasebeleştirilemez."
 Advance recorded and posted.,Avans kaydedildi ve muhasebeleştirildi.
+Supplier Payment Currency Guard,Tedarikçi Ödeme Para Birimi Kuralı
+This supplier is paid in {0}. Select a {0} account: the selected payment account is in {1}.,Bu tedarikçiye {0} ile ödeme yapılır. {0} cinsinden bir hesap seçin: seçilen ödeme hesabı {1} cinsinden.

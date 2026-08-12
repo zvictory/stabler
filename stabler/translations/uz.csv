@@ -5828,3 +5828,5 @@ No {0} account is set for this advance. Choose one before recording it.,Bu avans
 {0} has no payable account for {1}. Set the supplier's default payable account first.,{0} uchun {1} bo'yicha kreditorlik hisobi yo'q. Avval yetkazib beruvchining standart kreditorlik hisobini belgilang.
 "No usable {0} to {1} exchange rate on {2}, so {3} cannot be posted.","{2} sanasida {0} dan {1} ga yaroqli valyuta kursi yo'q, shuning uchun {3} provodka qilinmaydi."
 Advance recorded and posted.,Avans qayd etildi va provodka qilindi.
+Supplier Payment Currency Guard,Ta'minotchi to‘lovi valyutasi nazorati
+This supplier is paid in {0}. Select a {0} account: the selected payment account is in {1}.,Bu ta'minotchiga {0} da to‘lanadi. {0} dagi hisobni tanlang: tanlangan to‘lov hisobi {1} da.

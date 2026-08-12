@@ -99,6 +99,8 @@ _MODULE_FIELDS = {
 	"installment": "enable_installment",
 	# Backend-only policy: no SPA page ships for it, it gates validate hooks.
 	"valuation_guard": "enable_valuation_guard",
+	# Backend-only policy: no SPA page, it gates the payment-creation endpoints.
+	"supplier_payment_currency_guard": "enable_supplier_payment_currency_guard",
 }
 
 # Maps each SPA module key to the Frappe roles that grant access to it.
@@ -370,6 +372,7 @@ def update_company_modules(
 	sales_box_uom=None,
 	modern_sales_order=None,
 	valuation_guard=None,
+	supplier_payment_currency_guard=None,
 ):
 	"""Admin-only: toggle per-module flags for a company. Pass 0/1 to update; omit to leave."""
 	_require_admin()
@@ -411,6 +414,7 @@ def update_company_modules(
 		"enable_sales_box_uom": sales_box_uom,
 		"enable_modern_sales_order": modern_sales_order,
 		"enable_valuation_guard": valuation_guard,
+		"enable_supplier_payment_currency_guard": supplier_payment_currency_guard,
 	}
 	for field, val in updates.items():
 		if val is None or val == "":

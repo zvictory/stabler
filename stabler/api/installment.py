@@ -30,6 +30,7 @@ from stabler.api._common import (
 )
 from stabler.api.approvals import _assert_company_scope
 from stabler.api.money import payment_defaults_for_invoice
+from stabler.api.supplier_payment_guard import assert_supplier_payment_currency
 
 
 def _round2(n) -> float:
@@ -729,6 +730,18 @@ def collect_payment(
 	else:
 		pe.paid_from = bank_account
 		pe.paid_to = defaults["party_account"]
+	# Third endpoint that can create a supplier Payment Entry (side="buy" pays the
+	# car's supplier), so the company policy has to be checked here too — otherwise
+	# a company with both installment and the guard ON could post from the
+	# Murabaha screen exactly the payment the policy forbids.
+	company_currency = frappe.get_cached_value("Company", doc.company, "default_currency") or "UZS"
+	assert_supplier_payment_currency(
+		doc.company,
+		pe.payment_type,
+		pe.party_type,
+		frappe.db.get_value("Account", pe.paid_from, "account_currency") or company_currency,
+		frappe.db.get_value("Account", pe.paid_to, "account_currency") or company_currency,
+	)
 	pe.paid_amount = paid
 	pe.received_amount = paid
 	pe.mode_of_payment = mode_of_payment
