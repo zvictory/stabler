@@ -23,7 +23,7 @@ import json
 
 import frappe
 from frappe import _
-from frappe.utils import add_days, cint, flt, getdate, today
+from frappe.utils import add_days, cint, flt, formatdate, getdate, today
 
 from stabler.api import (
 	_advance_aging,
@@ -4706,8 +4706,42 @@ def assign_pis_to_group(group: str, pi_names, company: str) -> dict:
 
 
 # ---------------------------------------------------------------------------
-# Advance payment — 1-2 DRAFT Payment Entries against the PO (Bank / Cash)
+# Advance payment — 1-2 SUBMITTED Payment Entries against the PO (Bank / Cash)
 # ---------------------------------------------------------------------------
+
+
+def _assert_advance_postable(pe, *, company: str, stream: str) -> None:
+	"""Refuse to submit an advance whose posting would be blank or wrongly valued.
+
+	`_apply_pay_accounts` fills the accounts best-effort and is deliberately
+	defensive — that was safe only while the Payment Entry stayed a draft. A
+	submitted entry writes GL, so a missing account or a missing exchange rate
+	stops being cosmetic: it becomes an opaque ERPNext error or, worse, base
+	amounts computed at rate 0. Fail here with a message that names the fix.
+	"""
+	if not pe.paid_from:
+		frappe.throw(
+			_("No {0} account is set for this advance. Choose one before recording it.").format(
+				_(stream).lower()
+			)
+		)
+	if not pe.paid_to:
+		frappe.throw(
+			_("{0} has no payable account for {1}. Set the supplier's default payable account first.").format(
+				pe.party, company
+			)
+		)
+	company_currency = frappe.get_cached_value("Company", company, "default_currency")
+	for account_currency, rate, account in (
+		(pe.paid_from_account_currency, pe.source_exchange_rate, pe.paid_from),
+		(pe.paid_to_account_currency, pe.target_exchange_rate, pe.paid_to),
+	):
+		if account_currency and account_currency != company_currency and not flt(rate):
+			frappe.throw(
+				_("No usable {0} to {1} exchange rate on {2}, so {3} cannot be posted.").format(
+					account_currency, company_currency, formatdate(pe.posting_date), account
+				)
+			)
 
 
 def _validate_advance_source_account(account: str | None, *, company: str, currency: str, stream: str):
@@ -4740,13 +4774,18 @@ def create_advance_payment(
 	bank_account: str | None = None,
 	cash_account: str | None = None,
 ):
-	"""Record an advance against an import order or proforma as 1-2 DRAFT Payment Entries.
+	"""Record an advance against an import order or proforma as 1-2 SUBMITTED Payment Entries.
 
 	Mirrors the Django record-advance flow (financial_ops): one PE for the bank
 	stream, one for the cash stream, each a Pay to the supplier referencing the
-	PO/PI. Payment Entries are NEVER submitted here — they stay drafts for Accounts
-	to post. Cost-visible only (bank/cash split is dual-pricing data, K3). Equal
-	split is not enforced; an unequal bank/cash split returns a soft warning.
+	PO/PI. The entries are submitted here, so the advance is real money the moment
+	it is recorded: a draft contributes advance_in = 0 to the PI advance ledger, so
+	leaving them unposted made every running balance read zero. Cost-visible only
+	(bank/cash split is dual-pricing data, K3). Equal split is not enforced; an
+	unequal bank/cash split returns a soft warning.
+
+	Atomicity: both streams submit inside the request transaction and nothing here
+	commits, so a failure on the second stream rolls the first one back with it.
 	"""
 	if not purchase_order:
 		frappe.throw(_("Missing Purchase Order / Proforma reference."))
@@ -4832,8 +4871,12 @@ def create_advance_payment(
 			currency=doc.currency or pe.paid_from_account_currency,
 			stream=stream,
 		)
-		pe.insert(ignore_permissions=False)  # DRAFT — never submitted here.
-		created.append({"name": pe.name, "stream": stream, "amount": amount})
+		pe.insert(ignore_permissions=False)
+		_assert_advance_postable(pe, company=company, stream=stream)
+		pe.submit()  # Posted on creation — a draft buys no advance credit.
+		created.append(
+			{"name": pe.name, "stream": stream, "amount": amount, "docstatus": pe.docstatus}
+		)
 
 	warning = None
 	if bank > 0 and cash > 0 and abs(bank - cash) > 0.01:
