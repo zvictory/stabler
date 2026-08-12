@@ -106,6 +106,17 @@
 - Every list page must use `ListToolbar.vue` with auto-apply filtering on filter changes (no Apply/Refresh buttons). Suffix search placeholders with `⌘K`.
 - Place animated skeleton rows (`SkeletonRows.vue`) inside the table body while loading data. Never show a spinner in a void.
 
+## Agent orchestration
+- Delegating implementation to Antigravity (`agy`) follows one canonical workflow:
+  `.claude/skills/stabler-orchestrator/SKILL.md` (what Claude executes) and
+  `docs/runbooks/claude-antigravity-orchestration.md` (the human-facing runbook).
+- `agy` works only inside `.worktrees/agy-<bead-id>` on a feature branch, leaves its
+  changes uncommitted, and **never** merges, pushes, deploys, touches production or
+  closes the parent bead. Claude reviews the full diff independently before accepting it.
+- Pre-merge review: the read-only `stabler-diff-reviewer` agent (`.claude/agents/`).
+- **Production deploy always requires explicit approval from Zafar** — one
+  `bench restart` blips all seven tenants.
+
 ## Production / Deployment
 
 ### The five gates (why work "disappears")

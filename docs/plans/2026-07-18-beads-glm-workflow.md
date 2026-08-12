@@ -1,3 +1,8 @@
+> **TARİHSEL — yerini alan: `docs/runbooks/claude-antigravity-orchestration.md`.**
+> Omurga (bead sözleşmesi, worktree izolasyonu, üç turluk düzeltme döngüsü,
+> "uygulayıcı asla deploy etmez") hâlâ geçerli; uygulayıcı artık GLM-5.2 değil
+> Antigravity (`agy`). Kayıt için korunuyor.
+
 # Beads + GLM-5.2 çalışma modeli — Opus planlar, GLM uygular
 
 **Sahip:** Zafar · **Tasarım/yönetim:** Opus 4.8 (senior dev) · **Tarih:** 2026-07-18
