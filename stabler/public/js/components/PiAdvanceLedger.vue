@@ -68,6 +68,12 @@ function statusClass(status) {
 						{{ money(ledger.summary.advance_paid) }}
 					</div>
 				</div>
+				<div v-if="ledger.summary.advance_pending_approval > 0">
+					<div class="text-secondary small">{{ t("Advance Pending Approval") }}</div>
+					<div class="font-monospace fw-bold text-warning">
+						{{ money(ledger.summary.advance_pending_approval) }}
+					</div>
+				</div>
 				<div>
 					<div class="text-secondary small">{{ t("Advance Allocated") }}</div>
 					<div class="font-monospace fw-bold text-orange">

@@ -1212,7 +1212,7 @@ Enter at least one transfer amount.,En az bir transfer tutarı girin.
 Enter cost and term to see the payment schedule.,Ödeme planını görmek için maliyet ve vadeyi girin.
 Enter the quantity to return for each line. Leave 0 to exclude a line.,Her satır için iade miktarını girin. Satırı dışarıda bırakmak için 0 bırakın.
 Enter your Employee ID and secure PIN,
-Entered rate deviates by {pct}% from CBU rate.,
+Entered rate deviates by {pct}% from CBU rate.,"Girilen kur, CBU kurundan %{pct} sapıyor."
 Entries on/before this date are frozen.,
 Entry,Kayıt
 Entry cancelled.,Kayıt iptal edildi.
@@ -5769,3 +5769,43 @@ Price Offer,Fiyat Teklifi
 Guarantee Letter,Teminat Mektubu
 License Copy / Certificate,Lisans Kopyası / Sertifika
 Price Offer / Commercial Invoice,Fiyat Teklifi / Ticari Fatura
+Advance Allocated,Tahsis edilen avans
+Advance Balance,Avans bakiyesi
+Advance In,Gelen avans
+Advance Paid,Ödenen avans
+Advance Pending Approval,Onay bekleyen avans
+Advance Reserved,Rezerve edilen avans
+Advance Terms,Avans koşulları
+CI Amount,CI tutarı
+CI Outstanding,CI açık bakiyesi
+Free Advance Balance,Serbest avans bakiyesi
+No advance ledger movements yet.,Henüz avans hareketi yok.
+PI Advance Ledger,PI avans defteri
+PI Total Cost,PI toplam maliyeti
+Remaining PI Cost,Kalan PI maliyeti
+Show all allocations,Tüm tahsisleri göster
+Show fewer allocations,Daha az tahsis göster
+Total CI Value Created,Oluşturulan toplam CI değeri
+Advance Payment,Avans ödemesi
+CI Allocation,CI tahsisi
+CI Reservation,CI rezervasyonu
+CI Created,CI oluşturuldu
+Pending Approval,Onay bekliyor
+Migration Required,Geçiş gerekli
+Advance Applied,Uygulanan avans
+Available to Apply,Uygulanabilir tutar
+Commercial Invoice Total,Ticari fatura toplamı
+Create Draft Purchase Invoice,Taslak satın alma faturası oluştur
+Create draft Purchase Invoice?,Taslak satın alma faturası oluşturulsun mu?
+Not Created,Oluşturulmadı
+PI advances are reserved on draft bills and posted only when Accounts submits the Purchase Invoice.,PI avansları taslak faturalarda rezerve edilir ve yalnızca muhasebe satın alma faturasını onayladığında işlenir.
+Pay Remaining,Kalanı öde
+Remaining to Pay,Ödenecek kalan
+Review Purchase Invoice,Satın alma faturasını incele
+The proportional PI advance will be reserved for this CI. Accounts must review and submit the invoice.,Bu CI için orantılı PI avansı rezerve edilecek. Muhasebe faturayı inceleyip onaylamalıdır.
+Vendor Settlement,Tedarikçi mutabakatı
+Pay Remaining must use the selected Purchase Invoice's exact outstanding amount.,"«Kalanı öde», seçilen satın alma faturasının tam açık tutarını kullanmalıdır."
+The selected Purchase Invoice no longer has an outstanding balance.,Seçilen satın alma faturasının açık bakiyesi kalmadı.
+Unknown payment account for this company: {0},Bu şirket için bilinmeyen ödeme hesabı: {0}
+{0} must be a {1} account.,{0} bir {1} hesabı olmalıdır.
+{0} uses {1}; this {2} advance must be paid from a {2} account.,{0} {1} kullanıyor; bu {2} avansı bir {2} hesabından ödenmelidir.

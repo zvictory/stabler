@@ -1691,13 +1691,13 @@ def create_payment_entry(
 			frappe.throw("The payment must be allocated only to the selected Purchase Invoice.")
 	if refs:
 		party_amt = paid if payment_type == "Receive" else recv
-		if target_invoice and abs(party_amt - flt(target_invoice.outstanding_amount)) > 0.01:
-			frappe.throw("Pay Remaining must equal the target Purchase Invoice's outstanding amount.")
 		eps = money_epsilon(
 			frappe.db.get_value(
 				"Account", paid_from if payment_type == "Receive" else paid_to, "account_currency"
 			)
 		)
+		if target_invoice and abs(party_amt - flt(target_invoice.outstanding_amount)) > eps:
+			frappe.throw("Pay Remaining must equal the target Purchase Invoice's outstanding amount.")
 		total_alloc = sum(flt(r.get("allocated_amount", 0)) for r in refs)
 		if total_alloc > party_amt + eps:
 			frappe.throw(f"Total allocated ({total_alloc:.2f}) exceeds payment amount ({party_amt:.2f}).")

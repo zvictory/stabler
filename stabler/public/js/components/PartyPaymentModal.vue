@@ -17,7 +17,7 @@ import { computed, ref, watch } from "vue";
 import { storeToRefs } from "pinia";
 import { useSession } from "../stores/session.js";
 import { call } from "../api/client.js";
-import { formatMoney } from "../composables/money.js";
+import { formatMoney, moneyEpsilon } from "../composables/money.js";
 import { formatDate, todayIso } from "../composables/date.js";
 import { t } from "../composables/i18n.js";
 import { useToast } from "../composables/useToast.js";
@@ -304,7 +304,7 @@ async function submit() {
 			error.value = t("The selected Purchase Invoice no longer has an outstanding balance.");
 			return;
 		}
-		if (Math.abs(amount - paymentOutstanding.value) > 0.01) {
+		if (Math.abs(amount - paymentOutstanding.value) > moneyEpsilon(props.accountCurrency)) {
 			error.value = t("Pay Remaining must use the selected Purchase Invoice's exact outstanding amount.");
 			return;
 		}

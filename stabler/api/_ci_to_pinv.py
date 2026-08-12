@@ -120,13 +120,20 @@ def build_pi_advance_ledger(*, pi_total, advance_percentage, payments, ci_moveme
 	pct = round(_amt(advance_percentage), 2)
 	events: list[dict] = []
 	advance_paid = 0.0
+	pending_approval = 0.0
 	for payment in payments or []:
 		row = payment or {}
 		posted = int(_amt(row.get("docstatus"))) == 1
-		paid_amount = round(_amt(row.get("paid_amount")), 2) if posted else 0.0
+		entered_amount = round(_amt(row.get("paid_amount")), 2)
+		paid_amount = entered_amount if posted else 0.0
 		usable_amount = row.get("usable_amount") if "usable_amount" in row else paid_amount
 		usable_amount = round(_amt(usable_amount), 2) if posted else 0.0
 		advance_paid = round(advance_paid + paid_amount, 2)
+		if not posted:
+			# Money the user already entered but nobody approved yet. It buys no
+			# credit (advance_in stays 0) — it exists so the screen can say
+			# "waiting for approval" instead of showing an unexplained zero.
+			pending_approval = round(pending_approval + entered_amount, 2)
 		events.append(
 			{
 				"posting_date": row.get("posting_date"),
@@ -210,6 +217,7 @@ def build_pi_advance_ledger(*, pi_total, advance_percentage, payments, ci_moveme
 			"pi_total_cost": total,
 			"advance_percentage": pct,
 			"advance_paid": advance_paid,
+			"advance_pending_approval": pending_approval,
 			"advance_allocated": allocated,
 			"advance_reserved": reserved,
 			"advance_available": round(max(running_advance, 0.0), 2),

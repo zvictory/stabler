@@ -1225,9 +1225,9 @@ Enter at least one transfer amount.,Введите хотя бы одну сум
 Enter cost and term to see the payment schedule.,Введите себестоимость и срок для просмотра графика платежей.
 Enter the quantity to return for each line. Leave 0 to exclude a line.,"Введите количество возврата для каждой строки. Укажите 0, чтобы исключить строку."
 Enter your Employee ID and secure PIN,
-Entered rate deviates by {pct}% from CBU rate.,
+Entered rate deviates by {pct}% from CBU rate.,Введённый курс отклоняется от курса ЦБ на {pct}%.
 Entries on/before this date are frozen.,
-Entry,
+Entry,Запись
 Entry cancelled.,Запись отменена.
 Entry submitted.,Запись проведена.
 Equipment,Оборудование
@@ -5779,3 +5779,43 @@ Price Offer,Ценовое предложение
 Guarantee Letter,Гарантийное письмо
 License Copy / Certificate,Копия лицензии / Сертификат
 Price Offer / Commercial Invoice,Ценовое предложение / Коммерческий инвойс
+Advance Allocated,Распределено аванса
+Advance Balance,Остаток аванса
+Advance In,Поступило аванса
+Advance Paid,Оплачено авансом
+Advance Pending Approval,Аванс на согласовании
+Advance Reserved,Зарезервировано аванса
+Advance Terms,Условия аванса
+CI Amount,Сумма CI
+CI Outstanding,Остаток по CI
+Free Advance Balance,Свободный остаток аванса
+No advance ledger movements yet.,Движений по авансам пока нет.
+PI Advance Ledger,Реестр авансов по PI
+PI Total Cost,Общая стоимость PI
+Remaining PI Cost,Остаток стоимости PI
+Show all allocations,Показать все распределения
+Show fewer allocations,Показать меньше распределений
+Total CI Value Created,Общая сумма созданных CI
+Advance Payment,Авансовый платёж
+CI Allocation,Распределение по CI
+CI Reservation,Резерв по CI
+CI Created,CI создан
+Pending Approval,Ожидает согласования
+Migration Required,Требуется миграция
+Advance Applied,Аванс зачтён
+Available to Apply,Доступно к зачёту
+Commercial Invoice Total,Сумма коммерческого инвойса
+Create Draft Purchase Invoice,Создать черновик счёта закупки
+Create draft Purchase Invoice?,Создать черновик счёта закупки?
+Not Created,Не создан
+PI advances are reserved on draft bills and posted only when Accounts submits the Purchase Invoice.,Авансы по PI резервируются в черновиках счетов и проводятся только после проведения счёта закупки бухгалтерией.
+Pay Remaining,Оплатить остаток
+Remaining to Pay,Остаток к оплате
+Review Purchase Invoice,Проверить счёт закупки
+The proportional PI advance will be reserved for this CI. Accounts must review and submit the invoice.,Пропорциональный аванс по PI будет зарезервирован для этого CI. Бухгалтерия должна проверить и провести счёт.
+Vendor Settlement,Расчёты с поставщиком
+Pay Remaining must use the selected Purchase Invoice's exact outstanding amount.,«Оплатить остаток» должно использовать точную сумму остатка выбранного счёта закупки.
+The selected Purchase Invoice no longer has an outstanding balance.,У выбранного счёта закупки больше нет остатка к оплате.
+Unknown payment account for this company: {0},Неизвестный платёжный счёт для этой компании: {0}
+{0} must be a {1} account.,{0} должен быть счётом типа {1}.
+{0} uses {1}; this {2} advance must be paid from a {2} account.,{0} использует {1}; этот аванс в {2} должен быть оплачен со счёта в {2}.

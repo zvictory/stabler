@@ -1,6 +1,11 @@
 import { describe, expect, it } from "vitest";
 
-import { balanceState, formatCompactMoney, formatMoney } from "../composables/money.js";
+import {
+	balanceState,
+	formatCompactMoney,
+	formatMoney,
+	moneyEpsilon,
+} from "../composables/money.js";
 
 // Grouping separators come from ICU, and ICU changes them between Node releases
 // (ru-RU has shipped both U+00A0 and U+202F). Pinning the exact code point would
@@ -113,5 +118,27 @@ describe("balanceState — who owes whom", () => {
 
 	it.each([[null], [undefined], [""], ["abc"]])("treats %p as settled", (value) => {
 		expect(balanceState(value)).toEqual({ state: "settled", abs: 0 });
+	});
+});
+
+describe("moneyEpsilon — how close counts as equal", () => {
+	// These numbers must match `money_epsilon()` in stabler/api/_money.py exactly.
+	// The client blocks "Pay Remaining" before the request, the server blocks it
+	// again on arrival; if the two thresholds disagree, one of them lies to the
+	// user — either a rejected payment the server would have taken, or a form
+	// that submits only to throw.
+	it("is half a cent for two-decimal currencies", () => {
+		expect(moneyEpsilon("USD")).toBe(0.005);
+		expect(moneyEpsilon("EUR")).toBe(0.005);
+	});
+
+	it("is half a so'm for UZS, which has no fractional unit", () => {
+		// A hardcoded 0.01 here rejected legitimate whole-so'm payments.
+		expect(moneyEpsilon("UZS")).toBe(0.5);
+	});
+
+	it("defaults to half a cent when the currency is unknown or missing", () => {
+		expect(moneyEpsilon()).toBe(0.005);
+		expect(moneyEpsilon("")).toBe(0.005);
 	});
 });

@@ -226,6 +226,7 @@ class TestPiAdvanceLedger(unittest.TestCase):
 				"pi_total_cost": 6_000_000.0,
 				"advance_percentage": 30.0,
 				"advance_paid": 1_800_000.0,
+				"advance_pending_approval": 0.0,
 				"advance_allocated": 90_000.0,
 				"advance_reserved": 90_000.0,
 				"advance_available": 1_620_000.0,
@@ -264,6 +265,10 @@ class TestPiAdvanceLedger(unittest.TestCase):
 		self.assertEqual(ledger["summary"]["advance_paid"], 0.0)
 		self.assertEqual(ledger["summary"]["advance_available"], 0.0)
 		self.assertEqual(ledger["rows"][0]["status"], "Pending Approval")
+		# The screen must explain the zero instead of just showing it: the money is
+		# entered and waiting for approval, which is why it buys no credit yet.
+		self.assertEqual(ledger["summary"]["advance_pending_approval"], 1_800_000.0)
+		self.assertEqual(ledger["rows"][0]["advance_in"], 0.0)
 
 	def test_ci_without_purchase_invoice_reduces_pi_cost_but_reserves_no_advance(self):
 		"""Creating an operational CI has no GL allocation before a draft bill exists."""

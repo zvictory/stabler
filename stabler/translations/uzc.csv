@@ -1219,9 +1219,9 @@ Enter at least one transfer amount.,Камида битта ўтказма су�
 Enter cost and term to see the payment schedule.,Тўлов жадвалини кўриш учун таннарх ва муддатни киритинг.
 Enter the quantity to return for each line. Leave 0 to exclude a line.,Ҳар бир сатр учун қайтарилиши керак бўлган миқдорни киритинг. Сатрни чиқариб юбориш учун 0 қўйинг.
 Enter your Employee ID and secure PIN,
-Entered rate deviates by {pct}% from CBU rate.,
+Entered rate deviates by {pct}% from CBU rate.,Киритилган курс CBU курсидан {pct}% га фарқ қилади.
 Entries on/before this date are frozen.,
-Entry,
+Entry,Ёзув
 Entry cancelled.,Ёзув бекор қилинди.
 Entry submitted.,Ёзув тасдиқланди.
 Equipment,Ускуна
@@ -5774,3 +5774,43 @@ Price Offer,Нарх таклифи
 Guarantee Letter,Кафолат хати
 License Copy / Certificate,Лицензия нусхаси / Сертификат
 Price Offer / Commercial Invoice,Нарх таклифи / Тижорат инвойси
+Advance Allocated,Ажратилган аванс
+Advance Balance,Аванс қолдиғи
+Advance In,Келиб тушган аванс
+Advance Paid,Тўланган аванс
+Advance Pending Approval,Тасдиқ кутаётган аванс
+Advance Reserved,Захирадаги аванс
+Advance Terms,Аванс шартлари
+CI Amount,CI суммаси
+CI Outstanding,CI бўйича қолдиқ
+Free Advance Balance,Эркин аванс қолдиғи
+No advance ledger movements yet.,Ҳозирча аванс ҳаракатлари йўқ.
+PI Advance Ledger,PI аванс реестри
+PI Total Cost,PI умумий қиймати
+Remaining PI Cost,PI қолдиқ қиймати
+Show all allocations,Барча тақсимотларни кўрсатиш
+Show fewer allocations,Камроқ тақсимот кўрсатиш
+Total CI Value Created,Яратилган CI ларнинг умумий қиймати
+Advance Payment,Аванс тўлови
+CI Allocation,CI бўйича тақсимот
+CI Reservation,CI бўйича захира
+CI Created,CI яратилди
+Pending Approval,Тасдиқ кутилмоқда
+Migration Required,Миграция талаб қилинади
+Advance Applied,Ҳисобга олинган аванс
+Available to Apply,Ҳисобга олиш учун мавжуд
+Commercial Invoice Total,Тижорат инвойси жами
+Create Draft Purchase Invoice,Харид ҳисоб-фактураси қораламасини яратиш
+Create draft Purchase Invoice?,Харид ҳисоб-фактураси қораламаси яратилсинми?
+Not Created,Яратилмаган
+PI advances are reserved on draft bills and posted only when Accounts submits the Purchase Invoice.,PI аванслари қоралама ҳисоб-фактураларда захирага олинади ва фақат бухгалтерия харид ҳисоб-фактурасини тасдиқлаганда ўтказилади.
+Pay Remaining,Қолганини тўлаш
+Remaining to Pay,Тўланиши керак бўлган қолдиқ
+Review Purchase Invoice,Харид ҳисоб-фактурасини кўриб чиқиш
+The proportional PI advance will be reserved for this CI. Accounts must review and submit the invoice.,Ушбу CI учун пропорционал PI аванси захирага олинади. Бухгалтерия ҳисоб-фактурани кўриб чиқиб тасдиқлаши керак.
+Vendor Settlement,Етказиб берувчи билан ҳисоб-китоб
+Pay Remaining must use the selected Purchase Invoice's exact outstanding amount.,«Қолганини тўлаш» танланган харид ҳисоб-фактурасининг аниқ қолдиқ суммасидан фойдаланиши шарт.
+The selected Purchase Invoice no longer has an outstanding balance.,Танланган харид ҳисоб-фактурасида қолдиқ сумма қолмаган.
+Unknown payment account for this company: {0},Ушбу компания учун номаълум тўлов ҳисоби: {0}
+{0} must be a {1} account.,{0} {1} туридаги ҳисоб бўлиши керак.
+{0} uses {1}; this {2} advance must be paid from a {2} account.,{0} {1} дан фойдаланади; ушбу {2} аванси {2} ҳисобидан тўланиши керак.

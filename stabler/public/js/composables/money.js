@@ -85,6 +85,21 @@ export function formatCompactMoney(value, currency = "USD", language = "en") {
 	}
 }
 
+/**
+ * Half the smallest representable unit of `currency` — the threshold below
+ * which a difference is rounding noise, not a real gap.
+ *
+ * Mirrors `money_epsilon()` in `stabler/api/_money.py` so the client-side
+ * guard and the server-side guard agree. UZS has no fractional unit in
+ * circulation, so its epsilon is half a so'm (0.5), not half a cent —
+ * a hardcoded 0.01 would reject a legitimate whole-so'm payment.
+ */
+export function moneyEpsilon(currency = "USD") {
+	const digits = CURRENCY_OVERRIDES[currency]?.fractionDigits ?? 2;
+	if (digits <= 0) return 0.5;
+	return 0.5 * 10 ** -digits;
+}
+
 export function balanceState(value) {
 	const n = Number(value || 0);
 	const abs = Math.abs(Number.isFinite(n) ? n : 0);

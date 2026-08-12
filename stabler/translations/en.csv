@@ -5772,3 +5772,43 @@ Price Offer,Price Offer
 Guarantee Letter,Guarantee Letter
 License Copy / Certificate,License Copy / Certificate
 Price Offer / Commercial Invoice,Price Offer / Commercial Invoice
+Advance Allocated,Advance Allocated
+Advance Balance,Advance Balance
+Advance In,Advance In
+Advance Paid,Advance Paid
+Advance Pending Approval,Advance Pending Approval
+Advance Reserved,Advance Reserved
+Advance Terms,Advance Terms
+CI Amount,CI Amount
+CI Outstanding,CI Outstanding
+Free Advance Balance,Free Advance Balance
+No advance ledger movements yet.,No advance ledger movements yet.
+PI Advance Ledger,PI Advance Ledger
+PI Total Cost,PI Total Cost
+Remaining PI Cost,Remaining PI Cost
+Show all allocations,Show all allocations
+Show fewer allocations,Show fewer allocations
+Total CI Value Created,Total CI Value Created
+Advance Payment,Advance Payment
+CI Allocation,CI Allocation
+CI Reservation,CI Reservation
+CI Created,CI Created
+Pending Approval,Pending Approval
+Migration Required,Migration Required
+Advance Applied,Advance Applied
+Available to Apply,Available to Apply
+Commercial Invoice Total,Commercial Invoice Total
+Create Draft Purchase Invoice,Create Draft Purchase Invoice
+Create draft Purchase Invoice?,Create draft Purchase Invoice?
+Not Created,Not Created
+PI advances are reserved on draft bills and posted only when Accounts submits the Purchase Invoice.,PI advances are reserved on draft bills and posted only when Accounts submits the Purchase Invoice.
+Pay Remaining,Pay Remaining
+Remaining to Pay,Remaining to Pay
+Review Purchase Invoice,Review Purchase Invoice
+The proportional PI advance will be reserved for this CI. Accounts must review and submit the invoice.,The proportional PI advance will be reserved for this CI. Accounts must review and submit the invoice.
+Vendor Settlement,Vendor Settlement
+Pay Remaining must use the selected Purchase Invoice's exact outstanding amount.,Pay Remaining must use the selected Purchase Invoice's exact outstanding amount.
+The selected Purchase Invoice no longer has an outstanding balance.,The selected Purchase Invoice no longer has an outstanding balance.
+Unknown payment account for this company: {0},Unknown payment account for this company: {0}
+{0} must be a {1} account.,{0} must be a {1} account.
+{0} uses {1}; this {2} advance must be paid from a {2} account.,{0} uses {1}; this {2} advance must be paid from a {2} account.

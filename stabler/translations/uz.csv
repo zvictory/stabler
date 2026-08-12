@@ -1219,9 +1219,9 @@ Enter at least one transfer amount.,Kamida bitta o‘tkazma summasini kiriting.
 Enter cost and term to see the payment schedule.,To'lov jadvalini ko'rish uchun tannarx va muddatni kiriting.
 Enter the quantity to return for each line. Leave 0 to exclude a line.,Har bir qator uchun qaytarish miqdorini kiriting. Qatorni istisno qilish uchun 0 ni qoldiring.
 Enter your Employee ID and secure PIN,
-Entered rate deviates by {pct}% from CBU rate.,
+Entered rate deviates by {pct}% from CBU rate.,Kiritilgan kurs CBU kursidan {pct}% ga farq qiladi.
 Entries on/before this date are frozen.,
-Entry,
+Entry,Yozuv
 Entry cancelled.,Yozuv bekor qilindi.
 Entry submitted.,Yozuv tasdiqlandi.
 Equipment,Jihozlar
@@ -5774,3 +5774,43 @@ Price Offer,Narx taklifi
 Guarantee Letter,Kafolat xati
 License Copy / Certificate,Litsenziya nusxasi / Sertifikat
 Price Offer / Commercial Invoice,Narx taklifi / Tijorat invoysi
+Advance Allocated,Ajratilgan avans
+Advance Balance,Avans qoldig'i
+Advance In,Kelib tushgan avans
+Advance Paid,To'langan avans
+Advance Pending Approval,Tasdiq kutayotgan avans
+Advance Reserved,Zaxiradagi avans
+Advance Terms,Avans shartlari
+CI Amount,CI summasi
+CI Outstanding,CI bo'yicha qoldiq
+Free Advance Balance,Erkin avans qoldig'i
+No advance ledger movements yet.,Hozircha avans harakatlari yo'q.
+PI Advance Ledger,PI avans reyestri
+PI Total Cost,PI umumiy qiymati
+Remaining PI Cost,PI qoldiq qiymati
+Show all allocations,Barcha taqsimotlarni ko'rsatish
+Show fewer allocations,Kamroq taqsimot ko'rsatish
+Total CI Value Created,Yaratilgan CI larning umumiy qiymati
+Advance Payment,Avans to'lovi
+CI Allocation,CI bo'yicha taqsimot
+CI Reservation,CI bo'yicha zaxira
+CI Created,CI yaratildi
+Pending Approval,Tasdiq kutilmoqda
+Migration Required,Migratsiya talab qilinadi
+Advance Applied,Hisobga olingan avans
+Available to Apply,Hisobga olish uchun mavjud
+Commercial Invoice Total,Tijorat invoysi jami
+Create Draft Purchase Invoice,Xarid hisob-fakturasi qoralamasini yaratish
+Create draft Purchase Invoice?,Xarid hisob-fakturasi qoralamasi yaratilsinmi?
+Not Created,Yaratilmagan
+PI advances are reserved on draft bills and posted only when Accounts submits the Purchase Invoice.,PI avanslari qoralama hisob-fakturalarda zaxiraga olinadi va faqat buxgalteriya xarid hisob-fakturasini tasdiqlaganda o'tkaziladi.
+Pay Remaining,Qolganini to'lash
+Remaining to Pay,To'lanishi kerak bo'lgan qoldiq
+Review Purchase Invoice,Xarid hisob-fakturasini ko'rib chiqish
+The proportional PI advance will be reserved for this CI. Accounts must review and submit the invoice.,Ushbu CI uchun proporsional PI avansi zaxiraga olinadi. Buxgalteriya hisob-fakturani ko'rib chiqib tasdiqlashi kerak.
+Vendor Settlement,Yetkazib beruvchi bilan hisob-kitob
+Pay Remaining must use the selected Purchase Invoice's exact outstanding amount.,«Qolganini to'lash» tanlangan xarid hisob-fakturasining aniq qoldiq summasidan foydalanishi shart.
+The selected Purchase Invoice no longer has an outstanding balance.,Tanlangan xarid hisob-fakturasida qoldiq summa qolmagan.
+Unknown payment account for this company: {0},Ushbu kompaniya uchun noma'lum to'lov hisobi: {0}
+{0} must be a {1} account.,{0} {1} turidagi hisob bo'lishi kerak.
+{0} uses {1}; this {2} advance must be paid from a {2} account.,{0} {1} dan foydalanadi; ushbu {2} avansi {2} hisobidan to'lanishi kerak.
