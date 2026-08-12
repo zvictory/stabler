@@ -235,9 +235,9 @@
 import { ref, watch, onMounted } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { storeToRefs } from "pinia";
-import { useSession } from "../../stores/session";
-import { call } from "../../api/client";
-import { t } from "../../composables/i18n";
+import { useSession } from "../../stores/session.js";
+import { call } from "../../api/client.js";
+import { t } from "../../composables/i18n.js";
 import { useToast } from "../../composables/useToast.js";
 import { useTenderContext } from "../../composables/useTenderContext.js";
 import EmptyState from "../../components/EmptyState.vue";
