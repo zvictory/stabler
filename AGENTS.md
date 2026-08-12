@@ -33,6 +33,18 @@
   1. During active development, update only `en.csv` if needed so that English unit tests and feature tests stay green. Do NOT spend time translating into `tr`, `ru`, `uz`, `uzc` while code and UI are still iterating.
   2. Once feature implementation and test logic are complete and passing, backfill the translations for the other 4 language catalogs (`tr.csv`, `ru.csv`, `uz.csv`, `uzc.csv`) before final `make check` and `git push`.
 
+## Where the full rules live
+
+- This file is a **subset**. The authoritative rule set — date fields, module gating,
+  tenant ownership, button hierarchy, currency display, migrations, commit hygiene,
+  deployment — is `CLAUDE.md`. Read it before changing code.
+- Agent orchestration (Claude ⇄ Antigravity): `docs/runbooks/claude-antigravity-orchestration.md`.
+- Branch, ownership and merge protocol: `docs/runbooks/parallel-development.md`.
+- ⚠️ The auto-generated beads block below says `git pull --rebase`. **This repository
+  does not rebase** — CRLF translation CSVs re-conflict on every commit (23 consecutive,
+  measured). Use `git fetch origin && git merge origin/main`, and `git merge --no-ff`
+  to integrate into `main`.
+
 <!-- BEGIN BEADS INTEGRATION -->
 ## Issue Tracking with bd (beads)
 

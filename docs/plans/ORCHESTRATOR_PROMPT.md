@@ -1,3 +1,8 @@
+> **TARİHSEL — yerini alan: `docs/runbooks/claude-antigravity-orchestration.md`.**
+> Cowork dönemine ait. Var olmayan dosyalara (`stabler_final_blueprint.md`,
+> `audit_critique.md`) atıf yapar, beads'in yasakladığı TaskCreate/TaskList kullanır ve
+> CLAUDE.md'nin yasakladığı sürümlü commit trailer'ını dayatır. Kayıt için korunuyor.
+
 # STABLER OTONOM UYGULAMA DÖNGÜSÜ — Cowork Orkestratör Promptu
 # Kullanım: Aşağıdaki bloğu yeni bir Cowork oturumuna aynen yapıştır. {KAPSAM} satırını gerekirse değiştir.
 
