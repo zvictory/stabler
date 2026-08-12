@@ -8878,3 +8878,107 @@ def unlinked_transport_bills(commercial_invoice: str) -> dict:
 		"summary": {"rows": len(rows), "limit": _UNLINKED_BILL_LIMIT, "capped": capped},
 		"configured": True,
 	}
+
+
+#: How many advance-carrying PIs list_pi_advances() may examine before it stops.
+#: Only reached by scope="open", where openness is computed per PI in Python.
+_ADVANCE_SCAN_LIMIT = 2000
+
+
+@frappe.whitelist()
+def list_pi_advances(
+	company: str,
+	scope: str = "open",
+	supplier: str | None = None,
+	search: str | None = None,
+	limit: int = 200,
+) -> list[dict]:
+	"""Advance ledgers for every PI that carries at least one advance Payment Entry.
+
+	One row per PI, each row being exactly what :func:`pi_advance_ledger` returns for
+	that PI plus the list columns (``supplier``, ``supplier_name``, ``pi_date``,
+	``status``). ``scope="open"`` keeps only PIs that still hold advance credit —
+	``advance_available > 0`` or an unapproved (draft) payment pending — which is the
+	whole point of the page: a PI drops off the list once its advance is consumed.
+
+	``advance_available`` is derived, not a column, so the scope filter cannot run in
+	SQL. The candidate scan is therefore bounded by ``_ADVANCE_SCAN_LIMIT`` and
+	``limit`` is applied to the *filtered* rows; applying it to the candidates instead
+	would silently hide open advances behind newer, already-consumed ones.
+	"""
+	_assert_imports_access(company)
+	_assert_cost_visible()
+
+	has_pe_pi_ref = frappe.db.has_column("Payment Entry", "custom_proforma_invoice")
+	pi_match = " OR pe.custom_proforma_invoice = pi.name" if has_pe_pi_ref else ""
+
+	query = f"""
+		SELECT pi.name, pi.supplier, pi.pi_date, pi.status, pi.currency,
+		       pi.supplier_pi_ref, pi.agreed_total, pi.advance_pct,
+		       pi.docs_total, pi.cash_difference, s.supplier_name
+		FROM `tabProforma Invoice` pi
+		LEFT JOIN `tabSupplier` s ON s.name = pi.supplier
+		WHERE pi.company = %(company)s
+		  AND EXISTS (
+		      SELECT 1
+		      FROM `tabPayment Entry` pe
+		      LEFT JOIN `tabPayment Entry Reference` per ON per.parent = pe.name
+		      WHERE pe.company = %(company)s AND pe.docstatus < 2
+		        AND ((per.reference_doctype IN ('Purchase Order', 'Proforma Invoice')
+		              AND per.reference_name = pi.name){pi_match})
+		  )
+	"""
+
+	filters = {"company": company}
+
+	if supplier:
+		query += " AND pi.supplier = %(supplier)s"
+		filters["supplier"] = supplier
+
+	if search:
+		query += (
+			" AND (pi.name LIKE %(search)s OR pi.supplier_pi_ref LIKE %(search)s"
+			" OR s.supplier_name LIKE %(search)s)"
+		)
+		filters["search"] = f"%{search}%"
+
+	limit = max(1, int(limit))
+	# scope="all" needs no post-filter, so the SQL LIMIT is exact. scope="open" is
+	# decided per PI in Python, so scan wider and cut afterwards.
+	query += " ORDER BY pi.creation DESC LIMIT %(scan)s"
+	filters["scan"] = limit if scope == "all" else _ADVANCE_SCAN_LIMIT
+
+	candidates = frappe.db.sql(query, filters, as_dict=True)
+	if scope != "all" and len(candidates) >= _ADVANCE_SCAN_LIMIT:
+		# Silent truncation on a money list is how a "paid" advance goes missing.
+		# The UI warns when it receives a full page; this makes the harder case —
+		# the scan cap, which the row count alone cannot reveal — observable too.
+		frappe.logger("stabler.imports").warning(
+			f"list_pi_advances hit the candidate scan cap ({_ADVANCE_SCAN_LIMIT}) "
+			f"for company={company}; older advances may be missing from the result."
+		)
+
+	results = []
+	for row in candidates:
+		# Parent fields only — _build_proforma_advance_ledger reads no child table,
+		# so a full get_doc per PI would load items/containers for nothing. The
+		# list-vs-single identity test guards this equivalence.
+		advances, _paid_bank, _paid_cash = _po_advance_payment_entries(row.name, company)
+		ledger = _build_proforma_advance_ledger(row, advances)
+
+		ledger["supplier"] = row.supplier
+		ledger["supplier_name"] = row.supplier_name
+		ledger["pi_date"] = str(row.pi_date) if row.pi_date else None
+		ledger["status"] = row.status
+
+		if scope != "all" and not (
+			flt(ledger["summary"].get("advance_available")) > 0
+			or flt(ledger["summary"].get("advance_pending_approval")) > 0
+		):
+			continue
+
+		results.append(ledger)
+		if len(results) >= limit:
+			break
+
+	return results

@@ -169,6 +169,7 @@ import CommercialInvoiceForm from "./pages/imports/CommercialInvoiceForm.vue";
 import ProformaInvoices from "./pages/imports/ProformaInvoices.vue";
 import PiCiDiscrepancies from "./pages/imports/PiCiDiscrepancies.vue";
 import ProformaForm from "./pages/imports/ProformaForm.vue";
+import PiAdvances from "./pages/imports/PiAdvances.vue";
 import PiGroups from "./pages/imports/PiGroups.vue";
 import VendorCategories from "./pages/inventory/VendorCategories.vue";
 import ImportContainers from "./pages/imports/ImportContainers.vue";
@@ -216,6 +217,7 @@ const routes = [
 			{ path: "proformas/new", name: "imports-proforma-new", component: ProformaForm, meta: { title: t("New Proforma"), module: "imports" } },
 			{ path: "discrepancies", name: "imports-discrepancies", component: PiCiDiscrepancies, meta: { title: t("PI ↔ CI deviations"), module: "imports" } },
 			{ path: "proformas/:name(.*)", name: "imports-proforma", component: ProformaForm, meta: { title: t("Proforma Invoice"), module: "imports" } },
+			{ path: "advances", name: "imports-advances", component: PiAdvances, meta: { title: t("PI Advances"), module: "imports" } },
 			{ path: "pi-groups", name: "imports-pi-groups", component: PiGroups, meta: { title: t("PI Groups"), module: "imports" } },
 			{ path: "containers", name: "imports-containers", component: ImportContainers, meta: { title: t("Containers"), module: "imports" } },
 			{ path: "containers/new", name: "imports-container-new", component: ImportContainerForm, meta: { title: t("New Container"), module: "imports" } },

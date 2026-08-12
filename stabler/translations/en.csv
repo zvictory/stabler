@@ -5816,3 +5816,9 @@ Unknown payment account for this company: {0},Unknown payment account for this c
 No usable exchange rate found for {0} on {1}.,No usable exchange rate found for {0} on {1}.
 "This total uses the rate you typed. Creating the voucher does not — it reads the stored Currency Exchange rate. Record the USD rate for {0} first, then create the voucher.","This total uses the rate you typed. Creating the voucher does not — it reads the stored Currency Exchange rate. Record the USD rate for {0} first, then create the voucher."
 No USD rate recorded for this date.,No USD rate recorded for this date.
+PI Advances,PI Advances
+Open advances,Open advances
+No PI advances found.,No PI advances found.
+Failed to load PI advances.,Failed to load PI advances.
+Cannot show PI advances,Cannot show PI advances
+Showing the first {count} advances — narrow the filter to see the rest.,Showing the first {count} advances — narrow the filter to see the rest.
