@@ -5823,3 +5823,9 @@ Unknown payment account for this company: {0},Неизвестный платё�
 No usable exchange rate found for {0} on {1}.,Не найден пригодный курс обмена для {0} на {1}.
 "This total uses the rate you typed. Creating the voucher does not — it reads the stored Currency Exchange rate. Record the USD rate for {0} first, then create the voucher.","Этот итог рассчитан по введённому вами курсу. Создание ваучера использует сохранённый курс из справочника Currency Exchange. Сначала внесите курс USD на {0}, затем создайте ваучер."
 No USD rate recorded for this date.,Курс USD на эту дату не внесён.
+PI Advances,Авансы по PI
+Open advances,Открытые авансы
+No PI advances found.,Авансы по PI не найдены.
+Failed to load PI advances.,Не удалось загрузить авансы по PI.
+Cannot show PI advances,Невозможно показать авансы по PI
+Showing the first {count} advances — narrow the filter to see the rest.,"Показаны первые {count} авансов — уточните фильтр, чтобы увидеть остальные."

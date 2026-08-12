@@ -5818,3 +5818,9 @@ Unknown payment account for this company: {0},Ушбу компания учун
 No usable exchange rate found for {0} on {1}.,{1} санасида {0} учун яроқли айирбошлаш курси топилмади.
 "This total uses the rate you typed. Creating the voucher does not — it reads the stored Currency Exchange rate. Record the USD rate for {0} first, then create the voucher.","Бу жами сиз киритган курсдан фойдаланади. Ваучер яратиш эса сақланган Currency Exchange курсини ўқийди. Аввал {0} санасидаги USD курсини киритинг, сўнг ваучерни яратинг."
 No USD rate recorded for this date.,Бу сана учун USD курси киритилмаган.
+PI Advances,PI аванслари
+Open advances,Очиқ аванслар
+No PI advances found.,PI аванслари топилмади.
+Failed to load PI advances.,PI авансларини юклаб бўлмади.
+Cannot show PI advances,PI авансларини кўрсатиб бўлмади
+Showing the first {count} advances — narrow the filter to see the rest.,Биринчи {count} та аванс кўрсатилмоқда — қолганини кўриш учун филтрни торайтиринг.
