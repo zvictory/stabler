@@ -23,6 +23,7 @@ TEST_COMPANY = "_Test Company"
 TEST_ABBR = "_TC"
 TEST_SUPPLIER = "_Test Supplier"
 TEST_ITEM = "_Test Item"
+TEST_UOM = "Nos"
 
 
 def before_tests() -> None:
@@ -32,6 +33,7 @@ def before_tests() -> None:
 	_ensure_non_base_account()
 	_ensure_price_lists()
 	_ensure_supplier()
+	_ensure_uom()
 	_ensure_item()
 	frappe.db.commit()
 
@@ -178,6 +180,23 @@ def _ensure_supplier() -> None:
 	).insert(ignore_permissions=True)
 
 
+def _ensure_uom() -> None:
+	"""Test kaleminin ölçü birimi.
+
+	`Nos` ERPNext'in kurulum sihirbazından geliyor; sihirbazın koşmadığı
+	ya da UOM kataloğu yerelleştirilmiş bir sitede hiç bulunmuyor (yerel
+	test sitesinde ölçüldü: 236 UOM var, `Nos` yok). Eskiden burada
+	`get_value(...) or "Nos"` yazıyordu — yedek değer de aynı bulunamayan
+	adı verdiği için Item "Could not find Default Unit of Measure: Nos"
+	ile patlıyor, `before_tests` düşüyor ve bench testlerinin tamamı
+	çalışmadan kalıyordu.
+	"""
+	if frappe.db.exists("UOM", TEST_UOM):
+		return
+
+	frappe.get_doc({"doctype": "UOM", "uom_name": TEST_UOM}).insert(ignore_permissions=True)
+
+
 def _ensure_item() -> None:
 	if frappe.db.exists("Item", TEST_ITEM):
 		return
@@ -188,7 +207,7 @@ def _ensure_item() -> None:
 			"item_code": TEST_ITEM,
 			"item_name": TEST_ITEM,
 			"item_group": frappe.db.get_value("Item Group", {"is_group": 0}, "name"),
-			"stock_uom": frappe.db.get_value("UOM", {"name": "Nos"}, "name") or "Nos",
+			"stock_uom": TEST_UOM,
 			"is_stock_item": 1,
 		}
 	).insert(ignore_permissions=True)
