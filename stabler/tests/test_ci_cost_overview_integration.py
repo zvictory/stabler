@@ -37,7 +37,20 @@ def _first_supplier():
 
 
 def _first_item():
-	return frappe.db.get_value("Item", {}, "name")
+	"""A *goods* item — never one of the marker codes the categorizer reads.
+
+	``derive_bill_category`` buckets a bill by its item codes: ``Cross-Border
+	Transport`` means transport, ``Import Service`` means expense. Both items
+	exist on the bench test site (the imports fixtures create them), and
+	``get_value`` orders by ``modified desc``, so the bare lookup returned
+	``Import Service`` — every bill this file raised, including the 40 000 goods
+	invoice, was classified as an expense. ``billed`` then read 41 500 instead of
+	1 500 and ``billed_goods`` 0 instead of 40 000: a red test with green
+	production code. Exclude the markers so the goods bill is really goods.
+	"""
+	return frappe.db.get_value(
+		"Item", {"name": ["not in", ("Cross-Border Transport", "Import Service")]}, "name"
+	)
 
 
 def _gtd_number() -> str:
