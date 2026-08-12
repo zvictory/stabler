@@ -23,6 +23,7 @@ const tabs = [
 		label: t("Costs & Finance ▾"),
 		icon: "ti-coin",
 		children: [
+			{ name: "imports-advances", path: "/imports/advances", label: t("PI Advances"), icon: "ti-cash" },
 			{ name: "imports-freight", path: "/imports/freight", label: t("Freight Bookings"), icon: "ti-truck-delivery" },
 			{ name: "imports-expenses", path: "/imports/expenses", label: t("Import Expenses"), icon: "ti-receipt" },
 			{ name: "imports-bills", path: "/imports/bills", label: t("Landed Cost Bills"), icon: "ti-file-dollar" },
