@@ -199,24 +199,24 @@
 					</tr>
 				</thead>
 				<tbody>
-					<tr v-for="t in targets" :key="t.deal" role="button" @click="pickLot(t.deal)">
+					<tr v-for="lot in targets" :key="lot.deal" role="button" @click="pickLot(lot.deal)">
 						<td>
-							<div class="fw-semibold">{{ t.label }}</div>
-							<div class="text-secondary small font-monospace">{{ t.deal }}</div>
+							<div class="fw-semibold">{{ lot.label }}</div>
+							<div class="text-secondary small font-monospace">{{ lot.deal }}</div>
 						</td>
-						<td class="text-secondary small">{{ t.parent_tender || "—" }}</td>
-						<td><span class="badge bg-secondary-lt">{{ t.stage }}</span></td>
+						<td class="text-secondary small">{{ lot.parent_tender || "—" }}</td>
+						<td><span class="badge bg-secondary-lt">{{ lot.stage }}</span></td>
 						<td class="text-end">
-							<span v-if="t.missing_required" class="badge bg-red-lt text-red fw-bold">{{ t.missing_required }}</span>
+							<span v-if="lot.missing_required" class="badge bg-red-lt text-red fw-bold">{{ lot.missing_required }}</span>
 							<span v-else class="badge bg-green-lt text-green">✓</span>
 						</td>
 						<td>
 							<div class="d-flex align-items-center gap-2">
 								<div class="progress flex-grow-1" style="height: 5px; min-width: 60px">
-									<div class="progress-bar" :class="(t.readiness_pct || 0) === 100 ? 'bg-success' : 'bg-warning'"
-										:style="{ width: (t.readiness_pct || 0) + '%' }"></div>
+									<div class="progress-bar" :class="(lot.readiness_pct || 0) === 100 ? 'bg-success' : 'bg-warning'"
+										:style="{ width: (lot.readiness_pct || 0) + '%' }"></div>
 								</div>
-								<span class="font-monospace small">{{ t.readiness_pct || 0 }}%</span>
+								<span class="font-monospace small">{{ lot.readiness_pct || 0 }}%</span>
 							</div>
 						</td>
 						<td class="text-end">
