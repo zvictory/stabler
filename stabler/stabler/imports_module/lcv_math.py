@@ -83,17 +83,43 @@ def apply_gtd_customs_precedence(components, gtd_duty, gtd_excise, gtd_present) 
 	return out, warnings
 
 
-def line_company_amount(currency, amount, usd_rate, company_currency) -> float:
+def line_company_amount(currency, amount, rates, company_currency) -> float | None:
 	"""Amount of one cost line in company currency.
 
 	Lines already in the company currency pass through untouched; everything else
-	(USD) is converted with ``usd_rate`` (the rate for the GRN completion date,
-	fetched frappe-side and passed in as an argument).
+	is converted with ``rates`` (the rate for the GRN completion date,
+	fetched frappe-side and passed in as a map).
 	"""
 	amt = float(amount or 0)
 	if (currency or company_currency) == company_currency:
 		return round(amt, 2)
-	return round(amt * float(usd_rate or 0), 2)
+	rate = rates.get(currency)
+	if not rate or rate <= 0:
+		return None
+	return round(amt * float(rate), 2)
+
+
+def unvaluable_line_names(cost_lines, rates, company_currency) -> set:
+	"""Names of eligible lines no rate could value — they must stay UNSTAMPED.
+
+	``aggregate_components`` silently drops a line whose currency has no rate, so
+	its money reaches no voucher. Stamping such a row with ``lcv_ref`` would then
+	hide it from ``unconsumed`` forever: the cost would disappear from valuation
+	permanently, with only a log line as notice. The caller stamps
+	``source_rows - unvaluable_line_names(...)``.
+
+	VAT and GTD-superseded duty are deliberately NOT here. Those are excluded on
+	purpose and must never be picked up by a later voucher, so consuming them is
+	the correct outcome; a missing rate is a transient data gap, not a decision.
+	"""
+	out = set()
+	for ln in unconsumed(cost_lines):
+		if is_vat_component(ln.get("cost_component") or "Other"):
+			continue
+		if line_company_amount(ln.get("currency"), ln.get("amount"), rates, company_currency) is None:
+			out.add(ln.get("name"))
+	out.discard(None)
+	return out
 
 
 def unconsumed(cost_lines) -> list[dict]:
@@ -165,21 +191,44 @@ def supersede_billed(cost_lines) -> tuple[list[dict], list[str]]:
 	return kept, warnings
 
 
-def aggregate_components(cost_lines, usd_rate, company_currency) -> dict:
+def aggregate_components(cost_lines, rates, company_currency, translate=None) -> tuple[dict, list[str]]:
 	"""Aggregate eligible cost lines into ``{component: company_amount}`` (>0).
 
 	Excludes VAT components; sums full amounts (no clearance-fee division).
+
+	``translate`` is how a warning that reaches a user gets into their language
+	without dragging frappe into this module: callers on an API boundary pass
+	``frappe._``, and the *template* — not the interpolated sentence — is the
+	catalog key, so it is looked up before ``.format`` fills in the currency.
+	Callers that only log (the build path) leave it out and get English.
 	"""
+	t = translate or (lambda s: s)
 	agg: dict[str, float] = {}
+	warnings: list[str] = []
+	unvaluable: dict[str, list[str]] = {}
 	for ln in unconsumed(cost_lines):
 		comp = ln.get("cost_component") or "Other"
 		if is_vat_component(comp):
 			continue
-		amt = line_company_amount(ln.get("currency"), ln.get("amount"), usd_rate, company_currency)
+		amt = line_company_amount(ln.get("currency"), ln.get("amount"), rates, company_currency)
+		if amt is None:
+			# One warning per currency, not per line: a CI with twelve USD freight
+			# lines and no rate is one problem, not twelve alerts on the screen.
+			unvaluable.setdefault(str(ln.get("currency")), []).append(comp)
+			continue
 		if amt == 0:
 			continue
 		agg[comp] = round(agg.get(comp, 0.0) + amt, 2)
-	return {k: v for k, v in agg.items() if v > 0}
+
+	for currency, comps in sorted(unvaluable.items()):
+		warnings.append(
+			t(
+				"Could not value {0} in {1}: no known exchange rate, so it is excluded from the voucher."
+			).format(", ".join(sorted(set(comps))), currency)
+		)
+
+	components = {k: v for k, v in agg.items() if v > 0}
+	return components, warnings
 
 
 def build_lcv_payload(*, company, purchase_receipts, components, expense_account, distribute_based_on="Qty"):

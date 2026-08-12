@@ -124,23 +124,33 @@ def get_landed_cost_review(document_type: str, document_name: str, rate=None):
 				idx += 1
 
 		# Rate preview conversions
+		rates = {}
 		usd_rate = 1.0
 		rate_as_of = None
 		rate_overridden = False
 		if rate not in (None, ""):
 			try:
 				usd_rate = flt(rate)
-				rate_overridden = True
+				if usd_rate > 0:
+					rates["USD"] = usd_rate
+					rate_overridden = True
 			except Exception:
 				pass
 
 		from stabler.stabler.imports_module import lcv_math
 
-		components = lcv_math.aggregate_components(raw_lines, usd_rate, company_currency)
+		# ``rates`` stays empty in practice: every PO charge line above is built in
+		# ``company_currency``, so nothing here needs converting and the override is
+		# inert. It is wired anyway so a foreign-currency PO charge cannot silently
+		# land at a 1:1 rate the day one appears.
+		components, agg_warnings = lcv_math.aggregate_components(
+			raw_lines, rates, company_currency, translate=_
+		)
 		preview_components = [{"component": k, "amount": round(v, 2)} for k, v in sorted(components.items())]
 		preview_total = round(sum(components.values()), 2)
 
 		warnings = []
+		warnings.extend(agg_warnings)
 		if pr.docstatus != 1:
 			warnings.append(_("Purchase Receipt must be Submitted to create a Landed Cost Voucher."))
 		if not preview_components:

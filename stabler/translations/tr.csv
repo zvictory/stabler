@@ -5809,3 +5809,7 @@ The selected Purchase Invoice no longer has an outstanding balance.,Seçilen sat
 Unknown payment account for this company: {0},Bu şirket için bilinmeyen ödeme hesabı: {0}
 {0} must be a {1} account.,{0} bir {1} hesabı olmalıdır.
 {0} uses {1}; this {2} advance must be paid from a {2} account.,{0} {1} kullanıyor; bu {2} avansı bir {2} hesabından ödenmelidir.
+"Could not value {0} in {1}: no known exchange rate, so it is excluded from the voucher.","{1} para birimindeki {0} değerlenemedi: bilinen bir döviz kuru yok, bu nedenle fişe dâhil edilmedi."
+No usable exchange rate found for {0} on {1}.,{1} tarihinde {0} için kullanılabilir bir döviz kuru bulunamadı.
+"This total uses the rate you typed. Creating the voucher does not — it reads the stored Currency Exchange rate. Record the USD rate for {0} first, then create the voucher.","Bu toplam, sizin girdiğiniz kuru kullanır. Fiş oluşturma ise kayıtlı Currency Exchange kurunu okur. Önce {0} tarihli USD kurunu kaydedin, sonra fişi oluşturun."
+No USD rate recorded for this date.,Bu tarih için USD kuru kayıtlı değil.

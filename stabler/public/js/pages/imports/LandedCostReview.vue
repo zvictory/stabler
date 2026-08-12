@@ -348,7 +348,11 @@ watch(grnName, () => load());
 										<div class="form-hint">
 											<span v-if="data.preview.rate_overridden">{{ t("Override (preview only)") }}</span>
 											<span v-else-if="data.preview.rate_as_of">{{ t("Currency Exchange as of {date}", { date: formatDate(data.preview.rate_as_of) }) }}</span>
-											<span v-else>{{ t("Default rate") }}</span>
+											<span v-else-if="data.preview.exchange_rate">{{ t("Default rate") }}</span>
+											<!-- The server now sends no rate when it found none, so the box is
+											     empty. Labelling that "Default rate" would read as "1.00 applies"
+											     — the same fiction that used to be posted back as an override. -->
+											<span v-else class="text-danger">{{ t("No USD rate recorded for this date.") }}</span>
 										</div>
 									</div>
 									<button type="button" class="btn btn-outline-secondary btn-sm" :disabled="loading" @click="recompute">

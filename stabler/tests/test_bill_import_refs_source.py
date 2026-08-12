@@ -550,9 +550,9 @@ class CapitalizationTest(unittest.TestCase):
 		self.assertLess(src.index("_assert_capitalizable_currency("), write)
 
 	def test_a_currency_the_valuation_cannot_convert_is_refused_not_guessed(self):
-		# lcv_math.line_company_amount has two branches: company currency, else
-		# multiply by the USD rate. A EUR bill would silently be valued at the
-		# dollar rate and be wrong by the cross rate (stabler-oe3).
+		# lcv_math.line_company_amount now resolves each currency against a
+		# passed-in rates map. If a EUR bill lacks a EUR rate entry, it is
+		# safely excluded with a warning, but this gate still refuses it upfront.
 		src = body(self.src, "_assert_capitalizable_currency")
 		self.assertIn('currency not in (company_currency, "USD")', src)
 		self.assertIn("frappe.throw(", src)

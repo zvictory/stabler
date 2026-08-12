@@ -5814,3 +5814,7 @@ The selected Purchase Invoice no longer has an outstanding balance.,Танлан
 Unknown payment account for this company: {0},Ушбу компания учун номаълум тўлов ҳисоби: {0}
 {0} must be a {1} account.,{0} {1} туридаги ҳисоб бўлиши керак.
 {0} uses {1}; this {2} advance must be paid from a {2} account.,{0} {1} дан фойдаланади; ушбу {2} аванси {2} ҳисобидан тўланиши керак.
+"Could not value {0} in {1}: no known exchange rate, so it is excluded from the voucher.","{1} валютасидаги {0} баҳоланмади: маълум айирбошлаш курси йўқ, шунинг учун ваучерга киритилмади."
+No usable exchange rate found for {0} on {1}.,{1} санасида {0} учун яроқли айирбошлаш курси топилмади.
+"This total uses the rate you typed. Creating the voucher does not — it reads the stored Currency Exchange rate. Record the USD rate for {0} first, then create the voucher.","Бу жами сиз киритган курсдан фойдаланади. Ваучер яратиш эса сақланган Currency Exchange курсини ўқийди. Аввал {0} санасидаги USD курсини киритинг, сўнг ваучерни яратинг."
+No USD rate recorded for this date.,Бу сана учун USD курси киритилмаган.

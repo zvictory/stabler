@@ -13,8 +13,9 @@ import unittest
 from stabler.stabler.imports_module import lcv_math
 
 
-def _line(component, currency, amount, include=1, lcv_ref=None):
+def _line(component, currency, amount, include=1, lcv_ref=None, name=None):
 	return {
+		"name": name,
 		"cost_component": component,
 		"currency": currency,
 		"amount": amount,
@@ -23,12 +24,87 @@ def _line(component, currency, amount, include=1, lcv_ref=None):
 	}
 
 
+class TestUnvaluableLineNames(unittest.TestCase):
+	"""The set that must NOT be stamped ``lcv_ref``.
+
+	``aggregate_components`` drops an unvaluable line silently, so if the build
+	path stamps it anyway the money is gone: no voucher carries it and ``unconsumed``
+	will never offer it again. These tests are the guard on that set.
+	"""
+
+	def test_line_without_a_rate_is_unvaluable(self):
+		lines = [_line("Freight", "USD", 100, name="r1")]
+		self.assertEqual(lcv_math.unvaluable_line_names(lines, {}, "UZS"), {"r1"})
+
+	def test_line_with_a_rate_is_valuable(self):
+		lines = [_line("Freight", "USD", 100, name="r1")]
+		self.assertEqual(lcv_math.unvaluable_line_names(lines, {"USD": 12500}, "UZS"), set())
+
+	def test_company_currency_line_never_needs_a_rate(self):
+		lines = [_line("Uzbekistan Customs Duty", "UZS", 2_000_000, name="r1")]
+		self.assertEqual(lcv_math.unvaluable_line_names(lines, {}, "UZS"), set())
+
+	def test_vat_is_excluded_on_purpose_so_it_stays_stampable(self):
+		# VAT is never capitalized by design — consuming it is correct, and leaving
+		# it unstamped would re-offer it on every future voucher forever.
+		lines = [_line("Import VAT", "USD", 100, name="r1")]
+		self.assertEqual(lcv_math.unvaluable_line_names(lines, {}, "UZS"), set())
+
+	def test_already_vouchered_line_is_not_in_scope(self):
+		lines = [_line("Freight", "USD", 100, lcv_ref="LCV-0001", name="r1")]
+		self.assertEqual(lcv_math.unvaluable_line_names(lines, {}, "UZS"), set())
+
+	def test_only_the_unvaluable_of_a_mixed_set_is_returned(self):
+		lines = [
+			_line("Freight", "USD", 100, name="r1"),
+			_line("Insurance", "EUR", 50, name="r2"),
+			_line("Uzbekistan Customs Duty", "UZS", 2_000_000, name="r3"),
+		]
+		# EUR has a rate, USD does not: r1 alone must survive the stamp.
+		self.assertEqual(lcv_math.unvaluable_line_names(lines, {"EUR": 13500}, "UZS"), {"r1"})
+
+	def test_the_unstamped_set_matches_exactly_what_aggregation_dropped(self):
+		# The invariant the whole fix rests on: every line the voucher could not
+		# value is in the set, and no line it DID value is.
+		lines = [
+			_line("Freight", "USD", 100, name="r1"),
+			_line("Insurance", "EUR", 50, name="r2"),
+		]
+		rates = {"EUR": 13500}
+		agg, _warnings = lcv_math.aggregate_components(lines, rates, "UZS")
+		self.assertEqual(sorted(agg), ["Insurance"])
+		self.assertEqual(lcv_math.unvaluable_line_names(lines, rates, "UZS"), {"r1"})
+
+	def test_translate_hook_is_applied_to_the_template_not_the_sentence(self):
+		# The catalog key must be the template, so the lookup happens before the
+		# currency is interpolated — otherwise no catalog could ever match.
+		seen = []
+
+		def fake(message):
+			seen.append(message)
+			return "TR:" + message
+
+		_agg, warnings = lcv_math.aggregate_components(
+			[_line("Freight", "USD", 100, name="r1")], {}, "UZS", translate=fake
+		)
+		self.assertEqual(len(warnings), 1)
+		self.assertTrue(warnings[0].startswith("TR:"))
+		self.assertIn("{0}", seen[0])
+		self.assertNotIn("USD", seen[0])
+
+
 class TestLineCompanyAmount(unittest.TestCase):
 	def test_company_currency_passthrough(self):
-		self.assertEqual(lcv_math.line_company_amount("UZS", 1_000_000, 12500, "UZS"), 1_000_000.0)
+		self.assertEqual(lcv_math.line_company_amount("UZS", 1_000_000, {}, "UZS"), 1_000_000.0)
 
 	def test_usd_converted(self):
-		self.assertEqual(lcv_math.line_company_amount("USD", 100, 12500, "UZS"), 1_250_000.0)
+		self.assertEqual(lcv_math.line_company_amount("USD", 100, {"USD": 12500}, "UZS"), 1_250_000.0)
+
+	def test_eur_converted(self):
+		self.assertEqual(lcv_math.line_company_amount("EUR", 100, {"EUR": 13500}, "UZS"), 1_350_000.0)
+
+	def test_none_if_rate_missing(self):
+		self.assertIsNone(lcv_math.line_company_amount("EUR", 100, {"USD": 12500}, "UZS"))
 
 
 class TestIsVat(unittest.TestCase):
@@ -45,38 +121,93 @@ class TestAggregateComponents(unittest.TestCase):
 			_line("Freight", "USD", 50),
 			_line("Uzbekistan Customs Duty", "UZS", 2_000_000),
 		]
-		agg = lcv_math.aggregate_components(lines, usd_rate=12500, company_currency="UZS")
+		agg, warnings = lcv_math.aggregate_components(lines, rates={"USD": 12500}, company_currency="UZS")
 		self.assertEqual(agg["Freight"], 1_875_000.0)  # (100+50) * 12500
 		self.assertEqual(agg["Uzbekistan Customs Duty"], 2_000_000.0)
+		self.assertEqual(warnings, [])
 
 	def test_vat_excluded(self):
 		lines = [_line("Freight", "USD", 100), _line("Uzbekistan VAT 12%", "USD", 40)]
-		agg = lcv_math.aggregate_components(lines, usd_rate=12500, company_currency="UZS")
+		agg, warnings = lcv_math.aggregate_components(lines, rates={"USD": 12500}, company_currency="UZS")
 		self.assertIn("Freight", agg)
 		self.assertNotIn("Uzbekistan VAT 12%", agg)
+		self.assertEqual(warnings, [])
 
 	def test_clearance_fee_full_amount_not_divided(self):
 		# One CI-level clearance fee across 4 containers must land whole, not /4.
 		lines = [_line("Customs Clearance Fee", "UZS", 8_000_000)]
-		agg = lcv_math.aggregate_components(lines, usd_rate=12500, company_currency="UZS")
+		agg, warnings = lcv_math.aggregate_components(lines, rates={"USD": 12500}, company_currency="UZS")
 		self.assertEqual(agg["Customs Clearance Fee"], 8_000_000.0)
+		# Company-currency line: no rate needed, so an empty-of-UZS map must not warn.
+		self.assertEqual(warnings, [])
 
 	def test_excluded_lines_skipped(self):
 		lines = [_line("Freight", "USD", 100, include=0)]
-		self.assertEqual(lcv_math.aggregate_components(lines, 12500, "UZS"), {})
+		agg, warnings = lcv_math.aggregate_components(lines, rates={"USD": 12500}, company_currency="UZS")
+		self.assertEqual(agg, {})
+		self.assertEqual(warnings, [])
 
 	def test_consumed_lines_skipped(self):
 		lines = [
 			_line("Freight", "USD", 100, lcv_ref="LCV-0001"),
 			_line("Iran Demurrage", "USD", 30),
 		]
-		agg = lcv_math.aggregate_components(lines, 12500, "UZS")
+		agg, warnings = lcv_math.aggregate_components(lines, {"USD": 12500}, "UZS")
 		self.assertNotIn("Freight", agg)
 		self.assertEqual(agg["Iran Demurrage"], 375_000.0)
+		self.assertEqual(warnings, [])
 
 	def test_zero_amounts_dropped(self):
 		lines = [_line("Freight", "USD", 0)]
-		self.assertEqual(lcv_math.aggregate_components(lines, 12500, "UZS"), {})
+		agg, warnings = lcv_math.aggregate_components(lines, {"USD": 12500}, "UZS")
+		self.assertEqual(agg, {})
+		self.assertEqual(warnings, [])
+
+	def test_missing_rate_warns_and_excludes(self):
+		lines = [_line("Freight", "EUR", 100)]
+		agg, warnings = lcv_math.aggregate_components(lines, {"USD": 12500}, "UZS")
+		self.assertEqual(agg, {})
+		self.assertEqual(len(warnings), 1)
+		self.assertIn("EUR", warnings[0])
+
+	def test_many_unvaluable_lines_of_one_currency_warn_once(self):
+		# A CI with twelve USD freight lines and no USD rate is ONE problem. Warning
+		# per line would put twelve identical alerts on the review screen and bury
+		# the one line that is genuinely different.
+		lines = [_line("Freight", "USD", 100) for _ in range(12)]
+		agg, warnings = lcv_math.aggregate_components(lines, {}, "UZS")
+		self.assertEqual(agg, {})
+		self.assertEqual(len(warnings), 1)
+		self.assertIn("USD", warnings[0])
+		self.assertIn("Freight", warnings[0])
+
+	def test_each_unvaluable_currency_gets_its_own_warning(self):
+		# Deduping must not collapse two genuinely separate missing rates into one.
+		lines = [_line("Freight", "USD", 100), _line("Insurance", "EUR", 50)]
+		_, warnings = lcv_math.aggregate_components(lines, {}, "UZS")
+		self.assertEqual(len(warnings), 2)
+		self.assertEqual(sorted("EUR" in w for w in warnings), [False, True])
+
+	def test_one_currency_lists_every_component_it_could_not_value(self):
+		# The operator has to know WHICH costs fell out, not just that some did.
+		lines = [_line("Freight", "USD", 100), _line("Insurance", "USD", 50)]
+		_, warnings = lcv_math.aggregate_components(lines, {}, "UZS")
+		self.assertEqual(len(warnings), 1)
+		self.assertIn("Freight", warnings[0])
+		self.assertIn("Insurance", warnings[0])
+
+	def test_mixed_currencies_aggregate(self):
+		lines = [
+			_line("Freight", "USD", 100),
+			_line("Insurance", "EUR", 200),
+			_line("Uzbekistan Customs Duty", "UZS", 2_000_000),
+		]
+		rates = {"USD": 12500, "EUR": 13500}
+		agg, warnings = lcv_math.aggregate_components(lines, rates, "UZS")
+		self.assertEqual(agg["Freight"], 1_250_000.0)
+		self.assertEqual(agg["Insurance"], 2_700_000.0)
+		self.assertEqual(agg["Uzbekistan Customs Duty"], 2_000_000.0)
+		self.assertEqual(warnings, [])
 
 
 class TestUnconsumed(unittest.TestCase):

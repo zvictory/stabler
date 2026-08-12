@@ -3272,19 +3272,57 @@ def get_landed_cost_review(grn_checklist: str, rate=None):
 			override = flt(rate)
 		except Exception:
 			override = None
-	if override and override > 0:
-		usd_rate, rate_as_of = override, None
-		rate_overridden = True
-	else:
-		usd_rate, rate_as_of = _latest_exchange_rate("USD", company_currency, grn.completion_date)
-		rate_overridden = False
+	rate_overridden = bool(override and override > 0)
 
 	# Supersede before aggregating, the same way the build path does — a preview
 	# that shows a hand-typed line the voucher will drop is a preview of a document
 	# that does not exist, and this screen is where the accountant decides.
 	cost_lines = imports_hooks._collect_cost_lines(grn.commercial_invoice)
 	cost_lines, warnings = lcv_math.supersede_billed(cost_lines)
-	components = lcv_math.aggregate_components(cost_lines, usd_rate, company_currency)
+
+	rates, rate_warnings = imports_hooks.resolve_line_rates(cost_lines, company_currency, grn.completion_date)
+	warnings.extend(rate_warnings)
+
+	# What the resolver honestly found for USD; 0/absent when it found nothing.
+	# ``_latest_exchange_rate`` must never supply this number: it degrades to 1.0 on
+	# a miss, the SPA seeds its rate box from whatever we return here, and the next
+	# Recompute posts that 1.0 straight back as a hand-entered rate — which clears
+	# the override gate and values a USD 100 freight line at 100 UZS. A missing rate
+	# has to read as missing all the way out to the input. It is still consulted for
+	# the as-of date, which is only shown when a real rate was found.
+	resolved_usd = flt(rates.get("USD") or 0)
+	usd_rate = None
+	rate_as_of = None
+	if rate_overridden:
+		# A hand-entered rate is an instruction, so it wins for USD lines here.
+		rates["USD"] = override
+		usd_rate = override
+	elif resolved_usd:
+		usd_rate = resolved_usd
+		_unused, rate_as_of = _latest_exchange_rate("USD", company_currency, grn.completion_date)
+
+	components, agg_warnings = lcv_math.aggregate_components(cost_lines, rates, company_currency, translate=_)
+	warnings.extend(agg_warnings)
+
+	# ``_build_and_save_lcv`` takes no rate argument: it always re-resolves from
+	# Currency Exchange. So the moment an override actually touches a USD line, this
+	# total is money the create path would not post — either a different figure or
+	# none at all. Show it (that is what the box is for), but do not let the button
+	# promise it.
+	override_changes_the_build = rate_overridden and any(
+		(ln.get("currency") == "USD" != company_currency)
+		and not lcv_math.is_vat_component(ln.get("cost_component") or "Other")
+		for ln in lcv_math.unconsumed(cost_lines)
+	)
+	if override_changes_the_build:
+		warnings.append(
+			_(
+				"This total uses the rate you typed. Creating the voucher does not — it "
+				"reads the stored Currency Exchange rate. Record the USD rate for {0} "
+				"first, then create the voucher."
+			).format(str(grn.completion_date or today()))
+		)
+
 	if gtd is not None:
 		# extend, not reassign: the supersede warnings above must survive a GTD.
 		components, gtd_warnings = lcv_math.apply_gtd_customs_precedence(
@@ -3324,7 +3362,7 @@ def get_landed_cost_review(grn_checklist: str, rate=None):
 			"rate_as_of": rate_as_of,
 			"rate_overridden": rate_overridden,
 			"warnings": warnings,
-			"can_create": bool(pr_names and preview_components),
+			"can_create": bool(pr_names and preview_components and not override_changes_the_build),
 		},
 	}
 
