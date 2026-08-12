@@ -5830,3 +5830,4 @@ No {0} account is set for this advance. Choose one before recording it.,Bu avans
 Advance recorded and posted.,Avans qayd etildi va provodka qilindi.
 Supplier Payment Currency Guard,Ta'minotchi to‘lovi valyutasi nazorati
 This supplier is paid in {0}. Select a {0} account: the selected payment account is in {1}.,Bu ta'minotchiga {0} da to‘lanadi. {0} dagi hisobni tanlang: tanlangan to‘lov hisobi {1} da.
+No exchange rate found for this invoice date — landed cost cannot be calculated. Enter a rate above or add the CBU rate.,Ushbu hisob-faktura sanasi uchun kurs topilmadi — yakuniy tannarxni hisoblab bo'lmaydi. Yuqorida kurs kiriting yoki MB kursini qo'shing.

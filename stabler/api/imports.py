@@ -35,6 +35,7 @@ from stabler.api import (
 	_proforma,
 )
 from stabler.api import _imports_rules as rules
+from stabler.api._accounts import _cbu_rate_on_or_before
 from stabler.api._common import _assert_can_read, _assert_can_write, _require_company
 from stabler.api.organization import _ADMIN_ROLES, _MODULE_ROLES
 from stabler.api.permissions import cost_visible_for
@@ -2843,11 +2844,48 @@ def ci_transport_costs(commercial_invoice: str) -> dict:
 	)
 
 
+def _ci_landed_cost_rate(ci_doc, exchange_rate=None) -> tuple:
+	"""Resolve the rate that converts CI currency into company currency.
+
+	Returns ``(rate, source, rate_date)``. ``rate`` is None when no rate can be
+	established — the caller must then report "no rate" rather than invent one.
+	The old code defaulted to a hardcoded 12800 here, which made every landed
+	cost figure on the screen look like a real amount while being derived from a
+	number that came from nowhere. Same decision as ``reports.py:2420``.
+
+	No currency name is hardcoded: the pair is the CI's own currency against the
+	company's default currency, so this works for a UZS-book and a USD-book
+	tenant alike.
+	"""
+	manual = flt(exchange_rate)
+	if manual > 0:
+		return manual, "manual", None
+
+	doc_currency = ci_doc.currency or "USD"
+	company_currency = frappe.get_cached_value("Company", ci_doc.company, "default_currency")
+	if not company_currency:
+		return None, "missing", None
+	if doc_currency == company_currency:
+		return 1.0, "same_currency", None
+
+	rate, rate_date = _cbu_rate_on_or_before(doc_currency, company_currency, ci_doc.ci_date or today())
+	if not rate:
+		return None, "missing", None
+	return flt(rate), "cbu", str(rate_date) if rate_date else None
+
+
 @frappe.whitelist()
 def calculate_ci_landed_cost_uzs(
-	commercial_invoice: str, exchange_rate: float = 12800.0, allocation_method: str = "By Weight"
+	commercial_invoice: str, exchange_rate: float | None = None, allocation_method: str = "By Weight"
 ) -> dict:
-	"""Calculate UZS Landed Cost allocation per product line item for a CI."""
+	"""Calculate company-currency Landed Cost allocation per CI product line.
+
+	The ``_uzs`` suffixes are kept for API compatibility; the actual currency is
+	the company's default currency. When no exchange rate can be resolved the
+	response carries ``exchange_rate: None`` and an empty ``items`` list — every
+	figure below depends on the rate, so a fabricated rate would poison all of
+	them.
+	"""
 	if not commercial_invoice or not frappe.db.exists("Commercial Invoice", commercial_invoice):
 		frappe.throw(_("Unknown Commercial Invoice: {0}").format(commercial_invoice))
 
@@ -2855,7 +2893,19 @@ def calculate_ci_landed_cost_uzs(
 	_assert_imports_access(ci_doc.company)
 	_assert_can_read("Commercial Invoice", commercial_invoice)
 
-	rate = flt(exchange_rate) or 12800.0
+	rate, rate_source, rate_date = _ci_landed_cost_rate(ci_doc, exchange_rate)
+	if rate is None:
+		return {
+			"commercial_invoice": commercial_invoice,
+			"exchange_rate": None,
+			"rate_source": rate_source,
+			"rate_date": None,
+			"allocation_method": allocation_method,
+			"total_extra_uzs": None,
+			"total_landed_uzs": None,
+			"items": [],
+		}
+
 	ci_items = ci_doc.items or []
 
 	total_weight_kg = flt(ci_doc.total_kg) or sum(flt(it.qty) for it in ci_items) or 1.0
@@ -2917,6 +2967,8 @@ def calculate_ci_landed_cost_uzs(
 	return {
 		"commercial_invoice": commercial_invoice,
 		"exchange_rate": rate,
+		"rate_source": rate_source,
+		"rate_date": rate_date,
 		"allocation_method": allocation_method,
 		"total_extra_uzs": total_extra_uzs,
 		"total_landed_uzs": (total_agreed_usd * rate) + total_extra_uzs,
