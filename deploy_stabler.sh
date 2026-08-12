@@ -245,6 +245,20 @@ else
   echo "    Skipped. Run later:  ssh $PROD 'cd /home/frappe/frappe-bench && sudo -u frappe bench restart'"
 fi
 
+# 6b) clear-cache — REQUIRED whenever translations/*.csv shipped, and restart does
+#     NOT cover it: stabler/www/stabler.py:_load_translations caches each language
+#     map in Redis under stabler:translations:<lang> for an hour, and `bench restart`
+#     does not touch Redis. Without this the CSVs are correct on disk and users keep
+#     seeing the old strings for up to 60 minutes — an md5 manifest reads clean the
+#     whole time (measured 2026-08-12). Per-site, like migrate.
+say "6/7  clear-cache on EVERY stabler-bearing site (Redis holds translations 1h)"
+ssh -n "$PROD" 'cd /home/frappe/frappe-bench && for s in $(ls sites); do
+  [ -f "sites/$s/site_config.json" ] || continue
+  sudo -u frappe bench --site "$s" list-apps 2>/dev/null | grep -qw stabler || continue
+  echo "    --- clear-cache $s"
+  sudo -u frappe bench --site "$s" clear-cache
+done'
+
 # 7) Automated probe, then the manual smoke checks.
 #    The probe is the one piece deploy_full.sh had and this script did not: a
 #    round trip that only succeeds if the new code imports AND the site's DB

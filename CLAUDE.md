@@ -207,6 +207,15 @@ the merge protocol and the branch gate in `deploy_stabler.sh` are written out in
    sites you migrate get the DDL. (Near-miss 2026-07-18: `msa` was skipped and its
    new `Import PI Group` columns were missing until a follow-up migrate.)
 6. `bench restart` if any `.py` changed.
+7. `bench --site <site> clear-cache` on **all 7 sites** if any
+   `translations/*.csv` changed. `bench restart` does **not** cover this:
+   `stabler/www/stabler.py:_load_translations` caches each language map in Redis
+   under `stabler:translations:<lang>` with `expires_in_sec=3600`, and restart
+   never touches Redis. Skip it and the CSVs are correct on disk while users see
+   the old strings for up to an hour — and an md5 manifest reads clean the whole
+   time, because the files really are identical (measured 2026-08-12, the PI
+   Advance Ledger i18n deploy). Verify by reading the map back on prod:
+   `_load_translations("ru").get("<a new key>")` must be non-empty.
 - **`bench restart` restarts the whole bench → brief blip for ALL tenants**, not
   just anjan. Schedule for low traffic, or accept the blip explicitly.
 - Rollback = restore the step-2 tar, `chown`, `bench build`, `bench restart`.
