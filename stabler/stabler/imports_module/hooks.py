@@ -802,8 +802,13 @@ def _build_and_save_lcv(grn, note: str):
 	source_rows = [ln["name"] for ln in cost_lines]
 
 	company_currency = frappe.get_cached_value("Company", grn.company, "default_currency")
-	usd_rate = _completion_usd_rate(company_currency, grn.completion_date)
-	components = lcv_math.aggregate_components(cost_lines, usd_rate, company_currency)
+	rates, rate_warnings = resolve_line_rates(cost_lines, company_currency, grn.completion_date)
+	for warning in rate_warnings:
+		frappe.logger("stabler.imports").warning(f"GRN {grn.name}: {warning}")
+
+	components, agg_warnings = lcv_math.aggregate_components(cost_lines, rates, company_currency)
+	for warning in agg_warnings:
+		frappe.logger("stabler.imports").warning(f"GRN {grn.name}: {warning}")
 
 	# A cleared customs declaration (GTD) is the authoritative source of the
 	# Uzbekistan import duty + excise: its figures REPLACE any cost-line Uzbek
@@ -846,7 +851,14 @@ def _build_and_save_lcv(grn, note: str):
 	grn.flags.ignore_validate_update_after_submit = True
 	grn.save(ignore_permissions=True)
 
+	# Stamp only what this voucher actually carries. A line excluded for a missing
+	# exchange rate reached no LCV, so marking it consumed would delete its cost
+	# from valuation for good — the stamp is permanent and no later build looks at
+	# a stamped row again. It stays unstamped and returns once a rate exists.
+	unvaluable = lcv_math.unvaluable_line_names(cost_lines, rates, company_currency)
 	for row_name in source_rows:
+		if row_name in unvaluable:
+			continue
 		frappe.db.set_value("Container Cost Line", row_name, "lcv_ref", lcv.name)
 	return lcv.name
 
@@ -904,20 +916,65 @@ def _collect_cost_lines(commercial_invoice):
 	return line_dicts
 
 
-def _completion_usd_rate(company_currency, completion_date) -> float:
-	"""USD -> company-currency rate for the GRN completion date (default 1.0)."""
-	if company_currency == "USD":
-		return 1.0
-	try:
-		from erpnext.setup.utils import get_exchange_rate
+def resolve_line_rates(cost_lines, company_currency, on_date) -> tuple[dict, list[str]]:
+	"""Resolve fx rates for all non-company currencies present on the lines."""
+	currencies = {ln.get("currency") for ln in cost_lines if ln.get("currency")}
+	currencies.discard(company_currency)
 
-		rate = get_exchange_rate("USD", company_currency, completion_date or today())
-		return float(rate) or 1.0
-	except Exception:
-		frappe.logger("stabler.imports").warning(
-			f"Could not resolve USD->{company_currency} rate for {completion_date}; using 1.0"
+	rates = {}
+	warnings = []
+	for currency in currencies:
+		rate = 0.0
+		# Resolution order: stored Currency Exchange row on/before the date, then ERPNext's get_exchange_rate
+		ce = frappe.db.get_value(
+			"Currency Exchange",
+			{"from_currency": currency, "to_currency": company_currency, "date": ("<=", on_date or today())},
+			"exchange_rate",
+			order_by="date desc",
 		)
-		return 1.0
+		if ce:
+			rate = float(ce)
+		else:
+			try:
+				from erpnext.setup.utils import get_exchange_rate
+
+				fetched = get_exchange_rate(currency, company_currency, on_date or today())
+				if fetched:
+					rate = float(fetched)
+			except Exception:
+				# Never silent: the line will be excluded from the voucher below, and
+				# the operator only sees "no rate" — the cause belongs in the log.
+				frappe.log_error(
+					frappe.get_traceback(), f"LCV rate lookup failed: {currency} -> {company_currency}"
+				)
+
+		if rate > 0:
+			rates[currency] = rate
+		else:
+			warnings.append(
+				frappe._("No usable exchange rate found for {0} on {1}.").format(currency, on_date or today())
+			)
+
+	return rates, warnings
+
+
+def release_cost_lines_for_lcv(doc, method=None):
+	"""Release Container Cost Line reservations when a draft LCV is cancelled or deleted."""
+	cost_lines = frappe.get_all("Container Cost Line", filters={"lcv_ref": doc.name}, pluck="name")
+	for line_name in cost_lines:
+		frappe.db.set_value("Container Cost Line", line_name, "lcv_ref", "")
+
+	if method == "on_trash":
+		grns = frappe.db.get_all("GRN LCV Ref", filters={"lcv": doc.name}, pluck="parent")
+		for grn_name in set(grns):
+			if not grn_name:
+				continue
+			grn = frappe.get_doc("GRN Checklist", grn_name)
+			original_len = len(grn.landed_cost_vouchers)
+			grn.landed_cost_vouchers = [row for row in grn.landed_cost_vouchers if row.lcv != doc.name]
+			if len(grn.landed_cost_vouchers) != original_len:
+				grn.flags.ignore_validate_update_after_submit = True
+				grn.save(ignore_permissions=True)
 
 
 # ---------------------------------------------------------------------------

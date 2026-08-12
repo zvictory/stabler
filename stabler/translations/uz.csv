@@ -5814,3 +5814,7 @@ The selected Purchase Invoice no longer has an outstanding balance.,Tanlangan xa
 Unknown payment account for this company: {0},Ushbu kompaniya uchun noma'lum to'lov hisobi: {0}
 {0} must be a {1} account.,{0} {1} turidagi hisob bo'lishi kerak.
 {0} uses {1}; this {2} advance must be paid from a {2} account.,{0} {1} dan foydalanadi; ushbu {2} avansi {2} hisobidan to'lanishi kerak.
+"Could not value {0} in {1}: no known exchange rate, so it is excluded from the voucher.","{1} valyutasidagi {0} baholanmadi: ma'lum ayirboshlash kursi yo'q, shuning uchun vaucherga kiritilmadi."
+No usable exchange rate found for {0} on {1}.,{1} sanasida {0} uchun yaroqli ayirboshlash kursi topilmadi.
+"This total uses the rate you typed. Creating the voucher does not — it reads the stored Currency Exchange rate. Record the USD rate for {0} first, then create the voucher.","Bu jami siz kiritgan kursdan foydalanadi. Vaucher yaratish esa saqlangan Currency Exchange kursini o'qiydi. Avval {0} sanasidagi USD kursini kiriting, so'ng vaucherni yarating."
+No USD rate recorded for this date.,Bu sana uchun USD kursi kiritilmagan.

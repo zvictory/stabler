@@ -379,6 +379,14 @@ doc_events = {
 			"stabler.api.manufacturing.create_material_request_for_tomorrow_wo",
 		],
 	},
+	"Landed Cost Voucher": {
+		"on_cancel": [
+			"stabler.stabler.imports_module.hooks.release_cost_lines_for_lcv",
+		],
+		"on_trash": [
+			"stabler.stabler.imports_module.hooks.release_cost_lines_for_lcv",
+		],
+	},
 }
 
 custom_fields = {
