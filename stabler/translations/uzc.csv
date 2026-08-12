@@ -5830,3 +5830,4 @@ No {0} account is set for this advance. Choose one before recording it.,Бу а�
 Advance recorded and posted.,Аванс қайд этилди ва проводка қилинди.
 Supplier Payment Currency Guard,Таъминотчи тўлови валютаси назорати
 This supplier is paid in {0}. Select a {0} account: the selected payment account is in {1}.,Бу таъминотчига {0} да тўланади. {0} даги ҳисобни танланг: танланган тўлов ҳисоби {1} да.
+No exchange rate found for this invoice date — landed cost cannot be calculated. Enter a rate above or add the CBU rate.,Ушбу ҳисоб-фактура санаси учун курс топилмади — якуний таннархни ҳисоблаб бўлмайди. Юқорида курс киритинг ёки МБ курсини қўшинг.

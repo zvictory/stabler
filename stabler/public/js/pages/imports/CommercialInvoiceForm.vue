@@ -561,7 +561,10 @@ async function saveImportExpense() {
 // ---------------------------------------------------------------------------
 // UZS landed cost — computed server-side from the CI's real cost lines.
 // ---------------------------------------------------------------------------
-const usdToUzsRate = ref(12800);
+// Null until the server tells us the real rate. Seeding a number here would put
+// a made-up rate into every landed cost figure below before the first response
+// ever arrives — and it would look exactly like a real one.
+const usdToUzsRate = ref(null);
 const allocationMethod = ref("By Weight");
 // The four branches `calculate_ci_landed_cost_uzs` actually recognises.
 const allocationOptions = [
@@ -579,18 +582,23 @@ async function fetchLandedCostUzs() {
 		landedCostUzs.value = null;
 		return;
 	}
+	// A blank/zero box means "you decide" — the server then resolves the CBU rate
+	// for the CI's own currency pair on its CI date.
 	const rate = Number(usdToUzsRate.value) || 0;
-	if (rate <= 0) {
-		landedCostUzs.value = null;
-		return;
-	}
 	loadingLandedCost.value = true;
 	try {
-		landedCostUzs.value = await importsApi.calculateCiLandedCostUzs(
+		const res = await importsApi.calculateCiLandedCostUzs(
 			docName.value,
-			rate,
+			rate > 0 ? rate : null,
 			allocationMethod.value
 		);
+		landedCostUzs.value = res;
+		// Show what was actually used, without re-triggering the watch: writing the
+		// same value back is a no-op for Vue, and a different one is the server
+		// correcting us, which deserves exactly one more render, not a loop.
+		if (res?.exchange_rate && res.rate_source !== "manual") {
+			usdToUzsRate.value = Number(res.exchange_rate);
+		}
 	} catch (err) {
 		landedCostUzs.value = null;
 		console.error("Failed to load UZS landed cost", err);
@@ -604,6 +612,9 @@ watch([usdToUzsRate, allocationMethod], () => {
 	landedCostTimer = setTimeout(fetchLandedCostUzs, 400);
 });
 
+// No rate → nothing below it is computable. A table of zeros would read as
+// "these costs are zero", which is a different and false statement.
+const landedCostRateMissing = computed(() => landedCostUzs.value?.rate_source === "missing");
 const uzsLandedTableItems = computed(() => landedCostUzs.value?.items || []);
 const totalUzsLandedCostSum = computed(() => Number(landedCostUzs.value?.total_landed_uzs) || 0);
 const totalExtraUzs = computed(() => Number(landedCostUzs.value?.total_extra_uzs) || 0);
@@ -3013,7 +3024,12 @@ watch(
 					</thead>
 					<SkeletonRows v-if="loadingLandedCost" :rows="3" :cols="7" />
 					<tbody v-else>
-						<tr v-if="!uzsLandedTableItems.length">
+						<tr v-if="landedCostRateMissing">
+							<td colspan="7" class="text-center text-secondary py-3">
+								{{ t("No exchange rate found for this invoice date — landed cost cannot be calculated. Enter a rate above or add the CBU rate.") }}
+							</td>
+						</tr>
+						<tr v-else-if="!uzsLandedTableItems.length">
 							<td colspan="7" class="text-center text-secondary py-3">
 								{{ t("Nothing to allocate yet — add invoice items and costs first.") }}
 							</td>

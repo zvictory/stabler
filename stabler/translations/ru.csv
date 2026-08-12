@@ -5835,3 +5835,4 @@ No {0} account is set for this advance. Choose one before recording it.,Для �
 Advance recorded and posted.,Аванс записан и проведён.
 Supplier Payment Currency Guard,Контроль валюты платежа поставщику
 This supplier is paid in {0}. Select a {0} account: the selected payment account is in {1}.,Этому поставщику платят в {0}. Выберите счёт в {0}: выбранный счёт платежа в {1}.
+No exchange rate found for this invoice date — landed cost cannot be calculated. Enter a rate above or add the CBU rate.,Курс на дату этого инвойса не найден — себестоимость рассчитать невозможно. Укажите курс выше или добавьте курс ЦБ.
