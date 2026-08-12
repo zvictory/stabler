@@ -4718,6 +4718,14 @@ def _assert_advance_postable(pe, *, company: str, stream: str) -> None:
 	submitted entry writes GL, so a missing account or a missing exchange rate
 	stops being cosmetic: it becomes an opaque ERPNext error or, worse, base
 	amounts computed at rate 0. Fail here with a message that names the fix.
+
+	Call this **before** `insert()`. `paid_from` and `paid_to` are `reqd` on the
+	Payment Entry doctype and both exchange rates go through ERPNext's own
+	`validate_mandatory`, so every branch below is pre-empted by a generic
+	"<Field> is mandatory" the moment the document is inserted. The caller
+	therefore runs `setup_party_account_field()`, `set_missing_values()` and
+	`set_exchange_rate()` by hand first — the same three steps `validate()`
+	would run — so the values read here are the values ERPNext would post.
 	"""
 	if not pe.paid_from:
 		frappe.throw(
@@ -4865,18 +4873,20 @@ def create_advance_payment(
 
 		pe.setup_party_account_field()
 		pe.set_missing_values()
+		pe.set_exchange_rate()
 		_validate_advance_source_account(
 			pe.paid_from,
 			company=company,
 			currency=doc.currency or pe.paid_from_account_currency,
 			stream=stream,
 		)
-		pe.insert(ignore_permissions=False)
+		# Before insert(), not after: `paid_from` / `paid_to` are reqd on the
+		# Payment Entry doctype, so insert() raises Frappe's generic mandatory
+		# error first and these purpose-built messages would never be seen.
 		_assert_advance_postable(pe, company=company, stream=stream)
+		pe.insert(ignore_permissions=False)
 		pe.submit()  # Posted on creation — a draft buys no advance credit.
-		created.append(
-			{"name": pe.name, "stream": stream, "amount": amount, "docstatus": pe.docstatus}
-		)
+		created.append({"name": pe.name, "stream": stream, "amount": amount, "docstatus": pe.docstatus})
 
 	warning = None
 	if bank > 0 and cash > 0 and abs(bank - cash) > 0.01:

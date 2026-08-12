@@ -5824,3 +5824,7 @@ No PI advances found.,PI аванслари топилмади.
 Failed to load PI advances.,PI авансларини юклаб бўлмади.
 Cannot show PI advances,PI авансларини кўрсатиб бўлмади
 Showing the first {count} advances — narrow the filter to see the rest.,Биринчи {count} та аванс кўрсатилмоқда — қолганини кўриш учун филтрни торайтиринг.
+No {0} account is set for this advance. Choose one before recording it.,Бу аванс учун «{0}» ҳисоби танланмаган. Ёзишдан олдин уни танланг.
+{0} has no payable account for {1}. Set the supplier's default payable account first.,{0} учун {1} бўйича кредиторлик ҳисоби йўқ. Аввал етказиб берувчининг стандарт кредиторлик ҳисобини белгиланг.
+"No usable {0} to {1} exchange rate on {2}, so {3} cannot be posted.","{2} санасида {0} дан {1} га яроқли валюта курси йўқ, шунинг учун {3} проводка қилинмайди."
+Advance recorded and posted.,Аванс қайд этилди ва проводка қилинди.
