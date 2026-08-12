@@ -31,6 +31,7 @@ from __future__ import annotations
 
 import re
 import unittest
+from typing import ClassVar
 from unittest.mock import patch
 
 import frappe
@@ -245,7 +246,7 @@ class PiAdvancesScopeTest(unittest.TestCase):
 	"""The scope/limit contract, driven by stubbed ledgers so the numbers are exact."""
 
 	# name -> (advance_available, advance_pending_approval)
-	LEDGERS = {
+	LEDGERS: ClassVar[dict[str, tuple[float, float]]] = {
 		"PI-1": (0, 0),  # consumed  — must drop off
 		"PI-2": (0, 100),  # draft payment pending — still open
 		"PI-3": (100, 0),  # credit left — open
