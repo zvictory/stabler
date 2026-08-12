@@ -563,5 +563,24 @@ class TestTenderDocumentsApi(unittest.TestCase):
 		self.assertNotIn("custom_tender_intake", deal.get("_db_sets", {}))
 
 
+class TestCompanyModuleGuards(unittest.TestCase):
+	def test_get_company_module_row_checks_company_exists(self):
+		"""get_company_module_row must check frappe.db.exists before saving to prevent LinkValidationError."""
+		import os
+
+		path = os.path.join(
+			os.path.dirname(__file__),
+			"..",
+			"stabler",
+			"doctype",
+			"stabler_settings",
+			"stabler_settings.py",
+		)
+		with open(path, encoding="utf-8") as f:
+			source = f.read()
+
+		self.assertIn('if not company or not frappe.db.exists("Company", company):', source)
+
+
 if __name__ == "__main__":
 	unittest.main()

@@ -83,7 +83,7 @@ def get_company_module_row(company: str):
 
 	Defaults all modules to enabled when no explicit row exists yet.
 	"""
-	if not company:
+	if not company or not frappe.db.exists("Company", company):
 		return None
 	settings = frappe.get_single("Stabler Settings")
 	for row in settings.company_modules or []:
