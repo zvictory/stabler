@@ -5829,3 +5829,7 @@ No PI advances found.,Авансы по PI не найдены.
 Failed to load PI advances.,Не удалось загрузить авансы по PI.
 Cannot show PI advances,Невозможно показать авансы по PI
 Showing the first {count} advances — narrow the filter to see the rest.,"Показаны первые {count} авансов — уточните фильтр, чтобы увидеть остальные."
+No {0} account is set for this advance. Choose one before recording it.,Для этого аванса не выбран счёт «{0}». Укажите его перед записью.
+{0} has no payable account for {1}. Set the supplier's default payable account first.,У {0} нет счёта кредиторской задолженности для {1}. Сначала задайте счёт по умолчанию для этого поставщика.
+"No usable {0} to {1} exchange rate on {2}, so {3} cannot be posted.","Нет пригодного курса {0} к {1} на {2}, поэтому {3} не может быть проведён."
+Advance recorded and posted.,Аванс записан и проведён.

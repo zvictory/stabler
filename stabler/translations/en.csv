@@ -5822,3 +5822,7 @@ No PI advances found.,No PI advances found.
 Failed to load PI advances.,Failed to load PI advances.
 Cannot show PI advances,Cannot show PI advances
 Showing the first {count} advances — narrow the filter to see the rest.,Showing the first {count} advances — narrow the filter to see the rest.
+No {0} account is set for this advance. Choose one before recording it.,No {0} account is set for this advance. Choose one before recording it.
+{0} has no payable account for {1}. Set the supplier's default payable account first.,{0} has no payable account for {1}. Set the supplier's default payable account first.
+"No usable {0} to {1} exchange rate on {2}, so {3} cannot be posted.","No usable {0} to {1} exchange rate on {2}, so {3} cannot be posted."
+Advance recorded and posted.,Advance recorded and posted.

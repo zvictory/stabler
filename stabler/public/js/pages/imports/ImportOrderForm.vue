@@ -365,7 +365,7 @@ async function recordAdvance() {
 			reference_no: advRef.value || undefined,
 		});
 		if (res.warning) toast.info(res.warning);
-		toast.success(t("Advance recorded (draft)."));
+		toast.success(t("Advance recorded and posted."));
 		advOpen.value = false;
 		await loadDoc();
 	} catch (err) {

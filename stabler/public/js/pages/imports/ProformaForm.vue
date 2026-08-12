@@ -441,7 +441,7 @@ async function submitAdvancePayment() {
 			cash_account: advSelectedCash.value || undefined,
 		});
 		if (res.warning) toast.info(res.warning);
-		toast.success(t("Advance recorded (draft Payment Entry)."));
+		toast.success(t("Advance recorded and posted."));
 		advOpen.value = false;
 		await loadDoc();
 	} catch (err) {

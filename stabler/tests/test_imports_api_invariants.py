@@ -199,5 +199,50 @@ class TestRowLevelProformaIsPersisted(unittest.TestCase):
 		self.assertNotIn('or doc.get("custom_proforma_invoice")', body)
 
 
+class TestAdvanceIsPostedNotDrafted(unittest.TestCase):
+	"""An advance must be submitted, and its guard must run early enough to speak.
+
+	Two regressions live here, both invisible to a compiler:
+
+	1. A draft Payment Entry contributes `advance_in = 0` to
+	   `build_pi_advance_ledger`, so every PI advance ledger read
+	   `advance_available = 0` however much money had been entered.
+	2. `_assert_advance_postable` used to run *after* `insert()`. `paid_from` /
+	   `paid_to` are `reqd` on the Payment Entry doctype and both exchange rates
+	   go through ERPNext's `validate_mandatory`, so insert() pre-empted all three
+	   branches with a generic "<Field> is mandatory" — the guard was decorative.
+	   Moving it earlier only works because the caller now runs the same three
+	   `validate()` steps by hand first; without `set_exchange_rate()` the rate
+	   branch would fire on every single advance instead.
+
+	Ordering is the whole fix, so it is asserted as ordering, not as presence.
+	"""
+
+	def setUp(self):
+		self.body = _func_body(_read("imports.py"), "create_advance_payment")
+
+	def test_the_entry_is_submitted(self):
+		self.assertIn("pe.submit()", self.body)
+
+	def test_the_guard_runs_before_insert(self):
+		self.assertLess(
+			self.body.index("_assert_advance_postable(pe, company=company, stream=stream)"),
+			self.body.index("pe.insert("),
+		)
+
+	def test_the_exchange_rate_is_resolved_before_the_guard_reads_it(self):
+		self.assertLess(
+			self.body.index("pe.set_exchange_rate()"),
+			self.body.index("_assert_advance_postable(pe, company=company, stream=stream)"),
+		)
+		# set_exchange_rate() needs the account currencies set_missing_values() fills in.
+		self.assertLess(self.body.index("pe.set_missing_values()"), self.body.index("pe.set_exchange_rate()"))
+
+	def test_the_reported_docstatus_is_read_after_submit(self):
+		# The SPA trusts `docstatus` from the response; capturing it before submit()
+		# would report 0 for a perfectly posted entry.
+		self.assertLess(self.body.index("pe.submit()"), self.body.index('"docstatus": pe.docstatus'))
+
+
 if __name__ == "__main__":
 	unittest.main()
