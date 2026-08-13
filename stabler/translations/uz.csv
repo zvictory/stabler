@@ -5832,3 +5832,9 @@ Supplier Payment Currency Guard,Ta'minotchi to‘lovi valyutasi nazorati
 This supplier is paid in {0}. Select a {0} account: the selected payment account is in {1}.,Bu ta'minotchiga {0} da to‘lanadi. {0} dagi hisobni tanlang: tanlangan to‘lov hisobi {1} da.
 No exchange rate found for this invoice date — landed cost cannot be calculated. Enter a rate above or add the CBU rate.,Ushbu hisob-faktura sanasi uchun kurs topilmadi — yakuniy tannarxni hisoblab bo'lmaydi. Yuqorida kurs kiriting yoki MB kursini qo'shing.
 "A hand-entered {0} cost on container {1} is already capitalized by {2}. The bill was linked, but its cost was not added a second time.","{1} konteyneridagi qo'lda kiritilgan {0} xarajati allaqachon {2} bilan kapitallashtirilgan. Hisob-faktura bog'landi, lekin uning summasi ikkinchi marta qo'shilmadi."
+Advance for this CI,Ushbu CI uchun avans
+Advance planned for this CI,Ushbu CI uchun rejalashtirilgan avans
+Advance reserved for this CI,Ushbu CI uchun zaxiralangan avans
+Advance applied to this CI,Ushbu CI ga hisobga olingan avans
+Proforma Invoice,Proforma faktura
+Proportional share only — it is booked when a Purchase Invoice is created for this CI.,Faqat proporsional ulush — ushbu CI uchun xarid qilish hisob-fakturasi yaratilganda hisobga olinadi.

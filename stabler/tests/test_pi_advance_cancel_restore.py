@@ -21,7 +21,7 @@ Deliberately NOT asserted: that the `Purchase Invoice Advance` child rows are
 deleted. ERPNext's `remove_ref_from_advance_section` is called from the cancel
 path with `payment_name=None`, so its `adv.reference_name == payment_name`
 comparison never matches and the rows survive. Stabler is insulated because
-`_ci_vendor_settlement` filters `docstatus < 2`; asserting on the child rows
+`_ci_advance_share` filters `docstatus < 2`; asserting on the child rows
 would paint an upstream quirk as our regression.
 
 Fixtures are built by the test on whatever Company the site carries and rolled

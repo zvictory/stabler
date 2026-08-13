@@ -279,6 +279,14 @@ export const STATUS_MAP = {
 		"Partial Result": "bg-orange-lt",
 		Completed: "bg-green-lt",
 	},
+	// How much of a PI advance belongs to ONE Commercial Invoice. Derived in
+	// api/imports.py:_ci_advance_share — not a stored status, so the three keys
+	// must stay in step with the `state` values that function returns.
+	"CI Advance Share": {
+		Planned: "bg-yellow-lt",
+		Reserved: "bg-orange-lt",
+		Posted: "bg-green-lt",
+	},
 	"docstatus": {
 		0: "bg-yellow-lt", // Draft
 		1: "bg-green-lt",  // Submitted / Active

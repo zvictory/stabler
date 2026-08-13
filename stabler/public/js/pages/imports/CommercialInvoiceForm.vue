@@ -138,6 +138,7 @@ function blankForm() {
 			reconciliation: [],
 		},
 		grn: null,
+		ci_advance_share: null,
 	};
 }
 
@@ -163,6 +164,46 @@ const costOverviewData = ref(null);
 const loadingCostOverview = ref(false);
 const discrepancyData = ref(null);
 const loadingDiscrepancies = ref(false);
+
+// This CI's share of the PI advance — read-only, one row per source PI. The
+// backend gates it behind `_cost_visible()`, so a null here means either "no
+// cost access" or "no source PI"; both render nothing.
+const advanceShare = computed(() => {
+	if (!costVisible.value) return null;
+	const s = form.value.ci_advance_share;
+	return s && (s.sources || []).length ? s : null;
+});
+
+// "Applied" belongs to the posted branch alone — a planned figure read as booked
+// money is the one real risk this card carries.
+const advanceShareState = computed(() => {
+	const state = advanceShare.value?.state || "planned";
+	return state.charAt(0).toUpperCase() + state.slice(1);
+});
+
+const advanceShareTotal = computed(() => {
+	const s = advanceShare.value;
+	if (!s) return 0;
+	if (s.state === "posted") return s.advance_posted;
+	if (s.state === "reserved") return s.advance_reserved;
+	return s.advance_planned;
+});
+
+const advanceShareNote = computed(() => {
+	const s = advanceShare.value;
+	if (!s) return "";
+	if (s.state === "posted") return t("Advance applied to this CI");
+	if (s.state === "reserved") return t("Advance reserved for this CI");
+	return t("Advance planned for this CI");
+});
+
+function advanceShareRowAmount(row) {
+	const s = advanceShare.value;
+	if (!s) return 0;
+	if (s.state === "posted") return row.posted;
+	if (s.state === "reserved") return row.reserved;
+	return row.planned;
+}
 
 const containerCostMap = computed(() => {
 	const map = {};
@@ -2220,6 +2261,65 @@ watch(
 				<router-link to="/reports/pi-discrepancies" class="btn btn-ghost-primary btn-sm ms-2">
 					{{ t("Discrepancies Report →") }}
 				</router-link>
+			</div>
+		</div>
+
+		<!-- 3b This CI's share of the PI advance (read-only) -->
+		<div v-if="advanceShare" class="card mb-3">
+			<div class="card-header d-flex align-items-center justify-content-between flex-wrap gap-2">
+				<h3 class="card-title m-0">
+					<i class="ti ti-cash me-2"></i>{{ t("Advance for this CI") }}
+				</h3>
+				<span class="badge" :class="getStatusBadgeClass('CI Advance Share', advanceShareState)">
+					{{ t(advanceShareState) }}
+				</span>
+			</div>
+			<div class="table-responsive">
+				<table class="table table-sm table-vcenter mb-0">
+					<thead>
+						<tr>
+							<th>{{ t("Proforma Invoice") }}</th>
+							<th class="text-end">{{ t("Advance %") }}</th>
+							<th class="text-end">{{ t("CI Amount") }}</th>
+							<th class="text-end">{{ advanceShareNote }}</th>
+						</tr>
+					</thead>
+					<tbody>
+						<tr v-for="row in advanceShare.sources" :key="row.proforma_invoice">
+							<td>
+								<router-link
+									:to="`/imports/proformas/${row.proforma_invoice}`"
+									class="font-monospace"
+									>{{ row.supplier_pi_ref || row.proforma_invoice }}</router-link
+								>
+							</td>
+							<td class="text-end font-monospace">{{ row.advance_pct }}%</td>
+							<td class="text-end font-monospace">
+								{{ fm(row.ci_amount, advanceShare.currency) }}
+							</td>
+							<td class="text-end font-monospace fw-bold">
+								{{ fm(advanceShareRowAmount(row), advanceShare.currency) }}
+							</td>
+						</tr>
+					</tbody>
+					<tfoot v-if="advanceShare.sources.length > 1">
+						<tr>
+							<td colspan="3" class="text-end fw-semibold small">{{ t("Totals") }}</td>
+							<td class="text-end font-monospace fw-semibold">
+								{{ fm(advanceShareTotal, advanceShare.currency) }}
+							</td>
+						</tr>
+					</tfoot>
+				</table>
+			</div>
+			<div class="card-footer py-2 small text-secondary">
+				<template v-if="advanceShare.state === 'planned'">
+					{{ t("Proportional share only — it is booked when a Purchase Invoice is created for this CI.") }}
+				</template>
+				<template v-else>
+					{{ t("Purchase Invoice") }}:
+					<span class="font-monospace">{{ advanceShare.purchase_invoice }}</span>
+				</template>
 			</div>
 		</div>
 
