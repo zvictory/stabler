@@ -18,9 +18,11 @@
 # is exactly how the rsync exclude lists ended up disagreeing (see .rsync-exclude).
 # Its one unique part -- the post-migrate get_count probe -- lives in step 7 here.
 #
-# Migrate is unconditional below because it is cheap and idempotent; the restart
-# is the expensive one and it ASKS first. Rule of thumb: patches.txt or a doctype
-# changed -> migrate matters; any .py changed -> restart matters.
+# Migrate is conditional based on the git diff of schema-relevant files between
+# prod's stamp and HEAD, with a fail-safe default of migrating if unknown.
+# Set FORCE_MIGRATE=1 to force migrate. The restart is expensive and ASKS first.
+# Rule of thumb: patches.txt or a doctype changed -> migrate matters; any .py
+# changed -> restart matters.
 #
 # Safe by design: ships HEAD rather than the working tree (step 3), stops on any
 # error, backs up first, dry-runs the rsync, NO --delete, asks before the bench
@@ -229,12 +231,40 @@ ssh -n "$PROD" "cd /home/frappe/frappe-bench && sudo -u frappe bench build --app
 #    the code; only the sites you migrate get the DDL. Sites are DISCOVERED, not
 #    hardcoded — a hardcoded list goes stale the moment a tenant is added.
 say "5/7  migrate EVERY stabler-bearing site (per-site DDL)"
-ssh -n "$PROD" 'cd /home/frappe/frappe-bench && for s in $(ls sites); do
-  [ -f "sites/$s/site_config.json" ] || continue
-  sudo -u frappe bench --site "$s" list-apps 2>/dev/null | grep -qw stabler || continue
-  echo "    --- migrate $s"
-  sudo -u frappe bench --site "$s" migrate
-done'
+
+source "$APP_DIR/scripts/migrate_gate.sh"
+
+STAMP=$(ssh -n "$PROD" "cat $PROD_APPS/stabler/.stabler-migrated-sha 2>/dev/null || true")
+HEAD_SHA=$(git -C "$APP_DIR" rev-parse HEAD)
+
+if [ "${FORCE_MIGRATE:-0}" = "1" ] || migrate_needed "$STAMP" HEAD; then
+  TRIGGERS=$(migrate_trigger_files "$STAMP" HEAD 2>/dev/null || true)
+  if [ -n "$TRIGGERS" ]; then
+    echo "    Migrating: schema-relevant files changed in ${STAMP}..HEAD:"
+    printf '%s\n' "$TRIGGERS" | sed 's/^/      /'
+  elif [ "${FORCE_MIGRATE:-0}" = "1" ]; then
+    echo "    Migrating: FORCE_MIGRATE=1 was set."
+  else
+    echo "    Migrating: prod's stamp ('${STAMP}') is missing or not a commit in this clone,"
+    echo "    so the schema state on prod cannot be established. Fail-safe: migrate."
+  fi
+  ssh -n "$PROD" 'cd /home/frappe/frappe-bench && for s in $(ls sites); do
+    [ -f "sites/$s/site_config.json" ] || continue
+    sudo -u frappe bench --site "$s" list-apps 2>/dev/null | grep -qw stabler || continue
+    echo "    --- migrate $s"
+    START_TIME=$(date +%s)
+    if ! sudo -u frappe bench --site "$s" migrate; then
+      echo "!!! MIGRATE FAILED $s"
+      exit 1
+    fi
+    echo "    --- migrate $s took $(( $(date +%s) - START_TIME ))s"
+  done'
+  ssh -n "$PROD" "echo $HEAD_SHA | sudo -u frappe tee $PROD_APPS/stabler/.stabler-migrated-sha >/dev/null"
+else
+  echo "    Skipping migrate. Compared range ${STAMP}..HEAD:"
+  echo "    No doctype, patch, fixture, or hooks change was found, so no DDL is needed."
+  ssh -n "$PROD" "echo $HEAD_SHA | sudo -u frappe tee $PROD_APPS/stabler/.stabler-migrated-sha >/dev/null"
+fi
 
 # 6) Restart — REQUIRED (.py changed). NOTE: restarts the whole bench -> brief
 #    blip for ALL tenants, not just anjan. Run at low traffic.
