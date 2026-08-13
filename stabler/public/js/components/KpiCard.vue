@@ -1,51 +1,126 @@
 <script setup>
 defineProps({
 	label: { type: String, required: true },
-	value: { type: String, default: "—" },
+	value: { type: [String, Number], default: "—" },
+	unit: { type: String, default: "" },
+	prefix: { type: String, default: "" },
 	// Optional per-currency breakdown: pre-formatted strings, dominant first.
 	// When provided, lines[0] is displayed as the primary (big) value and
 	// lines.slice(1) are shown as smaller secondary rows below.
 	lines: { type: Array, default: null },
-	icon: { type: String, default: "ti-coin" },
+	icon: { type: String, default: "" },
 	trend: { type: Number, default: null },
 	hint: { type: String, default: "" },
 	loading: { type: Boolean, default: false },
 	tone: { type: String, default: "primary" },
+	valueTone: { type: String, default: "" },
+	badges: { type: Array, default: () => [] },
+	clickable: { type: Boolean, default: false },
+	active: { type: Boolean, default: false },
 });
+
+const emit = defineEmits(["click", "badge-click"]);
+
+function onClick(e) {
+	emit("click", e);
+}
+
+function onBadgeClick(b, e) {
+	emit("badge-click", b, e);
+}
 </script>
 
 <template>
-	<div class="card card-sm">
-		<div class="card-body">
-			<div class="row align-items-center">
-				<div class="col-auto">
-					<span class="bg-{{ tone || 'primary' }} text-white avatar" :class="`bg-${tone}`">
-						<i class="ti" :class="icon"></i>
-					</span>
+	<div
+		class="card card-sm stbl-kpi-card"
+		:class="{
+			'stbl-kpi-card--clickable': clickable,
+			'stbl-kpi-card--active': active,
+		}"
+		@click="onClick"
+	>
+		<div class="card-body p-3 d-flex flex-column justify-content-between">
+			<!-- Header: Micro-label and Top-Right Icon Badge -->
+			<div class="d-flex align-items-center justify-content-between mb-2">
+				<div class="stbl-kpi-label text-truncate me-2" :title="label">
+					<slot name="label">{{ label }}</slot>
 				</div>
-				<div class="col">
-					<div class="font-weight-medium text-secondary small">{{ label }}</div>
-					<div class="h2 mb-0">
-						<span v-if="loading" class="placeholder col-6">&nbsp;</span>
-						<span v-else>{{ lines ? lines[0] : value }}</span>
+				<div
+					v-if="icon"
+					class="avatar avatar-xs rounded-2 flex-shrink-0"
+					:class="`bg-${tone || 'primary'}-lt text-${tone || 'primary'}`"
+				>
+					<i class="ti fs-3" :class="icon.startsWith('ti-') ? icon : `ti-${icon}`"></i>
+				</div>
+			</div>
+
+			<!-- Hero Value Area -->
+			<div class="stbl-kpi-value-row d-flex align-items-baseline mb-1">
+				<span v-if="loading" class="placeholder col-7 placeholder-lg">&nbsp;</span>
+				<div
+					v-else
+					class="h2 mb-0 font-monospace fw-bold stbl-kpi-value text-truncate"
+					:class="valueTone ? `text-${valueTone}` : ''"
+				>
+					<slot name="value">
+						<span v-if="prefix" class="me-1 fs-4 fw-normal text-secondary">{{ prefix }}</span>
+						<span>{{ lines && lines.length ? lines[0] : value }}</span>
+						<span v-if="unit" class="ms-1 fs-5 fw-normal text-secondary">{{ unit }}</span>
+					</slot>
+				</div>
+			</div>
+
+			<!-- Multi-line breakdown for multi-currency or secondary amounts -->
+			<template v-if="!loading && lines && lines.length > 1">
+				<div class="stbl-kpi-lines mt-1">
+					<div
+						v-for="(line, i) in lines.slice(1)"
+						:key="i"
+						class="text-secondary small font-monospace text-truncate"
+					>
+						{{ line }}
 					</div>
-					<template v-if="!loading && lines && lines.length > 1">
-						<div
-							v-for="(line, i) in lines.slice(1)"
-							:key="i"
-							class="text-secondary small font-monospace"
+				</div>
+			</template>
+
+			<!-- Subtext / Micro-Badges / Trend / Hint Footer -->
+			<div
+				v-if="!loading && (badges?.length || hint || trend !== null || $slots.footer)"
+				class="stbl-kpi-footer d-flex flex-wrap align-items-center gap-1 mt-2 pt-1"
+			>
+				<slot name="footer">
+					<!-- Badges / Micro-pills -->
+					<template v-if="badges && badges.length">
+						<span
+							v-for="(b, idx) in badges"
+							:key="b.key || idx"
+							class="badge rounded-pill stbl-kpi-badge"
+							:class="[
+								b.tone ? `bg-${b.tone}-lt text-${b.tone}` : 'bg-secondary-lt text-secondary',
+								b.clickable ? 'cursor-pointer' : '',
+							]"
+							@click.stop="onBadgeClick(b, $event)"
 						>
-							{{ line }}
-						</div>
-					</template>
-					<div v-if="hint || trend !== null" class="text-secondary small mt-1">
-						<span v-if="trend !== null" :class="trend >= 0 ? 'text-success' : 'text-danger'">
-							<i class="ti" :class="trend >= 0 ? 'ti-trending-up' : 'ti-trending-down'"></i>
-							{{ Math.abs(trend).toFixed(1) }}%
+							<span class="stbl-kpi-badge-label">{{ b.label }}</span>
+							<span v-if="b.value !== undefined" class="stbl-kpi-badge-val ms-1 fw-bold font-monospace">: {{ b.value }}</span>
 						</span>
-						<span v-if="hint" class="ms-1">{{ hint }}</span>
-					</div>
-				</div>
+					</template>
+
+					<!-- Trend indicator -->
+					<span
+						v-if="trend !== null"
+						class="badge rounded-pill"
+						:class="trend >= 0 ? 'bg-success-lt text-success' : 'bg-danger-lt text-danger'"
+					>
+						<i class="ti me-1" :class="trend >= 0 ? 'ti-trending-up' : 'ti-trending-down'"></i>
+						{{ Math.abs(trend).toFixed(1) }}%
+					</span>
+
+					<!-- Hint text -->
+					<span v-if="hint" class="text-secondary small text-truncate" :title="hint">
+						{{ hint }}
+					</span>
+				</slot>
 			</div>
 		</div>
 	</div>

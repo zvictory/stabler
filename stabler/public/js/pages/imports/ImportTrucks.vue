@@ -14,6 +14,7 @@ import EmptyState from "../../components/EmptyState.vue";
 import Select from "../../components/Select.vue";
 import StatusBadge from "../../components/StatusBadge.vue";
 import Pagination from "../../components/Pagination.vue";
+import KpiCard from "../../components/KpiCard.vue";
 
 const session = useSession();
 const { activeCompany, user } = storeToRefs(session);
@@ -153,43 +154,38 @@ watch(activeCompany, reload);
 <template>
 	<div>
 		<!-- Metric Strip -->
-		<div class="row row-cards mb-3">
+		<div class="row row-deck row-cards mb-3">
 			<div class="col-sm-6 col-lg-4">
-				<div class="card card-sm">
-					<div class="card-body">
-						<div class="font-weight-medium text-secondary small">{{ t("Transport Cost Total") }}</div>
-						<div class="h2 mb-0 font-monospace text-primary fw-bold">
-							<span v-if="statsLoading" class="placeholder col-6">&nbsp;</span>
-							<span v-else>{{ stats && stats.transport_cost_sum != null ? fm(stats.transport_cost_sum, statsCurrency) : "—" }}</span>
-						</div>
-					</div>
-				</div>
+				<KpiCard
+					:label="t('Transport Cost Total')"
+					:value="stats && stats.transport_cost_sum != null ? fm(stats.transport_cost_sum, statsCurrency) : '—'"
+					icon="ti-file-dollar"
+					tone="primary"
+					:loading="statsLoading"
+				/>
 			</div>
 			<div class="col-sm-6 col-lg-4">
-				<div class="card card-sm">
-					<div class="card-body">
-						<div class="font-weight-medium text-secondary small">{{ t("Total Weight Transported") }}</div>
-						<div class="h2 mb-0 font-monospace text-azure fw-bold">
-							<span v-if="statsLoading" class="placeholder col-6">&nbsp;</span>
-							<span v-else>{{ fn(stats ? stats.total_kg_sum : 0) }} kg</span>
-						</div>
-					</div>
-				</div>
+				<KpiCard
+					:label="t('Total Weight Transported')"
+					:value="fn(stats ? stats.total_kg_sum : 0)"
+					unit="kg"
+					icon="ti-scale"
+					tone="azure"
+					:loading="statsLoading"
+				/>
 			</div>
 			<div class="col-sm-6 col-lg-4">
-				<div class="card card-sm">
-					<div class="card-body">
-						<div class="font-weight-medium text-secondary small">{{ t("Truck Fleet Active") }}</div>
-						<div class="h2 mb-0 font-monospace">
-							<span v-if="statsLoading" class="placeholder col-4">&nbsp;</span>
-							<span v-else>{{ stats ? stats.count : total }}</span>
-						</div>
-						<div v-if="!statsLoading" class="text-secondary small mt-1">
-							{{ t("In Transit") }}: <span class="font-monospace fw-semibold">{{ stats ? stats.in_transit_count : 0 }}</span> ·
-							{{ t("Completed") }}: <span class="font-monospace fw-semibold">{{ stats ? stats.completed_count : 0 }}</span>
-						</div>
-					</div>
-				</div>
+				<KpiCard
+					:label="t('Truck Fleet Active')"
+					:value="stats ? stats.count : total"
+					icon="ti-truck"
+					tone="purple"
+					:loading="statsLoading"
+					:badges="[
+						{ label: t('In Transit'), value: stats ? stats.in_transit_count : 0, tone: 'warning' },
+						{ label: t('Completed'), value: stats ? stats.completed_count : 0, tone: 'success' },
+					]"
+				/>
 			</div>
 		</div>
 

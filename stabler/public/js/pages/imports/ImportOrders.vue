@@ -14,6 +14,7 @@ import EmptyState from "../../components/EmptyState.vue";
 import Select from "../../components/Select.vue";
 import StatusBadge from "../../components/StatusBadge.vue";
 import Pagination from "../../components/Pagination.vue";
+import KpiCard from "../../components/KpiCard.vue";
 
 const session = useSession();
 const { activeCompany, user } = storeToRefs(session);
@@ -131,47 +132,40 @@ watch(activeCompany, () => {
 <template>
 	<div>
 		<!-- KPI strip -->
-		<div class="row row-cards mb-3">
+		<div class="row row-deck row-cards mb-3">
 			<div class="col-sm-6 col-lg-4">
-				<div class="card card-sm">
-					<div class="card-body">
-						<div class="font-weight-medium text-secondary small">{{ t("Agreed total") }}</div>
-						<div class="h2 mb-0 font-monospace">
-							<span v-if="loading" class="placeholder col-5">&nbsp;</span>
-							<span v-else>{{ money(kpis && kpis.agreed_total) }}</span>
-						</div>
-						<div v-if="!loading" class="text-secondary small mt-1">{{ kpiAgreedSub }}</div>
-					</div>
-				</div>
+				<KpiCard
+					:label="t('Agreed total')"
+					:value="money(kpis && kpis.agreed_total)"
+					icon="ti-file-dollar"
+					tone="primary"
+					:loading="loading"
+					:hint="kpiAgreedSub"
+				/>
 			</div>
 			<div class="col-sm-6 col-lg-4">
-				<div class="card card-sm">
-					<div class="card-body">
-						<div class="font-weight-medium text-secondary small">{{ t("Physical") }}</div>
-						<div class="h2 mb-0 font-monospace">
-							<span v-if="loading" class="placeholder col-5">&nbsp;</span>
-							<span v-else>{{ Number(kpis ? kpis.total_boxes : 0).toLocaleString() }} {{ t("boxes") }}</span>
-						</div>
-						<div v-if="!loading" class="text-secondary small mt-1 font-monospace">
-							{{ Number(kpis ? kpis.total_kg : 0).toFixed(0) }} {{ t("kg") }}
-						</div>
-					</div>
-				</div>
+				<KpiCard
+					:label="t('Physical')"
+					:value="Number(kpis ? kpis.total_boxes : 0).toLocaleString()"
+					unit="boxes"
+					icon="ti-package"
+					tone="orange"
+					:loading="loading"
+					:hint="`${Number(kpis ? kpis.total_kg : 0).toFixed(0)} kg`"
+				/>
 			</div>
 			<div class="col-sm-6 col-lg-4">
-				<div class="card card-sm">
-					<div class="card-body">
-						<div class="font-weight-medium text-secondary small">{{ t("Invoices") }}</div>
-						<div class="h2 mb-0 font-monospace">
-							<span v-if="loading" class="placeholder col-3">&nbsp;</span>
-							<span v-else>{{ kpis ? kpis.invoices_total : 0 }}</span>
-						</div>
-						<div v-if="!loading" class="text-secondary small mt-1">
-							{{ kpis ? kpis.invoices_pending : 0 }} {{ t("pending") }} ·
-							{{ kpis ? kpis.invoices_done : 0 }} {{ t("done") }}
-						</div>
-					</div>
-				</div>
+				<KpiCard
+					:label="t('Invoices')"
+					:value="kpis ? kpis.invoices_total : 0"
+					icon="ti-receipt"
+					tone="azure"
+					:loading="loading"
+					:badges="[
+						{ label: t('Pending'), value: kpis ? kpis.invoices_pending : 0, tone: 'warning' },
+						{ label: t('Done'), value: kpis ? kpis.invoices_done : 0, tone: 'success' },
+					]"
+				/>
 			</div>
 		</div>
 

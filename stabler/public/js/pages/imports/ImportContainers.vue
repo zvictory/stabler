@@ -14,6 +14,7 @@ import EmptyState from "../../components/EmptyState.vue";
 import Select from "../../components/Select.vue";
 import StatusBadge from "../../components/StatusBadge.vue";
 import Pagination from "../../components/Pagination.vue";
+import KpiCard from "../../components/KpiCard.vue";
 
 const session = useSession();
 const { activeCompany, user } = storeToRefs(session);
@@ -225,63 +226,47 @@ watch(activeCompany, reload);
 <template>
 	<div>
 		<!-- Metric Strip -->
-		<div class="row row-cards mb-3">
+		<div class="row row-deck row-cards mb-3">
 			<div class="col-sm-6 col-lg-3">
-				<div class="card card-sm">
-					<div class="card-body">
-						<div class="d-flex align-items-center">
-							<div class="subheader me-auto">{{ t("Total FCL (Containers)") }}</div>
-							<div class="avatar bg-primary-lt text-primary rounded"><i class="ti ti-box-seam fs-2"></i></div>
-						</div>
-						<div class="h1 mb-0 font-monospace text-primary fw-bold">
-							<span v-if="statsLoading" class="placeholder col-6">&nbsp;</span>
-							<span v-else>{{ stats ? stats.count : total }}</span>
-						</div>
-					</div>
-				</div>
+				<KpiCard
+					:label="t('Total FCL (Containers)')"
+					:value="stats ? stats.count : total"
+					icon="ti-box-seam"
+					tone="primary"
+					:loading="statsLoading"
+				/>
 			</div>
 			<div class="col-sm-6 col-lg-3">
-				<div class="card card-sm">
-					<div class="card-body">
-						<div class="d-flex align-items-center">
-							<div class="subheader me-auto">{{ t("Total Boxes") }}</div>
-							<div class="avatar bg-orange-lt text-orange rounded"><i class="ti ti-package fs-2"></i></div>
-						</div>
-						<div class="h1 mb-0 font-monospace text-orange fw-bold">
-							<span v-if="statsLoading" class="placeholder col-6">&nbsp;</span>
-							<span v-else>{{ fn(stats ? stats.total_boxes_sum : 0) }}</span>
-						</div>
-					</div>
-				</div>
+				<KpiCard
+					:label="t('Total Boxes')"
+					:value="fn(stats ? stats.total_boxes_sum : 0)"
+					icon="ti-package"
+					tone="orange"
+					:loading="statsLoading"
+				/>
 			</div>
 			<div class="col-sm-6 col-lg-3">
-				<div class="card card-sm">
-					<div class="card-body">
-						<div class="d-flex align-items-center">
-							<div class="subheader me-auto">{{ t("Total Weight (KG)") }}</div>
-							<div class="avatar bg-azure-lt text-azure rounded"><i class="ti ti-weight fs-2"></i></div>
-						</div>
-						<div class="h1 mb-0 font-monospace text-azure fw-bold">
-							<span v-if="statsLoading" class="placeholder col-6">&nbsp;</span>
-							<span v-else>{{ fn(stats ? stats.total_kg_sum : 0) }} <span class="fs-4 text-muted fw-normal">kg</span></span>
-						</div>
-					</div>
-				</div>
+				<KpiCard
+					:label="t('Total Weight')"
+					:value="fn(stats ? stats.total_kg_sum : 0)"
+					unit="kg"
+					icon="ti-scale"
+					tone="azure"
+					:loading="statsLoading"
+				/>
 			</div>
 			<div class="col-sm-6 col-lg-3">
-				<div class="card card-sm">
-					<div class="card-body">
-						<div class="d-flex align-items-center">
-							<div class="subheader me-auto">{{ t("Transit & Delivery") }}</div>
-							<div class="avatar bg-green-lt text-green rounded"><i class="ti ti-truck-delivery fs-2"></i></div>
-						</div>
-						<div v-if="!statsLoading" class="mt-1">
-							<span class="badge bg-warning-lt text-warning me-2"><i class="ti ti-transit me-1"></i>Transit: {{ stats ? stats.in_transit_count : 0 }}</span>
-							<span class="badge bg-success-lt text-success"><i class="ti ti-check me-1"></i>Delivered: {{ stats ? stats.delivered_count : 0 }}</span>
-						</div>
-						<div v-else class="placeholder col-8">&nbsp;</div>
-					</div>
-				</div>
+				<KpiCard
+					:label="t('Transit & Delivery')"
+					:value="stats ? (stats.in_transit_count + stats.delivered_count) : 0"
+					icon="ti-truck-delivery"
+					tone="success"
+					:loading="statsLoading"
+					:badges="[
+						{ label: t('Transit'), value: stats ? stats.in_transit_count : 0, tone: 'warning' },
+						{ label: t('Delivered'), value: stats ? stats.delivered_count : 0, tone: 'success' },
+					]"
+				/>
 			</div>
 		</div>
 

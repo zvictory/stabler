@@ -14,6 +14,7 @@ import EmptyState from "../../components/EmptyState.vue";
 import Select from "../../components/Select.vue";
 import StatusBadge from "../../components/StatusBadge.vue";
 import Pagination from "../../components/Pagination.vue";
+import KpiCard from "../../components/KpiCard.vue";
 
 const session = useSession();
 const { activeCompany, user } = storeToRefs(session);
@@ -327,54 +328,47 @@ watch(activeCompany, () => {
 <template>
 	<div>
 		<!-- Metric Strip -->
-		<div class="row row-cards mb-3">
+		<div class="row row-deck row-cards mb-3">
 			<div class="col-sm-6 col-lg-3">
-				<div class="card card-sm">
-					<div class="card-body">
-						<div class="font-weight-medium text-secondary small">{{ t("Agreed total") }}</div>
-						<div class="h2 mb-0 font-monospace text-primary fw-bold">
-							<span v-if="statsLoading" class="placeholder col-6">&nbsp;</span>
-							<span v-else>{{ fm(stats && stats.agreed_total_sum, statsCurrency) }}</span>
-						</div>
-					</div>
-				</div>
+				<KpiCard
+					:label="t('Agreed total')"
+					:value="fm(stats && stats.agreed_total_sum, statsCurrency)"
+					icon="ti-file-dollar"
+					tone="primary"
+					:loading="statsLoading"
+				/>
 			</div>
 			<div class="col-sm-6 col-lg-3">
-				<div class="card card-sm">
-					<div class="card-body">
-						<div class="font-weight-medium text-secondary small">{{ t("Docs total") }}</div>
-						<div class="h2 mb-0 font-monospace text-azure fw-bold">
-							<span v-if="statsLoading" class="placeholder col-6">&nbsp;</span>
-							<span v-else>{{ stats && stats.docs_total_sum != null ? fm(stats.docs_total_sum, statsCurrency) : "—" }}</span>
-						</div>
-					</div>
-				</div>
+				<KpiCard
+					:label="t('Docs total')"
+					:value="stats && stats.docs_total_sum != null ? fm(stats.docs_total_sum, statsCurrency) : '—'"
+					icon="ti-file-text"
+					tone="azure"
+					:loading="statsLoading"
+				/>
 			</div>
 			<div class="col-sm-6 col-lg-3">
-				<div class="card card-sm">
-					<div class="card-body">
-						<div class="font-weight-medium text-secondary small">{{ t("Cash Difference") }}</div>
-						<div class="h2 mb-0 font-monospace text-warning fw-bold">
-							<span v-if="statsLoading" class="placeholder col-6">&nbsp;</span>
-							<span v-else>{{ stats && stats.cash_difference_sum != null ? fm(stats.cash_difference_sum, statsCurrency) : "—" }}</span>
-						</div>
-					</div>
-				</div>
+				<KpiCard
+					:label="t('Cash Difference')"
+					:value="stats && stats.cash_difference_sum != null ? fm(stats.cash_difference_sum, statsCurrency) : '—'"
+					icon="ti-arrows-diff"
+					tone="orange"
+					value-tone="orange"
+					:loading="statsLoading"
+				/>
 			</div>
 			<div class="col-sm-6 col-lg-3">
-				<div class="card card-sm">
-					<div class="card-body">
-						<div class="font-weight-medium text-secondary small">{{ t("Commercial Invoices") }}</div>
-						<div class="h2 mb-0 font-monospace">
-							<span v-if="statsLoading" class="placeholder col-4">&nbsp;</span>
-							<span v-else>{{ stats ? stats.count : total }}</span>
-						</div>
-						<div v-if="!statsLoading" class="text-secondary small mt-1">
-							{{ t("Transit") }}: <span class="font-monospace fw-semibold">{{ stats ? stats.in_transit_count : 0 }}</span> ·
-							{{ t("Delivered") }}: <span class="font-monospace fw-semibold">{{ stats ? stats.delivered_count : 0 }}</span>
-						</div>
-					</div>
-				</div>
+				<KpiCard
+					:label="t('Commercial Invoices')"
+					:value="stats ? stats.count : total"
+					icon="ti-receipt"
+					tone="primary"
+					:loading="statsLoading"
+					:badges="[
+						{ label: t('Transit'), value: stats ? stats.in_transit_count : 0, tone: 'warning' },
+						{ label: t('Delivered'), value: stats ? stats.delivered_count : 0, tone: 'success' },
+					]"
+				/>
 			</div>
 		</div>
 

@@ -253,3 +253,63 @@ body {
 	color: var(--stbl-dropdown-muted);
 	cursor: default;
 }
+
+/* ==========================================================================
+   Stabler Modernist KPI / Score Cards
+   ========================================================================== */
+.stbl-kpi-card {
+	background: var(--tblr-bg-surface, #fff);
+	border: 1px solid var(--tblr-border-color, #e6e7e9);
+	border-radius: 0.5rem;
+	transition: border-color 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease;
+	position: relative;
+	min-height: 100%;
+}
+
+.stbl-kpi-card .card-body {
+	min-height: 96px;
+}
+
+.stbl-kpi-label {
+	font-size: 0.7rem;
+	font-weight: 600;
+	letter-spacing: 0.04em;
+	text-transform: uppercase;
+	color: var(--tblr-secondary, #6c7a91);
+}
+
+.stbl-kpi-value {
+	font-size: 1.45rem;
+	line-height: 1.2;
+	color: var(--tblr-body-color, #1a2433);
+	letter-spacing: -0.02em;
+	font-variant-numeric: tabular-nums;
+}
+
+.stbl-kpi-card--clickable {
+	cursor: pointer;
+	user-select: none;
+}
+
+.stbl-kpi-card--clickable:hover {
+	border-color: var(--tblr-primary, #206bc4);
+	box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+.stbl-kpi-card--active {
+	border-color: var(--tblr-primary, #206bc4);
+	background-color: var(--tblr-primary-lt, rgba(32, 107, 196, 0.04));
+	box-shadow: 0 0 0 1px var(--tblr-primary, #206bc4), 0 4px 12px rgba(32, 107, 196, 0.08);
+}
+
+.stbl-kpi-badge {
+	font-size: 0.72rem;
+	font-weight: 500;
+	padding: 0.2rem 0.5rem;
+	border: 1px solid transparent;
+}
+
+.stbl-kpi-badge.cursor-pointer:hover {
+	filter: brightness(0.95);
+}
+

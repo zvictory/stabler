@@ -13,6 +13,7 @@ import Select from "../../components/Select.vue";
 import ListToolbar from "../../components/ListToolbar.vue";
 import EmptyState from "../../components/EmptyState.vue";
 import SkeletonRows from "../../components/SkeletonRows.vue";
+import KpiCard from "../../components/KpiCard.vue";
 
 const session = useSession();
 const { activeCompany, user } = storeToRefs(session);
@@ -277,57 +278,50 @@ const canSupersede = (row) => ["DRAFT", "CONFIRMED"].includes(row.status);
 
 <template>
 	<!-- Stats strip -->
-	<div class="row row-cards mb-3">
+	<div class="row row-deck row-cards mb-3">
 		<div class="col-sm-6 col-lg-3">
-			<div class="card card-sm">
-				<div class="card-body">
-					<div class="font-weight-medium text-secondary small">{{ t("Agreed total") }}</div>
-					<div class="h2 mb-0 font-monospace">
-						<span v-if="statsLoading" class="placeholder col-6">&nbsp;</span>
-						<span v-else>{{ fm(stats && stats.agreed_total_sum, statsCurrency) }}</span>
-					</div>
-					<div v-if="!statsLoading && statsMixedCurrency" class="text-secondary small mt-1">{{ t("Mixed currencies — sum shown without symbol") }}</div>
-				</div>
-			</div>
+			<KpiCard
+				:label="t('Agreed total')"
+				:value="fm(stats && stats.agreed_total_sum, statsCurrency)"
+				icon="ti-file-dollar"
+				tone="primary"
+				:loading="statsLoading"
+				:hint="!statsLoading && statsMixedCurrency ? t('Mixed currencies — sum shown without symbol') : ''"
+			/>
 		</div>
 		<div class="col-sm-6 col-lg-3">
-			<div class="card card-sm">
-				<div class="card-body">
-					<div class="font-weight-medium text-secondary small">{{ t("Docs total") }}</div>
-					<div class="h2 mb-0 font-monospace">
-						<span v-if="statsLoading" class="placeholder col-6">&nbsp;</span>
-						<span v-else>{{ stats && stats.docs_total_sum != null ? fm(stats.docs_total_sum, statsCurrency) : "—" }}</span>
-					</div>
-					<div v-if="!statsLoading && statsMixedCurrency" class="text-secondary small mt-1">{{ t("Mixed currencies — sum shown without symbol") }}</div>
-				</div>
-			</div>
+			<KpiCard
+				:label="t('Docs total')"
+				:value="stats && stats.docs_total_sum != null ? fm(stats.docs_total_sum, statsCurrency) : '—'"
+				icon="ti-file-text"
+				tone="azure"
+				:loading="statsLoading"
+				:hint="!statsLoading && statsMixedCurrency ? t('Mixed currencies — sum shown without symbol') : ''"
+			/>
 		</div>
 		<div class="col-sm-6 col-lg-3">
-			<div class="card card-sm">
-				<div class="card-body">
-					<div class="font-weight-medium text-secondary small">{{ t("Cash Difference") }}</div>
-					<div class="h2 mb-0 font-monospace">
-						<span v-if="statsLoading" class="placeholder col-6">&nbsp;</span>
-						<span v-else>{{ stats && stats.cash_difference_sum != null ? fm(stats.cash_difference_sum, statsCurrency) : "—" }}</span>
-					</div>
-					<div v-if="!statsLoading && statsMixedCurrency" class="text-secondary small mt-1">{{ t("Mixed currencies — sum shown without symbol") }}</div>
-				</div>
-			</div>
+			<KpiCard
+				:label="t('Cash Difference')"
+				:value="stats && stats.cash_difference_sum != null ? fm(stats.cash_difference_sum, statsCurrency) : '—'"
+				icon="ti-arrows-diff"
+				tone="orange"
+				value-tone="orange"
+				:loading="statsLoading"
+				:hint="!statsLoading && statsMixedCurrency ? t('Mixed currencies — sum shown without symbol') : ''"
+			/>
 		</div>
 		<div class="col-sm-6 col-lg-3">
-			<div class="card card-sm">
-				<div class="card-body">
-					<div class="font-weight-medium text-secondary small">{{ t("Proforma Invoices") }}</div>
-					<div class="h2 mb-0 font-monospace">
-						<span v-if="statsLoading" class="placeholder col-4">&nbsp;</span>
-						<span v-else>{{ stats ? stats.count : rows.length }}</span>
-					</div>
-					<div v-if="!statsLoading" class="text-secondary small mt-1">
-						{{ t("Draft") }}: <span class="font-monospace">{{ stats ? stats.draft_count : 0 }}</span> ·
-						{{ t("Confirmed") }}: <span class="font-monospace">{{ stats ? stats.confirmed_count : 0 }}</span>
-					</div>
-				</div>
-			</div>
+			<KpiCard
+				:label="t('Proforma Invoices')"
+				:value="stats ? stats.count : rows.length"
+				icon="ti-files"
+				tone="primary"
+				:loading="statsLoading"
+				:badges="[
+					{ label: t('Draft'), value: stats ? stats.draft_count : 0, tone: 'secondary' },
+					{ label: t('Confirmed'), value: stats ? stats.confirmed_count : 0, tone: 'azure' },
+				]"
+			/>
 		</div>
 	</div>
 

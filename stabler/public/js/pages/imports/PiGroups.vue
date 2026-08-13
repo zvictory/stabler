@@ -15,6 +15,7 @@ import Typeahead from "../../components/Typeahead.vue";
 import ListToolbar from "../../components/ListToolbar.vue";
 import EmptyState from "../../components/EmptyState.vue";
 import SkeletonRows from "../../components/SkeletonRows.vue";
+import KpiCard from "../../components/KpiCard.vue";
 
 const session = useSession();
 const { activeCompany, user } = storeToRefs(session);
@@ -361,57 +362,38 @@ async function saveAssign() {
 <template>
 	<div class="page-body">
 		<!-- Summary Cards Header -->
-		<div class="row row-cards mb-3">
-			<div class="col-sm-6 col-lg-3">
-				<div class="card card-sm">
-					<div class="card-body">
-						<div class="row align-items-center">
-							<div class="col-auto">
-								<span class="bg-primary text-white avatar">
-									<i class="ti ti-tags fs-2"></i>
-								</span>
-							</div>
-							<div class="col">
-								<div class="font-weight-medium">{{ summaryStats.total }} {{ t("Groups") }}</div>
-								<div class="text-secondary small">{{ summaryStats.openCount }} {{ t("Open") }}</div>
-							</div>
-						</div>
-					</div>
-				</div>
+		<div class="row row-deck row-cards mb-3">
+			<div class="col-sm-6 col-lg-4">
+				<KpiCard
+					:label="t('PI Groups')"
+					:value="summaryStats.total"
+					icon="ti-tags"
+					tone="primary"
+					:loading="loading"
+					:badges="[
+						{ label: t('Open'), value: summaryStats.openCount, tone: 'success' },
+						{ label: t('Closed'), value: summaryStats.closedCount || 0, tone: 'secondary' },
+					]"
+				/>
 			</div>
-			<div class="col-sm-6 col-lg-3">
-				<div class="card card-sm">
-					<div class="card-body">
-						<div class="row align-items-center">
-							<div class="col-auto">
-								<span class="bg-azure text-white avatar">
-									<i class="ti ti-file-invoice fs-2"></i>
-								</span>
-							</div>
-							<div class="col">
-								<div class="font-weight-medium">{{ summaryStats.totalPis }} {{ t("Associated PIs") }}</div>
-								<div class="text-secondary small">{{ t("Across all groups") }}</div>
-							</div>
-						</div>
-					</div>
-				</div>
+			<div class="col-sm-6 col-lg-4">
+				<KpiCard
+					:label="t('Associated PIs')"
+					:value="summaryStats.totalPis"
+					icon="ti-file-invoice"
+					tone="azure"
+					:loading="loading"
+					:hint="t('Across all groups')"
+				/>
 			</div>
-			<div class="col-sm-6 col-lg-6">
-				<div class="card card-sm">
-					<div class="card-body">
-						<div class="row align-items-center">
-							<div class="col-auto">
-								<span class="bg-green text-white avatar">
-									<i class="ti ti-currency-dollar fs-2"></i>
-								</span>
-							</div>
-							<div class="col">
-								<div class="font-weight-medium font-monospace">{{ fm(summaryStats.totalAgreed, "USD") }}</div>
-								<div class="text-secondary small">{{ t("Total Agreed Value") }}</div>
-							</div>
-						</div>
-					</div>
-				</div>
+			<div class="col-sm-6 col-lg-4">
+				<KpiCard
+					:label="t('Total Agreed Value')"
+					:value="fm(summaryStats.totalAgreed, 'USD')"
+					icon="ti-file-dollar"
+					tone="green"
+					:loading="loading"
+				/>
 			</div>
 		</div>
 
