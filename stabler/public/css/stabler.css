@@ -313,3 +313,17 @@ body {
 	filter: brightness(0.95);
 }
 
+.stbl-kpi-icon {
+	font-size: 2.1rem;
+	line-height: 1;
+	opacity: 0.45;
+	stroke-width: 1.5;
+	transition: opacity 0.15s ease, transform 0.15s ease;
+}
+
+.stbl-kpi-card:hover .stbl-kpi-icon {
+	opacity: 0.75;
+	transform: scale(1.05);
+}
+
+

@@ -40,18 +40,19 @@ function onBadgeClick(b, e) {
 		@click="onClick"
 	>
 		<div class="card-body p-3 d-flex flex-column justify-content-between">
-			<!-- Header: Micro-label and Top-Right Icon Badge -->
-			<div class="d-flex align-items-center justify-content-between mb-2">
+			<!-- Header: Micro-label and Top-Right Standalone Large Icon -->
+			<div class="d-flex align-items-start justify-content-between mb-2">
 				<div class="stbl-kpi-label text-truncate me-2" :title="label">
 					<slot name="label">{{ label }}</slot>
 				</div>
-				<div
+				<i
 					v-if="icon"
-					class="avatar avatar-xs rounded-2 flex-shrink-0"
-					:class="`bg-${tone || 'primary'}-lt text-${tone || 'primary'}`"
-				>
-					<i class="ti fs-3" :class="icon.startsWith('ti-') ? icon : `ti-${icon}`"></i>
-				</div>
+					class="ti stbl-kpi-icon flex-shrink-0"
+					:class="[
+						icon.startsWith('ti-') ? icon : `ti-${icon}`,
+						tone ? `text-${tone}` : 'text-secondary',
+					]"
+				></i>
 			</div>
 
 			<!-- Hero Value Area -->
