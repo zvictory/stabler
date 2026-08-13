@@ -123,7 +123,7 @@ function statusClass(status) {
 					</tr>
 				</thead>
 				<tbody>
-					<tr v-for="row in visibleRows" :key="`${row.entry_type}-${row.reference}`">
+					<tr v-for="(row, i) in visibleRows" :key="`${row.entry_type}-${row.reference}-${i}`">
 						<td>{{ formatDate(row.posting_date) }}</td>
 						<td class="fw-semibold">{{ t(row.entry_type) }}</td>
 						<td class="font-monospace">{{ row.reference || "—" }}</td>
