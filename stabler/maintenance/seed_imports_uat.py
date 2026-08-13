@@ -257,9 +257,21 @@ def seed():
 				{"cost_component": "Other", "currency": "USD", "amount": 20, "include_in_landed_cost": 1},
 			)
 		elif c_letter == "B":
+			# The hand-typed counterpart of the carrier bill below (UAT-PI): same
+			# leg, same money. The component MUST be the one the bill derives
+			# ("Cross-Border Transport" — the carrier sits in a transport supplier
+			# group), because that is what makes the exactly-once guard fire in S4.
+			# Typing a different component here would let the link path capitalize
+			# the same 150 USD a second time under another name, and the harness
+			# would report a false "exactly once".
 			cont.append(
 				"cost_lines",
-				{"cost_component": "Freight", "currency": "USD", "amount": 150, "include_in_landed_cost": 1},
+				{
+					"cost_component": "Cross-Border Transport",
+					"currency": "USD",
+					"amount": 150,
+					"include_in_landed_cost": 1,
+				},
 			)
 			cont.append(
 				"cost_lines",

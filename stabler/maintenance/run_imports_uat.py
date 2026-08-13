@@ -294,40 +294,43 @@ def run():
 	evidence["scenarios"].append(s3_dict)
 
 	# Scenario S4 (Exactly-Once Proof)
-	lcv2_name = None
+	#
+	# Container B carries a hand-typed transport cost that LCV1 already capitalized
+	# in S3. Here the carrier's own bill for that same leg is linked to the
+	# container. The bill derives the SAME cost component, so the link path must
+	# refuse to write a second cost line for money a voucher already holds: the
+	# link itself still goes through (A/P attribution is untouched), only the
+	# double capitalization is suppressed. The proof is three facts read back from
+	# the database — the link returned a refusal warning and wrote no cost line, no
+	# Container Cost Line carries the bill, and the component appears in exactly
+	# one Landed Cost Voucher tax row across every voucher of this GRN.
+	lcv2_name = None  # nothing left to voucher here — S5 owns that assertion
 	s4_dict = {"id": "S4", "observed": {}, "documents": [], "amounts": [], "warnings": [], "error": None}
 	try:
 		pi_bill_no = f"UAT-PI{DEMO_SUFFIX}"
 		pi_name = frappe.db.get_value("Purchase Invoice", {"bill_no": pi_bill_no})
 		s4_dict["documents"].append(pi_name)
+		pi_currency, pi_net_total = frappe.db.get_value(
+			"Purchase Invoice", pi_name, ["currency", "net_total"]
+		)
 
 		# Link PI to Container B
 		from stabler.api.imports import set_bill_import_refs
 
-		set_bill_import_refs(purchase_invoice=pi_name, import_container=container_b_name)
+		link_res = set_bill_import_refs(purchase_invoice=pi_name, import_container=container_b_name)
+		s4_dict["warnings"] = list(link_res.get("warnings") or [])
 
-		# Retrieve warnings from supersede_billed call indirectly by checking LCV logs or re-running logic
-		# Actually, we can run create_additional_lcv, which calls supersede_billed and writes warnings to logs.
-		# To capture the warnings dynamically, we can inspect cost lines and run the check
-		from stabler.api.imports import create_additional_lcv
-
-		lcv2_res = create_additional_lcv(grn_name)
-		lcv2_name = lcv2_res["lcv"]
-		s4_dict["documents"].append(lcv2_name)
-
-		# Load billed cost line by querying purchase_invoice across all containers
-		billed_ccl_names = frappe.get_all(
-			"Container Cost Line", filters={"purchase_invoice": pi_name}, pluck="name"
-		)
-		billed_ccl = frappe.get_doc("Container Cost Line", billed_ccl_names[0]) if billed_ccl_names else None
-
-		# Load hand-entered cost line on Container B (Freight)
+		# Load the hand-entered cost line on Container B. It is identified by the
+		# money it carries (same currency and amount as the bill), never by a
+		# component literal: the component is what this scenario reads out, so
+		# feeding it in as a filter constant would make the proof circular.
 		hand_entered_ccl_names = frappe.get_all(
 			"Container Cost Line",
 			filters={
 				"parent": container_b_name,
-				"cost_component": "Freight",
 				"purchase_invoice": ["is", "not set"],
+				"currency": pi_currency,
+				"amount": pi_net_total,
 			},
 			pluck="name",
 		)
@@ -336,41 +339,13 @@ def run():
 			if hand_entered_ccl_names
 			else None
 		)
+		hand_component = hand_entered_ccl.cost_component if hand_entered_ccl else None
 
-		# Re-run supersede_billed to collect the exact warning message
-		from stabler.stabler.imports_module import lcv_math
-		from stabler.stabler.imports_module.hooks import _collect_cost_lines
-
-		cost_lines = _collect_cost_lines(ci_name)
-		_, bill_warnings = lcv_math.supersede_billed(cost_lines)
-		s4_dict["warnings"] = bill_warnings
-
-		# The LCV tax row description is written from the cost line's own cost_component
-		# (see build_lcv_payload in stabler/stabler/imports_module/lcv_math.py), which is
-		# derived for a billed line and is NOT necessarily the component a human typed on
-		# the hand-entered line. Look the row up by that component, never by a literal.
-		billed_component = billed_ccl.cost_component if billed_ccl else None
-
-		# Find the target LCV where the cost line is vouchered
-		target_lcv_name = billed_ccl.lcv_ref if (billed_ccl and billed_ccl.lcv_ref) else None
-		target_lcv_source = "billed_cost_line.lcv_ref" if target_lcv_name else "create_additional_lcv"
-		if not target_lcv_name:
-			target_lcv_name = lcv2_name
-
-		# Find the tax row carrying the billed line's own cost component in that LCV
-		billed_tax_row = None
-		if target_lcv_name and billed_component:
-			target_lcv_doc = frappe.get_doc("Landed Cost Voucher", target_lcv_name)
-			for tax in target_lcv_doc.taxes:
-				if tax.description == billed_component:
-					billed_tax_row = tax
-					break
-
-		# Counts for the exactly-once proof
+		# Cost lines carrying the bill: must be zero — its money is already in LCV1
+		# through the hand-typed line, so a second line would be a double count.
 		count_ccl = len(frappe.get_all("Container Cost Line", filters={"purchase_invoice": pi_name}))
 
-		# Count tax rows across every LCV linked to this GRN that carry the billed
-		# line's component and amount — more than one means the money was capitalized twice.
+		# Every LCV linked to this GRN, so the count below cannot miss a second voucher.
 		all_lcv_names = frappe.get_all(
 			"Landed Cost Purchase Receipt",
 			filters={
@@ -385,57 +360,51 @@ def run():
 		)
 		all_lcv_names = list(set(all_lcv_names))
 
+		# The LCV tax row description IS the cost component (see build_lcv_payload in
+		# stabler/stabler/imports_module/lcv_math.py), so counting rows that carry the
+		# hand line's own component across every voucher of this GRN is the
+		# exactly-once measurement: more than one means the leg was capitalized twice.
 		count_lcv_tax = None
-		if billed_tax_row:
-			if all_lcv_names:
-				count_lcv_tax = len(
-					frappe.get_all(
-						"Landed Cost Taxes and Charges",
-						filters={
-							"parent": ["in", all_lcv_names],
-							"description": billed_component,
-							"amount": billed_tax_row.amount,
-						},
-					)
-				)
-		elif not billed_ccl:
+		hand_tax_row = None
+		if hand_component and all_lcv_names:
+			tax_rows = frappe.get_all(
+				"Landed Cost Taxes and Charges",
+				filters={"parent": ["in", all_lcv_names], "description": hand_component},
+				fields=["name", "parent", "amount"],
+			)
+			count_lcv_tax = len(tax_rows)
+			hand_tax_row = tax_rows[0] if tax_rows else None
+		elif not hand_entered_ccl:
 			# Explicitly record the lookup failure — never substitute a placeholder
 			s4_dict["observed"]["tax_row_lookup_failure"] = (
-				f"No Container Cost Line carries purchase_invoice '{pi_name}', so no cost component was available to look up."
+				f"No hand-entered Container Cost Line of {pi_net_total} {pi_currency} on container "
+				f"'{container_b_name}', so no cost component was available to look up."
 			)
 		else:
 			s4_dict["observed"]["tax_row_lookup_failure"] = (
-				f"No Landed Cost Taxes and Charges row with description '{billed_component}' "
-				f"(the billed cost line's own cost_component) in target LCV '{target_lcv_name}'."
+				f"No Landed Cost Voucher is linked to GRN '{grn_name}', so the tax rows carrying "
+				f"'{hand_component}' could not be counted."
 			)
 
 		s4_dict["observed"].update(
 			{
 				"lcv2_name": lcv2_name,
-				"target_lcv_name": target_lcv_name,
-				"target_lcv_source": target_lcv_source,
-				"billed_cost_component": billed_component,
-				"billed_ccl_lcv_ref": billed_ccl.lcv_ref if billed_ccl else None,
-				"hand_entered_b_freight_component": hand_entered_ccl.cost_component
-				if hand_entered_ccl
-				else None,
-				"hand_entered_b_freight_lcv_ref": hand_entered_ccl.lcv_ref if hand_entered_ccl else None,
+				"lcv1_name": lcv_name,
+				"lcv_names_of_grn": sorted(all_lcv_names),
+				"link_wrote_cost_lines": len(link_res.get("cost_lines") or []),
+				"billed_cost_line_count": count_ccl,
+				"hand_entered_b_transport_component": hand_component,
+				"hand_entered_b_transport_lcv_ref": hand_entered_ccl.lcv_ref if hand_entered_ccl else None,
+				"hand_line_vouchered_by_lcv1": bool(
+					hand_entered_ccl and lcv_name and hand_entered_ccl.lcv_ref == lcv_name
+				),
+				"lcv_tax_rows_for_component": count_lcv_tax,
 			}
 		)
 
-		pi_net_total = frappe.db.get_value("Purchase Invoice", pi_name, "net_total")
 		s4_dict["amounts"].append(
 			{"doctype": "Purchase Invoice", "name": pi_name, "fieldname": "net_total", "value": pi_net_total}
 		)
-		if billed_tax_row:
-			s4_dict["amounts"].append(
-				{
-					"doctype": "Landed Cost Taxes and Charges",
-					"name": billed_tax_row.name,
-					"fieldname": "amount",
-					"value": billed_tax_row.amount,
-				}
-			)
 		if hand_entered_ccl:
 			s4_dict["amounts"].append(
 				{
@@ -445,13 +414,13 @@ def run():
 					"value": hand_entered_ccl.amount,
 				}
 			)
-		if billed_ccl:
+		if hand_tax_row:
 			s4_dict["amounts"].append(
 				{
-					"doctype": "Container Cost Line",
-					"name": billed_ccl.name,
+					"doctype": "Landed Cost Taxes and Charges",
+					"name": hand_tax_row["name"],
 					"fieldname": "amount",
-					"value": billed_ccl.amount,
+					"value": hand_tax_row["amount"],
 				}
 			)
 		s4_dict["amounts"].append(
