@@ -977,6 +977,24 @@ def release_cost_lines_for_lcv(doc, method=None):
 				grn.save(ignore_permissions=True)
 
 
+def allow_cancel_with_grn_link(doc, method=None):
+	"""Let a Landed Cost Voucher cancel even though a GRN Checklist links it.
+
+	``GRN LCV Ref`` rows are an audit trail — they record which voucher was
+	tried against the receipt — so they deliberately survive cancellation
+	(see ``release_cost_lines_for_lcv``, which strips them on delete only).
+	Frappe's cancel-time link check honours ``ignore_linked_doctypes`` and
+	compares it against the child row's ``parenttype``, so naming the parent
+	doctype here unblocks cancel without touching the delete path.
+	"""
+	if not frappe.db.exists("GRN LCV Ref", {"lcv": doc.name}):
+		return
+	ignored = list(doc.get("ignore_linked_doctypes") or [])
+	if "GRN Checklist" not in ignored:
+		ignored.append("GRN Checklist")
+	doc.ignore_linked_doctypes = ignored
+
+
 # ---------------------------------------------------------------------------
 # BRV customs-clearance fee (whitelisted): compute + optionally write CI fields
 # ---------------------------------------------------------------------------

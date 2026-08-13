@@ -1301,6 +1301,16 @@ def get_grn_checklist(name: str):
 		r["arrival_date"] = str(r["arrival_date"]) if r["arrival_date"] else None
 		r["docstatus"] = cint(r["docstatus"])
 
+	lcv_names = [lc.lcv for lc in (doc.landed_cost_vouchers or []) if lc.lcv]
+	lcv_docstatus = {}
+	if lcv_names:
+		lcv_docstatus = {
+			r.name: cint(r.docstatus)
+			for r in frappe.get_all(
+				"Landed Cost Voucher", filters={"name": ["in", lcv_names]}, fields=["name", "docstatus"]
+			)
+		}
+
 	payload = {
 		"name": doc.name,
 		"modified": str(doc.modified),
@@ -1357,6 +1367,7 @@ def get_grn_checklist(name: str):
 				"lcv": lc.lcv,
 				"posted_on": str(lc.posted_on) if lc.posted_on else None,
 				"note": lc.note,
+				"docstatus": lcv_docstatus.get(lc.lcv) if lc.lcv else None,
 			}
 			for lc in (doc.landed_cost_vouchers or [])
 		],

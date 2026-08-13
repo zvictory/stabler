@@ -380,6 +380,9 @@ doc_events = {
 		],
 	},
 	"Landed Cost Voucher": {
+		"before_cancel": [
+			"stabler.stabler.imports_module.hooks.allow_cancel_with_grn_link",
+		],
 		"on_cancel": [
 			"stabler.stabler.imports_module.hooks.release_cost_lines_for_lcv",
 		],

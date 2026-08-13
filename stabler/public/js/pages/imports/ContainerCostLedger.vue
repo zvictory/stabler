@@ -278,7 +278,7 @@ watch(containerName, load);
 									<tr v-for="lc in data.landed_cost_vouchers" :key="lc.lcv">
 										<td class="font-monospace small">{{ lc.lcv }}</td>
 										<td class="small">{{ lc.note || "—" }}</td>
-										<td class="text-center"><span class="badge" :class="lc.docstatus === 1 ? 'bg-green-lt' : 'bg-yellow-lt'">{{ getDocstatusLabel(lc.docstatus) }}</span></td>
+										<td class="text-center"><StatusBadge doctype="Landed Cost Voucher" :docstatus="lc.docstatus" /></td>
 										<td class="text-end font-monospace">{{ lc.total !== null ? Number(lc.total || 0).toFixed(0) : "—" }}</td>
 									</tr>
 									<tr v-if="!data.landed_cost_vouchers.length"><td colspan="4" class="text-secondary text-center py-2">{{ t("No vouchers yet.") }}</td></tr>
