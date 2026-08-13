@@ -649,6 +649,9 @@ async function fetchCostOverview() {
 // (no cost visibility) hides the whole panel rather than showing an error.
 const unlinkedBillsRequested = ref(false);
 const unlinkedBillsHidden = ref(false);
+// Non-empty only when the server judged the session user able to fix the gap
+// itself (an admin-only setting). Everyone else keeps the silent hide.
+const unlinkedBillsNotConfigured = ref("");
 const loadingUnlinkedBills = ref(false);
 const unlinkedBillsResult = ref(null);
 const selectedUnlinkedBills = ref([]);
@@ -672,6 +675,7 @@ async function fetchUnlinkedBills({ clearResults = false } = {}) {
 		// Silent, not an error state: unconfigured means the feature is off for
 		// this company and the panel must render nothing at all (C4).
 		unlinkedBillsHidden.value = !res?.configured;
+		unlinkedBillsNotConfigured.value = res?.configured ? "" : res?.reason || "";
 		selectedUnlinkedBills.value = selectedUnlinkedBills.value.filter((n) =>
 			(res?.rows || []).some((r) => r.name === n)
 		);
@@ -682,6 +686,7 @@ async function fetchUnlinkedBills({ clearResults = false } = {}) {
 		unlinkedBillsResult.value = null;
 		unlinkedBillsRequested.value = true;
 		unlinkedBillsHidden.value = true;
+		unlinkedBillsNotConfigured.value = "";
 	} finally {
 		loadingUnlinkedBills.value = false;
 	}
@@ -2657,6 +2662,12 @@ watch(
 							</div>
 						</template>
 					</template>
+
+					<!-- Reached only by users who can open Stabler Settings. One neutral
+					     line, no action button: the fix lives on a different screen. -->
+					<div v-else-if="unlinkedBillsRequested && unlinkedBillsNotConfigured" class="text-secondary small py-2">
+						<i class="ti ti-info-circle me-1"></i>{{ unlinkedBillsNotConfigured }}
+					</div>
 				</div>
 
 				<h4 class="card-title mb-2 mt-4">{{ t("Expenses without bills") }}</h4>

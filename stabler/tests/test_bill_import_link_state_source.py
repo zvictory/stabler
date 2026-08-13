@@ -156,12 +156,65 @@ class BillImportLinkStateGateOrderTest(unittest.TestCase):
 		self.assertNotIn("cint(bill.docstatus) != 0", self.body)
 		self.assertIn("A cancelled bill cannot be linked to an import: {0}.", self.body)
 
-	def test_unconfigured_transport_groups_is_silent(self):
+	def test_unconfigured_transport_groups_stays_silent_for_anyone_who_cannot_fix_it(self):
 		# Same polarity as the write gate's _assert_hand_linkable_supplier: an
 		# empty configured-groups list means the feature is off for this
-		# company, not "every supplier qualifies". Silent — no reason string —
-		# because this is invisible functionality, same as the module-off case.
-		self.assertRegex(self.body, r'if not groups:\n(?:\t\t#[^\n]*\n)*\t\treturn _not_eligible\(""\)')
+		# company, not "every supplier qualifies".
+		#
+		# Silence is still the answer for an operator — a setting they cannot
+		# open is not actionable, and that was the original behaviour on all
+		# three surfaces. It is the WRONG answer for someone who can open
+		# Stabler Settings, because "this tenant does not use imports" and "one
+		# field was never filled in" render identically, which is how msa ran
+		# for months with the whole hand-link feature dark and nobody noticing.
+		#
+		# The flag must therefore be derived from the reason (`bool(reason)`),
+		# never passed as a literal True: hardcoding it would put an empty hint
+		# in front of exactly the users the silence exists for.
+		self.assertRegex(
+			self.body,
+			r"if not groups:\n(?:\t\t#[^\n]*\n)*"
+			r"\t\treason = _not_configured_reason\(\)\n"
+			r"\t\treturn _not_eligible\(reason, not_configured=bool\(reason\)\)",
+		)
+		# Defaulting to False keeps every OTHER ineligible verdict (cancelled,
+		# wrong supplier group, already linked) hint-free without restating it
+		# at each return.
+		self.assertIn("def _not_eligible(reason: str, *, not_configured: bool = False) -> dict:", self.body)
+
+	def test_the_not_configured_hint_is_addressed_only_to_roles_that_can_fix_it(self):
+		# The fix lives in Stabler Settings, an admin-only surface. Widening
+		# this to _IMPORTS_ROLES would put an unclearable hint in front of every
+		# imports operator — noise, not help — and would undo the silence the
+		# test above pins.
+		src = read(IMPORTS)
+		self.assertIn('_IMPORTS_CONFIG_ROLES = frozenset(_ADMIN_ROLES) | {"Imports Manager"}', src)
+		self.assertRegex(
+			body(src, "_not_configured_reason"),
+			r"if not set\(frappe\.get_roles\(\)\)\.intersection\(_IMPORTS_CONFIG_ROLES\):\n\t\treturn \"\"",
+		)
+
+	def test_the_not_configured_hint_names_the_setting_that_fixes_it(self):
+		# A hint that does not say where to go is the silent hide with extra
+		# steps. One translatable line that names Stabler Settings — and no
+		# action, because the fix is on a screen this endpoint does not own.
+		helper = code(read(IMPORTS), "_not_configured_reason")
+		self.assertIn("Set the transport/service supplier groups in Stabler Settings.", helper)
+		self.assertIn("return _(", helper)
+
+	def test_module_off_never_raises_the_not_configured_hint(self):
+		# An administrator on a tenant that simply does not use imports must
+		# still see nothing: that branch is about functionality which does not
+		# exist for them, not about a field somebody forgot to fill in. Keeping
+		# the two branches distinct is what stops the hint from leaking to the
+		# six tenants that do not own the imports module.
+		off = self.body[
+			self.body.index('if not module_map_for(company).get("imports")') : self.body.index(
+				"refs = _bill_import_refs(purchase_invoice)"
+			)
+		]
+		self.assertIn('"not_configured": False,', off)
+		self.assertNotIn("_not_configured_reason", off)
 
 	def test_groups_come_from_company_config_not_a_constant(self):
 		# C3: tenant variance lives in config, never a literal group name.

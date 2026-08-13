@@ -8924,6 +8924,29 @@ def clear_bill_import_refs(purchase_invoice: str) -> dict:
 	}
 
 
+#: Roles that can actually act on a "not configured" hint. The fix lives in
+#: `Stabler Settings`, an admin-only surface, so naming a missing setting to
+#: anyone else is noise they cannot clear — for them the silent hide stays.
+_IMPORTS_CONFIG_ROLES = frozenset(_ADMIN_ROLES) | {"Imports Manager"}
+
+
+def _not_configured_reason() -> str:
+	"""One line for users who can fix the gap; "" — total silence — for everyone else.
+
+	Silence was the original behaviour on every surface, and it is still right
+	for an operator: a setting they cannot reach is not actionable. It is wrong
+	for an administrator, because "this tenant does not use imports" and "one
+	field in Stabler Settings was never filled in" look identical from the UI —
+	which is precisely how msa ran for months with the whole hand-link feature
+	dark and nobody noticing.
+	"""
+	if not set(frappe.get_roles()).intersection(_IMPORTS_CONFIG_ROLES):
+		return ""
+	return _(
+		"Linking bills to an import is not configured for this company. Set the transport/service supplier groups in Stabler Settings."
+	)
+
+
 @frappe.whitelist()
 def bill_import_link_state(purchase_invoice: str) -> dict:
 	"""Read state for the PI-form picker (W1) — the server decides eligibility.
@@ -8961,6 +8984,7 @@ def bill_import_link_state(purchase_invoice: str) -> dict:
 		return {
 			"eligible": False,
 			"reason": "",
+			"not_configured": False,
 			"refs": dict.fromkeys(rules.PI_REF_COLUMNS, ""),
 			"linked": False,
 			"can_unlink": False,
@@ -8975,10 +8999,14 @@ def bill_import_link_state(purchase_invoice: str) -> dict:
 		linked and not refs["custom_import_expense"] and not _automation_owner_of_bill(purchase_invoice)
 	)
 
-	def _not_eligible(reason: str) -> dict:
+	def _not_eligible(reason: str, *, not_configured: bool = False) -> dict:
+		# ``not_configured`` is a UI signal, not a fact about the company: it is
+		# raised only together with a reason the caller is allowed to read, so a
+		# client can render the hint without second-guessing an empty string.
 		return {
 			"eligible": False,
 			"reason": reason,
+			"not_configured": not_configured,
 			"refs": refs,
 			"linked": linked,
 			"can_unlink": can_unlink,
@@ -8996,8 +9024,12 @@ def bill_import_link_state(purchase_invoice: str) -> dict:
 	groups = imports_transport_supplier_groups_for(company)
 	if not groups:
 		# Unconfigured => the hand-link feature is off for this company. Same
-		# silent polarity as the module-off branch above.
-		return _not_eligible("")
+		# silent polarity as the module-off branch above for anyone who cannot
+		# fix it; an administrator is told, because "this tenant does not use
+		# imports" and "one field was never filled in" are otherwise identical
+		# from the UI — which is how msa ran with the feature dark for months.
+		reason = _not_configured_reason()
+		return _not_eligible(reason, not_configured=bool(reason))
 
 	supplier_group = frappe.db.get_value("Supplier", bill.supplier, "supplier_group")
 	if supplier_group not in groups:
@@ -9023,6 +9055,7 @@ def bill_import_link_state(purchase_invoice: str) -> dict:
 	return {
 		"eligible": True,
 		"reason": "",
+		"not_configured": False,
 		"refs": refs,
 		"linked": False,
 		"can_unlink": False,
@@ -9062,10 +9095,13 @@ def unlinked_transport_bills(commercial_invoice: str) -> dict:
 	groups = imports_transport_supplier_groups_for(ci.company)
 	if not groups:
 		# Not configured => the feature is off; there are no candidates at all.
+		# ``reason`` is non-empty only for a user who can open Stabler Settings,
+		# so the panel keeps hiding silently for everyone else exactly as before.
 		return {
 			"rows": [],
 			"summary": {"rows": 0, "limit": _UNLINKED_BILL_LIMIT, "capped": False},
 			"configured": False,
+			"reason": _not_configured_reason(),
 		}
 
 	conds = [

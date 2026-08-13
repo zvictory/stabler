@@ -341,8 +341,13 @@ const linkError = ref("");
 // refetch below, so they are cleared only when a new link attempt starts.
 const linkWarnings = ref([]);
 
+// `not_configured` is set by the server only when the session user can actually
+// open Stabler Settings and fill the gap in. For anyone else it stays false and
+// the panel keeps hiding silently, exactly as it did before.
 const showLinkPanel = computed(
-	() => !!linkState.value && (linkState.value.eligible || linkState.value.linked)
+	() =>
+		!!linkState.value &&
+		(linkState.value.eligible || linkState.value.linked || linkState.value.not_configured)
 );
 
 const linkedRefs = computed(() => {
@@ -967,6 +972,12 @@ async function submitDoc() {
 								{{ t("Link") }}
 							</button>
 						</div>
+					</div>
+
+					<!-- Reached only by users who can open Stabler Settings. One neutral
+					     line, no action button: the fix lives on a different screen. -->
+					<div v-else-if="linkState?.not_configured" class="text-secondary small mb-0">
+						<i class="ti ti-info-circle me-1"></i>{{ linkState.reason }}
 					</div>
 				</template>
 			</div>
