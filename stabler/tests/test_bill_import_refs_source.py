@@ -574,7 +574,22 @@ class CapitalizationTest(unittest.TestCase):
 		# None means "this bill has no business in the valuation" — a fallback
 		# component here would capitalize the goods invoice itself.
 		self.assertIn("if not component:", src)
-		self.assertIn("return []", src)
+		self.assertIn("return [], []", src)
+
+	def test_a_cost_already_vouchered_by_hand_is_not_capitalized_again(self):
+		# stabler-wen: once an operator's estimate has been consumed by an LCV it
+		# carries an lcv_ref, so supersede_billed can no longer drop it at build
+		# time. Writing the bill's line anyway puts the same money into stock
+		# valuation a second time. The link still goes through — refusing it would
+		# cost the attribution too — but the second cost line must not be written,
+		# and the skip must be visible instead of silent.
+		src = body(self.src, "_capitalize_linked_bill")
+		self.assertIn("lcv_math.vouchered_hand_line(", src)
+		self.assertIn("warnings.append(", src)
+		self.assertIn("return row_names, warnings", src)
+		# The response has to carry them out: a warning the caller cannot read is
+		# the same silence the defect had.
+		self.assertIn('"warnings": warnings', body(self.src, "set_bill_import_refs"))
 
 	def test_a_ci_level_bill_is_split_across_containers_by_weight(self):
 		src = body(self.src, "_capitalize_linked_bill")

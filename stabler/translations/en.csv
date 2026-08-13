@@ -5829,3 +5829,4 @@ Advance recorded and posted.,Advance recorded and posted.
 Supplier Payment Currency Guard,Supplier Payment Currency Guard
 This supplier is paid in {0}. Select a {0} account: the selected payment account is in {1}.,This supplier is paid in {0}. Select a {0} account: the selected payment account is in {1}.
 No exchange rate found for this invoice date — landed cost cannot be calculated. Enter a rate above or add the CBU rate.,No exchange rate found for this invoice date — landed cost cannot be calculated. Enter a rate above or add the CBU rate.
+"A hand-entered {0} cost on container {1} is already capitalized by {2}. The bill was linked, but its cost was not added a second time.","A hand-entered {0} cost on container {1} is already capitalized by {2}. The bill was linked, but its cost was not added a second time."

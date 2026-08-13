@@ -5836,3 +5836,4 @@ Advance recorded and posted.,Аванс записан и проведён.
 Supplier Payment Currency Guard,Контроль валюты платежа поставщику
 This supplier is paid in {0}. Select a {0} account: the selected payment account is in {1}.,Этому поставщику платят в {0}. Выберите счёт в {0}: выбранный счёт платежа в {1}.
 No exchange rate found for this invoice date — landed cost cannot be calculated. Enter a rate above or add the CBU rate.,Курс на дату этого инвойса не найден — себестоимость рассчитать невозможно. Укажите курс выше или добавьте курс ЦБ.
+"A hand-entered {0} cost on container {1} is already capitalized by {2}. The bill was linked, but its cost was not added a second time.","Введённая вручную стоимость «{0}» по контейнеру {1} уже капитализирована в {2}. Счёт привязан, но его сумма не добавлена повторно."

@@ -336,6 +336,10 @@ const linkState = ref(null);
 const linkStateLoading = ref(false);
 const linkActionRunning = ref(false);
 const linkError = ref("");
+// Warnings the link endpoint returns instead of throwing: the link succeeded,
+// but part of its cost was deliberately not capitalized. They must survive the
+// refetch below, so they are cleared only when a new link attempt starts.
+const linkWarnings = ref([]);
 
 const showLinkPanel = computed(
 	() => !!linkState.value && (linkState.value.eligible || linkState.value.linked)
@@ -423,12 +427,14 @@ async function linkTarget() {
 	if (!linkTargetName.value) return;
 	linkActionRunning.value = true;
 	linkError.value = "";
+	linkWarnings.value = [];
 	try {
 		const payload = { purchase_invoice: docName.value };
 		if (linkKind.value === "import_container") payload.import_container = linkTargetName.value;
 		else if (linkKind.value === "import_truck") payload.import_truck = linkTargetName.value;
 		else payload.commercial_invoice = linkTargetName.value;
-		await importsApi.setBillImportRefs(payload);
+		const res = await importsApi.setBillImportRefs(payload);
+		linkWarnings.value = res?.warnings || [];
 		clearLinkTarget();
 		await fetchLinkState();
 	} catch (err) {
@@ -441,6 +447,7 @@ async function linkTarget() {
 async function unlinkTarget() {
 	linkActionRunning.value = true;
 	linkError.value = "";
+	linkWarnings.value = [];
 	try {
 		await importsApi.clearBillImportRefs(docName.value);
 		await fetchLinkState();
@@ -897,6 +904,9 @@ async function submitDoc() {
 				</div>
 				<template v-else>
 					<div v-if="linkError" class="alert alert-danger py-2 small mb-2">{{ linkError }}</div>
+					<div v-if="linkWarnings.length" class="alert alert-warning py-2 small mb-2">
+						<div v-for="(w, i) in linkWarnings" :key="i">{{ w }}</div>
+					</div>
 
 					<div v-if="linkState?.linked" class="d-flex align-items-center gap-2 flex-wrap">
 						<span class="text-secondary small">{{ t("Linked to") }}:</span>

@@ -5831,3 +5831,4 @@ Advance recorded and posted.,Аванс қайд этилди ва провод�
 Supplier Payment Currency Guard,Таъминотчи тўлови валютаси назорати
 This supplier is paid in {0}. Select a {0} account: the selected payment account is in {1}.,Бу таъминотчига {0} да тўланади. {0} даги ҳисобни танланг: танланган тўлов ҳисоби {1} да.
 No exchange rate found for this invoice date — landed cost cannot be calculated. Enter a rate above or add the CBU rate.,Ушбу ҳисоб-фактура санаси учун курс топилмади — якуний таннархни ҳисоблаб бўлмайди. Юқорида курс киритинг ёки МБ курсини қўшинг.
+"A hand-entered {0} cost on container {1} is already capitalized by {2}. The bill was linked, but its cost was not added a second time.","{1} контейнеридаги қўлда киритилган {0} харажати аллақачон {2} билан капиталлаштирилган. Ҳисоб-фактура боғланди, лекин унинг суммаси иккинчи марта қўшилмади."

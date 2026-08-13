@@ -263,6 +263,12 @@ def _billable(component, container, purchase_invoice=None, amount=100.0):
 	}
 
 
+def _vouchered(component, container, lcv_ref, purchase_invoice=None, amount=100.0):
+	line = _billable(component, container, purchase_invoice=purchase_invoice, amount=amount)
+	line["lcv_ref"] = lcv_ref
+	return line
+
+
 class SupersedeBilledTest(unittest.TestCase):
 	"""The carrier's own invoice replaces the hand-typed guess of the same cost.
 
@@ -354,6 +360,54 @@ class SupersedeBilledTest(unittest.TestCase):
 	def test_it_reports_like_the_customs_precedence_it_mirrors(self):
 		kept, warnings = lcv_math.supersede_billed([])
 		self.assertEqual((kept, warnings), ([], []))
+
+
+class VoucheredHandLineTest(unittest.TestCase):
+	"""The half of the double-count that ``supersede_billed`` structurally cannot see.
+
+	Supersession happens while the voucher is being built, over the lines that are
+	still candidates. When the operator's estimate was already consumed by an
+	earlier LCV it carries an ``lcv_ref``, ``unconsumed`` drops it from every later
+	candidate set, and a bill linked afterwards writes a second line for the same
+	money that the next voucher capitalizes again — measured on the UAT chain as
+	150 USD charged to stock valuation twice, across two vouchers, silently
+	(stabler-wen). This read is what the link path uses to refuse that second write.
+	"""
+
+	def test_it_names_the_voucher_that_already_took_the_money(self):
+		# The operator's estimate is inside MAT-LCV-13; capitalizing the bill on top
+		# of it is the double-count. The ref is returned, not a bare True, because
+		# the warning has to tell the accountant which voucher to look at.
+		lines = [_vouchered("Freight", "CNT-1", "MAT-LCV-13")]
+		self.assertEqual(lcv_math.vouchered_hand_line(lines, "CNT-1", "Freight"), "MAT-LCV-13")
+
+	def test_an_unvouchered_estimate_is_left_alone(self):
+		# Still a candidate, so ``supersede_billed`` will drop it at build time with
+		# a warning. Refusing the bill's line here too would lose the cost entirely.
+		lines = [_billable("Freight", "CNT-1")]
+		self.assertIsNone(lcv_math.vouchered_hand_line(lines, "CNT-1", "Freight"))
+
+	def test_a_voucher_on_one_container_says_nothing_about_another(self):
+		lines = [_vouchered("Freight", "CNT-1", "MAT-LCV-13")]
+		self.assertIsNone(lcv_math.vouchered_hand_line(lines, "CNT-2", "Freight"))
+
+	def test_the_two_transport_legs_are_not_the_same_cost(self):
+		# Freight is the sea leg, Cross-Border Transport the trucking leg. Treating
+		# them as one family would silently under-capitalize the second leg, and a
+		# vouchered line never comes back.
+		lines = [_vouchered("Freight", "CNT-1", "MAT-LCV-13")]
+		self.assertIsNone(lcv_math.vouchered_hand_line(lines, "CNT-1", "Cross-Border Transport"))
+
+	def test_another_bill_is_a_second_real_invoice_not_a_duplicate(self):
+		# Same rule ``supersede_billed`` applies: two carriers on one leg are two
+		# costs. Only a hand-typed estimate yields to a bill.
+		lines = [_vouchered("Freight", "CNT-1", "MAT-LCV-13", purchase_invoice="PINV-9")]
+		self.assertIsNone(lcv_math.vouchered_hand_line(lines, "CNT-1", "Freight"))
+
+	def test_a_line_excluded_from_the_landed_cost_never_reached_valuation(self):
+		line = _vouchered("Freight", "CNT-1", "MAT-LCV-13")
+		line["include_in_landed_cost"] = 0
+		self.assertIsNone(lcv_math.vouchered_hand_line([line], "CNT-1", "Freight"))
 
 
 if __name__ == "__main__":

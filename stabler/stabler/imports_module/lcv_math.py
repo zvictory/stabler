@@ -191,6 +191,44 @@ def supersede_billed(cost_lines) -> tuple[list[dict], list[str]]:
 	return kept, warnings
 
 
+def vouchered_hand_line(cost_lines, container, cost_component) -> str | None:
+	"""Voucher that already capitalized a hand-typed *cost_component* on *container*.
+
+	Returns the ``lcv_ref`` of the first line that matches, or ``None``.
+
+	``supersede_billed`` is the same precedence rule applied at voucher-build
+	time, and it can only drop a hand-typed guess that is still a candidate.
+	Once a Landed Cost Voucher has consumed that guess the line carries an
+	``lcv_ref``, ``unconsumed`` skips it forever, and a bill linked afterwards
+	inserts a second line for the same money that the next voucher capitalizes
+	again — the same cost in stock valuation twice, with no warning anywhere.
+	This is the read the link path uses to refuse writing that second line.
+
+	Only hand-typed lines count. A line carrying a ``purchase_invoice`` is
+	another bill's money, and two carriers on one leg are two real costs, not a
+	duplicate — exactly the case ``supersede_billed`` also keeps.
+
+	Matched on the exact component, never a family: ``Freight`` (the sea leg)
+	and ``Cross-Border Transport`` (the trucking leg) are different real costs
+	that one container routinely carries both of. Widening the match would trade
+	a visible over-capitalization for a silent under-capitalization, and a
+	vouchered line never comes back.
+	"""
+	for ln in cost_lines:
+		if ln.get("container") != container:
+			continue
+		if not ln.get("include_in_landed_cost"):
+			continue
+		if (ln.get("purchase_invoice") or "").strip():
+			continue
+		if ln.get("cost_component") != cost_component:
+			continue
+		ref = (ln.get("lcv_ref") or "").strip()
+		if ref:
+			return ref
+	return None
+
+
 def aggregate_components(cost_lines, rates, company_currency, translate=None) -> tuple[dict, list[str]]:
 	"""Aggregate eligible cost lines into ``{component: company_amount}`` (>0).
 

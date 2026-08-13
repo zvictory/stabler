@@ -5826,3 +5826,4 @@ Advance recorded and posted.,Avans kaydedildi ve muhasebeleştirildi.
 Supplier Payment Currency Guard,Tedarikçi Ödeme Para Birimi Kuralı
 This supplier is paid in {0}. Select a {0} account: the selected payment account is in {1}.,Bu tedarikçiye {0} ile ödeme yapılır. {0} cinsinden bir hesap seçin: seçilen ödeme hesabı {1} cinsinden.
 No exchange rate found for this invoice date — landed cost cannot be calculated. Enter a rate above or add the CBU rate.,Bu fatura tarihi için kur bulunamadı — landed cost hesaplanamıyor. Yukarıya bir kur girin veya CBU kurunu ekleyin.
+"A hand-entered {0} cost on container {1} is already capitalized by {2}. The bill was linked, but its cost was not added a second time.","Konteyner {1} üzerindeki elle girilen {0} masrafı zaten {2} ile aktifleştirilmiş. Fatura bağlandı, ancak masrafı ikinci kez eklenmedi."

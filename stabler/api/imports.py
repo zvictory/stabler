@@ -8436,8 +8436,13 @@ def _containers_behind_refs(refs: dict) -> list[dict]:
 	)
 
 
-def _capitalize_linked_bill(purchase_invoice: str, company: str, refs: dict, bill: dict) -> list[str]:
-	"""Write a linked bill's cost onto the containers it paid for. Returns row names.
+def _capitalize_linked_bill(
+	purchase_invoice: str, company: str, refs: dict, bill: dict
+) -> tuple[list[str], list[str]]:
+	"""Write a linked bill's cost onto the containers it paid for.
+
+	Returns ``(row_names, warnings)`` — the rows written, and one message per
+	container where the cost was deliberately NOT written.
 
 	Silent no-op, deliberately, whenever the bill has no business in the valuation:
 	an unclassifiable category (``bill_cost_component`` returns ``None``), no
@@ -8460,15 +8465,15 @@ def _capitalize_linked_bill(purchase_invoice: str, company: str, refs: dict, bil
 		)
 	)
 	if not component:
-		return []
+		return [], []
 
 	containers = _containers_behind_refs(refs)
 	if not containers:
-		return []
+		return [], []
 
 	amount = flt(bill.get("net_total"))
 	if amount <= 0:
-		return []
+		return [], []
 
 	currency = bill.get("currency") or frappe.get_cached_value("Company", company, "default_currency")
 	# Both splits conserve their own total (the last container absorbs the
@@ -8477,17 +8482,47 @@ def _capitalize_linked_bill(purchase_invoice: str, company: str, refs: dict, bil
 	parts = rules.allocate_by_weight(amount, containers)
 	base_parts = rules.allocate_by_weight(flt(bill.get("base_net_total")), containers)
 
+	from stabler.stabler.imports_module import lcv_math
+
 	row_names = []
+	warnings: list[str] = []
 	for part, base_part in zip(parts, base_parts, strict=True):
 		# Inserted as a child document rather than through ``doc.save()`` on the
 		# container, for the same reason the ref write uses db.set_value: a full
 		# save re-runs the container's validation over a document somebody may be
 		# editing, to add one row that carries no business logic of its own.
-		used = frappe.get_all(
+		existing = frappe.get_all(
 			"Container Cost Line",
 			filters={"parent": part["container"], "parenttype": "Import Container"},
-			pluck="idx",
+			fields=[
+				"idx",
+				"parent as container",
+				"cost_component",
+				"purchase_invoice",
+				"lcv_ref",
+				"include_in_landed_cost",
+			],
 		)
+		used = [row["idx"] for row in existing]
+
+		# The operator's own estimate for this component is already inside a
+		# Landed Cost Voucher, so ``supersede_billed`` can no longer drop it —
+		# it is not a candidate any more. Writing the bill's line here would put
+		# the same money into stock valuation a second time (stabler-wen). The
+		# link itself still goes through: attribution is what makes the bill
+		# visible in the cost overview, and it is worth having even when the
+		# valuation is already carried. Reversing the posted voucher is the
+		# accountant's call, not this endpoint's.
+		already = lcv_math.vouchered_hand_line(existing, part["container"], component)
+		if already:
+			warnings.append(
+				_(
+					"A hand-entered {0} cost on container {1} is already capitalized by {2}. "
+					"The bill was linked, but its cost was not added a second time."
+				).format(_(component), part["container"], already)
+			)
+			continue
+
 		row = frappe.get_doc(
 			{
 				"doctype": "Container Cost Line",
@@ -8506,7 +8541,7 @@ def _capitalize_linked_bill(purchase_invoice: str, company: str, refs: dict, bil
 		)
 		row.insert(ignore_permissions=True)
 		row_names.append(row.name)
-	return row_names
+	return row_names, warnings
 
 
 @frappe.whitelist()
@@ -8644,13 +8679,14 @@ def set_bill_import_refs(
 	# resolves its CI through the database, and reading back is also what proves
 	# the write landed on this site's columns.
 	refs = _bill_import_refs(purchase_invoice)
-	cost_lines = _capitalize_linked_bill(purchase_invoice, company, refs, bill)
+	cost_lines, warnings = _capitalize_linked_bill(purchase_invoice, company, refs, bill)
 
 	return {
 		"name": purchase_invoice,
 		"refs": refs,
 		"linked": True,
 		"cost_lines": cost_lines,
+		"warnings": warnings,
 	}
 
 
