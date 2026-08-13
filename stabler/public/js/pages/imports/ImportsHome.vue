@@ -8,12 +8,12 @@ const route = useRoute();
 
 // Streamlined tabs fitting on exactly 1 crisp single line:
 // Core operational tabs + Costs & Finance dropdown.
+// Deliberately absent: the dashboard (it is the module landing page — see the
+// `/imports` redirect in router.js) and PI Groups (reached from the PI list page).
 const tabs = [
-	{ name: "imports-dashboard", path: "/imports/dashboard", label: t("Dashboard"), icon: "ti-layout-dashboard" },
 	{ name: "imports-orders", path: "/imports/orders", label: t("Orders"), icon: "ti-clipboard-list" },
-	{ name: "imports-proformas", path: "/imports/proformas", label: t("Proformas"), icon: "ti-file-dollar" },
-	{ name: "imports-pi-groups", path: "/imports/pi-groups", label: t("PI Groups"), icon: "ti-tags" },
-	{ name: "imports-commercial-invoices", path: "/imports/commercial-invoices", label: t("Invoices"), icon: "ti-file-invoice" },
+	{ name: "imports-proformas", path: "/imports/proformas", label: t("PI"), icon: "ti-file-dollar" },
+	{ name: "imports-commercial-invoices", path: "/imports/commercial-invoices", label: t("CI"), icon: "ti-file-invoice" },
 	{ name: "imports-containers", path: "/imports/containers", label: t("Containers"), icon: "ti-box" },
 	{ name: "imports-trucks", path: "/imports/trucks", label: t("Trucks"), icon: "ti-truck" },
 	{ name: "imports-grn-checklists", path: "/imports/grn-checklists", label: t("GRN"), icon: "ti-clipboard-check" },
