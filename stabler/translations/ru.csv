@@ -5843,3 +5843,8 @@ Advance reserved for this CI,"Аванс, зарезервированный п�
 Advance applied to this CI,"Аванс, зачтённый по этому CI"
 Proforma Invoice,Проформа-инвойс
 Proportional share only — it is booked when a Purchase Invoice is created for this CI.,"Только пропорциональная доля — она будет проведена, когда для этого CI будет создан счёт-фактура покупки."
+Expected payment,Ожидаемая оплата
+Expected Payment Date,Ожидаемая дата оплаты
+Paid on PI,Оплачено по PI
+Allocated on PI,Распределено по PI
+"Paid on PI and Allocated on PI are totals for the whole Proforma Invoice, not this CI's share.","«Оплачено по PI» и «Распределено по PI» — итоги по всей проформе-инвойсу, а не доля этого CI."

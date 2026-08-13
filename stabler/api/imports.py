@@ -6148,6 +6148,7 @@ def save_proforma(payload) -> dict:
 		"prepayment_type",
 		"agreed_total",
 		"advance_pct",
+		"expected_payment_date",
 		"bank_agreed",
 		"cash_agreed",
 		"status",
@@ -6524,6 +6525,18 @@ def _ci_advance_share(ci) -> dict:
 
 	The word "applied" belongs to the ``posted`` branch alone — reading a planned
 	figure as booked money is the only real risk this card carries.
+
+	Each row also carries three **PI-level** facts the user asked for next to the
+	share: how much advance the supplier has actually been paid against that
+	Proforma (``pi_advance_paid``), how much of it any Purchase Invoice has taken
+	(``pi_advance_allocated``), and when the payment is expected
+	(``expected_payment_date``). They are single aggregates about the source PI —
+	the PI's other Commercial Invoices are still never listed here.
+
+	All three PI links are keyed on ``Payment Entry.custom_proforma_invoice``, the
+	same field the booked figure above uses. ``_po_advance_payment_entries`` also
+	honours ``Payment Entry Reference`` rows; matching that here would make the two
+	halves of this one card key on different links, which is the worse divergence.
 	"""
 	pi_amounts = _ci_pi_amounts(ci)
 	pi_names = sorted(pi_amounts)
@@ -6564,6 +6577,42 @@ def _ci_advance_share(ci) -> dict:
 		):
 			booked[pi_name] = flt(amount)
 
+	pi_paid: dict[str, float] = {}
+	pi_allocated: dict[str, float] = {}
+	if pi_names and frappe.db.has_column("Payment Entry", "custom_proforma_invoice"):
+		for pi_name, amount in frappe.db.sql(
+			"""
+			SELECT pe.custom_proforma_invoice, COALESCE(SUM(pe.paid_amount), 0)
+			FROM `tabPayment Entry` pe
+			WHERE pe.company = %(company)s
+			  AND pe.docstatus = 1
+			  AND pe.custom_proforma_invoice IN %(proformas)s
+			GROUP BY pe.custom_proforma_invoice
+			""",
+			{"company": ci.company, "proformas": tuple(pi_names)},
+		):
+			pi_paid[pi_name] = flt(amount)
+
+		# Allocation lives in the child table, not in `unallocated_amount`: Frappe
+		# only rewrites that on submit, so a draft Purchase Invoice's reservation
+		# would read as unallocated. `docstatus < 2` drops cancelled invoices.
+		for pi_name, amount in frappe.db.sql(
+			"""
+			SELECT pe.custom_proforma_invoice, COALESCE(SUM(pia.allocated_amount), 0)
+			FROM `tabPurchase Invoice Advance` pia
+			JOIN `tabPayment Entry` pe
+			  ON pe.name = pia.reference_name
+			 AND pia.reference_type = 'Payment Entry'
+			JOIN `tabPurchase Invoice` pinv
+			  ON pinv.name = pia.parent
+			 AND pinv.docstatus < 2
+			WHERE pe.custom_proforma_invoice IN %(proformas)s
+			GROUP BY pe.custom_proforma_invoice
+			""",
+			{"proformas": tuple(pi_names)},
+		):
+			pi_allocated[pi_name] = flt(amount)
+
 	planned: dict[str, float] = {}
 	if not invoice:
 		advances = _ci_import_advances(ci.company, ci)
@@ -6571,11 +6620,16 @@ def _ci_advance_share(ci) -> dict:
 		planned = _ci_to_pinv.allocation_by_proforma(plan["allocations"], advances)
 
 	is_posted = bool(invoice) and cint(invoice["docstatus"]) == 1
+	# The date field ships with this card; a site whose migrate has not run yet
+	# must still render the rest of the row instead of throwing on the column.
+	meta_fields = ["name", "advance_pct", "supplier_pi_ref"]
+	if frappe.db.has_column("Proforma Invoice", "expected_payment_date"):
+		meta_fields.append("expected_payment_date")
 	meta_rows = (
 		frappe.get_all(
 			"Proforma Invoice",
 			filters={"name": ["in", pi_names]},
-			fields=["name", "advance_pct", "supplier_pi_ref"],
+			fields=meta_fields,
 		)
 		if pi_names
 		else []
@@ -6592,6 +6646,9 @@ def _ci_advance_share(ci) -> dict:
 				"supplier_pi_ref": meta.get("supplier_pi_ref"),
 				"ci_amount": flt(pi_amounts[pi_name]),
 				"advance_pct": flt(meta.get("advance_pct")),
+				"expected_payment_date": meta.get("expected_payment_date"),
+				"pi_advance_paid": flt(pi_paid.get(pi_name)),
+				"pi_advance_allocated": flt(pi_allocated.get(pi_name)),
 				"planned": 0.0 if invoice else amount,
 				"reserved": amount if invoice and not is_posted else 0.0,
 				"posted": amount if is_posted else 0.0,

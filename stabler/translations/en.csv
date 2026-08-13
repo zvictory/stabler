@@ -5836,3 +5836,8 @@ Advance reserved for this CI,Advance reserved for this CI
 Advance applied to this CI,Advance applied to this CI
 Proforma Invoice,Proforma Invoice
 Proportional share only — it is booked when a Purchase Invoice is created for this CI.,Proportional share only — it is booked when a Purchase Invoice is created for this CI.
+Expected payment,Expected payment
+Expected Payment Date,Expected Payment Date
+Paid on PI,Paid on PI
+Allocated on PI,Allocated on PI
+"Paid on PI and Allocated on PI are totals for the whole Proforma Invoice, not this CI's share.","Paid on PI and Allocated on PI are totals for the whole Proforma Invoice, not this CI's share."

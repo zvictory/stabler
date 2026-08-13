@@ -2302,6 +2302,9 @@ watch(
 						<tr>
 							<th>{{ t("Proforma Invoice") }}</th>
 							<th class="text-end">{{ t("Advance %") }}</th>
+							<th class="text-end">{{ t("Expected payment") }}</th>
+							<th class="text-end">{{ t("Paid on PI") }}</th>
+							<th class="text-end">{{ t("Allocated on PI") }}</th>
 							<th class="text-end">{{ t("CI Amount") }}</th>
 							<th class="text-end">{{ advanceShareNote }}</th>
 						</tr>
@@ -2317,6 +2320,15 @@ watch(
 							</td>
 							<td class="text-end font-monospace">{{ row.advance_pct }}%</td>
 							<td class="text-end font-monospace">
+								{{ formatDate(row.expected_payment_date) }}
+							</td>
+							<td class="text-end font-monospace">
+								{{ fm(row.pi_advance_paid, advanceShare.currency) }}
+							</td>
+							<td class="text-end font-monospace">
+								{{ fm(row.pi_advance_allocated, advanceShare.currency) }}
+							</td>
+							<td class="text-end font-monospace">
 								{{ fm(row.ci_amount, advanceShare.currency) }}
 							</td>
 							<td class="text-end font-monospace fw-bold">
@@ -2326,7 +2338,7 @@ watch(
 					</tbody>
 					<tfoot v-if="advanceShare.sources.length > 1">
 						<tr>
-							<td colspan="3" class="text-end fw-semibold small">{{ t("Totals") }}</td>
+							<td colspan="6" class="text-end fw-semibold small">{{ t("Totals") }}</td>
 							<td class="text-end font-monospace fw-semibold">
 								{{ fm(advanceShareTotal, advanceShare.currency) }}
 							</td>
@@ -2335,6 +2347,9 @@ watch(
 				</table>
 			</div>
 			<div class="card-footer py-2 small text-secondary">
+				<div>
+					{{ t("Paid on PI and Allocated on PI are totals for the whole Proforma Invoice, not this CI's share.") }}
+				</div>
 				<template v-if="advanceShare.state === 'planned'">
 					{{ t("Proportional share only — it is booked when a Purchase Invoice is created for this CI.") }}
 				</template>
