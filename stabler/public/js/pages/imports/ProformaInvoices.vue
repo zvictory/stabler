@@ -334,7 +334,10 @@ const canSupersede = (row) => ["DRAFT", "CONFIRMED"].includes(row.status);
 	<div class="card">
 		<div class="card-header d-flex align-items-center gap-2">
 			<div class="card-title m-0">{{ t("Proforma Invoices") }}</div>
-			<button type="button" class="btn btn-outline-secondary btn-sm ms-auto" @click="router.push('/imports/advances')">
+			<button type="button" class="btn btn-outline-secondary btn-sm ms-auto" @click="router.push('/imports/pi-groups')">
+				<i class="ti ti-tags me-1"></i>{{ t("PI Groups") }}
+			</button>
+			<button type="button" class="btn btn-outline-secondary btn-sm" @click="router.push('/imports/advances')">
 				<i class="ti ti-cash me-1"></i>{{ t("PI Advances") }}
 			</button>
 			<button type="button" class="btn btn-primary btn-sm" @click="router.push('/imports/proformas/new')">
