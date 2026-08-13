@@ -801,8 +801,10 @@ class RowProformaIsNotLaunderedFromTheHeaderTest(unittest.TestCase):
 	def test_display_still_falls_back_so_a_blank_row_is_not_blank_on_screen(self):
 		# Storage stops coalescing; the screen must not. A row with no PI of its own
 		# is shown under the header's, which is exactly what the server computes.
+		# The script-side twin of this fallback lived only inside the contract-summary
+		# computed, which was removed with the "Contracts for this shipment" card
+		# (stabler-9jd); the template fallback below is the whole display guarantee now.
 		self.assertIn("row.custom_proforma_invoice || form.custom_proforma_invoice", self.vue)
-		self.assertIn("row.custom_proforma_invoice || form.value.custom_proforma_invoice", self.vue)
 
 
 class HeaderProformaComesFromTheAllocationTest(unittest.TestCase):
