@@ -9,6 +9,7 @@ import unittest
 
 from stabler.api import _ci_to_pinv as ci_math
 from stabler.api._ci_to_pinv import (
+	allocation_by_proforma,
 	lines_total,
 	no_double_count,
 	pinv_lines_from_ci_items,
@@ -329,6 +330,68 @@ class TestNoDoubleCount(unittest.TestCase):
 	def test_reconciles_kurus(self):
 		self.assertTrue(reconciles(24999.6, 25000, eps=0.5))
 		self.assertFalse(reconciles(24000, 25000, eps=0.5))
+
+
+class TestAllocationByProforma(unittest.TestCase):
+	"""The CI card asks "how much per Proforma Invoice"; the planner answers "how
+	much per Payment Entry". This fold is what makes one card row per source PI
+	possible, and it must never invent a PI the plan did not actually draw from."""
+
+	def test_two_payments_of_one_pi_collapse_to_one_row(self):
+		advances = [
+			{
+				"name": "PE-1",
+				"proforma_invoice": "PI-A",
+				"unallocated_amount": 223188,
+				"advance_percentage": 30,
+				"ci_amount": 399000,
+			},
+			{
+				"name": "PE-2",
+				"proforma_invoice": "PI-A",
+				"unallocated_amount": 892752,
+				"advance_percentage": 30,
+				"ci_amount": 399000,
+			},
+		]
+		plan = plan_advance_allocation(399000, advances)
+		# The proportional cap is what the card promises: 399 000 x 30 %.
+		self.assertEqual(allocation_by_proforma(plan["allocations"], advances), {"PI-A": 119700.0})
+
+	def test_two_proformas_stay_separate(self):
+		advances = [
+			{
+				"name": "PE-1",
+				"proforma_invoice": "PI-A",
+				"unallocated_amount": 5000,
+				"advance_percentage": 50,
+				"ci_amount": 6000,
+			},
+			{
+				"name": "PE-2",
+				"proforma_invoice": "PI-B",
+				"unallocated_amount": 5000,
+				"advance_percentage": 20,
+				"ci_amount": 4000,
+			},
+		]
+		plan = plan_advance_allocation(10000, advances)
+		self.assertEqual(
+			allocation_by_proforma(plan["allocations"], advances), {"PI-A": 3000.0, "PI-B": 800.0}
+		)
+
+	def test_advance_without_a_proforma_is_dropped_not_guessed(self):
+		# Legacy container-only advances carry no PI. Attributing them to the
+		# first PI in the list would show money against a contract that never
+		# received it.
+		advances = [{"name": "PE-9", "proforma_invoice": "", "unallocated_amount": 500}]
+		self.assertEqual(allocation_by_proforma([{"payment_entry": "PE-9", "amount": 500}], advances), {})
+
+	def test_unknown_payment_entry_is_dropped(self):
+		self.assertEqual(allocation_by_proforma([{"payment_entry": "PE-X", "amount": 10}], []), {})
+
+	def test_empty_plan_yields_no_rows(self):
+		self.assertEqual(allocation_by_proforma([], None), {})
 
 
 if __name__ == "__main__":

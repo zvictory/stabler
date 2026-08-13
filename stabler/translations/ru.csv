@@ -5837,3 +5837,9 @@ Supplier Payment Currency Guard,Контроль валюты платежа п�
 This supplier is paid in {0}. Select a {0} account: the selected payment account is in {1}.,Этому поставщику платят в {0}. Выберите счёт в {0}: выбранный счёт платежа в {1}.
 No exchange rate found for this invoice date — landed cost cannot be calculated. Enter a rate above or add the CBU rate.,Курс на дату этого инвойса не найден — себестоимость рассчитать невозможно. Укажите курс выше или добавьте курс ЦБ.
 "A hand-entered {0} cost on container {1} is already capitalized by {2}. The bill was linked, but its cost was not added a second time.","Введённая вручную стоимость «{0}» по контейнеру {1} уже капитализирована в {2}. Счёт привязан, но его сумма не добавлена повторно."
+Advance for this CI,Аванс по этому CI
+Advance planned for this CI,"Аванс, запланированный по этому CI"
+Advance reserved for this CI,"Аванс, зарезервированный по этому CI"
+Advance applied to this CI,"Аванс, зачтённый по этому CI"
+Proforma Invoice,Проформа-инвойс
+Proportional share only — it is booked when a Purchase Invoice is created for this CI.,"Только пропорциональная доля — она будет проведена, когда для этого CI будет создан счёт-фактура покупки."

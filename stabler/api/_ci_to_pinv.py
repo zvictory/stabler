@@ -109,6 +109,32 @@ def plan_advance_allocation(invoice_total, advances) -> dict:
 	}
 
 
+def allocation_by_proforma(allocations, advances) -> dict[str, float]:
+	"""Fold a ``plan_advance_allocation`` result back onto its source PIs.
+
+	``plan_advance_allocation`` answers "how much of each Payment Entry"; the CI
+	screen asks "how much of each Proforma Invoice". The PI is not on the plan
+	rows, so it is looked up from the same ``advances`` list the plan was built
+	from. Payment Entries with no ``proforma_invoice`` (legacy container-only
+	advances) are dropped — they cannot be attributed to a PI line.
+	"""
+	pi_of: dict[str, str] = {}
+	for adv in advances or []:
+		a = adv or {}
+		name = str(a.get("name") or "").strip()
+		pi = str(a.get("proforma_invoice") or "").strip()
+		if name and pi:
+			pi_of[name] = pi
+	totals: dict[str, float] = {}
+	for row in allocations or []:
+		r = row or {}
+		pi = pi_of.get(str(r.get("payment_entry") or "").strip())
+		if not pi:
+			continue
+		totals[pi] = round(totals.get(pi, 0.0) + _amt(r.get("amount")), 2)
+	return totals
+
+
 def build_pi_advance_ledger(*, pi_total, advance_percentage, payments, ci_movements) -> dict:
 	"""Build the audit-friendly running ledger shown on PI and CI screens.
 

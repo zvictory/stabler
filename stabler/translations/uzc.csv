@@ -5832,3 +5832,9 @@ Supplier Payment Currency Guard,Таъминотчи тўлови валютас
 This supplier is paid in {0}. Select a {0} account: the selected payment account is in {1}.,Бу таъминотчига {0} да тўланади. {0} даги ҳисобни танланг: танланган тўлов ҳисоби {1} да.
 No exchange rate found for this invoice date — landed cost cannot be calculated. Enter a rate above or add the CBU rate.,Ушбу ҳисоб-фактура санаси учун курс топилмади — якуний таннархни ҳисоблаб бўлмайди. Юқорида курс киритинг ёки МБ курсини қўшинг.
 "A hand-entered {0} cost on container {1} is already capitalized by {2}. The bill was linked, but its cost was not added a second time.","{1} контейнеридаги қўлда киритилган {0} харажати аллақачон {2} билан капиталлаштирилган. Ҳисоб-фактура боғланди, лекин унинг суммаси иккинчи марта қўшилмади."
+Advance for this CI,Ушбу CI учун аванс
+Advance planned for this CI,Ушбу CI учун режалаштирилган аванс
+Advance reserved for this CI,Ушбу CI учун захираланган аванс
+Advance applied to this CI,Ушбу CI га ҳисобга олинган аванс
+Proforma Invoice,Проформа фактура
+Proportional share only — it is booked when a Purchase Invoice is created for this CI.,Фақат пропорционал улуш — ушбу CI учун сотиб олиш ҳисоб-фактураси яратилганда ҳисобга олинади.

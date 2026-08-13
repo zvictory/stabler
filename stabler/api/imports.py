@@ -528,7 +528,7 @@ def get_commercial_invoice(name: str):
 		"grn": grn_rows[0] if grn_rows else None,
 		"customs_fee_breakdown": _safe_customs_breakdown(name),
 		"pi_tracking": get_pi_tracking_for_ci(doc),
-		"vendor_settlement": _ci_vendor_settlement(doc) if _cost_visible() else None,
+		"ci_advance_share": _ci_advance_share(doc) if _cost_visible() else None,
 	}
 	rules.mask_named(payload, rules.CI_MASK_FIELDS, _cost_visible())
 	return payload
@@ -6510,16 +6510,23 @@ def _restrict_advances_to_import(doc, import_allocations) -> float:
 	return round(total, 2)
 
 
-def _ci_vendor_settlement(ci) -> dict:
-	"""One CI's goods payable plus the independent ledgers of its source PIs."""
-	pi_names = sorted(_ci_pi_amounts(ci))
-	ledgers = []
-	for pi_name in pi_names:
-		if not frappe.db.exists("Proforma Invoice", pi_name):
-			continue
-		pi_doc = frappe.get_doc("Proforma Invoice", pi_name)
-		payments, _paid_bank, _paid_cash = _po_advance_payment_entries(pi_name, ci.company)
-		ledgers.append(_build_proforma_advance_ledger(pi_doc, payments))
+def _ci_advance_share(ci) -> dict:
+	"""How much of the PI advance belongs to THIS Commercial Invoice.
+
+	Read-only and deliberately narrow: one row per source Proforma Invoice, the
+	PI's other CIs never appear, and no action is offered here (the CI → Purchase
+	Invoice conversion lives on the Suppliers page). Three honest states:
+
+	  * ``planned``  — no Purchase Invoice yet; the share is proportional only
+	    (``ci_amount × advance_pct``) and has touched no ledger.
+	  * ``reserved`` — a draft Purchase Invoice holds the allocation.
+	  * ``posted``   — a submitted Purchase Invoice has it in the GL.
+
+	The word "applied" belongs to the ``posted`` branch alone — reading a planned
+	figure as booked money is the only real risk this card carries.
+	"""
+	pi_amounts = _ci_pi_amounts(ci)
+	pi_names = sorted(pi_amounts)
 
 	invoice = None
 	if frappe.db.has_column("Purchase Invoice", "custom_commercial_invoice"):
@@ -6530,52 +6537,79 @@ def _ci_vendor_settlement(ci) -> dict:
 				"supplier": ci.supplier,
 				"docstatus": ["<", 2],
 			},
-			fields=["name", "docstatus", "status", "grand_total", "outstanding_amount"],
+			fields=["name", "docstatus"],
 			order_by="docstatus desc, creation desc",
 			limit=1,
 		)
 		invoice = rows[0] if rows else None
 
-	advances = _ci_import_advances(ci.company, ci)
-	plan = _ci_to_pinv.plan_advance_allocation(flt(ci.agreed_total), advances)
-	applied = 0.0
+	booked: dict[str, float] = {}
 	if invoice and pi_names and frappe.db.has_column("Payment Entry", "custom_proforma_invoice"):
 		# Submitted Payment Entries no longer have an unallocated balance, so
-		# deriving eligibility from `_ci_import_advances` would make a real $90k
-		# allocation disappear from the settlement card after Accounts posts it.
-		applied = flt(
-			frappe.db.sql(
-				"""
-				SELECT COALESCE(SUM(pia.allocated_amount), 0)
-				FROM `tabPurchase Invoice Advance` pia
-				JOIN `tabPayment Entry` pe
-				  ON pe.name = pia.reference_name
-				 AND pia.reference_type = 'Payment Entry'
-				WHERE pia.parent = %(purchase_invoice)s
-				  AND pe.custom_proforma_invoice IN %(proformas)s
-				""",
-				{"purchase_invoice": invoice["name"], "proformas": tuple(pi_names)},
-			)[0][0]
+		# deriving this from `_ci_import_advances` would make a real $90k
+		# allocation disappear from the card after Accounts posts it. Grouping
+		# the existing scalar sum by PI keeps that total identical.
+		for pi_name, amount in frappe.db.sql(
+			"""
+			SELECT pe.custom_proforma_invoice, COALESCE(SUM(pia.allocated_amount), 0)
+			FROM `tabPurchase Invoice Advance` pia
+			JOIN `tabPayment Entry` pe
+			  ON pe.name = pia.reference_name
+			 AND pia.reference_type = 'Payment Entry'
+			WHERE pia.parent = %(purchase_invoice)s
+			  AND pe.custom_proforma_invoice IN %(proformas)s
+			GROUP BY pe.custom_proforma_invoice
+			""",
+			{"purchase_invoice": invoice["name"], "proformas": tuple(pi_names)},
+		):
+			booked[pi_name] = flt(amount)
+
+	planned: dict[str, float] = {}
+	if not invoice:
+		advances = _ci_import_advances(ci.company, ci)
+		plan = _ci_to_pinv.plan_advance_allocation(flt(ci.agreed_total), advances)
+		planned = _ci_to_pinv.allocation_by_proforma(plan["allocations"], advances)
+
+	is_posted = bool(invoice) and cint(invoice["docstatus"]) == 1
+	meta_rows = (
+		frappe.get_all(
+			"Proforma Invoice",
+			filters={"name": ["in", pi_names]},
+			fields=["name", "advance_pct", "supplier_pi_ref"],
 		)
-	remaining = (
-		flt(invoice["outstanding_amount"])
-		if invoice and cint(invoice["docstatus"]) == 1
-		else max(flt(ci.agreed_total) - applied, 0.0)
+		if pi_names
+		else []
 	)
+	pi_meta = {row["name"]: row for row in meta_rows}
+
+	sources = []
+	for pi_name in pi_names:
+		meta = pi_meta.get(pi_name) or {}
+		amount = flt(booked.get(pi_name)) if invoice else flt(planned.get(pi_name))
+		sources.append(
+			{
+				"proforma_invoice": pi_name,
+				"supplier_pi_ref": meta.get("supplier_pi_ref"),
+				"ci_amount": flt(pi_amounts[pi_name]),
+				"advance_pct": flt(meta.get("advance_pct")),
+				"planned": 0.0 if invoice else amount,
+				"reserved": amount if invoice and not is_posted else 0.0,
+				"posted": amount if is_posted else 0.0,
+			}
+		)
+
+	def _total(key: str) -> float:
+		return round(sum(flt(row[key]) for row in sources), 2)
+
 	return {
-		"commercial_invoice_total": flt(ci.agreed_total),
-		"advance_applied": applied,
-		"advance_available_to_apply": flt(plan["total_allocated"]) if not invoice else 0.0,
-		"remaining_to_pay": round(remaining, 2),
+		"state": "posted" if is_posted else ("reserved" if invoice else "planned"),
+		"currency": ci.get("currency"),
+		"ci_total": flt(ci.agreed_total),
+		"advance_planned": _total("planned"),
+		"advance_reserved": _total("reserved"),
+		"advance_posted": _total("posted"),
 		"purchase_invoice": invoice["name"] if invoice else None,
-		"purchase_invoice_docstatus": cint(invoice["docstatus"]) if invoice else None,
-		"purchase_invoice_status": invoice["status"] if invoice else "Not Created",
-		"can_create_purchase_invoice": not bool(invoice),
-		"can_pay_remaining": bool(
-			invoice and cint(invoice["docstatus"]) == 1 and flt(invoice["outstanding_amount"]) > 0
-		),
-		"advance_plan": plan,
-		"pi_ledgers": ledgers,
+		"sources": sources,
 	}
 
 
