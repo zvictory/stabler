@@ -213,6 +213,81 @@ class NoPlannedFigureUnderAPostedLabelTest(unittest.TestCase):
 		self.assertIn("Proportional share only", block)
 
 
+class PiLevelPaymentFactsTest(unittest.TestCase):
+	"""stabler-feq: "avans ne kadar ödendi/allocated, beklenen ödeme tarihi".
+
+	These three numbers are **facts about the source Proforma Invoice**, not about
+	this CI. That distinction is the whole risk: rendered next to this CI's share
+	without a label, "paid 1.115.940" reads as money paid for *this* invoice. So
+	the header says *on PI*, the footer says it in a sentence, and this test fails
+	if either disappears.
+
+	They are single aggregates by construction — one number per PI — which is why
+	they do not reopen the deleted whole-PI ledger: the PI's other Commercial
+	Invoices are still never enumerated here.
+	"""
+
+	def setUp(self):
+		self.api = read(API)
+		self.fn = py_func(self.api, "_ci_advance_share")
+		self.vue = read(VUE)
+		self.block = card(self.vue)
+
+	def test_each_source_row_carries_the_three_pi_level_facts(self):
+		for key in ("pi_advance_paid", "pi_advance_allocated", "expected_payment_date"):
+			with self.subTest(key=key):
+				self.assertIn(f'"{key}":', self.fn)
+
+	def test_paid_is_summed_from_submitted_payment_entries_of_that_pi(self):
+		self.assertIn("pe.custom_proforma_invoice IN %(proformas)s", self.fn)
+		self.assertIn("pe.docstatus = 1", self.fn)
+
+	def test_allocated_is_read_from_the_child_table_not_unallocated_amount(self):
+		# Frappe rewrites `Payment Entry.unallocated_amount` only on submit, so a
+		# *draft* Purchase Invoice's reservation would read as still unallocated.
+		self.assertIn("SUM(pia.allocated_amount)", self.fn)
+		self.assertNotIn("pe.unallocated_amount", self.fn)
+		self.assertIn("pinv.docstatus < 2", self.fn)
+
+	def test_the_new_date_column_is_guarded_for_a_site_that_has_not_migrated(self):
+		# rsync reaches all seven tenants at once; `migrate` is per-site. Until it
+		# runs, selecting the column would throw and take the whole card with it.
+		self.assertIn('frappe.db.has_column("Proforma Invoice", "expected_payment_date")', self.fn)
+
+	def test_the_pi_level_figures_are_labelled_as_pi_level(self):
+		for label in ('t("Paid on PI")', 't("Allocated on PI")'):
+			with self.subTest(label=label):
+				self.assertIn(label, self.block)
+		self.assertIn("are totals for the whole Proforma Invoice, not this CI's share.", self.block)
+
+	def test_the_expected_date_goes_through_the_shared_formatter(self):
+		self.assertIn("formatDate(row.expected_payment_date)", self.block)
+		self.assertNotIn("{{ row.expected_payment_date }}", self.block)
+
+	def test_the_totals_row_still_spans_every_leading_column(self):
+		# Adding a column without bumping the colspan silently shifts the totals
+		# figure out from under its own header.
+		columns = len(re.findall(r"<th[ >]", self.block))
+		m = re.search(r'<td colspan="(\d+)" class="text-end fw-semibold small"', self.block)
+		self.assertIsNotNone(m)
+		self.assertEqual(int(m.group(1)), columns - 1)
+
+	def test_the_date_is_stored_on_the_proforma_and_is_savable(self):
+		doctype = read(os.path.join(_ROOT, "stabler", "doctype", "proforma_invoice", "proforma_invoice.json"))
+		self.assertIn('"fieldname": "expected_payment_date"', doctype)
+		self.assertIn('"fieldtype": "Date"', doctype)
+		# Without the allow-list entry the field renders, edits, saves — and is
+		# dropped on the way to the database.
+		self.assertIn('"expected_payment_date",', py_func(self.api, "save_proforma"))
+
+	def test_the_pi_form_edits_it_with_the_shared_date_component(self):
+		pi_form = read(os.path.join(_ROOT, "public", "js", "pages", "imports", "ProformaForm.vue"))
+		self.assertIn('<DateInput v-model="form.expected_payment_date" />', pi_form)
+		self.assertNotIn('type="date"', pi_form)
+		# null from the backend would trip DateInput's String prop.
+		self.assertIn('expected_payment_date: detail.expected_payment_date || ""', pi_form)
+
+
 class DisplayHygieneTest(unittest.TestCase):
 	def setUp(self):
 		self.vue = read(VUE)

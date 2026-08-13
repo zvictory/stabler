@@ -72,6 +72,7 @@ function blankForm() {
 		prepayment_type: "AGREED_TOTAL",
 		agreed_total: 0,
 		advance_pct: 30,
+		expected_payment_date: "",
 		bank_agreed: 0,
 		cash_agreed: 0,
 		docs_total: null,
@@ -203,6 +204,8 @@ async function loadDoc() {
 			...blankForm(),
 			...detail,
 			supplier_name: await resolveSupplierName(detail.supplier),
+			// null from the backend would trip DateInput's String prop; "" is its blank value.
+			expected_payment_date: detail.expected_payment_date || "",
 			items: (detail.items || []).map((it) => ({
 				item: it.item,
 				category: it.category || "",
@@ -889,10 +892,14 @@ watch(activeCompany, loadPiGroups);
 							<label class="form-check-label" for="pt-docs">{{ t("Docs only") }}</label>
 						</div>
 					</div>
-					<div class="col-md-6">
+					<div class="col-md-3">
 						<label class="form-label">{{ t("Advance %") }}</label>
 						<input v-model.number="form.advance_pct" type="range" min="0" max="100" class="form-range">
 						<div class="small text-secondary">{{ form.advance_pct }}% / {{ 100 - form.advance_pct }}%</div>
+					</div>
+					<div class="col-md-3">
+						<label class="form-label">{{ t("Expected Payment Date") }}</label>
+						<DateInput v-model="form.expected_payment_date" />
 					</div>
 				</div>
 

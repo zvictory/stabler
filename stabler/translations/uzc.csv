@@ -5838,3 +5838,8 @@ Advance reserved for this CI,Ушбу CI учун захираланган ав�
 Advance applied to this CI,Ушбу CI га ҳисобга олинган аванс
 Proforma Invoice,Проформа фактура
 Proportional share only — it is booked when a Purchase Invoice is created for this CI.,Фақат пропорционал улуш — ушбу CI учун сотиб олиш ҳисоб-фактураси яратилганда ҳисобга олинади.
+Expected payment,Кутилаётган тўлов
+Expected Payment Date,Кутилаётган тўлов санаси
+Paid on PI,PI бўйича тўланган
+Allocated on PI,PI бўйича тақсимланган
+"Paid on PI and Allocated on PI are totals for the whole Proforma Invoice, not this CI's share.","«PI бўйича тўланган» ва «PI бўйича тақсимланган» — бутун Proforma Invoice бўйича жами суммалар, бу CI нинг улуши эмас."

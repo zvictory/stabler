@@ -5833,3 +5833,8 @@ Advance reserved for this CI,Bu CI için rezerve edilen avans
 Advance applied to this CI,Bu CI'ya mahsup edilen avans
 Proforma Invoice,Proforma Fatura
 Proportional share only — it is booked when a Purchase Invoice is created for this CI.,Yalnızca orantısal pay — bu CI için bir Satın Alma Faturası oluşturulduğunda muhasebeleşir.
+Expected payment,Beklenen ödeme
+Expected Payment Date,Beklenen ödeme tarihi
+Paid on PI,PI'da ödenen
+Allocated on PI,PI'da tahsis edilen
+"Paid on PI and Allocated on PI are totals for the whole Proforma Invoice, not this CI's share.","""PI'da ödenen"" ve ""PI'da tahsis edilen"" tüm Proforma Fatura toplamlarıdır, bu CI'nın payı değil."

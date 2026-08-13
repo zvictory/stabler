@@ -5838,3 +5838,8 @@ Advance reserved for this CI,Ushbu CI uchun zaxiralangan avans
 Advance applied to this CI,Ushbu CI ga hisobga olingan avans
 Proforma Invoice,Proforma faktura
 Proportional share only — it is booked when a Purchase Invoice is created for this CI.,Faqat proporsional ulush — ushbu CI uchun xarid qilish hisob-fakturasi yaratilganda hisobga olinadi.
+Expected payment,Kutilayotgan to'lov
+Expected Payment Date,Kutilayotgan to'lov sanasi
+Paid on PI,PI bo'yicha to'langan
+Allocated on PI,PI bo'yicha taqsimlangan
+"Paid on PI and Allocated on PI are totals for the whole Proforma Invoice, not this CI's share.","""PI bo'yicha to'langan"" va ""PI bo'yicha taqsimlangan"" — butun Proforma Invoice bo'yicha jami summalar, bu CI ning ulushi emas."

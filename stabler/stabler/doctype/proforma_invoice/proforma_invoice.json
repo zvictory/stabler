@@ -25,6 +25,7 @@
   "cash_difference",
   "prepayment_type",
   "advance_pct",
+  "expected_payment_date",
   "column_break_amount",
   "bank_agreed",
   "cash_agreed",
@@ -124,6 +125,12 @@
    "fieldname": "advance_pct",
    "fieldtype": "Percent",
    "label": "Advance %"
+  },
+  {
+   "description": "When the advance is expected to be paid to the supplier. Informational only — no automation depends on it.",
+   "fieldname": "expected_payment_date",
+   "fieldtype": "Date",
+   "label": "Expected Payment Date"
   },
   {
    "fieldname": "column_break_amount",
