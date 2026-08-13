@@ -48,8 +48,16 @@ const cls = computed(() => {
 const label = computed(() =>
 	props.status ? t(props.status) : getDocstatusLabel(props.docstatus)
 );
+
+// A row can carry neither a string status nor a numeric docstatus — a `GRN LCV Ref`
+// audit row whose voucher no longer exists sends `docstatus: null`. `getDocstatusLabel`
+// falls through to `String(docstatus)`, so without this guard the badge renders the
+// literal text "null". Render nothing instead; `0` is a real docstatus and must survive.
+const hasValue = computed(
+	() => Boolean(props.status) || typeof props.docstatus === "number"
+);
 </script>
 
 <template>
-	<span class="badge" :class="cls">{{ label }}</span>
+	<span v-if="hasValue" class="badge" :class="cls">{{ label }}</span>
 </template>

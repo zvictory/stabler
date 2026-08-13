@@ -327,7 +327,7 @@ watch(activeCompany, load);
 							<ul v-else class="list-unstyled mb-0">
 								<li v-for="lc in doc.landed_cost_vouchers" :key="lc.lcv" class="d-flex justify-content-between border-bottom py-1">
 									<span class="font-monospace small">{{ lc.lcv }}</span>
-									<span class="text-secondary small">{{ t(lc.note) }} · {{ formatDate(lc.posted_on) }}</span>
+									<span class="text-secondary small"><StatusBadge doctype="Landed Cost Voucher" :docstatus="lc.docstatus" class="me-2" />{{ t(lc.note) }} · {{ formatDate(lc.posted_on) }}</span>
 								</li>
 							</ul>
 						</div>

@@ -24,6 +24,7 @@ from stabler.stabler.imports_module import lcv_math
 from stabler.stabler.imports_module.hooks import _build_and_save_lcv, _collect_cost_lines
 
 RELEASE_HANDLER = "stabler.stabler.imports_module.hooks.release_cost_lines_for_lcv"
+CANCEL_HANDLER = "stabler.stabler.imports_module.hooks.allow_cancel_with_grn_link"
 
 LINE_AMOUNT = 100.0
 LINE_RATE = 12500.0
@@ -298,3 +299,56 @@ class TestLCVIntegration(FrappeTestCase):
 		# Cancel keeps the audit trail: the GRN still shows which voucher was tried.
 		self.grn.reload()
 		self.assertEqual(len(self.grn.landed_cost_vouchers), 1)
+
+	def test_a_submitted_grn_lcv_ref_blocks_cancel_until_the_handler_runs(self):
+		lcv_name = _build_and_save_lcv(self.grn, note="initial")
+		self.assertTrue(lcv_name)
+
+		# Make GRN submitted so Frappe link checking finds it
+		self.grn.db_set("docstatus", 1)
+		# `db_set` writes only the parent row. In production `Document.set_docstatus`
+		# (document.py:547) copies the docstatus onto every child row, and
+		# `delete_doc.py:356` tests the CHILD row's docstatus — so without this the link
+		# check finds nothing and the "prove it can fail" step would pass vacuously.
+		frappe.db.set_value("GRN LCV Ref", {"parent": self.grn.name}, "docstatus", 1)
+
+		# Assert CANCEL_HANDLER is registered under before_cancel
+		registered_before = (
+			frappe.get_hooks("doc_events").get("Landed Cost Voucher", {}).get("before_cancel", [])
+		)
+		self.assertIn(CANCEL_HANDLER, registered_before)
+
+		lcv = frappe.get_doc("Landed Cost Voucher", lcv_name)
+		lcv.db_set("docstatus", 1)
+		lcv.reload()
+
+		# Prove the link IS detected first without the fix, otherwise the test is a false green.
+		# The reloaded lcv has no ignore_linked_doctypes yet, so this is the un-fixed state.
+		from frappe.exceptions import LinkExistsError
+		from frappe.model.delete_doc import check_if_doc_is_linked
+
+		with self.assertRaises(LinkExistsError):
+			check_if_doc_is_linked(lcv, method="Cancel")
+
+		# With the hook enabled, the check should pass
+		frappe.get_attr(CANCEL_HANDLER)(lcv, "before_cancel")
+		check_if_doc_is_linked(lcv, method="Cancel")
+
+	def test_the_handler_is_a_no_op_when_no_grn_lcv_ref_points_at_the_lcv(self):
+		doc = frappe._dict({"name": "LCV-no-such-voucher"})
+		frappe.get_attr(CANCEL_HANDLER)(doc, "before_cancel")
+		self.assertIsNone(doc.get("ignore_linked_doctypes"))
+
+	def test_the_handler_appends_to_ignore_linked_doctypes_instead_of_clobbering_it(self):
+		lcv_name = _build_and_save_lcv(self.grn, note="initial")
+		doc = frappe._dict({"name": lcv_name, "ignore_linked_doctypes": ("Purchase Receipt",)})
+		frappe.get_attr(CANCEL_HANDLER)(doc, "before_cancel")
+
+		# Assert all three:
+		# - "Purchase Receipt" is still present
+		self.assertIn("Purchase Receipt", doc.ignore_linked_doctypes)
+		# - "GRN Checklist" is present
+		self.assertIn("GRN Checklist", doc.ignore_linked_doctypes)
+		# - idempotent: calling a second time leaves exactly one "GRN Checklist"
+		frappe.get_attr(CANCEL_HANDLER)(doc, "before_cancel")
+		self.assertEqual(doc.ignore_linked_doctypes.count("GRN Checklist"), 1)

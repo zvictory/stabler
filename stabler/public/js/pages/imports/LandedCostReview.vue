@@ -13,7 +13,6 @@ import { useEscapeBack } from "../../composables/useEscapeBack.js";
 import StatusBadge from "../../components/StatusBadge.vue";
 import EmptyState from "../../components/EmptyState.vue";
 import MoneyInput from "../../components/MoneyInput.vue";
-import { getDocstatusLabel } from "../../composables/status.js";
 
 const session = useSession();
 const { user } = storeToRefs(session);
@@ -243,9 +242,7 @@ watch(grnName, () => load());
 											<td class="font-monospace small">{{ lc.lcv }}</td>
 											<td class="small">{{ lc.note || "—" }}</td>
 											<td class="text-center">
-												<span class="badge" :class="lc.docstatus === 1 ? 'bg-green-lt' : 'bg-yellow-lt'">
-													{{ getDocstatusLabel(lc.docstatus) }}
-												</span>
+												<StatusBadge doctype="Landed Cost Voucher" :docstatus="lc.docstatus" />
 											</td>
 											<td class="text-end font-monospace">{{ lc.total !== null ? formatMoney(lc.total, currency, user.language) : "—" }}</td>
 											<td class="text-end">
