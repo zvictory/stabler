@@ -1664,6 +1664,20 @@ const rollbackTarget = computed(() => {
 	return idx > 0 ? PIPELINE[idx - 1] : null;
 });
 
+// Every status move the current user may make, as one list, so the action bar
+// can offer a single menu instead of one button per transition. Same set as
+// before: forward transitions (never "Cancelled" — cancelling a shipment is not
+// a routine step) plus the privileged single-step correction.
+const statusActions = computed(() => {
+	const actions = (form.value.allowed_transitions || [])
+		.filter((s) => s !== "Cancelled")
+		.map((s) => ({ status: s, backward: false }));
+	if (canRollback.value && rollbackTarget.value) {
+		actions.push({ status: rollbackTarget.value, backward: true });
+	}
+	return actions;
+});
+
 const fm = (v, ccy) => formatMoney(v, ccy || "USD", user.value?.language || "en");
 const fn = (v) => {
 	if (v === null || v === undefined || isNaN(v)) return "0.00";
@@ -1962,24 +1976,32 @@ watch(
 			<div class="card-body d-flex align-items-center flex-wrap gap-2">
 				<span class="text-secondary small fw-semibold">{{ t("Status") }}:</span>
 				<StatusBadge doctype="Commercial Invoice" :status="form.status" />
-				<button
-					v-for="ns in form.allowed_transitions.filter((s) => s !== 'Cancelled')"
-					:key="ns"
-					type="button"
-					class="btn btn-primary btn-sm"
-					@click="advanceStatus(ns)"
-				>
-					{{ t("Advance status →") }}
-				</button>
-
-				<button
-					v-if="canRollback && rollbackTarget"
-					type="button"
-					class="btn btn-ghost-secondary btn-sm"
-					@click="advanceStatus(rollbackTarget)"
-				>
-					<i class="ti ti-arrow-back-up me-1"></i>{{ t("Roll back") }}
-				</button>
+				<div v-if="statusActions.length" class="dropdown">
+					<button
+						type="button"
+						class="btn btn-primary btn-sm dropdown-toggle"
+						data-bs-toggle="dropdown"
+						aria-expanded="false"
+					>
+						{{ t("Change status") }}
+					</button>
+					<div class="dropdown-menu stbl-menu stbl-menu--nocheck">
+						<a
+							v-for="a in statusActions"
+							:key="`${a.backward ? 'back' : 'fwd'}-${a.status}`"
+							href="#"
+							class="dropdown-item stbl-menu-item"
+							@click.prevent="advanceStatus(a.status)"
+						>
+							<i
+								class="ti me-2 text-secondary"
+								:class="a.backward ? 'ti-arrow-back-up' : 'ti-arrow-right'"
+							></i>
+							<StatusBadge doctype="Commercial Invoice" :status="a.status" />
+							<span v-if="a.backward" class="ms-2 small text-secondary">{{ t("Roll back") }}</span>
+						</a>
+					</div>
+				</div>
 
 				<div class="ms-auto d-flex align-items-center gap-2 small text-secondary">
 					<span v-if="form.etd">ETD {{ formatDate(form.etd) }}</span>
