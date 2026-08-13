@@ -16,13 +16,32 @@ import sys
 import unittest
 from unittest.mock import MagicMock
 
-# Setup frappe mock as a package with utilities
+
+# `bench run-tests --module X` still IMPORTS every test_*.py while discovering
+# tests, so a fake left in `sys.modules` by this module leaks into every other
+# module in the run. Install the fakes only when there is no bench, and put
+# `sys.modules` back the moment the imports that need them are done — same
+# guard/restore pair as `test_item_crud_and_prices.py`, which documents the bug.
+def _under_bench() -> bool:
+	try:
+		import frappe
+
+		return frappe.local.site is not None
+	except Exception:
+		return False
+
+
+_UNDER_BENCH = _under_bench()
+
 frappe_mock = MagicMock()
 frappe_mock.utils = MagicMock()
 frappe_mock.utils.nowdate = MagicMock(return_value="2026-08-13")
 
-sys.modules["frappe"] = frappe_mock
-sys.modules["frappe.utils"] = frappe_mock.utils
+_FAKES = {"frappe": frappe_mock, "frappe.utils": frappe_mock.utils}
+
+if not _UNDER_BENCH:
+	_SAVED = {name: sys.modules.get(name) for name in _FAKES}
+	sys.modules.update(_FAKES)
 
 import frappe
 
@@ -30,11 +49,19 @@ from stabler.api._imports_rules import bill_cost_component, derive_bill_category
 from stabler.maintenance import seed_imports_uat
 from stabler.maintenance.seed_imports_uat import DEMO_SUFFIX, _guard
 
+if not _UNDER_BENCH:
+	for _name, _saved in _SAVED.items():
+		if _saved is None:
+			sys.modules.pop(_name, None)
+		else:
+			sys.modules[_name] = _saved
+
 
 class _Refused(Exception):
 	"""Stands in for frappe.throw, which aborts rather than returns."""
 
 
+@unittest.skipIf(_UNDER_BENCH, "needs the frappe mock: runs in its own process via `make test`")
 class ImportsUatGuardTest(unittest.TestCase):
 	def setUp(self):
 		frappe.throw.side_effect = _Refused
