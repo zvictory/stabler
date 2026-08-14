@@ -1,0 +1,507 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mikas — Tender Süreç Haritası (Birleşik)</title>
+<style>
+	:root {
+		--ink: #16202e; --muted: #6b7a8c; --line: #dde3ea; --card: #fff; --bg: #f4f6f9;
+		--ok: #2fa36b; --ok-bg: #e6f6ee;
+		--part: #c98a06; --part-bg: #fdf4dd;
+		--miss: #d64545; --miss-bg: #fdeaea;
+		--new: #2563eb; --new-bg: #e8effd;
+		--auto: #7c3aed; --auto-bg: #f1eafd;
+		--dark: #0f172a;
+	}
+	* { box-sizing: border-box; }
+	body { margin: 0; font-family: Inter, -apple-system, "Segoe UI", Roboto, sans-serif; background: var(--bg); color: var(--ink); font-size: 14px; line-height: 1.5; }
+	.wrap { max-width: 1120px; margin: 0 auto; padding: 28px 20px 90px; }
+
+	.hdr { background: var(--dark); color: #e2e8f0; border-radius: 14px; padding: 20px 24px; margin-bottom: 20px; }
+	.hdr h1 { margin: 0 0 6px; font-size: 22px; font-weight: 750; color: #fff; }
+	.hdr p { margin: 0; font-size: 13px; color: #94a3b8; max-width: 880px; }
+	.hdr .tags { margin-top: 10px; }
+	.hdr .tag { display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 700; margin-right: 6px; background: #1e293b; border: 1px solid #334155; }
+	.hdr .tag.branch { color: #60a5fa; } .hdr .tag.tenant { color: #fbbf24; }
+
+	.legend { display: flex; flex-wrap: wrap; gap: 10px 18px; background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 12px 16px; margin-bottom: 22px; font-size: 13px; }
+	.legend .chip { display: inline-flex; align-items: center; gap: 6px; }
+	.dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+
+	.callout { border-radius: 10px; padding: 13px 16px; margin-bottom: 18px; font-size: 13.5px; line-height: 1.55; }
+	.callout.decision { background: var(--dark); color: #cbd5e1; border: 1px solid #1e293b; }
+	.callout.decision b { color: #fff; }
+
+	/* Ana akış şeridi */
+	.flow { display: flex; align-items: stretch; flex-wrap: wrap; gap: 0; margin-bottom: 30px; }
+	.flow-step { flex: 1; min-width: 170px; background: var(--card); border: 1px solid var(--line); border-top: 3px solid var(--new); border-radius: 11px; padding: 13px 15px; position: relative; margin-right: 26px; margin-bottom: 10px; }
+	.flow-step:last-child { margin-right: 0; }
+	.flow-step::after { content: "→"; position: absolute; right: -21px; top: 50%; transform: translateY(-50%); font-size: 20px; color: var(--muted); }
+	.flow-step:last-child::after { display: none; }
+	.flow-step .fn { font-size: 10px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); font-weight: 700; }
+	.flow-step .ft { font-size: 14px; font-weight: 750; margin: 4px 0 6px; }
+	.flow-step .fd { font-size: 12px; color: var(--muted); line-height: 1.45; }
+	.flow-step .fb { margin-top: 8px; display: flex; gap: 4px; flex-wrap: wrap; }
+	.flow-step.done { border-top-color: var(--ok); }
+	.flow-step.cancel { border-top-color: var(--muted); opacity: .55; }
+
+	/* Item omurgası */
+	.spine { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 18px 20px; margin: 0 0 30px; }
+	.spine h2 { font-size: 17px; margin: 0 0 4px; }
+	.spine p.sub { color: var(--muted); font-size: 13px; margin: 0 0 14px; }
+	.chain { display: flex; flex-wrap: wrap; align-items: stretch; }
+	.link { flex: 1 1 150px; min-width: 150px; border-radius: 10px; padding: 10px 12px; border: 1.5px solid var(--line); background: #fafbfd; }
+	.link .from-to { font-size: 12.5px; font-weight: 700; }
+	.link .how { font-size: 11.5px; margin-top: 4px; color: var(--muted); }
+	.link.ok { border-color: var(--auto); background: var(--auto-bg); } .link.ok .how { color: var(--auto); font-weight: 650; }
+	.link.miss { border-color: var(--miss); background: var(--miss-bg); } .link.miss .how { color: var(--miss); font-weight: 650; }
+	.link.plan { border-color: var(--new); background: var(--new-bg); } .link.plan .how { color: var(--new); font-weight: 650; }
+	.chain .sep { align-self: center; color: var(--muted); font-size: 16px; padding: 0 6px; flex: 0 0 auto; }
+
+	/* Bölümler */
+	.stage { margin-bottom: 32px; }
+	.stage-head { display: flex; align-items: baseline; gap: 10px; margin-bottom: 4px; flex-wrap: wrap; }
+	.stage-no { font-size: 12px; font-weight: 800; color: #fff; background: var(--ink); border-radius: 7px; padding: 3px 9px; letter-spacing: .06em; }
+	.stage-title { font-size: 17px; font-weight: 750; }
+	.stage-desc { color: var(--muted); font-size: 13px; }
+	.stage .beadline { font-size: 11.5px; color: var(--muted); font-family: ui-monospace, Menlo, monospace; margin-bottom: 10px; }
+
+	.nodes { display: grid; grid-template-columns: repeat(auto-fit, minmax(235px, 1fr)); gap: 12px; }
+	.node { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; }
+	.node h3 { margin: 0 0 6px; font-size: 14px; }
+	.node p { margin: 0; font-size: 12.5px; color: var(--muted); }
+	.node .badges { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; align-items: center; }
+	.badge { font-size: 11px; font-weight: 650; border-radius: 20px; padding: 2px 9px; display: inline-flex; align-items: center; gap: 4px; }
+	.b-ok { background: var(--ok-bg); color: var(--ok); }
+	.b-part { background: var(--part-bg); color: var(--part); }
+	.b-miss { background: var(--miss-bg); color: var(--miss); }
+	.b-new { background: var(--new-bg); color: var(--new); }
+	.b-auto { background: var(--auto-bg); color: var(--auto); }
+	.b-bead { background: #eef1f5; color: var(--muted); font-family: ui-monospace, Menlo, monospace; font-size: 10.5px; }
+	.route { font-family: ui-monospace, Menlo, monospace; font-size: 11px; color: var(--muted); }
+	.node.crit { border-color: var(--miss); box-shadow: 0 0 0 1px var(--miss) inset; }
+	.node.plan { border-color: var(--new); }
+	.arrow-row { text-align: center; color: var(--muted); font-size: 18px; margin: 4px 0; }
+
+	/* Roller */
+	.roles { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; }
+	.role { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; }
+	.role h3 { margin: 0 0 6px; font-size: 13.5px; }
+	.role ul { margin: 0; padding-left: 16px; font-size: 12.5px; color: var(--muted); }
+	.role li { margin-bottom: 3px; }
+
+	.notes { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 16px 20px; }
+	.notes h2 { font-size: 16px; margin: 0 0 10px; }
+	.notes ul { margin: 0; padding-left: 20px; font-size: 13.5px; }
+	.notes li { margin-bottom: 7px; }
+	.next { border-left: 3px solid var(--new); padding-left: 12px; }
+	footer { margin-top: 26px; color: var(--muted); font-size: 12px; text-align: center; }
+	code { font-family: ui-monospace, Menlo, monospace; font-size: 12px; background: #eef1f5; border-radius: 4px; padding: 1px 5px; }
+	a { color: var(--new); }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+	<header class="hdr">
+		<h1>Mikas — Tender Süreç Haritası</h1>
+		<p>Tek doküman: ana iş akışı · her adımın sistem durumu · item aktarım omurgası · tasarım kararları · roller.
+		Belge Merkezi tasarım taslağı (<code>vgk.7 → .4</code>, 2026-08-10) ile süreç haritasını birleştirir —
+		o taslaktaki 7 işin tamamı ship edilmiştir.</p>
+		<div class="tags">
+			<span class="tag tenant">mikas</span>
+			<span class="tag branch">feat/mikas-tender-flat-loop</span>
+			<span class="tag branch">bd: stabler-0b2</span>
+		</div>
+	</header>
+
+	<div class="legend">
+		<span class="chip"><span class="dot" style="background:var(--ok)"></span> Var, çalışıyor</span>
+		<span class="chip"><span class="dot" style="background:var(--part)"></span> Kısmen / sınırlı</span>
+		<span class="chip"><span class="dot" style="background:var(--miss)"></span> Yok — kopuk halka</span>
+		<span class="chip"><span class="dot" style="background:var(--new)"></span> Bu dilimde geliyor</span>
+		<span class="chip"><span class="dot" style="background:var(--auto)"></span> 🔁 Item otomatik akıyor</span>
+		<span class="chip"><span class="dot" style="background:var(--muted)"></span> ✍️ Item manuel giriliyor</span>
+		<span class="chip"><span class="badge b-bead">vgk.7</span> Belge Merkezi bead'i</span>
+	</div>
+
+	<div class="callout decision">
+		<b>📌 Mimari karar (2026-08-10, uygulanmıştır):</b>
+		Tek seviyeli mimari — İhale = CRM Deal (<code>deal_type="Tender"</code>). Ayrı Tender Master parent'a
+		gerek yok; ihale girilir, kanbana Intake aşamasında düşer, tek kart olarak yaşar. Atama belge
+		merkezinin başladığı andır; yükleme satırın <code>role</code> alanına göre daralır; okuma dört tender
+		görünümüne de açıktır. Giriş ekranı (vgk.7) ship edildi; geriye kalan tek seviye işi
+		<b>navigasyonun düzleştirilmesi</b> — <code>/tender/crm</code> doğrudan kanban açmalı (bugün araya Seviye-1 panosu giriyor).
+	</div>
+
+	<!-- ANA AKIŞ -->
+	<div class="flow">
+		<div class="flow-step done">
+			<div class="fn">vgk.7</div>
+			<div class="ft">İhaleyi Gir</div>
+			<div class="fd">Müşteri + ihale bilgisi + dosyalar + item satırları → kanbana Intake'te düşer</div>
+			<div class="fb"><span class="badge b-ok">✅ Ship</span></div>
+		</div>
+		<div class="flow-step cancel">
+			<div class="fn">vgk.8</div>
+			<div class="ft" style="text-decoration:line-through">Lot Aç</div>
+			<div class="fd">İPTAL — tek seviyede lot kavramı yok</div>
+			<div class="fb"><span class="badge b-bead">iptal</span></div>
+		</div>
+		<div class="flow-step done">
+			<div class="fn">vgk.10 → vgk.9</div>
+			<div class="ft">Sourcing'e Ata</div>
+			<div class="fd">Deal kartından sourcing kullanıcısına atama → belge merkezi başlar</div>
+			<div class="fb"><span class="badge b-ok">✅ Ship</span></div>
+		</div>
+		<div class="flow-step done">
+			<div class="fn">vgk.1 → vgk.2</div>
+			<div class="ft">Belge Yükle</div>
+			<div class="fd">Her rol kendi satırını yükler; lot seçici ile ekrana gelir</div>
+			<div class="fb"><span class="badge b-ok">✅ Ship</span></div>
+		</div>
+		<div class="flow-step">
+			<div class="fn">bu dilim</div>
+			<div class="ft">Döngüyü Kapat</div>
+			<div class="fd">Item omurgası uçtan uca: RFQ → teklif → ödül → PO</div>
+			<div class="fb"><span class="badge b-new">🔵 Geliyor</span></div>
+		</div>
+	</div>
+
+	<!-- ITEM OMURGASI -->
+	<section class="spine">
+		<h2>📦 Item Omurgası — akışın kalbi</h2>
+		<p class="sub">İhale girişinde girilen item satırları zincir boyunca taşınmalı; kullanıcı her aşamada yalnızca o aşamaya özgü bilgi girmeli (fiyat, vade, tarife).</p>
+		<div class="chain">
+			<div class="link ok">
+				<div class="from-to">İhale girişi → RFQ</div>
+				<div class="how">🔁 Otomatik — shipped</div>
+			</div>
+			<div class="sep">→</div>
+			<div class="link plan">
+				<div class="from-to">RFQ → Teklif girişi</div>
+				<div class="how">✍️ Bugün manuel → bu dilimde 🔁</div>
+			</div>
+			<div class="sep">→</div>
+			<div class="link ok">
+				<div class="from-to">Teklif → Karşılaştırma</div>
+				<div class="how">🔁 Otomatik — shipped</div>
+			</div>
+			<div class="sep">→</div>
+			<div class="link plan">
+				<div class="from-to">Ödül → Satınalma siparişi</div>
+				<div class="how">✍️ Bugün manuel → bu dilimde 🔁</div>
+			</div>
+			<div class="sep">→</div>
+			<div class="link ok">
+				<div class="from-to">PO → Teslimat zinciri</div>
+				<div class="how">🔁 Otomatik (gümrük/transit/fatura)</div>
+			</div>
+		</div>
+	</section>
+
+	<!-- 1 -->
+	<section class="stage">
+		<div class="stage-head">
+			<span class="stage-no">1</span>
+			<span class="stage-title">Keşif &amp; İhale Girişi</span>
+			<span class="stage-desc">İhale bulunur, kapsamı item satırlarıyla kayda geçirilir</span>
+		</div>
+		<div class="beadline">stabler-vgk.7 (ship) · stabler-vgk.8 (iptal)</div>
+		<div class="nodes">
+			<div class="node">
+				<h3>İhale Giriş Merkezi (drawer)</h3>
+				<p>4 bölüm: <b>A)</b> Müşteri — Typeahead ile mevcut Customer, yoksa Sales'e yönlendir ·
+				<b>B)</b> İhale bilgisi — başlık, no, kaynak, tarihler, tahmini tutar + para birimi ·
+				<b>C)</b> Dosyalar — tek dropzone (PDF/PNG/JPG/XLSX) ·
+				<b>D)</b> Talep itemları — merkezî item havuzundan satırlar (kod/qty/UOM/fiyat/tutar)</p>
+				<div class="badges">
+					<span class="badge b-ok">✅ Ship</span>
+					<span class="badge b-auto">🔁 Item kalıcı</span>
+					<span class="badge b-bead">vgk.7</span>
+				</div>
+			</div>
+			<div class="node">
+				<h3>Depolama</h3>
+				<p>Deal + <code>custom_tender_intake</code> JSON overlay (itemlar, dosya metadata, ihale bilgisi).
+				Server-side sanitizer: amount yeniden hesaplanır, absentee-koruma, 200 satır limiti;
+				düzenlemede mevcut itemlar geri yüklenir</p>
+				<div class="badges"><span class="badge b-ok">✅ Ship</span></div>
+			</div>
+			<div class="node">
+				<h3>UZEX otomatik toplama</h3>
+				<p>Portal tarama, yeni ihale otomatik düşer</p>
+				<div class="badges"><span class="badge b-ok">✅ Var</span><span class="route">uzex_poll</span></div>
+			</div>
+			<div class="node plan">
+				<h3>Giriş ekranına giden yol</h3>
+				<p>"Yeni İhale" butonu bugün yalnız Seviye-1 panosunda; kanban action satırına taşınıyor</p>
+				<div class="badges"><span class="badge b-part">🟡 Yanlış yerde</span><span class="badge b-new">Bu dilimde</span></div>
+			</div>
+		</div>
+	</section>
+	<div class="arrow-row">↓</div>
+
+	<!-- 2 -->
+	<section class="stage">
+		<div class="stage-head">
+			<span class="stage-no">2</span>
+			<span class="stage-title">Değerlendirme — Görüldü → GO</span>
+			<span class="stage-desc">Itemlar, son tarih, garanti, ceza şartları ile katılım kararı; atama belge merkezini başlatır</span>
+		</div>
+		<div class="beadline">stabler-vgk.10 (ship) · stabler-vgk.9 (ship)</div>
+		<div class="nodes">
+			<div class="node">
+				<h3>Tek seviyeli kanban</h3>
+				<p>Görüldü / GO / Sourcing / Fiyatlandı / Sunuldu / Kazanıldı–Kaybedildi +
+				kazanma-sonrası şeritler (PO/gümrük/transit/teslim/fatura/bitti)</p>
+				<div class="badges">
+					<span class="badge b-ok">✅ Kanban ship</span>
+					<span class="badge b-miss">💥 Seviye-1 drill-down</span>
+					<span class="badge b-new">Bu dilimde düz</span>
+				</div>
+			</div>
+			<div class="node">
+				<h3>Atanabilir kullanıcı listesi</h3>
+				<p>Rol kümesi <code>_TENDER_VIEW_ROLES["sourcing"]</code>'ten türetilir — ikinci sabit liste yok;
+				Stabler Tender Sourcing rolü listede</p>
+				<div class="badges"><span class="badge b-ok">✅ Düzeltildi</span><span class="badge b-bead">vgk.10</span></div>
+			</div>
+			<div class="node">
+				<h3>Atama, kartın çekmecesinde</h3>
+				<p><code>assign_tender</code> kanban drawer'ında — belge merkezini başlatan olay lotun görüldüğü yerde</p>
+				<div class="badges"><span class="badge b-ok">✅ Ship</span><span class="badge b-bead">vgk.9</span></div>
+			</div>
+			<div class="node">
+				<h3>Intake detay + SLA</h3>
+				<p>Son tarihler, garanti, ceza %/gün, GO/NO-GO; aşama SLA ve darboğaz uyarısı</p>
+				<div class="badges"><span class="badge b-ok">✅ Var</span><span class="route">/tender/po-control</span></div>
+			</div>
+		</div>
+	</section>
+	<div class="arrow-row">↓</div>
+
+	<!-- 3 -->
+	<section class="stage">
+		<div class="stage-head">
+			<span class="stage-no">3</span>
+			<span class="stage-title">Sourcing — RFQ → Teklifler → Karşılaştırma → Ödül</span>
+			<span class="stage-desc">Politika: en az 5 teklif, en az 2 ülke. Çok turlu pazarlık normaldir</span>
+		</div>
+		<div class="nodes">
+			<div class="node">
+				<h3>RFQ oluşturma</h3>
+				<p>Tender itemları otomatik dolar; tedarikçi çipleri; cevap tarihi; liste/detay/print sayfaları</p>
+				<div class="badges">
+					<span class="badge b-ok">✅ Ship</span>
+					<span class="badge b-auto">🔁 İntake'ten</span>
+					<span class="route">/tender/rfq</span>
+				</div>
+			</div>
+			<div class="node">
+				<h3>RFQ iletimi</h3>
+				<p>Print/PDF + kanal kaydı (WhatsApp/e-posta/…, "gönderildi" işareti Communication'a yazılır).
+				Otomatik e-posta yok — bilinçli: gönderim insan işi</p>
+				<div class="badges"><span class="badge b-part">🟡 Print + kayıt</span><span class="route">/tender/rfq/:name</span></div>
+			</div>
+			<div class="node crit">
+				<h3>Teklif girişi (drawer)</h3>
+				<p>Tedarikçi cevapları satır satır girilir — bugün her satır elle yeniden yazılıyor;
+				drawer RFQ'dan açıldığında satırlar gelmeli</p>
+				<div class="badges">
+					<span class="badge b-miss">❌ Prefill yok</span>
+					<span class="badge b-new">Bu dilimde 🔁 RFQ'dan</span>
+				</div>
+			</div>
+			<div class="node">
+				<h3>Tur-bazlı cevap takibi</h3>
+				<p>2. tur RFQ'da kim yeniden cevap verdi — bugün yalnız lot-seviyesi yanıt durumu</p>
+				<div class="badges"><span class="badge b-part">🟡 Lot-seviyesi</span><span class="badge b-new">Bu dilimde tur-bazlı</span></div>
+			</div>
+			<div class="node">
+				<h3>Karşılaştırma + landed cost</h3>
+				<p>Ülke, baz para, nakliye tahminiyle sıralama; politika rozetleri; tedarikçi geçmişi</p>
+				<div class="badges"><span class="badge b-ok">✅ Var</span><span class="route">/tender/sourcing</span></div>
+			</div>
+			<div class="node">
+				<h3>Ödül kararı + direktör onayı</h3>
+				<p>En ucuz ≠ seçilen: gerekçe, teknik sonuç, politika istisnası yazılır; karşılaştırma anlık görüntüsü donar</p>
+				<div class="badges"><span class="badge b-ok">✅ Var</span></div>
+			</div>
+			<div class="node crit">
+				<h3>Ödülden PO kurma</h3>
+				<p>Kazanan teklifin satırlarıyla satınalma siparişi taslağı — bugün yok, PO elle kuruluyor</p>
+				<div class="badges">
+					<span class="badge b-miss">❌ Yok</span>
+					<span class="badge b-new">Bu dilimde 🔁 SQ'den</span>
+				</div>
+			</div>
+		</div>
+	</section>
+	<div class="arrow-row">↓</div>
+
+	<!-- 4 -->
+	<section class="stage">
+		<div class="stage-head">
+			<span class="stage-no">4</span>
+			<span class="stage-title">İhale Teklifi</span>
+			<span class="stage-desc">Fiyatlama, paket, sunum</span>
+		</div>
+		<div class="nodes">
+			<div class="node">
+				<h3>Teklif fiyatlaması</h3>
+				<p>FX bloğu, PnL, paket (docx) üretimi</p>
+				<div class="badges"><span class="badge b-ok">✅ Var</span></div>
+			</div>
+			<div class="node">
+				<h3>Sunum + sonuç kaydı</h3>
+				<p>Sunum kanıtı, referans; kazanma/kaybetme + gerekçe</p>
+				<div class="badges"><span class="badge b-ok">✅ Var</span></div>
+			</div>
+		</div>
+	</section>
+	<div class="arrow-row">↓</div>
+
+	<!-- 5 -->
+	<section class="stage">
+		<div class="stage-head">
+			<span class="stage-no">5</span>
+			<span class="stage-title">Kazanıldı — Teslimat &amp; Para</span>
+			<span class="stage-desc">Won bir duvar değil, bir geçiş: kazanma-sonrası şeritler kayıtlardan otomatik türetilir</span>
+		</div>
+		<div class="nodes">
+			<div class="node">
+				<h3>Birleşik lifecycle kanban</h3>
+				<p>Pre-win ve post-win aynı board'da; post-win aşamalar elle set edilmez — PO, beyanname,
+				yük, fatura kayıtlarından türetilir (Customs/Freight deal linkleri ship)</p>
+				<div class="badges"><span class="badge b-ok">✅ Ship</span></div>
+			</div>
+			<div class="node">
+				<h3>Satış siparişi (müşteri)</h3>
+				<p>Kazanılan ihalenin sözleşmesi, sözleşme panosu</p>
+				<div class="badges"><span class="badge b-ok">✅ Var</span></div>
+			</div>
+			<div class="node">
+				<h3>PO kontrol + landed cost</h3>
+				<p>PO şeridi, varış maliyeti, LCV zinciri</p>
+				<div class="badges"><span class="badge b-ok">✅ Var</span><span class="route">/tender/po-control</span></div>
+			</div>
+			<div class="node">
+				<h3>Gümrük → Transit → Teslim</h3>
+				<p>Beyanname kuyruğu, yük panosu</p>
+				<div class="badges"><span class="badge b-ok">✅ Var</span></div>
+			</div>
+			<div class="node">
+				<h3>Faturalama &amp; ödeme</h3>
+				<p>Fatura şeridi; garanti iadesi takibi intake'te</p>
+				<div class="badges"><span class="badge b-ok">✅ Var</span><span class="badge b-part">🟡 Garanti iadesi elle</span></div>
+			</div>
+			<div class="node">
+				<h3>Kaybedilen yol</h3>
+				<p>Kayıp gerekçesi, huni analizi</p>
+				<div class="badges"><span class="badge b-ok">✅ Var</span></div>
+			</div>
+		</div>
+	</section>
+
+	<!-- DOKUMAN MERKEZI -->
+	<section class="stage">
+		<div class="stage-head">
+			<span class="stage-no">✚</span>
+			<span class="stage-title">Doküman Merkezi — tüm akış boyunca</span>
+			<span class="stage-desc">İhale dokümanından GTD'ye, sözleşmeye, kabul tutanağına — her rol kendi satırını yükler</span>
+		</div>
+		<div class="beadline">stabler-vgk.1 (ship) · stabler-vgk.2 (ship) · stabler-vgk.4 (ship)</div>
+		<div class="nodes">
+			<div class="node">
+				<h3>Rol kapısı</h3>
+				<p>Okuma dört tender görünümüne de açık (direktör, sourcing, deklarant, logist);
+				yükleme/waiver yalnız satırın <code>role</code> alanına uyan role</p>
+				<div class="badges"><span class="badge b-ok">✅ Ship</span><span class="badge b-bead">vgk.1</span></div>
+			</div>
+			<div class="node">
+				<h3>Lot seçici</h3>
+				<p><code>?deal=</code> yoksa boş ekran yerine <code>tender_document_targets</code> ile seçilebilir ihale listesi</p>
+				<div class="badges"><span class="badge b-ok">✅ Ship</span><span class="badge b-bead">vgk.2</span></div>
+			</div>
+			<div class="node">
+				<h3>Sekme düzeltimi</h3>
+				<p>Çift "Documents" sekmesi (duplicate <code>:key</code>) temizlendi</p>
+				<div class="badges"><span class="badge b-ok">✅ Ship</span><span class="badge b-bead">vgk.4</span></div>
+			</div>
+			<div class="node">
+				<h3>Hazır olma yüzdesi</h3>
+				<p>Kontrol listesi tamamlanma oranı kanban kartında ve KPI şeridinde; eksik zorunlu belge uyarısı</p>
+				<div class="badges"><span class="badge b-ok">✅ Var</span><span class="route">/tender/documents</span></div>
+			</div>
+		</div>
+	</section>
+
+	<!-- ROLLER -->
+	<section class="stage">
+		<div class="stage-head">
+			<span class="stage-no">👥</span>
+			<span class="stage-title">Roller — kim ne yapar</span>
+		</div>
+		<div class="roles">
+			<div class="role">
+				<h3>🎯 Direktör</h3>
+				<ul>
+					<li>Panolar, huni, SLA darboğazı</li>
+					<li>Atama yapar (sourcing'e)</li>
+					<li>Ödül kararını onaylar; politika istisnasını o imzalar</li>
+				</ul>
+			</div>
+			<div class="role">
+				<h3>🛒 Sourcing</h3>
+				<ul>
+					<li>RFQ açar (itemlar otomatik gelir), iletir</li>
+					<li>Teklifleri girer, karşılaştırır, ödül taslağı yazar</li>
+					<li>PO'yu kurar, varış maliyetini izler</li>
+				</ul>
+			</div>
+			<div class="role">
+				<h3>🛃 Deklarant</h3>
+				<ul>
+					<li>Gümrük beyannamesi kuyruğu</li>
+					<li>GTD belgesini yükler (satırın rolü)</li>
+				</ul>
+			</div>
+			<div class="role">
+				<h3>🚚 Lojist</h3>
+				<ul>
+					<li>Yük panosu, transit takibi</li>
+					<li>Teslimat belgelerini yükler</li>
+				</ul>
+			</div>
+		</div>
+	</section>
+
+	<!-- SIRADAKI ISLER -->
+	<section class="notes">
+		<h2>🚀 Sıradaki işler — bu dilim (<code>feat/mikas-tender-flat-loop</code>)</h2>
+		<ul>
+			<li class="next"><b>A — Tek seviyeli navigasyon:</b> <code>/tender/crm</code> doğrudan kanban açar;
+			Seviye-1 panosu, <code>?tender=</code> drill-down ve breadcrumb kalkar; "Yeni İhale" butonu kanbana
+			taşınır; <code>?deal=</code> gelirse kart çekmecesi açılır.</li>
+			<li class="next"><b>A — Satış-CRM görünmez olur:</b> tender'ın kullandığı crm uçları
+			"crm <i>veya</i> tender" kapısına alınır, mikas'ta <code>enable_crm=0</code> — sidebar'daki CRM
+			gider, tender etkilenmez (altta yatan CRM Deal doctype'ı yerinde kalır).</li>
+			<li class="next"><b>B — RFQ → Teklif prefill:</b> teklif drawer'ı RFQ satırlarıyla açılır
+			(rate/currency/validity kullanıcıdan).</li>
+			<li class="next"><b>B — Tur-bazlı takip:</b> Supplier Quotation'a RFQ linki; hangi tura hangi cevap.</li>
+			<li class="next"><b>B — Ödül → PO:</b> kazanan teklifin satırlarıyla PO taslağı;
+			tender ↔ teklif ↔ PO üçlü eşleşmesi denetim izi olur.</li>
+			<li><b>Kapsam dışı (ayrı bead):</b> Tender Master backend emekliliği (~15 tüketici) ·
+			supplier e-posta/portali · garanti iadesi otomasyonu.</li>
+		</ul>
+	</section>
+
+	<footer>
+		Kaynaklar: <a href="../uat/2026-08-10-belge-merkezi/belge_merkezi_draft.html">Belge Merkezi tasarım taslağı (vgk.7 → .4, tümü ship)</a> ·
+		bd stabler-0b2 · Stabler SPA <code>/stabler/#/tender/...</code> · docs/design/tender-flow-map.html
+	</footer>
+</div>
+</body>
+</html>
