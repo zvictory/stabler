@@ -125,17 +125,26 @@ endif
 compile:
 	@$(PY) -m compileall -q stabler
 
-# -n1 = one module per process, deliberately: several modules install a fake
-# `frappe` into sys.modules and never restore it, so a combined run leaks
-# MagicMocks into whichever module imports next. Same reasoning as CI.
+# -n1 = one module per process. This used to be load-bearing: several modules
+# installed a fake `frappe` into sys.modules and never restored it, so a combined
+# run leaked bare ModuleTypes into whichever module imported next. Every such
+# module now goes through stabler/tests/module_sandbox.py and restores in
+# tearDownModule, so isolation is no longer what keeps the suite green -- see the
+# single-process pass below, which is what actually holds the line.
 #
 # -P8 is the one place this diverges from ci.yml: 84 interpreter startups are
-# ~35s serial and ~7s at -P8. Safe precisely BECAUSE of -n1 -- the modules share
-# no process state, which is why they had to be isolated in the first place.
-# xargs still exits non-zero if any module fails; only the output interleaves.
+# ~35s serial and ~7s at -P8. xargs still exits non-zero if any module fails;
+# only the output interleaves.
+#
+# The second pass runs the SAME list in ONE interpreter, and is not redundant:
+# `-P8 -n1` structurally cannot catch sys.modules pollution, because no leak ever
+# crosses a module boundary there. That is exactly how four modules stayed green
+# per-module while the combined run failed (measured 2026-08-14). It costs ~3s.
 test:
 	@echo "frappe-free modules: $$(grep -cv -e '^#' -e '^$$' .github/frappe-free-tests.txt)"
 	@grep -v -e '^#' -e '^$$' .github/frappe-free-tests.txt | xargs -P8 -n1 $(PY) -m unittest
+	@echo "single-process pass (sys.modules leak guard):"
+	@grep -v -e '^#' -e '^$$' .github/frappe-free-tests.txt | xargs $(PY) -m unittest
 
 # The OTHER 15. stabler/tests/ has 99 modules; the 84 above run without a bench,
 # and these 15 need a real site (they hit the DB, submit documents, check GL).

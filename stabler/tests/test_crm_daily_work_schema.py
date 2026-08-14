@@ -5,10 +5,45 @@ from __future__ import annotations
 import importlib
 import json
 import os
+import types
 import unittest
 from unittest.mock import patch
 
+from stabler.tests.module_sandbox import ModuleSandbox
+
 _ROOT = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
+
+_SANDBOX = ModuleSandbox()
+
+
+def tearDownModule():
+	"""The fakes below are process-wide — hand ``sys.modules`` back intact."""
+	_SANDBOX.restore()
+
+
+def _install_frappe_package():
+	"""Publish a fake ``frappe`` that is a *package*, not a bare module.
+
+	``v74`` re-exports ``v27``, which does ``from frappe.custom.doctype.custom_field
+	.custom_field import create_custom_fields`` at import time. A bare
+	``ModuleType("frappe")`` has no ``__path__``, so that import dies with
+	``'frappe' is not a package`` — the submodules have to exist too.
+	"""
+	frappe = types.ModuleType("frappe")
+	frappe.__path__ = []
+	modules = {"frappe": frappe}
+	parent = frappe
+	for name in ("frappe.custom", "frappe.custom.doctype", "frappe.custom.doctype.custom_field"):
+		child = types.ModuleType(name)
+		child.__path__ = []
+		setattr(parent, name.rsplit(".", 1)[1], child)
+		modules[name] = child
+		parent = child
+	leaf = types.ModuleType("frappe.custom.doctype.custom_field.custom_field")
+	leaf.create_custom_fields = lambda *_args, **_kwargs: None
+	parent.custom_field = leaf
+	modules["frappe.custom.doctype.custom_field.custom_field"] = leaf
+	_SANDBOX.install(modules)
 
 
 class TestCrmDailyWorkSchema(unittest.TestCase):
@@ -18,11 +53,8 @@ class TestCrmDailyWorkSchema(unittest.TestCase):
 		with open(os.path.join(_ROOT, "patches.txt"), encoding="utf-8") as source:
 			self.assertIn(repair, source.read().split())
 
-		import sys
-		import types
-
-		if "frappe" not in sys.modules:
-			sys.modules["frappe"] = types.ModuleType("frappe")
+		_SANDBOX.evict(repair, "stabler.patches.v27_tender_deal_fields")
+		_install_frappe_package()
 		module = importlib.import_module(repair)
 		with patch.object(module, "create_tender_deal_fields") as create_fields:
 			module.execute()

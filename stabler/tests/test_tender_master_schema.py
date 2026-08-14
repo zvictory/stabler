@@ -5,16 +5,24 @@ from __future__ import annotations
 import importlib
 import json
 import re
-import sys
 import types
 import unittest
 from datetime import date
 from pathlib import Path
 
+from stabler.tests.module_sandbox import ModuleSandbox
+
 _ROOT = Path(__file__).resolve().parent.parent
 TENDER_MASTER_JSON = _ROOT / "stabler" / "doctype" / "tender_master" / "tender_master.json"
 PATCH = _ROOT / "patches" / "v61_tender_master_link.py"
 PATCHES = _ROOT / "patches.txt"
+
+_SANDBOX = ModuleSandbox()
+
+
+def tearDownModule():
+	"""The fakes below are process-wide — hand ``sys.modules`` back intact."""
+	_SANDBOX.restore()
 
 
 class _Document:
@@ -23,14 +31,13 @@ class _Document:
 
 
 def _load_tender_master_controller():
-	for name in (
+	_SANDBOX.evict(
 		"stabler.stabler.doctype.tender_master.tender_master",
 		"frappe",
 		"frappe.model",
 		"frappe.model.document",
 		"frappe.utils",
-	):
-		sys.modules.pop(name, None)
+	)
 
 	frappe = types.ModuleType("frappe")
 	frappe._ = lambda value: value
@@ -40,7 +47,7 @@ def _load_tender_master_controller():
 	document.Document = _Document
 	utils = types.ModuleType("frappe.utils")
 	utils.getdate = lambda value: date.fromisoformat(str(value)[:10])
-	sys.modules.update(
+	_SANDBOX.install(
 		{
 			"frappe": frappe,
 			"frappe.model": model,

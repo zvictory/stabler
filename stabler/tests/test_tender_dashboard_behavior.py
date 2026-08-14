@@ -9,11 +9,19 @@ from __future__ import annotations
 
 import importlib
 import json
-import sys
 import types
 import unittest
 from datetime import date
 from unittest.mock import patch
+
+from stabler.tests.module_sandbox import ModuleSandbox
+
+_SANDBOX = ModuleSandbox()
+
+
+def tearDownModule():
+	"""The fakes below are process-wide — hand ``sys.modules`` back intact."""
+	_SANDBOX.restore()
 
 
 class _FakeDB:
@@ -69,7 +77,7 @@ class _Row(dict):
 
 def _load_tender(db: _FakeDB, roles: list[str], user: str = "source@example.com"):
 	"""Import tender.py against only the Frappe surface the tested APIs need."""
-	for name in (
+	_SANDBOX.evict(
 		"stabler.api.tender",
 		"stabler.api.purchasing",
 		"frappe",
@@ -79,8 +87,7 @@ def _load_tender(db: _FakeDB, roles: list[str], user: str = "source@example.com"
 		"stabler.api._bid_package",
 		"stabler.api.organization",
 		"stabler.stabler.doctype.stabler_settings.stabler_settings",
-	):
-		sys.modules.pop(name, None)
+	)
 	frappe = types.ModuleType("frappe")
 	frappe._ = lambda value: value
 	frappe.PermissionError = PermissionError
@@ -107,8 +114,7 @@ def _load_tender(db: _FakeDB, roles: list[str], user: str = "source@example.com"
 	utils.today = lambda: "2026-07-22"
 	utils.now = lambda: "2026-07-22 09:00:00"
 	frappe.utils = utils
-	sys.modules["frappe"] = frappe
-	sys.modules["frappe.utils"] = utils
+	_SANDBOX.install({"frappe": frappe, "frappe.utils": utils})
 	approvals = types.ModuleType("stabler.api.approvals")
 	approvals._assert_company_scope = lambda _company: None
 	common = types.ModuleType("stabler.api._common")
@@ -122,15 +128,16 @@ def _load_tender(db: _FakeDB, roles: list[str], user: str = "source@example.com"
 	purchasing.tender_quotations = lambda _deal: {"rows": []}
 	settings = types.ModuleType("stabler.stabler.doctype.stabler_settings.stabler_settings")
 	settings.module_map_for = lambda _company: {"tender": True}
-	for name, module in (
-		("stabler.api.approvals", approvals),
-		("stabler.api._common", common),
-		("stabler.api._bid_package", bid_package),
-		("stabler.api.organization", organization),
-		("stabler.api.purchasing", purchasing),
-		("stabler.stabler.doctype.stabler_settings.stabler_settings", settings),
-	):
-		sys.modules[name] = module
+	_SANDBOX.install(
+		{
+			"stabler.api.approvals": approvals,
+			"stabler.api._common": common,
+			"stabler.api._bid_package": bid_package,
+			"stabler.api.organization": organization,
+			"stabler.api.purchasing": purchasing,
+			"stabler.stabler.doctype.stabler_settings.stabler_settings": settings,
+		}
+	)
 	return importlib.import_module("stabler.api.tender")
 
 

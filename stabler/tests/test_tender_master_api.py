@@ -6,17 +6,25 @@ import ast
 import importlib
 import json
 import re
-import sys
 import types
 import unittest
 from datetime import date
 from pathlib import Path
 from typing import ClassVar
 
+from stabler.tests.module_sandbox import ModuleSandbox
+
 _ROOT = Path(__file__).resolve().parents[1]
 API_SOURCE = _ROOT / "api" / "tender_master.py"
 STATE_SOURCE = _ROOT / "api" / "_tender_master_state.py"
 COMPOSABLE_SOURCE = _ROOT / "public" / "js" / "composables" / "tenderMaster.js"
+
+_SANDBOX = ModuleSandbox()
+
+
+def tearDownModule():
+	"""The fakes below are process-wide — hand ``sys.modules`` back intact."""
+	_SANDBOX.restore()
 
 
 class _Doc(dict):
@@ -145,7 +153,7 @@ _SETTINGS_MODULE = "stabler.stabler.doctype.stabler_settings.stabler_settings"
 
 
 def _load_api(fake: _FakeFrappe, *, tender_allowed=True, missing_columns=(), tender_module=True):
-	for name in (
+	_SANDBOX.evict(
 		"stabler.api.tender_master",
 		"stabler.api.tender",
 		"frappe",
@@ -153,8 +161,7 @@ def _load_api(fake: _FakeFrappe, *, tender_allowed=True, missing_columns=(), ten
 		"stabler.api._common",
 		"stabler.api.organization",
 		_SETTINGS_MODULE,
-	):
-		sys.modules.pop(name, None)
+	)
 	frappe = types.ModuleType("frappe")
 	frappe._ = lambda value: value
 	frappe.PermissionError = PermissionError
@@ -226,7 +233,7 @@ def _load_api(fake: _FakeFrappe, *, tender_allowed=True, missing_columns=(), ten
 	settings.module_map_for = lambda company: (
 		fake.module_map_calls.append(company) or ({"tender": 1} if tender_module else {})
 	)
-	sys.modules.update(
+	_SANDBOX.install(
 		{
 			"frappe": frappe,
 			"frappe.utils": utils,
