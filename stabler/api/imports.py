@@ -8560,6 +8560,15 @@ def _capitalize_linked_bill(
 	recoverable input credit, and it is excluded from the landed cost everywhere
 	else in this module (``aggregate_components`` drops VAT components outright).
 	Capitalizing it would inflate the cost of goods by the VAT rate.
+
+	The account gate runs LAST, after the three no-op returns, and that placement is
+	the point: it must refuse exactly the bills whose cost is about to be written,
+	and stay out of the way of a link that was never going to write one. The other
+	gates in ``set_bill_import_refs`` run before the ref write because they can be
+	decided from the bill alone; this one cannot — whether a cost is written at all
+	depends on the component and the containers resolved here, and duplicating that
+	resolution upstream would give the two copies room to disagree. The throw
+	unwinds the ref write with the request's transaction.
 	"""
 	component = rules.bill_cost_component(
 		rules.derive_bill_category(
@@ -8580,6 +8589,8 @@ def _capitalize_linked_bill(
 	amount = flt(bill.get("net_total"))
 	if amount <= 0:
 		return [], []
+
+	_assert_bill_valuation_accounts(purchase_invoice)
 
 	currency = bill.get("currency") or frappe.get_cached_value("Company", company, "default_currency")
 
@@ -9048,6 +9059,67 @@ def _assert_valuation_account(import_expense: str, expense_account: str | None) 
 				"so adding it to the landed cost would charge the goods for it a second "
 				"time. Post the expense to a valuation account first."
 			).format(expense_account, _VALUATION_ACCOUNT_TYPE)
+		)
+
+
+def _assert_bill_valuation_accounts(purchase_invoice: str) -> None:
+	"""Every item on a capitalized bill must debit a stock-valuation account.
+
+	The bill path's version of ``_assert_valuation_account``, and it closes the same
+	hole from the other side. A Purchase Invoice debits ``expense_account`` per item
+	the moment it is submitted. When that account is an ordinary P&L expense — a
+	plain "Freight Expenses" — the carrier's money is ALREADY in the income
+	statement; capitalizing the same bill through a Landed Cost Voucher debits stock
+	for it as well, and the business pays for one truckload twice, once as expense
+	and once inside the cost of the goods it moved. Only on an
+	'Expenses Included In Valuation' account are the two legs the same money: that
+	account exists precisely to be relieved by the LCV.
+
+	ALL items, not the first or the biggest one. The whole ``net_total`` is what
+	gets capitalized, so a single non-valuation line means part of that total is
+	double counted — and a mixed bill is the case most likely to slip past a human
+	reading the voucher.
+
+	An item with no expense account fails the same way, deliberately. It is not a
+	bill we can prove anything about, and the honest answer to "which account did
+	this debit" being unknown is a refusal, not a guess in the direction that costs
+	money.
+
+	Refusing rather than warning, because the operator has to see it. The bulk
+	linker on the Commercial Invoice form reports per-bill success and failure and
+	discards ``warnings`` — a warning-only design would be invisible on exactly the
+	screen where bills are linked in batches. The message names the offending
+	accounts, because the operator's next move is to correct them.
+	"""
+	rows = frappe.get_all(
+		"Purchase Invoice Item",
+		filters={"parent": purchase_invoice},
+		fields=["expense_account"],
+	)
+	accounts = {(r.get("expense_account") or "").strip() for r in rows}
+
+	if not accounts or "" in accounts:
+		frappe.throw(
+			_(
+				"{0} has an item with no Expense Account, so there is no way to tell whether "
+				"its cost is already in the income statement. Set the account before adding "
+				"the bill to the import."
+			).format(purchase_invoice)
+		)
+
+	types = frappe.get_all(
+		"Account",
+		filters={"name": ["in", sorted(accounts)]},
+		fields=["name", "account_type"],
+	)
+	offenders = sorted(a["name"] for a in types if a["account_type"] != _VALUATION_ACCOUNT_TYPE)
+	if offenders:
+		frappe.throw(
+			_(
+				"{0} posts to {1}, which is not an '{2}' account. Its cost is already in the "
+				"income statement, so capitalizing the bill would charge the goods for it a "
+				"second time. Move the bill to a valuation account first."
+			).format(purchase_invoice, ", ".join(offenders), _VALUATION_ACCOUNT_TYPE)
 		)
 
 

@@ -708,5 +708,101 @@ class CapitalizationTest(unittest.TestCase):
 		self.assertRegex(raw, r'"fieldname": "import_expense",[\s\S]{0,200}?"options": "Import Expense"')
 
 
+class BillValuationAccountTest(unittest.TestCase):
+	"""A capitalized bill must debit a valuation account, or the cost is paid twice.
+
+	The failure this guards is invisible in every screen it passes through. A
+	Purchase Invoice posted to a plain "Freight Expenses" account debits the P&L
+	at submit; capitalizing the same bill debits stock through the Landed Cost
+	Voucher. Both vouchers are individually correct, both balance, and nothing in
+	the import module ever shows the two side by side — the goods simply carry a
+	cost the company already expensed. Only an account of type
+	``Expenses Included In Valuation`` makes the second leg a relief of the first.
+
+	The Import Expense path has had this gate since the expense capitalization
+	shipped (``_assert_valuation_account``). The bill path reached valuation later
+	and arrived without one, which is the whole reason this class exists.
+	"""
+
+	def setUp(self):
+		self.src = read(IMPORTS)
+
+	def test_the_gate_runs_where_the_cost_is_actually_written(self):
+		"""Inside ``_capitalize_linked_bill``, after the three no-op returns.
+
+		Placement is the substance, not a style choice. A link with no cost
+		component, no container behind it, or a zero net total writes nothing —
+		it is pure attribution, and the function's own contract says a missing
+		cost line must not undo a legitimate attribution. Hoisting the check into
+		``set_bill_import_refs`` would refuse those links too, and would have to
+		re-derive the component and the containers to know which bills to refuse
+		— two copies of that resolution, free to drift apart.
+		"""
+		src = body(self.src, "_capitalize_linked_bill")
+		gate = src.index("_assert_bill_valuation_accounts(")
+		self.assertLess(src.index('amount = flt(bill.get("net_total"))'), gate)
+		self.assertLess(src.index("if amount <= 0:"), gate)
+		self.assertLess(gate, src.index("_capitalize_import_cost("))
+
+	def test_the_account_type_is_never_retyped(self):
+		"""One constant, shared with the expense path.
+
+		The Account doctype offers a near-miss sibling — "Expenses Included In
+		Asset Valuation" — which capitalizes into a fixed asset instead of stock.
+		A second spelling of the string is a silent wrong valuation waiting for a
+		typo, so the gate must reference ``_VALUATION_ACCOUNT_TYPE`` rather than
+		carry its own literal.
+		"""
+		src = code(self.src, "_assert_bill_valuation_accounts")
+		self.assertIn("_VALUATION_ACCOUNT_TYPE", src)
+		self.assertNotIn('"Expenses Included In Valuation"', src)
+
+	def test_every_item_account_is_checked_not_just_one(self):
+		"""The whole ``net_total`` is capitalized, so one bad line is enough.
+
+		Reading a single item's account — or the first one — would pass a mixed
+		bill where part of the total is already in the income statement. A mixed
+		bill is also the case a human reviewing the voucher is least likely to
+		catch.
+		"""
+		src = code(self.src, "_assert_bill_valuation_accounts")
+		self.assertIn('"Purchase Invoice Item"', src)
+		self.assertIn('"expense_account"', src)
+		self.assertIn('filters={"parent": purchase_invoice}', src)
+		# a set over all rows, not row[0]
+		self.assertIn("for r in rows", src)
+		self.assertNotIn("rows[0]", src)
+
+	def test_a_missing_account_is_refused_rather_than_assumed(self):
+		"""An unverifiable debit fails closed.
+
+		If an item carries no expense account there is no way to tell whether the
+		cost already hit the P&L. Guessing in the permissive direction is the
+		guess that costs money twice.
+		"""
+		src = code(self.src, "_assert_bill_valuation_accounts")
+		self.assertIn('if not accounts or "" in accounts:', src)
+		self.assertEqual(src.count("frappe.throw("), 2)
+
+	def test_it_throws_rather_than_warning(self):
+		"""A warning would be invisible on the screen that links bills in bulk.
+
+		``CommercialInvoiceForm``'s bulk linker records per-bill success/failure
+		and discards ``warnings`` — so a warn-only design would let a whole batch
+		of wrongly-accounted bills reach valuation with nothing on screen. The
+		single-bill form does show warnings, but one silent surface is enough.
+		Refusing also matches ``_assert_valuation_account`` on the sibling path.
+		"""
+		src = code(self.src, "_assert_bill_valuation_accounts")
+		self.assertIn("frappe.throw(", src)
+		self.assertNotIn("return", src)
+
+	def test_the_message_names_the_offending_accounts(self):
+		"""The operator's next move is to fix an account, so the gate must say which."""
+		src = code(self.src, "_assert_bill_valuation_accounts")
+		self.assertIn("offenders", src)
+		self.assertIn('", ".join(offenders)', src)
+
+
 if __name__ == "__main__":
 	unittest.main()

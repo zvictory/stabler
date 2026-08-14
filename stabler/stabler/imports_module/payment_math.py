@@ -29,6 +29,11 @@ IMPORT_SERVICE_ITEM_CODE = "Import Service"
 # a duplicate for them.
 _TRUCK_OWNED_CATEGORIES = ("Transport",)
 
+# An Import Expense in either of these states has already had money leave the
+# account (see expense_status: they are derived from bank_payment + cash_payment),
+# so it must not additionally raise a supplier payable.
+_SETTLED_EXPENSE_STATUSES = ("Paid", "Partial")
+
 
 def should_run_automation(in_migration: bool, imports_enabled: bool) -> bool:
 	"""M6 guard: imports hooks run only outside ETL and only for imports-on companies."""
@@ -71,6 +76,30 @@ def expense_status(amount, bank_payment, cash_payment) -> str:
 	if paid > 0:
 		return "Partial"
 	return "Pending"
+
+
+def transport_expense_is_billable(*, purchase_invoice, journal_entry, status) -> bool:
+	"""True when a Transport Import Expense may still feed the tier 1/2 transport bill.
+
+	The lookup this guards used to define "not yet billed" as an empty
+	``purchase_invoice`` alone. That misses the expense that was settled in cash:
+	the kasa flow stamps it with a ``journal_entry`` and moves ``status`` to Paid
+	(or Partial) without ever creating a PI, so at CROSSED_BORDER the truck hook
+	would raise a DRAFT payable for money that has already left the account — the
+	same spend booked twice, once as cash out and once as a supplier bill.
+	``lcv_math.supersede_billed`` cannot repair that: it de-duplicates two cost
+	rows for one container + component, while here the duplication is upstream.
+
+	Partial counts as settled, not as "bill the remainder". ``resolve_transport_source``
+	bills the expense's FULL ``amount`` — there is no remainder anywhere in the
+	payload it builds — so letting a partially paid expense through would bill the
+	portion already paid a second time.
+	"""
+	if (purchase_invoice or "").strip():
+		return False
+	if (journal_entry or "").strip():
+		return False
+	return (status or "") not in _SETTLED_EXPENSE_STATUSES
 
 
 def wants_expense_pi(category, supplier, amount, purchase_invoice) -> bool:

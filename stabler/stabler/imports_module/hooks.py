@@ -337,12 +337,14 @@ def create_transport_pi(truck_name: str):
 
 
 def _first_unbilled_transport_expense(commercial_invoice, *, truck=None, supplier=None, unlinked=False):
-	"""First not-yet-billed Import Expense (category Transport) for the tier lookup.
+	"""First still-billable Import Expense (category Transport) for the tier lookup.
 
 	Returns ``{"name", "amount", "supplier", "currency"}`` or ``None``. ``truck``
 	pins tier 1 (explicitly linked); ``supplier`` + ``unlinked`` pins tier 2 (an
-	expense for the trucking company with no truck link). "Not yet billed" means
-	an empty ``purchase_invoice``.
+	expense for the trucking company with no truck link). Eligibility is
+	``pm.transport_expense_is_billable``: an empty ``purchase_invoice`` alone is
+	not enough, because a cash-settled expense carries a ``journal_entry`` and a
+	Paid/Partial status but no PI, and billing it would double-count the spend.
 	"""
 	if not commercial_invoice:
 		return None
@@ -356,11 +358,15 @@ def _first_unbilled_transport_expense(commercial_invoice, *, truck=None, supplie
 	rows = frappe.get_all(
 		"Import Expense",
 		filters=filters,
-		fields=["name", "amount", "supplier", "currency", "purchase_invoice"],
+		fields=["name", "amount", "supplier", "currency", "purchase_invoice", "journal_entry", "status"],
 		order_by="creation asc",
 	)
 	for r in rows:
-		if (r.get("purchase_invoice") or "").strip():
+		if not pm.transport_expense_is_billable(
+			purchase_invoice=r.get("purchase_invoice"),
+			journal_entry=r.get("journal_entry"),
+			status=r.get("status"),
+		):
 			continue
 		return {
 			"name": r.name,

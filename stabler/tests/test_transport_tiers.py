@@ -122,6 +122,66 @@ class TestWantsExpensePi(unittest.TestCase):
 		self.assertFalse(pm.wants_expense_pi("Customs", "SUP", 100, "PINV-0001"))
 
 
+class TestTransportExpenseIsBillable(unittest.TestCase):
+	"""Which Transport expenses may still become a tier 1/2 supplier bill.
+
+	The rule exists because the truck's CROSSED_BORDER hook raises a payable, and
+	a payable for money that already left the account is the same cost booked
+	twice. So the question is not "does this expense have a PI yet" but "has
+	anybody paid for it yet, by any route".
+	"""
+
+	def test_an_untouched_expense_is_billable(self):
+		self.assertTrue(
+			pm.transport_expense_is_billable(purchase_invoice=None, journal_entry=None, status="Pending")
+		)
+
+	def test_an_already_billed_expense_is_not_billed_again(self):
+		self.assertFalse(
+			pm.transport_expense_is_billable(
+				purchase_invoice="PINV-0001", journal_entry=None, status="Pending"
+			)
+		)
+
+	def test_a_cash_settled_expense_is_not_billable(self):
+		"""The kasa flow stamps journal_entry + Paid and never writes a PI.
+
+		Judging by purchase_invoice alone, this row looks unbilled forever — so
+		every CROSSED_BORDER transition would raise a fresh payable against a
+		spend that is already out of the bank.
+		"""
+		self.assertFalse(
+			pm.transport_expense_is_billable(
+				purchase_invoice="", journal_entry="ACC-JV-2026-00007", status="Paid"
+			)
+		)
+
+	def test_paid_without_a_journal_entry_is_still_settled(self):
+		"""bank_payment/cash_payment can be typed straight onto the expense.
+
+		expense_status then reports Paid with no JE to point at, and the money is
+		just as gone.
+		"""
+		self.assertFalse(
+			pm.transport_expense_is_billable(purchase_invoice="", journal_entry="", status="Paid")
+		)
+
+	def test_partial_counts_as_settled_because_the_bill_has_no_remainder(self):
+		"""resolve_transport_source bills the FULL amount, never a balance.
+
+		Admitting a half-paid expense would therefore re-bill the paid half.
+		"""
+		self.assertFalse(
+			pm.transport_expense_is_billable(purchase_invoice=None, journal_entry=None, status="Partial")
+		)
+
+	def test_a_blank_status_does_not_block_the_bill(self):
+		"""Rows predating the status field must not silently stop being billable."""
+		self.assertTrue(
+			pm.transport_expense_is_billable(purchase_invoice=None, journal_entry=None, status=None)
+		)
+
+
 class TestBuildImportExpensePiPayload(unittest.TestCase):
 	def test_draft_payload_shape(self):
 		payload = pm.build_import_expense_pi_payload(
