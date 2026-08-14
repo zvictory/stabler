@@ -5882,3 +5882,10 @@ Yutilgan,Kazanıldı
 •••,•••
 ⚠ {0} line(s) had no cost — verify item valuation; margin may be overstated.,⚠ {0} satır(da) maliyet yok — kalem değerlemesini doğrulayın; marj abartılmış olabilir.
 ﻿#,#
+Cancel Landed Cost Voucher,Varış maliyeti fişini iptal et
+Cancel voucher {lcv}? This reverses the stock valuation and the General Ledger entries it posted.,"{lcv} fişi iptal edilsin mi? Bu, oluşturduğu stok değerlemesini ve muhasebe kayıtlarını geri alır."
+Cancel voucher,Fişi iptal et
+Cancel Voucher,Fişi İptal Et
+Landed Cost Voucher {lcv} cancelled.,{lcv} fişi iptal edildi.
+Could not cancel the voucher.,Fiş iptal edilemedi.
+Only submitted Landed Cost Vouchers can be cancelled.,Yalnızca onaylanmış Varış Maliyeti Fişleri iptal edilebilir.

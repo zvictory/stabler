@@ -5887,3 +5887,10 @@ Yutilgan,Ютилган
 — top-level —,— юқори сатҳ —
 •••,•••
 ⚠ {0} line(s) had no cost — verify item valuation; margin may be overstated.,⚠ {0} сатр(да) таннарх йўқ — товар баҳолашни текширинг; маржа ошириган бўлиши мумкин.
+Cancel Landed Cost Voucher,Етказиб бериш қиймати ваучерини бекор қилиш
+Cancel voucher {lcv}? This reverses the stock valuation and the General Ledger entries it posted.,{lcv} ваучери бекор қилинсинми? Бу у яратган захира баҳолаши ва бош дафтар ёзувларини қайтаради.
+Cancel voucher,Ваучерни бекор қилиш
+Cancel Voucher,Ваучерни бекор қилиш
+Landed Cost Voucher {lcv} cancelled.,{lcv} ваучери бекор қилинди.
+Could not cancel the voucher.,Ваучерни бекор қилиб бўлмади.
+Only submitted Landed Cost Vouchers can be cancelled.,Фақат тасдиқланган етказиб бериш қиймати ваучерларини бекор қилиш мумкин.

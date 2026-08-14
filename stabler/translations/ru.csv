@@ -5892,3 +5892,10 @@ Yutilgan,Выиграно
 — top-level —,— верхний уровень —
 •••,•••
 ⚠ {0} line(s) had no cost — verify item valuation; margin may be overstated.,⚠ {0} строк(а) без себестоимости — проверьте оценку товара; маржа может быть завышена.
+Cancel Landed Cost Voucher,Отменить ваучер стоимости доставки
+Cancel voucher {lcv}? This reverses the stock valuation and the General Ledger entries it posted.,"Отменить ваучер {lcv}? Это откатит оценку запасов и проводки главной книги, которые он создал."
+Cancel voucher,Отменить ваучер
+Cancel Voucher,Отменить ваучер
+Landed Cost Voucher {lcv} cancelled.,Ваучер {lcv} отменён.
+Could not cancel the voucher.,Не удалось отменить ваучер.
+Only submitted Landed Cost Vouchers can be cancelled.,Отменить можно только проведённые ваучеры стоимости доставки.

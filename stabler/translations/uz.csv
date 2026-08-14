@@ -5887,3 +5887,10 @@ Yutilgan,Yutilgan
 — top-level —,— eng yuqori darajali —
 •••,•••
 ⚠ {0} line(s) had no cost — verify item valuation; margin may be overstated.,⚠ {0} qator(da) tannarx yo'q — tovar baholashni tekshiring; marja oshirilgan bo'lishi mumkin.
+Cancel Landed Cost Voucher,Yetkazib berish qiymati vaucherini bekor qilish
+Cancel voucher {lcv}? This reverses the stock valuation and the General Ledger entries it posted.,{lcv} vaucheri bekor qilinsinmi? Bu u yaratgan zaxira baholashi va bosh daftar yozuvlarini qaytaradi.
+Cancel voucher,Vaucherni bekor qilish
+Cancel Voucher,Vaucherni bekor qilish
+Landed Cost Voucher {lcv} cancelled.,{lcv} vaucheri bekor qilindi.
+Could not cancel the voucher.,Vaucherni bekor qilib boʻlmadi.
+Only submitted Landed Cost Vouchers can be cancelled.,Faqat tasdiqlangan yetkazib berish qiymati vaucherlarini bekor qilish mumkin.

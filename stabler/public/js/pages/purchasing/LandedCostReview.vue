@@ -44,6 +44,7 @@ const error = ref("");
 const data = ref(null);
 const rateOverride = ref("");
 const creating = ref(false);
+const cancelling = ref(false);
 
 const costVisible = computed(() => session.costVisible === true);
 const currency = computed(() => data.value?.grn?.company_currency || "UZS");
@@ -101,6 +102,25 @@ async function createLcv() {
 		toast.error(err?.message || t("Could not create the voucher."));
 	} finally {
 		creating.value = false;
+	}
+}
+
+async function cancelLcv(lcvName) {
+	const ok = await confirm({
+		title: t("Cancel Landed Cost Voucher"),
+		body: t("Cancel voucher {lcv}? This reverses the stock valuation and the General Ledger entries it posted.", { lcv: lcvName }),
+		confirmLabel: t("Cancel voucher"),
+	});
+	if (!ok) return;
+	cancelling.value = true;
+	try {
+		await lcvApi.cancelLandedCostVoucher(lcvName);
+		toast.success(t("Landed Cost Voucher {lcv} cancelled.", { lcv: lcvName }));
+		await load();
+	} catch (err) {
+		toast.error(err?.message || t("Could not cancel the voucher."));
+	} finally {
+		cancelling.value = false;
 	}
 }
 
@@ -177,15 +197,27 @@ watch(documentName, () => load());
 						<div class="card-header"><h3 class="card-title">{{ t("Existing vouchers") }}</h3></div>
 						<div class="table-responsive">
 							<table class="table table-sm card-table">
-								<thead><tr><th>{{ t("LCV") }}</th><th>{{ t("Note") }}</th><th class="text-center">{{ t("State") }}</th><th class="text-end">{{ t("Total") }}</th></tr></thead>
+								<thead><tr><th>{{ t("LCV") }}</th><th>{{ t("Note") }}</th><th class="text-center">{{ t("State") }}</th><th class="text-end">{{ t("Total") }}</th><th></th></tr></thead>
 								<tbody>
 									<tr v-for="lc in data.existing_lcvs" :key="lc.lcv">
 										<td class="font-monospace small">{{ lc.lcv }}</td>
 										<td class="small">{{ lc.note || "—" }}</td>
 										<td class="text-center"><span class="badge" :class="lc.docstatus === 1 ? 'bg-green-lt' : 'bg-yellow-lt'">{{ getDocstatusLabel(lc.docstatus) }}</span></td>
 										<td class="text-end font-monospace">{{ lc.total !== null ? formatMoney(lc.total, currency, user.language) : "—" }}</td>
+										<td class="text-end">
+											<button
+												v-if="lc.docstatus === 1"
+												type="button"
+												class="btn btn-sm btn-outline-danger"
+												:disabled="cancelling"
+												:title="t('Cancel Voucher')"
+												@click="cancelLcv(lc.lcv)"
+											>
+												<i class="ti ti-x me-1"></i>{{ t("Cancel") }}
+											</button>
+										</td>
 									</tr>
-									<tr v-if="!data.existing_lcvs.length"><td colspan="4" class="text-secondary text-center py-2">{{ t("No vouchers yet.") }}</td></tr>
+									<tr v-if="!data.existing_lcvs.length"><td colspan="5" class="text-secondary text-center py-2">{{ t("No vouchers yet.") }}</td></tr>
 								</tbody>
 							</table>
 						</div>
