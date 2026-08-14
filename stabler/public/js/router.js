@@ -40,6 +40,10 @@ import SalesOrders from "./pages/sales/SalesOrders.vue";
 import SalesOrderForm from "./pages/sales/SalesOrderForm.vue";
 import SalesOrderBoard from "./pages/sales/SalesOrderBoard.vue";
 import SourcingWorkspace from "./pages/tender/SourcingWorkspace.vue";
+import RfqList from "./pages/tender/rfq/RfqList.vue";
+import RfqForm from "./pages/tender/rfq/RfqForm.vue";
+import RfqDetail from "./pages/tender/rfq/RfqDetail.vue";
+import RfqPrint from "./pages/tender/rfq/RfqPrint.vue";
 import PoControlBoard from "./pages/tender/PoControlBoard.vue";
 import DeclarantQueue from "./pages/tender/DeclarantQueue.vue";
 import LogistBoard from "./pages/tender/LogistBoard.vue";
@@ -274,6 +278,10 @@ const routes = [
 	{ path: "/tender/crm", name: "tender-crm", component: TenderCrmWrapper, meta: { title: t("Tender CRM"), module: "tender" } },
 	{ path: "/tender/documents", name: "tender-documents", component: TenderDocuments, meta: { title: t("Document center"), module: "tender" } },
 	{ path: "/tender/sourcing", name: "tender-sourcing", component: SourcingWorkspace, meta: { title: t("Sourcing workspace"), module: "tender" } },
+	{ path: "/tender/rfq", name: "tender-rfq-list", component: RfqList, meta: { title: t("Requests for quotation"), module: "tender" } },
+	{ path: "/tender/rfq/new", name: "tender-rfq-new", component: RfqForm, meta: { title: t("New request for quotation"), module: "tender" } },
+	{ path: "/tender/rfq/:name", name: "tender-rfq-detail", component: RfqDetail, meta: { title: t("Request for quotation"), module: "tender" } },
+	{ path: "/tender/rfq/:name/print", name: "tender-rfq-print", component: RfqPrint, meta: { title: t("Request for quotation"), module: "tender" } },
 	{ path: "/tender/po-control", name: "tender-po-control", component: PoControlBoard, meta: { title: t("Tender PO control"), module: "tender" } },
 	{ path: "/tender", redirect: "/tender/portfolio", meta: { module: "tender" } },
 	{ path: "/tender/director", redirect: "/tender/portfolio", meta: { module: "tender" } },

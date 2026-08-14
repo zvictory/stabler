@@ -17,6 +17,8 @@ from pathlib import Path
 _ROOT = Path(__file__).resolve().parents[1]
 DRAWER = _ROOT / "public" / "js" / "components" / "QuotationEntryDrawer.vue"
 SOURCING = _ROOT / "public" / "js" / "pages" / "tender" / "SourcingWorkspace.vue"
+RFQ_FORM = _ROOT / "public" / "js" / "pages" / "tender" / "rfq" / "RfqForm.vue"
+RFQ_DETAIL = _ROOT / "public" / "js" / "pages" / "tender" / "rfq" / "RfqDetail.vue"
 API = _ROOT / "api" / "sourcing.py"
 
 
@@ -151,12 +153,12 @@ class TestSourcingWorkspaceContract(unittest.TestCase):
 	def setUp(self):
 		self.src = _read(SOURCING)
 
-	def test_money_goes_through_moneyinput(self):
-		self.assertIn("MoneyInput", self.src)
+	def test_the_workspace_no_longer_edits_money_or_dates(self):
+		"""RFQ creation moved to its own page (RfqForm); the workspace keeps
+		the comparison and the award. What remains here may not regress to raw
+		inputs either — but the shared-component contract now lives with the
+		form that actually edits those values (TestRfqFormContract below)."""
 		self.assertNotIn('type="number"', self.src)
-
-	def test_dates_go_through_dateinput(self):
-		self.assertIn("DateInput", self.src)
 		self.assertNotIn('type="date"', self.src)
 
 	def test_every_search_field_advertises_the_shortcut(self):
@@ -176,6 +178,57 @@ class TestSourcingWorkspaceContract(unittest.TestCase):
 		approve_body = self.src[approve_start : approve_start + 400]
 		self.assertIn("approve_sourcing_decision", approve_body)
 		self.assertNotIn("save_sourcing_decision", approve_body)
+
+
+class TestRfqFormContract(unittest.TestCase):
+	"""The RFQ form inherited the workspace's old job — asking suppliers — so
+	it inherits the structural contracts that came with it, plus the one this
+	slice exists for: the tender's items must pre-fill it."""
+
+	def setUp(self):
+		self.src = _read(RFQ_FORM)
+
+	def test_money_goes_through_moneyinput(self):
+		self.assertIn("MoneyInput", self.src)
+		self.assertNotIn('type="number"', self.src)
+
+	def test_dates_go_through_dateinput(self):
+		self.assertIn("DateInput", self.src)
+		self.assertNotIn('type="date"', self.src)
+
+	def test_the_prefill_comes_from_the_deal_defaults(self):
+		"""The items a tender was specified with arrive from the server, not
+		from client-side guessing about the lot."""
+		self.assertIn("stabler.api.sourcing.get_deal_rfq_defaults", self.src)
+
+	def test_every_search_field_advertises_the_shortcut(self):
+		placeholders = re.findall(r':placeholder="t\(\'([^\']+)\'\)"', self.src)
+		self.assertTrue(placeholders, "form has no typeahead placeholder at all")
+		for text in placeholders:
+			with self.subTest(placeholder=text):
+				self.assertIn("⌘K", text)
+
+	def test_no_escape_to_the_frappe_desk(self):
+		self.assertNotIn("/app/", self.src)
+
+	def test_the_draft_is_created_through_the_scoped_endpoint(self):
+		call_site = self.src[self.src.index("stabler.api.sourcing.create_rfq") :][:400]
+		self.assertIn("company: activeCompany.value", call_site)
+
+
+class TestRfqPagesAreLinked(unittest.TestCase):
+	"""A page nobody reaches is dead code — the TenderControlTower lesson, now
+	applied on day one instead of weeks later."""
+
+	def test_the_workspace_links_to_the_rfq_pages(self):
+		src = _read(SOURCING)
+		self.assertIn("tender-rfq-new", src)
+		self.assertIn("tender-rfq-detail", src)
+
+	def test_the_detail_page_links_back_to_the_comparison(self):
+		src = _read(RFQ_DETAIL)
+		self.assertIn("tender-sourcing", src)
+		self.assertNotIn("/app/", src)
 
 
 if __name__ == "__main__":

@@ -152,6 +152,26 @@ watch(
 			form.estimated_total = val.deal_value || val.estimated_total || 0;
 			form.items = [];
 			form.files = [];
+			// Intake itemları artık kalıcı; düzenleme kaydı onları silmemeli. Editlenen
+			// kaydın intake'i varsa satırlar geri yüklenir — yoksa (yeni/henüz intake'siz
+			// kayıt) bugünkü gibi boş kalır. Deal çözülemiyorsa sessiz geç: form yine dolar.
+			call("stabler.api.tender.deal_intake", {
+				deal: val.name,
+				company: activeCompany.value,
+			})
+				.then((res) => {
+					if (form.name !== val.name) return; // kullanıcı başka kayda geçti
+					const lines = (res?.intake?.items || []).map((l) => ({
+						item_code: l.item_code || "",
+						item_name: l.item_name || "",
+						qty: Number(l.qty) || 1,
+						uom: l.uom || "",
+						rate: Number(l.rate) || 0,
+						amount: Number(l.amount) || 0,
+					}));
+					if (lines.length) form.items = lines;
+				})
+				.catch(() => {});
 		} else {
 			reset();
 		}

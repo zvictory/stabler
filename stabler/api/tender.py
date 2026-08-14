@@ -1360,6 +1360,7 @@ def _clean_intake(data: dict, prior: dict | None = None, audit_actor: str | None
 	changing a decision records a fresh server timestamp and actor instead.
 	"""
 	from stabler.api._tender_documents import apply_ready_audit
+	from stabler.api._tender_intake_items import clean_intake_items
 
 	prior = prior or {}
 	out = {k: str(data.get(k) or "").strip()[:200] for k in _INTAKE_KEYS_STR}
@@ -1404,6 +1405,10 @@ def _clean_intake(data: dict, prior: dict | None = None, audit_actor: str | None
 	# trusted from the client. This keeps _clean_intake and the dedicated document
 	# endpoints (upload/waive) over the same single source of truth.
 	out["documents"] = _merge_client_documents(data.get("documents") or [], prior.get("documents") or [])[:40]
+	# Item lines follow the same reconciliation idea as documents, but simpler:
+	# they carry no server-owned facts, so an absent key preserves and a present
+	# list replaces. They are the scope the RFQ step later copies line by line.
+	out["items"] = clean_intake_items(data, prior.get("items"))
 	# The transition rule is shared with the document endpoints, which also move
 	# a lot across the ready line (see apply_ready_audit). Carry the prior audit
 	# in first so an unchanged decision keeps its original timestamp.

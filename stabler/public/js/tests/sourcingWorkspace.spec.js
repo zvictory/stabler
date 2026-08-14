@@ -13,33 +13,22 @@ describe("SourcingWorkspace Vue Contract Tests", () => {
 		expect(workspaceSrc).not.toContain("/desk/");
 	});
 
-	it("uses MoneyInput for numeric amounts and quantities", () => {
-		expect(workspaceSrc).toContain("MoneyInput");
+	it("does not use raw number or date inputs", () => {
+		expect(workspaceSrc).not.toContain('type="number"');
+		expect(workspaceSrc).not.toContain('type="date"');
 	});
 
-	it("uses DateInput for date fields", () => {
-		expect(workspaceSrc).toContain("DateInput");
-	});
-
-	it("renders EmptyState when no deal is selected or no items exist", () => {
+	it("renders EmptyState when no deal is selected", () => {
 		expect(workspaceSrc).toContain("EmptyState");
 	});
 
-	it("calls get_deal_rfq_defaults and create_rfq API with deterministic payload shape", () => {
-		expect(workspaceSrc).toContain("stabler.api.sourcing.get_deal_rfq_defaults");
-		expect(workspaceSrc).toContain("stabler.api.sourcing.create_rfq");
-		expect(workspaceSrc).toContain("item_code");
-		expect(workspaceSrc).toContain("qty");
-		expect(workspaceSrc).toContain("schedule_date");
+	it("links to RFQ creation and detail pages", () => {
+		expect(workspaceSrc).toContain("tender-rfq-new");
+		expect(workspaceSrc).toContain("tender-rfq-detail");
 	});
 
-	it("preserves user dirty state without overwriting manual input on async reload", () => {
-		expect(workspaceSrc).toContain("rfqIsDirty");
-		expect(workspaceSrc).toContain("markRfqDirty");
-	});
-
-	it("preserves draft RFQ semantics without auto email sending", () => {
-		expect(workspaceSrc).toContain("draft");
-		expect(workspaceSrc).not.toContain("sendmail");
+	it("keeps save decision and approve decision actions separate", () => {
+		expect(workspaceSrc).toContain("save_sourcing_decision");
+		expect(workspaceSrc).toContain("approve_sourcing_decision");
 	});
 });
