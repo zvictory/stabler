@@ -427,38 +427,52 @@ def list_rfqs(deal, company=None):
 	return {"rows": rows, "count": len(rows)}
 
 
+def _read_deal_intake_items(doc) -> list[dict]:
+	"""The tender's item lines, as sanitized at intake time.
+
+	Read through the same pure module every intake reader uses, so an RFQ
+	raised months after intake sees the same lines the drawer captured — not
+	a JSON blob that drifted through edits by hand.
+	"""
+	from stabler.api._tender_intake_items import read_intake_items
+
+	return read_intake_items(doc)
+
+
 @frappe.whitelist()
 def get_deal_rfq_defaults(deal, company=None):
-	"""Return company-scoped default items and suppliers for a tender deal lot."""
+	"""Return company-scoped default items and suppliers for a tender deal lot.
+
+	The items are the tender scope as captured at intake: a deal that reached
+	the sourcing lane was already specified line by line, and asking the officer
+	to retype those lines is asking for a second, drifting copy of the same
+	list. Suppliers stay a deliberate choice — the policy wants >=5 quotations
+	from >=2 countries, not whatever a table happens to contain.
+	"""
 	_require_tender(company)
 	selected_company = _assert_company_scope(company)
-	_deal_scope(deal, selected_company, "read")
+	doc, _ = _deal_scope(deal, selected_company, "read")
 
-	doc = frappe.get_doc("CRM Deal", deal) if frappe.db.exists("CRM Deal", deal) else None
-	items = []
-	suppliers = []
-	if doc and doc.get("items"):
-		for item in doc.get("items"):
-			if isinstance(item, dict):
-				items.append(
-					{
-						"item_code": item.get("item_code"),
-						"qty": flt(item.get("qty") or 1),
-						"uom": item.get("uom") or "",
-						"schedule_date": item.get("schedule_date") or "",
-						"warehouse": item.get("warehouse") or "",
-					}
-				)
-	if doc and doc.get("suppliers"):
-		for s in doc.get("suppliers"):
-			if isinstance(s, dict) and s.get("supplier"):
-				suppliers.append(s.get("supplier"))
+	items = [
+		{
+			"item_code": line["item_code"],
+			"item_name": line["item_name"],
+			"qty": line["qty"],
+			"uom": line["uom"],
+			"rate": line["rate"],
+			"schedule_date": "",
+			"warehouse": "",
+		}
+		for line in _read_deal_intake_items(doc)
+	]
 
 	return {
 		"deal": deal,
+		"deal_label": doc.get("organization") or doc.get("lead_name") or deal,
+		"currency": doc.get("currency") or "",
 		"company": selected_company,
 		"items": items,
-		"suppliers": suppliers,
+		"suppliers": [],
 	}
 
 
@@ -506,6 +520,266 @@ def create_rfq(deal, suppliers, items, schedule_date=None, company=None, warehou
 		"supplier_count": len(supplier_names),
 		"item_count": len(lines),
 	}
+
+
+# --- The request, readable ---------------------------------------------------
+#
+# Until now an RFQ raised here existed only as a chip: a name, a date, a badge.
+# The questions a chip cannot answer — whom exactly did we ask, and who has
+# answered — are precisely the ones the sourcing policy (>=5 quotations from
+# >=2 countries) is audited against, so the list and the detail carry them.
+
+_RFQ_LIST_PAGE_FIELDS = (
+	"name",
+	"status",
+	"transaction_date",
+	"schedule_date",
+	"docstatus",
+	_RFQ_DEAL_FIELD,
+)
+
+_RFQ_SUPPLIER_TABLE = "Request for Quotation Supplier"
+
+#: Channels a human can actually hand an RFQ over by, in the market this runs
+#: in. WhatsApp is first-class on purpose: it is how suppliers answer here.
+_SENT_CHANNELS = ("whatsapp", "email", "phone", "hand", "other")
+
+
+def _rfq_doc_scope(name: str, selected_company: str, ptype: str = "read"):
+	"""Resolve one RFQ inside the selected company, with record permission.
+
+	Company first, record permission second — same order `_deal_scope` uses, so
+	a foreign-company RFQ reads as "not permitted", never as "wrong lot".
+	"""
+	doc = frappe.get_doc("Request for Quotation", name)
+	if doc.company != selected_company:
+		frappe.throw(
+			_("Request for quotation does not belong to the selected company."), frappe.PermissionError
+		)
+	if not frappe.has_permission("Request for Quotation", ptype=ptype, doc=doc):
+		frappe.throw(_("Not permitted."), frappe.PermissionError)
+	return doc
+
+
+def _rfq_supplier_counts(names: list[str]) -> dict[str, int]:
+	"""How many suppliers each RFQ asked, straight from the child table.
+
+	Counted by pulling parents, not with `count(name)`: Frappe v16 refuses a
+	SQL function inside a string SELECT field, which passes every local check
+	and then 500s the list on the live site (same lesson as
+	tender_master.list_tender_masters).
+	"""
+	counts = {name: 0 for name in names}
+	if not names:
+		return counts
+	rows = frappe.get_all(
+		_RFQ_SUPPLIER_TABLE,
+		filters={"parent": ["in", names], "parenttype": "Request for Quotation"},
+		fields=["parent"],
+		limit_page_length=0,
+	)
+	for row in rows:
+		counts[row["parent"]] = counts.get(row["parent"], 0) + 1
+	return counts
+
+
+def _deal_quotation_counts(deals: list[str]) -> dict[str, int]:
+	"""Quotations received per lot (draft + submitted): the answer-side count."""
+	counts = {deal: 0 for deal in deals}
+	if not deals or not _sq_link_ready():
+		return counts
+	rows = frappe.get_list(
+		"Supplier Quotation",
+		filters={_SQ_DEAL_FIELD: ["in", deals], "docstatus": ["<", 2]},
+		fields=["name", _SQ_DEAL_FIELD],
+		limit_page_length=0,
+	)
+	for row in rows:
+		deal_name = row.get(_SQ_DEAL_FIELD)
+		if deal_name in counts:
+			counts[deal_name] += 1
+	return counts
+
+
+def _deal_labels(deals: list[str]) -> dict[str, str]:
+	"""Lot display labels, resolved in one query rather than one per row."""
+	labels = {deal: deal for deal in deals}
+	if not deals:
+		return labels
+	rows = frappe.get_list(
+		"CRM Deal",
+		filters={"name": ["in", deals]},
+		fields=["name", "organization", "lead_name"],
+		limit_page_length=0,
+	)
+	for row in rows:
+		labels[row["name"]] = row.get("organization") or row.get("lead_name") or row["name"]
+	return labels
+
+
+@frappe.whitelist()
+def list_all_rfqs(company=None, deal=None, search=None, limit=200):
+	"""All requests for quotation across the selected company's tender lots."""
+	_require_tender(company)
+	selected_company = _assert_company_scope(company)
+	if not frappe.has_permission("Request for Quotation", "read"):
+		frappe.throw(_("Not permitted."), frappe.PermissionError)
+	# Unmigrated site reports "no RFQs" instead of 500-ing the list page — the
+	# tolerance `list_rfqs` shows for the same migration state.
+	if not _rfq_link_ready():
+		return {"rows": [], "count": 0}
+	filters = {"company": selected_company, "docstatus": ["<", 2]}
+	if deal:
+		filters[_RFQ_DEAL_FIELD] = deal
+	if search:
+		filters["name"] = ["like", f"%{str(search).strip()}%"]
+	rows = frappe.get_list(
+		"Request for Quotation",
+		filters=filters,
+		fields=list(_RFQ_LIST_PAGE_FIELDS),
+		order_by="transaction_date desc, modified desc",
+		limit_page_length=max(1, min(int(flt(limit) or 200), 500)),
+	)
+	deals = sorted({row.get(_RFQ_DEAL_FIELD) for row in rows if row.get(_RFQ_DEAL_FIELD)})
+	supplier_counts = _rfq_supplier_counts([row["name"] for row in rows])
+	quotation_counts = _deal_quotation_counts(deals)
+	labels = _deal_labels(deals)
+	for row in rows:
+		deal_name = row.get(_RFQ_DEAL_FIELD) or ""
+		row["deal"] = deal_name
+		row["deal_label"] = labels.get(deal_name, deal_name)
+		row["supplier_count"] = supplier_counts.get(row["name"], 0)
+		row["quotation_count"] = quotation_counts.get(deal_name, 0)
+	return {"rows": rows, "count": len(rows)}
+
+
+@frappe.whitelist()
+def get_rfq(name, company=None):
+	"""One RFQ with its suppliers, per-supplier response status, and lines.
+
+	The target rate on each line is the intake estimate for that item — a buyer
+	reference the RFQ doctype itself does not carry, joined back here by item
+	code so the officer sees the tender's expectation next to what was asked.
+	"""
+	_require_tender(company)
+	selected_company = _assert_company_scope(company)
+	doc = _rfq_doc_scope(name, selected_company)
+
+	deal = doc.get(_RFQ_DEAL_FIELD) or ""
+	deal_label = deal
+	intake_items = []
+	if deal:
+		deal_doc = frappe.get_doc("CRM Deal", deal)
+		deal_label = deal_doc.get("organization") or deal_doc.get("lead_name") or deal
+		intake_items = _read_deal_intake_items(deal_doc)
+	target_rate = {line["item_code"]: line["rate"] for line in intake_items}
+
+	quotations: dict[str, list[str]] = {}
+	if deal and _sq_link_ready():
+		rows = frappe.get_list(
+			"Supplier Quotation",
+			filters={_SQ_DEAL_FIELD: deal, "docstatus": ["<", 2]},
+			fields=["name", "supplier"],
+			order_by="modified desc",
+			limit_page_length=0,
+		)
+		for row in rows:
+			quotations.setdefault(row["supplier"], []).append(row["name"])
+
+	suppliers = []
+	for row in doc.get("suppliers") or []:
+		supplier = row.get("supplier") or ""
+		if not supplier:
+			continue
+		suppliers.append(
+			{
+				"supplier": supplier,
+				"supplier_name": row.get("supplier_name") or supplier,
+				"contact": row.get("contact") or "",
+				"email_id": row.get("email_id") or "",
+				"quotations": quotations.get(supplier, []),
+				"responded": bool(quotations.get(supplier)),
+			}
+		)
+
+	return {
+		"name": doc.name,
+		"deal": deal,
+		"deal_label": deal_label,
+		"company": selected_company,
+		"status": doc.status,
+		"docstatus": int(doc.docstatus or 0),
+		"transaction_date": str(doc.transaction_date or ""),
+		"schedule_date": str(doc.schedule_date or ""),
+		"suppliers": suppliers,
+		"items": [
+			{
+				"item_code": d.get("item_code") or "",
+				"item_name": d.get("item_name") or d.get("item_code") or "",
+				"qty": flt(d.get("qty")),
+				"uom": d.get("uom") or "",
+				"warehouse": d.get("warehouse") or "",
+				"schedule_date": str(d.get("schedule_date") or ""),
+				"description": d.get("description") or "",
+				"target_rate": target_rate.get(d.get("item_code"), 0.0),
+			}
+			for d in (doc.get("items") or [])
+		],
+	}
+
+
+@frappe.whitelist()
+def rfq_print(name, company=None):
+	"""Print payload for one RFQ: the letter a supplier is handed."""
+	_require_tender(company)
+	selected_company = _assert_company_scope(company)
+	_rfq_doc_scope(name, selected_company)
+	base = get_rfq(name, company)
+	company_doc = frappe.get_doc("Company", selected_company)
+	return {
+		**base,
+		"company_name": company_doc.company_name,
+		"company_abbr": company_doc.abbr,
+		"company_tax_id": getattr(company_doc, "tax_id", "") or "",
+		"company_email": getattr(company_doc, "email", "") or "",
+		"company_phone": getattr(company_doc, "phone_no", "") or "",
+	}
+
+
+@frappe.whitelist()
+def mark_rfq_sent(name, company=None, channel=None, note=None):
+	"""Record that the RFQ was handed to its suppliers — by whom, when, how.
+
+	The draft-and-stop philosophy stays: Stabler does not email anything. But
+	"we sent it" is a business fact the sourcing timeline needs, so the human
+	act is logged as a Communication on the RFQ, the same record type the CRM
+	email trail uses.
+	"""
+	_require_tender(company)
+	selected_company = _assert_company_scope(company)
+	doc = _rfq_doc_scope(name, selected_company, "write")
+	if not frappe.has_permission("Communication", "create"):
+		frappe.throw(_("Not permitted for Communication"), frappe.PermissionError)
+
+	ch = str(channel or "").strip().lower() or "other"
+	if ch not in _SENT_CHANNELS:
+		frappe.throw(_("Unknown sending channel: {0}.").format(ch), frappe.ValidationError)
+	note_text = str(note or "").strip()[:500]
+
+	comm = frappe.new_doc("Communication")
+	comm.communication_type = "Communication"
+	comm.communication_medium = "Email" if ch == "email" else "Other"
+	comm.sent_or_received = "Sent"
+	comm.subject = _("Request for quotation {0} sent to {1} suppliers").format(
+		doc.name, len(doc.get("suppliers") or [])
+	)
+	comm.content = note_text or _("RFQ shared with suppliers via {0}.").format(ch)
+	comm.sender = frappe.session.user
+	comm.reference_doctype = "Request for Quotation"
+	comm.reference_name = doc.name
+	comm.company = selected_company
+	comm.insert()
+	return {"communication": comm.name, "rfq": doc.name, "channel": ch}
 
 
 # --- The award -------------------------------------------------------------

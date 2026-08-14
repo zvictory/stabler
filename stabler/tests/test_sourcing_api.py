@@ -82,14 +82,33 @@ class _FakeFrappe:
 
 	def __init__(self):
 		self.docs = {
-			("Company", "ACME"): _Doc(name="ACME", abbr="ACME"),
+			("Company", "ACME"): _Doc(name="ACME", abbr="ACME", company_name="ACME Corp"),
 			# Warehouse resolution reads this table, NOT a Company field:
 			# ERPNext's Company doctype has no `default_warehouse`, so modelling
 			# one here would test a fiction.
 			("Warehouse", "Stores - ACME"): _Doc(name="Stores - ACME", company="ACME", is_group=0),
 			("Item", "RAIL-01"): _Doc(name="RAIL-01", is_stock_item=1, stock_uom="Nos"),
 			("Item", "SERVICE-01"): _Doc(name="SERVICE-01", is_stock_item=0, stock_uom="Nos"),
-			("CRM Deal", "LOT-A"): _Doc(name="LOT-A", company="ACME", deal_type="Tender"),
+			("CRM Deal", "LOT-A"): _Doc(
+				name="LOT-A",
+				company="ACME",
+				deal_type="Tender",
+				organization="Alfa Rail Lot",
+				custom_tender_intake=json.dumps(
+					{
+						"items": [
+							{
+								"item_code": "RAIL-01",
+								"item_name": "Rail 01",
+								"qty": 10,
+								"uom": "Nos",
+								"rate": 2.5,
+								"amount": 25.0,
+							}
+						]
+					}
+				),
+			),
 			("CRM Deal", "LOT-DENIED"): _Doc(name="LOT-DENIED", company="ACME", deal_type="Tender"),
 			("CRM Deal", "LOT-OTHER"): _Doc(name="LOT-OTHER", company="Other Co", deal_type="Tender"),
 			("Supplier", "SUP-A"): _Doc(name="SUP-A", supplier_name="Alfa"),
@@ -177,6 +196,39 @@ class _FakeFrappe:
 				status="Draft",
 				docstatus=0,
 				transaction_date="2026-07-01",
+				schedule_date="2026-07-05",
+				suppliers=[
+					{"supplier": "SUP-A", "supplier_name": "Alfa", "contact": "", "email_id": ""},
+					{"supplier": "SUP-B", "supplier_name": "Beta", "contact": "", "email_id": ""},
+				],
+				items=[
+					{
+						"item_code": "RAIL-01",
+						"item_name": "Rail 01",
+						"qty": 10.0,
+						"uom": "Nos",
+						"warehouse": "Stores - ACME",
+						"schedule_date": "2026-07-05",
+						"description": "",
+					}
+				],
+			),
+			# Child rows counted by the list page: two suppliers were asked on
+			# RFQ-1, none anywhere else. The counts query reads this table, not
+			# the parent — modelling them only on the parent would test a fiction.
+			("Request for Quotation Supplier", "RFQ1-SUP-A"): _Doc(
+				parent="RFQ-1", parenttype="Request for Quotation", supplier="SUP-A"
+			),
+			("Request for Quotation Supplier", "RFQ1-SUP-B"): _Doc(
+				parent="RFQ-1", parenttype="Request for Quotation", supplier="SUP-B"
+			),
+			("Request for Quotation", "RFQ-OTHER-COMPANY"): _Doc(
+				name="RFQ-OTHER-COMPANY",
+				company="Other Co",
+				custom_crm_deal="LOT-OTHER",
+				status="Draft",
+				docstatus=0,
+				transaction_date="2026-07-04",
 			),
 			("Request for Quotation", "RFQ-CANCELLED"): _Doc(
 				name="RFQ-CANCELLED",
@@ -282,6 +334,9 @@ class _FakeFrappe:
 				rows = [row for row in rows if int(row.get(field) or 0) < operand]
 			elif operator == "=":
 				rows = [row for row in rows if row.get(field) == operand]
+			elif operator == "like":
+				needle = str(operand).strip("%")
+				rows = [row for row in rows if needle.lower() in str(row.get(field) or "").lower()]
 			else:
 				raise AssertionError(f"unsupported filter operator: {operator}")
 		return [dict(row) for row in rows]
@@ -650,6 +705,31 @@ class TestRfqDefaultsEndpoint(unittest.TestCase):
 		self.assertEqual(res["deal"], "LOT-A")
 		self.assertEqual(res["company"], "ACME")
 
+	def test_defaults_come_from_the_tender_intake_not_from_a_dead_field(self):
+		"""The whole point of this slice: a lot that reached sourcing was
+		already specified line by line at intake, and the RFQ form must open
+		with exactly those lines. The old body read child tables CRM Deal never
+		had, so the answer was always empty."""
+		res = self.api.get_deal_rfq_defaults("LOT-A", company="ACME")
+		self.assertEqual(len(res["items"]), 1)
+		line = res["items"][0]
+		self.assertEqual(line["item_code"], "RAIL-01")
+		self.assertEqual(line["item_name"], "Rail 01")
+		self.assertEqual(line["qty"], 10.0)
+		self.assertEqual(line["uom"], "Nos")
+		self.assertEqual(line["rate"], 2.5)
+		self.assertEqual(res["deal_label"], "Alfa Rail Lot")
+
+	def test_suppliers_are_never_prefilled(self):
+		"""The policy wants >=5 quotations from >=2 countries — a deliberate
+		choice per request, not whatever a table happens to contain."""
+		res = self.api.get_deal_rfq_defaults("LOT-A", company="ACME")
+		self.assertEqual(res["suppliers"], [])
+
+	def test_a_lot_without_intake_lines_defaults_to_no_lines(self):
+		res = self.api.get_deal_rfq_defaults("LOT-B", company="ACME")
+		self.assertEqual(res["items"], [])
+
 	def test_get_deal_rfq_defaults_rejects_unauthorized_deal(self):
 		with self.assertRaises(self.api.frappe.PermissionError):
 			self.api.get_deal_rfq_defaults("LOT-DENIED", company="ACME")
@@ -666,6 +746,140 @@ class TestRfqDefaultsEndpoint(unittest.TestCase):
 			api.create_rfq("LOT-A", ["SUP-A"], [{"item_code": "RAIL-01", "qty": 1}], company="ACME")
 		self.assertIn("migrate", str(ctx.exception).lower())
 		self.assertEqual(self.fake.created, [])
+
+
+class TestListAllRfqs(unittest.TestCase):
+	def setUp(self):
+		self.fake = _FakeFrappe()
+		self.api = _load_api(self.fake)
+
+	def test_lists_only_this_company_open_rfqs(self):
+		"""The list page answers 'whom did we ask' company-wide; a foreign
+		company's RFQ or a cancelled one must not be in it."""
+		res = self.api.list_all_rfqs(company="ACME")
+		names = [row["name"] for row in res["rows"]]
+		self.assertIn("RFQ-1", names)
+		self.assertIn("RFQ-OTHER-LOT", names)
+		self.assertNotIn("RFQ-OTHER-COMPANY", names)
+		self.assertNotIn("RFQ-CANCELLED", names)
+
+	def test_rows_carry_the_two_policy_numbers(self):
+		"""Supplier count from the RFQ's own child table; quotation count from
+		the lot's answers. These are the numbers the >=5/>=2 policy is argued
+		with, so they may not be guessed client-side."""
+		res = self.api.list_all_rfqs(company="ACME")
+		by_name = {row["name"]: row for row in res["rows"]}
+		self.assertEqual(by_name["RFQ-1"]["supplier_count"], 2)
+		self.assertEqual(by_name["RFQ-1"]["quotation_count"], 3)  # 2 drafts + 1 submitted on LOT-A
+		self.assertEqual(by_name["RFQ-1"]["deal_label"], "Alfa Rail Lot")
+
+	def test_deal_filter_narrows_to_one_lot(self):
+		res = self.api.list_all_rfqs(company="ACME", deal="LOT-A")
+		self.assertEqual([row["name"] for row in res["rows"]], ["RFQ-1"])
+
+	def test_search_matches_the_document_name(self):
+		res = self.api.list_all_rfqs(company="ACME", search="RFQ-1")
+		self.assertEqual([row["name"] for row in res["rows"]], ["RFQ-1"])
+
+	def test_reads_through_the_permission_filtered_query(self):
+		self.api.list_all_rfqs(company="ACME")
+		self.assertIn("Request for Quotation", self.fake.list_calls)
+
+	def test_rejects_when_the_tender_module_is_unavailable(self):
+		api = _load_api(self.fake, tender_allowed=False)
+		with self.assertRaises(PermissionError):
+			api.list_all_rfqs(company="ACME")
+
+	def test_rejects_a_company_the_user_may_not_select(self):
+		with self.assertRaises(PermissionError):
+			self.api.list_all_rfqs(company="Other Co")
+
+	def test_returns_empty_before_the_patch_has_run(self):
+		api = _load_api(self.fake, missing_columns=("custom_crm_deal",))
+		self.assertEqual(api.list_all_rfqs(company="ACME"), {"rows": [], "count": 0})
+
+
+class TestGetRfq(unittest.TestCase):
+	def setUp(self):
+		self.fake = _FakeFrappe()
+		self.api = _load_api(self.fake)
+
+	def test_answers_whom_we_asked_and_who_answered(self):
+		"""SUP-A has quotations on this lot, SUP-B does not: the per-supplier
+		response status is exactly what the ERPNext Desk 'Received' row state
+		encodes, and what the award audit later relies on."""
+		res = self.api.get_rfq("RFQ-1", company="ACME")
+		by_supplier = {row["supplier"]: row for row in res["suppliers"]}
+		self.assertTrue(by_supplier["SUP-A"]["responded"])
+		self.assertEqual(by_supplier["SUP-A"]["quotations"], ["SQ-DRAFT", "SQ-PAST-DRAFT", "SQ-SUBMITTED"])
+		self.assertFalse(by_supplier["SUP-B"]["responded"])
+
+	def test_lines_carry_the_intake_target_rate_as_a_reference(self):
+		"""The RFQ doctype has no rate; the intake estimate is joined back by
+		item code so the officer sees the tender's expectation next to the ask."""
+		res = self.api.get_rfq("RFQ-1", company="ACME")
+		self.assertEqual(len(res["items"]), 1)
+		self.assertEqual(res["items"][0]["item_code"], "RAIL-01")
+		self.assertEqual(res["items"][0]["target_rate"], 2.5)
+
+	def test_rejects_an_rfq_of_another_company(self):
+		with self.assertRaises(PermissionError):
+			self.api.get_rfq("RFQ-OTHER-COMPANY", company="ACME")
+
+	def test_rejects_when_the_tender_module_is_unavailable(self):
+		api = _load_api(self.fake, tender_allowed=False)
+		with self.assertRaises(PermissionError):
+			api.get_rfq("RFQ-1", company="ACME")
+
+
+class TestRfqPrint(unittest.TestCase):
+	def setUp(self):
+		self.fake = _FakeFrappe()
+		self.api = _load_api(self.fake)
+
+	def test_print_payload_extends_the_detail_with_the_company_letterhead(self):
+		res = self.api.rfq_print("RFQ-1", company="ACME")
+		self.assertEqual(res["name"], "RFQ-1")
+		self.assertEqual(res["company_name"], "ACME Corp")
+		self.assertEqual(res["company_abbr"], "ACME")
+		self.assertEqual(len(res["items"]), 1)
+
+	def test_rejects_an_rfq_of_another_company(self):
+		with self.assertRaises(PermissionError):
+			self.api.rfq_print("RFQ-OTHER-COMPANY", company="ACME")
+
+
+class TestMarkRfqSent(unittest.TestCase):
+	def setUp(self):
+		self.fake = _FakeFrappe()
+		self.api = _load_api(self.fake)
+
+	def test_records_a_communication_on_the_rfq(self):
+		"""Stabler does not email anything; the human act of handing the RF
+		Q over is still a business fact. It is logged on the same record type
+		the CRM email trail uses, referenced to this RFQ."""
+		res = self.api.mark_rfq_sent("RFQ-1", company="ACME", channel="whatsapp")
+		comm = next(d for d in self.fake.created if d.get("doctype") == "Communication")
+		self.assertEqual(comm["reference_doctype"], "Request for Quotation")
+		self.assertEqual(comm["reference_name"], "RFQ-1")
+		self.assertEqual(comm["company"], "ACME")
+		self.assertEqual(comm["sent_or_received"], "Sent")
+		self.assertEqual(res["channel"], "whatsapp")
+
+	def test_an_unknown_channel_is_rejected_before_anything_is_written(self):
+		with self.assertRaises(ValueError):
+			self.api.mark_rfq_sent("RFQ-1", company="ACME", channel="pigeon")
+		self.assertFalse(any(d.get("doctype") == "Communication" for d in self.fake.created))
+
+	def test_requires_the_communication_create_right(self):
+		api = _load_api(self.fake, can_create=False)
+		with self.assertRaises(PermissionError):
+			api.mark_rfq_sent("RFQ-1", company="ACME", channel="email")
+		self.assertFalse(any(d.get("doctype") == "Communication" for d in self.fake.created))
+
+	def test_rejects_an_rfq_of_another_company(self):
+		with self.assertRaises(PermissionError):
+			self.api.mark_rfq_sent("RFQ-OTHER-COMPANY", company="ACME", channel="email")
 
 
 class TestRfqPatch(unittest.TestCase):

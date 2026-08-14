@@ -20,8 +20,6 @@ import Typeahead from "../../components/Typeahead.vue";
 import EmptyState from "../../components/EmptyState.vue";
 import SkeletonRows from "../../components/SkeletonRows.vue";
 import Select from "../../components/Select.vue";
-import MoneyInput from "../../components/MoneyInput.vue";
-import DateInput from "../../components/DateInput.vue";
 import TenderPage from "./TenderPage.vue";
 import QuotationEntryDrawer from "../../components/QuotationEntryDrawer.vue";
 import LandedChargesEditor from "../../components/LandedChargesEditor.vue";
@@ -56,15 +54,6 @@ function openLandedEditor(r) {
 	landedOpen.value = true;
 }
 
-// Modal state for RFQ creation
-const rfqOpen = ref(false);
-const rfqSaving = ref(false);
-const rfqForm = ref({
-	suppliers: [],
-	items: [{ item_code: "", itemLabel: "", qty: 1 }],
-	schedule_date: "",
-});
-
 // Award panel form
 const awardForm = ref({
 	selected_quotation: "",
@@ -89,20 +78,6 @@ async function searchDeals(q) {
 		name: d.name,
 		label: d.organization || d.lead_name || d.name,
 	}));
-}
-
-async function searchSuppliers(q) {
-	const rows = await call("stabler.api.purchasing.list_suppliers", {
-		company: activeCompany.value,
-		search: q,
-		limit: 20,
-	});
-	return (rows || []).map((r) => ({ name: r.name, label: r.supplier_name || r.name }));
-}
-
-async function searchItems(q) {
-	const rows = await call("stabler.api.inventory.list_items", { search: q, limit: 20 });
-	return (rows || []).map((r) => ({ name: r.name, label: r.item_name || r.name }));
 }
 
 function pickDeal(o) {
@@ -254,86 +229,6 @@ async function submitQuotation(qName) {
 	}
 }
 
-const rfqIsDirty = ref(false);
-
-function markRfqDirty() {
-	rfqIsDirty.value = true;
-}
-
-async function openCreateRfqModal() {
-	rfqOpen.value = true;
-	if (!rfqIsDirty.value && deal.value) {
-		try {
-			const defaults = await call("stabler.api.sourcing.get_deal_rfq_defaults", {
-				deal: deal.value,
-				company: activeCompany.value,
-			});
-			if (defaults?.items?.length) {
-				rfqForm.value.items = defaults.items.map((i) => ({
-					item_code: i.item_code || "",
-					itemLabel: i.item_code || "",
-					qty: i.qty || 1,
-					uom: i.uom || "",
-					schedule_date: i.schedule_date || "",
-					warehouse: i.warehouse || "",
-				}));
-			}
-			if (defaults?.suppliers?.length) {
-				rfqForm.value.suppliers = defaults.suppliers;
-			}
-		} catch {
-			// Fall back cleanly if defaults cannot be loaded
-		}
-	}
-}
-
-function addRfqItem() {
-	markRfqDirty();
-	rfqForm.value.items.push({ item_code: "", itemLabel: "", qty: 1 });
-}
-
-function removeRfqItem(idx) {
-	markRfqDirty();
-	rfqForm.value.items.splice(idx, 1);
-	if (!rfqForm.value.items.length) addRfqItem();
-}
-
-async function createRfq() {
-	const validSuppliers = rfqForm.value.suppliers;
-	const validItems = rfqForm.value.items.filter((i) => i.item_code && i.qty > 0);
-	if (!validSuppliers.length || !validItems.length || rfqSaving.value) return;
-	rfqSaving.value = true;
-	try {
-		await call("stabler.api.sourcing.create_rfq", {
-			deal: deal.value,
-			suppliers: JSON.stringify(validSuppliers),
-			items: JSON.stringify(
-				validItems.map((i) => ({
-					item_code: i.item_code,
-					qty: i.qty,
-					...(i.uom ? { uom: i.uom } : {}),
-					...(i.schedule_date ? { schedule_date: i.schedule_date } : {}),
-					...(i.warehouse ? { warehouse: i.warehouse } : {}),
-				}))
-			),
-			schedule_date: rfqForm.value.schedule_date || null,
-			company: activeCompany.value,
-		});
-		toast.success(t("Request for quotation created as draft."));
-		rfqOpen.value = false;
-		rfqForm.value = {
-			suppliers: [],
-			items: [{ item_code: "", itemLabel: "", qty: 1 }],
-			schedule_date: "",
-		};
-		await loadRfqs();
-	} catch (err) {
-		toast.error(err?.message || t("Could not create RFQ."));
-	} finally {
-		rfqSaving.value = false;
-	}
-}
-
 // Decision panel calculations
 const rows = computed(() => data.value?.rows || []);
 const baseCcy = computed(() => data.value?.base_currency || "");
@@ -461,13 +356,12 @@ watch(
 				</div>
 
 				<div v-if="deal" class="ms-auto d-flex gap-2">
-					<button
-						type="button"
+					<router-link
+						:to="{ name: 'tender-rfq-new', query: { ...route.query, deal } }"
 						class="btn btn-outline-secondary btn-sm"
-						@click="openCreateRfqModal"
 					>
 						<i class="ti ti-send me-1"></i>{{ t("Request for quotation") }}
-					</button>
+					</router-link>
 					<button type="button" class="btn btn-primary btn-sm" @click="openAddQuotation">
 						<i class="ti ti-plus me-1"></i>{{ t("Add quotation") }}
 					</button>
@@ -491,18 +385,19 @@ watch(
 							t("No RFQs created for this deal yet. Click 'Request for quotation' to raise one.")
 						}}
 					</div>
-					<div v-else class="d-flex flex-wrap gap-2">
-						<div
-							v-for="rfq in rfqs"
-							:key="rfq.name"
-							class="border rounded px-2 py-1 small d-flex align-items-center gap-2"
-						>
-							<i class="ti ti-file-text text-secondary"></i>
-							<span class="fw-semibold">{{ rfq.name }}</span>
-							<span class="text-secondary">· {{ formatDate(rfq.transaction_date) }}</span>
-							<span class="badge bg-blue-lt text-blue">{{ rfq.status }}</span>
-						</div>
-					</div>
+				<div v-else class="d-flex flex-wrap gap-2">
+					<router-link
+						v-for="rfq in rfqs"
+						:key="rfq.name"
+						:to="{ name: 'tender-rfq-detail', params: { name: rfq.name }, query: { ...route.query } }"
+						class="border rounded px-2 py-1 small d-flex align-items-center gap-2 text-decoration-none"
+					>
+						<i class="ti ti-file-text text-secondary"></i>
+						<span class="fw-semibold">{{ rfq.name }}</span>
+						<span class="text-secondary">· {{ formatDate(rfq.transaction_date) }}</span>
+						<span class="badge bg-blue-lt text-blue">{{ rfq.status }}</span>
+					</router-link>
+				</div>
 				</div>
 			</div>
 
@@ -979,160 +874,18 @@ watch(
 				"
 				@saved="loadAll" />
 
-			<!-- Modal for Creating RFQ -->
-			<div
-				v-if="rfqOpen"
-				class="modal fade show d-block"
-				tabindex="-1"
-				style="background: rgba(0, 0, 0, 0.45)"
-			>
-				<div class="modal-dialog modal-lg modal-dialog-centered">
-					<div class="modal-content">
-						<div class="modal-header py-2">
-							<h3 class="modal-title">{{ t("Create Request for Quotation (RFQ)") }}</h3>
-							<button
-								type="button"
-								class="btn-close"
-								:disabled="rfqSaving"
-								@click="rfqOpen = false"
-							></button>
-						</div>
-						<div class="modal-body">
-							<div class="mb-3">
-								<label class="form-label fw-semibold"
-									>{{ t("Select suppliers to ask") }} <span class="text-danger">*</span></label
-								>
-								<div class="d-flex flex-wrap gap-1 mb-2" v-if="rfqForm.suppliers.length">
-									<span
-										v-for="(sup, idx) in rfqForm.suppliers"
-										:key="sup"
-										class="badge bg-primary-lt text-primary"
-									>
-										{{ sup }}
-										<button
-											type="button"
-											class="btn-close ms-1"
-											style="font-size: 10px"
-											@click="rfqForm.suppliers.splice(idx, 1)"
-										></button>
-									</span>
-								</div>
-								<Typeahead
-									:search="searchSuppliers"
-									size="sm"
-									:placeholder="t('Search and add suppliers… ⌘K')"
-									@pick="
-										(o) => {
-											if (!rfqForm.suppliers.includes(o.name)) rfqForm.suppliers.push(o.name);
-										}
-									"
-								>
-									<template #option="{ item }">{{ item.label }}</template>
-								</Typeahead>
-							</div>
-
-							<div class="mb-3">
-								<label class="form-label fw-semibold">{{ t("Required response date") }}</label>
-								<DateInput v-model="rfqForm.schedule_date" size="sm" />
-							</div>
-
-							<div class="mb-3">
-								<div class="d-flex justify-content-between align-items-center mb-2">
-									<label class="form-label fw-semibold mb-0"
-										>{{ t("Requested items") }} <span class="text-danger">*</span></label
-									>
-									<button
-										type="button"
-										class="btn btn-outline-secondary btn-sm"
-										@click="addRfqItem"
-									>
-										<i class="ti ti-plus me-1"></i>{{ t("Add line") }}
-									</button>
-								</div>
-								<table class="table table-sm align-middle">
-									<thead>
-										<tr>
-											<th>{{ t("Item") }}</th>
-											<th style="width: 120px" class="text-end">{{ t("Qty") }}</th>
-											<th style="width: 40px"></th>
-										</tr>
-									</thead>
-									<tbody>
-										<tr v-for="(line, idx) in rfqForm.items" :key="idx">
-											<td>
-												<Typeahead
-													:model-value="line.item_code"
-													:display="line.itemLabel"
-													:search="searchItems"
-													size="sm"
-													:placeholder="t('Search item… ⌘K')"
-													@pick="
-														(o) => {
-															line.item_code = o.name;
-															line.itemLabel = o.label;
-														}
-													"
-													@clear="
-														line.item_code = '';
-														line.itemLabel = '';
-													"
-												>
-													<template #option="{ item }">{{ item.label }}</template>
-												</Typeahead>
-											</td>
-											<td>
-												<MoneyInput v-model="line.qty" hide-currency size="sm" :min="1" />
-											</td>
-											<td class="text-center">
-												<button
-													type="button"
-													class="btn btn-ghost-danger btn-icon btn-sm"
-													@click="removeRfqItem(idx)"
-												>
-													<i class="ti ti-trash"></i>
-												</button>
-											</td>
-										</tr>
-									</tbody>
-								</table>
-							</div>
-						</div>
-
-						<div class="modal-footer py-2">
-							<button
-								type="button"
-								class="btn btn-outline-secondary"
-								:disabled="rfqSaving"
-								@click="rfqOpen = false"
-							>
-								{{ t("Cancel") }}
-							</button>
-							<button
-								type="button"
-								class="btn btn-primary"
-								:disabled="
-									rfqSaving ||
-									!rfqForm.suppliers.length ||
-									!rfqForm.items.some((i) => i.item_code && i.qty > 0)
-								"
-								@click="createRfq"
-							>
-								<span v-if="rfqSaving" class="spinner-border spinner-border-sm me-1"></span
-								>{{ t("Create draft RFQ") }}
-							</button>
-						</div>
-					</div>
-				</div>
-				<LandedChargesEditor
-					:show="landedOpen"
-					:quotation-name="landedRow?.name || ''"
-					:supplier-name="landedRow?.supplier_name || ''"
-					:currency="landedRow?.currency || 'USD'"
-					:base-grand-total="landedRow?.base_grand_total || landedRow?.base_total || 0"
-					@close="landedOpen = false"
-					@saved="loadAll"
-				/></div
-		></template>
+			<!-- Landed charges editor — a sibling of the drawers, not nested in any
+			     conditional wrapper: it must open from any quotation row. -->
+			<LandedChargesEditor
+				:show="landedOpen"
+				:quotation-name="landedRow?.name || ''"
+				:supplier-name="landedRow?.supplier_name || ''"
+				:currency="landedRow?.currency || 'USD'"
+				:base-grand-total="landedRow?.base_grand_total || landedRow?.base_total || 0"
+				@close="landedOpen = false"
+				@saved="loadAll"
+			/>
+		</template>
 
 		<EmptyState
 			v-else

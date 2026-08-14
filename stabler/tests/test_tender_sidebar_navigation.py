@@ -102,6 +102,11 @@ class TestTheModuleBarCarriesEveryScreen(unittest.TestCase):
 		"/tender/sourcing",
 		"/tender/overview",
 		"/tender/documents",
+		# RFQ oluşturma akışı: her zaman bir lot bağlamıyla (`?deal=`) gelir —
+		# RFQ listesinin "New request" düğmesinden ve sourcing workspace'in
+		# "Request for quotation" bağlantısından. Çubukta liste (`/tender/rfq`)
+		# var; oluşturma bağlamsız bir varış noktası değil.
+		"/tender/rfq/new",
 	}
 
 	def test_every_tender_screen_is_reachable_from_the_bar(self):
@@ -119,7 +124,8 @@ class TestTheModuleBarCarriesEveryScreen(unittest.TestCase):
 	def test_every_drill_down_is_linked_from_a_real_screen(self):
 		"""Muafiyet bir kaçış kapısı olmamalı: çubuğa girmeyen ekran EN AZ bir
 		yerden linklenmeli, yoksa muafiyet listesi ölü kodun saklandığı yer
-		olur."""
+		olur. Sorgu taşıyan bağlantılar SPA'nın deyimi olan isim-tabanlı
+		router-link kullanır; yolun kendisi ya da rota adı eşleşir."""
 		pages = os.path.normpath(os.path.join(_HERE, "..", "public", "js"))
 		sources = []
 		for root, _dirs, files in os.walk(pages):
@@ -128,8 +134,12 @@ class TestTheModuleBarCarriesEveryScreen(unittest.TestCase):
 					sources.append(_read(os.path.join(root, name)))
 		blob = "\n".join(sources)
 		for path in sorted(self.DRILL_DOWNS):
+			route_name = path.lstrip("/").replace("/", "-")
 			with self.subTest(path=path):
-				self.assertIn(path, blob, f"{path} hiçbir ekrandan linklenmiyor — öksüz")
+				self.assertTrue(
+					path in blob or f'"{route_name}"' in blob,
+					f"{path} hiçbir ekrandan linklenmiyor — öksüz",
+				)
 
 	def test_every_tender_screen_actually_renders_the_bar(self):
 		"""Çubuğun VAR olması yetmiyor; ekranın onu ÇİZMESİ gerekiyor.
