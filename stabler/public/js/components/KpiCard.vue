@@ -54,8 +54,8 @@ function onBadgeClick(b, e) {
 	>
 		<div class="card-body p-3 d-flex flex-column justify-content-between">
 			<!-- Header: Micro-label and Top-Right Standalone Large Icon -->
-			<div class="d-flex align-items-start justify-content-between mb-2">
-				<div class="d-flex align-items-center gap-1 text-truncate me-2">
+			<div class="d-flex align-items-start justify-content-between mb-2 stbl-kpi-headrow">
+				<div class="d-flex align-items-center gap-1 stbl-kpi-head me-2">
 					<div class="stbl-kpi-label text-truncate" :title="label">
 						<slot name="label">{{ label }}</slot>
 					</div>
@@ -63,8 +63,11 @@ function onBadgeClick(b, e) {
 						{{ t("SELECTION") }}
 					</span>
 				</div>
+				<!-- In selection mode the SELECTION mark takes the corner: the icon is
+				     decorative, the mark is the only thing telling the user the hero
+				     value is narrowed. Trading it away keeps the header one line. -->
 				<i
-					v-if="icon"
+					v-if="icon && selected === 0"
 					class="ti stbl-kpi-icon flex-shrink-0"
 					:class="[
 						icon.startsWith('ti-') ? icon : `ti-${icon}`,

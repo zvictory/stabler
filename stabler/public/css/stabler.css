@@ -309,11 +309,32 @@ body {
 	background-color: var(--tblr-primary-lt, rgba(32, 107, 196, 0.04));
 }
 
+/* Entering selection mode swaps the corner icon for the SELECTION mark, which
+   is shorter than the icon. Without a floor the card would lose ~3px of height
+   the moment a row is ticked and the whole strip would twitch. */
+.stbl-kpi-headrow {
+	min-height: 2.125rem;
+}
+
+/* The label yields space, the SELECTION mark never does: a half-rendered
+   "SELECTK" reads as a bug, while a truncated title still reads as a title. */
+.stbl-kpi-head {
+	flex: 1 1 auto;
+	min-width: 0;
+}
+
+.stbl-kpi-head .stbl-kpi-label {
+	flex: 0 1 auto;
+	min-width: 0;
+}
+
 .stbl-kpi-selmark {
 	font-size: 0.6rem;
 	font-weight: 600;
-	letter-spacing: 0.04em;
-	padding: 0.1rem 0.35rem;
+	letter-spacing: 0;
+	padding: 0.1rem 0.25rem;
+	flex: 0 0 auto;
+	white-space: nowrap;
 }
 
 .stbl-kpi-global {

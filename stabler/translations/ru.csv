@@ -5856,3 +5856,5 @@ of {value} on all {count} rows,из {value} по всем {count} строкам
 Score cards above show this selection only,Карточки выше показывают только этот выбор
 Remove filter,Убрать фильтр
 trucks,фур
+Transit,В пути
+View container detail,Открыть карточку контейнера
