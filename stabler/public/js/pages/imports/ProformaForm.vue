@@ -896,9 +896,9 @@ const subCuts = computed(() => {
 						<MoneyInput v-model="form.cash_agreed" :currency="form.currency" :language="user.language" @focus="onCashInput" />
 					</div>
 					<div class="col-12">
-						<div v-if="!earmarkOk" class="alert alert-warning py-1.5 px-3 mb-0 small d-flex align-items-center justify-content-between flex-wrap gap-2">
+						<div v-if="!earmarkOk" class="alert alert-warning py-2 px-3 mb-0 small d-flex align-items-center justify-content-between flex-wrap gap-2">
 							<span><i class="ti ti-alert-triangle me-1"></i>{{ t("Bank Agreed + Cash Agreed must equal Agreed Total.") }}</span>
-							<button type="button" class="btn btn-warning btn-sm py-0.5 px-2 font-monospace ms-auto" @click="syncEarmark">
+							<button type="button" class="btn btn-warning btn-sm font-monospace ms-auto" @click="syncEarmark">
 								<i class="ti ti-refresh me-1"></i>{{ t("Sync Prepayment Totals") }}
 							</button>
 						</div>

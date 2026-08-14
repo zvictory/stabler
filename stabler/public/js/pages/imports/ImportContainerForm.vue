@@ -515,7 +515,7 @@ watch(docName, loadDoc);
 		<div v-if="costVisible" class="card mb-3">
 			<div class="card-body d-flex justify-content-between align-items-center">
 				<label class="form-label mb-0">{{ t("Goods value (total amount)") }}</label>
-				<div style="width: 200px"><MoneyInput v-model="form.total_amount" :currency="form.currency" :language="user.language" size="sm" /></div>
+				<div style="width: 200px"><MoneyInput v-model="form.total_amount" :currency="form.currency" :language="user.language" /></div>
 			</div>
 		</div>
 	</div>
