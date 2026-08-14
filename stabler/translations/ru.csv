@@ -5848,3 +5848,10 @@ Expected Payment Date,Ожидаемая дата оплаты
 Paid on PI,Оплачено по PI
 Allocated on PI,Распределено по PI
 "Paid on PI and Allocated on PI are totals for the whole Proforma Invoice, not this CI's share.","«Оплачено по PI» и «Распределено по PI» — итоги по всей проформе-инвойсу, а не доля этого CI."
+Cancel Landed Cost Voucher,Отменить ваучер стоимости доставки
+"Cancel voucher {lcv}? This reverses the stock valuation and the General Ledger entries it posted.","Отменить ваучер {lcv}? Это откатит оценку запасов и проводки главной книги, которые он создал."
+Cancel voucher,Отменить ваучер
+Cancel Voucher,Отменить ваучер
+"Landed Cost Voucher {lcv} cancelled.","Ваучер {lcv} отменён."
+Could not cancel the voucher.,Не удалось отменить ваучер.
+Only submitted Landed Cost Vouchers can be cancelled.,Отменить можно только проведённые ваучеры стоимости доставки.

@@ -25,6 +25,7 @@ from stabler.stabler.imports_module.hooks import _build_and_save_lcv, _collect_c
 
 RELEASE_HANDLER = "stabler.stabler.imports_module.hooks.release_cost_lines_for_lcv"
 CANCEL_HANDLER = "stabler.stabler.imports_module.hooks.allow_cancel_with_grn_link"
+CANCEL_ENDPOINT = "stabler.api.lcv.cancel_landed_cost_voucher"
 
 LINE_AMOUNT = 100.0
 LINE_RATE = 12500.0
@@ -352,3 +353,52 @@ class TestLCVIntegration(FrappeTestCase):
 		# - idempotent: calling a second time leaves exactly one "GRN Checklist"
 		frappe.get_attr(CANCEL_HANDLER)(doc, "before_cancel")
 		self.assertEqual(doc.ignore_linked_doctypes.count("GRN Checklist"), 1)
+
+	def test_a_draft_voucher_cannot_be_cancelled_and_its_money_stays_reserved(self):
+		lcv_name = _build_and_save_lcv(self.grn, note="initial")
+
+		with self.assertRaises(frappe.ValidationError):
+			frappe.get_attr(CANCEL_ENDPOINT)(lcv_name)
+
+		self.assertEqual(self._stamps(), [lcv_name])
+
+	def test_an_already_cancelled_voucher_cannot_be_cancelled_twice(self):
+		lcv_name = _build_and_save_lcv(self.grn, note="initial")
+		# Legitimate use of set_value here: setting up fixture state for a guard test
+		# without needing a full production cancel lifecycle
+		frappe.db.set_value("Landed Cost Voucher", lcv_name, "docstatus", 2)
+
+		with self.assertRaises(frappe.ValidationError):
+			frappe.get_attr(CANCEL_ENDPOINT)(lcv_name)
+
+	def test_an_unknown_voucher_name_is_rejected(self):
+		with self.assertRaises(frappe.ValidationError):
+			frappe.get_attr(CANCEL_ENDPOINT)("LCV-does-not-exist")
+
+	def test_a_user_without_cancel_permission_cannot_cancel_a_voucher(self):
+		lcv_name = _build_and_save_lcv(self.grn, note="initial")
+		frappe.set_user("Guest")
+		self.addCleanup(frappe.set_user, "Administrator")
+
+		with self.assertRaises(frappe.PermissionError):
+			frappe.get_attr(CANCEL_ENDPOINT)(lcv_name)
+
+	def test_cancelling_through_the_endpoint_reverses_the_voucher_and_releases_the_money(self):
+		lcv_name = _build_and_save_lcv(self.grn, note="initial")
+		self.assertEqual(self._stamps(), [lcv_name])
+
+		frappe.get_doc("Landed Cost Voucher", lcv_name).submit()
+
+		res = frappe.get_attr(CANCEL_ENDPOINT)(lcv_name)
+		self.assertEqual(res["docstatus"], 2)
+		self.assertEqual(res["name"], lcv_name)
+
+		lcv = frappe.get_doc("Landed Cost Voucher", lcv_name)
+		self.assertEqual(lcv.docstatus, 2)
+
+		self.assertEqual(self._stamps(), [""])
+		self.assertTrue(frappe.db.exists("GRN LCV Ref", {"lcv": lcv_name}))
+
+	def test_the_release_handler_is_wired_to_the_cancel_lifecycle(self):
+		registered = frappe.get_hooks("doc_events").get("Landed Cost Voucher", {}).get("on_cancel", [])
+		self.assertIn(RELEASE_HANDLER, registered)

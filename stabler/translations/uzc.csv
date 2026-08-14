@@ -5843,3 +5843,10 @@ Expected Payment Date,Кутилаётган тўлов санаси
 Paid on PI,PI бўйича тўланган
 Allocated on PI,PI бўйича тақсимланган
 "Paid on PI and Allocated on PI are totals for the whole Proforma Invoice, not this CI's share.","«PI бўйича тўланган» ва «PI бўйича тақсимланган» — бутун Proforma Invoice бўйича жами суммалар, бу CI нинг улуши эмас."
+Cancel Landed Cost Voucher,Етказиб бериш қиймати ваучерини бекор қилиш
+"Cancel voucher {lcv}? This reverses the stock valuation and the General Ledger entries it posted.","{lcv} ваучери бекор қилинсинми? Бу у яратган захира баҳолаши ва бош дафтар ёзувларини қайтаради."
+Cancel voucher,Ваучерни бекор қилиш
+Cancel Voucher,Ваучерни бекор қилиш
+"Landed Cost Voucher {lcv} cancelled.","{lcv} ваучери бекор қилинди."
+Could not cancel the voucher.,Ваучерни бекор қилиб бўлмади.
+Only submitted Landed Cost Vouchers can be cancelled.,Фақат тасдиқланган етказиб бериш қиймати ваучерларини бекор қилиш мумкин.

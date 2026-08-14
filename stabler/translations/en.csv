@@ -5841,3 +5841,10 @@ Expected Payment Date,Expected Payment Date
 Paid on PI,Paid on PI
 Allocated on PI,Allocated on PI
 "Paid on PI and Allocated on PI are totals for the whole Proforma Invoice, not this CI's share.","Paid on PI and Allocated on PI are totals for the whole Proforma Invoice, not this CI's share."
+Cancel Landed Cost Voucher,Cancel Landed Cost Voucher
+"Cancel voucher {lcv}? This reverses the stock valuation and the General Ledger entries it posted.","Cancel voucher {lcv}? This reverses the stock valuation and the General Ledger entries it posted."
+Cancel voucher,Cancel voucher
+Cancel Voucher,Cancel Voucher
+"Landed Cost Voucher {lcv} cancelled.","Landed Cost Voucher {lcv} cancelled."
+Could not cancel the voucher.,Could not cancel the voucher.
+Only submitted Landed Cost Vouchers can be cancelled.,Only submitted Landed Cost Vouchers can be cancelled.

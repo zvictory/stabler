@@ -319,3 +319,26 @@ def submit_landed_cost_voucher(name: str):
 
 	lcv.submit()
 	return {"status": "ok", "name": lcv.name, "docstatus": lcv.docstatus}
+
+
+@frappe.whitelist()
+def cancel_landed_cost_voucher(name: str):
+	"""Cancel a submitted Landed Cost Voucher directly from Stabler SPA.
+
+	Cancelling reverses ERPNext's own valuation and GL postings (its
+	``LandedCostVoucher.on_cancel``) and, through the ``on_cancel`` hook
+	``release_cost_lines_for_lcv``, clears ``lcv_ref`` on every Container Cost
+	Line the voucher consumed — so the money becomes vouchereable again.
+	"""
+	_assert_can_write("Landed Cost Voucher", name, "cancel")
+	_assert_cost_visible()
+
+	if not name or not frappe.db.exists("Landed Cost Voucher", name):
+		frappe.throw(_("Unknown Landed Cost Voucher: {0}").format(name))
+
+	lcv = frappe.get_doc("Landed Cost Voucher", name)
+	if lcv.docstatus != 1:
+		frappe.throw(_("Only submitted Landed Cost Vouchers can be cancelled."))
+
+	lcv.cancel()
+	return {"status": "ok", "name": lcv.name, "docstatus": lcv.docstatus}

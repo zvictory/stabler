@@ -80,9 +80,8 @@ export const importsApi = {
 	// Landed Cost Review
 	getLandedCostReview: (grn_checklist, rate) =>
 		call(`${P}.get_landed_cost_review`, { grn_checklist, rate }),
-	submitLandedCostVoucher: (name) =>
-		call("stabler.stabler.api.lcv.submit_landed_cost_voucher", { name }),
-
+	submitLandedCostVoucher: (name) => call("stabler.api.lcv.submit_landed_cost_voucher", { name }),
+	cancelLandedCostVoucher: (name) => call("stabler.api.lcv.cancel_landed_cost_voucher", { name }),
 
 	// Container cost ledger + landed-cost bills (WP7 vendor traceability)
 	containerCostLedger: (container) => call(`${P}.container_cost_ledger`, { container }),

@@ -102,6 +102,29 @@ async function submitLcv(lcvName) {
 	}
 }
 
+const cancellingLcv = ref(false);
+async function cancelLcv(lcvName) {
+	const ok = await confirm({
+		title: t("Cancel Landed Cost Voucher"),
+		body: t(
+			"Cancel voucher {lcv}? This reverses the stock valuation and the General Ledger entries it posted.",
+			{ lcv: lcvName },
+		),
+		confirmLabel: t("Cancel voucher"),
+	});
+	if (!ok) return;
+	cancellingLcv.value = true;
+	try {
+		await importsApi.cancelLandedCostVoucher(lcvName);
+		toast.success(t("Landed Cost Voucher {lcv} cancelled.", { lcv: lcvName }));
+		await load();
+	} catch (err) {
+		toast.error(err?.message || t("Could not cancel the voucher."));
+	} finally {
+		cancellingLcv.value = false;
+	}
+}
+
 const unitCostAnalysis = computed(() => {
 	if (!data.value) return null;
 	const totalKg = Number(data.value.grn?.received_total_kg || 0);
@@ -255,6 +278,16 @@ watch(grnName, () => load());
 													:title="t('Submit Voucher to GL')"
 												>
 													<i class="ti ti-check me-1"></i>{{ t("Submit") }}
+												</button>
+												<button
+													v-if="lc.docstatus === 1"
+													type="button"
+													class="btn btn-xs btn-outline-danger"
+													:disabled="cancellingLcv"
+													@click="cancelLcv(lc.lcv)"
+													:title="t('Cancel Voucher')"
+												>
+													<i class="ti ti-x me-1"></i>{{ t("Cancel") }}
 												</button>
 											</td>
 										</tr>

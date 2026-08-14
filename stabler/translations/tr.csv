@@ -5838,3 +5838,10 @@ Expected Payment Date,Beklenen ödeme tarihi
 Paid on PI,PI'da ödenen
 Allocated on PI,PI'da tahsis edilen
 "Paid on PI and Allocated on PI are totals for the whole Proforma Invoice, not this CI's share.","""PI'da ödenen"" ve ""PI'da tahsis edilen"" tüm Proforma Fatura toplamlarıdır, bu CI'nın payı değil."
+Cancel Landed Cost Voucher,Varış maliyeti fişini iptal et
+"Cancel voucher {lcv}? This reverses the stock valuation and the General Ledger entries it posted.","{lcv} fişi iptal edilsin mi? Bu, oluşturduğu stok değerlemesini ve muhasebe kayıtlarını geri alır."
+Cancel voucher,Fişi iptal et
+Cancel Voucher,Fişi İptal Et
+"Landed Cost Voucher {lcv} cancelled.","{lcv} fişi iptal edildi."
+Could not cancel the voucher.,Fiş iptal edilemedi.
+Only submitted Landed Cost Vouchers can be cancelled.,Yalnızca onaylanmış Varış Maliyeti Fişleri iptal edilebilir.
