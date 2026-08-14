@@ -1,7 +1,7 @@
 <script setup>
 import { computed, onMounted, ref, watch } from "vue";
 import { storeToRefs } from "pinia";
-import { useRoute, useRouter } from "vue-router";
+import { useRoute } from "vue-router";
 import { call } from "../../api/client.js";
 import { formatDate } from "../../composables/date.js";
 import { formatMoney } from "../../composables/money.js";
@@ -15,7 +15,6 @@ import TenderMasterDrawer from "../../components/TenderMasterDrawer.vue";
 import TenderPage from "./TenderPage.vue";
 
 const route = useRoute();
-const router = useRouter();
 const { sourcingLocation, documentsLocation, poControlLocation } = useTenderContext(route);
 
 const session = useSession();
