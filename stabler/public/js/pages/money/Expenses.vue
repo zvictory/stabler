@@ -171,6 +171,7 @@ function blankForm() {
 		commercial_invoice: "",
 		import_truck: "",
 		import_container: "",
+		import_category: "",
 		lines: [],
 	};
 }
@@ -467,14 +468,47 @@ async function searchCommercialInvoices(q) {
 	}));
 }
 
+// Categories mirror Import Expense.category exactly — the spawned expense copies
+// the value straight through, so a divergence here would fail its Select validation.
+const IMPORT_CATEGORIES = [
+	"Border Crossing",
+	"Transport",
+	"Handling",
+	"Storage",
+	"Insurance",
+	"Documentation",
+	"Customs",
+	"Other",
+];
+
+// Only an "Expenses Included In Valuation" account can be capitalized onto the
+// containers later (ERPNext's Landed Cost Voucher rejects anything else). The
+// list already carries account_type, so no extra round-trip is needed.
+const valuationAccount = computed(
+	() => expAccounts.value.find((a) => a.account_type === "Expenses Included In Valuation")?.name || "",
+);
+
 function pickCI(item) {
 	form.value.commercial_invoice = item.name;
 	ciLabel.value = item.label;
+	// The category Select only appears once a CI is picked, so seed it with the
+	// same fallback the backend uses rather than showing an empty control.
+	if (!form.value.import_category) form.value.import_category = "Other";
+	// Steer the operator to the valuation account up front, so the landed-cost
+	// account-type check is a safety valve rather than a dead end at submit time.
+	// Only empty rows are touched — a deliberate account choice is never overwritten.
+	if (valuationAccount.value) {
+		for (const line of form.value.lines) {
+			if (!line.account) line.account = valuationAccount.value;
+		}
+		if (!ghost.value.account) ghost.value.account = valuationAccount.value;
+	}
 }
 
 function clearCI() {
 	form.value.commercial_invoice = "";
 	ciLabel.value = "";
+	form.value.import_category = "";
 }
 
 async function loadCILabel(ciName) {
@@ -550,6 +584,9 @@ async function openEditFromDetail() {
 		commercial_invoice: listRow?.commercial_invoice || "",
 		import_truck: listRow?.import_truck || "",
 		import_container: listRow?.import_container || "",
+		// Entries booked before v82 carry no category; show the same fallback the
+		// backend applies rather than an empty Select.
+		import_category: listRow?.import_category || "Other",
 		lines: debits.map((row) => ({
 			id: ++lineSeq,
 			account: row.account,
@@ -594,6 +631,9 @@ async function submitCreate(afterAction) {
 		form.value.posting_date = keepDate;
 		ghost.value = newGhost();
 		dealLabel.value = "";
+		// blankForm() drops form.commercial_invoice, so the label has to go with it
+		// — otherwise the next entry displays a CI it is not actually tagged with.
+		ciLabel.value = "";
 		await fetchExchangeRate();
 		return;
 	}
@@ -625,6 +665,9 @@ async function submitCreate(afterAction) {
 		payload.commercial_invoice = form.value.commercial_invoice;
 		if (form.value.import_truck) payload.import_truck = form.value.import_truck;
 		if (form.value.import_container) payload.import_container = form.value.import_container;
+		// Drives the cost component of the Import Expense the JE on_submit hook
+		// mirrors; the backend falls back to "Other" when it is left blank.
+		if (form.value.import_category) payload.import_category = form.value.import_category;
 	}
 	if (isCrossCurrency.value) {
 
@@ -1102,6 +1145,16 @@ watch(activeCompany, () => {
 									<div class="small text-secondary">{{ item.label }}</div>
 								</template>
 							</Typeahead>
+						</div>
+						<!-- Only meaningful once a CI is chosen: it labels the Import Expense
+						     this entry becomes, and nothing is created without a CI. -->
+						<div v-if="importsOn && form.commercial_invoice" class="col-md-4">
+							<label class="form-label small">{{ t("Import expense category") }}</label>
+							<select v-model="form.import_category" class="form-select">
+								<option v-for="c in IMPORT_CATEGORIES" :key="c" :value="c">
+									{{ t(c) }}
+								</option>
+							</select>
 						</div>
 					</div>
 						</div><!-- /Panel A body -->

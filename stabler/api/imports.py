@@ -2726,6 +2726,10 @@ def _post_expense_kasa_entry(doc) -> dict:
 			commercial_invoice=doc.get("commercial_invoice"),
 			import_container=doc.get("container"),
 			import_truck=doc.get("truck"),
+			import_category=doc.get("category"),
+			# Back-link: this voucher belongs to an Import Expense that already
+			# exists, so the JE on_submit hook must not mirror a second one.
+			import_expense=doc.name,
 		)
 		or {}
 	)
@@ -8578,16 +8582,85 @@ def _capitalize_linked_bill(
 		return [], []
 
 	currency = bill.get("currency") or frappe.get_cached_value("Company", company, "default_currency")
-	# Both splits conserve their own total (the last container absorbs the
-	# remainder), so the transaction figure and the company figure each still sum
-	# back to the bill even when they round apart on an individual container.
-	parts = rules.allocate_by_weight(amount, containers)
-	base_parts = rules.allocate_by_weight(flt(bill.get("base_net_total")), containers)
 
+	row_names, skipped = _capitalize_import_cost(
+		refs=refs,
+		component=component,
+		amount=amount,
+		base_amount=flt(bill.get("base_net_total")),
+		currency=currency,
+		description=_("Bill {0}").format(bill.get("bill_no") or purchase_invoice),
+		source_field="purchase_invoice",
+		source_name=purchase_invoice,
+	)
+	warnings = [
+		_(
+			"A hand-entered {0} cost on container {1} is already capitalized by {2}. "
+			"The bill was linked, but its cost was not added a second time."
+		).format(_(skip["cost_component"]), skip["container"], skip["vouchered_by"])
+		for skip in skipped
+	]
+	return row_names, warnings
+
+
+def _capitalize_import_cost(
+	refs: dict,
+	component: str,
+	amount: float,
+	base_amount: float,
+	currency: str,
+	description: str,
+	source_field: str,
+	source_name: str,
+) -> tuple[list[str], list[dict]]:
+	"""Spread one document's cost over the containers behind ``refs``.
+
+	Shared by every path that turns a real document into landed cost — a linked
+	carrier's bill today, an Import Expense paid in cash or from the bank next to
+	it. ``source_field`` says which Link column on the cost line names that
+	document, and it MUST be one of ``lcv_math.SOURCE_FIELDS``: a line whose source
+	field is unknown to that tuple reads as an operator's hand-typed estimate, so a
+	later bill would supersede it and the real spend would silently vanish.
+
+	Returns ``(row_names, skipped)``. ``skipped`` carries one dict per container
+	where the cost was deliberately NOT written, so each caller words its own
+	message — the wording is the only thing the two paths do not share.
+
+	Silent no-op whenever there is nothing to capitalize: no component, no
+	container behind the refs, or nothing to charge. The attribution itself is
+	still worth having in those cases — it is what makes the document visible in
+	the cost overview — so a missing cost line must not undo it.
+	"""
 	from stabler.stabler.imports_module import lcv_math
 
+	if source_field not in lcv_math.SOURCE_FIELDS:
+		frappe.throw(_("Unknown cost source field {0}.").format(source_field))
+	if not component:
+		return [], []
+
+	containers = _containers_behind_refs(refs)
+	if not containers:
+		return [], []
+
+	if flt(amount) <= 0:
+		return [], []
+
+	# Both splits conserve their own total (the last container absorbs the
+	# remainder), so the transaction figure and the company figure each still sum
+	# back to the document even when they round apart on an individual container.
+	parts = rules.allocate_by_weight(flt(amount), containers)
+	base_parts = rules.allocate_by_weight(flt(base_amount), containers)
+
+	# Read through ``has_column`` because a deploy copies the code before
+	# ``bench migrate`` adds the column: between those two steps an unconditional
+	# field list would make every link attempt fail. The unlink cleanup below
+	# guards the same way.
+	source_columns = [
+		field for field in lcv_math.SOURCE_FIELDS if frappe.db.has_column("Container Cost Line", field)
+	]
+
 	row_names = []
-	warnings: list[str] = []
+	skipped: list[dict] = []
 	for part, base_part in zip(parts, base_parts, strict=True):
 		# Inserted as a child document rather than through ``doc.save()`` on the
 		# container, for the same reason the ref write uses db.set_value: a full
@@ -8600,28 +8673,29 @@ def _capitalize_linked_bill(
 				"idx",
 				"parent as container",
 				"cost_component",
-				"purchase_invoice",
 				"lcv_ref",
 				"include_in_landed_cost",
+				*source_columns,
 			],
 		)
 		used = [row["idx"] for row in existing]
 
 		# The operator's own estimate for this component is already inside a
 		# Landed Cost Voucher, so ``supersede_billed`` can no longer drop it —
-		# it is not a candidate any more. Writing the bill's line here would put
-		# the same money into stock valuation a second time (stabler-wen). The
-		# link itself still goes through: attribution is what makes the bill
+		# it is not a candidate any more. Writing this document's line here would
+		# put the same money into stock valuation a second time (stabler-wen). The
+		# attribution itself still goes through: it is what makes the document
 		# visible in the cost overview, and it is worth having even when the
 		# valuation is already carried. Reversing the posted voucher is the
 		# accountant's call, not this endpoint's.
 		already = lcv_math.vouchered_hand_line(existing, part["container"], component)
 		if already:
-			warnings.append(
-				_(
-					"A hand-entered {0} cost on container {1} is already capitalized by {2}. "
-					"The bill was linked, but its cost was not added a second time."
-				).format(_(component), part["container"], already)
+			skipped.append(
+				{
+					"container": part["container"],
+					"cost_component": component,
+					"vouchered_by": already,
+				}
 			)
 			continue
 
@@ -8633,17 +8707,17 @@ def _capitalize_linked_bill(
 				"parent": part["container"],
 				"idx": max(used or [0]) + 1,
 				"cost_component": component,
-				"description": _("Bill {0}").format(bill.get("bill_no") or purchase_invoice),
+				"description": description,
 				"currency": currency,
 				"amount": part["amount"],
 				"amount_uzs": base_part["amount"],
 				"include_in_landed_cost": 1,
-				"purchase_invoice": purchase_invoice,
+				source_field: source_name,
 			}
 		)
 		row.insert(ignore_permissions=True)
 		row_names.append(row.name)
-	return row_names, warnings
+	return row_names, skipped
 
 
 @frappe.whitelist()
@@ -8921,6 +8995,335 @@ def clear_bill_import_refs(purchase_invoice: str) -> dict:
 		"name": purchase_invoice,
 		"refs": _bill_import_refs(purchase_invoice),
 		"linked": False,
+	}
+
+
+#: The ERPNext ``Account.account_type`` that means "money spent on this account is
+#: already destined for stock value". Read verbatim off the Account doctype's own
+#: Select options rather than written from memory, because the list contains a
+#: near-miss sibling — "Expenses Included In Asset Valuation" — which is the
+#: FIXED-ASSET variant and capitalizes into an asset, not into stock. The two are
+#: not interchangeable and a typo between them is a silent wrong valuation.
+_VALUATION_ACCOUNT_TYPE = "Expenses Included In Valuation"
+
+
+def _assert_valuation_account(import_expense: str, expense_account: str | None) -> None:
+	"""The expense's debit account must be one stock valuation already expects.
+
+	This is the expense path's replacement for the bill path's supplier-group gate
+	(gate 5), and it guards a bigger hole than that one does. An Import Expense
+	paid from a cash desk posts a Journal Entry that debits ``expense_account``.
+	If that account is an ordinary P&L expense, the cost has ALREADY hit the
+	income statement; capitalizing it a second time through a Landed Cost Voucher
+	debits stock for the same money, and the business pays for one truckload of
+	transport twice — once as expense, once inside the cost of the goods.
+
+	"Expenses Included In Valuation" is ERPNext's own name for the account that
+	exists precisely to be relieved by the LCV, so it is the one account type
+	where both legs are the same money rather than two.
+
+	The message names the account, because the operator's next move is to change
+	it and they cannot do that from "the account is wrong".
+
+	An empty account is refused separately and deliberately: it means the expense
+	is billed through a supplier Purchase Invoice instead of paid in cash (see the
+	field's own description), and THAT invoice — not this document — is what the
+	landed cost has to be built from, via ``set_bill_import_refs``. Capitalizing
+	here as well would be the same double count from the other direction.
+	"""
+	if not expense_account:
+		frappe.throw(
+			_(
+				"{0} has no Expense Account, so it is billed through a supplier invoice. "
+				"Add that Purchase Invoice to the import instead — capitalizing both would "
+				"count the cost twice."
+			).format(import_expense)
+		)
+
+	account_type = frappe.db.get_value("Account", expense_account, "account_type")
+	if account_type != _VALUATION_ACCOUNT_TYPE:
+		frappe.throw(
+			_(
+				"{0} is not an '{1}' account. Its cost is already in the income statement, "
+				"so adding it to the landed cost would charge the goods for it a second "
+				"time. Post the expense to a valuation account first."
+			).format(expense_account, _VALUATION_ACCOUNT_TYPE)
+		)
+
+
+def _expense_import_refs(expense: dict) -> dict:
+	"""The expense's own targets, shaped like a bill's ``custom_*`` ref dict.
+
+	Everything downstream of the link — ``_ci_behind``, ``_ci_supplier_behind``,
+	``_containers_behind_refs``, ``_capitalize_import_cost`` — reads that shape.
+	Reusing it is what makes the expense route land on exactly the same containers,
+	with exactly the same weight split, as a bill pointed at the same invoice.
+	"""
+	return {
+		"custom_commercial_invoice": expense.get("commercial_invoice"),
+		"custom_import_container": expense.get("container"),
+		"custom_import_truck": expense.get("truck"),
+	}
+
+
+def _resolve_expense_cost_component(expense: dict, requested: str | None) -> str:
+	"""Operator's choice first, then the stored field, then the category prefill.
+
+	Validated against ``Container Cost Line``'s own Select options instead of a
+	copy of that list: the component decides what supersedes what, and a value the
+	child table does not know would be written straight through
+	``insert(ignore_permissions=True)`` and then never match anything.
+	"""
+	component = (requested or "").strip() or (expense.get("cost_component") or "").strip()
+	if not component:
+		component = rules.expense_cost_component(expense.get("category"))
+
+	field = frappe.get_meta("Container Cost Line").get_field("cost_component")
+	allowed = [opt.strip() for opt in (field.options or "").split("\n") if opt.strip()]
+	if component not in allowed:
+		frappe.throw(_("Unknown cost component: {0}").format(component))
+	return component
+
+
+@frappe.whitelist()
+def set_expense_landed_cost(import_expense: str, cost_component: str | None = None) -> dict:
+	"""Capitalize a cash-paid Import Expense onto the containers of its invoice.
+
+	The second source of a landed cost, alongside a linked bill. The gates mirror
+	``set_bill_import_refs`` one for one, with two deliberate differences:
+
+	* there is no docstatus gate, because Import Expense is not a submittable
+	  doctype at all. That is a fact about the doctype, not a relaxation: writing
+	  a ``docstatus`` check here would be dead code that reads like protection.
+	* gate 5 is not a supplier group but ``_assert_valuation_account``. A bill's
+	  risk is *which* import it belongs to; a cash expense's risk is that its
+	  money has already been expensed once (see that helper).
+
+	Unlike the bill path, a no-op is never silent here. Linking a bill has value
+	on its own — it is what makes the bill visible in the cost overview — so a
+	bill that cannot be costed is still worth linking. This endpoint does nothing
+	*but* capitalize, so anything that prevents the write is reported, not
+	swallowed, and the ``include_in_landed_cost`` flag is set only when rows
+	really exist to back it.
+	"""
+	if not import_expense or not frappe.db.exists("Import Expense", import_expense):
+		frappe.throw(_("Unknown Import Expense: {0}").format(import_expense))
+
+	# Gate 1 — module access for the expense's company, before anything else.
+	company = _company_of("Import Expense", import_expense)
+	_assert_imports_access(company)
+
+	# Gate 2 — record-level write; @frappe.whitelist() gates the method, not the row.
+	_assert_can_write("Import Expense", import_expense)
+
+	# Gate 3 — authoring a landed-cost figure needs the same visibility the cost
+	# fields are masked by.
+	_assert_cost_visible()
+
+	# Gate 4 — the column this whole feature writes its provenance into. Deploy
+	# copies code with rsync and runs `bench migrate` afterwards, so there is a
+	# window where this endpoint exists and `Container Cost Line.import_expense`
+	# does not. Frappe would silently DROP the unknown field from the insert and
+	# leave a cost line with no source — which reads as hand-typed, which means a
+	# later bill for the same component supersedes it and takes real spend back
+	# out of the valuation. Refusing for a few minutes is the cheap failure.
+	if not frappe.db.has_column("Container Cost Line", "import_expense"):
+		frappe.throw(_("Landed cost from expenses is not available yet on this site (migration pending)."))
+
+	expense = frappe.db.get_value(
+		"Import Expense",
+		import_expense,
+		[
+			"commercial_invoice",
+			"container",
+			"truck",
+			"category",
+			"cost_component",
+			"supplier",
+			"currency",
+			"amount",
+			"expense_date",
+			"expense_account",
+			"invoice_reference",
+			"include_in_landed_cost",
+		],
+		as_dict=True,
+	)
+
+	# Gate 5 — already capitalized. The flag and the rows are checked separately
+	# because either one alone can be the truth: the flag survives a hand-deleted
+	# row, and rows survive a hand-cleared flag. Re-running would duplicate cost.
+	if cint(expense.include_in_landed_cost):
+		frappe.throw(_("{0} is already included in the landed cost.").format(import_expense))
+	if frappe.db.count("Container Cost Line", {"import_expense": import_expense}):
+		frappe.throw(
+			_("{0} already has landed-cost lines. Remove them before adding it again.").format(import_expense)
+		)
+
+	# Gate 6 — the account gate that replaces the bill path's supplier group.
+	_assert_valuation_account(import_expense, expense.expense_account)
+
+	refs = _expense_import_refs(expense)
+
+	# Gate 7 — never the goods supplier's own money (CIF, same reason as a bill).
+	if expense.supplier:
+		_assert_not_ci_supplier(expense.supplier, _ci_supplier_behind(refs))
+
+	# Gate 8 — every target exists, lives in the SAME company, and is readable.
+	# The expense's links are plain Links with no company filter of their own, so
+	# without this a name from another tenant's company would be charged here.
+	for col, doctype in _HAND_LINKABLE_REFS:
+		value = refs.get(col)
+		if not value:
+			continue
+		if not frappe.db.exists(doctype, value):
+			frappe.throw(_("Unknown {0}: {1}").format(_(doctype), value))
+		if _company_of(doctype, value) != company:
+			frappe.throw(_("{0} {1} belongs to another company.").format(_(doctype), value))
+		_assert_can_read(doctype, value)
+
+	company_currency = frappe.get_cached_value("Company", company, "default_currency")
+	currency = expense.currency or company_currency
+
+	# Gate 9 — a currency the cost book can actually value (see the helper).
+	_assert_capitalizable_currency(import_expense, currency, company_currency)
+
+	amount = flt(expense.amount)
+	if amount <= 0:
+		frappe.throw(_("{0} has no amount to add to the landed cost.").format(import_expense))
+
+	if not _containers_behind_refs(refs):
+		frappe.throw(
+			_("{0} has no containers yet, so there is nothing to charge the cost to.").format(
+				expense.commercial_invoice or import_expense
+			)
+		)
+
+	component = _resolve_expense_cost_component(expense, cost_component)
+
+	# The company-currency figure. A Purchase Invoice stores its own
+	# `base_net_total`; an Import Expense stores nothing of the kind, so it is
+	# converted here at the expense date. Be clear about what this number is and
+	# is not: it feeds `Container Cost Line.amount_uzs`, which is DISPLAY ONLY —
+	# `lcv_math.line_company_amount` re-converts from the GRN-date rate when the
+	# voucher is built. So the 1.0 fallback inside `_latest_exchange_rate` can
+	# make this column approximate on a site with no stored rate; it cannot make
+	# the valuation wrong.
+	if currency == company_currency:
+		base_amount = amount
+	else:
+		rate, _as_of = _latest_exchange_rate(currency, company_currency, expense.expense_date)
+		base_amount = flt(amount) * flt(rate)
+
+	row_names, skipped = _capitalize_import_cost(
+		refs=refs,
+		component=component,
+		amount=amount,
+		base_amount=base_amount,
+		currency=currency,
+		description=_("Expense {0}").format(expense.invoice_reference or import_expense),
+		source_field="import_expense",
+		source_name=import_expense,
+	)
+
+	warnings = [
+		_(
+			"A hand-entered {0} cost on container {1} is already capitalized by {2}. "
+			"The expense was not added a second time there."
+		).format(_(skip["cost_component"]), skip["container"], skip["vouchered_by"])
+		for skip in skipped
+	]
+
+	if not row_names:
+		# Every container refused the line. Nothing was written, so the flag would
+		# be a receipt for rows that do not exist — and the operator would be told
+		# the cost is in the valuation when it is not.
+		frappe.throw(
+			" ".join(warnings) or _("{0} could not be added to the landed cost.").format(import_expense)
+		)
+
+	# update_modified=False for the reason the bill path documents: this stamp is
+	# not part of what the expense form submits, but `modified` is, and bumping it
+	# under an open form turns the user's next Save into a concurrency failure.
+	frappe.db.set_value(
+		"Import Expense",
+		import_expense,
+		{"include_in_landed_cost": 1, "cost_component": component},
+		update_modified=False,
+	)
+
+	return {
+		"name": import_expense,
+		"include_in_landed_cost": True,
+		"cost_component": component,
+		"cost_lines": row_names,
+		"warnings": warnings,
+	}
+
+
+@frappe.whitelist()
+def clear_expense_landed_cost(import_expense: str) -> dict:
+	"""Undo ``set_expense_landed_cost`` — the escape hatch for a wrong capitalization.
+
+	Mirrors ``clear_bill_import_refs``: no docstatus gate (there is none to have),
+	and the one rule that actually protects money is the voucher check. Once a
+	Landed Cost Voucher has consumed these lines the cost is inside stock
+	valuation, and taking it back out is the accountant's reversal to make, not
+	this endpoint's.
+
+	``cost_component`` is deliberately left on the expense. It is the operator's
+	classification of what this money is, not a by-product of the link, and it is
+	still right if they capitalize the expense again.
+	"""
+	if not import_expense or not frappe.db.exists("Import Expense", import_expense):
+		frappe.throw(_("Unknown Import Expense: {0}").format(import_expense))
+
+	company = _company_of("Import Expense", import_expense)
+	_assert_imports_access(company)
+	_assert_can_write("Import Expense", import_expense)
+	_assert_cost_visible()
+
+	if not frappe.db.has_column("Container Cost Line", "import_expense"):
+		frappe.throw(_("Landed cost from expenses is not available yet on this site (migration pending)."))
+
+	flagged = cint(frappe.db.get_value("Import Expense", import_expense, "include_in_landed_cost"))
+	rows = frappe.db.count("Container Cost Line", {"import_expense": import_expense})
+	if not flagged and not rows:
+		frappe.throw(_("{0} is not included in the landed cost.").format(import_expense))
+
+	vouchered = frappe.db.sql(
+		"""
+        SELECT cl.lcv_ref
+        FROM `tabContainer Cost Line` cl
+        WHERE cl.import_expense = %(expense)s
+          AND cl.lcv_ref IS NOT NULL AND cl.lcv_ref != ''
+        LIMIT 1
+        """,
+		{"expense": import_expense},
+		as_dict=True,
+	)
+	if vouchered:
+		frappe.throw(
+			_("This expense is already vouchered ({0}) and can no longer be removed.").format(
+				vouchered[0]["lcv_ref"]
+			)
+		)
+
+	# Nothing here reached a voucher, so no posted valuation is being altered. Any
+	# hand-typed line this expense superseded comes back on its own: the supersede
+	# is computed when the voucher is built and never stored.
+	frappe.db.delete("Container Cost Line", {"import_expense": import_expense})
+	frappe.db.set_value(
+		"Import Expense",
+		import_expense,
+		{"include_in_landed_cost": 0},
+		update_modified=False,
+	)
+
+	return {
+		"name": import_expense,
+		"include_in_landed_cost": False,
+		"cost_lines_removed": rows,
 	}
 
 

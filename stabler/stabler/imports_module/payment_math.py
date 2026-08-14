@@ -91,6 +91,46 @@ def wants_expense_pi(category, supplier, amount, purchase_invoice) -> bool:
 	return True
 
 
+def wants_je_import_expense(*, commercial_invoice, owning_import_expense, amount) -> bool:
+	"""True when a submitted expense Journal Entry should spawn an Import Expense.
+
+	The /money/expenses screen books a cash/bank expense straight to GL. When the
+	operator tagged it with a Commercial Invoice, that spend is an import cost and
+	has to become an Import Expense so it can be capitalized onto the containers.
+
+	``owning_import_expense`` is the JE's ``custom_import_expense`` back-link: when
+	it is set the voucher was posted *by* an Import Expense (the cash-desk path in
+	``imports._post_expense_kasa_entry``) and already has its parent — spawning here
+	would duplicate it. Without a Commercial Invoice nothing is import-related and
+	behaviour stays exactly as it was before this feature.
+	"""
+	if not (commercial_invoice or "").strip():
+		return False
+	if (owning_import_expense or "").strip():
+		return False
+	return round(float(amount or 0), 2) > 0
+
+
+def je_cancel_expense_action(*, owning_import_expense, include_in_landed_cost) -> str:
+	"""What to do with an Import Expense when its Journal Entry is cancelled.
+
+	* ``"keep"`` — the JE belongs to an imports-side Import Expense (it carries the
+	  ``custom_import_expense`` back-link). The expense is the parent, not a child
+	  of the voucher, so cancelling the voucher must never delete it.
+	* ``"block"`` — the spawned expense is already capitalized. Its cost sits in a
+	  container's valuation through Container Cost Line rows; deleting it here would
+	  leave those rows behind and silently double-count. The caller must throw and
+	  make the operator un-capitalize first.
+	* ``"delete"`` — a plain spawned expense that nothing depends on: remove it so
+	  cancel/amend does not leave a duplicate behind.
+	"""
+	if (owning_import_expense or "").strip():
+		return "keep"
+	if int(include_in_landed_cost or 0):
+		return "block"
+	return "delete"
+
+
 def resolve_transport_source(
 	*, tier1_expense, tier2_expense, truck_transport_cost, truck_supplier, truck_currency
 ):

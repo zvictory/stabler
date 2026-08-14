@@ -5849,3 +5849,12 @@ Paid on PI,Оплачено по PI
 Allocated on PI,Распределено по PI
 "Paid on PI and Allocated on PI are totals for the whole Proforma Invoice, not this CI's share.","«Оплачено по PI» и «Распределено по PI» — итоги по всей проформе-инвойсу, а не доля этого CI."
 Linking bills to an import is not configured for this company. Set the transport/service supplier groups in Stabler Settings.,Привязка счетов к импорту не настроена для этой компании. Укажите группы поставщиков транспорта/услуг в настройках Stabler.
+Import expense category,Категория импортных расходов
+SELECTION,ВЫБРАНО
+{count} selected,Выбрано: {count}
+of {value} on all {count} rows,из {value} по всем {count} строкам
+Score cards above show this selection only,Карточки выше показывают только этот выбор
+Remove filter,Убрать фильтр
+trucks,фур
+Transit,В пути
+View container detail,Открыть карточку контейнера

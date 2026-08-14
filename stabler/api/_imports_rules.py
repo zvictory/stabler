@@ -590,6 +590,23 @@ BILL_CATEGORY_COST_COMPONENT: dict[str, str] = {
 	"expense": "Other",
 }
 
+#: Which ``Container Cost Line.cost_component`` an Import Expense capitalizes as,
+#: by its own ``category`` Select. Deliberately tiny, and the smallness is the
+#: point: a component decides what supersedes what, so a wrong guess deletes real
+#: money from the valuation. Only the two categories that mean exactly one
+#: component are named. Everything else — Handling, Storage, Customs, Border
+#: Crossing, Documentation — falls to ``Other``, which supersedes nothing, is
+#: superseded by nothing, never enters ``apply_gtd_customs_precedence``, and still
+#: reaches the landed cost. "Handling" is NOT mapped to "Uzbekistan Port Handling":
+#: the category does not say which side of the border the handling happened on.
+EXPENSE_CATEGORY_COST_COMPONENT: dict[str, str] = {
+	"Transport": "Cross-Border Transport",
+	"Insurance": "Insurance",
+}
+
+#: Where an unmapped expense category lands. See above — safe by construction.
+EXPENSE_DEFAULT_COST_COMPONENT = "Other"
+
 #: Landed-cost bill money columns masked for users lacking cost visibility (K3).
 LANDED_BILL_MASK_FIELDS: tuple[str, ...] = ("grand_total", "outstanding_amount")
 
@@ -662,6 +679,25 @@ def bill_cost_component(category) -> str | None:
 	invent a component for it. See ``BILL_CATEGORY_COST_COMPONENT``.
 	"""
 	return BILL_CATEGORY_COST_COMPONENT.get(str(category or ""))
+
+
+def expense_cost_component(category) -> str:
+	"""Cost component to PREFILL for an Import Expense of *category*.
+
+	Always returns something, which is the one place this differs from
+	``bill_cost_component``'s ``None``-is-a-refusal contract — and the difference
+	is not an inconsistency. A bill's category is derived by the system, so
+	"unclassifiable" has to stop the capitalization. An expense is capitalized
+	because a human asked for it on that one document, so the question is never
+	*whether* it belongs in the landed cost, only *as what* — and ``Other`` is a
+	true answer to that, not a guess: it supersedes nothing, nothing supersedes
+	it, and it still reaches the valuation.
+
+	This is a prefill. The operator sees the resulting component on the form and
+	can correct it before capitalizing; ``set_expense_landed_cost`` takes their
+	value over this one.
+	"""
+	return EXPENSE_CATEGORY_COST_COMPONENT.get(str(category or ""), EXPENSE_DEFAULT_COST_COMPONENT)
 
 
 def allocate_by_weight(amount, containers) -> list[dict]:

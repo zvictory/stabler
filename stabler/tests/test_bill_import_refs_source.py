@@ -576,6 +576,20 @@ class CapitalizationTest(unittest.TestCase):
 		self.assertIn("if not component:", src)
 		self.assertIn("return [], []", src)
 
+	def test_the_bill_reaches_valuation_through_the_one_shared_core(self):
+		# The allocate-and-insert core is shared with the Import Expense path, so
+		# every guard below is asserted on _capitalize_import_cost. Without this
+		# assertion those guards could be satisfied by a core nothing calls, while
+		# the bill quietly grew a second, unguarded write path of its own.
+		src = body(self.src, "_capitalize_linked_bill")
+		self.assertIn("_capitalize_import_cost(", src)
+		self.assertIn('source_field="purchase_invoice"', src)
+		self.assertIn("source_name=purchase_invoice", src)
+		# The core splits whatever it is handed, so which figure lands in
+		# base_amount is decided HERE: passing the transaction total would value
+		# every container's line in the wrong currency.
+		self.assertIn('base_amount=flt(bill.get("base_net_total"))', src)
+
 	def test_a_cost_already_vouchered_by_hand_is_not_capitalized_again(self):
 		# stabler-wen: once an operator's estimate has been consumed by an LCV it
 		# carries an lcv_ref, so supersede_billed can no longer drop it at build
@@ -583,27 +597,44 @@ class CapitalizationTest(unittest.TestCase):
 		# valuation a second time. The link still goes through — refusing it would
 		# cost the attribution too — but the second cost line must not be written,
 		# and the skip must be visible instead of silent.
-		src = body(self.src, "_capitalize_linked_bill")
+		src = body(self.src, "_capitalize_import_cost")
 		self.assertIn("lcv_math.vouchered_hand_line(", src)
-		self.assertIn("warnings.append(", src)
-		self.assertIn("return row_names, warnings", src)
-		# The response has to carry them out: a warning the caller cannot read is
-		# the same silence the defect had.
+		# Recorded and skipped, not recorded and written anyway.
+		self.assertIn("skipped.append(", src)
+		self.assertLess(src.index("skipped.append("), src.index("continue"))
+		self.assertIn("return row_names, skipped", src)
+		# The skip has to reach the operator. The core carries it as data so each
+		# caller words its own message; the bill path turns it into a warning and
+		# the response carries them out — a warning the caller cannot read is the
+		# same silence the defect had.
+		bill = body(self.src, "_capitalize_linked_bill")
+		self.assertIn("row_names, skipped = _capitalize_import_cost(", bill)
+		self.assertIn("for skip in skipped", bill)
+		self.assertIn("return row_names, warnings", bill)
 		self.assertIn('"warnings": warnings', body(self.src, "set_bill_import_refs"))
 
 	def test_a_ci_level_bill_is_split_across_containers_by_weight(self):
-		src = body(self.src, "_capitalize_linked_bill")
+		src = body(self.src, "_capitalize_import_cost")
 		# Both figures, named individually: pinning only "allocate_by_weight
 		# appears" let a mutation split the base amount by weight and hand every
 		# container the FULL transaction amount, which multiplies the bill by the
 		# container count in exactly the currency the LCV reads.
-		self.assertIn("parts = rules.allocate_by_weight(amount, containers)", src)
-		self.assertIn(
-			'base_parts = rules.allocate_by_weight(flt(bill.get("base_net_total")), containers)', src
-		)
+		self.assertIn("parts = rules.allocate_by_weight(flt(amount), containers)", src)
+		self.assertIn("base_parts = rules.allocate_by_weight(flt(base_amount), containers)", src)
 		resolver = body(self.src, "_containers_behind_refs")
 		self.assertIn("_ci_behind(refs)", resolver)
 		self.assertIn('"total_kg"', resolver)
+
+	def test_an_unknown_source_field_is_refused_instead_of_silently_dropped(self):
+		# frappe.get_doc ignores keys the doctype does not have, so a typo'd
+		# source field would write a cost line carrying NO source at all. That
+		# line reads as an operator's estimate, and the next real bill for the
+		# same component supersedes it — the real spend leaves the valuation
+		# without a single error anywhere.
+		src = body(self.src, "_capitalize_import_cost")
+		self.assertIn("if source_field not in lcv_math.SOURCE_FIELDS:", src)
+		self.assertIn("frappe.throw(", src)
+		self.assertLess(src.index("source_field not in"), src.index("row.insert("))
 
 	def test_unlinking_removes_exactly_what_linking_wrote(self):
 		# A link that can be undone while its cost stays behind is how the same
@@ -655,12 +686,26 @@ class CapitalizationTest(unittest.TestCase):
 		src = body(self.src, "_clean_container_cost_lines")
 		self.assertNotIn('"purchase_invoice"', src)
 		self.assertNotIn('"lcv_ref"', src)
+		# Same reason, second source: a browser that could set import_expense
+		# would forge a capitalized cost — and, because every source field also
+		# outranks a hand-typed line, silently delete an operator's real figure.
+		self.assertNotIn('"import_expense"', src)
 
 	def test_the_column_exists_on_the_child_doctype(self):
 		raw = read(COST_LINE_JSON)
 		self.assertIn('"fieldname": "purchase_invoice"', raw)
 		# read_only, because the only legitimate author is the guarded endpoint.
 		self.assertRegex(raw, r'"fieldname": "purchase_invoice",[\s\S]{0,200}?"read_only": 1')
+
+	def test_the_second_source_column_exists_and_is_equally_server_owned(self):
+		# A cost paid in cash or from the bank never becomes a Purchase Invoice,
+		# so without a second source column that money has no route into the
+		# landed cost at all — and lcv_math would read its line as an operator's
+		# hand-typed estimate, letting a later bill supersede real spend.
+		raw = read(COST_LINE_JSON)
+		self.assertIn('"fieldname": "import_expense"', raw)
+		self.assertRegex(raw, r'"fieldname": "import_expense",[\s\S]{0,200}?"read_only": 1')
+		self.assertRegex(raw, r'"fieldname": "import_expense",[\s\S]{0,200}?"options": "Import Expense"')
 
 
 if __name__ == "__main__":

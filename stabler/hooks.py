@@ -249,11 +249,17 @@ doc_events = {
 			"stabler.api.approvals.before_submit_gate",
 			"stabler.api.sod_enforce.assert_no_sod_conflict",
 		],
+		"on_submit": [
+			"stabler.stabler.imports_module.hooks.on_journal_entry_submit",
+		],
 		"before_update_after_submit": [
 			"stabler.api.desk_write_guard.assert_write_via_stabler",
 		],
 		"before_cancel": [
 			"stabler.api.desk_write_guard.assert_write_via_stabler",
+		],
+		"on_cancel": [
+			"stabler.stabler.imports_module.hooks.on_journal_entry_cancel",
 		],
 		"on_trash": [
 			"stabler.api.desk_write_guard.assert_write_via_stabler",

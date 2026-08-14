@@ -7,13 +7,16 @@ import { call } from "../../api/client.js";
 import { formatMoney } from "../../composables/money.js";
 import { formatDate } from "../../composables/date.js";
 import { t } from "../../composables/i18n.js";
-import { getStatusBadgeClass } from "../../composables/status.js";
 import { useToast } from "../../composables/useToast.js";
+import { useListSelection } from "../../composables/useListSelection.js";
 import Select from "../../components/Select.vue";
 import ListToolbar from "../../components/ListToolbar.vue";
 import EmptyState from "../../components/EmptyState.vue";
 import SkeletonRows from "../../components/SkeletonRows.vue";
 import KpiCard from "../../components/KpiCard.vue";
+import StatusIcon from "../../components/StatusIcon.vue";
+import SelectionBar from "../../components/SelectionBar.vue";
+import FilterChips from "../../components/FilterChips.vue";
 
 const session = useSession();
 const { activeCompany, user } = storeToRefs(session);
@@ -138,7 +141,6 @@ const SORT_KEYS = {
 	total_kg: (r) => Number(r.total_kg) || 0,
 	agreed_total: (r) => Number(r.agreed_total) || 0,
 	invoiced_pct: (r) => Number(r.invoiced_pct) || 0,
-	status: (r) => String(r.status || ""),
 };
 
 const sortBy = ref("pi_date");
@@ -151,7 +153,7 @@ function toggleSort(key) {
 	} else {
 		sortBy.value = key;
 		// Text reads best A→Z, magnitudes read best largest-first.
-		sortDir.value = key === "ref" || key === "vendor" || key === "status" ? "asc" : "desc";
+		sortDir.value = key === "ref" || key === "vendor" ? "asc" : "desc";
 	}
 }
 
@@ -171,23 +173,45 @@ const sortedRows = computed(() => {
 	});
 });
 
-/** Column totals for the loaded rows — what procurement asks for first. */
+// ---- row selection -------------------------------------------------------
+// Client-side only: `scope` is the ticked rows when there is a selection and
+// the whole page otherwise, so the cards and the footer sum one thing and can
+// never disagree about what they are describing. Keyed on docname, so sorting
+// the table cannot shuffle what is selected.
+const { selected, isSelected, toggle, toggleAll, allSelected, clear, hasSelection, scope } =
+	useListSelection(rows);
+
+/** Column totals for the scoped rows — what procurement asks for first. */
 const totals = computed(() => {
-	const acc = { count: 0, items: 0, boxes: 0, kg: 0, agreed: 0, gap: 0, vendors: new Set() };
-	for (const r of rows.value) {
+	const acc = {
+		count: 0,
+		items: 0,
+		boxes: 0,
+		kg: 0,
+		agreed: 0,
+		docs: 0,
+		gap: 0,
+		draft: 0,
+		confirmed: 0,
+		vendors: new Set(),
+	};
+	for (const r of scope.value) {
 		acc.count += 1;
 		acc.items += Number(r.item_count) || 0;
 		acc.boxes += Number(r.total_boxes) || 0;
 		acc.kg += Number(r.total_kg) || 0;
 		acc.agreed += Number(r.agreed_total) || 0;
+		acc.docs += Number(r.docs_total) || 0;
 		acc.gap += Number(r.cash_difference) || 0;
+		if (r.status === "DRAFT") acc.draft += 1;
+		if (r.status === "CONFIRMED") acc.confirmed += 1;
 		if (r.supplier) acc.vendors.add(r.supplier);
 	}
 	return acc;
 });
 
 const totalsCurrency = computed(() => {
-	const set = new Set(rows.value.map((r) => r.currency).filter(Boolean));
+	const set = new Set(scope.value.map((r) => r.currency).filter(Boolean));
 	return set.size === 1 ? [...set][0] : "";
 });
 
@@ -274,6 +298,58 @@ function filterBySupplier(sup) {
 }
 
 const canSupersede = (row) => ["DRAFT", "CONFIRMED"].includes(row.status);
+
+// ---- selection-aware card values ----------------------------------------
+const selCount = computed(() => selected.value.length);
+const countGlobal = computed(() => (stats.value ? stats.value.count : rows.value.length));
+const agreedGlobal = computed(() => fm(stats.value && stats.value.agreed_total_sum, statsCurrency.value));
+const docsGlobal = computed(() =>
+	stats.value && stats.value.docs_total_sum != null ? fm(stats.value.docs_total_sum, statsCurrency.value) : "—"
+);
+const gapGlobal = computed(() =>
+	stats.value && stats.value.cash_difference_sum != null
+		? fm(stats.value.cash_difference_sum, statsCurrency.value)
+		: "—"
+);
+
+// proforma_list_stats nulls docs_total_sum / cash_difference_sum for users
+// without cost visibility. Those two cards therefore keep their global "—" in
+// selection mode instead of summing rows into a confident number the viewer is
+// not supposed to see. The backend's own null is the signal — never a guess.
+const costVisible = computed(() => !!stats.value && stats.value.docs_total_sum != null);
+
+// ---- filter chips --------------------------------------------------------
+// Derived from the filter refs themselves; removing a chip blanks its ref and
+// reloads. This page has no filter watcher (each Select calls load() on change),
+// so the chip handlers call load() explicitly.
+function optionLabel(options, value) {
+	const hit = options.find((o) => o.value === value);
+	return hit ? hit.label : value;
+}
+const filterChips = computed(() => {
+	const out = [];
+	if (statusFilter.value) out.push({ key: "status", label: statusFilter.value, icon: "ti-flag" });
+	if (supplierFilter.value)
+		out.push({ key: "supplier", label: optionLabel(supplierOptions.value, supplierFilter.value), icon: "ti-building-store" });
+	if (groupFilter.value)
+		out.push({ key: "group", label: optionLabel(groupOptions.value, groupFilter.value), icon: "ti-tags" });
+	if (search.value) out.push({ key: "search", label: search.value, icon: "ti-search" });
+	return out;
+});
+function removeChip(key) {
+	if (key === "status") statusFilter.value = "";
+	else if (key === "supplier") supplierFilter.value = "";
+	else if (key === "group") groupFilter.value = "";
+	else if (key === "search") search.value = "";
+	load();
+}
+function clearFilters() {
+	statusFilter.value = "";
+	supplierFilter.value = "";
+	groupFilter.value = "";
+	search.value = "";
+	load();
+}
 </script>
 
 <template>
@@ -282,44 +358,64 @@ const canSupersede = (row) => ["DRAFT", "CONFIRMED"].includes(row.status);
 		<div class="col-sm-6 col-lg-3">
 			<KpiCard
 				:label="t('Agreed total')"
-				:value="fm(stats && stats.agreed_total_sum, statsCurrency)"
+				:value="hasSelection ? fm(totals.agreed, totalsCurrency) : agreedGlobal"
 				icon="ti-file-dollar"
 				tone="primary"
 				:loading="statsLoading"
 				:hint="!statsLoading && statsMixedCurrency ? t('Mixed currencies — sum shown without symbol') : ''"
+				:selected="selCount"
+				:global-value="agreedGlobal"
+				:global-count="countGlobal"
 			/>
 		</div>
 		<div class="col-sm-6 col-lg-3">
 			<KpiCard
 				:label="t('Docs total')"
-				:value="stats && stats.docs_total_sum != null ? fm(stats.docs_total_sum, statsCurrency) : '—'"
+				:value="hasSelection && costVisible ? fm(totals.docs, totalsCurrency) : docsGlobal"
 				icon="ti-file-text"
 				tone="azure"
 				:loading="statsLoading"
 				:hint="!statsLoading && statsMixedCurrency ? t('Mixed currencies — sum shown without symbol') : ''"
+				:selected="costVisible ? selCount : 0"
+				:global-value="docsGlobal"
+				:global-count="countGlobal"
 			/>
 		</div>
 		<div class="col-sm-6 col-lg-3">
 			<KpiCard
 				:label="t('Cash Difference')"
-				:value="stats && stats.cash_difference_sum != null ? fm(stats.cash_difference_sum, statsCurrency) : '—'"
+				:value="hasSelection && costVisible ? fm(totals.gap, totalsCurrency) : gapGlobal"
 				icon="ti-arrows-diff"
 				tone="orange"
 				value-tone="orange"
 				:loading="statsLoading"
 				:hint="!statsLoading && statsMixedCurrency ? t('Mixed currencies — sum shown without symbol') : ''"
+				:selected="costVisible ? selCount : 0"
+				:global-value="gapGlobal"
+				:global-count="countGlobal"
 			/>
 		</div>
 		<div class="col-sm-6 col-lg-3">
 			<KpiCard
 				:label="t('Proforma Invoices')"
-				:value="stats ? stats.count : rows.length"
+				:value="hasSelection ? totals.count : countGlobal"
 				icon="ti-files"
 				tone="primary"
 				:loading="statsLoading"
+				:selected="selCount"
+				:global-value="countGlobal"
+				:global-count="countGlobal"
 				:badges="[
-					{ label: t('Draft'), value: stats ? stats.draft_count : 0, tone: 'secondary' },
-					{ label: t('Confirmed'), value: stats ? stats.confirmed_count : 0, tone: 'azure' },
+					{
+						label: t('Draft'),
+						value: hasSelection ? totals.draft : stats ? stats.draft_count : 0,
+						tone: 'secondary',
+					},
+					{
+						label: t('Confirmed'),
+						value: hasSelection ? totals.confirmed : stats ? stats.confirmed_count : 0,
+						tone: 'azure',
+					},
 				]"
 			/>
 		</div>
@@ -341,17 +437,30 @@ const canSupersede = (row) => ["DRAFT", "CONFIRMED"].includes(row.status);
 
 		<ListToolbar v-model="search" :placeholder="t('PI no or supplier') + '  ⌘K'" :count="rows.length" @search="load">
 			<template #filters>
-				<Select v-model="statusFilter" size="sm" style="width: 180px" :options="STATUSES" value-key="value" label-key="label" @change="load" />
+				<Select v-model="statusFilter" size="sm" style="width: 150px" :options="STATUSES" value-key="value" label-key="label" @change="load" />
 				<Select v-model="supplierFilter" size="sm" style="width: 200px" :options="supplierOptions" value-key="value" label-key="label" @change="load" />
-				<Select v-model="groupFilter" size="sm" style="width: 180px" :options="groupOptions" value-key="value" label-key="label" @change="load" />
-			<!-- colspan-bumped -->
-</template>
+				<Select v-model="groupFilter" size="sm" style="width: 170px" :options="groupOptions" value-key="value" label-key="label" @change="load" />
+			</template>
 		</ListToolbar>
+
+		<FilterChips :chips="filterChips" @remove="removeChip" @clear="clearFilters" />
+		<SelectionBar :count="selCount" :actions="[]" @clear="clear" />
 
 		<div class="table-responsive">
 			<table class="table table-vcenter">
 				<thead>
 					<tr>
+						<th class="text-center" style="width: 36px">
+							<input
+								class="form-check-input m-0"
+								type="checkbox"
+								:checked="allSelected"
+								:aria-label="t('Select all')"
+								@click.stop
+								@change="toggleAll"
+							/>
+						</th>
+						<th class="d-none d-md-table-cell text-end text-secondary" style="width: 52px">{{ t("Row") }}</th>
 						<th style="min-width: 170px" class="pi-sort" @click="toggleSort('ref')">
 							{{ t("PI Group / Ref / Vendor") }} <i v-if="sortIcon('ref')" class="ti" :class="sortIcon('ref')"></i>
 						</th>
@@ -382,15 +491,33 @@ const canSupersede = (row) => ["DRAFT", "CONFIRMED"].includes(row.status);
 						<th style="min-width: 110px" class="pi-sort" @click="toggleSort('invoiced_pct')">
 							{{ t("Invoiced %") }} <i v-if="sortIcon('invoiced_pct')" class="ti" :class="sortIcon('invoiced_pct')"></i>
 						</th>
-						<th class="pi-sort" @click="toggleSort('status')">
-							{{ t("Status") }} <i v-if="sortIcon('status')" class="ti" :class="sortIcon('status')"></i>
-						</th>
 						<th class="w-1"><span class="visually-hidden">{{ t("Actions") }}</span></th>
 					</tr>
 				</thead>
 				<tbody>
-					<SkeletonRows v-if="loading" :cols="9" :rows="6" />
-					<tr v-for="r in sortedRows" :key="r.name" class="pi-row" style="cursor: pointer" @click="router.push({ name: 'imports-proforma', params: { name: r.name } })">
+					<SkeletonRows v-if="loading" :cols="13" :rows="6" />
+					<tr
+						v-for="(r, index) in sortedRows"
+						:key="r.name"
+						class="pi-row"
+						style="cursor: pointer"
+						:class="{ 'table-active': isSelected(r) }"
+						@click="router.push({ name: 'imports-proforma', params: { name: r.name } })"
+					>
+						<!-- @click.stop on the cell keeps a stray click off the row's
+						     navigation; the toggle itself hangs on @change only, so it
+						     cannot fire twice and cancel itself. -->
+						<td class="text-center" @click.stop>
+							<input
+								class="form-check-input m-0"
+								type="checkbox"
+								:checked="isSelected(r)"
+								:aria-label="refMain(r) || r.name"
+								@click.stop
+								@change="toggle(r)"
+							/>
+						</td>
+						<td class="d-none d-md-table-cell text-end font-monospace text-secondary">{{ index + 1 }}</td>
 						<td>
 							<div class="mb-1">
 								<span
@@ -412,7 +539,12 @@ const canSupersede = (row) => ["DRAFT", "CONFIRMED"].includes(row.status);
 									<i class="ti ti-folder-off me-1"></i>{{ t("No group") }}
 								</span>
 							</div>
-							<div class="fw-bold text-primary font-monospace" style="font-size: 0.9rem">{{ refMain(r) }}</div>
+							<!-- The Status column is gone; the icon carries the same state
+							     here, with title + aria-label, right beside the identity. -->
+							<div class="d-flex align-items-center gap-1">
+								<StatusIcon doctype="Proforma Invoice" :status="r.status" />
+								<span class="fw-bold text-primary font-monospace" style="font-size: 0.9rem">{{ refMain(r) }}</span>
+							</div>
 							<span
 								class="badge bg-secondary-lt text-dark font-monospace mt-1"
 								style="cursor: pointer"
@@ -461,7 +593,6 @@ const canSupersede = (row) => ["DRAFT", "CONFIRMED"].includes(row.status);
 								<i class="ti ti-chevron-right text-primary ms-1" style="font-size: 0.75rem" :title="t('View linked CIs')"></i>
 							</div>
 						</td>
-						<td><span class="badge" :class="getStatusBadgeClass('Proforma Invoice', r.status)">{{ r.status }}</span></td>
 						<td class="text-end text-nowrap" @click.stop>
 							<button
 								v-if="canSupersede(r)"
@@ -484,10 +615,16 @@ const canSupersede = (row) => ["DRAFT", "CONFIRMED"].includes(row.status);
 						</td>
 					</tr>
 				</tbody>
+				<!-- Sums `scope`, never `rows`: the cards above sum the same thing, so
+				     the footer and the strip can never describe different sets. -->
 				<tfoot v-if="!loading && rows.length">
 					<tr class="pi-totals">
+						<td colspan="2"></td>
 						<td class="text-secondary">
-							{{ totals.count }} PI · {{ totals.vendors.size }} {{ t("vendors") }}
+							<div>{{ totals.count }} PI · {{ totals.vendors.size }} {{ t("vendors") }}</div>
+							<div class="small text-secondary">
+								{{ hasSelection ? t("{count} selected", { count: selCount }) : t("this page only") }}
+							</div>
 						</td>
 						<td></td>
 						<td class="text-end font-monospace pi-num">{{ grp(totals.items) }}</td>
@@ -499,7 +636,7 @@ const canSupersede = (row) => ["DRAFT", "CONFIRMED"].includes(row.status);
 								{{ totals.gap ? "−" + fm(totals.gap, totalsCurrency) : fm(0, totalsCurrency) }}
 							</div>
 						</td>
-						<td colspan="6"></td>
+						<td colspan="5"></td>
 					</tr>
 				</tfoot>
 			</table>

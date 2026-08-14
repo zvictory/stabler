@@ -2583,9 +2583,17 @@ def list_bank_entries(
 		if frappe.db.has_column("Journal Entry", "custom_commercial_invoice")
 		else "NULL AS commercial_invoice, NULL AS import_truck, NULL AS import_container,"
 	)
+	# Guarded separately from ci_col: the category field ships in v82, the rest in
+	# v78, so a site part-way through migrate can legitimately have one and not
+	# the other.
+	category_col = (
+		"je.custom_import_expense_category AS import_category,"
+		if frappe.db.has_column("Journal Entry", "custom_import_expense_category")
+		else "NULL AS import_category,"
+	)
 	return frappe.db.sql(
 		f"""
-		SELECT je.name, je.posting_date, je.voucher_type, je.user_remark, {deal_col} {ci_col}
+		SELECT je.name, je.posting_date, je.voucher_type, je.user_remark, {deal_col} {ci_col} {category_col}
 		       je.total_debit AS total_debit_base,
 
 		       je.total_credit AS total_credit_base,
@@ -2626,6 +2634,8 @@ def submit_expense_entry(
 	commercial_invoice: str | None = None,
 	import_truck: str | None = None,
 	import_container: str | None = None,
+	import_category: str | None = None,
+	import_expense: str | None = None,
 ) -> dict:
 	"""Create (and optionally submit) an expense Journal Entry.
 
@@ -2636,6 +2646,11 @@ def submit_expense_entry(
 
 	`deal` (optional, WP-K2): tag the entry with a CRM Deal (tender).
 	`commercial_invoice` (optional): tag the entry with an Import Commercial Invoice.
+	`import_category` (optional): Import Expense category for the mirrored expense
+	that `imports_module.hooks.on_journal_entry_submit` spawns on submit.
+	`import_expense` (optional, server-side callers only): the Import Expense this
+	voucher is being posted *for*. It suppresses that spawn — the expense already
+	exists and this JE is its payment, not the other way round.
 	"""
 	_require_company(company)
 	_assert_company_scope(company)  # tenant isolation: reject a foreign company arg
@@ -2758,6 +2773,13 @@ def submit_expense_entry(
 			doc.custom_import_truck = import_truck
 		if import_container and frappe.get_meta("Journal Entry").has_field("custom_import_container"):
 			doc.custom_import_container = import_container
+		if import_category and frappe.get_meta("Journal Entry").has_field("custom_import_expense_category"):
+			doc.custom_import_expense_category = import_category
+	# Back-link set outside the `commercial_invoice` branch on purpose: it is the
+	# marker that this voucher already has an Import Expense parent, and it must be
+	# honoured even if the caller did not pass the CI along.
+	if import_expense and frappe.get_meta("Journal Entry").has_field("custom_import_expense"):
+		doc.custom_import_expense = import_expense
 	if remark:
 		doc.user_remark = remark
 

@@ -26,6 +26,25 @@ replicated:
 
 from __future__ import annotations
 
+#: Fields on a Container Cost Line that name the document the cost came from.
+#: A line carrying any of them was written by an attribution path; a line
+#: carrying none of them was typed in by an operator. The distinction — not the
+#: particular field — is what ``supersede_billed`` and ``vouchered_hand_line``
+#: decide on, so a new attribution source is added HERE and both rules follow.
+#: Reading only ``purchase_invoice`` would make every other source look
+#: hand-typed, which supersedes the wrong side and lets the same money reach
+#: stock valuation twice.
+SOURCE_FIELDS = ("purchase_invoice", "import_expense")
+
+
+def source_document(line) -> str:
+	"""Name of the document a cost line came from, or ``""`` when hand-typed."""
+	for field in SOURCE_FIELDS:
+		ref = (line.get(field) or "").strip()
+		if ref:
+			return ref
+	return ""
+
 
 def is_vat_component(component) -> bool:
 	"""True for any VAT component (excluded from the landed-cost build)."""
@@ -144,8 +163,9 @@ def supersede_billed(cost_lines) -> tuple[list[dict], list[str]]:
 
 	Same precedence shape as ``apply_gtd_customs_precedence``: when a more
 	authoritative source for a cost exists, it REPLACES the hand-typed figure
-	instead of adding to it. Here the authoritative source is the carrier's own
-	Purchase Invoice, carried on the line as ``purchase_invoice``.
+	instead of adding to it. Here the authoritative source is a document — the
+	carrier's own Purchase Invoice, or the Import Expense a cash payment was
+	recorded on — named on the line by one of ``SOURCE_FIELDS``.
 
 	This is the guard for the double-count that hand-attribution made possible.
 	The same freight can exist twice on one container — once typed in by an
@@ -164,26 +184,30 @@ def supersede_billed(cost_lines) -> tuple[list[dict], list[str]]:
 	Returns ``(kept_lines, warnings)``; a warning names each dropped line so the
 	operator can confirm it was not meant as a separate charge.
 	"""
-	billed = {
-		(ln.get("container"), ln.get("cost_component"))
-		for ln in cost_lines
-		if (ln.get("purchase_invoice") or "").strip()
-	}
+	# Keyed by (container, component) and holding the document that covers it, so
+	# the warning can name what to unlink. With two possible sources "the bill"
+	# is no longer a description an operator can act on.
+	billed: dict[tuple, str] = {}
+	for ln in cost_lines:
+		source = source_document(ln)
+		if source:
+			billed.setdefault((ln.get("container"), ln.get("cost_component")), source)
 	if not billed:
 		return list(cost_lines), []
 
 	kept: list[dict] = []
 	warnings: list[str] = []
 	for ln in cost_lines:
-		if (ln.get("purchase_invoice") or "").strip():
+		if source_document(ln):
 			kept.append(ln)
 			continue
-		if (ln.get("container"), ln.get("cost_component")) in billed:
+		key = (ln.get("container"), ln.get("cost_component"))
+		if key in billed:
 			warnings.append(
-				"A hand-entered {0} cost line on container {1} was dropped: a linked "
-				"supplier bill already covers that component. Remove the bill link if "
-				"the cost line was meant as a separate charge.".format(
-					ln.get("cost_component") or "Other", ln.get("container") or "?"
+				"A hand-entered {0} cost line on container {1} was dropped: {2} already "
+				"covers that component. Remove that link if the cost line was meant as a "
+				"separate charge.".format(
+					ln.get("cost_component") or "Other", ln.get("container") or "?", billed[key]
 				)
 			)
 			continue
@@ -204,9 +228,9 @@ def vouchered_hand_line(cost_lines, container, cost_component) -> str | None:
 	again — the same cost in stock valuation twice, with no warning anywhere.
 	This is the read the link path uses to refuse writing that second line.
 
-	Only hand-typed lines count. A line carrying a ``purchase_invoice`` is
-	another bill's money, and two carriers on one leg are two real costs, not a
-	duplicate — exactly the case ``supersede_billed`` also keeps.
+	Only hand-typed lines count. A line naming a document in ``SOURCE_FIELDS`` is
+	another document's money, and two carriers on one leg are two real costs, not
+	a duplicate — exactly the case ``supersede_billed`` also keeps.
 
 	Matched on the exact component, never a family: ``Freight`` (the sea leg)
 	and ``Cross-Border Transport`` (the trucking leg) are different real costs
@@ -219,7 +243,7 @@ def vouchered_hand_line(cost_lines, container, cost_component) -> str | None:
 			continue
 		if not ln.get("include_in_landed_cost"):
 			continue
-		if (ln.get("purchase_invoice") or "").strip():
+		if source_document(ln):
 			continue
 		if ln.get("cost_component") != cost_component:
 			continue

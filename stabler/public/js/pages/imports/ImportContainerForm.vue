@@ -6,13 +6,11 @@ import { useSession } from "../../stores/session.js";
 import { importsApi } from "../../api/imports.js";
 import { call } from "../../api/client.js";
 import { t } from "../../composables/i18n.js";
-import { formatMoney } from "../../composables/money.js";
 import { useToast } from "../../composables/useToast.js";
 import { useConfirm } from "../../composables/useConfirm.js";
 import { useEscapeBack } from "../../composables/useEscapeBack.js";
 import DateInput from "../../components/DateInput.vue";
 import Select from "../../components/Select.vue";
-import Typeahead from "../../components/Typeahead.vue";
 import MoneyInput from "../../components/MoneyInput.vue";
 import StatusBadge from "../../components/StatusBadge.vue";
 
@@ -119,11 +117,6 @@ function addItem() {
 function removeItem(i) {
 	form.value.items.splice(i, 1);
 }
-function pickItem(row, item) {
-	row.item_code = item.name;
-	row.item_name = item.item_name || item.name;
-}
-
 function addCostLine() {
 	form.value.cost_lines.push({ cost_component: "Freight", description: "", currency: form.value.currency || "USD", amount: 0, amount_uzs: 0, include_in_landed_cost: 1, lcv_ref: null });
 }
@@ -515,7 +508,7 @@ watch(docName, loadDoc);
 		<div v-if="costVisible" class="card mb-3">
 			<div class="card-body d-flex justify-content-between align-items-center">
 				<label class="form-label mb-0">{{ t("Goods value (total amount)") }}</label>
-				<div style="width: 200px"><MoneyInput v-model="form.total_amount" :currency="form.currency" :language="user.language" size="sm" /></div>
+				<div style="width: 200px"><MoneyInput v-model="form.total_amount" :currency="form.currency" :language="user.language" /></div>
 			</div>
 		</div>
 	</div>

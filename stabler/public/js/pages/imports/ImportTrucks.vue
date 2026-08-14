@@ -8,11 +8,15 @@ import { call } from "../../api/client.js";
 import { t } from "../../composables/i18n.js";
 import { formatDate } from "../../composables/date.js";
 import { formatMoney } from "../../composables/money.js";
+import { useListSelection } from "../../composables/useListSelection.js";
 import ListToolbar from "../../components/ListToolbar.vue";
 import SkeletonRows from "../../components/SkeletonRows.vue";
 import EmptyState from "../../components/EmptyState.vue";
 import Select from "../../components/Select.vue";
 import StatusBadge from "../../components/StatusBadge.vue";
+import StatusIcon from "../../components/StatusIcon.vue";
+import SelectionBar from "../../components/SelectionBar.vue";
+import FilterChips from "../../components/FilterChips.vue";
 import Pagination from "../../components/Pagination.vue";
 import KpiCard from "../../components/KpiCard.vue";
 
@@ -124,6 +128,54 @@ const masked = (v) => v === null || v === undefined;
 const fm = (v, ccy) => formatMoney(v, ccy || "USD", user.value?.language || "en");
 const fn = (v) => Math.round(Number(v) || 0).toLocaleString("ru-RU");
 
+// ---- row selection -------------------------------------------------------
+// Client-side only: `scope` is the ticked rows when there is a selection and
+// the whole page otherwise, so the cards and the footer sum one thing and can
+// never disagree about what they are describing.
+const { selected, isSelected, toggle, toggleAll, allSelected, clear, hasSelection, scope } =
+	useListSelection(rows);
+
+/** Column totals over the current scope — labelled in the footer. */
+const totals = computed(() => {
+	const acc = { kg: 0, cost: 0, receipts: 0, transit: 0, completed: 0 };
+	for (const r of scope.value) {
+		acc.kg += Number(r.total_kg) || 0;
+		acc.cost += Number(r.transport_cost) || 0;
+		acc.receipts += Number(r.receipt_count) || 0;
+		// Mirrors truck_list_stats' SQL exactly — a badge that counts a
+		// different set of statuses than the global one is worse than no badge.
+		if (["DEPARTED_IRAN", "AT_BORDER", "CROSSED_BORDER", "IN_TRANSIT"].includes(r.status)) acc.transit += 1;
+		if (["ARRIVED", "UNLOADING", "GRN_CREATED", "COMPLETED"].includes(r.status)) acc.completed += 1;
+	}
+	return acc;
+});
+
+const selCount = computed(() => selected.value.length);
+// transport_cost is masked per row for users without cost visibility, exactly
+// as the stats endpoint nulls its sum. Summing masked rows would report a hard
+// zero, so that card (and the footer cell) stays global instead.
+const costVisible = computed(() => !!stats.value && stats.value.transport_cost_sum != null);
+const costGlobal = computed(() =>
+	costVisible.value ? fm(stats.value.transport_cost_sum, statsCurrency.value) : "—"
+);
+const kgGlobal = computed(() => fn(stats.value ? stats.value.total_kg_sum : 0));
+const countGlobal = computed(() => (stats.value ? stats.value.count : total.value));
+
+// ---- filter chips --------------------------------------------------------
+// Derived from the filter ref itself; removing the chip blanks it and the
+// existing auto-apply watcher reloads. No second source of filter state.
+const filterChips = computed(() =>
+	status.value ? [{ key: "status", label: t(status.value), icon: "ti-flag" }] : []
+);
+
+function removeChip(key) {
+	if (key === "status") status.value = "";
+}
+
+function clearFilters() {
+	status.value = "";
+}
+
 function syncFromQuery() {
 	const qSearch = String(route.query.search || route.query.ci || route.query.commercial_invoice || "").trim();
 	const qStatus = String(route.query.status || "").trim();
@@ -158,32 +210,49 @@ watch(activeCompany, reload);
 			<div class="col-sm-6 col-lg-4">
 				<KpiCard
 					:label="t('Transport Cost Total')"
-					:value="stats && stats.transport_cost_sum != null ? fm(stats.transport_cost_sum, statsCurrency) : '—'"
+					:value="hasSelection && costVisible ? fm(totals.cost, statsCurrency) : costGlobal"
 					icon="ti-file-dollar"
 					tone="primary"
 					:loading="statsLoading"
+					:selected="costVisible ? selCount : 0"
+					:global-value="costGlobal"
+					:global-count="total"
 				/>
 			</div>
 			<div class="col-sm-6 col-lg-4">
 				<KpiCard
 					:label="t('Total Weight Transported')"
-					:value="fn(stats ? stats.total_kg_sum : 0)"
+					:value="hasSelection ? fn(totals.kg) : kgGlobal"
 					unit="kg"
 					icon="ti-scale"
 					tone="azure"
 					:loading="statsLoading"
+					:selected="selCount"
+					:global-value="kgGlobal"
+					:global-count="total"
 				/>
 			</div>
 			<div class="col-sm-6 col-lg-4">
 				<KpiCard
 					:label="t('Truck Fleet Active')"
-					:value="stats ? stats.count : total"
+					:value="hasSelection ? scope.length : countGlobal"
 					icon="ti-truck"
 					tone="purple"
 					:loading="statsLoading"
+					:selected="selCount"
+					:global-value="countGlobal"
+					:global-count="total"
 					:badges="[
-						{ label: t('In Transit'), value: stats ? stats.in_transit_count : 0, tone: 'warning' },
-						{ label: t('Completed'), value: stats ? stats.completed_count : 0, tone: 'success' },
+						{
+							label: t('In Transit'),
+							value: hasSelection ? totals.transit : stats ? stats.in_transit_count : 0,
+							tone: 'warning',
+						},
+						{
+							label: t('Completed'),
+							value: hasSelection ? totals.completed : stats ? stats.completed_count : 0,
+							tone: 'success',
+						},
 					]"
 				/>
 			</div>
@@ -200,9 +269,12 @@ watch(activeCompany, reload);
 				@primary-click="openCreate"
 			>
 				<template #filters>
-					<Select v-model="status" size="sm" :options="statusOptions" style="width: 180px" />
+					<Select v-model="status" size="sm" :options="statusOptions" style="width: 170px" />
 				</template>
 			</ListToolbar>
+
+			<FilterChips :chips="filterChips" @remove="removeChip" @clear="clearFilters" />
+			<SelectionBar :count="selCount" :actions="[]" @clear="clear" />
 
 			<div v-if="error" class="card-body"><div class="alert alert-danger m-0">{{ error }}</div></div>
 			<EmptyState
@@ -216,6 +288,17 @@ watch(activeCompany, reload);
 				<table class="table table-vcenter card-table table-hover">
 					<thead>
 						<tr>
+							<th class="text-center" style="width: 36px">
+								<input
+									class="form-check-input m-0"
+									type="checkbox"
+									:checked="allSelected"
+									:aria-label="t('Select all')"
+									@click.stop
+									@change="toggleAll"
+								/>
+							</th>
+							<th class="d-none d-md-table-cell text-end text-secondary" style="width: 52px">{{ t("Row") }}</th>
 							<th class="text-nowrap">{{ t("Truck / Plate") }}</th>
 							<th>{{ t("Carrier & Driver") }}</th>
 							<th>{{ t("CI & Warehouse") }}</th>
@@ -223,16 +306,40 @@ watch(activeCompany, reload);
 							<th class="text-end">{{ t("Weight (kg)") }}</th>
 							<th class="text-end">{{ t("Transport Cost") }}</th>
 							<th class="text-center">{{ t("Receipts") }}</th>
-							<th>{{ t("Status") }}</th>
 							<th class="text-end" style="width: 48px"></th>
 						</tr>
 					</thead>
-					<SkeletonRows v-if="loading" :rows="6" :cols="9" />
+					<SkeletonRows v-if="loading" :rows="6" :cols="10" />
 					<tbody v-else>
-						<tr v-for="r in rows" :key="r.name" style="cursor: pointer" @click="openForm(r.name)">
+						<tr
+							v-for="(r, index) in rows"
+							:key="r.name"
+							style="cursor: pointer"
+							:class="{ 'table-active': isSelected(r) }"
+							@click="openForm(r.name)"
+						>
+							<!-- @click.stop on the cell keeps a stray click off the row's
+							     openForm; the toggle itself hangs on @change only, so it
+							     cannot fire twice and cancel itself. -->
+							<td class="text-center" @click.stop>
+								<input
+									class="form-check-input m-0"
+									type="checkbox"
+									:checked="isSelected(r)"
+									:aria-label="r.truck_number || r.name"
+									@click.stop
+									@change="toggle(r)"
+								/>
+							</td>
+							<td class="d-none d-md-table-cell text-end font-monospace text-secondary truck-num">
+								{{ limitStart + index + 1 }}
+							</td>
 							<td>
-								<div class="font-monospace text-primary fw-bold" style="font-size: 0.95rem">
-									<i class="ti ti-truck me-1"></i>{{ r.truck_number || r.name }}
+								<div class="d-flex align-items-center gap-1">
+									<StatusIcon doctype="Import Truck" :status="r.status" />
+									<span class="font-monospace text-primary fw-bold" style="font-size: 0.95rem">
+										{{ r.truck_number || r.name }}
+									</span>
 								</div>
 								<div v-if="r.truck_number && r.truck_number !== r.name" class="small text-secondary font-monospace">
 									Ref: {{ r.name }}
@@ -262,7 +369,6 @@ watch(activeCompany, reload);
 							<td class="text-center">
 								<span class="badge bg-azure-lt font-monospace">{{ r.receipt_count || 0 }} Receipts</span>
 							</td>
-							<td><StatusBadge doctype="Import Truck" :status="r.status" /></td>
 							<td class="text-end">
 								<button type="button" class="btn btn-ghost-secondary btn-icon btn-sm" :title="t('Quick view')" @click.stop="openDrawer(r.name)">
 									<i class="ti ti-eye"></i>
@@ -270,6 +376,26 @@ watch(activeCompany, reload);
 							</td>
 						</tr>
 					</tbody>
+					<tfoot v-if="!loading && rows.length">
+						<tr class="truck-totals">
+							<td></td>
+							<td class="d-none d-md-table-cell"></td>
+							<td class="text-secondary">
+								{{ scope.length }} {{ t("trucks") }}
+								<div class="text-muted small">
+									{{ hasSelection ? t("{count} selected", { count: selCount }) : t("this page only") }}
+								</div>
+							</td>
+							<td colspan="3"></td>
+							<td class="text-end font-monospace fw-bold text-nowrap">{{ fn(totals.kg) }} kg</td>
+							<td class="text-end font-monospace fw-bold text-nowrap">
+								<span v-if="!costVisible" class="text-secondary fw-normal">•••</span>
+								<span v-else>{{ fm(totals.cost, statsCurrency) }}</span>
+							</td>
+							<td class="text-center font-monospace fw-bold">{{ fn(totals.receipts) }}</td>
+							<td></td>
+						</tr>
+					</tfoot>
 				</table>
 			</div>
 			<Pagination
@@ -326,3 +452,14 @@ watch(activeCompany, reload);
 		<div v-if="drawerOpen" class="offcanvas-backdrop fade show" @click="closeDrawer"></div>
 	</div>
 </template>
+
+<style scoped>
+.truck-num {
+	font-variant-numeric: tabular-nums;
+}
+
+.truck-totals td {
+	border-top: 2px solid var(--tblr-border-color);
+	background: var(--tblr-bg-surface-secondary);
+}
+</style>

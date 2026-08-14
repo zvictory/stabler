@@ -8,11 +8,14 @@ import { call } from "../../api/client.js";
 import { t } from "../../composables/i18n.js";
 import { formatDate } from "../../composables/date.js";
 import { formatMoney } from "../../composables/money.js";
+import { useListSelection } from "../../composables/useListSelection.js";
 import ListToolbar from "../../components/ListToolbar.vue";
 import SkeletonRows from "../../components/SkeletonRows.vue";
 import EmptyState from "../../components/EmptyState.vue";
 import Select from "../../components/Select.vue";
-import StatusBadge from "../../components/StatusBadge.vue";
+import StatusIcon from "../../components/StatusIcon.vue";
+import SelectionBar from "../../components/SelectionBar.vue";
+import FilterChips from "../../components/FilterChips.vue";
 import Pagination from "../../components/Pagination.vue";
 import KpiCard from "../../components/KpiCard.vue";
 
@@ -196,10 +199,34 @@ function docsGap(r) {
 	return Number(r.cash_difference) || 0;
 }
 
-/** Column totals for the current page — labelled as such in the footer. */
+// ---- row selection -------------------------------------------------------
+// Client-side only: `scope` is the ticked rows when there is a selection and
+// the whole page otherwise, so the cards and the footer sum one thing and can
+// never disagree about what they are describing.
+const { selected, isSelected, toggle, toggleAll, allSelected, clear, hasSelection, scope } =
+	useListSelection(rows);
+
+/** Column totals over the current scope — labelled in the footer. */
 const totals = computed(() => {
-	const acc = { boxes: 0, kg: 0, agreed: 0, gap: 0, containers: 0, trucks: 0, grn: 0, vendors: new Set() };
-	for (const r of rows.value) {
+	const acc = {
+		boxes: 0,
+		kg: 0,
+		agreed: 0,
+		docs: 0,
+		gap: 0,
+		containers: 0,
+		trucks: 0,
+		grn: 0,
+		transit: 0,
+		delivered: 0,
+		vendors: new Set(),
+	};
+	for (const r of scope.value) {
+		acc.docs += Number(r.docs_total) || 0;
+		// Mirrors commercial_invoice_list_stats' SQL exactly — a badge that counts
+		// a different set of statuses than the global one is worse than no badge.
+		if (["IN_TRANSIT", "GATE_IN", "ON_BOARD", "STUFFED"].includes(r.status)) acc.transit += 1;
+		if (r.status === "DELIVERED_TO_UZBEKISTAN") acc.delivered += 1;
 		acc.boxes += Number(r.total_boxes) || 0;
 		acc.kg += Number(r.total_kg) || 0;
 		acc.agreed += Number(r.agreed_total) || 0;
@@ -298,6 +325,70 @@ function openCreate() {
 const fm = (v, ccy) => formatMoney(v, ccy || "USD", user.value?.language || "en");
 const fn = (v) => Math.round(Number(v) || 0).toLocaleString(user.value?.language || "ru-RU");
 
+// ---- selection-aware card values ----------------------------------------
+// Only metrics whose per-row field ships in the list payload are recomputed
+// from the selection; inventing one would show a confidently wrong number.
+const selCount = computed(() => selected.value.length);
+const agreedGlobal = computed(() => fm(stats.value && stats.value.agreed_total_sum, statsCurrency.value));
+const docsGlobal = computed(() =>
+	stats.value && stats.value.docs_total_sum != null ? fm(stats.value.docs_total_sum, statsCurrency.value) : "—"
+);
+const gapGlobal = computed(() =>
+	stats.value && stats.value.cash_difference_sum != null
+		? fm(stats.value.cash_difference_sum, statsCurrency.value)
+		: "—"
+);
+const countGlobal = computed(() => (stats.value ? stats.value.count : total.value));
+// docs_total / cash_difference are masked per row for users without cost
+// visibility, exactly as the stats endpoint nulls its sums. Summing masked
+// rows would report a hard zero, so those two cards stay global instead.
+const costVisible = computed(() => !!stats.value && stats.value.docs_total_sum != null);
+
+// ---- filter chips --------------------------------------------------------
+// Derived from the filter refs themselves; removing a chip blanks its ref and
+// the existing auto-apply watcher reloads. No second source of filter state.
+const filterChips = computed(() => {
+	const out = [];
+	if (status.value) out.push({ key: "status", label: t(status.value), icon: "ti-flag" });
+	if (supplier.value) {
+		const s = suppliers.value.find((x) => x.name === supplier.value);
+		out.push({
+			key: "supplier",
+			label: (s && (s.supplier_name || s.name)) || supplier.value,
+			icon: "ti-building-store",
+		});
+	}
+	if (groupFilter.value) {
+		out.push({
+			key: "group",
+			label: groupFilter.value === "__none__" ? t("No PI group") : groupsByName.value[groupFilter.value] || groupFilter.value,
+			icon: "ti-folders",
+		});
+	}
+	if (piMatch.value) {
+		out.push({
+			key: "pi_match",
+			label: piMatch.value === "linked" ? t("Linked to PI") : t("Not linked to PI"),
+			icon: "ti-link",
+		});
+	}
+	return out;
+});
+
+function removeChip(key) {
+	if (key === "status") status.value = "";
+	else if (key === "supplier") supplier.value = "";
+	else if (key === "group") groupFilter.value = "";
+	else if (key === "pi_match") piMatch.value = "";
+}
+
+function clearFilters() {
+	status.value = "";
+	supplier.value = "";
+	groupFilter.value = "";
+	piMatch.value = "";
+}
+
 onMounted(() => {
 	loadSuppliers();
 	loadPiGroups();
@@ -332,41 +423,64 @@ watch(activeCompany, () => {
 			<div class="col-sm-6 col-lg-3">
 				<KpiCard
 					:label="t('Agreed total')"
-					:value="fm(stats && stats.agreed_total_sum, statsCurrency)"
+					:value="hasSelection ? fm(totals.agreed, statsCurrency) : agreedGlobal"
 					icon="ti-file-dollar"
 					tone="primary"
 					:loading="statsLoading"
+					:selected="selCount"
+					:global-value="agreedGlobal"
+					:global-count="total"
 				/>
 			</div>
 			<div class="col-sm-6 col-lg-3">
+				<!-- Without cost visibility the per-row docs total is masked, so a
+				     selection sum would read a hard 0 where the global reads "—".
+				     The card then stays global (plan §9 risk 3). -->
 				<KpiCard
 					:label="t('Docs total')"
-					:value="stats && stats.docs_total_sum != null ? fm(stats.docs_total_sum, statsCurrency) : '—'"
+					:value="hasSelection && costVisible ? fm(totals.docs, statsCurrency) : docsGlobal"
 					icon="ti-file-text"
 					tone="azure"
 					:loading="statsLoading"
+					:selected="costVisible ? selCount : 0"
+					:global-value="docsGlobal"
+					:global-count="total"
 				/>
 			</div>
 			<div class="col-sm-6 col-lg-3">
 				<KpiCard
 					:label="t('Cash Difference')"
-					:value="stats && stats.cash_difference_sum != null ? fm(stats.cash_difference_sum, statsCurrency) : '—'"
+					:value="hasSelection && costVisible ? fm(totals.gap, statsCurrency) : gapGlobal"
 					icon="ti-arrows-diff"
 					tone="orange"
 					value-tone="orange"
 					:loading="statsLoading"
+					:selected="costVisible ? selCount : 0"
+					:global-value="gapGlobal"
+					:global-count="total"
 				/>
 			</div>
 			<div class="col-sm-6 col-lg-3">
 				<KpiCard
 					:label="t('Commercial Invoices')"
-					:value="stats ? stats.count : total"
+					:value="hasSelection ? scope.length : countGlobal"
 					icon="ti-receipt"
 					tone="primary"
 					:loading="statsLoading"
+					:selected="selCount"
+					:global-value="countGlobal"
+					:global-count="total"
 					:badges="[
-						{ label: t('Transit'), value: stats ? stats.in_transit_count : 0, tone: 'warning' },
-						{ label: t('Delivered'), value: stats ? stats.delivered_count : 0, tone: 'success' },
+						{
+							label: t('Transit'),
+							value: hasSelection ? totals.transit : stats ? stats.in_transit_count : 0,
+							tone: 'warning',
+						},
+						{
+							label: t('Delivered'),
+							value: hasSelection ? totals.delivered : stats ? stats.delivered_count : 0,
+							tone: 'success',
+						},
 					]"
 				/>
 			</div>
@@ -384,13 +498,16 @@ watch(activeCompany, () => {
 			>
 				<template #filters>
 					<div class="d-flex align-items-center gap-2">
-						<Select v-model="status" size="sm" :options="statusOptions" style="width: 180px" />
+						<Select v-model="status" size="sm" :options="statusOptions" style="width: 170px" />
 						<Select v-model="supplier" size="sm" :options="supplierOptions" style="width: 200px" />
-						<Select v-model="groupFilter" size="sm" :options="groupOptions" style="width: 180px" />
+						<Select v-model="groupFilter" size="sm" :options="groupOptions" style="width: 170px" />
 						<Select v-model="piMatch" size="sm" :options="piMatchOptions" style="width: 170px" />
 					</div>
 				</template>
 			</ListToolbar>
+
+			<FilterChips :chips="filterChips" @remove="removeChip" @clear="clearFilters" />
+			<SelectionBar :count="selCount" :actions="[]" @clear="clear" />
 
 			<div v-if="error" class="card-body">
 				<div class="alert alert-danger m-0">{{ error }}</div>
@@ -407,6 +524,16 @@ watch(activeCompany, () => {
 				<table class="table table-vcenter card-table table-hover">
 					<thead>
 						<tr>
+							<th class="text-center" style="width: 36px">
+								<input
+									class="form-check-input m-0"
+									type="checkbox"
+									:checked="allSelected"
+									:aria-label="t('Select all')"
+									@click.stop
+									@change="toggleAll"
+								/>
+							</th>
 							<th class="d-none d-md-table-cell text-end text-secondary" style="width: 52px">{{ t("Row") }}</th>
 							<th class="ci-sort" @click="toggleSort('ci_number')">
 								{{ t("CI № / vendor") }} <i v-if="sortIcon('ci_number')" class="ti" :class="sortIcon('ci_number')"></i>
@@ -428,18 +555,37 @@ watch(activeCompany, () => {
 								{{ t("Cnt / truck") }} <i v-if="sortIcon('container_count')" class="ti" :class="sortIcon('container_count')"></i>
 							</th>
 							<th class="text-center">{{ t("GRN") }}</th>
-							<th class="ci-sort" @click="toggleSort('status')">
-								{{ t("Status") }} <i v-if="sortIcon('status')" class="ti" :class="sortIcon('status')"></i>
-							</th>
 						</tr>
 					</thead>
 					<SkeletonRows v-if="loading" :rows="6" :cols="10" hide-first-on-mobile />
 					<tbody v-else>
-						<tr v-for="(r, index) in rows" :key="r.name" style="cursor: pointer" @click="openDetail(r.name)">
+						<tr
+							v-for="(r, index) in rows"
+							:key="r.name"
+							style="cursor: pointer"
+							:class="{ 'table-active': isSelected(r) }"
+							@click="openDetail(r.name)"
+						>
+							<!-- @click.stop on the cell keeps a stray click off the row's
+							     openDetail; the toggle itself hangs on @change only, so it
+							     cannot fire twice and cancel itself. -->
+							<td class="text-center" @click.stop>
+								<input
+									class="form-check-input m-0"
+									type="checkbox"
+									:checked="isSelected(r)"
+									:aria-label="r.ci_number || r.name"
+									@click.stop
+									@change="toggle(r)"
+								/>
+							</td>
 							<td class="d-none d-md-table-cell text-end font-monospace text-secondary">{{ limitStart + index + 1 }}</td>
 							<td>
-								<div class="fw-bold text-primary font-monospace" style="font-size: 0.9rem">
-									{{ r.ci_number || r.name }}
+								<div class="d-flex align-items-center gap-1">
+									<StatusIcon doctype="Commercial Invoice" :status="r.status" />
+									<span class="fw-bold text-primary font-monospace" style="font-size: 0.9rem">
+										{{ r.ci_number || r.name }}
+									</span>
 								</div>
 								<span
 									class="badge bg-secondary-lt text-dark font-monospace mt-1"
@@ -531,15 +677,17 @@ watch(activeCompany, () => {
 								<i v-if="r.has_grn" class="ti ti-check text-green" :title="t('GRN created')"></i>
 								<span v-else class="text-muted">—</span>
 							</td>
-							<td><StatusBadge doctype="Commercial Invoice" :status="r.status" /></td>
 						</tr>
 					</tbody>
 					<tfoot v-if="!loading && rows.length">
 						<tr class="ci-totals">
+							<td></td>
 							<td class="d-none d-md-table-cell"></td>
 							<td class="text-secondary">
-								{{ rows.length }} CI · {{ totals.vendors.size }} {{ t("vendors") }}
-								<div class="text-muted small">{{ t("this page only") }}</div>
+								{{ scope.length }} CI · {{ totals.vendors.size }} {{ t("vendors") }}
+								<div class="text-muted small">
+									{{ hasSelection ? t("{count} selected", { count: selCount }) : t("this page only") }}
+								</div>
 							</td>
 							<td></td>
 							<td></td>
@@ -553,7 +701,6 @@ watch(activeCompany, () => {
 							</td>
 							<td class="text-end font-monospace ci-num">{{ totals.containers }} / {{ totals.trucks }}</td>
 							<td class="text-center font-monospace ci-num">{{ totals.grn }}</td>
-							<td></td>
 						</tr>
 					</tfoot>
 				</table>

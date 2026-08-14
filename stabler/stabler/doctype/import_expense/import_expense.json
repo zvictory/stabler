@@ -26,6 +26,9 @@
   "bank_payment",
   "cash_payment",
   "status",
+  "section_landed_cost",
+  "include_in_landed_cost",
+  "cost_component",
   "section_link",
   "purchase_invoice",
   "journal_entry"
@@ -157,6 +160,26 @@
    "label": "Status",
    "options": "Pending\nPartial\nPaid",
    "read_only": 1
+  },
+  {
+   "fieldname": "section_landed_cost",
+   "fieldtype": "Section Break",
+   "label": "Landed Cost"
+  },
+  {
+   "default": "0",
+   "description": "Set by the server when the expense is capitalized onto the containers behind its Commercial Invoice. Never edit it by hand: the flag is the receipt for Container Cost Line rows that already exist, and clearing it here would leave those rows behind and double-count the cost.",
+   "fieldname": "include_in_landed_cost",
+   "fieldtype": "Check",
+   "label": "Included in Landed Cost",
+   "read_only": 1
+  },
+  {
+   "description": "Which landed-cost component this expense becomes on the container. Decides what supersedes what, so it is the operator's call, not a guess: prefilled from Category (Transport, Insurance) and otherwise left on Other, which supersedes nothing and is superseded by nothing. Options mirror Container Cost Line exactly.",
+   "fieldname": "cost_component",
+   "fieldtype": "Select",
+   "label": "Cost Component",
+   "options": "\nFreight\nIran Customs Duty\nIran Port & THC\nIran Storage\nIran Demurrage\nIran Inspection\nCross-Border Transport\nInsurance\nCertificate\nUzbekistan Customs Duty\nUzbekistan Port Handling\nCustoms Clearance Fee\nOther"
   },
   {
    "fieldname": "section_link",

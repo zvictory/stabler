@@ -15,7 +15,6 @@ import { useEscapeBack } from "../../composables/useEscapeBack.js";
 import Typeahead from "../../components/Typeahead.vue";
 import MoneyInput from "../../components/MoneyInput.vue";
 import DateInput from "../../components/DateInput.vue";
-import Select from "../../components/Select.vue";
 import PiAdvanceLedger from "../../components/PiAdvanceLedger.vue";
 
 const session = useSession();
@@ -36,23 +35,9 @@ const form = ref(blankForm());
 
 const INCOTERMS = ["EXW", "FCA", "FAS", "FOB", "CFR", "CIF", "CPT", "CIP", "DAP", "DPU", "DDP"];
 
-// ---- PI Groups ----
-const piGroups = ref([]);
-const groupOptions = computed(() => [
-	{ value: "", label: t("No PI group") },
-	...piGroups.value.map((g) => ({ value: g.name, label: g.title || g.name })),
-]);
-
-async function loadPiGroups() {
-	if (!activeCompany.value) return;
-	try {
-		piGroups.value = await call("stabler.api.imports.list_pi_groups", {
-			company: activeCompany.value,
-		});
-	} catch (_err) {
-		piGroups.value = [];
-	}
-}
+// PI group assignment lives in PiGroups.vue (multi-select modal), not here — the
+// input is gone but `import_pi_group` stays in the form state below so an edit
+// round-trips the stored value instead of clearing it.
 
 function blankForm() {
 	return {
@@ -662,7 +647,6 @@ async function confirmDelete() {
 
 onMounted(() => {
 	loadItemsList();
-	loadPiGroups();
 	loadDoc();
 });
 watch(docName, loadDoc);
@@ -714,7 +698,6 @@ const subCuts = computed(() => {
 	}
 	return [...groups.values()];
 });
-watch(activeCompany, loadPiGroups);
 </script>
 
 <template>
@@ -832,10 +815,6 @@ watch(activeCompany, loadPiGroups);
 							</template>
 						</Typeahead>
 					</div>
-					<div class="col-md-3">
-						<label class="form-label">{{ t("PI Group") }}</label>
-						<Select v-model="form.import_pi_group" :options="groupOptions" />
-					</div>
 					<div class="col-md-2">
 						<label class="form-label">{{ t("PI Date") }}</label>
 						<DateInput v-model="form.pi_date" />
@@ -917,9 +896,9 @@ watch(activeCompany, loadPiGroups);
 						<MoneyInput v-model="form.cash_agreed" :currency="form.currency" :language="user.language" @focus="onCashInput" />
 					</div>
 					<div class="col-12">
-						<div v-if="!earmarkOk" class="alert alert-warning py-1.5 px-3 mb-0 small d-flex align-items-center justify-content-between flex-wrap gap-2">
+						<div v-if="!earmarkOk" class="alert alert-warning py-2 px-3 mb-0 small d-flex align-items-center justify-content-between flex-wrap gap-2">
 							<span><i class="ti ti-alert-triangle me-1"></i>{{ t("Bank Agreed + Cash Agreed must equal Agreed Total.") }}</span>
-							<button type="button" class="btn btn-warning btn-sm py-0.5 px-2 font-monospace ms-auto" @click="syncEarmark">
+							<button type="button" class="btn btn-warning btn-sm font-monospace ms-auto" @click="syncEarmark">
 								<i class="ti ti-refresh me-1"></i>{{ t("Sync Prepayment Totals") }}
 							</button>
 						</div>

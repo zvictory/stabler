@@ -411,7 +411,7 @@ watch(docName, loadDoc);
 					<template v-if="costVisible">
 						<div class="col-md-3">
 							<label class="form-label">{{ t("Transport cost") }}</label>
-							<MoneyInput v-model="form.transport_cost" :currency="form.transport_currency" :language="user.language" size="sm" />
+							<MoneyInput v-model="form.transport_cost" :currency="form.transport_currency" :language="user.language" />
 						</div>
 						<div class="col-md-3">
 							<label class="form-label">{{ t("Currency") }}</label>

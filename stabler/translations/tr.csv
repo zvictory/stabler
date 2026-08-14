@@ -5839,3 +5839,12 @@ Paid on PI,PI'da ödenen
 Allocated on PI,PI'da tahsis edilen
 "Paid on PI and Allocated on PI are totals for the whole Proforma Invoice, not this CI's share.","""PI'da ödenen"" ve ""PI'da tahsis edilen"" tüm Proforma Fatura toplamlarıdır, bu CI'nın payı değil."
 Linking bills to an import is not configured for this company. Set the transport/service supplier groups in Stabler Settings.,Faturaların bir ithalata bağlanması bu şirket için yapılandırılmamış. Nakliye/hizmet tedarikçi gruplarını Stabler Ayarları'nda tanımlayın.
+Import expense category,İthalat gider kategorisi
+SELECTION,SEÇİM
+{count} selected,{count} seçildi
+of {value} on all {count} rows,toplam {count} satırdaki {value} içinden
+Score cards above show this selection only,Yukarıdaki kartlar yalnızca bu seçimi gösterir
+Remove filter,Filtreyi kaldır
+trucks,tır
+Transit,Transit
+View container detail,Konteyner detayını aç
