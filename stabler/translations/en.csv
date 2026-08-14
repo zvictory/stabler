@@ -77,7 +77,6 @@ Absent,Absent
 absent,absent
 Accept Return,Accept Return
 Accepted,Accepted
-Accepted,Accepted
 Access denied to tender module.,Access denied to tender module.
 Access Review,Access Review
 Access token,Access token
@@ -189,6 +188,7 @@ Add supplier,Add supplier
 Add supplier quotations to compare them and record an award.,Add supplier quotations to compare them and record an award.
 Add Task,Add Task
 Add to Google Calendar,Add to Google Calendar
+Add to landed cost,Add to landed cost
 Add to stock,Add to stock
 Add voucher,Add voucher
 Add warehouse,Add warehouse
@@ -734,6 +734,7 @@ Cannot show PI advances,Cannot show PI advances
 Cannot start a payment for a zero total.,Cannot start a payment for a zero total.
 Cannot verify all container packing lists because the scope changed or permissions are incomplete. Please try again.,Cannot verify all container packing lists because the scope changed or permissions are incomplete. Please try again.
 Capability grid,Capability grid
+Capitalize,Capitalize
 Captured At,Captured At
 Car / Item,Car / Item
 Car item is required.,Car item is required.
@@ -751,7 +752,6 @@ Cash / bank account,Cash / bank account
 Cash Agreed,Cash Agreed
 Cash amount,Cash amount
 Cash difference,Cash difference
-Cash Difference,Cash Difference
 Cash Difference,Cash Difference
 Cash due,Cash due
 Cash flow,Cash flow
@@ -1058,6 +1058,7 @@ Cost / kg,Cost / kg
 Cost Centre,Cost Centre
 Cost centre,Cost centre
 Cost Component,Cost Component
+Cost component,Cost component
 Cost figures are hidden — ask an imports manager or accountant for landed-cost visibility.,Cost figures are hidden — ask an imports manager or accountant for landed-cost visibility.
 Cost ledger,Cost ledger
 Cost Lines,Cost Lines
@@ -1283,7 +1284,6 @@ Customs Clearance Fee,Customs Clearance Fee
 Customs clearance fee,Customs clearance fee
 Customs Declaration,Customs Declaration
 Customs declaration,Customs declaration
-Customs Declaration,Customs Declaration
 Customs Declaration (GTD),Customs Declaration (GTD)
 Customs Declaration Line,Customs Declaration Line
 Customs declaration {0} is not cleared.,Customs declaration {0} is not cleared.
@@ -1371,7 +1371,6 @@ Declaration Document,Declaration Document
 Declaration lines,Declaration lines
 Declaration saved.,Declaration saved.
 Declared,Declared
-Declared,Declared
 Declared value (USD),Declared value (USD)
 Decrease,Decrease
 Deducted from worked time daily.,Deducted from worked time daily.
@@ -1433,7 +1432,6 @@ Deleting shows everything that depends on this invoice before anything is remove
 Deleting shows everything that depends on this proforma before anything is removed.,Deleting shows everything that depends on this proforma before anything is removed.
 Deliv,Deliv
 Deliver,Deliver
-Delivered,Delivered
 Delivered,Delivered
 Delivered total,Delivered total
 DELIVERED_TO_UZBEKISTAN,DELIVERED_TO_UZBEKISTAN
@@ -1505,7 +1503,6 @@ Directions,Directions
 Director board,Director board
 Disable,Disable
 Disable account?,Disable account?
-Disabled,Disabled
 Disabled,Disabled
 Disc,Disc
 Disc %,Disc %
@@ -1822,7 +1819,6 @@ Exchange rate unavailable — enter it manually.,Exchange rate unavailable — e
 Exchange rate unavailable — line prices were not converted. Enter the rate manually.,Exchange rate unavailable — line prices were not converted. Enter the rate manually.
 Exchange Rates,Exchange Rates
 Excise,Excise
-Excise,Excise
 Excise %,Excise %
 Excise Amount (UZS),Excise Amount (UZS)
 Excise Rate %,Excise Rate %
@@ -1854,6 +1850,7 @@ Expected quantities locked,Expected quantities locked
 Expected quantities refreshed from container packing lists.,Expected quantities refreshed from container packing lists.
 Expense,Expense
 Expense account,Expense account
+Expense capitalized on {count} container cost line(s).,Expense capitalized on {count} container cost line(s).
 Expense created.,Expense created.
 Expense Date,Expense Date
 Expense date,Expense date
@@ -1862,6 +1859,7 @@ Expense entry cancelled.,Expense entry cancelled.
 Expense lines,Expense lines
 Expense recorded.,Expense recorded.
 Expense recorded. Journal Entry {je} posted.,Expense recorded. Journal Entry {je} posted.
+Expense removed from the landed cost ({count} cost line(s) deleted).,Expense removed from the landed cost ({count} cost line(s) deleted).
 Expense saved and sent for approval — no money has left the cash desk yet.,Expense saved and sent for approval — no money has left the cash desk yet.
 Expense saved · {name},Expense saved · {name}
 Expense saved.,Expense saved.
@@ -2361,7 +2359,6 @@ in this invoice,in this invoice
 In time,In time
 In Transit,In Transit
 In transit,In transit
-In Transit,In Transit
 "In, out, returns and net movement totals for the period.","In, out, returns and net movement totals for the period."
 IN_TRANSIT,IN_TRANSIT
 Inactive,Inactive
@@ -2555,7 +2552,6 @@ Landed rate (UZS/kg),Landed rate (UZS/kg)
 Landed total,Landed total
 Landed-cost lines,Landed-cost lines
 Lane,Lane
-Lanes,Lanes
 Lanes,Lanes
 Language,Language
 Last 180 days,Last 180 days
@@ -3589,7 +3585,6 @@ Over-shipped products,Over-shipped products
 Overall Invoiced Progress,Overall Invoiced Progress
 Overdue,Overdue
 overdue,overdue
-Overdue,Overdue
 Overdue bids,Overdue bids
 Overdue installments,Overdue installments
 Overdue only,Overdue only
@@ -4290,6 +4285,7 @@ Remove column,Remove column
 Remove column?,Remove column?
 Remove file,Remove file
 Remove filter,Remove filter
+Remove from landed cost,Remove from landed cost
 Remove holiday?,Remove holiday?
 Remove Lane,Remove Lane
 Remove Lane?,Remove Lane?
@@ -4517,7 +4513,6 @@ Save as Draft,Save as Draft
 Save as draft,Save as draft
 save as draft,save as draft
 Save bid pricing,Save bid pricing
-Save Changes,Save Changes
 Save Changes,Save Changes
 Save changes,Save changes
 Save Details,Save Details
@@ -4831,7 +4826,6 @@ Soon,Soon
 SOON,SOON
 source,target
 Source,Source
-source,target
 Source / Portal,Source / Portal
 Source Stock,Source Stock
 Source warehouse,Source warehouse
@@ -5024,7 +5018,6 @@ Sync TimePay attendance and generate the period summary to populate this table.,
 System document,System document
 System qty,System qty
 Table,Table
-Table,Table
 Tag Sales/Purchase Orders to a tender deal to see them here.,Tag Sales/Purchase Orders to a tender deal to see them here.
 Tag Supplier Quotations to this deal to compare them here.,Tag Supplier Quotations to this deal to compare them here.
 Take Payment,Take Payment
@@ -5119,7 +5112,9 @@ The Commercial Invoice has no invoiceable item lines.,The Commercial Invoice has
 The commercial invoice has no items to receive.,The commercial invoice has no items to receive.
 The Commercial Invoice has no supplier.,The Commercial Invoice has no supplier.
 The Compliance module is disabled for this company.,The Compliance module is disabled for this company.
+The container cost lines created from {name} will be deleted. The expense itself stays.,The container cost lines created from {name} will be deleted. The expense itself stays.
 The expense account and the cash desk are in different currencies. Pick an account in {currency}.,The expense account and the cash desk are in different currencies. Pick an account in {currency}.
+The expense is split across this invoice's containers and added to their cost lines.,The expense is split across this invoice's containers and added to their cost lines.
 The GL ledger scan detected {0} issues that require immediate attention.,The GL ledger scan detected {0} issues that require immediate attention.
 The GRN expected snapshot is locked because receiving has started.,The GRN expected snapshot is locked because receiving has started.
 The import order has no supplier.,The import order has no supplier.
@@ -5490,7 +5485,6 @@ Unmatched,Unmatched
 Unmatched Event,Unmatched Event
 "Unmatched events, missing punches","Unmatched events, missing punches"
 Unmatched TimePay users,Unmatched TimePay users
-Unpaid,Unpaid
 Unpaid,Unpaid
 unpaid,unpaid
 Unreconciled transactions,Unreconciled transactions

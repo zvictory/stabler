@@ -2787,7 +2787,7 @@ def list_import_expenses(
                ie.expense_date, ie.supplier, ie.invoice_reference, ie.description,
                ie.amount, ie.currency, ie.bank_payment, ie.cash_payment, ie.status,
                ie.purchase_invoice, ie.expense_account, ie.paid_from_account,
-               ie.journal_entry
+               ie.journal_entry, ie.include_in_landed_cost, ie.cost_component
         FROM `tabImport Expense` ie
         WHERE {where}
         ORDER BY ie.creation DESC, ie.name DESC

@@ -77,7 +77,6 @@ Absent,Devamsız
 absent,gelmedi
 Accept Return,
 Accepted,Kabul edildi
-Accepted,Kabul Edildi
 Access denied to tender module.,Tender modülüne erişim yok.
 Access Review,Erişim İncelemesi
 Access token,
@@ -189,6 +188,7 @@ Add supplier,Tedarikçi ekle
 Add supplier quotations to compare them and record an award.,Karşılaştırmak ve kazananı kaydetmek için tedarikçi tekliflerini ekleyin.
 Add Task,Görev Ekle
 Add to Google Calendar,Google Takvim'e ekle
+Add to landed cost,Toplam maliyete ekle
 Add to stock,Stoğa ekle
 Add voucher,Fiş ekle
 Add warehouse,Depo ekle
@@ -734,6 +734,7 @@ Cannot show PI advances,PI avansları gösterilemiyor
 Cannot start a payment for a zero total.,
 Cannot verify all container packing lists because the scope changed or permissions are incomplete. Please try again.,Tüm konteyner çeki listeleri doğrulanamadı: kapsam değişti veya yetkiler eksik. Lütfen tekrar deneyin.
 Capability grid,Yetki tablosu
+Capitalize,Maliyetleştir
 Captured At,Kaydedilme Tarihi
 Car / Item,Araç / Kalem
 Car item is required.,Araç kalemi gereklidir.
@@ -752,7 +753,6 @@ Cash Agreed,Nakit (anlaşılan)
 Cash amount,Nakit tutar
 Cash difference,Nakit farkı
 Cash Difference,Nakit farkı
-Cash Difference,Nakit Farkı
 Cash due,Nakit ödeme
 Cash flow,Nakit akışı
 Cash on hand,Kasadaki nakit
@@ -1058,6 +1058,7 @@ Cost / kg,Maliyet / kg
 Cost Centre,
 Cost centre,
 Cost Component,Maliyet Bileşeni
+Cost component,Maliyet kalemi
 Cost figures are hidden — ask an imports manager or accountant for landed-cost visibility.,Maliyet tutarları gizli — indirilmiş maliyet erişimi için ithalat yöneticisine veya muhasebeciye başvurun.
 Cost ledger,Maliyet defteri
 Cost Lines,Maliyet Satırları
@@ -1370,7 +1371,6 @@ Declaration Document,Beyanname Belgesi
 Declaration lines,Beyanname satırları
 Declaration saved.,Beyanname kaydedildi.
 Declared,Beyan edildi
-Declared,Beyan Edildi
 Declared value (USD),Beyan edilen değer (USD)
 Decrease,Azalt
 Deducted from worked time daily.,
@@ -1432,7 +1432,6 @@ Deleting shows everything that depends on this invoice before anything is remove
 Deleting shows everything that depends on this proforma before anything is removed.,"Silme, hiçbir şey kaldırılmadan önce bu proformaya bağlı her şeyi gösterir."
 Deliv,Teslim
 Deliver,Teslim Et
-Delivered,Teslim Edildi
 Delivered,Teslim Edildi
 Delivered total,Toplam teslim maliyeti
 DELIVERED_TO_UZBEKISTAN,Özbekistan'a teslim edildi
@@ -1505,7 +1504,6 @@ Director board,Direktör paneli
 Disable,
 Disable account?,
 Disabled,Pasif
-Disabled,Devre Dışı
 Disc,İndirim
 Disc %,İndirim %
 Discard,
@@ -1821,7 +1819,6 @@ Exchange rate unavailable — enter it manually.,Döviz kuru bulunamadı — ell
 Exchange rate unavailable — line prices were not converted. Enter the rate manually.,Döviz kuru mevcut değil — satır fiyatları dönüştürülmedi. Kuru manuel girin.
 Exchange Rates,Döviz Kurları
 Excise,ÖTV
-Excise,ÖTV
 Excise %,ÖTV %
 Excise Amount (UZS),ÖTV Tutarı (UZS)
 Excise Rate %,ÖTV Oranı %
@@ -1853,6 +1850,7 @@ Expected quantities locked,Beklenen miktarlar kilitli
 Expected quantities refreshed from container packing lists.,Beklenen miktarlar konteyner çeki listelerinden yenilendi.
 Expense,Gider
 Expense account,Gider hesabı
+Expense capitalized on {count} container cost line(s).,Gider {count} konteyner maliyet satırına eklendi.
 Expense created.,Gider oluşturuldu.
 Expense Date,Gider Tarihi
 Expense date,Masraf tarihi
@@ -1861,6 +1859,7 @@ Expense entry cancelled.,
 Expense lines,Gider kalemleri
 Expense recorded.,Masraf kaydedildi.
 Expense recorded. Journal Entry {je} posted.,Masraf kaydedildi. {je} yevmiye kaydı işlendi.
+Expense removed from the landed cost ({count} cost line(s) deleted).,Gider toplam maliyetten çıkarıldı ({count} maliyet satırı silindi).
 Expense saved and sent for approval — no money has left the cash desk yet.,Masraf kaydedildi ve onaya gönderildi — kasadan henüz para çıkmadı.
 Expense saved · {name},Gider kaydedildi · {name}
 Expense saved.,Gider kaydedildi.
@@ -2360,7 +2359,6 @@ in this invoice,bu faturada
 In time,Zamanında
 In Transit,Yolda
 In transit,Yolda
-In Transit,Transit
 "In, out, returns and net movement totals for the period.","Dönem için giriş, çıkış, iade ve net hareket toplamları."
 IN_TRANSIT,Yolda
 Inactive,Pasif
@@ -2555,7 +2553,6 @@ Landed total,Landed toplam
 Landed-cost lines,Varış maliyeti satırları
 Lane,Şerit
 Lanes,Şeritler
-Lanes,Kulvarlar
 Language,Dil
 Last 180 days,Son 180 gün
 Last 30 days,Son 30 gün
@@ -2820,7 +2817,6 @@ Monday,
 Money,Para
 Month,Ay
 month,ay
-Month,Ay
 Month grid,Aylık ızgara
 Month is required in YYYY-MM format.,
 Month to date,
@@ -3589,7 +3585,6 @@ Over-shipped products,Fazla sevk edilen ürünler
 Overall Invoiced Progress,Genel faturalama ilerlemesi
 Overdue,Gecikmiş
 overdue,gecikmiş
-Overdue,Geciken
 Overdue bids,Gecikmiş teklifler
 Overdue installments,Gecikmiş taksitler
 Overdue only,Sadece vadesi geçenler
@@ -4289,6 +4284,7 @@ Remove column,Sütunu sil
 Remove column?,
 Remove file,Dosyayı kaldır
 Remove filter,Filtreyi kaldır
+Remove from landed cost,Toplam maliyetten çıkar
 Remove holiday?,Tatil kaldırılsın mı?
 Remove Lane,Şeridi Kaldır
 Remove Lane?,
@@ -4516,7 +4512,6 @@ Save as Draft,Taslak Olarak Kaydet
 Save as draft,Taslak olarak kaydet
 save as draft,
 Save bid pricing,Fiyatlandırmayı kaydet
-Save Changes,Değişiklikleri Kaydet
 Save Changes,Değişiklikleri Kaydet
 Save changes,Değişiklikleri kaydet
 Save Details,Detayları Kaydet
@@ -4830,7 +4825,6 @@ Soon,Yaklaşan
 SOON,YAK
 source,target
 Source,Kaynak
-source,target
 Source / Portal,Kaynak / Portal
 Source Stock,Kaynak Stok
 Source warehouse,Kaynak depo
@@ -5023,7 +5017,6 @@ Sync TimePay attendance and generate the period summary to populate this table.,
 System document,Sistemdeki belge
 System qty,Sistem miktarı
 Table,Tablo
-Table,Tablo
 Tag Sales/Purchase Orders to a tender deal to see them here.,Burada görmek için siparişleri bir tendere bağlayın.
 Tag Supplier Quotations to this deal to compare them here.,Karşılaştırmak için teklifleri bu anlaşmaya bağlayın.
 Take Payment,
@@ -5118,7 +5111,9 @@ The Commercial Invoice has no invoiceable item lines.,Ticari faturada faturalana
 The commercial invoice has no items to receive.,Ticari faturada kabul edilecek ürün yok.
 The Commercial Invoice has no supplier.,Ticari faturada tedarikçi belirtilmemiş.
 The Compliance module is disabled for this company.,Bu şirket için Uyumluluk modülü devre dışı.
+The container cost lines created from {name} will be deleted. The expense itself stays.,{name} kaydından oluşturulan konteyner maliyet satırları silinecek. Giderin kendisi kalır.
 The expense account and the cash desk are in different currencies. Pick an account in {currency}.,Gider hesabı ile kasa farklı para birimlerinde. {currency} cinsinden bir hesap seçin.
+The expense is split across this invoice's containers and added to their cost lines.,Gider bu faturanın konteynerlerine dağıtılır ve maliyet satırlarına eklenir.
 The GL ledger scan detected {0} issues that require immediate attention.,
 The GRN expected snapshot is locked because receiving has started.,Mal kabulü başladığı için beklenen miktar anlık görüntüsü kilitli.
 The import order has no supplier.,

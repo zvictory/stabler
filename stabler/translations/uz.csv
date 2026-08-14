@@ -77,7 +77,6 @@ Absent,Yo'q
 absent,kelmagan
 Accept Return,
 Accepted,Qabul qilingan
-Accepted,Qabul qilindi
 Access denied to tender module.,Tender moduliga ruxsat yo'q.
 Access Review,Kirishni tekshirish
 Access token,
@@ -189,6 +188,7 @@ Add supplier,Ta'minotchi qo'shish
 Add supplier quotations to compare them and record an award.,Taqqoslash va g'olibni belgilash uchun etkazib beruvchi takliflarini qo'shing.
 Add Task,Vazifa qo'shish
 Add to Google Calendar,Google Kalendarga qo'shish
+Add to landed cost,Yakuniy tannarxga qo'shish
 Add to stock,Omborga qo'shish
 Add voucher,Vaucher qoʻshish
 Add warehouse,Omborxona qo'shish
@@ -736,6 +736,7 @@ Cannot show PI advances,PI avanslarini koʻrsatib boʻlmadi
 Cannot start a payment for a zero total.,
 Cannot verify all container packing lists because the scope changed or permissions are incomplete. Please try again.,Barcha konteyner qadoqlash ro‘yxatlarini tekshirib bo‘lmadi: qamrov o‘zgardi yoki ruxsatlar to‘liq emas. Qayta urinib ko‘ring.
 Capability grid,Vakolatlar jadvali
+Capitalize,Kapitallashtirish
 Captured At,Qabul qilingan vaqti
 Car / Item,Avtomobil / Mahsulot
 Car item is required.,Mahsulot (avtomobil) majburiy.
@@ -753,7 +754,6 @@ Cash / bank account,Kassa / bank hisobi
 Cash Agreed,Naqd (kelishilgan)
 Cash amount,Naqd summa
 Cash difference,Naqd farqi
-Cash Difference,Naqd farqi
 Cash Difference,Naqd farqi
 Cash due,Naqd to'lov
 Cash flow,Pul oqimi
@@ -1060,6 +1060,7 @@ Cost / kg,Tannarx / kg
 Cost Centre,
 Cost centre,
 Cost Component,Xarajat komponenti
+Cost component,Xarajat moddasi
 Cost figures are hidden — ask an imports manager or accountant for landed-cost visibility.,Xarajat summalari yashirilgan — yakuniy tannarxni ko‘rish uchun import menejeri yoki buxgalterga murojaat qiling.
 Cost ledger,Xarajatlar reyestri
 Cost Lines,Xarajat qatorlari
@@ -1372,7 +1373,6 @@ Declaration Document,Deklaratsiya hujjati
 Declaration lines,Deklaratsiya qatorlari
 Declaration saved.,Deklaratsiya saqlandi.
 Declared,Deklaratsiya qilingan
-Declared,Deklaratsiyalangan
 Declared value (USD),E’lon qilingan qiymat (USD)
 Decrease,Kamaytirish
 Deducted from worked time daily.,
@@ -1435,7 +1435,6 @@ Deleting shows everything that depends on this proforma before anything is remov
 Deliv,Yetk.
 Deliver,Yetkazib berish
 Delivered,Yetkazib berilgan
-Delivered,Yetkazib berildi
 Delivered total,Yetkazib berish bilan jami
 DELIVERED_TO_UZBEKISTAN,O‘zbekistonga yetkazildi
 Delivery,Yetkazish
@@ -1507,7 +1506,6 @@ Director board,Direktor paneli
 Disable,
 Disable account?,
 Disabled,Nofaol
-Disabled,O'chirilgan
 Disc,Chegirma
 Disc %,Chegirma %
 Discard,
@@ -1823,7 +1821,6 @@ Exchange rate unavailable — enter it manually.,Valyuta kursi mavjud emas — u
 Exchange rate unavailable — line prices were not converted. Enter the rate manually.,Valyuta kursi mavjud emas — qator narxlari qayta hisoblanmadi. Kursni qo'lda kiriting.
 Exchange Rates,Valyuta kurslari
 Excise,Aktsiz
-Excise,Aktsiz
 Excise %,Aktsiz %
 Excise Amount (UZS),Aksiz miqdori (UZS)
 Excise Rate %,Aksiz stavkasi %
@@ -1855,6 +1852,7 @@ Expected quantities locked,Kutilayotgan miqdorlar qulflangan
 Expected quantities refreshed from container packing lists.,Kutilayotgan miqdorlar konteyner qadoqlash ro‘yxatlaridan yangilandi.
 Expense,Xarajat
 Expense account,Xarajat hisobi
+Expense capitalized on {count} container cost line(s).,Xarajat {count} ta konteyner xarajat satriga kapitallashtirildi.
 Expense created.,Xarajat yaratildi.
 Expense Date,Xarajat sanasi
 Expense date,Xarajat sanasi
@@ -1863,6 +1861,7 @@ Expense entry cancelled.,
 Expense lines,Xarajat qatorlari
 Expense recorded.,Xarajat qayd etildi.
 Expense recorded. Journal Entry {je} posted.,Xarajat qayd etildi. {je} jurnal yozuvi o'tkazildi.
+Expense removed from the landed cost ({count} cost line(s) deleted).,Xarajat yakuniy tannarxdan olib tashlandi ({count} ta xarajat satri o'chirildi).
 Expense saved and sent for approval — no money has left the cash desk yet.,Xarajat saqlandi va tasdiqlashga yuborildi — pul kassadan hali chiqmadi.
 Expense saved · {name},Xarajat saqlandi · {name}
 Expense saved.,Xarajat saqlandi.
@@ -2362,7 +2361,6 @@ in this invoice,ushbu hisobda
 In time,Kirish vaqti
 In Transit,Yo'lda
 In transit,Yo‘lda
-In Transit,Yo'lda
 "In, out, returns and net movement totals for the period.","Davr uchun kirim, chiqim, qaytish va sof harakat jami."
 IN_TRANSIT,Yo‘lda
 Inactive,Faol emas
@@ -2557,7 +2555,6 @@ Landed total,Yetkazilgan jami
 Landed-cost lines,Yetkazib berish qiymati qatorlari
 Lane,Yo'lak
 Lanes,Yo'laklar
-Lanes,Ustunlar
 Language,Til
 Last 180 days,So‘nggi 180 kun
 Last 30 days,So‘nggi 30 kun
@@ -2822,7 +2819,6 @@ Monday,
 Money,Pul
 Month,Oy
 month,oy
-Month,Oy
 Month grid,Oylik jadval
 Month is required in YYYY-MM format.,
 Month to date,
@@ -3591,7 +3587,6 @@ Over-shipped products,Ortiqcha jo'natilgan mahsulotlar
 Overall Invoiced Progress,Umumiy hisob-faktura jarayoni
 Overdue,Muddati o'tgan
 overdue,kechikdi
-Overdue,Muddati o'tgan
 Overdue bids,Muddati o'tgan takliflar
 Overdue installments,Muddati o'tgan to'lovlar
 Overdue only,Faqat muddati oʻtganlar
@@ -4293,6 +4288,7 @@ Remove column,Ustunni o'chirish
 Remove column?,
 Remove file,Faylni o'chirish
 Remove filter,Filtrni olib tashlash
+Remove from landed cost,Yakuniy tannarxdan olib tashlash
 Remove holiday?,Bayram o'chirilsinmi?
 Remove Lane,Yo'lakni o'chirish
 Remove Lane?,
@@ -4520,7 +4516,6 @@ Save as Draft,Qoralama sifatida saqlash
 Save as draft,Qoralama sifatida saqlash
 save as draft,
 Save bid pricing,Narx rejasini saqlash
-Save Changes,O'zgarishlarni saqlash
 Save Changes,O'zgarishlarni saqlash
 Save changes,O'zgarishlarni saqlash
 Save Details,Tafsilotlarni Saqlash
@@ -4834,7 +4829,6 @@ Soon,Yaqinlashayotgan
 SOON,YQN
 source,target
 Source,Manba
-source,target
 Source / Portal,Manba / Portal
 Source Stock,Manba qoldig'i
 Source warehouse,Manba ombor
@@ -5027,7 +5021,6 @@ Sync TimePay attendance and generate the period summary to populate this table.,
 System document,Tizimdagi hujjat
 System qty,Tizimdagi miqdor
 Table,Jadval
-Table,Jadval
 Tag Sales/Purchase Orders to a tender deal to see them here.,Ularni bu yerda ko‘rish uchun buyurtmalarni tenderга bog‘lang.
 Tag Supplier Quotations to this deal to compare them here.,Taqqoslash uchun kotirovkalarni shu bitimga bog'lang.
 Take Payment,
@@ -5122,7 +5115,9 @@ The Commercial Invoice has no invoiceable item lines.,Tijorat invoysida hisob-fa
 The commercial invoice has no items to receive.,Tijorat invoysida qabul qilinadigan tovarlar yo‘q.
 The Commercial Invoice has no supplier.,Tijorat invoysida yetkazib beruvchi ko‘rsatilmagan.
 The Compliance module is disabled for this company.,Bu kompaniya uchun Muvofiqlik moduli o'chirilgan.
+The container cost lines created from {name} will be deleted. The expense itself stays.,{name} dan yaratilgan konteyner xarajat satrlari o'chiriladi. Xarajatning o'zi qoladi.
 The expense account and the cash desk are in different currencies. Pick an account in {currency}.,Xarajat hisobi va kassa turli valyutada. {currency} dagi hisobni tanlang.
+The expense is split across this invoice's containers and added to their cost lines.,Xarajat ushbu invoysning konteynerlari bo'yicha taqsimlanadi va ularning xarajat satrlariga qo'shiladi.
 The GL ledger scan detected {0} issues that require immediate attention.,
 The GRN expected snapshot is locked because receiving has started.,Qabul boshlangani uchun kutilayotgan miqdorlar surati qulflangan.
 The import order has no supplier.,

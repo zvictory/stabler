@@ -76,6 +76,10 @@ export const importsApi = {
 	getImportExpense: (name) => call(`${P}.get_import_expense`, { name }),
 	createImportExpense: (payload) => call(`${P}.create_import_expense`, payload),
 	updateImportExpense: (payload) => call(`${P}.update_import_expense`, payload),
+	setExpenseLandedCost: (import_expense, cost_component) =>
+		call(`${P}.set_expense_landed_cost`, { import_expense, cost_component }),
+	clearExpenseLandedCost: (import_expense) =>
+		call(`${P}.clear_expense_landed_cost`, { import_expense }),
 
 	// Landed Cost Review
 	getLandedCostReview: (grn_checklist, rate) =>

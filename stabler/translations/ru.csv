@@ -78,7 +78,6 @@ Absent,Отсутствует
 absent,отсутствовал
 Accept Return,
 Accepted,Принят
-Accepted,Принято
 Access denied to tender module.,Нет доступа к модулю тендеров.
 Access Review,Проверка доступа
 Access token,
@@ -190,6 +189,7 @@ Add supplier,Добавить поставщика
 Add supplier quotations to compare them and record an award.,Добавьте предложения поставщиков для сравнения и оформления победы.
 Add Task,Добавить задачу
 Add to Google Calendar,Добавить в Google Календарь
+Add to landed cost,Добавить в себестоимость
 Add to stock,Добавить на склад
 Add voucher,Добавить ваучер
 Add warehouse,Добавить склад
@@ -740,6 +740,7 @@ Cannot show PI advances,Невозможно показать авансы по 
 Cannot start a payment for a zero total.,
 Cannot verify all container packing lists because the scope changed or permissions are incomplete. Please try again.,Не удалось проверить все упаковочные листы контейнеров: изменился состав или недостаточно прав. Повторите попытку.
 Capability grid,Матрица полномочий
+Capitalize,Капитализировать
 Captured At,Захвачено
 Car / Item,Авто / Товар
 Car item is required.,Товар (автомобиль) обязателен.
@@ -757,7 +758,6 @@ Cash / bank account,Касса / банк счёт
 Cash Agreed,Наличные (договорено)
 Cash amount,Сумма наличными
 Cash difference,Разница наличными
-Cash Difference,Разница (наличные)
 Cash Difference,Разница (наличные)
 Cash due,К оплате (нал.)
 Cash flow,Движение денежных средств
@@ -1065,6 +1065,7 @@ Cost / kg,Себестоимость / кг
 Cost Centre,
 Cost centre,
 Cost Component,Статья затрат
+Cost component,Статья затрат
 Cost figures are hidden — ask an imports manager or accountant for landed-cost visibility.,Суммы затрат скрыты — обратитесь к менеджеру по импорту или бухгалтеру для доступа к себестоимости.
 Cost ledger,Реестр затрат
 Cost Lines,Строки затрат
@@ -1377,7 +1378,6 @@ Declaration Document,Документ декларации
 Declaration lines,Строки декларации
 Declaration saved.,Декларация сохранена.
 Declared,Задекларировано
-Declared,Задекларирован
 Declared value (USD),Заявленная стоимость (USD)
 Decrease,Уменьшить
 Deducted from worked time daily.,
@@ -1439,7 +1439,6 @@ Deleting shows everything that depends on this invoice before anything is remove
 Deleting shows everything that depends on this proforma before anything is removed.,"Удаление сначала покажет всё, что зависит от этой проформы."
 Deliv,Доставл.
 Deliver,Доставить
-Delivered,Доставлено
 Delivered,Доставлено
 Delivered total,Итого с доставкой
 DELIVERED_TO_UZBEKISTAN,Доставлен в Узбекистан
@@ -1512,7 +1511,6 @@ Director board,Панель директора
 Disable,
 Disable account?,
 Disabled,Отключен
-Disabled,Отключено
 Disc,Скидка
 Disc %,Скидка %
 Discard,
@@ -1829,7 +1827,6 @@ Exchange rate unavailable — enter it manually.,Обменный курс не�
 Exchange rate unavailable — line prices were not converted. Enter the rate manually.,Курс обмена недоступен — цены строк не были пересчитаны. Введите курс вручную.
 Exchange Rates,Курсы валют
 Excise,Акциз
-Excise,Акциз
 Excise %,Акциз %
 Excise Amount (UZS),Сумма акциза (UZS)
 Excise Rate %,Ставка акциза %
@@ -1861,6 +1858,7 @@ Expected quantities locked,Ожидаемые количества зафикс�
 Expected quantities refreshed from container packing lists.,Ожидаемые количества обновлены из упаковочных листов контейнеров.
 Expense,Расход
 Expense account,Счёт расходов
+Expense capitalized on {count} container cost line(s).,Расход капитализирован в строках затрат контейнеров: {count}.
 Expense created.,Расход создан.
 Expense Date,Дата расхода
 Expense date,Дата расхода
@@ -1869,6 +1867,7 @@ Expense entry cancelled.,
 Expense lines,Строки расходов
 Expense recorded.,Расход записан.
 Expense recorded. Journal Entry {je} posted.,Расход записан. Проведена проводка {je}.
+Expense removed from the landed cost ({count} cost line(s) deleted).,Расход убран из себестоимости (удалено строк затрат: {count}).
 Expense saved and sent for approval — no money has left the cash desk yet.,Расход сохранён и отправлен на утверждение — деньги из кассы ещё не списаны.
 Expense saved · {name},Расход сохранён · {name}
 Expense saved.,Расход сохранён.
@@ -2367,7 +2366,6 @@ in this invoice,в этом инвойсе
 In time,Время входа
 In Transit,В пути
 In transit,В пути
-In Transit,В пути
 "In, out, returns and net movement totals for the period.","Итоги прихода, расхода, возвратов и чистого движения за период."
 IN_TRANSIT,В пути
 Inactive,Неактивные
@@ -2562,7 +2560,6 @@ Landed total,Итого с доставкой
 Landed-cost lines,Статьи стоимости доставки
 Lane,Полоса
 Lanes,Полосы
-Lanes,Колонки
 Language,Язык
 Last 180 days,Последние 180 дней
 Last 30 days,Последние 30 дней
@@ -2827,7 +2824,6 @@ Monday,
 Money,Деньги
 Month,Месяц
 month,месяц
-Month,Месяц
 Month grid,Месячная сетка
 Month is required in YYYY-MM format.,
 Month to date,
@@ -3596,7 +3592,6 @@ Over-shipped products,Товаров с перегрузом
 Overall Invoiced Progress,Общий прогресс фактурирования
 Overdue,Просрочено
 overdue,просрочено
-Overdue,Просрочено
 Overdue bids,Просроченные подачи
 Overdue installments,Просроченные платежи
 Overdue only,Только просроченные
@@ -4298,6 +4293,7 @@ Remove column,Удалить колонку
 Remove column?,
 Remove file,Удалить файл
 Remove filter,Убрать фильтр
+Remove from landed cost,Убрать из себестоимости
 Remove holiday?,Удалить праздник?
 Remove Lane,Удалить полосу
 Remove Lane?,
@@ -4525,7 +4521,6 @@ Save as Draft,Сохранить как черновик
 Save as draft,Сохранить черновик
 save as draft,
 Save bid pricing,Сохранить ценообразование
-Save Changes,Сохранить изменения
 Save Changes,Сохранить изменения
 Save changes,Сохранить изменения
 Save Details,Сохранить данные
@@ -4839,7 +4834,6 @@ Soon,Скоро
 SOON,СКР
 source,target
 Source,Источник
-source,target
 Source / Portal,Источник / Портал
 Source Stock,Остаток на источнике
 Source warehouse,Склад источника
@@ -5032,7 +5026,6 @@ Sync TimePay attendance and generate the period summary to populate this table.,
 System document,Документ в системе
 System qty,Кол-во в системе
 Table,Таблица
-Table,Таблица
 Tag Sales/Purchase Orders to a tender deal to see them here.,"Привяжите заказы к тендеру, чтобы видеть их здесь."
 Tag Supplier Quotations to this deal to compare them here.,"Привяжите котировки к сделке, чтобы сравнить их здесь."
 Take Payment,
@@ -5127,7 +5120,9 @@ The Commercial Invoice has no invoiceable item lines.,В коммерческо�
 The commercial invoice has no items to receive.,В коммерческом инвойсе нет позиций для приёмки.
 The Commercial Invoice has no supplier.,В коммерческом инвойсе не указан поставщик.
 The Compliance module is disabled for this company.,Модуль соответствия отключён для этой компании.
+The container cost lines created from {name} will be deleted. The expense itself stays.,"Строки затрат контейнеров, созданные из {name}, будут удалены. Сам расход останется."
 The expense account and the cash desk are in different currencies. Pick an account in {currency}.,Счёт расходов и касса в разных валютах. Выберите счёт в {currency}.
+The expense is split across this invoice's containers and added to their cost lines.,Расход распределяется по контейнерам этого инвойса и добавляется в их строки затрат.
 The GL ledger scan detected {0} issues that require immediate attention.,
 The GRN expected snapshot is locked because receiving has started.,"Снимок ожидаемых количеств зафиксирован, так как приёмка началась."
 The import order has no supplier.,

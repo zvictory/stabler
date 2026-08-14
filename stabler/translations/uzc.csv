@@ -77,7 +77,6 @@ Absent,Йўқ
 absent,келмаган
 Accept Return,
 Accepted,Қабул қилинган
-Accepted,Қабул қилинди
 Access denied to tender module.,Тендер модулига рухсат йўқ.
 Access Review,Киришни текшириш
 Access token,
@@ -189,6 +188,7 @@ Add supplier,Таъминотчи қўшиш
 Add supplier quotations to compare them and record an award.,Таққослаш ва ғолибни белгилаш учун етказиб берувчи таклифларини қўшинг.
 Add Task,Вазифа қўшиш
 Add to Google Calendar,Google Календарга қўшиш
+Add to landed cost,Якуний таннархга қўшиш
 Add to stock,Омборга қўшиш
 Add voucher,Ваучер қўшиш
 Add warehouse,Омбор қўшиш
@@ -736,6 +736,7 @@ Cannot show PI advances,PI авансларини кўрсатиб бўлмад�
 Cannot start a payment for a zero total.,
 Cannot verify all container packing lists because the scope changed or permissions are incomplete. Please try again.,Барча контейнер қадоқлаш рўйхатларини текшириб бўлмади: қамров ўзгарди ёки рухсатлар тўлиқ эмас. Қайта уриниб кўринг.
 Capability grid,Ваколатлар жадвали
+Capitalize,Капиталлаштириш
 Captured At,Қўлга олингани
 Car / Item,Автомобил / Маҳсулот
 Car item is required.,Маҳсулот (автомобил) мажбурий.
@@ -753,7 +754,6 @@ Cash / bank account,Касса / банк ҳисоби
 Cash Agreed,Нақд (келишилган)
 Cash amount,Нақд сумма
 Cash difference,Нақд фарқи
-Cash Difference,Нақд фарқи
 Cash Difference,Нақд фарқи
 Cash due,Нақд тўлов
 Cash flow,Пул ағдарлари
@@ -1060,6 +1060,7 @@ Cost / kg,Таннарх / кг
 Cost Centre,
 Cost centre,
 Cost Component,Харажат компоненти
+Cost component,Харажат моддаси
 Cost figures are hidden — ask an imports manager or accountant for landed-cost visibility.,Харажат суммалари яширилган — якуний таннархни кўриш учун импорт менежери ёки бухгалтерга мурожаат қилинг.
 Cost ledger,Харажатлар реестри
 Cost Lines,Харажат қаторлари
@@ -1372,7 +1373,6 @@ Declaration Document,Декларация ҳужжати
 Declaration lines,Декларация қаторлари
 Declaration saved.,Декларация сақланди.
 Declared,Декларация қилинган
-Declared,Декларацияланган
 Declared value (USD),Эълон қилинган қиймат (USD)
 Decrease,Камайтириш
 Deducted from worked time daily.,
@@ -1435,7 +1435,6 @@ Deleting shows everything that depends on this proforma before anything is remov
 Deliv,Етк.
 Deliver,Етказиш
 Delivered,Етказилган
-Delivered,Етказиб берилди
 Delivered total,Етказиб бериш билан жами
 DELIVERED_TO_UZBEKISTAN,Ўзбекистонга етказилди
 Delivery,Етказиш
@@ -1507,7 +1506,6 @@ Director board,Директор панели
 Disable,
 Disable account?,
 Disabled,Нофаол
-Disabled,Ўчирилган
 Disc,Чегирма
 Disc %,Чегирма %
 Discard,
@@ -1823,7 +1821,6 @@ Exchange rate unavailable — enter it manually.,Алмашта нарх мав�
 Exchange rate unavailable — line prices were not converted. Enter the rate manually.,Валюта курси мавжуд эмас — қатор нархлари қайта ҳисобланмади. Курсни қўлда киритинг.
 Exchange Rates,Валюта курслари
 Excise,Акциз
-Excise,Акциз
 Excise %,Акциз %
 Excise Amount (UZS),Акциз миқдори (UZS)
 Excise Rate %,Акциз ставкаси %
@@ -1855,6 +1852,7 @@ Expected quantities locked,Кутилаётган миқдорлар қулфл�
 Expected quantities refreshed from container packing lists.,Кутилаётган миқдорлар контейнер қадоқлаш рўйхатларидан янгиланди.
 Expense,Харжи
 Expense account,Харажат ҳисоби
+Expense capitalized on {count} container cost line(s).,Харажат {count} та контейнер харажат сатрига капиталлаштирилди.
 Expense created.,Харажат яратилди.
 Expense Date,Харажат санаси
 Expense date,Харажат санаси
@@ -1863,6 +1861,7 @@ Expense entry cancelled.,
 Expense lines,Харжи сатрлари
 Expense recorded.,Харажат қайд этилди.
 Expense recorded. Journal Entry {je} posted.,Харажат қайд этилди. {je} журнал ёзуви ўтказилди.
+Expense removed from the landed cost ({count} cost line(s) deleted).,Харажат якуний таннархдан олиб ташланди ({count} та харажат сатри ўчирилди).
 Expense saved and sent for approval — no money has left the cash desk yet.,Харажат сақланди ва тасдиқлашга юборилди — пул кассадан ҳали чиқмади.
 Expense saved · {name},Харажат сақланди · {name}
 Expense saved.,Харажат сақланди.
@@ -2362,7 +2361,6 @@ in this invoice,ушбу ҳисобда
 In time,Кириш вақти
 In Transit,Йўлда
 In transit,Йўлда
-In Transit,Йўлда
 "In, out, returns and net movement totals for the period.","Давр учун кирим, чиқим, қайтиш ва соф ҳаракат жами."
 IN_TRANSIT,Йўлда
 Inactive,Фаол эмас
@@ -2557,7 +2555,6 @@ Landed total,Етказилган жами
 Landed-cost lines,Етказиб бериш қиймати қаторлари
 Lane,Йўлак
 Lanes,Йўлаклар
-Lanes,Устунлар
 Language,Тил
 Last 180 days,Сўнгги 180 кун
 Last 30 days,Сўнгги 30 кун
@@ -2822,7 +2819,6 @@ Monday,
 Money,Пул
 Month,Ой
 month,ой
-Month,Ой
 Month grid,Ойлик жадвал
 Month is required in YYYY-MM format.,
 Month to date,
@@ -3591,7 +3587,6 @@ Over-shipped products,Ортиқча жўнатилган маҳсулотлар
 Overall Invoiced Progress,Умумий ҳисоб-фактура жараёни
 Overdue,Муддати ўтган
 overdue,кечикди
-Overdue,Муддати ўтган
 Overdue bids,Муддати ўтган таклифлар
 Overdue installments,Муддати ўтган тўловлар
 Overdue only,Фақат муддати ўтганлар
@@ -4293,6 +4288,7 @@ Remove column,Устунни ўчириш
 Remove column?,
 Remove file,Fayldı alıp taslaw
 Remove filter,Фильтрни олиб ташлаш
+Remove from landed cost,Якуний таннархдан олиб ташлаш
 Remove holiday?,Байрам ўчирилсинми?
 Remove Lane,Йўлакни ўчириш
 Remove Lane?,
@@ -4520,7 +4516,6 @@ Save as Draft,Қоралама сифатида сақлаш
 Save as draft,Қоралама сифатида сақлаш
 save as draft,
 Save bid pricing,Нарх режасини сақлаш
-Save Changes,Ўзгаришларни сақлаш
 Save Changes,Ўзгаришларни сақлаш
 Save changes,Ўзгаришларни сақлаш
 Save Details,Тафсилотларни Сақлаш
@@ -4834,7 +4829,6 @@ Soon,Яқинлашаётган
 SOON,ЯҚН
 source,target
 Source,Манба
-source,target
 Source / Portal,Манба / Портал
 Source Stock,Манба қолдиғи
 Source warehouse,Манба омбор
@@ -5027,7 +5021,6 @@ Sync TimePay attendance and generate the period summary to populate this table.,
 System document,Тизимдаги ҳужжат
 System qty,Тизимдаги миқдор
 Table,Жадвал
-Table,Жадвал
 Tag Sales/Purchase Orders to a tender deal to see them here.,Уларни бу ерда кўриш учун буюртмаларни тендерга боғланг.
 Tag Supplier Quotations to this deal to compare them here.,Таққослаш учун котировкаларни шу битимга боғланг.
 Take Payment,
@@ -5122,7 +5115,9 @@ The Commercial Invoice has no invoiceable item lines.,Тижорат инвой�
 The commercial invoice has no items to receive.,Тижорат инвойсида қабул қилинадиган товарлар йўқ.
 The Commercial Invoice has no supplier.,Тижорат инвойсида етказиб берувчи кўрсатилмаган.
 The Compliance module is disabled for this company.,Мувофиқлик модули бу компанияда ўчирилган.
+The container cost lines created from {name} will be deleted. The expense itself stays.,{name} дан яратилган контейнер харажат сатрлари ўчирилади. Харажатнинг ўзи қолади.
 The expense account and the cash desk are in different currencies. Pick an account in {currency}.,Харажат ҳисоби ва касса турли валютада. {currency} даги ҳисобни танланг.
+The expense is split across this invoice's containers and added to their cost lines.,Харажат ушбу инвойснинг контейнерлари бўйича тақсимланади ва уларнинг харажат сатрларига қўшилади.
 The GL ledger scan detected {0} issues that require immediate attention.,
 The GRN expected snapshot is locked because receiving has started.,Қабул бошлангани учун кутилаётган миқдорлар сурати қулфланган.
 The import order has no supplier.,
