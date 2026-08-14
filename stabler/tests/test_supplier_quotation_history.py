@@ -6,9 +6,17 @@ PYTHONPATH=$PWD python3 -m unittest stabler.tests.test_supplier_quotation_histor
 from __future__ import annotations
 
 import importlib
-import sys
 import types
 import unittest
+
+from stabler.tests.module_sandbox import ModuleSandbox
+
+_SANDBOX = ModuleSandbox()
+
+
+def tearDownModule():
+	"""The fakes below are process-wide — hand ``sys.modules`` back intact."""
+	_SANDBOX.restore()
 
 
 class _FakeFrappe:
@@ -171,14 +179,13 @@ class _FakeFrappe:
 
 
 def _load_purchasing(fake: _FakeFrappe):
-	for name in (
+	_SANDBOX.evict(
 		"stabler.api.purchasing",
 		"stabler.stabler.doctype.stabler_settings.stabler_settings",
 		"frappe",
 		"frappe.utils",
 		"frappe.model.document",
-	):
-		sys.modules.pop(name, None)
+	)
 
 	frappe_model_doc = types.ModuleType("frappe.model.document")
 
@@ -186,7 +193,7 @@ def _load_purchasing(fake: _FakeFrappe):
 		pass
 
 	frappe_model_doc.Document = Document
-	sys.modules["frappe.model.document"] = frappe_model_doc
+	_SANDBOX.install({"frappe.model.document": frappe_model_doc})
 
 	frappe = types.ModuleType("frappe")
 	frappe._ = lambda value: value
@@ -220,7 +227,7 @@ def _load_purchasing(fake: _FakeFrappe):
 
 	approvals._assert_company_scope = _assert_company_scope
 
-	sys.modules.update(
+	_SANDBOX.install(
 		{
 			"frappe": frappe,
 			"frappe.utils": utils,

@@ -3,9 +3,17 @@
 from __future__ import annotations
 
 import importlib
-import sys
 import types
 import unittest
+
+from stabler.tests.module_sandbox import ModuleSandbox
+
+_SANDBOX = ModuleSandbox()
+
+
+def tearDownModule():
+	"""The fakes below are process-wide — hand ``sys.modules`` back intact."""
+	_SANDBOX.restore()
 
 
 class _Document:
@@ -14,13 +22,12 @@ class _Document:
 
 
 def _load_controller(*, exists=True, permitted=True, reference_company="Mikas"):
-	for name in (
+	_SANDBOX.evict(
 		"stabler.stabler.doctype.crm_activity.crm_activity",
 		"frappe",
 		"frappe.model",
 		"frappe.model.document",
-	):
-		sys.modules.pop(name, None)
+	)
 	frappe = types.ModuleType("frappe")
 	frappe._ = lambda value: value
 	frappe.session = types.SimpleNamespace(user="rep@mikas.example")
@@ -35,7 +42,7 @@ def _load_controller(*, exists=True, permitted=True, reference_company="Mikas"):
 	model = types.ModuleType("frappe.model")
 	document = types.ModuleType("frappe.model.document")
 	document.Document = _Document
-	sys.modules.update({"frappe": frappe, "frappe.model": model, "frappe.model.document": document})
+	_SANDBOX.install({"frappe": frappe, "frappe.model": model, "frappe.model.document": document})
 	module = importlib.import_module("stabler.stabler.doctype.crm_activity.crm_activity")
 	return module.CRMActivity
 

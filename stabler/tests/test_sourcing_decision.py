@@ -14,15 +14,23 @@ from __future__ import annotations
 
 import importlib
 import json
-import sys
 import types
 import unittest
 from pathlib import Path
+
+from stabler.tests.module_sandbox import ModuleSandbox
 
 _ROOT = Path(__file__).resolve().parents[1]
 SCHEMA = _ROOT / "stabler" / "doctype" / "tender_sourcing_decision" / "tender_sourcing_decision.json"
 CONTROLLER = _ROOT / "stabler" / "doctype" / "tender_sourcing_decision" / "tender_sourcing_decision.py"
 HOOKS = _ROOT / "hooks.py"
+
+_SANDBOX = ModuleSandbox()
+
+
+def tearDownModule():
+	"""The fakes below are process-wide — hand ``sys.modules`` back intact."""
+	_SANDBOX.restore()
 
 
 class _Flags(types.SimpleNamespace):
@@ -51,13 +59,12 @@ class _Document:
 
 
 def _load_controller():
-	for name in (
+	_SANDBOX.evict(
 		"stabler.stabler.doctype.tender_sourcing_decision.tender_sourcing_decision",
 		"frappe",
 		"frappe.model",
 		"frappe.model.document",
-	):
-		sys.modules.pop(name, None)
+	)
 
 	frappe = types.ModuleType("frappe")
 	frappe._ = lambda value: value
@@ -66,7 +73,7 @@ def _load_controller():
 	model = types.ModuleType("frappe.model")
 	document = types.ModuleType("frappe.model.document")
 	document.Document = _Document
-	sys.modules.update({"frappe": frappe, "frappe.model": model, "frappe.model.document": document})
+	_SANDBOX.install({"frappe": frappe, "frappe.model": model, "frappe.model.document": document})
 	module = importlib.import_module(
 		"stabler.stabler.doctype.tender_sourcing_decision.tender_sourcing_decision"
 	)

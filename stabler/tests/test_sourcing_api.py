@@ -14,17 +14,25 @@ from __future__ import annotations
 import importlib
 import json
 import re
-import sys
 import types
 import unittest
 from datetime import datetime
 from pathlib import Path
 from typing import ClassVar
 
+from stabler.tests.module_sandbox import ModuleSandbox
+
 _ROOT = Path(__file__).resolve().parents[1]
 API_SOURCE = _ROOT / "api" / "sourcing.py"
 PATCH = _ROOT / "patches" / "v68_rfq_tender_deal.py"
 PATCHES = _ROOT / "patches.txt"
+
+_SANDBOX = ModuleSandbox()
+
+
+def tearDownModule():
+	"""The fakes below are process-wide — hand ``sys.modules`` back intact."""
+	_SANDBOX.restore()
 
 
 class _Doc(dict):
@@ -351,7 +359,7 @@ def _load_api(
 	can_submit=True,
 	views=("sourcing", "director"),
 ):
-	for name in (
+	_SANDBOX.evict(
 		"stabler.api.sourcing",
 		"stabler.api._common",
 		"stabler.api.tender",
@@ -364,8 +372,7 @@ def _load_api(
 		"stabler.api.organization",
 		"frappe",
 		"frappe.utils",
-	):
-		sys.modules.pop(name, None)
+	)
 
 	frappe = types.ModuleType("frappe")
 	frappe._ = lambda value: value
@@ -474,7 +481,7 @@ def _load_api(
 
 	tender_master.require_selected_company = _require_selected_company
 
-	sys.modules.update(
+	_SANDBOX.install(
 		{
 			"frappe": frappe,
 			"frappe.utils": utils,
