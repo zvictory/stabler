@@ -114,6 +114,12 @@ def doc_events_block(src: str, doctype: str) -> str:
 #: patch or the SPA must fail here, not in production.
 EXPENSE_CATEGORIES = options(load(EXPENSE_JSON), "category")
 
+#: The assertion is about the constant's VALUE, not about how the assignment is
+#: laid out — `ruff format` wraps the literal in parentheses once the line grows
+#: past the limit, and a regex pinned to the unwrapped form fails on a pure
+#: reformat while the categories are still correct.
+_CATEGORY_OPTIONS_RE = r'_CATEGORY_OPTIONS = \(?\s*"([^"]+)"'
+
 
 class WantsJeImportExpenseTest(unittest.TestCase):
 	"""When a submitted expense voucher should mirror itself as an Import Expense."""
@@ -132,9 +138,7 @@ class WantsJeImportExpenseTest(unittest.TestCase):
 		for ci in (None, "", "   "):
 			with self.subTest(commercial_invoice=repr(ci)):
 				self.assertFalse(
-					pm.wants_je_import_expense(
-						commercial_invoice=ci, owning_import_expense=None, amount=1200
-					)
+					pm.wants_je_import_expense(commercial_invoice=ci, owning_import_expense=None, amount=1200)
 				)
 
 	def test_a_voucher_that_already_has_a_parent_never_spawns(self):
@@ -250,7 +254,7 @@ class SpawnHookSourceTest(unittest.TestCase):
 
 	def test_spawn_delegates_the_decision_to_payment_math(self):
 		self.assertIn("pm.wants_je_import_expense(", self.spawn)
-		self.assertIn("owning_import_expense=doc.get(\"custom_import_expense\")", self.spawn)
+		self.assertIn('owning_import_expense=doc.get("custom_import_expense")', self.spawn)
 
 	def test_spawn_is_idempotent_per_voucher(self):
 		# A cancelled-and-resubmitted voucher runs on_submit again; without the
@@ -314,7 +318,7 @@ class MoneyApiWiringTest(unittest.TestCase):
 		# when the caller passes the expense without repeating its CI — nesting it
 		# would make the suppression depend on an unrelated argument.
 		self.assertIn('\n\tif import_expense and frappe.get_meta("Journal Entry").has_field(', self.fn)
-		self.assertNotIn('\n\t\tif import_expense and', self.fn)
+		self.assertNotIn("\n\t\tif import_expense and", self.fn)
 
 
 class KasaEntryWiringTest(unittest.TestCase):
@@ -342,7 +346,9 @@ class PatchTest(unittest.TestCase):
 		# patches.txt has no [post_model_sync] marker and migrate re-runs are
 		# routine; a second create_custom_fields call on an existing field throws.
 		self.assertEqual(self.src.count('frappe.db.exists(\n\t\t"Custom Field"'), 1)
-		self.assertIn('"Custom Field", {"dt": "Journal Entry", "fieldname": "custom_import_expense"}', self.src)
+		self.assertIn(
+			'"Custom Field", {"dt": "Journal Entry", "fieldname": "custom_import_expense"}', self.src
+		)
 
 	def test_back_link_is_read_only(self):
 		# It is set by the server for the kasa flow. A hand-editable back-link is a
@@ -354,7 +360,7 @@ class PatchTest(unittest.TestCase):
 		# The value is copied verbatim onto Import Expense.category; anything the
 		# doctype's Select does not accept fails validation at insert time, inside
 		# an on_submit hook, i.e. it rolls back the user's expense entry.
-		m = re.search(r'_CATEGORY_OPTIONS = "([^"]+)"', self.src)
+		m = re.search(_CATEGORY_OPTIONS_RE, self.src)
 		self.assertIsNotNone(m, "_CATEGORY_OPTIONS not found")
 		listed = [opt for opt in m.group(1).split("\\n") if opt]
 		self.assertEqual(listed, EXPENSE_CATEGORIES)
@@ -362,7 +368,8 @@ class PatchTest(unittest.TestCase):
 	def test_category_allows_being_empty(self):
 		# The field sits on every Journal Entry in the system; the overwhelming
 		# majority are not import expenses and must not be forced into a category.
-		m = re.search(r'_CATEGORY_OPTIONS = "([^"]+)"', self.src)
+		m = re.search(_CATEGORY_OPTIONS_RE, self.src)
+		self.assertIsNotNone(m, "_CATEGORY_OPTIONS not found")
 		self.assertTrue(m.group(1).startswith("\\n"))
 
 

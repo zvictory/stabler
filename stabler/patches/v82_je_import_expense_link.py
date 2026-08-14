@@ -21,7 +21,9 @@ from frappe.custom.doctype.custom_field.custom_field import create_custom_fields
 
 #: Mirrors Import Expense.category exactly, with a leading blank so the field
 #: may legitimately stay empty on the vast majority of Journal Entries.
-_CATEGORY_OPTIONS = "\nBorder Crossing\nTransport\nHandling\nStorage\nInsurance\nDocumentation\nCustoms\nOther"
+_CATEGORY_OPTIONS = (
+	"\nBorder Crossing\nTransport\nHandling\nStorage\nInsurance\nDocumentation\nCustoms\nOther"
+)
 
 
 def execute():

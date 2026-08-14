@@ -76,9 +76,7 @@ class ImportsListSelectionSourceTest(unittest.TestCase):
 		"""Regression lock: the double-fire that made ticking a row a no-op."""
 		for page in LIST_PAGES:
 			src = read(PAGES / page)
-			checkbox = re.search(
-				r'<input[^>]*?:checked="isSelected\(r\)".*?/>', src, re.S
-			)
+			checkbox = re.search(r'<input[^>]*?:checked="isSelected\(r\)".*?/>', src, re.S)
 			self.assertIsNotNone(checkbox, f"{page} must render a per-row selection checkbox")
 			markup = checkbox.group(0)
 			self.assertIn("@click.stop", markup, f"{page} row checkbox must carry @click.stop")
