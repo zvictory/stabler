@@ -771,13 +771,21 @@ def get_rfq(name, company=None):
 
 	quotations: dict[str, list[str]] = {}
 	if deal and _sq_link_ready():
+		sq_filters = {_SQ_DEAL_FIELD: deal, "docstatus": ["<", 2]}
+		or_filters = None
 		if _sq_rfq_link_ready():
-			sq_filters = {_SQ_RFQ_FIELD: name, "docstatus": ["<", 2]}
-		else:
-			sq_filters = {_SQ_DEAL_FIELD: deal, "docstatus": ["<", 2]}
+			# v83 added `custom_rfq` for round tracking, but a custom field's
+			# default only reaches NEW documents and `save_supplier_quotation`
+			# stamps it on insert only — every quotation recorded before the
+			# migrate keeps it empty. Matching on the RFQ alone would hide all
+			# of those with no way to repair them from the UI (measured on
+			# mikas 2026-08-15: 14 of 14 quotations), so an unstamped quotation
+			# still answers every RFQ of its deal, as it did before v83.
+			or_filters = [[_SQ_RFQ_FIELD, "=", name], [_SQ_RFQ_FIELD, "is", "not set"]]
 		rows = frappe.get_list(
 			"Supplier Quotation",
 			filters=sq_filters,
+			or_filters=or_filters,
 			fields=["name", "supplier"],
 			order_by="modified desc",
 			limit_page_length=0,

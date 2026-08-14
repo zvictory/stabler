@@ -339,18 +339,40 @@ class _FakeFrappe:
 				rows = [row for row in rows if row.get(field) == value]
 				continue
 			operator, operand = value
-			if operator == "in":
-				rows = [row for row in rows if row.get(field) in operand]
-			elif operator == "<":
-				rows = [row for row in rows if int(row.get(field) or 0) < operand]
-			elif operator == "=":
-				rows = [row for row in rows if row.get(field) == operand]
-			elif operator == "like":
-				needle = str(operand).strip("%")
-				rows = [row for row in rows if needle.lower() in str(row.get(field) or "").lower()]
-			else:
-				raise AssertionError(f"unsupported filter operator: {operator}")
+			rows = [row for row in rows if self._matches(row, field, operator, operand)]
+		# Frappe ORs `or_filters` among themselves and ANDs the group with
+		# `filters`: WHERE (f1 AND f2) AND (o1 OR o2). Modelled because
+		# `get_rfq` leans on exactly that shape to keep pre-v83 quotations
+		# visible — a double that ignored `or_filters` would let the P1
+		# regression back in without failing a single test.
+		or_filters = kwargs.get("or_filters")
+		if or_filters:
+			rows = [
+				row
+				for row in rows
+				if any(
+					self._matches(row, field, operator, operand) for field, operator, operand in or_filters
+				)
+			]
 		return [dict(row) for row in rows]
+
+	def _matches(self, row, field, operator, operand):
+		if operator == "in":
+			return row.get(field) in operand
+		if operator == "<":
+			return int(row.get(field) or 0) < operand
+		if operator == "=":
+			return row.get(field) == operand
+		if operator == "like":
+			return str(operand).strip("%").lower() in str(row.get(field) or "").lower()
+		if operator == "is":
+			# Frappe rewrites `["is", "not set"]` to `ifnull(col, '') = ''`, so
+			# NULL and empty string both match.
+			if operand == "not set":
+				return not row.get(field)
+			if operand == "set":
+				return bool(row.get(field))
+		raise AssertionError(f"unsupported filter operator: {operator} {operand!r}")
 
 
 def _load_api(
@@ -823,6 +845,44 @@ class TestGetRfq(unittest.TestCase):
 		self.assertTrue(by_supplier["SUP-A"]["responded"])
 		self.assertEqual(by_supplier["SUP-A"]["quotations"], ["SQ-DRAFT", "SQ-PAST-DRAFT", "SQ-SUBMITTED"])
 		self.assertFalse(by_supplier["SUP-B"]["responded"])
+
+	def test_a_quotation_recorded_before_the_rfq_link_still_answers_the_rfq(self):
+		"""v83 added `custom_rfq`, but a custom field's default only reaches NEW
+		documents and `save_supplier_quotation` stamps it on insert only — so
+		every quotation recorded before the migrate keeps it empty. Matching on
+		the RFQ alone would hide all of them permanently, with no way to repair
+		them from the UI (measured on mikas 2026-08-15: 14 of 14 quotations)."""
+		self.fake.docs[("Supplier Quotation", "SQ-PRE-V83")] = _Doc(
+			name="SQ-PRE-V83",
+			company="ACME",
+			supplier="SUP-B",
+			currency="USD",
+			custom_crm_deal="LOT-A",
+			custom_rfq=None,
+			docstatus=0,
+		)
+		res = self.api.get_rfq("RFQ-1", company="ACME")
+		by_supplier = {row["supplier"]: row for row in res["suppliers"]}
+		self.assertTrue(by_supplier["SUP-B"]["responded"])
+		self.assertEqual(by_supplier["SUP-B"]["quotations"], ["SQ-PRE-V83"])
+
+	def test_a_quotation_stamped_to_another_round_of_the_same_lot_is_excluded(self):
+		"""The unstamped fallback must not collapse round tracking back into
+		"every quotation of the lot": once a quotation names its RFQ, that name
+		decides, so a second round's bid never inflates this round's count."""
+		self.fake.docs[("Supplier Quotation", "SQ-ROUND-2")] = _Doc(
+			name="SQ-ROUND-2",
+			company="ACME",
+			supplier="SUP-B",
+			currency="USD",
+			custom_crm_deal="LOT-A",
+			custom_rfq="RFQ-2",
+			docstatus=0,
+		)
+		res = self.api.get_rfq("RFQ-1", company="ACME")
+		by_supplier = {row["supplier"]: row for row in res["suppliers"]}
+		self.assertFalse(by_supplier["SUP-B"]["responded"])
+		self.assertEqual(by_supplier["SUP-B"]["quotations"], [])
 
 	def test_lines_carry_the_intake_target_rate_as_a_reference(self):
 		"""The RFQ doctype has no rate; the intake estimate is joined back by
