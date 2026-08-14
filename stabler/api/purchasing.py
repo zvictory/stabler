@@ -2766,19 +2766,21 @@ def supplier_rfq_history(supplier, company=None):
 	if not frappe.db.exists("DocType", "Request for Quotation Supplier"):
 		return {"rows": [], "count": 0}
 
-	rfq_supp_rows = frappe.get_all(
-		"Request for Quotation Supplier",
-		filters={"supplier": supplier_name},
-		fields=["parent"],
-		limit_page_length=500,
+	rfq_names = frappe.db.sql_list(
+		"""
+		SELECT DISTINCT parent
+		FROM `tabRequest for Quotation Supplier`
+		WHERE supplier = %(supplier)s AND parenttype = 'Request for Quotation'
+		""",
+		{"supplier": supplier_name},
 	)
-	rfq_names = list({r["parent"] for r in rfq_supp_rows if r.get("parent")})
 	if not rfq_names:
 		return {"rows": [], "count": 0}
 
 	fields = [
 		"name",
 		"transaction_date",
+		"schedule_date",
 		"status",
 		"docstatus",
 	]
@@ -2807,17 +2809,19 @@ def supplier_rfq_history(supplier, company=None):
 
 	sq_deals = set()
 	if deal_names and frappe.db.has_column("Supplier Quotation", "custom_crm_deal"):
-		sqs = frappe.get_all(
-			"Supplier Quotation",
-			filters={
-				"supplier": supplier_name,
-				"company": selected_company,
-				"custom_crm_deal": ["in", deal_names],
-				"docstatus": ["<", 2],
-			},
-			fields=["custom_crm_deal"],
+		sq_deals = set(
+			frappe.db.sql_list(
+				"""
+				SELECT DISTINCT custom_crm_deal
+				FROM `tabSupplier Quotation`
+				WHERE supplier = %(supplier)s
+				  AND company = %(company)s
+				  AND custom_crm_deal IN %(deals)s
+				  AND docstatus < 2
+				""",
+				{"supplier": supplier_name, "company": selected_company, "deals": deal_names},
+			)
 		)
-		sq_deals = {s["custom_crm_deal"] for s in sqs if s.get("custom_crm_deal")}
 
 	for r in rfqs:
 		deal = r.get("custom_crm_deal")

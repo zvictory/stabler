@@ -154,6 +154,21 @@ class _FakeFrappe:
 		rows = [r for r in self.quotations if r["company"] == company and r["supplier"] == supplier]
 		return [dict(r) for r in rows]
 
+	def sql_list(self, query, params=None):
+		params = params or {}
+		supplier = params.get("supplier")
+		if "Request for Quotation Supplier" in query:
+			return [r["parent"] for r in self.rfq_suppliers if r["supplier"] == supplier]
+		elif "Supplier Quotation" in query:
+			company = params.get("company")
+			deals = params.get("deals", [])
+			return [
+				r["custom_crm_deal"]
+				for r in self.quotations
+				if r["company"] == company and r["supplier"] == supplier and r.get("custom_crm_deal") in deals
+			]
+		return []
+
 
 def _load_purchasing(fake: _FakeFrappe):
 	for name in (
@@ -187,6 +202,7 @@ def _load_purchasing(fake: _FakeFrappe):
 		has_column=lambda dt, col: col in fake.columns,
 		exists=lambda dt, name=None: dt in fake.doctypes,
 		sql=fake.sql,
+		sql_list=fake.sql_list,
 	)
 
 	utils = types.ModuleType("frappe.utils")
