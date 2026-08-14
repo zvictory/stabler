@@ -5858,3 +5858,11 @@ Remove filter,Убрать фильтр
 trucks,фур
 Transit,В пути
 View container detail,Открыть карточку контейнера
+Capitalize,Капитализировать
+Add to landed cost,Добавить в себестоимость
+Cost component,Статья затрат
+Remove from landed cost,Убрать из себестоимости
+The expense is split across this invoice's containers and added to their cost lines.,Расход распределяется по контейнерам этого инвойса и добавляется в их строки затрат.
+Expense capitalized on {count} container cost line(s).,Расход капитализирован в строках затрат контейнеров: {count}.
+The container cost lines created from {name} will be deleted. The expense itself stays.,"Строки затрат контейнеров, созданные из {name}, будут удалены. Сам расход останется."
+Expense removed from the landed cost ({count} cost line(s) deleted).,Расход убран из себестоимости (удалено строк затрат: {count}).

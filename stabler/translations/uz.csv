@@ -5853,3 +5853,11 @@ Remove filter,Filtrni olib tashlash
 trucks,fura
 Transit,Yo'lda
 View container detail,Konteyner kartasini ochish
+Capitalize,Kapitallashtirish
+Add to landed cost,Yakuniy tannarxga qo'shish
+Cost component,Xarajat moddasi
+Remove from landed cost,Yakuniy tannarxdan olib tashlash
+The expense is split across this invoice's containers and added to their cost lines.,Xarajat ushbu invoysning konteynerlari bo'yicha taqsimlanadi va ularning xarajat satrlariga qo'shiladi.
+Expense capitalized on {count} container cost line(s).,Xarajat {count} ta konteyner xarajat satriga kapitallashtirildi.
+The container cost lines created from {name} will be deleted. The expense itself stays.,{name} dan yaratilgan konteyner xarajat satrlari o'chiriladi. Xarajatning o'zi qoladi.
+Expense removed from the landed cost ({count} cost line(s) deleted).,Xarajat yakuniy tannarxdan olib tashlandi ({count} ta xarajat satri o'chirildi).

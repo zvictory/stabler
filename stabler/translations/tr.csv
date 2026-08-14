@@ -5848,3 +5848,11 @@ Remove filter,Filtreyi kaldır
 trucks,tır
 Transit,Transit
 View container detail,Konteyner detayını aç
+Capitalize,Maliyetleştir
+Add to landed cost,Toplam maliyete ekle
+Cost component,Maliyet kalemi
+Remove from landed cost,Toplam maliyetten çıkar
+The expense is split across this invoice's containers and added to their cost lines.,Gider bu faturanın konteynerlerine dağıtılır ve maliyet satırlarına eklenir.
+Expense capitalized on {count} container cost line(s).,Gider {count} konteyner maliyet satırına eklendi.
+The container cost lines created from {name} will be deleted. The expense itself stays.,{name} kaydından oluşturulan konteyner maliyet satırları silinecek. Giderin kendisi kalır.
+Expense removed from the landed cost ({count} cost line(s) deleted).,Gider toplam maliyetten çıkarıldı ({count} maliyet satırı silindi).

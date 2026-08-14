@@ -558,6 +558,99 @@ async function saveImportExpense() {
 }
 
 // ---------------------------------------------------------------------------
+// Landed cost. A cash-paid expense can be capitalized into the containers'
+// cost lines. The backend is the authority — `set_expense_landed_cost` re-runs
+// the cost-visibility, valuation-account, currency and already-vouchered
+// checks; this screen only picks the component and reports what came back.
+// ---------------------------------------------------------------------------
+const showLandedCostModal = ref(false);
+const landedCostExpense = ref(null);
+const landedCostComponent = ref("Other");
+// Which expense currently has a call in flight — a page-wide flag would grey
+// out every row while a single one is being capitalized.
+const landedCostBusy = ref("");
+
+// Mirrors the `cost_component` Select on the `Container Cost Line` doctype;
+// `_resolve_expense_cost_component` validates the value against that meta.
+const costComponentOptions = [
+	"Freight",
+	"Iran Customs Duty",
+	"Iran Port & THC",
+	"Iran Storage",
+	"Iran Demurrage",
+	"Iran Inspection",
+	"Cross-Border Transport",
+	"Insurance",
+	"Certificate",
+	"Uzbekistan Customs Duty",
+	"Uzbekistan Port Handling",
+	"Customs Clearance Fee",
+	"Other",
+].map((value) => ({ value, label: t(value) }));
+
+function openLandedCostModal(exp) {
+	landedCostExpense.value = exp;
+	landedCostComponent.value = exp.cost_component || "Other";
+	showLandedCostModal.value = true;
+}
+
+function closeLandedCostModal() {
+	showLandedCostModal.value = false;
+	landedCostExpense.value = null;
+}
+
+async function confirmLandedCost() {
+	const exp = landedCostExpense.value;
+	if (!exp || landedCostBusy.value) return;
+	landedCostBusy.value = exp.name;
+	try {
+		const res = await importsApi.setExpenseLandedCost(exp.name, landedCostComponent.value);
+		closeLandedCostModal();
+		// Containers whose component is already vouchered are skipped, not failed.
+		// Reporting only the success would overstate what actually landed.
+		for (const warning of res?.warnings || []) toast.warning(warning);
+		toast.success(
+			t("Expense capitalized on {count} container cost line(s).", {
+				count: (res?.cost_lines || []).length,
+			})
+		);
+		await Promise.all([fetchExpenses(), fetchLandedCostUzs(), fetchTransportCosts(), fetchCostOverview()]);
+	} catch (err) {
+		toast.error(err);
+	} finally {
+		landedCostBusy.value = "";
+	}
+}
+
+async function removeLandedCost(exp) {
+	if (landedCostBusy.value) return;
+	const ok = await confirm({
+		title: t("Remove from landed cost"),
+		body: t("The container cost lines created from {name} will be deleted. The expense itself stays.", {
+			name: exp.name,
+		}),
+		danger: true,
+		confirmLabel: t("Remove"),
+		cancelLabel: t("Cancel"),
+	});
+	if (!ok) return;
+	landedCostBusy.value = exp.name;
+	try {
+		const res = await importsApi.clearExpenseLandedCost(exp.name);
+		toast.success(
+			t("Expense removed from the landed cost ({count} cost line(s) deleted).", {
+				count: res?.cost_lines_removed || 0,
+			})
+		);
+		await Promise.all([fetchExpenses(), fetchLandedCostUzs(), fetchTransportCosts(), fetchCostOverview()]);
+	} catch (err) {
+		toast.error(err);
+	} finally {
+		landedCostBusy.value = "";
+	}
+}
+
+// ---------------------------------------------------------------------------
 // UZS landed cost — computed server-side from the CI's real cost lines.
 // ---------------------------------------------------------------------------
 // Null until the server tells us the real rate. Seeding a number here would put
@@ -2935,12 +3028,15 @@ watch(
 							<th class="text-end">{{ t("Amount") }}</th>
 							<th>{{ t("Status") }}</th>
 							<th>{{ t("Journal Entry") }}</th>
+							<!-- Capitalizing is a cost action: the column follows the same
+							     visibility gate the backend enforces on the endpoints. -->
+							<th v-if="costVisible">{{ t("Landed cost") }}</th>
 						</tr>
 					</thead>
-					<SkeletonRows v-if="loadingExpenses" :rows="3" :cols="7" />
+					<SkeletonRows v-if="loadingExpenses" :rows="3" :cols="costVisible ? 8 : 7" />
 					<tbody v-else>
 						<tr v-if="!expenses.length">
-							<td colspan="7" class="text-center text-secondary py-3">{{ t("No expenses recorded for this invoice yet.") }}</td>
+							<td :colspan="costVisible ? 8 : 7" class="text-center text-secondary py-3">{{ t("No expenses recorded for this invoice yet.") }}</td>
 						</tr>
 						<tr v-for="exp in expenses" :key="exp.name">
 							<td class="font-monospace fw-bold text-primary">{{ exp.name }}</td>
@@ -2950,13 +3046,37 @@ watch(
 							<td class="text-end font-monospace">{{ fm(exp.amount, exp.currency) }}</td>
 							<td><StatusBadge :status="exp.status" /></td>
 							<td class="font-monospace small">{{ exp.journal_entry || exp.purchase_invoice || "—" }}</td>
+							<td v-if="costVisible" class="text-nowrap">
+								<template v-if="exp.include_in_landed_cost">
+									<span class="badge bg-purple-lt me-1">{{ t(exp.cost_component || "Other") }}</span>
+									<button
+										type="button"
+										class="btn btn-outline-secondary btn-sm"
+										:disabled="landedCostBusy === exp.name"
+										:title="t('Remove from landed cost')"
+										@click="removeLandedCost(exp)"
+									>
+										<span v-if="landedCostBusy === exp.name" class="spinner-border spinner-border-sm"></span>
+										<i v-else class="ti ti-x"></i>
+									</button>
+								</template>
+								<button
+									v-else
+									type="button"
+									class="btn btn-outline-secondary btn-sm"
+									:disabled="landedCostBusy === exp.name"
+									@click="openLandedCostModal(exp)"
+								>
+									<i class="ti ti-package-import me-1"></i>{{ t("Capitalize") }}
+								</button>
+							</td>
 						</tr>
 					</tbody>
 					<tfoot v-if="expenseTotals.length">
 						<tr v-for="tot in expenseTotals" :key="tot.currency" class="fw-bold">
 							<td colspan="4">{{ t("Total expenses") }}</td>
 							<td class="text-end font-monospace">{{ fm(tot.amount, tot.currency) }}</td>
-							<td colspan="2"></td>
+							<td :colspan="costVisible ? 3 : 2"></td>
 						</tr>
 					</tfoot>
 				</table>
@@ -3195,6 +3315,38 @@ watch(
 						<button type="button" class="btn btn-primary" :disabled="savingExpense || !canSaveExpense" @click="saveImportExpense">
 							<span v-if="savingExpense" class="spinner-border spinner-border-sm me-1"></span>
 							<i v-else class="ti ti-device-floppy me-1"></i>{{ t("Record expense") }}
+						</button>
+					</div>
+				</div>
+			</div>
+		</div>
+
+		<!-- Landed cost component picker. Which component the expense lands on is
+		     the only decision the operator makes here — every rule (visibility,
+		     valuation account, currency, already-vouchered) is enforced server-side. -->
+		<div v-if="showLandedCostModal" class="modal d-block" tabindex="-1" style="background: rgba(0, 0, 0, 0.4)">
+			<div class="modal-dialog modal-dialog-centered">
+				<div class="modal-content">
+					<div class="modal-header">
+						<h5 class="modal-title">{{ t("Add to landed cost") }}</h5>
+						<button type="button" class="btn-close" @click="closeLandedCostModal"></button>
+					</div>
+					<div class="modal-body">
+						<div class="mb-3">
+							<label class="form-label required">{{ t("Cost component") }}</label>
+							<Select v-model="landedCostComponent" :options="costComponentOptions" :searchable="false" />
+						</div>
+						<div class="text-secondary small">
+							{{ t("The expense is split across this invoice's containers and added to their cost lines.") }}
+						</div>
+					</div>
+					<div class="modal-footer">
+						<button type="button" class="btn btn-outline-secondary" :disabled="!!landedCostBusy" @click="closeLandedCostModal">
+							{{ t("Cancel") }}
+						</button>
+						<button type="button" class="btn btn-primary" :disabled="!!landedCostBusy" @click="confirmLandedCost">
+							<span v-if="landedCostBusy" class="spinner-border spinner-border-sm me-1"></span>
+							<i v-else class="ti ti-package-import me-1"></i>{{ t("Capitalize") }}
 						</button>
 					</div>
 				</div>

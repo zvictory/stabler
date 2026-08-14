@@ -5851,3 +5851,11 @@ Remove filter,Remove filter
 trucks,trucks
 Transit,Transit
 View container detail,View container detail
+Capitalize,Capitalize
+Add to landed cost,Add to landed cost
+Cost component,Cost component
+Remove from landed cost,Remove from landed cost
+The expense is split across this invoice's containers and added to their cost lines.,The expense is split across this invoice's containers and added to their cost lines.
+Expense capitalized on {count} container cost line(s).,Expense capitalized on {count} container cost line(s).
+The container cost lines created from {name} will be deleted. The expense itself stays.,The container cost lines created from {name} will be deleted. The expense itself stays.
+Expense removed from the landed cost ({count} cost line(s) deleted).,Expense removed from the landed cost ({count} cost line(s) deleted).

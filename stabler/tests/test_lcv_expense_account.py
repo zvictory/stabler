@@ -71,7 +71,7 @@ def _hooks(accounts: dict, singles: dict):
 		frappe.flags = types.SimpleNamespace()
 		frappe.db = _Db(accounts, singles)
 		frappe.throw = lambda message, *a, **k: (_ for _ in ()).throw(Exception(message))
-		frappe.whitelist = lambda *a, **k: (lambda fn: fn)
+		frappe.whitelist = lambda *a, **k: lambda fn: fn
 		frappe.logger = lambda _name=None: types.SimpleNamespace(
 			warning=warnings.append, info=lambda *a, **k: None, error=lambda *a, **k: None
 		)

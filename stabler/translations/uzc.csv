@@ -5853,3 +5853,11 @@ Remove filter,Фильтрни олиб ташлаш
 trucks,фура
 Transit,Йўлда
 View container detail,Контейнер картасини очиш
+Capitalize,Капиталлаштириш
+Add to landed cost,Якуний таннархга қўшиш
+Cost component,Харажат моддаси
+Remove from landed cost,Якуний таннархдан олиб ташлаш
+The expense is split across this invoice's containers and added to their cost lines.,Харажат ушбу инвойснинг контейнерлари бўйича тақсимланади ва уларнинг харажат сатрларига қўшилади.
+Expense capitalized on {count} container cost line(s).,Харажат {count} та контейнер харажат сатрига капиталлаштирилди.
+The container cost lines created from {name} will be deleted. The expense itself stays.,{name} дан яратилган контейнер харажат сатрлари ўчирилади. Харажатнинг ўзи қолади.
+Expense removed from the landed cost ({count} cost line(s) deleted).,Харажат якуний таннархдан олиб ташланди ({count} та харажат сатри ўчирилди).
