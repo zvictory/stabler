@@ -5845,3 +5845,9 @@ Allocated on PI,PI bo'yicha taqsimlangan
 "Paid on PI and Allocated on PI are totals for the whole Proforma Invoice, not this CI's share.","""PI bo'yicha to'langan"" va ""PI bo'yicha taqsimlangan"" — butun Proforma Invoice bo'yicha jami summalar, bu CI ning ulushi emas."
 Linking bills to an import is not configured for this company. Set the transport/service supplier groups in Stabler Settings.,Hisob-fakturalarni importga bog'lash bu kompaniya uchun sozlanmagan. Stabler sozlamalarida transport/xizmat yetkazib beruvchi guruhlarini belgilang.
 Import expense category,Import xarajati toifasi
+SELECTION,TANLANGAN
+{count} selected,{count} ta tanlandi
+of {value} on all {count} rows,jami {count} qatordan {value}
+Score cards above show this selection only,Yuqoridagi kartalar faqat shu tanlovni ko'rsatadi
+Remove filter,Filtrni olib tashlash
+trucks,fura

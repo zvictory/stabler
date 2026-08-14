@@ -5845,3 +5845,9 @@ Allocated on PI,PI бўйича тақсимланган
 "Paid on PI and Allocated on PI are totals for the whole Proforma Invoice, not this CI's share.","«PI бўйича тўланган» ва «PI бўйича тақсимланган» — бутун Proforma Invoice бўйича жами суммалар, бу CI нинг улуши эмас."
 Linking bills to an import is not configured for this company. Set the transport/service supplier groups in Stabler Settings.,Ҳисоб-фактураларни импортга боғлаш бу компания учун созланмаган. Stabler созламаларида транспорт/хизмат етказиб берувчи гуруҳларини белгиланг.
 Import expense category,Импорт харажати тоифаси
+SELECTION,ТАНЛАНГАН
+{count} selected,{count} та танланди
+of {value} on all {count} rows,жами {count} қатордан {value}
+Score cards above show this selection only,Юқоридаги карталар фақат шу танловни кўрсатади
+Remove filter,Фильтрни олиб ташлаш
+trucks,фура

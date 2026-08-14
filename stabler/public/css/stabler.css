@@ -302,6 +302,25 @@ body {
 	box-shadow: 0 0 0 1px var(--tblr-primary, #206bc4), 0 4px 12px rgba(32, 107, 196, 0.08);
 }
 
+/* Selection mode: an INSET ring, never a border swap — the card must not move
+   by a pixel when the user ticks a row, or the whole strip jitters. */
+.stbl-kpi-card--selected {
+	box-shadow: inset 0 0 0 1px var(--tblr-primary, #206bc4);
+	background-color: var(--tblr-primary-lt, rgba(32, 107, 196, 0.04));
+}
+
+.stbl-kpi-selmark {
+	font-size: 0.6rem;
+	font-weight: 600;
+	letter-spacing: 0.04em;
+	padding: 0.1rem 0.35rem;
+}
+
+.stbl-kpi-global {
+	font-size: 0.72rem;
+	line-height: 1.2;
+}
+
 .stbl-kpi-badge {
 	font-size: 0.72rem;
 	font-weight: 500;

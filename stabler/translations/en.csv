@@ -5843,3 +5843,9 @@ Allocated on PI,Allocated on PI
 "Paid on PI and Allocated on PI are totals for the whole Proforma Invoice, not this CI's share.","Paid on PI and Allocated on PI are totals for the whole Proforma Invoice, not this CI's share."
 Linking bills to an import is not configured for this company. Set the transport/service supplier groups in Stabler Settings.,Linking bills to an import is not configured for this company. Set the transport/service supplier groups in Stabler Settings.
 Import expense category,Import expense category
+SELECTION,SELECTION
+{count} selected,{count} selected
+of {value} on all {count} rows,of {value} on all {count} rows
+Score cards above show this selection only,Score cards above show this selection only
+Remove filter,Remove filter
+trucks,trucks

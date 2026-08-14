@@ -1,4 +1,6 @@
 <script setup>
+import { t } from "../composables/i18n.js";
+
 defineProps({
 	label: { type: String, required: true },
 	value: { type: [String, Number], default: "—" },
@@ -17,6 +19,16 @@ defineProps({
 	badges: { type: Array, default: () => [] },
 	clickable: { type: Boolean, default: false },
 	active: { type: Boolean, default: false },
+	// Selection mode (list pages): how many rows the shown value was summed
+	// over. > 0 means the hero value describes the ticked rows only, so the
+	// card says so — a narrowed number that looks like the page total is the
+	// one failure mode selection-aware cards must never have.
+	selected: { type: Number, default: 0 },
+	// The same metric over the whole result set, for the comparison line.
+	// Left null when the list payload cannot produce the metric per row; the
+	// card then keeps its global value and shows no selection marker.
+	globalValue: { type: [String, Number], default: null },
+	globalCount: { type: Number, default: null },
 });
 
 const emit = defineEmits(["click", "badge-click"]);
@@ -36,14 +48,20 @@ function onBadgeClick(b, e) {
 		:class="{
 			'stbl-kpi-card--clickable': clickable,
 			'stbl-kpi-card--active': active,
+			'stbl-kpi-card--selected': selected > 0,
 		}"
 		@click="onClick"
 	>
 		<div class="card-body p-3 d-flex flex-column justify-content-between">
 			<!-- Header: Micro-label and Top-Right Standalone Large Icon -->
 			<div class="d-flex align-items-start justify-content-between mb-2">
-				<div class="stbl-kpi-label text-truncate me-2" :title="label">
-					<slot name="label">{{ label }}</slot>
+				<div class="d-flex align-items-center gap-1 text-truncate me-2">
+					<div class="stbl-kpi-label text-truncate" :title="label">
+						<slot name="label">{{ label }}</slot>
+					</div>
+					<span v-if="selected > 0" class="badge bg-blue-lt text-blue stbl-kpi-selmark">
+						{{ t("SELECTION") }}
+					</span>
 				</div>
 				<i
 					v-if="icon"
@@ -69,6 +87,14 @@ function onBadgeClick(b, e) {
 						<span v-if="unit" class="ms-1 fs-5 fw-normal text-secondary">{{ unit }}</span>
 					</slot>
 				</div>
+			</div>
+
+			<!-- Selection mode: what the same metric is over the whole result set -->
+			<div
+				v-if="!loading && selected > 0 && globalValue !== null"
+				class="stbl-kpi-global text-secondary small font-monospace text-truncate"
+			>
+				{{ t("of {value} on all {count} rows", { value: globalValue, count: globalCount ?? 0 }) }}
 			</div>
 
 			<!-- Multi-line breakdown for multi-currency or secondary amounts -->

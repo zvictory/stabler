@@ -15,7 +15,6 @@ import { useEscapeBack } from "../../composables/useEscapeBack.js";
 import Typeahead from "../../components/Typeahead.vue";
 import MoneyInput from "../../components/MoneyInput.vue";
 import DateInput from "../../components/DateInput.vue";
-import Select from "../../components/Select.vue";
 import PiAdvanceLedger from "../../components/PiAdvanceLedger.vue";
 
 const session = useSession();
@@ -36,23 +35,9 @@ const form = ref(blankForm());
 
 const INCOTERMS = ["EXW", "FCA", "FAS", "FOB", "CFR", "CIF", "CPT", "CIP", "DAP", "DPU", "DDP"];
 
-// ---- PI Groups ----
-const piGroups = ref([]);
-const groupOptions = computed(() => [
-	{ value: "", label: t("No PI group") },
-	...piGroups.value.map((g) => ({ value: g.name, label: g.title || g.name })),
-]);
-
-async function loadPiGroups() {
-	if (!activeCompany.value) return;
-	try {
-		piGroups.value = await call("stabler.api.imports.list_pi_groups", {
-			company: activeCompany.value,
-		});
-	} catch (_err) {
-		piGroups.value = [];
-	}
-}
+// PI group assignment lives in PiGroups.vue (multi-select modal), not here — the
+// input is gone but `import_pi_group` stays in the form state below so an edit
+// round-trips the stored value instead of clearing it.
 
 function blankForm() {
 	return {
@@ -662,7 +647,6 @@ async function confirmDelete() {
 
 onMounted(() => {
 	loadItemsList();
-	loadPiGroups();
 	loadDoc();
 });
 watch(docName, loadDoc);
@@ -714,7 +698,6 @@ const subCuts = computed(() => {
 	}
 	return [...groups.values()];
 });
-watch(activeCompany, loadPiGroups);
 </script>
 
 <template>
@@ -831,10 +814,6 @@ watch(activeCompany, loadPiGroups);
 								<div class="font-monospace text-secondary" style="font-size: 11px">{{ item.name }}</div>
 							</template>
 						</Typeahead>
-					</div>
-					<div class="col-md-3">
-						<label class="form-label">{{ t("PI Group") }}</label>
-						<Select v-model="form.import_pi_group" :options="groupOptions" />
 					</div>
 					<div class="col-md-2">
 						<label class="form-label">{{ t("PI Date") }}</label>
