@@ -3227,11 +3227,13 @@ No records yet.,Записей пока нет.
 No remaining (unshipped) items found on this Proforma Invoice.,В этой проформе не осталось неотгруженных позиций.
 No repair requests,Запросов на ремонт нет
 No reports found,
+No requests for quotation have been sent to this supplier.,Этому поставщику еще не отправлялись запросы котировок.
 No requests for quotation yet.,Запросов котировок пока нет.
 No reservations for this warehouse,
 "No results for ""{query}"".","Нет результатов для ""{query}""."
 No revaluations yet,
 No RFQs created for this deal yet. Click 'Request for quotation' to raise one.,Для этой сделки запросы цен еще не создавались. Нажмите 'Запросить предложение'.
+No RFQs yet,Запросов котировок пока нет
 No ROI snapshots yet,Снимков ROI пока нет
 No routes yet,Пока нет маршрутов
 No rows to import.,
@@ -4369,6 +4371,7 @@ Resolved,
 resolved,завершено
 Resolved At,Разрешено в
 Responded,Получен ответ
+Response,Ответ
 Response by,Срок ответа
 Restore test,Тест восстановления
 Restore test recorded.,Тест восстановления записан.

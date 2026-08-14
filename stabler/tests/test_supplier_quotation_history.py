@@ -1,4 +1,4 @@
-"""Behavior and contract tests for supplier quotation history (Faz 2 · Task 4).
+"""Behavior and contract tests for supplier quotation and RFQ history (Faz 2 · Task 4).
 
 PYTHONPATH=$PWD python3 -m unittest stabler.tests.test_supplier_quotation_history -v
 """
@@ -15,8 +15,43 @@ class _FakeFrappe:
 	def __init__(self):
 		self.sql_calls = []
 		self.get_list_calls = []
+		self.get_all_calls = []
 		self.columns = {"custom_crm_deal"}
-		self.doctypes = {"DocType", "Supplier Quotation", "Tender Sourcing Decision"}
+		self.doctypes = {
+			"DocType",
+			"Supplier Quotation",
+			"Tender Sourcing Decision",
+			"Request for Quotation",
+			"Request for Quotation Supplier",
+			"CRM Deal",
+		}
+		self.rfq_suppliers = [
+			{"parent": "PUR-RFQ-001", "supplier": "SUP-A"},
+			{"parent": "PUR-RFQ-002", "supplier": "SUP-A"},
+			{"parent": "PUR-RFQ-003", "supplier": "SUP-B"},
+		]
+		self.rfqs = [
+			{
+				"name": "PUR-RFQ-001",
+				"company": "ACME",
+				"custom_crm_deal": "LOT-1",
+				"status": "Draft",
+				"transaction_date": "2026-08-10",
+				"docstatus": 0,
+			},
+			{
+				"name": "PUR-RFQ-002",
+				"company": "ACME",
+				"custom_crm_deal": "LOT-4",
+				"status": "Submitted",
+				"transaction_date": "2026-08-11",
+				"docstatus": 1,
+			},
+		]
+		self.deals = [
+			{"name": "LOT-1", "organization": "Railway Lot 1", "lead_name": "Lot 1 Lead"},
+			{"name": "LOT-4", "organization": "Metro Lot 4", "lead_name": "Lot 4 Lead"},
+		]
 		self.quotations = [
 			{
 				"name": "SQ-WON",
@@ -86,6 +121,30 @@ class _FakeFrappe:
 			deals = deal_filter[1] if isinstance(deal_filter, list) and deal_filter[0] == "in" else []
 			rows = [r for r in self.decisions if r["company"] == company and r["deal"] in deals]
 			return [dict(r) for r in rows]
+		elif doctype == "Request for Quotation":
+			company = filters.get("company")
+			names_filter = filters.get("name")
+			names = names_filter[1] if isinstance(names_filter, list) and names_filter[0] == "in" else []
+			rows = [r for r in self.rfqs if r["company"] == company and r["name"] in names]
+			return [dict(r) for r in rows]
+		return []
+
+	def get_all(self, doctype, filters=None, fields=None, **kwargs):
+		self.get_all_calls.append({"doctype": doctype, "filters": filters, "fields": fields, **kwargs})
+		if doctype == "Request for Quotation Supplier":
+			supplier = filters.get("supplier")
+			rows = [r for r in self.rfq_suppliers if r["supplier"] == supplier]
+			return [dict(r) for r in rows]
+		elif doctype == "CRM Deal":
+			name_filter = filters.get("name")
+			names = name_filter[1] if isinstance(name_filter, list) and name_filter[0] == "in" else []
+			rows = [r for r in self.deals if r["name"] in names]
+			return [dict(r) for r in rows]
+		elif doctype == "Supplier Quotation":
+			supplier = filters.get("supplier")
+			company = filters.get("company")
+			rows = [r for r in self.quotations if r["company"] == company and r["supplier"] == supplier]
+			return [dict(r) for r in rows]
 		return []
 
 	def sql(self, query, params, as_dict=True):
@@ -123,6 +182,7 @@ def _load_purchasing(fake: _FakeFrappe):
 	frappe.throw = lambda message, exception=Exception: (_ for _ in ()).throw(exception(message))
 	frappe.has_permission = lambda doctype, ptype="read", doc=None: True
 	frappe.get_list = fake.get_list
+	frappe.get_all = fake.get_all
 	frappe.db = types.SimpleNamespace(
 		has_column=lambda dt, col: col in fake.columns,
 		exists=lambda dt, name=None: dt in fake.doctypes,
@@ -182,6 +242,21 @@ class TestSupplierQuotationHistory(unittest.TestCase):
 	def test_requires_company(self):
 		with self.assertRaises(ValueError):
 			self.api.supplier_quotation_history("SUP-A", company="")
+
+	def test_supplier_rfq_history_returns_rows_with_deal_and_response_status(self):
+		res = self.api.supplier_rfq_history("SUP-A", company="ACME")
+		self.assertEqual(res["count"], 2)
+		by_name = {r["name"]: r for r in res["rows"]}
+		# LOT-1 has SQ-WON from SUP-A, so responded is True
+		self.assertTrue(by_name["PUR-RFQ-001"]["responded"])
+		self.assertEqual(by_name["PUR-RFQ-001"]["deal_label"], "Railway Lot 1")
+		# LOT-4 has no SQ from SUP-A, so responded is False
+		self.assertFalse(by_name["PUR-RFQ-002"]["responded"])
+		self.assertEqual(by_name["PUR-RFQ-002"]["deal_label"], "Metro Lot 4")
+
+	def test_supplier_rfq_history_rejects_foreign_company(self):
+		with self.assertRaises(PermissionError):
+			self.api.supplier_rfq_history("SUP-A", company="OTHER")
 
 
 if __name__ == "__main__":

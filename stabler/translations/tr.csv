@@ -3220,11 +3220,13 @@ No records yet.,Henüz kayıt yok.
 No remaining (unshipped) items found on this Proforma Invoice.,Bu proforma faturada sevk edilmemiş kalan kalem yok.
 No repair requests,Onarım talebi yok
 No reports found,
+No requests for quotation have been sent to this supplier.,Bu tedarikçiye henüz teklif talebi gönderilmedi.
 No requests for quotation yet.,Henüz teklif talebi yok.
 No reservations for this warehouse,
 "No results for ""{query}"".","""{query}"" için sonuç bulunamadı."
 No revaluations yet,
 No RFQs created for this deal yet. Click 'Request for quotation' to raise one.,Bu anlaşma için henüz RFQ oluşturulmadı. Yeni oluşturmak için 'Teklif iste' düğmesine tıklayın.
+No RFQs yet,Henüz RFQ yok
 No ROI snapshots yet,Henüz YGO anlık görüntüsü yok
 No routes yet,Henüz rota yok
 No rows to import.,
@@ -4360,6 +4362,7 @@ Resolved,
 resolved,sonuçlanan
 Resolved At,Çözüldüğü Yer
 Responded,Yanıtlandı
+Response,Yanıt
 Response by,Yanıt tarihi
 Restore test,Geri yükleme testi
 Restore test recorded.,Geri yükleme testi kaydedildi.

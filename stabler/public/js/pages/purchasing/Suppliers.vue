@@ -117,11 +117,14 @@ const centerLabels = computed(() => ({
 	loadError: t("Failed to load suppliers."),
 }));
 
-const extraTabs = computed(() =>
-	session.canAccessModule("tender")
-		? [{ key: "quotations", label: t("Quotations"), badge: suppQuotations.value.length }]
-		: [],
-);
+const extraTabs = computed(() => {
+	const tabs = [];
+	if (session.canAccessModule("tender") || session.canAccessModule("purchasing")) {
+		tabs.push({ key: "rfqs", label: t("RFQs"), badge: suppRfqs.value.length });
+		tabs.push({ key: "quotations", label: t("Quotations"), badge: suppQuotations.value.length });
+	}
+	return tabs;
+});
 
 const paymentButtonTitle = computed(() => {
 	if (!selected.value) return "";
@@ -140,13 +143,16 @@ function onSelect(row) {
 		selectedDetail.value = null;
 		selectedExposure.value = null;
 		exposureReq.invalidate();
+		suppRfqs.value = [];
+		rfqsReq.invalidate();
+		suppRfqsLoading.value = false;
 		suppQuotations.value = [];
 		quotationsReq.invalidate();
-		// The retired request's finally no longer owns the flag, so clear it here.
 		suppQuotationsLoading.value = false;
 		return;
 	}
 	loadExposure(row.name);
+	loadSuppRfqs(row.name);
 	loadSuppQuotations(row.name);
 }
 
@@ -271,6 +277,29 @@ async function confirmConvert() {
 		toast.error(err?.message || t("Could not create the Purchase Invoice."));
 	} finally {
 		convertBusy.value = false;
+	}
+}
+
+const suppRfqs = ref([]);
+const suppRfqsLoading = ref(false);
+const rfqsReq = useLatestRequest();
+
+async function loadSuppRfqs(supplierName) {
+	if (!supplierName || !activeCompany.value) return;
+	suppRfqsLoading.value = true;
+	const isCurrent = rfqsReq.take();
+	try {
+		const res = await call("stabler.api.purchasing.supplier_rfq_history", {
+			supplier: supplierName,
+			company: activeCompany.value,
+		});
+		if (!isCurrent()) return;
+		suppRfqs.value = res?.rows || [];
+	} catch {
+		if (!isCurrent()) return;
+		suppRfqs.value = [];
+	} finally {
+		if (isCurrent()) suppRfqsLoading.value = false;
 	}
 }
 
@@ -535,7 +564,57 @@ async function deleteSupplier() {
 		</template>
 
 		<template #extra-tabs="{ tab }">
-			<template v-if="tab === 'quotations'">
+			<template v-if="tab === 'rfqs'">
+				<table v-if="suppRfqsLoading" class="ds-table">
+					<SkeletonRows :rows="5" :cols="5" />
+				</table>
+				<EmptyState
+					v-else-if="!suppRfqs.length"
+					icon="ti-file-text"
+					:title="t('No RFQs yet')"
+					:subtitle="t('No requests for quotation have been sent to this supplier.')"
+				/>
+				<table v-else class="ds-table">
+					<thead>
+						<tr>
+							<th>{{ t("RFQ #") }}</th>
+							<th>{{ t("Date") }}</th>
+							<th>{{ t("Tender / deal") }}</th>
+							<th>{{ t("Status") }}</th>
+							<th>{{ t("Response") }}</th>
+						</tr>
+					</thead>
+					<tbody>
+						<tr
+							v-for="r in suppRfqs"
+							:key="r.name"
+							style="cursor: pointer"
+							@click="router.push({ name: 'tender-rfq-detail', params: { name: r.name } })"
+						>
+							<td><span class="ds-mono">{{ r.name }}</span></td>
+							<td>{{ r.transaction_date ? formatDate(r.transaction_date) : "—" }}</td>
+							<td>
+								<span v-if="r.deal">
+									<i class="ti ti-target me-1 text-primary"></i>
+									{{ r.deal_label || r.deal }}
+								</span>
+								<span v-else class="text-secondary">—</span>
+							</td>
+							<td>
+								<span class="badge" :class="getStatusBadgeClass('Request for Quotation', r.status)">{{ t(r.status) }}</span>
+							</td>
+							<td>
+								<span v-if="r.responded" class="ds-chip" data-tone="ok">
+									<i class="ti ti-check me-1"></i>{{ t("Answered") }}
+								</span>
+								<span v-else class="ds-chip" data-tone="soon">{{ t("Waiting") }}</span>
+							</td>
+						</tr>
+					</tbody>
+				</table>
+			</template>
+
+			<template v-else-if="tab === 'quotations'">
 				<table v-if="suppQuotationsLoading" class="ds-table">
 					<SkeletonRows :rows="5" :cols="7" />
 				</table>

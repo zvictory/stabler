@@ -177,3 +177,4 @@ stabler.tests.test_imports_uat_harness
 stabler.tests.test_imports_list_selection_source
 stabler.tests.test_tender_intake_items
 stabler.tests.test_lcv_expense_account
+stabler.tests.test_supplier_quotation_history

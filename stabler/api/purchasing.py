@@ -2743,3 +2743,86 @@ def supplier_quotation_history(supplier, company=None):
 			s["result"] = "open"
 
 	return {"rows": sqs, "count": len(sqs)}
+
+
+@frappe.whitelist()
+def supplier_rfq_history(supplier, company=None):
+	"""Requests for Quotation raised to this supplier, with lot and response facts.
+
+	Queries `Request for Quotation Supplier` to find RFQs where this supplier
+	was asked, retrieves parent RFQs scoped to company, and determines whether
+	the supplier has responded with a quotation.
+	"""
+	if not company:
+		frappe.throw(_("Company is required."), frappe.ValidationError)
+	selected_company = _assert_company_scope(company)
+	if not frappe.has_permission("Supplier", "read"):
+		frappe.throw(_("You are not permitted to view suppliers."), frappe.PermissionError)
+
+	supplier_name = str(supplier or "").strip()
+	if not supplier_name:
+		return {"rows": [], "count": 0}
+
+	if not frappe.db.exists("DocType", "Request for Quotation Supplier"):
+		return {"rows": [], "count": 0}
+
+	rfq_supp_rows = frappe.get_all(
+		"Request for Quotation Supplier",
+		filters={"supplier": supplier_name},
+		fields=["parent"],
+		limit_page_length=500,
+	)
+	rfq_names = list({r["parent"] for r in rfq_supp_rows if r.get("parent")})
+	if not rfq_names:
+		return {"rows": [], "count": 0}
+
+	fields = [
+		"name",
+		"transaction_date",
+		"status",
+		"docstatus",
+	]
+	has_deal = frappe.db.has_column("Request for Quotation", "custom_crm_deal")
+	if has_deal:
+		fields.append("custom_crm_deal")
+
+	rfqs = frappe.get_list(
+		"Request for Quotation",
+		filters={"name": ["in", rfq_names], "company": selected_company, "docstatus": ["<", 2]},
+		fields=fields,
+		order_by="transaction_date desc, name desc",
+		limit_page_length=500,
+	)
+
+	deal_names = list({r["custom_crm_deal"] for r in rfqs if r.get("custom_crm_deal")})
+	deal_labels = {}
+	if deal_names and frappe.db.exists("DocType", "CRM Deal"):
+		deals = frappe.get_all(
+			"CRM Deal",
+			filters={"name": ["in", deal_names]},
+			fields=["name", "organization", "lead_name"],
+		)
+		for d in deals:
+			deal_labels[d["name"]] = d.get("organization") or d.get("lead_name") or d["name"]
+
+	sq_deals = set()
+	if deal_names and frappe.db.has_column("Supplier Quotation", "custom_crm_deal"):
+		sqs = frappe.get_all(
+			"Supplier Quotation",
+			filters={
+				"supplier": supplier_name,
+				"company": selected_company,
+				"custom_crm_deal": ["in", deal_names],
+				"docstatus": ["<", 2],
+			},
+			fields=["custom_crm_deal"],
+		)
+		sq_deals = {s["custom_crm_deal"] for s in sqs if s.get("custom_crm_deal")}
+
+	for r in rfqs:
+		deal = r.get("custom_crm_deal")
+		r["deal"] = deal
+		r["deal_label"] = deal_labels.get(deal, deal)
+		r["responded"] = bool(deal and deal in sq_deals)
+
+	return {"rows": rfqs, "count": len(rfqs)}

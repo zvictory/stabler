@@ -3220,11 +3220,13 @@ No records yet.,No records yet.
 No remaining (unshipped) items found on this Proforma Invoice.,No remaining (unshipped) items found on this Proforma Invoice.
 No repair requests,No repair requests
 No reports found,No reports found
+No requests for quotation have been sent to this supplier.,No requests for quotation have been sent to this supplier.
 No requests for quotation yet.,No requests for quotation yet.
 No reservations for this warehouse,No reservations for this warehouse
 "No results for ""{query}"".","No results for ""{query}""."
 No revaluations yet,No revaluations yet
 No RFQs created for this deal yet. Click 'Request for quotation' to raise one.,No RFQs created for this deal yet. Click 'Request for quotation' to raise one.
+No RFQs yet,No RFQs yet
 No ROI snapshots yet,No ROI snapshots yet
 No routes yet,No routes yet
 No rows to import.,No rows to import.
@@ -4361,6 +4363,7 @@ Resolved,Resolved
 resolved,resolved
 Resolved At,Resolved At
 Responded,Responded
+Response,Response
 Response by,Response by
 Restore test,Restore test
 Restore test recorded.,Restore test recorded.

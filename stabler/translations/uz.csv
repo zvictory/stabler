@@ -3222,11 +3222,13 @@ No records yet.,Hozircha yozuvlar yo'q.
 No remaining (unshipped) items found on this Proforma Invoice.,Bu proformada yuborilmagan qoldiq pozitsiyalar yo‘q.
 No repair requests,Ta'mirlash so'rovlari yo'q
 No reports found,
+No requests for quotation have been sent to this supplier.,Ushbu yetkazib beruvchiga hali narx so'rovi yuborilmagan.
 No requests for quotation yet.,Hozircha narx so'rovlari yo'q.
 No reservations for this warehouse,
 "No results for ""{query}"".","""{query}"" uchun natijalar yo'q."
 No revaluations yet,
 No RFQs created for this deal yet. Click 'Request for quotation' to raise one.,Ushbu bitim uchun hali narx so'rovi yaratilmagan. 'Taklif so'rash' tugmasini bosing.
+No RFQs yet,Hozircha RFQ yo'q
 No ROI snapshots yet,Hali ROI suratlar yo'q
 No routes yet,Marshrutlar hali yo'q
 No rows to import.,
@@ -4364,6 +4366,7 @@ Resolved,
 resolved,yakunlangan
 Resolved At,Hal qilish vaqti
 Responded,Javob berildi
+Response,Javob
 Response by,Javob muddati
 Restore test,Tiklash sinovi
 Restore test recorded.,Tiklash sinovi qayd etildi.
