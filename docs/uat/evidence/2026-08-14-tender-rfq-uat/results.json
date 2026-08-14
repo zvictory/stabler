@@ -1,0 +1,88 @@
+{
+  "timestamp": "2026-08-14T12:02:25.076Z",
+  "site": "https://mikas.erpstable.com",
+  "company": "Mikas",
+  "run_id": "TENDER-RFQ-UAT-1786708945078",
+  "steps": [
+    {
+      "id": "UAT-01-LOGIN",
+      "description": "Admin login via API",
+      "status": "PASS",
+      "details": ""
+    },
+    {
+      "id": "UAT-01-NAV-CRM",
+      "description": "Tender CRM loaded",
+      "status": "PASS",
+      "details": ""
+    },
+    {
+      "id": "UAT-02-SAVE-INTAKE",
+      "description": "Save deal intake with item lines",
+      "status": "PASS",
+      "details": "Saved items: 2"
+    },
+    {
+      "id": "UAT-03-SOURCING-VIEW",
+      "description": "Sourcing Workspace loaded for deal",
+      "status": "PASS",
+      "details": ""
+    },
+    {
+      "id": "UAT-03-RFQ-BTN",
+      "description": "Request for quotation button links to /tender/rfq/new",
+      "status": "PASS",
+      "details": ""
+    },
+    {
+      "id": "UAT-04-RFQ-FORM-LOAD",
+      "description": "RFQ Form loaded with prefilled deal",
+      "status": "PASS",
+      "details": ""
+    },
+    {
+      "id": "UAT-04-ITEMS-PREFILLED",
+      "description": "Tender items pre-filled into RFQ table",
+      "status": "PASS",
+      "details": "Table rows: 2"
+    },
+    {
+      "id": "UAT-05-CREATE-RFQ",
+      "description": "Create RFQ draft API",
+      "status": "PASS",
+      "details": "RFQ: PUR-RFQ-2026-00005"
+    },
+    {
+      "id": "UAT-06-DETAIL-LOAD",
+      "description": "RFQ Detail Page Loaded",
+      "status": "PASS",
+      "details": ""
+    },
+    {
+      "id": "UAT-07-MARK-SENT",
+      "description": "Mark RFQ as Sent with Communication record",
+      "status": "PASS",
+      "details": "Comm: 9muif7svln"
+    },
+    {
+      "id": "UAT-08-PRINT-VIEW",
+      "description": "RFQ Print View Loaded",
+      "status": "PASS",
+      "details": ""
+    },
+    {
+      "id": "UAT-09-LIST-VIEW",
+      "description": "RFQ List View Loaded",
+      "status": "PASS",
+      "details": ""
+    },
+    {
+      "id": "UAT-10-SOURCING-CHIP",
+      "description": "Sourcing Workspace reflects newly created RFQ",
+      "status": "PASS",
+      "details": ""
+    }
+  ],
+  "passed_count": 13,
+  "failed_count": 0
+}
