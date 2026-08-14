@@ -2726,6 +2726,10 @@ def _post_expense_kasa_entry(doc) -> dict:
 			commercial_invoice=doc.get("commercial_invoice"),
 			import_container=doc.get("container"),
 			import_truck=doc.get("truck"),
+			import_category=doc.get("category"),
+			# Back-link: this voucher belongs to an Import Expense that already
+			# exists, so the JE on_submit hook must not mirror a second one.
+			import_expense=doc.name,
 		)
 		or {}
 	)

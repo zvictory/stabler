@@ -1060,3 +1060,137 @@ def compute_customs_fee(commercial_invoice, off_hours=None, on_date=None, apply=
 	override = flt(ci.get("customs_fee_override"))
 	breakdown["effective_fee_uzs"] = override or breakdown["fee_uzs"]
 	return breakdown
+
+
+# ---------------------------------------------------------------------------
+# Journal Entry (kassa / bank expense) -> Import Expense
+# ---------------------------------------------------------------------------
+
+
+def _je_credit_leg(doc):
+	"""``(amount, currency, account)`` of a Bank Entry's paying leg.
+
+	The credit side of an expense voucher is the cash desk / bank account money
+	left from, so its account-currency amount is what the expense actually cost.
+	"""
+	for row in doc.get("accounts") or []:
+		amount = flt(row.get("credit_in_account_currency"))
+		if amount > 0:
+			return amount, row.get("account_currency"), row.get("account")
+	return 0.0, None, None
+
+
+def _je_single_debit_account(doc):
+	"""The debit account when the voucher has exactly one — else ``None``.
+
+	Import Expense carries a single ``expense_account``; a multi-line voucher has
+	no one answer, so the field is left empty rather than guessed at.
+	"""
+	debits = [
+		r.get("account") for r in (doc.get("accounts") or []) if flt(r.get("debit_in_account_currency")) > 0
+	]
+	return debits[0] if len(debits) == 1 else None
+
+
+def on_journal_entry_submit(doc, method=None):
+	"""doc_events on_submit for Journal Entry: mirror a CI-tagged expense.
+
+	Money spent against a Commercial Invoice on /money/expenses becomes an Import
+	Expense so it shows up in the CI cost overview and can be capitalized onto the
+	containers. Untagged vouchers are untouched — without a Commercial Invoice this
+	hook returns before it reads anything else.
+
+	Hooked on submit rather than called from ``money.submit_expense_entry`` because
+	a maker-checker-routed voucher is submitted later by ``approvals.approve``,
+	outside that function; on_submit is the one point both paths pass through.
+	"""
+	if doc.voucher_type != "Bank Entry":
+		return
+	if not pm.wants_je_import_expense(
+		commercial_invoice=doc.get("custom_commercial_invoice"),
+		owning_import_expense=doc.get("custom_import_expense"),
+		amount=_je_credit_leg(doc)[0],
+	):
+		return
+	if not _should_run(doc):
+		return
+	# Re-submitting an amended voucher must not stack a second mirror.
+	if frappe.db.exists("Import Expense", {"journal_entry": doc.name}):
+		return
+
+	from stabler.api import _imports_rules as rules
+
+	amount, currency, paid_from = _je_credit_leg(doc)
+	category = doc.get("custom_import_expense_category") or "Other"
+
+	expense = frappe.new_doc("Import Expense")
+	expense.update(
+		{
+			"commercial_invoice": doc.custom_commercial_invoice,
+			"company": doc.company,
+			"container": doc.get("custom_import_container") or None,
+			# `truck` is deliberately NOT set: it means "bill this through the truck
+			# border-crossing hook", which would raise a payable for money already
+			# paid. The truck attribution stays on the voucher's custom_import_truck.
+			"category": category,
+			"expense_date": doc.posting_date,
+			# No `supplier` either — /money/expenses records a free-text payee, and a
+			# supplier would make `wants_expense_pi` spawn a DRAFT service PI for an
+			# expense that is already settled.
+			"description": doc.get("user_remark") or doc.name,
+			"amount": amount,
+			"currency": currency,
+			"expense_account": _je_single_debit_account(doc),
+			"paid_from_account": paid_from,
+			# The voucher exists already: setting it here is also the idempotency key
+			# that stops `_post_expense_kasa_entry` from posting a second one.
+			"journal_entry": doc.name,
+			"include_in_landed_cost": 0,
+			"cost_component": rules.expense_cost_component(category),
+		}
+	)
+	expense.insert(ignore_permissions=True)
+
+	# db_set, not save(): bank/cash are permlevel-1 on a doctype that carries no
+	# permlevel-1 permission row, and `status` is only derived inside validate(),
+	# which has already run. Same reasoning as imports._post_expense_kasa_entry.
+	is_cash = frappe.db.get_value("Account", paid_from, "account_type") == "Cash"
+	bank_payment = 0.0 if is_cash else amount
+	cash_payment = amount if is_cash else 0.0
+	expense.db_set(
+		{
+			"bank_payment": bank_payment,
+			"cash_payment": cash_payment,
+			"status": pm.expense_status(amount, bank_payment, cash_payment),
+		}
+	)
+
+
+def on_journal_entry_cancel(doc, method=None):
+	"""doc_events on_cancel for Journal Entry: retire the mirrored Import Expense.
+
+	``money.amend_expense_entry`` cancels the source voucher instead of deleting it,
+	so without this the amended entry would leave its mirror behind and the CI would
+	count the cost twice.
+	"""
+	if doc.voucher_type != "Bank Entry":
+		return
+	for row in frappe.get_all(
+		"Import Expense",
+		filters={"journal_entry": doc.name},
+		fields=["name", "include_in_landed_cost"],
+	):
+		action = pm.je_cancel_expense_action(
+			owning_import_expense=doc.get("custom_import_expense"),
+			include_in_landed_cost=row.include_in_landed_cost,
+		)
+		if action == "keep":
+			continue
+		if action == "block":
+			frappe.throw(
+				frappe._(
+					"Import Expense {0} is already included in landed cost. Remove it from the "
+					"landed cost first, then cancel this entry."
+				).format(row.name)
+			)
+		frappe.delete_doc("Import Expense", row.name, ignore_permissions=True, delete_permanently=True)
