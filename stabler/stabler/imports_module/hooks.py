@@ -771,9 +771,58 @@ def create_additional_lcv(grn_name: str):
 	return name
 
 
+def _usable_expense_account(account: str, company: str) -> bool:
+	"""True when ``account`` can actually carry a landed-cost charge for ``company``."""
+	row = frappe.db.get_value("Account", account, ["company", "is_group", "root_type"], as_dict=True)
+	if not row:
+		return False
+	return row.company == company and not cint(row.is_group) and row.root_type == "Expense"
+
+
+def resolve_lcv_expense_account(company: str) -> str | None:
+	"""Resolve the expense account every auto-created imports LCV line posts to.
+
+	The setting is a Single — one global value for every company on the site — and
+	nothing revalidates it when a chart of accounts changes. So it can name an
+	account that does not exist at all (measured on msa: a numbered account on a
+	chart with no numbered accounts), or one that belongs to another company, or a
+	group. Checking only for emptiness, as this did, let that name flow straight
+	into the voucher payload and killed the whole LCV chain on a setting no user
+	ever sees. A broken value must therefore behave like an empty one — fall back,
+	do not disable the fallback — which is what the sibling path in
+	``stabler/api/lcv.py`` already does for the Purchase Receipt flow.
+	"""
+	configured = [
+		frappe.db.get_single_value("Stabler Settings", "imports_lcv_expense_account"),
+		frappe.db.get_single_value("Stabler Settings", "landed_cost_expense_account"),
+	]
+	for account in configured:
+		if not account:
+			continue
+		if _usable_expense_account(account, company):
+			return account
+		frappe.logger("stabler.imports").warning(
+			f"Stabler Settings landed-cost expense account {account!r} is unusable for "
+			f"company {company} (missing, wrong company, a group, or not an expense "
+			f"account) — falling back to auto-discovery"
+		)
+
+	discovered = frappe.db.get_value(
+		"Account",
+		{"company": company, "account_type": "Expenses Included In Valuation", "is_group": 0},
+		"name",
+	) or frappe.db.get_value("Account", {"company": company, "root_type": "Expense", "is_group": 0}, "name")
+	if discovered:
+		frappe.logger("stabler.imports").warning(
+			f"Company {company}: landed-cost expense account auto-discovered as {discovered!r}. "
+			f"Set it explicitly in Stabler Settings."
+		)
+	return discovered
+
+
 def _build_and_save_lcv(grn, note: str):
 	"""Collect cost lines -> DRAFT LCV -> append GRN ref -> mark lines consumed."""
-	expense_account = frappe.db.get_single_value("Stabler Settings", "imports_lcv_expense_account")
+	expense_account = resolve_lcv_expense_account(grn.company)
 	if not expense_account:
 		frappe.throw(
 			frappe._(
