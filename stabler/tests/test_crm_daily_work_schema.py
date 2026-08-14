@@ -18,6 +18,11 @@ class TestCrmDailyWorkSchema(unittest.TestCase):
 		with open(os.path.join(_ROOT, "patches.txt"), encoding="utf-8") as source:
 			self.assertIn(repair, source.read().split())
 
+		import sys
+		import types
+
+		if "frappe" not in sys.modules:
+			sys.modules["frappe"] = types.ModuleType("frappe")
 		module = importlib.import_module(repair)
 		with patch.object(module, "create_tender_deal_fields") as create_fields:
 			module.execute()

@@ -8,10 +8,18 @@ computed from invoices the current user cannot read.
 from __future__ import annotations
 
 import importlib
-import sys
 import types
 import unittest
 from datetime import date, datetime
+
+from stabler.tests.module_sandbox import ModuleSandbox
+
+_SANDBOX = ModuleSandbox()
+
+
+def tearDownModule():
+	"""The fakes below are process-wide — hand ``sys.modules`` back intact."""
+	_SANDBOX.restore()
 
 
 class _Doc(dict):
@@ -118,14 +126,13 @@ class _FakeDB:
 
 
 def _load_crm(db: _FakeDB):
-	for name in (
+	_SANDBOX.evict(
 		"stabler.api.crm",
 		"frappe",
 		"frappe.utils",
 		"stabler.api._common",
 		"stabler.api.organization",
-	):
-		sys.modules.pop(name, None)
+	)
 
 	frappe = types.ModuleType("frappe")
 	frappe._ = lambda value: value
@@ -164,7 +171,7 @@ def _load_crm(db: _FakeDB):
 	organization._can_access_module = lambda *_args, **_kwargs: True
 	organization._user_allowed_companies = lambda _user: ["Mikas"]
 
-	sys.modules.update(
+	_SANDBOX.install(
 		{
 			"frappe": frappe,
 			"frappe.utils": utils,

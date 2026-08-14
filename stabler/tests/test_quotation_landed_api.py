@@ -7,10 +7,18 @@ from __future__ import annotations
 
 import importlib
 import json
-import sys
 import types
 import unittest
 from datetime import datetime
+
+from stabler.tests.module_sandbox import ModuleSandbox
+
+_SANDBOX = ModuleSandbox()
+
+
+def tearDownModule():
+	"""The fakes below are process-wide — hand ``sys.modules`` back intact."""
+	_SANDBOX.restore()
 
 
 class _FakeDoc:
@@ -50,7 +58,7 @@ class _FakeFrappe:
 
 
 def _load_sourcing(fake: _FakeFrappe):
-	for name in (
+	_SANDBOX.evict(
 		"stabler.api.sourcing",
 		"stabler.api.tender",
 		"stabler.api.tender_master",
@@ -58,8 +66,7 @@ def _load_sourcing(fake: _FakeFrappe):
 		"frappe",
 		"frappe.utils",
 		"frappe.model.document",
-	):
-		sys.modules.pop(name, None)
+	)
 
 	frappe_model_doc = types.ModuleType("frappe.model.document")
 
@@ -67,7 +74,7 @@ def _load_sourcing(fake: _FakeFrappe):
 		pass
 
 	frappe_model_doc.Document = Document
-	sys.modules["frappe.model.document"] = frappe_model_doc
+	_SANDBOX.install({"frappe.model.document": frappe_model_doc})
 
 	frappe = types.ModuleType("frappe")
 	frappe._ = lambda value: value
@@ -108,7 +115,7 @@ def _load_sourcing(fake: _FakeFrappe):
 	tender_master = types.ModuleType("stabler.api.tender_master")
 	tender_master.require_selected_company = lambda company: company or "ACME"
 
-	sys.modules.update(
+	_SANDBOX.install(
 		{
 			"frappe": frappe,
 			"frappe.utils": utils,
