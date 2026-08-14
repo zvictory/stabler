@@ -886,9 +886,12 @@ def _collect_cost_lines(commercial_invoice):
 	could drop a line from the middle: the two lists would silently fall out of
 	step and stamp the wrong rows as vouchered.
 
-	``container`` and ``purchase_invoice`` are what make that supersede possible —
-	the first scopes it so containers cannot supersede each other, the second says
-	which line came from a carrier's bill rather than an operator's keyboard.
+	``container`` and every field in ``lcv_math.SOURCE_FIELDS`` are what make that
+	supersede possible — the first scopes it so containers cannot supersede each
+	other, the rest say which line came from a real document rather than an
+	operator's keyboard. Every source field has to be carried: a line whose source
+	is dropped here reads as hand-typed, and a later bill would supersede real
+	spend right out of the valuation.
 	"""
 	containers = frappe.get_all(
 		"Import Container", filters={"commercial_invoice": commercial_invoice}, pluck="name"
@@ -909,8 +912,8 @@ def _collect_cost_lines(commercial_invoice):
 					"currency": row.currency,
 					"amount": row.amount,
 					"include_in_landed_cost": row.include_in_landed_cost,
-					"purchase_invoice": row.get("purchase_invoice"),
 					"lcv_ref": row.get("lcv_ref"),
+					**{field: row.get(field) for field in lcv_math.SOURCE_FIELDS},
 				}
 			)
 	return line_dicts

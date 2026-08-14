@@ -251,8 +251,9 @@ class TestBuildLcvPayload(unittest.TestCase):
 		)
 
 
-def _billable(component, container, purchase_invoice=None, amount=100.0):
-	return {
+def _billable(component, container, purchase_invoice=None, amount=100.0, **source):
+	"""One cost line. ``**source`` carries any other field in ``SOURCE_FIELDS``."""
+	line = {
 		"cost_component": component,
 		"container": container,
 		"purchase_invoice": purchase_invoice,
@@ -261,10 +262,12 @@ def _billable(component, container, purchase_invoice=None, amount=100.0):
 		"include_in_landed_cost": 1,
 		"lcv_ref": None,
 	}
+	line.update(source)
+	return line
 
 
-def _vouchered(component, container, lcv_ref, purchase_invoice=None, amount=100.0):
-	line = _billable(component, container, purchase_invoice=purchase_invoice, amount=amount)
+def _vouchered(component, container, lcv_ref, purchase_invoice=None, amount=100.0, **source):
+	line = _billable(component, container, purchase_invoice=purchase_invoice, amount=amount, **source)
 	line["lcv_ref"] = lcv_ref
 	return line
 
@@ -355,7 +358,11 @@ class SupersedeBilledTest(unittest.TestCase):
 		_, warnings = lcv_math.supersede_billed(lines)
 		self.assertIn("Freight", warnings[0])
 		self.assertIn("CNT-1", warnings[0])
-		self.assertIn("Remove the bill link", warnings[0])
+		self.assertIn("Remove that link", warnings[0])
+		# It must also name the document that won, not just "the bill": with more
+		# than one possible source, "unlink the bill" is not an instruction the
+		# operator can act on.
+		self.assertIn("PINV-1", warnings[0])
 
 	def test_it_reports_like_the_customs_precedence_it_mirrors(self):
 		kept, warnings = lcv_math.supersede_billed([])
@@ -408,6 +415,83 @@ class VoucheredHandLineTest(unittest.TestCase):
 		line = _vouchered("Freight", "CNT-1", "MAT-LCV-13")
 		line["include_in_landed_cost"] = 0
 		self.assertIsNone(lcv_math.vouchered_hand_line([line], "CNT-1", "Freight"))
+
+
+class LineSourceTest(unittest.TestCase):
+	"""Both precedence rules ask "did a document produce this line?" — not "is there
+	a purchase_invoice?".
+
+	A cost reaches a container from more than one document now: the carrier's own
+	Purchase Invoice, and the Import Expense a cash payment was recorded on. If
+	either rule went back to reading ``purchase_invoice`` alone, an
+	expense-sourced line would be classified as an operator's hand-typed
+	estimate, and both rules would then act on the wrong side —
+	``supersede_billed`` would drop the real bill's line instead of the estimate,
+	and ``vouchered_hand_line`` would refuse a genuine later bill link as if it
+	were a double-count. Both mistakes are the same money either capitalized
+	twice or lost, which is precisely the invariant this module exists to hold.
+
+	These tests are parametrized over ``SOURCE_FIELDS``, so reverting either rule
+	to a single hard-coded field turns them red.
+	"""
+
+	def test_every_source_field_marks_a_line_as_a_document_not_a_guess(self):
+		# The bill wins over the estimate regardless of WHICH document it is.
+		for field in lcv_math.SOURCE_FIELDS:
+			with self.subTest(source=field):
+				lines = [
+					_billable("Freight", "CNT-1", amount=900.0),
+					_billable("Freight", "CNT-1", amount=1000.0, **{field: "DOC-1"}),
+				]
+				kept, warnings = lcv_math.supersede_billed(lines)
+				self.assertEqual([ln["amount"] for ln in kept], [1000.0])
+				self.assertEqual(len(warnings), 1)
+				self.assertIn("DOC-1", warnings[0])
+
+	def test_every_source_field_survives_the_vouchered_hand_line_check(self):
+		# A vouchered line that came from a document is another document's money;
+		# reading it as a hand-typed estimate would block a legitimate second
+		# link and silently drop that cost out of the valuation.
+		for field in lcv_math.SOURCE_FIELDS:
+			with self.subTest(source=field):
+				line = _vouchered("Freight", "CNT-1", "MAT-LCV-13", **{field: "DOC-1"})
+				self.assertIsNone(lcv_math.vouchered_hand_line([line], "CNT-1", "Freight"))
+
+	def test_a_blank_source_field_is_still_a_hand_typed_line(self):
+		# Frappe writes "" (and operators paste whitespace) far more often than
+		# NULL; a blank must not be mistaken for a document, or the estimate
+		# would supersede itself.
+		for field in lcv_math.SOURCE_FIELDS:
+			with self.subTest(source=field):
+				lines = [
+					_billable("Freight", "CNT-1", **{field: "   "}),
+					_billable("Freight", "CNT-1"),
+				]
+				kept, warnings = lcv_math.supersede_billed(lines)
+				self.assertEqual(len(kept), 2)
+				self.assertEqual(warnings, [])
+
+	def test_a_bill_and_an_expense_for_one_component_are_two_real_payments(self):
+		# Same reasoning as two carriers on one leg: each document is money that
+		# was actually spent, so both stay. Only an operator's estimate yields.
+		lines = [
+			_billable("Cross-Border Transport", "CNT-1", purchase_invoice="PINV-1", amount=400.0),
+			_billable("Cross-Border Transport", "CNT-1", import_expense="IE-1", amount=600.0),
+		]
+		kept, warnings = lcv_math.supersede_billed(lines)
+		self.assertEqual(round(sum(ln["amount"] for ln in kept), 2), 1000.0)
+		self.assertEqual(warnings, [])
+
+	def test_the_two_capitalizing_paths_are_both_registered_as_sources(self):
+		# Named explicitly so that dropping a field from SOURCE_FIELDS — which
+		# would quietly turn the parametrized tests above green while breaking
+		# that path's route into the landed cost — fails here instead.
+		self.assertEqual(set(lcv_math.SOURCE_FIELDS), {"purchase_invoice", "import_expense"})
+
+	def test_source_document_returns_the_name_so_a_warning_can_cite_it(self):
+		self.assertEqual(lcv_math.source_document({"import_expense": "IE-7"}), "IE-7")
+		self.assertEqual(lcv_math.source_document({"purchase_invoice": "PINV-7"}), "PINV-7")
+		self.assertEqual(lcv_math.source_document({}), "")
 
 
 if __name__ == "__main__":

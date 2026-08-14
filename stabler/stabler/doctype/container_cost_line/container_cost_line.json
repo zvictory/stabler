@@ -12,6 +12,7 @@
   "amount_uzs",
   "include_in_landed_cost",
   "purchase_invoice",
+  "import_expense",
   "lcv_ref"
  ],
  "fields": [
@@ -56,11 +57,19 @@
    "label": "Include in Landed Cost"
   },
   {
-   "description": "The carrier's or service provider's Purchase Invoice this cost line came from. Set automatically when a bill is linked to the import; blank means an operator typed the figure in by hand. A billed line supersedes a hand-typed line of the same component on the same container, so the same money is never capitalized twice.",
+   "description": "The carrier's or service provider's Purchase Invoice this cost line came from. Set automatically when a bill is linked to the import. A line is hand-typed only when BOTH this field and Import Expense are blank, and a document-sourced line supersedes a hand-typed line of the same component on the same container, so the same money is never capitalized twice.",
    "fieldname": "purchase_invoice",
    "fieldtype": "Link",
    "label": "Purchase Invoice",
    "options": "Purchase Invoice",
+   "read_only": 1
+  },
+  {
+   "description": "The Import Expense this cost line came from — the route taken by a cost paid in cash or from a bank account rather than billed on a supplier invoice. Set automatically when an expense is marked for landed cost. It is the second source field alongside Purchase Invoice; the two are mutually exclusive on a line, and either one marks the line as a real document rather than an operator's estimate.",
+   "fieldname": "import_expense",
+   "fieldtype": "Link",
+   "label": "Import Expense",
+   "options": "Import Expense",
    "read_only": 1
   },
   {
