@@ -2687,7 +2687,8 @@ def supplier_quotation_history(supplier, company=None):
 	"""
 	if not company:
 		frappe.throw(_("Company is required."), frappe.ValidationError)
-	selected_company = _assert_company_scope(company)
+	_assert_company_scope(company)
+	selected_company = company
 	if not frappe.has_permission("Supplier", "read"):
 		frappe.throw(_("You are not permitted to view suppliers."), frappe.PermissionError)
 
@@ -2755,7 +2756,8 @@ def supplier_rfq_history(supplier, company=None):
 	"""
 	if not company:
 		frappe.throw(_("Company is required."), frappe.ValidationError)
-	selected_company = _assert_company_scope(company)
+	_assert_company_scope(company)
+	selected_company = company
 	if not frappe.has_permission("Supplier", "read"):
 		frappe.throw(_("You are not permitted to view suppliers."), frappe.PermissionError)
 
