@@ -128,6 +128,7 @@ class _FakeFrappe:
 				supplier="SUP-A",
 				currency="USD",
 				custom_crm_deal="LOT-A",
+				custom_rfq="RFQ-1",
 				docstatus=0,
 				items=[{"item_code": "RAIL-01", "qty": 5.0, "rate": 100.0}],
 			),
@@ -137,6 +138,7 @@ class _FakeFrappe:
 				supplier="SUP-A",
 				currency="USD",
 				custom_crm_deal="LOT-A",
+				custom_rfq="RFQ-1",
 				transaction_date="2026-07-01",
 				docstatus=0,
 				items=[{"item_code": "RAIL-01", "qty": 5.0, "rate": 100.0}],
@@ -147,6 +149,7 @@ class _FakeFrappe:
 				supplier="SUP-A",
 				currency="USD",
 				custom_crm_deal="LOT-A",
+				custom_rfq="RFQ-1",
 				docstatus=1,
 			),
 			("Supplier Quotation", "SQ-OTHER-COMPANY"): _Doc(
@@ -1392,6 +1395,62 @@ class TestUnassignedQuotationsAndLinking(unittest.TestCase):
 		with self.assertRaises(ValueError) as ctx:
 			self.api.detach_quotation_from_deal("SQ-OTHER-LOT", company="ACME")
 		self.assertIn("approved sourcing decision", str(ctx.exception))
+
+
+class TestGetQuotationDefaults(unittest.TestCase):
+	def setUp(self):
+		self.fake = _FakeFrappe()
+		self.api = _load_api(self.fake)
+
+	def test_defaults_from_explicit_rfq(self):
+		res = self.api.get_quotation_defaults("LOT-A", rfq="RFQ-1", company="ACME")
+		self.assertEqual(len(res["items"]), 1)
+		self.assertEqual(res["items"][0]["item_code"], "RAIL-01")
+		self.assertEqual(res["items"][0]["qty"], 10.0)
+		self.assertEqual(res["items"][0]["uom"], "Nos")
+		self.assertNotIn("rate", res["items"][0])
+
+	def test_defaults_from_latest_rfq_when_rfq_not_specified(self):
+		res = self.api.get_quotation_defaults("LOT-A", company="ACME")
+		self.assertEqual(len(res["items"]), 1)
+		self.assertEqual(res["items"][0]["item_code"], "RAIL-01")
+
+	def test_defaults_empty_when_no_rfqs_exist(self):
+		res = self.api.get_quotation_defaults("LOT-C", company="ACME")
+		self.assertEqual(res, {"items": []})
+
+	def test_defaults_rejects_foreign_rfq(self):
+		with self.assertRaises(PermissionError):
+			self.api.get_quotation_defaults("LOT-A", rfq="RFQ-OTHER-COMPANY", company="ACME")
+
+
+class TestSqRfqLink(unittest.TestCase):
+	def setUp(self):
+		self.fake = _FakeFrappe()
+		self.api = _load_api(self.fake)
+
+	def test_save_supplier_quotation_sets_custom_rfq(self):
+		self.api.save_supplier_quotation(
+			deal="LOT-A",
+			supplier="SUP-A",
+			currency="USD",
+			rfq="RFQ-1",
+			items=[{"item_code": "RAIL-01", "qty": 1.0, "rate": 50.0}],
+			company="ACME",
+		)
+		doc = self.fake.created[-1]
+		self.assertEqual(doc.get("custom_rfq"), "RFQ-1")
+
+	def test_save_supplier_quotation_rejects_foreign_rfq(self):
+		with self.assertRaises(Exception):
+			self.api.save_supplier_quotation(
+				deal="LOT-A",
+				supplier="SUP-A",
+				currency="USD",
+				rfq="RFQ-OTHER-COMPANY",
+				items=[{"item_code": "RAIL-01", "qty": 1.0, "rate": 50.0}],
+				company="ACME",
+			)
 
 
 if __name__ == "__main__":

@@ -5899,3 +5899,11 @@ Cancel Voucher,Отменить ваучер
 Landed Cost Voucher {lcv} cancelled.,Ваучер {lcv} отменён.
 Could not cancel the voucher.,Не удалось отменить ваучер.
 Only submitted Landed Cost Vouchers can be cancelled.,Отменить можно только проведённые ваучеры стоимости доставки.
+New tender,Новый тендер
+Record quotation,Записать предложение
+Create purchase order,Создать заказ на покупку
+Purchase order created from the quotation.,Заказ на покупку создан на основе коммерческого предложения.
+This quotation has no lines.,В этом коммерческом предложении нет строк.
+Could not create purchase order.,Не удалось создать заказ на покупку.
+Creating…,Создание…
+Purchase order {0} already exists.,Заказ на покупку {0} уже существует.

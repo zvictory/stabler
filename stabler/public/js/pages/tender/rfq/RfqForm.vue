@@ -41,6 +41,7 @@ async function searchDeals(q) {
 	const r = await call("stabler.api.crm.list_deals", {
 		company: activeCompany.value,
 		search: q,
+		deal_type: "Tender",
 		page_length: 20,
 	});
 	return (r?.deals || []).map((d) => ({

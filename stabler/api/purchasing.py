@@ -9,7 +9,13 @@ from frappe import _
 from frappe.utils import cint, flt, getdate, today
 
 from stabler.api import _import_exposure
-from stabler.api._common import _assert_can_read, _assert_can_write, _require_company, check_concurrency
+from stabler.api._common import (
+	_assert_can_read,
+	_assert_can_write,
+	_company_default_warehouse,
+	_require_company,
+	check_concurrency,
+)
 from stabler.api._money import money_epsilon
 from stabler.api.approvals import _assert_company_scope
 from stabler.stabler.doctype.stabler_settings.stabler_settings import (
@@ -2832,3 +2838,108 @@ def supplier_rfq_history(supplier, company=None):
 		r["responded"] = bool(deal and deal in sq_deals)
 
 	return {"rows": rfqs, "count": len(rfqs)}
+
+
+@frappe.whitelist()
+def create_po_from_quotation(quotation: str, company: str | None = None) -> dict:
+	"""Bridge an approved tender award to a draft ERP Purchase Order.
+
+	Validates company scope, permissions, and SQ attachment to a tender lot.
+	Idempotent: returns existing draft PO if one already exists for this lot + supplier.
+	"""
+	_require_company(company)
+	selected_company = _assert_company_scope(company)
+
+	if not frappe.db.exists("Supplier Quotation", quotation):
+		frappe.throw(_("Supplier Quotation not found: {0}").format(quotation), frappe.DoesNotExistError)
+
+	sq = frappe.get_doc("Supplier Quotation", quotation)
+	if sq.company != selected_company:
+		frappe.throw(_("Quotation does not belong to the selected company."), frappe.PermissionError)
+
+	if not frappe.has_permission("Supplier Quotation", "read", doc=sq):
+		frappe.throw(_("Not permitted to read quotation."), frappe.PermissionError)
+
+	if not frappe.has_permission("Purchase Order", "create"):
+		frappe.throw(_("Not permitted to create Purchase Order."), frappe.PermissionError)
+
+	if sq.docstatus == 2:
+		frappe.throw(_("Cannot create Purchase Order from cancelled quotation."), frappe.ValidationError)
+
+	deal = getattr(sq, "custom_crm_deal", None) or ""
+	if not deal:
+		frappe.throw(_("Quotation is not linked to a tender lot."), frappe.ValidationError)
+
+	# Idempotent guard: check for existing draft PO for this deal and supplier
+	has_deal_field = frappe.db.has_column("Purchase Order", "custom_crm_deal")
+	if has_deal_field:
+		existing_pos = frappe.get_list(
+			"Purchase Order",
+			filters={
+				"company": selected_company,
+				"supplier": sq.supplier,
+				"custom_crm_deal": deal,
+				"docstatus": ["<", 2],
+			},
+			fields=["name"],
+			limit_page_length=1,
+		)
+		if existing_pos:
+			return {"name": existing_pos[0]["name"], "existing": True}
+
+	sq_items = sq.get("items") or []
+	if not sq_items:
+		frappe.throw(_("This quotation has no lines."), frappe.ValidationError)
+
+	po = frappe.new_doc("Purchase Order")
+	po.company = selected_company
+	po.supplier = sq.supplier
+	po.currency = sq.currency or frappe.db.get_value("Company", selected_company, "default_currency") or "USD"
+	po.transaction_date = today()
+	po.schedule_date = str(sq.valid_till or today())
+	if has_deal_field:
+		po.custom_crm_deal = deal
+
+	warehouse = _company_default_warehouse(selected_company)
+
+	for item in sq_items:
+		item_code = item.get("item_code") if isinstance(item, dict) else getattr(item, "item_code", "")
+		item_name = (
+			item.get("item_name") if isinstance(item, dict) else getattr(item, "item_name", "")
+		) or item_code
+		qty = flt(item.get("qty") if isinstance(item, dict) else getattr(item, "qty", 1.0)) or 1.0
+		uom = (item.get("uom") if isinstance(item, dict) else getattr(item, "uom", "")) or ""
+		rate = flt(item.get("rate") if isinstance(item, dict) else getattr(item, "rate", 0.0))
+		amount = flt(item.get("amount") if isinstance(item, dict) else getattr(item, "amount", 0.0)) or (
+			qty * rate
+		)
+		item_schedule_date = (
+			item.get("schedule_date") if isinstance(item, dict) else getattr(item, "schedule_date", None)
+		)
+		schedule_date = str(item_schedule_date or sq.valid_till or today())
+		item_warehouse = (
+			item.get("warehouse") if isinstance(item, dict) else getattr(item, "warehouse", None)
+		) or warehouse
+
+		po.append(
+			"items",
+			{
+				"item_code": item_code,
+				"item_name": item_name,
+				"qty": qty,
+				"uom": uom,
+				"rate": rate,
+				"amount": amount,
+				"schedule_date": schedule_date,
+				"warehouse": item_warehouse,
+			},
+		)
+
+	po.flags.ignore_permissions = False
+	if hasattr(po, "set_missing_values"):
+		po.set_missing_values()
+	if hasattr(po, "calculate_taxes_and_totals"):
+		po.calculate_taxes_and_totals()
+
+	po.insert()
+	return {"name": po.name, "existing": False}

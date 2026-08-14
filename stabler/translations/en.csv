@@ -5891,3 +5891,11 @@ Cancel Voucher,Cancel Voucher
 Landed Cost Voucher {lcv} cancelled.,Landed Cost Voucher {lcv} cancelled.
 Could not cancel the voucher.,Could not cancel the voucher.
 Only submitted Landed Cost Vouchers can be cancelled.,Only submitted Landed Cost Vouchers can be cancelled.
+New tender,New tender
+Record quotation,Record quotation
+Create purchase order,Create purchase order
+Purchase order created from the quotation.,Purchase order created from the quotation.
+This quotation has no lines.,This quotation has no lines.
+Could not create purchase order.,Could not create purchase order.
+Creating…,Creating…
+Purchase order {0} already exists.,Purchase order {0} already exists.

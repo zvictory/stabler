@@ -5894,3 +5894,11 @@ Cancel Voucher,Ваучерни бекор қилиш
 Landed Cost Voucher {lcv} cancelled.,{lcv} ваучери бекор қилинди.
 Could not cancel the voucher.,Ваучерни бекор қилиб бўлмади.
 Only submitted Landed Cost Vouchers can be cancelled.,Фақат тасдиқланган етказиб бериш қиймати ваучерларини бекор қилиш мумкин.
+New tender,Янги тендер
+Record quotation,Таклифни киритиш
+Create purchase order,Харид буюртмасини яратиш
+Purchase order created from the quotation.,Тижорат таклифи асосида харид буюртмаси яратилди.
+This quotation has no lines.,Ушбу таклифда қаторлар мавжуд эмас.
+Could not create purchase order.,Харид буюртмасини яратиб бўлмади.
+Creating…,Яратилмоқда…
+Purchase order {0} already exists.,{0} харид буюртмаси аллақачон мавжуд.

@@ -803,6 +803,37 @@ class TestCrmCompanyScope(unittest.TestCase):
 		resolved = self.crm._resolve_crm_source("Portal")
 		self.assertEqual(resolved, "Portal")
 
+	def test_require_crm_or_tender_gate_allows_tender_only_tenant(self):
+		"""A tender-only tenant (enable_crm=0, enable_tender=1) can save and list deals."""
+		original_can_access = self.crm._can_access_module
+		try:
+			self.crm._can_access_module = lambda user, mod: mod == "tender"
+			deals = self.crm.list_deals("Mikas", deal_type="Tender")
+			self.assertEqual([row["name"] for row in deals["deals"]], ["DEAL-MIKAS"])
+			deal_calls = [c for c in self.db.get_list_calls if c[0] == "CRM Deal"]
+			self.assertEqual(deal_calls[0][1]["filters"].get("deal_type"), "Tender")
+
+			saved = self.crm.save_deal({"name": "DEAL-MIKAS", "organization": "Mikas Tender"}, "Mikas")
+			self.assertEqual(saved["organization"], "Mikas Tender")
+
+			# Other CRM endpoints requiring plain _require_crm must be rejected
+			with self.assertRaises(PermissionError):
+				self.crm.get_deal("DEAL-MIKAS", "Mikas")
+		finally:
+			self.crm._can_access_module = original_can_access
+
+	def test_require_crm_or_tender_gate_rejects_when_both_disabled(self):
+		"""When neither CRM nor Tender is accessible, endpoints reject with PermissionError."""
+		original_can_access = self.crm._can_access_module
+		try:
+			self.crm._can_access_module = lambda user, mod: False
+			with self.assertRaises(PermissionError):
+				self.crm.list_deals("Mikas")
+			with self.assertRaises(PermissionError):
+				self.crm.save_deal({"organization": "Denied"}, "Mikas")
+		finally:
+			self.crm._can_access_module = original_can_access
+
 
 if __name__ == "__main__":
 	unittest.main()

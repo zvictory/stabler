@@ -8,21 +8,15 @@ import { formatMoney } from "../../composables/money.js";
 import { t } from "../../composables/i18n.js";
 import { useToast } from "../../composables/useToast.js";
 import { useSession } from "../../stores/session.js";
-import { useEscapeBack } from "../../composables/useEscapeBack.js";
 import { useTenderContext } from "../../composables/useTenderContext.js";
 import EmptyState from "../../components/EmptyState.vue";
 import SkeletonRows from "../../components/SkeletonRows.vue";
+import TenderMasterDrawer from "../../components/TenderMasterDrawer.vue";
 import TenderPage from "./TenderPage.vue";
 
 const route = useRoute();
 const router = useRouter();
 const { sourcingLocation, documentsLocation, poControlLocation } = useTenderContext(route);
-
-useEscapeBack(() => {
-	if (route.query?.tender) {
-		router.push("/tender/crm");
-	}
-});
 
 const session = useSession();
 const { activeCompany, user, currency } = storeToRefs(session);
@@ -33,6 +27,7 @@ const viewMode = ref("kanban"); // 'kanban' | 'list'
 const searchQuery = ref("");
 const lanes = ref([]);
 const cards = ref([]);
+const newTenderOpen = ref(false);
 
 // Selected deal drawer
 const drawerOpen = ref(false);
@@ -45,6 +40,15 @@ const dealQuotations = ref(null);
 const dragCardName = ref("");
 const dragOverLane = ref("");
 
+function checkDealQuery() {
+	if (route.query?.deal) {
+		const match = cards.value.find((c) => c.name === route.query.deal);
+		if (match) {
+			openDealDrawer(match);
+		}
+	}
+}
+
 async function load() {
 	if (!activeCompany.value) return;
 	loading.value = true;
@@ -52,6 +56,7 @@ async function load() {
 		const res = await call("stabler.api.tender.crm_board", { company: activeCompany.value });
 		lanes.value = res?.lanes || [];
 		cards.value = res?.cards || [];
+		checkDealQuery();
 	} catch (err) {
 		toast.error(err?.message || t("Could not load Tender CRM."));
 	} finally {
@@ -92,6 +97,7 @@ onMounted(() => {
 	loadManagers();
 });
 watch(activeCompany, load);
+watch(() => route.query.deal, () => checkDealQuery());
 
 const activeKpi = ref("");
 
@@ -107,10 +113,6 @@ function toggleKpi(key) {
 
 const filteredCards = computed(() => {
 	let list = cards.value || [];
-	if (route.query?.tender) {
-		const parentTender = String(route.query.tender).trim().toLowerCase();
-		list = list.filter((c) => String(c.custom_parent_tender || "").trim().toLowerCase() === parentTender);
-	}
 	if (searchQuery.value.trim()) {
 		const q = searchQuery.value.trim().toLowerCase();
 		list = list.filter(
@@ -126,6 +128,7 @@ const filteredCards = computed(() => {
 	}
 	return list;
 });
+
 
 const cardsByLane = computed(() => {
 	const map = {};
@@ -312,37 +315,34 @@ function riskLabel(risk) {
 <template>
 	<TenderPage :label="`${t('Tender')} · ${t('Deal pipeline')}`" :title="t('Tender CRM')">
 		<template #meta>
-			<span v-if="route.query?.tender">
-				<router-link to="/tender/crm" class="ds-mono me-1">
-					<i class="ti ti-arrow-left me-1"></i>{{ t("Tender CRM") }}
-				</router-link>
-				/ <span class="ds-mono ms-1 fw-bold">{{ route.query.tender }}</span>
-			</span>
 			<span>{{ t("Every card is an ERP deal record") }}</span>
 			<span>{{ t("Columns are stages; drag a card to move it") }}</span>
 		</template>
 
 		<template #actions>
-				<label class="ds-field crm-search">
-					<span class="ds-field-label">{{ t("Search") }}</span>
-					<input
-						v-model="searchQuery"
-						type="search"
-						class="ds-input"
-						:placeholder="t('Deal no, buyer, lot…')"
-					/>
-				</label>
-				<span class="ds-seg">
-					<button type="button" :aria-pressed="String(viewMode === 'kanban')" @click="viewMode = 'kanban'">
-						{{ t("Kanban") }}
-					</button>
-					<button type="button" :aria-pressed="String(viewMode === 'list')" @click="viewMode = 'list'">
-						{{ t("List") }}
-					</button>
-				</span>
-				<button type="button" class="ds-btn" :disabled="loading" @click="load">
-					{{ loading ? t("Loading…") : t("Refresh") }}
+			<button type="button" class="btn btn-primary btn-sm" @click="newTenderOpen = true">
+				<i class="ti ti-plus me-1"></i>{{ t("New tender") }}
+			</button>
+			<label class="ds-field crm-search">
+				<span class="ds-field-label">{{ t("Search") }}</span>
+				<input
+					v-model="searchQuery"
+					type="search"
+					class="ds-input"
+					:placeholder="t('Deal no, buyer, lot…')"
+				/>
+			</label>
+			<span class="ds-seg">
+				<button type="button" :aria-pressed="String(viewMode === 'kanban')" @click="viewMode = 'kanban'">
+					{{ t("Kanban") }}
 				</button>
+				<button type="button" :aria-pressed="String(viewMode === 'list')" @click="viewMode = 'list'">
+					{{ t("List") }}
+				</button>
+			</span>
+			<button type="button" class="ds-btn" :disabled="loading" @click="load">
+				{{ loading ? t("Loading…") : t("Refresh") }}
+			</button>
 		</template>
 
 		<!-- KPI şeridi · her biri aynı zamanda filtre.
@@ -675,6 +675,12 @@ function riskLabel(risk) {
 				</footer>
 			</aside>
 		</template>
+
+		<TenderMasterDrawer
+			v-model:open="newTenderOpen"
+			:deal="null"
+			@saved="load"
+		/>
 	</TenderPage>
 </template>
 
