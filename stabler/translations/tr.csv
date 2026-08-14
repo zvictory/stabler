@@ -5889,3 +5889,11 @@ Cancel Voucher,Fişi İptal Et
 Landed Cost Voucher {lcv} cancelled.,{lcv} fişi iptal edildi.
 Could not cancel the voucher.,Fiş iptal edilemedi.
 Only submitted Landed Cost Vouchers can be cancelled.,Yalnızca onaylanmış Varış Maliyeti Fişleri iptal edilebilir.
+New tender,Yeni İhale
+Record quotation,Teklifi Kaydet
+Create purchase order,Satın Alma Siparişi Oluştur
+Purchase order created from the quotation.,Tekliften satın alma siparişi oluşturuldu.
+This quotation has no lines.,Bu teklifte hiç satır yok.
+Could not create purchase order.,Satın alma siparişi oluşturulamadı.
+Creating…,Oluşturuluyor…
+Purchase order {0} already exists.,{0} satın alma siparişi zaten mevcut.

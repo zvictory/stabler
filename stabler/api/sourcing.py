@@ -44,6 +44,9 @@ _RFQ_DEAL_FIELD = "custom_crm_deal"
 #: on two doctypes, and one being renamed must not silently rename the other.
 _SQ_DEAL_FIELD = "custom_crm_deal"
 
+#: Tag patch v83 puts on Supplier Quotation linking it to Request for Quotation.
+_SQ_RFQ_FIELD = "custom_rfq"
+
 #: Columns the sourcing workspace lists. `docstatus` travels with the rows so
 #: the UI can tell a draft request from a sent one without a second call.
 _RFQ_LIST_FIELDS = (
@@ -57,6 +60,10 @@ _RFQ_LIST_FIELDS = (
 
 def _rfq_link_ready() -> bool:
 	return bool(frappe.db.has_column("Request for Quotation", _RFQ_DEAL_FIELD))
+
+
+def _sq_rfq_link_ready() -> bool:
+	return bool(frappe.db.has_column("Supplier Quotation", _SQ_RFQ_FIELD))
 
 
 def _assert_company_scope(company: str | None) -> str:
@@ -311,7 +318,15 @@ def _apply_rfq_item_defaults(lines: list[dict], fallback_schedule_date) -> None:
 
 @frappe.whitelist()
 def save_supplier_quotation(
-	deal, supplier, currency, items, valid_till=None, name=None, company=None, warehouse=None
+	deal,
+	supplier,
+	currency,
+	items,
+	valid_till=None,
+	name=None,
+	company=None,
+	warehouse=None,
+	rfq=None,
 ):
 	"""Create or update a DRAFT Supplier Quotation tagged to one tender lot.
 
@@ -325,6 +340,17 @@ def save_supplier_quotation(
 	_deal_scope(deal, selected_company, "write")
 	if not _sq_link_ready():
 		frappe.throw(_("Run migrate to enable tender supplier quotations."))
+
+	if rfq:
+		if not frappe.db.exists("Request for Quotation", rfq):
+			frappe.throw(_("RFQ not found: {0}").format(rfq), frappe.DoesNotExistError)
+		rfq_doc = frappe.get_doc("Request for Quotation", rfq)
+		if rfq_doc.company != selected_company or rfq_doc.get(_RFQ_DEAL_FIELD) != deal:
+			frappe.throw(
+				_("Cannot attach quotation to an RFQ from another lot or company."), frappe.ValidationError
+			)
+		if not frappe.has_permission("Request for Quotation", "read", doc=rfq_doc):
+			frappe.throw(_("Not permitted."), frappe.PermissionError)
 
 	supplier_name = str(supplier or "").strip()
 	currency_code = str(currency or "").strip()
@@ -349,6 +375,8 @@ def save_supplier_quotation(
 		doc = frappe.new_doc("Supplier Quotation")
 		doc.transaction_date = today()
 		effective_tx_date = str(doc.transaction_date)
+		if rfq and _sq_rfq_link_ready():
+			setattr(doc, _SQ_RFQ_FIELD, rfq)
 
 	if valid_till and getdate(valid_till) < getdate(effective_tx_date):
 		frappe.throw(
@@ -474,6 +502,73 @@ def get_deal_rfq_defaults(deal, company=None):
 		"items": items,
 		"suppliers": [],
 	}
+
+
+@frappe.whitelist()
+def get_quotation_defaults(deal, rfq=None, company=None):
+	"""Lines to quote against: the ask, not a blank form.
+
+	A quotation answers a request. When a specific RFQ is given its lines are
+	used; otherwise the lot's LATEST open RFQ's. Rates stay empty — the rate
+	is the supplier's answer, never prefilled.
+	"""
+	_require_tender(company)
+	selected_company = _assert_company_scope(company)
+	_deal_scope(deal, selected_company, "read")
+
+	rfq_doc = None
+	if rfq:
+		if not frappe.db.exists("Request for Quotation", rfq):
+			frappe.throw(_("RFQ not found: {0}").format(rfq), frappe.DoesNotExistError)
+		candidate = frappe.get_doc("Request for Quotation", rfq)
+		if candidate.company != selected_company or candidate.get(_RFQ_DEAL_FIELD) != deal:
+			frappe.throw(_("RFQ does not belong to this deal."), frappe.PermissionError)
+		if not frappe.has_permission("Request for Quotation", "read", doc=candidate):
+			frappe.throw(_("Not permitted."), frappe.PermissionError)
+		if candidate.docstatus < 2:
+			rfq_doc = candidate
+	else:
+		if _rfq_link_ready():
+			rfq_names = frappe.get_list(
+				"Request for Quotation",
+				filters={
+					_RFQ_DEAL_FIELD: deal,
+					"company": selected_company,
+					"docstatus": ["<", 2],
+				},
+				fields=["name"],
+				order_by="transaction_date desc, name desc",
+				limit_page_length=1,
+			)
+			if rfq_names:
+				candidate = frappe.get_doc("Request for Quotation", rfq_names[0]["name"])
+				if frappe.has_permission("Request for Quotation", "read", doc=candidate):
+					rfq_doc = candidate
+
+	if not rfq_doc:
+		return {"items": []}
+
+	items = []
+	for it in rfq_doc.get("items") or []:
+		if isinstance(it, dict):
+			item_code = it.get("item_code") or ""
+			item_name = it.get("item_name") or item_code
+			qty = flt(it.get("qty")) or 1.0
+			uom = it.get("uom") or ""
+		else:
+			item_code = getattr(it, "item_code", "")
+			item_name = getattr(it, "item_name", "") or item_code
+			qty = flt(getattr(it, "qty", 1.0)) or 1.0
+			uom = getattr(it, "uom", "") or ""
+		items.append(
+			{
+				"item_code": item_code,
+				"item_name": item_name,
+				"qty": qty,
+				"uom": uom,
+			}
+		)
+	return {"items": items}
 
 
 @frappe.whitelist()
@@ -676,9 +771,13 @@ def get_rfq(name, company=None):
 
 	quotations: dict[str, list[str]] = {}
 	if deal and _sq_link_ready():
+		if _sq_rfq_link_ready():
+			sq_filters = {_SQ_RFQ_FIELD: name, "docstatus": ["<", 2]}
+		else:
+			sq_filters = {_SQ_DEAL_FIELD: deal, "docstatus": ["<", 2]}
 		rows = frappe.get_list(
 			"Supplier Quotation",
-			filters={_SQ_DEAL_FIELD: deal, "docstatus": ["<", 2]},
+			filters=sq_filters,
 			fields=["name", "supplier"],
 			order_by="modified desc",
 			limit_page_length=0,

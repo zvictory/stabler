@@ -230,6 +230,24 @@ class TestRfqPagesAreLinked(unittest.TestCase):
 		self.assertIn("tender-sourcing", src)
 		self.assertNotIn("/app/", src)
 
+	def test_rfq_detail_has_record_quotation_button(self):
+		src = _read(RFQ_DETAIL)
+		self.assertIn("Record quotation", src)
+		self.assertIn("recordQuotation", src)
+
+
+class TestFlatLoopSourcingSpaContracts(unittest.TestCase):
+	def test_drawer_prefills_from_quotation_defaults(self):
+		src = _read(DRAWER)
+		self.assertIn("stabler.api.sourcing.get_quotation_defaults", src)
+		self.assertIn("rfq:", src)
+
+	def test_workspace_supports_rfq_query_and_po_creation(self):
+		src = _read(SOURCING)
+		self.assertIn("create_po_from_quotation", src)
+		self.assertIn("Create purchase order", src)
+		self.assertIn("route.query?.rfq", src)
+
 
 if __name__ == "__main__":
 	unittest.main()

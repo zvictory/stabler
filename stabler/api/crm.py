@@ -21,6 +21,20 @@ def _require_crm():
 		frappe.throw(_("Not permitted"), frappe.PermissionError)
 
 
+def _require_crm_or_tender():
+	"""Module gate for endpoints the TENDER flow shares with sales CRM.
+
+	The tender intake drawer saves deals and both tender deal pickers search
+	them through endpoints that used to sit behind the plain CRM gate; a
+	tender-only tenant (enable_crm=0) would break its own intake. The gate
+	accepts either module — company scoping below it is unchanged.
+	"""
+	if not (
+		_can_access_module(frappe.session.user, "crm") or _can_access_module(frappe.session.user, "tender")
+	):
+		frappe.throw(_("Not permitted"), frappe.PermissionError)
+
+
 def _require_crm_company(company: str | None) -> str:
 	"""Validate the caller's explicitly selected CRM company.
 
@@ -182,6 +196,7 @@ def _crm_list(
 	owner_field: str,
 	page_length: int,
 	start: int,
+	extra_filters: dict | None = None,
 ) -> tuple[list, int]:
 	"""Fetch one company through Frappe's permission-aware list API."""
 	filters: dict = {"company": company}
@@ -189,6 +204,8 @@ def _crm_list(
 		filters["status"] = status
 	if owner:
 		filters[owner_field] = owner
+	if extra_filters:
+		filters.update(extra_filters)
 	or_filters = [[field, "like", f"%{search}%"] for field in search_fields] if search else None
 	kwargs = {
 		"filters": filters,
@@ -350,11 +367,22 @@ def delete_lead(name: str, company=""):
 
 
 @frappe.whitelist()
-def list_deals(company="", search="", status="", deal_owner="", page_length=50, start=0):
-	_require_crm()
+def list_deals(
+	company="",
+	search="",
+	status="",
+	deal_owner="",
+	deal_type="",
+	page_length=50,
+	start=0,
+):
+	_require_crm_or_tender()
 	company = _require_crm_company(company)
 	if not frappe.has_permission("CRM Deal", "read"):
 		frappe.throw(_("Not permitted"), frappe.PermissionError)
+	extra_filters = {}
+	if deal_type:
+		extra_filters["deal_type"] = deal_type
 	rows, total = _crm_list(
 		"CRM Deal",
 		company=company,
@@ -397,6 +425,7 @@ def list_deals(company="", search="", status="", deal_owner="", page_length=50, 
 		owner_field="deal_owner",
 		page_length=page_length,
 		start=start,
+		extra_filters=extra_filters or None,
 	)
 
 	# Attach the linked customer's open AR so reps see exposure on the board.
@@ -426,7 +455,7 @@ def get_deal(name: str, company=""):
 
 @frappe.whitelist()
 def save_deal(data: str | dict, company=""):
-	_require_crm()
+	_require_crm_or_tender()
 	company = _require_crm_company(company)
 	payload = frappe.parse_json(data)
 	requested_status = str(payload.get("status") or "").strip()

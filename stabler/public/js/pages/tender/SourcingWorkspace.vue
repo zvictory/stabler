@@ -44,6 +44,8 @@ const decisionLoading = ref(false);
 // Drawer state for Quotation entry/edit
 const entryOpen = ref(false);
 const entryQuotationName = ref("");
+const entryRfq = ref("");
+const creatingPo = ref(false);
 
 // Landed Charges Editor state
 const landedOpen = ref(false);
@@ -72,6 +74,7 @@ async function searchDeals(q) {
 	const r = await call("stabler.api.crm.list_deals", {
 		company: activeCompany.value,
 		search: q,
+		deal_type: "Tender",
 		page_length: 20,
 	});
 	return (r?.deals || []).map((d) => ({
@@ -206,14 +209,37 @@ async function loadAll() {
 	await Promise.all([loadRfqs(), loadDecision(), loadUnassigned()]);
 }
 
-function openAddQuotation() {
+function openAddQuotation(rfq = "") {
 	entryQuotationName.value = "";
+	entryRfq.value = rfq || "";
 	entryOpen.value = true;
 }
 
 function openEditQuotation(qName) {
 	entryQuotationName.value = qName;
+	entryRfq.value = "";
 	entryOpen.value = true;
+}
+
+async function createPo(quotationName) {
+	if (!quotationName || creatingPo.value) return;
+	creatingPo.value = true;
+	try {
+		const res = await call("stabler.api.purchasing.create_po_from_quotation", {
+			quotation: quotationName,
+			company: activeCompany.value,
+		});
+		if (res?.existing) {
+			toast.info(t("Purchase order {0} already exists.").replace("{0}", res.name));
+		} else {
+			toast.success(t("Purchase order created from the quotation."));
+		}
+		router.push({ name: "purchasing-order", params: { name: res.name } });
+	} catch (err) {
+		toast.error(err?.message || t("Could not create purchase order."));
+	} finally {
+		creatingPo.value = false;
+	}
 }
 
 async function submitQuotation(qName) {
@@ -316,6 +342,11 @@ async function approveDecision() {
 
 onMounted(() => {
 	if (deal.value) loadAll();
+	if (route.query?.rfq) {
+		const rfqParam = String(route.query.rfq);
+		openAddQuotation(rfqParam);
+		router.replace({ query: { ...route.query, rfq: undefined } });
+	}
 });
 
 watch(
@@ -722,6 +753,17 @@ watch(
 							</div>
 							<div class="small">{{ decisionData.decision.exception_reason }}</div>
 						</div>
+
+						<div v-if="decisionData.decision.selected_quotation" class="pt-2">
+							<button
+								type="button"
+								class="btn btn-outline-secondary btn-sm"
+								:disabled="creatingPo"
+								@click="createPo(decisionData.decision.selected_quotation)"
+							>
+								<i class="ti ti-shopping-cart me-1"></i>{{ creatingPo ? t("Creating…") : t("Create purchase order") }}
+							</button>
+						</div>
 					</div>
 
 					<!-- Case 2: Draft or New Award Form -->
@@ -868,9 +910,11 @@ watch(
 				:deal="deal"
 				:deal-label="dealLabel"
 				:quotation-name="entryQuotationName"
+				:rfq="entryRfq"
 				@close="
 					entryOpen = false;
 					entryQuotationName = '';
+					entryRfq = '';
 				"
 				@saved="loadAll" />
 

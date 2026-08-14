@@ -34,6 +34,7 @@ const props = defineProps({
 	deal: { type: String, required: true },
 	dealLabel: { type: String, default: "" },
 	quotationName: { type: String, default: "" },
+	rfq: { type: String, default: "" },
 });
 const emit = defineEmits(["close", "saved"]);
 
@@ -62,30 +63,49 @@ function blankLine() {
 }
 
 onMounted(async () => {
-	if (!props.quotationName) return;
-	try {
-		const res = await call("stabler.api.sourcing.get_supplier_quotation", {
-			name: props.quotationName,
-			company: activeCompany.value,
-		});
-		if (res) {
-			form.value.name = res.name;
-			form.value.supplier = res.supplier;
-			form.value.supplierLabel = res.supplier_name || res.supplier;
-			form.value.currency = res.currency || currency.value;
-			form.value.valid_till = res.valid_till || "";
-			form.value.transaction_date = res.transaction_date || "";
-			if (res.items && res.items.length) {
+	if (props.quotationName) {
+		try {
+			const res = await call("stabler.api.sourcing.get_supplier_quotation", {
+				name: props.quotationName,
+				company: activeCompany.value,
+			});
+			if (res) {
+				form.value.name = res.name;
+				form.value.supplier = res.supplier;
+				form.value.supplierLabel = res.supplier_name || res.supplier;
+				form.value.currency = res.currency || currency.value;
+				form.value.valid_till = res.valid_till || "";
+				form.value.transaction_date = res.transaction_date || "";
+				if (res.items && res.items.length) {
+					form.value.items = res.items.map((i) => ({
+						item_code: i.item_code,
+						itemLabel: i.item_name || i.item_code,
+						qty: i.qty,
+						rate: i.rate,
+					}));
+				}
+			}
+		} catch (err) {
+			toast.error(err?.message || t("Could not load quotation details."));
+		}
+	} else if (props.deal) {
+		try {
+			const res = await call("stabler.api.sourcing.get_quotation_defaults", {
+				deal: props.deal,
+				rfq: props.rfq || null,
+				company: activeCompany.value,
+			});
+			if (res?.items && res.items.length) {
 				form.value.items = res.items.map((i) => ({
 					item_code: i.item_code,
 					itemLabel: i.item_name || i.item_code,
 					qty: i.qty,
-					rate: i.rate,
+					rate: null,
 				}));
 			}
+		} catch {
+			// Non-blocking fallback to blankLine
 		}
-	} catch (err) {
-		toast.error(err?.message || t("Could not load quotation details."));
 	}
 });
 
@@ -95,16 +115,6 @@ const minValidTill = computed(() => {
 	}
 	return todayIso();
 });
-
-/* Mevcut bir taslağı DÜZENLEMEK bu dilimde yok: sunucu tarafı destekliyor
- * (`save_supplier_quotation` bir `name` alırsa yerinde günceller ve satırları
- * DEĞİŞTİRİR), ama formu doldurmak için tek bir teklifi satırlarıyla okuyan bir
- * uç nokta gerekiyor ve o Task 3'te SourcingWorkspace ile geliyor. Yarısı
- * çalışan bir düzenleme düğmesi koymaktansa hiç koymuyoruz.
- *
- * Panel her açılışta yeniden monte ediliyor (`v-if`), bu yüzden form kendi
- * kendine sıfırlanıyor — açık kalan bir bileşende eski tedarikçinin yeni teklife
- * sızması klasik hata. */
 
 (async () => {
 	try {
@@ -170,6 +180,7 @@ async function save() {
 			currency: form.value.currency,
 			valid_till: form.value.valid_till || null,
 			name: form.value.name || null,
+			rfq: props.rfq || null,
 			company: activeCompany.value,
 			items: JSON.stringify(
 				form.value.items

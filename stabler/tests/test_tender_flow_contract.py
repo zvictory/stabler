@@ -35,7 +35,6 @@ from stabler.tests.test_tender_documents import _FakeFrappe
 
 ROOT = Path(__file__).resolve().parents[1]
 CRM = (ROOT / "public/js/pages/tender/TenderCrm.vue").read_text(encoding="utf-8")
-BOARD = (ROOT / "public/js/pages/tender/TenderMasterBoard.vue").read_text(encoding="utf-8")
 DRAWER = (ROOT / "public/js/components/TenderMasterDrawer.vue").read_text(encoding="utf-8")
 TENDER_PY = (ROOT / "api/tender.py").read_text(encoding="utf-8")
 
@@ -113,19 +112,18 @@ class TestWhatTheDecisionStandsOn(unittest.TestCase):
 			with self.subTest(key=req["key"]):
 				self.assertIn(req["role"], VALID_DOC_ROLES)
 
-	def test_the_tender_is_born_on_the_master_board(self):
-		"""Zincirin başı: Tender Master Board + İhale Giriş çekmecesi.
+	def test_the_tender_is_born_on_tender_crm(self):
+		"""Zincirin başı: Tender CRM + İhale Giriş çekmecesi.
 
-		Tek seviyeli mimari: çekmece artık crm.save_deal (deal_type=Tender)
-		çağırır — tender_master.save_tender_master değil.
+		Tek seviyeli mimari: TenderCrm New tender butonu ile TenderMasterDrawer'ı açar;
+		çekmece crm.save_deal (deal_type=Tender) çağırır.
 		"""
-		self.assertIn("TenderMasterDrawer", BOARD)
+		self.assertIn("TenderMasterDrawer", CRM)
 		self.assertIn("crm.save_deal", DRAWER)
 
-	def test_opening_a_master_card_lands_on_the_lot_board(self):
-		"""Level 1 → Level 2 geçişi `?tender=` sorgusuyla yapılıyor."""
-		self.assertIn('path: "/tender/crm"', BOARD)
-		self.assertIn("query: { tender:", BOARD)
+	def test_tender_crm_is_single_level(self):
+		"""Tek seviyeli mimari: Tender CRM doğrudan deal kartlarını yönetir."""
+		self.assertIn("crm_board", CRM)
 
 
 class TestWhatTheDecisionStillNeeds(unittest.TestCase):
@@ -165,10 +163,8 @@ class TestWhatTheDecisionStillNeeds(unittest.TestCase):
 		self.assertIsNotNone(item_search, "çekmece itemSearcher kullanmalı")
 		self.assertNotIn("warehouse", item_search.group(1))
 
-		# 3) Düzenleme: tahta çekmecenin bildirdiği prop adını geçmeli. Vue
-		#    tanımsız prop'u sessizce yutar → `deal` null kalır → mevcut ihale
-		#    boş "yeni ihale" formu olarak açılır.
-		self.assertIn(':deal="editingTender"', BOARD)
+		# 3) Çekmece bağlama: Tender CRM yeni ihale için :deal="null" geçer.
+		self.assertIn(':deal="null"', CRM)
 
 		# 4) Seçim görünmeli. Typeahead düzenlenebilir kutu ile seçili değeri
 		#    `modelValue` üzerinden ayırır (`hasSelection`), ve `display`

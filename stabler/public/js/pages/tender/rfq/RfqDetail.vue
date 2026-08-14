@@ -69,6 +69,14 @@ function openLot(deal) {
 	router.push({ name: "tender-sourcing", query: buildTenderQuery(route.query, { deal }) });
 }
 
+function recordQuotation() {
+	if (!rfq.value) return;
+	router.push({
+		name: "tender-sourcing",
+		query: buildTenderQuery(route.query, { deal: rfq.value.deal, rfq: rfq.value.name }),
+	});
+}
+
 function openPrint() {
 	router.push({ name: "tender-rfq-print", params: { name: route.params.name }, query: { ...route.query } });
 }
@@ -180,11 +188,20 @@ async function markSent() {
 						</tbody>
 					</table>
 				</div>
-				<div class="card-body py-2 text-secondary small">
-					{{ t("Record answers on the sourcing workspace, where the comparison and the award live.") }}
-					<a href="#" class="text-decoration-none" @click.prevent="openLot(rfq.deal)">
-						{{ t("Open comparison") }} <i class="ti ti-arrow-right ms-1"></i>
-					</a>
+				<div class="card-body py-2 d-flex justify-content-between align-items-center flex-wrap gap-2 text-secondary small">
+					<div>
+						{{ t("Record answers on the sourcing workspace, where the comparison and the award live.") }}
+						<a href="#" class="text-decoration-none ms-1" @click.prevent="openLot(rfq.deal)">
+							{{ t("Open comparison") }} <i class="ti ti-arrow-right ms-1"></i>
+						</a>
+					</div>
+					<button
+						type="button"
+						class="btn btn-outline-secondary btn-sm"
+						@click="recordQuotation"
+					>
+						<i class="ti ti-file-plus me-1"></i>{{ t("Record quotation") }}
+					</button>
 				</div>
 			</div>
 
