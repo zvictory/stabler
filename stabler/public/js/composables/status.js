@@ -269,6 +269,26 @@ export const STATUS_MAP = {
 		overdue: "bg-red-lt",
 		upcoming: "bg-blue-lt",
 	},
+	// Vehicle Agreement lifecycle. Without this block only Draft and Completed
+	// resolved — the generic map at the bottom of this file carries no Review,
+	// Approved, Active, Restructured or Terminated — so five of the seven states
+	// rendered bg-secondary-lt and the portfolio lifecycle strip showed a
+	// terminated agreement as identical to a live one.
+	// Active is blue, not green, because Completed is green by convention
+	// everywhere else in this map; making both green would rebuild the same
+	// can't-tell-them-apart defect one column over.
+	// Restructured is orange on purpose: a rescheduled agreement is an exception
+	// to watch, not a healthy one, and colouring it green hides the risk the
+	// reschedule was taken on to avoid.
+	"Vehicle Agreement": {
+		Draft: "bg-secondary-lt",
+		Review: "bg-yellow-lt",
+		Approved: "bg-azure-lt",
+		Active: "bg-blue-lt",
+		Restructured: "bg-orange-lt",
+		Completed: "bg-green-lt",
+		Terminated: "bg-red-lt",
+	},
 	// Tender Master board lanes. These are DERIVED from the child lots
 	// (api/_tender_master_state.py), not typed by anyone — the keys must stay in
 	// step with LANES there and in composables/tenderMaster.js.

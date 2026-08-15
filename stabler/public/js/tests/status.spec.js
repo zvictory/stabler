@@ -38,6 +38,48 @@ describe("getStatusBadgeClass — doctype-specific mapping", () => {
 	});
 });
 
+// Bead stabler-exc. Before the "Vehicle Agreement" block existed, five of the
+// seven lifecycle states hit the generic table, found nothing, and came back
+// grey -- so the Operations portfolio strip drew a terminated agreement exactly
+// like a live one. These tests fail if that block is deleted, and they fail if
+// someone collapses two states that the business needs to tell apart.
+describe("getStatusBadgeClass — Vehicle Agreement lifecycle", () => {
+	const VA = (s) => getStatusBadgeClass("Vehicle Agreement", s);
+
+	// The five that used to fall through. Naming them individually means the
+	// failure message says WHICH state regressed.
+	it.each(["Review", "Approved", "Active", "Restructured", "Terminated"])(
+		"resolves %s to something other than the fall-through grey",
+		(state) => {
+			expect(VA(state)).not.toBe("bg-secondary-lt");
+		},
+	);
+
+	// The defect this bead was filed for, stated as an assertion.
+	it("does not draw a terminated agreement like a live one", () => {
+		expect(VA("Terminated")).not.toBe(VA("Active"));
+	});
+
+	// Completed is green by convention across this map, so Active must not be.
+	// Otherwise the lifecycle strip overstates the live portfolio by every
+	// agreement that already paid itself off.
+	it("does not draw a settled agreement like a live one", () => {
+		expect(VA("Completed")).toBe("bg-green-lt");
+		expect(VA("Active")).not.toBe(VA("Completed"));
+	});
+
+	// A rescheduled agreement is an exception to watch. Green would hide the
+	// risk the reschedule was taken on to avoid.
+	it("marks Restructured as an exception rather than a healthy state", () => {
+		expect(VA("Restructured")).toBe("bg-orange-lt");
+		expect(VA("Restructured")).not.toBe(VA("Active"));
+	});
+
+	it("still greys a state that is not part of the lifecycle", () => {
+		expect(VA("Repossessed")).toBe("bg-secondary-lt");
+	});
+});
+
 describe("getStatusBadgeClass — numeric docstatus", () => {
 	// A numeric argument is Frappe's docstatus, not a status name, and it must
 	// short-circuit before the doctype lookup: several maps have string keys that
