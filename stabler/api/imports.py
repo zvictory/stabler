@@ -8978,6 +8978,19 @@ def _capitalize_linked_bill(
 	if amount <= 0:
 		return [], []
 
+	if cint(bill.get("docstatus")) == 0:
+		lcv_account = _resolve_company_lcv_account(company)
+		if lcv_account:
+			pi_doc = frappe.get_doc("Purchase Invoice", purchase_invoice)
+			modified = False
+			for it in pi_doc.items:
+				acc_type = frappe.db.get_value("Account", it.expense_account, "account_type")
+				if acc_type != _VALUATION_ACCOUNT_TYPE:
+					it.expense_account = lcv_account
+					modified = True
+			if modified:
+				pi_doc.save(ignore_permissions=True)
+
 	_assert_bill_valuation_accounts(purchase_invoice)
 
 	currency = bill.get("currency") or frappe.get_cached_value("Company", company, "default_currency")
