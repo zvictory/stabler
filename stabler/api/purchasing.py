@@ -1150,6 +1150,19 @@ def _apply_invoice_payload(
 			if row.get(_df) not in (None, ""):
 				line.set(_df, flt(row.get(_df)))
 
+	if (commercial_invoice or doc.get("custom_commercial_invoice")) and hasattr(doc, "company") and doc.company:
+		try:
+			from stabler.stabler.imports_module import hooks as imports_hooks
+
+			lcv_acc = imports_hooks.resolve_lcv_expense_account(doc.company)
+			if lcv_acc:
+				for line in doc.items:
+					acc_type = frappe.db.get_value("Account", line.expense_account, "account_type")
+					if acc_type != "Expenses Included In Valuation":
+						line.expense_account = lcv_acc
+		except Exception:
+			pass
+
 	doc.set("taxes", [])
 	doc.taxes_and_charges = taxes_template or None
 	if taxes_template:
