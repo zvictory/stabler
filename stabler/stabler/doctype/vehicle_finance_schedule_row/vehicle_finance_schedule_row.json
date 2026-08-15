@@ -1,0 +1,22 @@
+{
+ "actions": [],
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": ["sequence", "due_date", "amount", "row_type", "note"],
+ "fields": [
+  {"fieldname": "sequence", "fieldtype": "Int", "reqd": 1, "in_list_view": 1},
+  {"fieldname": "due_date", "fieldtype": "Date", "reqd": 1, "in_list_view": 1},
+  {"fieldname": "amount", "fieldtype": "Currency", "reqd": 1, "in_list_view": 1},
+  {"fieldname": "row_type", "fieldtype": "Select", "options": "Down Payment\nInstallment\nBalloon\nCash Settlement", "reqd": 1, "in_list_view": 1},
+  {"fieldname": "note", "fieldtype": "Data"}
+ ],
+ "istable": 1,
+ "links": [],
+ "module": "Stabler",
+ "name": "Vehicle Finance Schedule Row",
+ "permissions": [],
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": []
+}

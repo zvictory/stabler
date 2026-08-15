@@ -37,6 +37,13 @@ permission_query_conditions = {
 	"CRM Stage Event": "stabler.api.permissions.crm_stage_event_query",
 	"Tender Master": "stabler.api.permissions.tender_master_query",
 	"Tender Sourcing Decision": "stabler.api.permissions.tender_sourcing_decision_query",
+	# Vehicle Finance Center (Agreement V1) — company-scoped domain records.
+	"Vehicle Unit": "stabler.api.permissions.vehicle_unit_query",
+	"Vehicle Agreement": "stabler.api.permissions.vehicle_agreement_query",
+	"Vehicle Finance Schedule Version": "stabler.api.permissions.vehicle_finance_schedule_version_query",
+	"Vehicle Finance Payment Application": "stabler.api.permissions.vehicle_finance_payment_application_query",
+	"Vehicle Finance Follow-up Log": "stabler.api.permissions.vehicle_finance_follow_up_log_query",
+	"Vehicle Finance Settings": "stabler.api.permissions.vehicle_finance_settings_query",
 	# Master scoping by owner/territory (gap #46) — safe-by-default: only restricts
 	# users with an explicit Allowed Owner/Territory list; admins unaffected.
 	"Customer": "stabler.api.permissions.customer_query",
@@ -59,6 +66,12 @@ has_permission = {
 	"CRM Stage Event": "stabler.api.permissions.company_has_permission",
 	"Tender Master": "stabler.api.permissions.company_has_permission",
 	"Tender Sourcing Decision": "stabler.api.permissions.company_has_permission",
+	"Vehicle Unit": "stabler.api.permissions.company_has_permission",
+	"Vehicle Agreement": "stabler.api.permissions.company_has_permission",
+	"Vehicle Finance Schedule Version": "stabler.api.permissions.company_has_permission",
+	"Vehicle Finance Payment Application": "stabler.api.permissions.company_has_permission",
+	"Vehicle Finance Follow-up Log": "stabler.api.permissions.company_has_permission",
+	"Vehicle Finance Settings": "stabler.api.permissions.company_has_permission",
 	"Customer": "stabler.api.permissions.master_has_permission",
 	"Supplier": "stabler.api.permissions.master_has_permission",
 }
