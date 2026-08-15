@@ -1,0 +1,36 @@
+{
+ "timestamp": "2026-08-15T13:26:49.722Z",
+ "site": "https://mikas.erpstable.com",
+ "checks": [
+  {
+   "id": "CRM-01",
+   "description": "Tender CRM page loads",
+   "status": "PASS",
+   "details": "https://mikas.erpstable.com/stabler#/tender/crm"
+  },
+  {
+   "id": "CRM-02",
+   "description": "No standalone CRM menu entry in sidebar (no /crm anchors)",
+   "status": "PASS",
+   "details": "anchors=0"
+  },
+  {
+   "id": "CRM-02b",
+   "description": "Tender CRM nav item still present",
+   "status": "PASS",
+   "details": "anchors=1"
+  },
+  {
+   "id": "CRM-03",
+   "description": "/crm/leads redirects (module disabled)",
+   "status": "PASS",
+   "details": "landed on https://mikas.erpstable.com/stabler#/tender/portfolio"
+  },
+  {
+   "id": "CRM-04",
+   "description": "/tender/crm still accessible",
+   "status": "PASS",
+   "details": "https://mikas.erpstable.com/stabler#/tender/crm"
+  }
+ ]
+}
