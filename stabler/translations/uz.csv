@@ -5937,3 +5937,4 @@ Could not load linkable invoices,Hisoblarni yuklab bo‘lmadi
 Failed to link invoice,Hisobni biriktirib bo‘lmadi
 Failed to unlink invoice,Hisobni ajratib bo‘lmadi
 Failed to create transport invoice,Transport hisobini yaratib bo‘lmadi
+Agreement {0} is not open for payment.,{0} shartnomasi to'lovga ochiq emas.
