@@ -1150,7 +1150,11 @@ def _apply_invoice_payload(
 			if row.get(_df) not in (None, ""):
 				line.set(_df, flt(row.get(_df)))
 
-	if (commercial_invoice or doc.get("custom_commercial_invoice")) and hasattr(doc, "company") and doc.company:
+	if (
+		(commercial_invoice or doc.get("custom_commercial_invoice"))
+		and hasattr(doc, "company")
+		and doc.company
+	):
 		try:
 			from stabler.stabler.imports_module import hooks as imports_hooks
 
