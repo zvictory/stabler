@@ -33,6 +33,7 @@ stabler.tests.test_crm_deal_company_scope_patch
 stabler.tests.test_crm_activity_controller
 stabler.tests.test_crm_company_scope
 stabler.tests.test_crm_daily_work_schema
+stabler.tests.test_crm_deal_trash
 stabler.tests.test_customer_hierarchy
 stabler.tests.test_customs_estimate
 stabler.tests.test_customs_fee_math

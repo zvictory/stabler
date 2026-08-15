@@ -528,6 +528,28 @@ def delete_deal(name: str, company=""):
 	return "ok"
 
 
+def clear_deal_stage_events(doc, method=None):
+	"""Drop a deal's own stage history when the deal is trashed.
+
+	`frappe.delete_doc` runs `on_trash` (delete_doc.py:165) BEFORE the link
+	checks (delete_doc.py:172-173), so rows dropped here are never seen by
+	`check_if_doc_is_linked`. Without this, any deal that was moved between
+	lanes even once became undeletable — `CRM Stage Event` links the deal
+	both via `deal` (reqd Link) and `reference_name` (Dynamic Link), and
+	Stabler registers no `ignore_links_on_delete`.
+
+	`CRM Stage Event` is an immutable audit log: its controller throws in
+	`on_trash` (crm_stage_event.py:72), so `frappe.delete_doc` cannot be
+	used and the rows are dropped directly. Same precedent:
+	maintenance/seed_tender_demo.py:789-793.
+
+	Only the deal's own history is cleared. `delete_deal` stays force-free,
+	so a deal referenced by a Tender Sourcing Decision, quotation, RFQ or
+	order is still refused by Frappe's link integrity — deliberate.
+	"""
+	frappe.db.delete("CRM Stage Event", {"deal": doc.name})
+
+
 _ACTIVITY_MUTABLE_FIELDS = frozenset(
 	(
 		"reference_doctype",

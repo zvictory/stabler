@@ -127,6 +127,9 @@ doc_events = {
 			"stabler.api.crm.validate_crm_deal_hygiene",
 			"stabler.api.tender_master.validate_deal_parent_tender",
 		],
+		# Drop the deal's own stage history before the link checks run, or a
+		# deal that ever changed lane can never be deleted. See the handler.
+		"on_trash": ["stabler.api.crm.clear_deal_stage_events"],
 	},
 	"Sales Invoice": {
 		"before_validate": [
