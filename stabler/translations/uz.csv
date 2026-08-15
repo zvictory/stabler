@@ -5944,3 +5944,46 @@ Failed to link invoice,Hisobni biriktirib bo‘lmadi
 Failed to unlink invoice,Hisobni ajratib bo‘lmadi
 Failed to create transport invoice,Transport hisobini yaratib bo‘lmadi
 Agreement {0} is not open for payment.,{0} shartnomasi to'lovga ochiq emas.
+Acquisition,Sotib olish
+All currencies,Barcha valyutalar
+Back to all work,Barcha ishlarga qaytish
+Contract price,Shartnoma narxi
+Critical Overdue,Kritik muddati o'tgan
+Currency Scorecards,Valyuta bo'yicha ko'rsatkichlar
+Disposition,Sotish
+Due Today,Bugun muddati
+Due within 7 days,7 kun ichida muddati
+Failed to load operations data.,Operatsiya ma'lumotlarini yuklab bo'lmadi.
+Failed to log follow-up.,Aloqani saqlab bo'lmadi.
+Failed to record promise.,Va'dani yozib bo'lmadi.
+Installments due today,Bugun muddati keladigan to'lovlar
+Last contact,Oxirgi aloqa
+Log Follow-up,Aloqani qayd etish
+Log follow-up,Aloqani qayd etish
+Monitoring,Monitoring
+Next 7 Days,Keyingi 7 kun
+Next action,Keyingi harakat
+"One currency per agreement — totals are listed per currency, never summed.",Har bir shartnomaga bitta valyuta — jami summalar har valyuta bo'yicha ko'rsatiladi va hech qachon qo'shilmaydi.
+Open follow-up or pending promise,Ochiq aloqa yoki kutilayotgan va'da
+Overdue Count,Muddati o'tganlar soni
+Overdue Outstanding,Muddati o'tgan qoldiq
+Past escalation threshold or broken promise,Eskalatsiya chegarasidan oshgan yoki va'da buzilgan
+Portfolio Lifecycle,Portfel hayot sikli
+Promise Amount,Va'da summasi
+Promise Date,Va'da sanasi
+Promise broken,Va'da buzilgan
+Promise due,Va'da muddati
+Record Promise,Va'dani qayd etish
+Record promise,Va'dani qayd etish
+Restructured,Qayta tuzilgan
+Review,Ko'rib chiqilmoqda
+Save Follow-up,Aloqani saqlash
+Save Promise,Va'dani saqlash
+Terminated,Bekor qilingan
+Total Agreements,Jami shartnomalar
+USD,USD
+Upcoming due within 7 days,7 kun ichida muddati keladi
+Vehicle / VIN,Transport / VIN
+Work Queues,Ish navbatlari
+agreements,shartnoma
+showing first {n} of {count},{count} tadan birinchi {n} tasi ko'rsatilmoqda

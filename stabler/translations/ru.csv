@@ -5949,3 +5949,46 @@ Failed to link invoice,Не удалось привязать счет
 Failed to unlink invoice,Не удалось отвязать счет
 Failed to create transport invoice,Не удалось создать транспортный счет
 Agreement {0} is not open for payment.,Договор {0} не открыт для оплаты.
+Acquisition,Приобретение
+All currencies,Все валюты
+Back to all work,Ко всем задачам
+Contract price,Цена договора
+Critical Overdue,Критическая просрочка
+Currency Scorecards,Сводка по валютам
+Disposition,Реализация
+Due Today,Срок сегодня
+Due within 7 days,Срок в течение 7 дней
+Failed to load operations data.,Не удалось загрузить данные операций.
+Failed to log follow-up.,Не удалось сохранить контакт.
+Failed to record promise.,Не удалось записать обещание.
+Installments due today,Платежи со сроком сегодня
+Last contact,Последний контакт
+Log Follow-up,Записать контакт
+Log follow-up,Записать контакт
+Monitoring,Мониторинг
+Next 7 Days,Ближайшие 7 дней
+Next action,Следующее действие
+"One currency per agreement — totals are listed per currency, never summed.",Одна валюта на договор — итоги указаны по каждой валюте и никогда не суммируются.
+Open follow-up or pending promise,Открытый контакт или ожидаемое обещание
+Overdue Count,Количество просрочек
+Overdue Outstanding,Просроченная задолженность
+Past escalation threshold or broken promise,Превышен порог эскалации или нарушено обещание
+Portfolio Lifecycle,Жизненный цикл портфеля
+Promise Amount,Сумма обещания
+Promise Date,Дата обещания
+Promise broken,Обещание нарушено
+Promise due,Срок обещания
+Record Promise,Записать обещание
+Record promise,Записать обещание
+Restructured,Реструктурирован
+Review,На рассмотрении
+Save Follow-up,Сохранить контакт
+Save Promise,Сохранить обещание
+Terminated,Расторгнут
+Total Agreements,Всего договоров
+USD,USD
+Upcoming due within 7 days,Срок наступает в течение 7 дней
+Vehicle / VIN,Транспорт / VIN
+Work Queues,Очереди работ
+agreements,договоров
+showing first {n} of {count},показаны первые {n} из {count}

@@ -5939,3 +5939,46 @@ Failed to link invoice,Fatura bağlanamadı
 Failed to unlink invoice,Fatura bağlantısı kaldırılamadı
 Failed to create transport invoice,Nakliye faturası oluşturulamadı
 Agreement {0} is not open for payment.,{0} sözleşmesi ödemeye açık değil.
+Acquisition,Alım
+All currencies,Tüm para birimleri
+Back to all work,Tüm işlere dön
+Contract price,Sözleşme bedeli
+Critical Overdue,Kritik gecikme
+Currency Scorecards,Para birimi özeti
+Disposition,Satış
+Due Today,Bugün vadesi
+Due within 7 days,7 gün içinde vadesi
+Failed to load operations data.,Operasyon verileri yüklenemedi.
+Failed to log follow-up.,İletişim kaydı kaydedilemedi.
+Failed to record promise.,Ödeme sözü kaydedilemedi.
+Installments due today,Bugün vadesi gelen taksitler
+Last contact,Son iletişim
+Log Follow-up,İletişim Kaydı
+Log follow-up,İletişim kaydet
+Monitoring,İzleme
+Next 7 Days,Önümüzdeki 7 gün
+Next action,Sonraki aksiyon
+"One currency per agreement — totals are listed per currency, never summed.","Sözleşme başına tek para birimi — toplamlar para birimi bazında listelenir, asla toplanmaz."
+Open follow-up or pending promise,Açık iletişim veya bekleyen söz
+Overdue Count,Geciken sayısı
+Overdue Outstanding,Geciken bakiye
+Past escalation threshold or broken promise,Eskalasyon eşiği aşıldı veya söz bozuldu
+Portfolio Lifecycle,Portföy yaşam döngüsü
+Promise Amount,Söz verilen tutar
+Promise Date,Söz verilen tarih
+Promise broken,Söz bozuldu
+Promise due,Söz vadesi
+Record Promise,Ödeme Sözü Kaydet
+Record promise,Ödeme sözü kaydet
+Restructured,Yeniden yapılandırıldı
+Review,İncelemede
+Save Follow-up,İletişimi Kaydet
+Save Promise,Sözü Kaydet
+Terminated,Feshedildi
+Total Agreements,Toplam sözleşme
+USD,USD
+Upcoming due within 7 days,7 gün içinde vadesi geliyor
+Vehicle / VIN,Araç / VIN
+Work Queues,İş kuyrukları
+agreements,sözleşme
+showing first {n} of {count},{count} kaydın ilk {n} tanesi gösteriliyor
