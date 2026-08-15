@@ -550,6 +550,49 @@ def clear_deal_stage_events(doc, method=None):
 	frappe.db.delete("CRM Stage Event", {"deal": doc.name})
 
 
+def clear_deal_automation_activities(doc, method=None):
+	"""Drop the scheduler-written activities of a deal being trashed.
+
+	`CRM Activity` links the deal only through the Dynamic Link pair
+	(`reference_doctype` / `reference_name`), so it is caught one line later than
+	a stage event — by `check_if_doc_is_dynamically_linked` (delete_doc.py:173)
+	rather than `check_if_doc_is_linked` (:172). The static check raising first is
+	why the production traceback named `CRM Stage Event` and never mentioned this.
+
+	Left alone the blockade grows: `scheduled_daily_crm_automation` (hooks.py:97)
+	writes a row per matching rule per day, so a deal becomes undeletable simply
+	by getting old.
+
+	Only the automation's own rows go. `create_crm_activity` (:650) is whitelisted
+	— a rep's follow-up task lives in the same table, and a deal carrying one
+	keeps refusing deletion, the same deliberate semantic as a Tender Sourcing
+	Decision. `custom_rule_name` separates the two: only crm_automation.py:86
+	writes it, and `_mutable_payload` admits no `custom_*` field, so it cannot be
+	forged through the endpoint.
+
+	As with `clear_deal_stage_events` the rows are dropped directly — `CRM
+	Activity` is immutable and throws in its own `on_trash` (crm_activity.py:37).
+	"""
+	# A site that has not yet run `v72_crm_activity_automation_fields` has no such
+	# column, and filtering on it would raise inside `on_trash` — breaking every
+	# deal deletion on that site, a worse outage than the bug being fixed.
+	if not frappe.db.has_column("CRM Activity", "custom_rule_name"):
+		return
+
+	frappe.db.delete(
+		"CRM Activity",
+		{
+			"reference_doctype": "CRM Deal",
+			"reference_name": doc.name,
+			# `("is", "set")` compiles to `custom_rule_name != ''`
+			# (operator_map.py:110-118). NULL does not satisfy that, so a row
+			# without the marker is never matched — the safe direction for a
+			# filter whose failure mode is deleting someone's work.
+			"custom_rule_name": ("is", "set"),
+		},
+	)
+
+
 _ACTIVITY_MUTABLE_FIELDS = frozenset(
 	(
 		"reference_doctype",

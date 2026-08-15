@@ -24,6 +24,14 @@ What these tests defend, and why the obvious cheaper versions would not:
      module's other assertions while destroying the protection that still refuses
      to delete a deal referenced by a Tender Sourcing Decision, quotation, RFQ or
      order. That refusal is the deliberate semantic, not an accident.
+
+`CRM Stage Event` was only half the blockade. `CRM Activity` links the deal too —
+Dynamic Link only, so it is `check_if_doc_is_dynamically_linked` (delete_doc.py:173)
+that raises, one line after the static check that the fix above cleared. The
+static check firing first is why the production traceback named `CRM Stage Event`
+and nothing else. `clear_deal_automation_activities` closes that half, and the
+tests below defend the one thing that makes it safe: the filter deletes only the
+rows a scheduler wrote, never the ones a rep did.
 """
 
 from __future__ import annotations
@@ -38,6 +46,7 @@ from stabler.tests.module_sandbox import ModuleSandbox
 _SANDBOX = ModuleSandbox()
 
 TRASH_HANDLER = "stabler.api.crm.clear_deal_stage_events"
+ACTIVITY_HANDLER = "stabler.api.crm.clear_deal_automation_activities"
 
 
 def tearDownModule():
@@ -48,11 +57,15 @@ def tearDownModule():
 class _FakeDB:
 	"""Records the writes the handler attempts, and nothing else."""
 
-	def __init__(self):
+	def __init__(self, columns=True):
 		self.deleted_rows = []
+		self._columns = columns
 
 	def delete(self, doctype, filters=None):
 		self.deleted_rows.append((doctype, filters))
+
+	def has_column(self, _doctype, _column):
+		return self._columns
 
 
 def _load_crm(db: _FakeDB):
@@ -111,6 +124,12 @@ class TestTheHandlerIsRegistered(unittest.TestCase):
 
 		self.assertIn(TRASH_HANDLER, hooks.doc_events["CRM Deal"]["on_trash"])
 
+	def test_on_trash_names_the_activity_handler_too(self):
+		"""Stage events were only half the blockade; the other half is dynamic."""
+		import stabler.hooks as hooks
+
+		self.assertIn(ACTIVITY_HANDLER, hooks.doc_events["CRM Deal"]["on_trash"])
+
 	def test_registration_does_not_displace_the_existing_validate_chain(self):
 		import stabler.hooks as hooks
 
@@ -151,6 +170,114 @@ class TestTheHandlerClearsOnlyThatDealsHistory(unittest.TestCase):
 		"""`CRM Stage Event` throws in its own `on_trash` (crm_stage_event.py:72)."""
 		# `frappe.delete_doc` is wired to raise; a rewrite to it fails here.
 		self.crm.clear_deal_stage_events(types.SimpleNamespace(name="CRM-DEAL-2026-00042"), None)
+
+
+class TestTheHandlerClearsAutomationActivitiesOnly(unittest.TestCase):
+	"""`CRM Activity` holds two kinds of row and only one of them may be cascaded.
+
+	`scheduled_daily_crm_automation` (hooks.py:97 → crm_automation.py:73) writes a
+	row per matching rule per day, so a deal accumulates blockers it never asked
+	for and every deal eventually becomes undeletable. But `create_crm_activity`
+	(crm.py:650) is a whitelisted endpoint — a rep's own follow-up task lives in
+	the same table, and cascading it would destroy authored work on delete.
+
+	The two are separable because only the automation writer sets
+	`custom_rule_name` (crm_automation.py:86). A rep cannot forge that marker:
+	`create_crm_activity` runs the payload through `_mutable_payload`, which
+	admits only `_ACTIVITY_MUTABLE_FIELDS` — no `custom_*` field is in it. The
+	last test here pins that, because the day someone adds one, this handler
+	starts deleting user-authored rows and nothing else would notice.
+	"""
+
+	def setUp(self):
+		self.db = _FakeDB()
+		self.crm = _load_crm(self.db)
+
+	def test_it_drops_the_automation_activities_of_the_deal_being_trashed(self):
+		doc = types.SimpleNamespace(name="CRM-DEAL-2026-00042")
+
+		self.crm.clear_deal_automation_activities(doc, "on_trash")
+
+		self.assertEqual(
+			self.db.deleted_rows,
+			[
+				(
+					"CRM Activity",
+					{
+						"reference_doctype": "CRM Deal",
+						"reference_name": "CRM-DEAL-2026-00042",
+						"custom_rule_name": ("is", "set"),
+					},
+				)
+			],
+		)
+
+	def test_the_filter_keys_on_the_pair_the_dynamic_check_reads(self):
+		"""`CRM Activity` has no static Link to the deal — only the pair.
+
+		`check_if_doc_is_dynamically_linked` matches `reference_doctype` against
+		the doctype and `reference_name` against the name (delete_doc.py,
+		`get_dynamic_linked_docs`). A delete keyed on anything else leaves rows
+		the check will still see, and the deal stays undeletable.
+		"""
+		self.crm.clear_deal_automation_activities(types.SimpleNamespace(name="CRM-DEAL-2026-00042"), None)
+
+		_doctype, filters = self.db.deleted_rows[0]
+		self.assertEqual(filters.get("reference_doctype"), "CRM Deal")
+		self.assertEqual(filters.get("reference_name"), "CRM-DEAL-2026-00042")
+
+	def test_it_never_deletes_an_activity_a_person_wrote(self):
+		"""The whole point of the handler being narrow. Losing this is data loss."""
+		self.crm.clear_deal_automation_activities(types.SimpleNamespace(name="CRM-DEAL-2026-00042"), None)
+
+		_doctype, filters = self.db.deleted_rows[0]
+		self.assertEqual(
+			filters.get("custom_rule_name"),
+			("is", "set"),
+			"the automation marker must be part of the filter, or a rep's own "
+			"follow-up task is deleted along with the deal",
+		)
+
+	def test_it_touches_nothing_but_crm_activity(self):
+		self.crm.clear_deal_automation_activities(types.SimpleNamespace(name="CRM-DEAL-2026-00042"), None)
+
+		self.assertEqual({doctype for doctype, _filters in self.db.deleted_rows}, {"CRM Activity"})
+
+	def test_it_does_not_route_through_the_document_api(self):
+		"""`CRM Activity` throws in its own `on_trash` (crm_activity.py:37)."""
+		# `frappe.delete_doc` is wired to raise; a rewrite to it fails here.
+		self.crm.clear_deal_automation_activities(types.SimpleNamespace(name="CRM-DEAL-2026-00042"), None)
+
+	def test_it_deletes_nothing_before_the_v72_patch_has_run(self):
+		"""A site mid-migrate has no `custom_rule_name` column.
+
+		Filtering on a missing column is a SQL error inside `on_trash`, which
+		would break *every* deal deletion on that site — a worse outage than the
+		bug being fixed. Skipping is also the safe direction for the data: the
+		deal refuses to delete instead of taking rows the handler cannot classify.
+		"""
+		db = _FakeDB(columns=False)
+		crm = _load_crm(db)
+
+		crm.clear_deal_automation_activities(types.SimpleNamespace(name="CRM-DEAL-2026-00042"), None)
+
+		self.assertEqual(db.deleted_rows, [])
+
+	def test_the_automation_marker_is_not_writable_through_the_public_endpoint(self):
+		"""The separation rests on this: a rep cannot forge an automation row.
+
+		If a `custom_*` field ever joins the mutable set, a user-authored activity
+		becomes indistinguishable from a scheduler-written one and this handler
+		silently deletes it.
+		"""
+		forgeable = [field for field in self.crm._ACTIVITY_MUTABLE_FIELDS if field.startswith("custom_")]
+
+		self.assertEqual(
+			forgeable,
+			[],
+			"a custom_* field in _ACTIVITY_MUTABLE_FIELDS lets a user forge the "
+			"automation marker that clear_deal_automation_activities deletes on",
+		)
 
 
 class TestDeleteDealStillRefusesLinkedBusinessDocuments(unittest.TestCase):

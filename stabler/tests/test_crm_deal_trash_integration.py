@@ -17,17 +17,31 @@ Every test here first proves the link IS detected without the handler. Without
 that step a green result would mean nothing — the same green appears when the
 fixture silently failed to create a stage event. Same discipline as
 `test_lcv_integration.py:305-340`.
+
+The module was extended for `CRM Activity`, which the original round missed
+precisely because that discipline was applied to only one of the two checks. The
+fixture built a deal and a stage event and nothing else, so line 173 was never
+reached — and production could not tell us either, because line 172 raises first
+and the traceback stops there. `CRM Activity` is asserted against
+`get_dynamic_linked_docs` by name rather than through `LinkExistsError`, so a
+test cannot pass on some unrelated row happening to block the same deal.
 """
 
 import frappe
 from frappe.exceptions import LinkExistsError
-from frappe.model.delete_doc import check_if_doc_is_linked
+from frappe.model.delete_doc import (
+	check_if_doc_is_dynamically_linked,
+	check_if_doc_is_linked,
+	get_dynamic_linked_docs,
+)
 from frappe.tests.utils import FrappeTestCase
 
 from stabler.api._funnel import STAGES
 
 TRASH_HANDLER = "stabler.api.crm.clear_deal_stage_events"
+ACTIVITY_HANDLER = "stabler.api.crm.clear_deal_automation_activities"
 TENDER_STAGE = "go"
+AUTOMATION_RULE = "UAT Trash Fixture Rule"
 
 
 class TestCRMDealTrash(FrappeTestCase):
@@ -35,9 +49,19 @@ class TestCRMDealTrash(FrappeTestCase):
 		# `has_column`/`get_all` raise TableMissingError instead of returning empty
 		# on a site without the crm app — probe the table first
 		# (.claude/rules/20-backend-migrations.md).
-		for doctype in ("CRM Deal", "CRM Stage Event", "CRM Organization", "CRM Deal Status"):
+		for doctype in (
+			"CRM Deal",
+			"CRM Stage Event",
+			"CRM Activity",
+			"CRM Organization",
+			"CRM Deal Status",
+		):
 			if not frappe.db.table_exists(doctype):
 				self.skipTest(f"site does not carry {doctype}")
+		# The automation marker arrives with `v72_crm_activity_automation_fields`;
+		# without it the handler deliberately no-ops and has nothing to assert.
+		if not frappe.db.has_column("CRM Activity", "custom_rule_name"):
+			self.skipTest("site has not run v72_crm_activity_automation_fields")
 		self.company = frappe.db.get_value("Company", {}, "name")
 		if not self.company:
 			self.skipTest("a Company fixture is required")
@@ -53,6 +77,9 @@ class TestCRMDealTrash(FrappeTestCase):
 		for name in self.trash:
 			if frappe.db.exists("CRM Deal", name):
 				frappe.db.delete("CRM Stage Event", {"deal": name})
+				# Both audit doctypes throw in `on_trash`, so a leftover row can
+				# only be removed the way the handlers remove it.
+				frappe.db.delete("CRM Activity", {"reference_doctype": "CRM Deal", "reference_name": name})
 				frappe.delete_doc("CRM Deal", name, force=True, ignore_permissions=True)
 
 	def _organization(self) -> str:
@@ -99,6 +126,48 @@ class TestCRMDealTrash(FrappeTestCase):
 
 	def _stage_event_count(self, deal_name: str) -> int:
 		return frappe.db.count("CRM Stage Event", {"deal": deal_name})
+
+	def _add_activity(self, deal_name: str, rule_name: str = "") -> str:
+		"""One activity on the deal — scheduler-written when `rule_name` is given.
+
+		Both kinds are built identically apart from the automation fields, because
+		that single difference is the whole basis on which the handler decides
+		what may be destroyed. `create_crm_activity` (api/crm.py:650) cannot set
+		them: `_mutable_payload` admits only `_ACTIVITY_MUTABLE_FIELDS`.
+		"""
+		activity = frappe.new_doc("CRM Activity")
+		activity.update(
+			{
+				"company": self.company,
+				"reference_doctype": "CRM Deal",
+				"reference_name": deal_name,
+				"activity_type": "Task",
+				"subject": f"[{rule_name or 'rep'}] {deal_name}",
+			}
+		)
+		if rule_name:
+			activity.custom_rule_name = rule_name
+			activity.custom_idempotency_key = f"{rule_name}:{deal_name}"
+			activity.custom_execution_status = "Executed"
+		activity.insert(ignore_permissions=True)
+		return activity.name
+
+	def _activity_count(self, deal_name: str) -> int:
+		return frappe.db.count("CRM Activity", {"reference_doctype": "CRM Deal", "reference_name": deal_name})
+
+	def _dynamic_blockers(self, doc, doctype: str) -> list[str]:
+		"""Rows of `doctype` that `delete_doc.py:173` would refuse this delete on.
+
+		Asserting on names rather than on `LinkExistsError` is deliberate: the
+		exception only tells you that *something* blocks, so a test written
+		against it passes when an unrelated row blocks and the fixture never
+		worked.
+		"""
+		return [
+			link["reference_docname"]
+			for link in get_dynamic_linked_docs(doc)
+			if link["reference_doctype"] == doctype
+		]
 
 	def test_the_handler_is_registered_under_on_trash(self):
 		"""Unregistered, the handler is dead code and the delete stays broken."""
@@ -163,3 +232,64 @@ class TestCRMDealTrash(FrappeTestCase):
 			check_if_doc_is_linked(self.deal)
 
 		frappe.delete_doc("Tender Sourcing Decision", decision.name, force=True, ignore_permissions=True)
+
+	def test_the_activity_handler_is_registered_under_on_trash(self):
+		registered = frappe.get_hooks("doc_events").get("CRM Deal", {}).get("on_trash", [])
+		self.assertIn(ACTIVITY_HANDLER, registered)
+
+	def test_an_automation_activity_blocks_the_delete_until_the_handler_runs(self):
+		"""The half the first round missed, and the half production could not report.
+
+		`CRM Activity` has no static Link to the deal, so it is line 173 that
+		refuses — and line 172 raises first, which is why the production
+		traceback named `CRM Stage Event` and stopped there.
+		"""
+		name = self._add_activity(self.deal.name, AUTOMATION_RULE)
+
+		self.assertIn(name, self._dynamic_blockers(self.deal, "CRM Activity"))
+		with self.assertRaises(LinkExistsError):
+			check_if_doc_is_dynamically_linked(self.deal)
+
+		frappe.get_attr(ACTIVITY_HANDLER)(self.deal, "on_trash")
+
+		self.assertEqual(self._dynamic_blockers(self.deal, "CRM Activity"), [])
+
+	def test_a_deal_the_daily_automation_wrote_to_can_actually_be_deleted(self):
+		"""The end-to-end claim. `scheduled_daily_crm_automation` writes a row per
+		matching rule per day, so without this a deal becomes undeletable by ageing.
+		"""
+		name = self.deal.name
+		self._add_stage_event(name)
+		self._add_activity(name, AUTOMATION_RULE)
+
+		frappe.delete_doc("CRM Deal", name, ignore_permissions=True)
+
+		self.assertFalse(frappe.db.exists("CRM Deal", name))
+		self.assertEqual(self._activity_count(name), 0)
+
+	def test_an_activity_a_person_wrote_survives_and_still_refuses_the_delete(self):
+		"""Cascade the machine's rows, keep the human's — inside one table.
+
+		A rep's follow-up task is authored work, not audit exhaust. Losing this
+		assertion means deal deletion silently destroys it, which is the failure
+		the narrow filter exists to prevent.
+		"""
+		authored = self._add_activity(self.deal.name)
+		self._add_activity(self.deal.name, AUTOMATION_RULE)
+
+		frappe.get_attr(ACTIVITY_HANDLER)(self.deal, "on_trash")
+
+		self.assertTrue(frappe.db.exists("CRM Activity", authored))
+		self.assertEqual(self._dynamic_blockers(self.deal, "CRM Activity"), [authored])
+		with self.assertRaises(LinkExistsError):
+			check_if_doc_is_dynamically_linked(self.deal)
+
+	def test_deleting_one_deal_leaves_another_deals_automation_rows_intact(self):
+		"""A filter missing the deal would wipe the tenant's whole automation audit."""
+		other = self._make_deal()
+		self._add_activity(other.name, AUTOMATION_RULE)
+		self._add_activity(self.deal.name, AUTOMATION_RULE)
+
+		frappe.delete_doc("CRM Deal", self.deal.name, ignore_permissions=True)
+
+		self.assertEqual(self._activity_count(other.name), 1)

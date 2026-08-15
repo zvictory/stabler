@@ -127,9 +127,15 @@ doc_events = {
 			"stabler.api.crm.validate_crm_deal_hygiene",
 			"stabler.api.tender_master.validate_deal_parent_tender",
 		],
-		# Drop the deal's own stage history before the link checks run, or a
-		# deal that ever changed lane can never be deleted. See the handler.
-		"on_trash": ["stabler.api.crm.clear_deal_stage_events"],
+		# Drop the deal's own machine-written history before the link checks run,
+		# or a deal that ever changed lane — or merely got old, once the daily
+		# automation started writing activities — can never be deleted. Stage
+		# events are caught by the static check, activities by the dynamic one.
+		# See the handlers.
+		"on_trash": [
+			"stabler.api.crm.clear_deal_stage_events",
+			"stabler.api.crm.clear_deal_automation_activities",
+		],
 	},
 	"Sales Invoice": {
 		"before_validate": [
