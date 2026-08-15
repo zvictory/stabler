@@ -540,7 +540,19 @@ class TestFollowUpLogAppendOnly(unittest.TestCase):
 			company="ACME", agreement="VFA-2026-00001", contact_type="Call", contact_result="Promise"
 		)
 		fields.update(overrides)
-		return _instance(follow_up_mod.VehicleFinanceFollowUpLog, **fields)
+		return _instance(follow_up_mod.VehicleFinanceFollowupLog, **fields)
+
+	def test_controller_class_name_is_the_one_frappe_derives(self):
+		# frappe/model/base_document.py:113 derives the controller class name as
+		# doctype.replace(" ", "").replace("-", ""). Get it wrong and get_controller
+		# raises ImportError, which makes `bench migrate` classify the DocType as an
+		# orphan and delete it — on every site, every migrate. Measured, not theory.
+		doctype = "Vehicle Finance Follow-up Log"
+		classname = doctype.replace(" ", "").replace("-", "")
+		self.assertTrue(
+			hasattr(follow_up_mod, classname),
+			f"{doctype} needs a controller class named {classname}",
+		)
 
 	def test_new_entry_passes_and_stamps_user(self):
 		doc = self._log()

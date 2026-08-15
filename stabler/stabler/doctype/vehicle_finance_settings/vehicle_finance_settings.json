@@ -30,7 +30,8 @@
   "require_delivery_before_revenue",
   "allow_fifo_override",
   "allow_same_day_payment_cancel",
-  "early_settlement_discount_enabled"
+  "early_settlement_discount_enabled",
+  "escalation_threshold_days"
  ],
  "fields": [
   {"fieldname": "company", "fieldtype": "Link", "options": "Company", "reqd": 1, "unique": 1, "in_standard_filter": 1},
@@ -59,7 +60,8 @@
   {"fieldname": "require_delivery_before_revenue", "fieldtype": "Check", "default": "1"},
   {"fieldname": "allow_fifo_override", "fieldtype": "Check", "default": "1"},
   {"fieldname": "allow_same_day_payment_cancel", "fieldtype": "Check", "default": "1"},
-  {"fieldname": "early_settlement_discount_enabled", "fieldtype": "Check", "default": "0"}
+  {"fieldname": "early_settlement_discount_enabled", "fieldtype": "Check", "default": "0"},
+  {"fieldname": "escalation_threshold_days", "fieldtype": "Int", "default": "7", "description": "Days past due after which an open row is treated as critical."}
  ],
  "links": [],
  "module": "Stabler",

@@ -8,7 +8,12 @@ from frappe.model.document import Document
 from frappe.utils import now
 
 
-class VehicleFinanceFollowUpLog(Document):
+# The class name is derived by Frappe as `doctype.replace(" ", "").replace("-", "")`
+# (frappe/model/base_document.py:113), so "Vehicle Finance Follow-up Log" resolves to
+# `VehicleFinanceFollowupLog` — lowercase "up". Spelling it `FollowUp` makes
+# `get_controller` raise ImportError, and `remove_orphan_doctypes` then deletes the
+# DocType on every `bench migrate`. Do not "fix" the capitalisation.
+class VehicleFinanceFollowupLog(Document):
 	def validate(self) -> None:
 		if not self.is_new() and not getattr(self.flags, "vf_internal", False):
 			frappe.throw(_("Follow-up Log entries are append-only."))
