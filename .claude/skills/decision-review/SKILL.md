@@ -1,9 +1,9 @@
 ---
 name: decision-review
-description: Convene the four-lens decision panel before committing to a judgement that is expensive to reverse — merging, accepting a red or ambiguous gate result, obeying a plan or table written elsewhere, sequencing work, closing a bead whose DoD was not proven, or writing a number into a rule. Produces decisions with differential acceptance criteria, not findings. Use when you are about to say "this is fine, proceed" and would not be able to name the evidence.
+description: Convene the decision panel before committing to a judgement that is expensive to reverse — merging, accepting a red or ambiguous gate result, obeying a plan or table written elsewhere, sequencing work, closing a bead whose DoD was not proven, or writing a number into a rule. Produces decisions with differential acceptance criteria, not findings. Use when you are about to say "this is fine, proceed" and would not be able to name the evidence.
 ---
 
-# Decision review — the four-lens panel
+# Decision review — the panel
 
 This replaces "report findings and wait for a human to decide". You convene the
 panel, you argue it out, you decide, and you state what would change your mind.
@@ -87,7 +87,12 @@ work over it.
 
 ---
 
-## The four lenses
+## The lenses
+
+No count in this heading, and none in the description either. There were
+three wearable lenses, then four; writing the number down would have made this
+file wrong the moment it grew — the exact failure Rule 0 spends a section on.
+Name the set, let the list below be the list.
 
 Take each in turn. Write two or three sentences per lens — not a paragraph. If a
 lens has nothing to say on this decision, write "nothing" and move on; a lens that
@@ -120,6 +125,25 @@ later?
 **DevOps** — What is the environment this depends on, and is it pinned? Who runs
 it, when, and what happens when nobody does? Is the result reproducible tomorrow,
 on a different site, by a different session?
+
+**The Operator** — who receives this, and what do they do next? Speaks only when
+a decision produces something a human reads or clicks: a warning string, an error
+message, a screen, a flow. Silent on pure backend work, and that silence is the
+normal case — say "nothing" and move on.
+
+Its one question is whether the message names the **action**, not just the fact.
+"The declaration is below what is already capitalized" states a fact; "cancel the
+landed cost voucher that over-charged it instead" names the action. The first
+leaves an accountant staring at a screen. Added 2026-08-16 after a session that
+shipped four such strings across five languages, verified every catalog key
+byte-for-byte, and never once asked whether the sentences told anyone what to do.
+Grammatically correct and operationally useless is a shape the other three lenses
+cannot see: the architect checks the shape, the dev team checks the friction of
+*writing* it, DevOps checks reproducibility, and none of them is the person
+holding the invoice.
+
+Repo already has the depth when this lens does speak: the `ui-ux-pro-max` skill,
+and `.claude/rules/10-frontend.md`, which loads on any `*.vue` / `*.js` touch.
 
 **Skeptic** — see below. Not a lens you wear; an agent you spawn.
 
