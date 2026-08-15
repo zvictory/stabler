@@ -185,7 +185,7 @@ class TestFullCrudOnTheDrawer(unittest.TestCase):
 
 	def test_edit_opens_the_master_drawer_in_edit_mode(self):
 		self.assertIn("function openEditDrawer()", CRM)
-		self.assertIn("@click=\"openEditDrawer\"", TEMPLATE)
+		self.assertIn('@click="openEditDrawer"', TEMPLATE)
 
 	def test_the_master_drawer_is_not_hardwired_to_create(self):
 		"""editingTender null = yeni ihale, dolu = düzenleme; ikisi de aynı
@@ -204,9 +204,7 @@ class TestFullCrudOnTheDrawer(unittest.TestCase):
 		enable_crm=0 kiracısında tender kanbanı silme yeteneği olmadan
 		çıkıyordu. Şirket kapsamı + link kontrolleri yerinde kalır."""
 		source = (ROOT / "api/crm.py").read_text(encoding="utf-8")
-		block = re.search(
-			r'def delete_deal\(.*?\n\t(.*?)\n\tfrappe\.delete_doc', source, flags=re.S
-		)
+		block = re.search(r"def delete_deal\(.*?\n\t(.*?)\n\tfrappe\.delete_doc", source, flags=re.S)
 		self.assertIsNotNone(block, "delete_deal bulunamadı")
 		self.assertIn("_require_crm_or_tender()", block.group(1))
 		self.assertIn("_assert_crm_record_company", block.group(1))
