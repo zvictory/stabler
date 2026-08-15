@@ -168,9 +168,7 @@ def promise_event(
 	return None
 
 
-def policy_date_for(
-	event_type: str, due_date: object = None, promise_date: object = None
-) -> datetime.date:
+def policy_date_for(event_type: str, due_date: object = None, promise_date: object = None) -> datetime.date:
 	"""The date the policy fired, not the moment the job ran."""
 	source = promise_date if event_type in _PROMISE_EVENTS else due_date
 	if source is None:

@@ -93,7 +93,9 @@ class TestIdentityAndIdempotency(unittest.TestCase):
 	def test_promise_events_key_on_the_promise_date(self):
 		promised = date(2026, 4, 10)
 		self.assertEqual(
-			policy.policy_date_for(policy.EVENT_PROMISE_BROKEN, due_date=date(2026, 3, 1), promise_date=promised),
+			policy.policy_date_for(
+				policy.EVENT_PROMISE_BROKEN, due_date=date(2026, 3, 1), promise_date=promised
+			),
 			promised,
 		)
 
