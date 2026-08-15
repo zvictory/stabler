@@ -97,6 +97,9 @@ scheduler_events = {
 		"stabler.api.crm_automation.scheduled_daily_crm_automation",
 		# Watch the repost queue — both COGS poisonings survived on its silence.
 		"stabler.tasks.repost_queue_alert.check_repost_queue",
+		# Vehicle Finance collections/payables queue. Idempotent by identity
+		# tuple: a second run on the same day creates zero rows.
+		"stabler.api.vehicle_finance.work.generate_daily_work",
 	],
 	"weekly": [
 		# Two-tier backup retention pruning (gap #47).

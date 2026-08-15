@@ -45,7 +45,7 @@
  "permissions": [
   {"read": 1, "role": "Vehicle Finance Viewer"},
   {"read": 1, "role": "Vehicle Finance Contract Clerk"},
-  {"read": 1, "role": "Vehicle Finance Payables Clerk"},
+  {"read": 1, "create": 1, "write": 1, "role": "Vehicle Finance Payables Clerk"},
   {"read": 1, "role": "Vehicle Finance Reviewer"},
   {"read": 1, "create": 1, "write": 1, "role": "Vehicle Finance Collector"},
   {"read": 1, "create": 1, "write": 1, "role": "Vehicle Finance Cashier"},
