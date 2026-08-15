@@ -1,0 +1,46 @@
+# Known-red bench modules — the ratchet.
+#
+# STATUS: this file is a MEASURED RECORD, not yet a gate. Nothing enforces it.
+# The enforcing checks are bead stabler-a93, which cannot land here: the honest
+# ZERO COVERAGE gate it depends on lives on feat/vehicle-finance-work-queue, and
+# that branch derives a different BENCH_TESTS than the one measured below. Do not
+# read a green `make test-bench` as this file having been honoured — until
+# stabler-a93 lands, it has not been.
+#
+# WHY THIS FILE EXISTS
+# `make test-bench` became honest in 44fe689: a module that skips every test, or
+# collects none, is now RED instead of printing OK. Five modules failed the moment
+# the gate stopped lying. Demanding all five green before anything else may proceed
+# would make the gate permanently red, and Makefile:9-11 already recorded what
+# happens then — "a permanently red hook is one everybody bypasses with --no-verify."
+#
+# So the gate is red against a BASELINE, not against zero. Both directions are
+# enforced by `make test-bench`:
+#   - a module red that is NOT listed here      -> RED ("you broke something")
+#   - a module listed here that now PASSES      -> RED ("delete its line")
+# The set only tightens. Intention is not a mechanism.
+#
+# MEASURED 2026-08-16, and this pin is the whole validity of the file:
+#   commit    main @ 2d422aa
+#   command   make test-bench
+#   scope     49 of the modules BENCH_TESTS derives (Makefile:190)
+# Re-measure before trusting it on a different site or a later commit. A stale
+# baseline is worse than no baseline: it reads as verified.
+#
+# The site pin below is PARSED, not prose. `make test-bench` compares it to
+# $(TEST_SITE) and, when they differ, refuses to ratchet at all: it falls back to
+# "every red is red". A baseline measured on one site says nothing about another,
+# and a comment cannot stop anyone from ignoring that. Intention is not a
+# mechanism — the whole point of this file.
+#
+#pin site=genesis-test.local
+#
+# Every entry MUST name a bead. A red with no bead is not known-red, it is ignored.
+#
+# format: <module>  <bead>  <cause>
+
+test_approvals_integration           stabler-f74  errors=4; Reference No and Reference Date mandatory for Bank transaction
+test_deploy_migrate_gate             stabler-56v  ZERO COVERAGE, collected-none; unittest collects nothing from the module
+test_related_documents_integration   stabler-97o  ZERO COVERAGE, skipped-3/3; site lacks the seeded fixture, prints OK (skipped=3)
+test_supplier_quotations_api         stabler-cd1  errors=1; fake stabler_settings cannot provide imports_supplier_groups_for
+test_tender_flow_contract            stabler-vcq  failures=1; ':deal="null"' no longer present in the Vue source the contract greps
