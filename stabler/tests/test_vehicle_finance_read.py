@@ -176,7 +176,9 @@ class VehicleFinanceReadTest(FrappeTestCase):
 		unit.insert(ignore_permissions=True)
 		return unit.name
 
-	def _make_agreement(self, *, direction, settlement_mode="Installment", currency="USD", party=None, vin=None):
+	def _make_agreement(
+		self, *, direction, settlement_mode="Installment", currency="USD", party=None, vin=None
+	):
 		wh = (
 			"Stores - _TC"
 			if direction == "Disposition" and not frappe.db.get_value("Serial No", vin, "warehouse")

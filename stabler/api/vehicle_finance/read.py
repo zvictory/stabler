@@ -289,7 +289,8 @@ def agreement_detail(agreement: str) -> dict:
 		"schedule_version": version_name,
 		"schedule_rows": schedule_rows,
 		"schedule_total": schedule_total,
-		"schedule_matches_total": round(schedule_total, precision) == round(flt(doc.total_contract_price), precision),
+		"schedule_matches_total": round(schedule_total, precision)
+		== round(flt(doc.total_contract_price), precision),
 		"paid": paid,
 		"outstanding": outstanding,
 		"capabilities": capabilities,
@@ -481,7 +482,9 @@ def operations_summary(
 			row["currency"], {"agreements": 0, "total_contract_price": 0.0, "outstanding": 0.0}
 		)
 		bucket["agreements"] += 1
-		bucket["total_contract_price"] = flt(bucket["total_contract_price"] + flt(row["total_contract_price"]))
+		bucket["total_contract_price"] = flt(
+			bucket["total_contract_price"] + flt(row["total_contract_price"])
+		)
 
 		if row["agreement_status"] not in _COLLECTIBLE_STATUSES or not row["active_schedule_version"]:
 			continue
@@ -555,7 +558,9 @@ def schedule_preview(payload: dict | None = None) -> dict:
 		{
 			"name": "rows_sum_equals_total",
 			"passed": total_matches,
-			"message": "" if total_matches else _("Rows sum to {0} but the agreement total is {1}.").format(row_sum, total),
+			"message": ""
+			if total_matches
+			else _("Rows sum to {0} but the agreement total is {1}.").format(row_sum, total),
 		},
 		{
 			"name": "due_dates_increasing",
