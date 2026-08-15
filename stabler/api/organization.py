@@ -96,6 +96,8 @@ _MODULE_FIELDS = {
 	# _MODULE_ROLES so only System Manager / Stabler Admin can reach them via
 	# the SPA's canAccessModule() check.
 	"remittance": "enable_remittance",
+	# The Vehicle Finance Center roles grant the installment module; Agreement V1
+	# behaviour is separately gated by Vehicle Finance Settings.installment_engine.
 	"installment": "enable_installment",
 	# Backend-only policy: no SPA page ships for it, it gates validate hooks.
 	"valuation_guard": "enable_valuation_guard",
@@ -139,6 +141,18 @@ _MODULE_ROLES: dict[str, list[str]] = {
 	"agreements": ["Sales User", "Sales Manager", "Accounts User", "Accounts Manager"],
 	"fx_revaluation": ["Accounts Manager"],
 	"budget": ["Accounts User", "Accounts Manager"],
+	# Deliberate widening: installment used to be absent (admin-only). The
+	# Vehicle Finance Center ships seven dedicated roles (v84 patch); the
+	# Agreement V1 engine stays off per company via installment_engine.
+	"installment": [
+		"Vehicle Finance Viewer",
+		"Vehicle Finance Contract Clerk",
+		"Vehicle Finance Collector",
+		"Vehicle Finance Payables Clerk",
+		"Vehicle Finance Reviewer",
+		"Vehicle Finance Cashier",
+		"Vehicle Finance Manager",
+	],
 }
 
 _ADMIN_ROLES = ("System Manager", "Stabler Admin")

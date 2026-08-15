@@ -85,3 +85,4 @@ stabler.patches.v80_pe_proforma_advance_ref
 stabler.patches.v81_crm_deal_customs_freight_refs
 stabler.patches.v82_je_import_expense_link
 stabler.patches.v83_sq_rfq_link
+stabler.patches.v84_vehicle_finance_roles

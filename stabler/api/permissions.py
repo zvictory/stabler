@@ -187,6 +187,30 @@ def tender_sourcing_decision_query(user=None):
 	return _company_condition(user, "Tender Sourcing Decision")
 
 
+def vehicle_unit_query(user=None):
+	return _company_condition(user, "Vehicle Unit")
+
+
+def vehicle_agreement_query(user=None):
+	return _company_condition(user, "Vehicle Agreement")
+
+
+def vehicle_finance_schedule_version_query(user=None):
+	return _company_condition(user, "Vehicle Finance Schedule Version")
+
+
+def vehicle_finance_payment_application_query(user=None):
+	return _company_condition(user, "Vehicle Finance Payment Application")
+
+
+def vehicle_finance_follow_up_log_query(user=None):
+	return _company_condition(user, "Vehicle Finance Follow-up Log")
+
+
+def vehicle_finance_settings_query(user=None):
+	return _company_condition(user, "Vehicle Finance Settings")
+
+
 # ---------------------------------------------------------------------------
 # Gap #46 — owner / territory scoping for masters (Customer, Supplier)
 # ---------------------------------------------------------------------------
