@@ -147,7 +147,9 @@ test:
 	@grep -v -e '^#' -e '^$$' .github/frappe-free-tests.txt | xargs $(PY) -m unittest
 
 # The OTHER 15. stabler/tests/ has 99 modules; the 84 above run without a bench,
-# and these 15 need a real site (they hit the DB, submit documents, check GL).
+# and the rest need a real site (they hit the DB, submit documents, check GL).
+# Do not write the count here: BENCH_TESTS is derived and measured 50 on
+# 2026-08-15, while every prose copy of it still said 15.
 # The GitLab `bench-tests` job is supposed to cover them but is `when: manual` +
 # `allow_failure: true` and has never once run, so its bootstrap is unproven.
 # Proving them locally first is what earns that job the right to block.
@@ -175,13 +177,36 @@ test-bench:
 	 || { echo "ERROR: $(TEST_SITE) has allow_tests off (or does not exist)."; \
 	      echo "  bench --site $(TEST_SITE) set-config allow_tests true"; exit 1; }
 	@echo "bench modules: $(words $(BENCH_TESTS))  site: $(TEST_SITE)"
-	@fail=0; for m in $(BENCH_TESTS); do \
+	@fail=0; mute=0; muted=""; log=`mktemp`; \
+	for m in $(BENCH_TESTS); do \
 	  echo "--- $$m"; \
 	  ( cd $(LOCAL_BENCH) && bench --site $(TEST_SITE) run-tests \
-	      --module stabler.tests.$$m ) || fail=1; \
+	      --module stabler.tests.$$m ) > $$log 2>&1 || fail=1; \
+	  cat $$log; \
+	  ran=`sed -n 's/^Ran \([0-9][0-9]*\) test.*/\1/p' $$log | tail -1`; \
+	  skip=`sed -n 's/.*(skipped=\([0-9][0-9]*\)).*/\1/p' $$log | tail -1`; \
+	  [ -n "$$ran" ] || ran=0; [ -n "$$skip" ] || skip=0; \
+	  if [ "$$ran" -eq 0 ]; then \
+	    echo "!! ZERO COVERAGE: $$m collected no tests on $(TEST_SITE)."; \
+	    mute=`expr $$mute + 1`; muted="$$muted $$m(collected-none)"; \
+	  elif [ "$$skip" -eq "$$ran" ]; then \
+	    echo "!! ZERO COVERAGE: $$m skipped all $$ran tests on $(TEST_SITE) -- nothing was asserted."; \
+	    mute=`expr $$mute + 1`; muted="$$muted $$m(skipped-$$ran/$$ran)"; \
+	  fi; \
 	done; \
+	rm -f $$log; \
+	if [ "$$mute" != "0" ]; then \
+	  echo ""; \
+	  echo "ZERO COVERAGE: $$mute of $(words $(BENCH_TESTS)) modules asserted nothing --$$muted"; \
+	  echo "  A module that skips every test still prints OK, so the run reads as proof it is not."; \
+	  echo "  Three causes, all seen here: an optional app is missing on $(TEST_SITE) (install it, THEN"; \
+	  echo "  replay that app's dependent stabler patches -- see the TEST_SITE comment); the site has no"; \
+	  echo "  seeded fixture the module needs; or a test class that does not subclass TestCase, which"; \
+	  echo "  unittest cannot collect at all."; \
+	  fail=1; \
+	fi; \
 	if [ "$$fail" != "0" ]; then \
-	  echo "FAIL: at least one bench module is red -- see the --- markers above."; fi; \
+	  echo "FAIL: a bench module is red or proved nothing -- see the --- and !! markers above."; fi; \
 	exit $$fail
 
 # Vitest over the SPA's pure-logic layer. Scope is deliberately narrow: the
