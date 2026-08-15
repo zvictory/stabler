@@ -185,3 +185,4 @@ stabler.tests.test_vehicle_finance_schedule
 stabler.tests.test_vehicle_finance_permissions
 stabler.tests.test_vehicle_finance_allocation
 stabler.tests.test_vehicle_finance_work
+stabler.tests.test_module_sandbox_hygiene

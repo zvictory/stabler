@@ -52,13 +52,10 @@ test_tender_flow_contract            stabler-vcq  failures=1; ':deal="null"' no 
 test_deploy_migrate_gate             stabler-56v  ZERO COVERAGE, collected-none; unittest collects nothing from the module
 test_related_documents_integration   stabler-97o  ZERO COVERAGE, skipped-3/3; site lacks the seeded fixture, prints OK (skipped=3)
 
-# --- tests pass, the runner still exits non-zero. One cause, one bead, six lines:
-# when stabler-5gc is fixed all six come out together, and the ratchet will insist,
-# because a listed module that starts passing is itself RED.
-test_crm_analytics                   stabler-5gc  Ran 3 OK; teardown AttributeError frappe.cache
-test_crm_automation                  stabler-5gc  Ran 8 OK; teardown AttributeError frappe.cache
-test_crm_email                       stabler-5gc  Ran 11 OK; teardown AttributeError frappe.cache
-test_tender_documents                stabler-5gc  Ran 31 OK; teardown AttributeError frappe.cache
-test_tender_navigation_context       stabler-5gc  Ran 3 OK; teardown AttributeError frappe.cache
-test_tender_uat_matrix               stabler-5gc  Ran 5 OK; teardown AttributeError frappe.cache
+# --- tests pass, the runner still exits non-zero
+# stabler-5gc took six modules out of this block on 2026-08-16: they faked frappe
+# into sys.modules and never handed it back, so frappe's own _cleanup_after_tests
+# died on the fake. The ratchet is what surfaced them and would have demanded this
+# deletion anyway -- a listed module that starts passing is itself RED.
+# test_module_sandbox_hygiene now fails the build if a seventh one appears.
 test_ci_transport_pi_link            stabler-slaa Ran 4 OK; teardown orjson decode error on empty input

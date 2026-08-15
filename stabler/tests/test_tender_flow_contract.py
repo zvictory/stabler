@@ -31,7 +31,21 @@ import unittest
 from pathlib import Path
 
 from stabler.api._tender_documents import VALID_DOC_ROLES, default_doc_requirements
+from stabler.tests.module_sandbox import ModuleSandbox
 from stabler.tests.test_tender_documents import _FakeFrappe
+
+_SANDBOX = ModuleSandbox()
+
+
+def tearDownModule():
+	"""``_load_api`` replaces the real ``frappe`` in ``sys.modules`` process-wide.
+
+	Without handing it back, ``bench run-tests`` dies in its own
+	``_cleanup_after_tests`` calling ``frappe.clear_cache()`` — the tests report
+	their real verdict and the runner's exit code then says something else.
+	"""
+	_SANDBOX.restore()
+
 
 ROOT = Path(__file__).resolve().parents[1]
 CRM = (ROOT / "public/js/pages/tender/TenderCrm.vue").read_text(encoding="utf-8")
@@ -49,8 +63,7 @@ def _load_api(fake: _FakeFrappe, *, views=("sourcing",), user="sourcer@acme.test
 	pencerenin açık olup olmadığını söyler. Böylece çağrı yeri değişince test de
 	değişir.
 	"""
-	for name in ("stabler.api.tender_documents", "stabler.api.tender_master"):
-		sys.modules.pop(name, None)
+	_SANDBOX.evict("stabler.api.tender_documents", "stabler.api.tender_master")
 
 	frappe = types.ModuleType("frappe")
 	frappe._ = lambda value: value
@@ -70,8 +83,7 @@ def _load_api(fake: _FakeFrappe, *, views=("sourcing",), user="sourcer@acme.test
 
 	utils = types.ModuleType("frappe.utils")
 	utils.now = lambda: "2026-08-10 10:00:00"
-	sys.modules["frappe"] = frappe
-	sys.modules["frappe.utils"] = utils
+	_SANDBOX.install({"frappe": frappe, "frappe.utils": utils})
 
 	pure = importlib.import_module("stabler.api._tender_documents")
 
@@ -92,9 +104,13 @@ def _load_api(fake: _FakeFrappe, *, views=("sourcing",), user="sourcer@acme.test
 	)
 	tender_mod._deal_label = lambda deal: deal
 	tender_mod._tender_deal_names = lambda company: set()
-	sys.modules["stabler.api.tender_master"] = tender_master_mod
-	sys.modules["stabler.api.tender"] = tender_mod
-	sys.modules["stabler.api._tender_documents"] = pure
+	_SANDBOX.install(
+		{
+			"stabler.api.tender_master": tender_master_mod,
+			"stabler.api.tender": tender_mod,
+			"stabler.api._tender_documents": pure,
+		}
+	)
 
 	return importlib.import_module("stabler.api.tender_documents")
 

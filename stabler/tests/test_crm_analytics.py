@@ -8,7 +8,19 @@ from __future__ import annotations
 import sys
 import unittest
 
-from stabler.tests.test_sourcing_api import _Doc, _FakeFrappe, _load_api
+from stabler.tests.test_sourcing_api import _SANDBOX, _Doc, _FakeFrappe, _load_api
+
+
+def tearDownModule():
+	"""``_load_api`` evicts the real ``frappe`` from ``sys.modules`` process-wide.
+
+	unittest runs ``tearDownModule`` per module, so the owning module's teardown
+	does NOT run for a borrower — importing ``_load_api`` borrows the sandbox and
+	inherits the duty to hand it back. Without this the fake ``frappe`` outlives
+	the suite, and ``bench run-tests`` dies in its own ``_cleanup_after_tests``
+	calling ``frappe.clear_cache()``: tests print OK, the runner still exits 1.
+	"""
+	_SANDBOX.restore()
 
 
 class TestCrmAnalytics(unittest.TestCase):
