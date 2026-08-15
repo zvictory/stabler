@@ -3729,14 +3729,14 @@ def get_landed_cost_review(grn_checklist: str, rate=None):
 			override = None
 	rate_overridden = bool(override and override > 0)
 
-	# Supersede before aggregating, the same way the build path does — a preview
-	# that shows a hand-typed line the voucher will drop is a preview of a document
-	# that does not exist, and this screen is where the accountant decides.
-	cost_lines = imports_hooks._collect_cost_lines(grn.commercial_invoice)
-	cost_lines, warnings = lcv_math.supersede_billed(cost_lines)
-
-	rates, rate_warnings = imports_hooks.resolve_line_rates(cost_lines, company_currency, grn.completion_date)
-	warnings.extend(rate_warnings)
+	# One implementation, shared with ``_build_and_save_lcv``. This screen is where
+	# the accountant decides, and a preview computed by a second copy of the
+	# precedence chain is a preview of a document that does not exist: the two
+	# copies drift, and the drift is capitalized into stock valuation.
+	computed = imports_hooks.compute_next_lcv(grn, rate_override=override, translate=_)
+	warnings = computed["warnings"]
+	components = computed["components"]
+	pending = computed["pending"]
 
 	# What the resolver honestly found for USD; 0/absent when it found nothing.
 	# ``_latest_exchange_rate`` must never supply this number: it degrades to 1.0 on
@@ -3745,19 +3745,15 @@ def get_landed_cost_review(grn_checklist: str, rate=None):
 	# the override gate and values a USD 100 freight line at 100 UZS. A missing rate
 	# has to read as missing all the way out to the input. It is still consulted for
 	# the as-of date, which is only shown when a real rate was found.
-	resolved_usd = flt(rates.get("USD") or 0)
+	resolved_usd = flt((computed["resolved_rates"] or {}).get("USD") or 0)
 	usd_rate = None
 	rate_as_of = None
 	if rate_overridden:
 		# A hand-entered rate is an instruction, so it wins for USD lines here.
-		rates["USD"] = override
 		usd_rate = override
 	elif resolved_usd:
 		usd_rate = resolved_usd
 		_unused, rate_as_of = _latest_exchange_rate("USD", company_currency, grn.completion_date)
-
-	components, agg_warnings = lcv_math.aggregate_components(cost_lines, rates, company_currency, translate=_)
-	warnings.extend(agg_warnings)
 
 	# ``_build_and_save_lcv`` takes no rate argument: it always re-resolves from
 	# Currency Exchange. So the moment an override actually touches a USD line, this
@@ -3767,7 +3763,7 @@ def get_landed_cost_review(grn_checklist: str, rate=None):
 	override_changes_the_build = rate_overridden and any(
 		(ln.get("currency") == "USD" != company_currency)
 		and not lcv_math.is_vat_component(ln.get("cost_component") or "Other")
-		for ln in lcv_math.unconsumed(cost_lines)
+		for ln in pending
 	)
 	if override_changes_the_build:
 		warnings.append(
@@ -3778,12 +3774,6 @@ def get_landed_cost_review(grn_checklist: str, rate=None):
 			).format(str(grn.completion_date or today()))
 		)
 
-	if gtd is not None:
-		# extend, not reassign: the supersede warnings above must survive a GTD.
-		components, gtd_warnings = lcv_math.apply_gtd_customs_precedence(
-			components, gtd_duty=gtd[0], gtd_excise=gtd[1], gtd_present=True
-		)
-		warnings.extend(gtd_warnings)
 	preview_components = [{"component": k, "amount": round(v, 2)} for k, v in sorted(components.items())]
 	preview_total = round(sum(components.values()), 2)
 	if not pr_names:

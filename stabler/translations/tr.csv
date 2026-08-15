@@ -5543,6 +5543,7 @@ Users,Kullanıcılar
 Users flagged,İşaretli kullanıcılar
 Utilization %,Kullanım %
 Uzbekistan Customs Duty,Özbekistan Gümrük Vergisi
+Uzbekistan Excise,Özbekistan ÖTV
 Uzbekistan Port Handling,Özbekistan Liman Elleçleme
 UZEX lot {0} not found.,
 UZS,UZS
@@ -5939,3 +5940,6 @@ Failed to link invoice,Fatura bağlanamadı
 Failed to unlink invoice,Fatura bağlantısı kaldırılamadı
 Failed to create transport invoice,Nakliye faturası oluşturulamadı
 Agreement {0} is not open for payment.,{0} sözleşmesi ödemeye açık değil.
+"{0}: the customs declaration ({1}) is below the {2} already capitalized on this receipt. Nothing was added — cancel the landed cost voucher that over-charged it instead.","{0}: gümrük beyannamesi ({1}), bu mal kabulünde maliyete zaten eklenmiş olan {2} tutarının altında. Hiçbir şey eklenmedi — tutarı fazla yükleyen ek maliyet fişini iptal edin."
+"{0}: the customs declaration ({1}) is already fully capitalized on this receipt.","{0}: gümrük beyannamesi ({1}) bu mal kabulünde maliyete tamamen eklenmiş durumda."
+"{0}: {1} of the customs declaration's {2} is already capitalized on this receipt; only the remaining {3} was added.","{0}: gümrük beyannamesindeki {2} tutarının {1} kadarı bu mal kabulünde maliyete zaten eklenmiş; yalnızca kalan {3} eklendi."

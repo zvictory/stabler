@@ -61,7 +61,9 @@ def is_uzbekistan_customs_duty(component) -> bool:
 	return "uzbek" in c and "customs duty" in c
 
 
-def apply_gtd_customs_precedence(components, gtd_duty, gtd_excise, gtd_present) -> tuple[dict, list[str]]:
+def apply_gtd_customs_precedence(
+	components, gtd_duty, gtd_excise, gtd_present, capitalized=None, translate=None
+) -> tuple[dict, list[str]]:
 	"""Let a cleared customs declaration (GTD) supersede cost-line Uzbek duty.
 
 	When an Approved + cleared GTD exists for the CI, its ``duty_amount`` and
@@ -70,10 +72,22 @@ def apply_gtd_customs_precedence(components, gtd_duty, gtd_excise, gtd_present) 
 	so the two sources are never double-counted. VAT is never added from either
 	source (recoverable input credit — see ``aggregate_components``).
 
+	``capitalized`` is what the vouchers already posted against this receipt
+	charged per component. It exists because the declaration is a standing figure,
+	not a document that arrives once: a cost line is stamped with ``lcv_ref`` and
+	is invisible to every later build, but the GTD is re-read on each one. Without
+	netting, a second voucher offers the same customs payment again — in full —
+	and submitting it capitalizes it twice into stock valuation. Only the
+	declaration's OWN two components are netted; everything else is already
+	protected by its stamp, and netting it here would swallow a genuinely new
+	cost that happened to match an old one.
+
 	Returns ``(new_components, warnings)``. A warning is emitted when BOTH a
 	cost-line Uzbek duty AND a cleared GTD were present (the GTD won; the operator
-	should confirm the cost line was not meant as a separate charge).
+	should confirm the cost line was not meant as a separate charge), and whenever
+	a declared amount is reduced or dropped by what is already capitalized.
 	"""
+	t = translate or (lambda s: s)
 	warnings: list[str] = []
 	if not gtd_present:
 		return dict(components), warnings
@@ -86,20 +100,67 @@ def apply_gtd_customs_precedence(components, gtd_duty, gtd_excise, gtd_present) 
 			continue  # superseded by the GTD
 		out[comp] = amt
 
-	duty = round(float(gtd_duty or 0), 2)
-	excise = round(float(gtd_excise or 0), 2)
-	if duty > 0:
-		out["Uzbekistan Customs Duty"] = round(out.get("Uzbekistan Customs Duty", 0.0) + duty, 2)
-	if excise > 0:
-		out["Uzbekistan Excise"] = round(out.get("Uzbekistan Excise", 0.0) + excise, 2)
+	posted = capitalized or {}
+	for comp, declared in (
+		("Uzbekistan Customs Duty", gtd_duty),
+		("Uzbekistan Excise", gtd_excise),
+	):
+		declared = round(float(declared or 0), 2)
+		already = round(float(posted.get(comp) or 0), 2)
+		remaining = round(declared - already, 2)
+
+		if already > 0 and remaining < 0:
+			# Never post the difference as a negative charge: a negative amount on
+			# a Landed Cost Voucher writes a negative valuation adjustment into the
+			# stock ledger of every receipt line it touches. Undoing an
+			# over-capitalization means cancelling the voucher that caused it,
+			# which carries a GL reversal — an operator's decision, not a silent one.
+			warnings.append(
+				t(
+					"{0}: the customs declaration ({1}) is below the {2} already capitalized on this receipt. "
+					"Nothing was added — cancel the landed cost voucher that over-charged it instead."
+				).format(t(comp), _money(declared), _money(already))
+			)
+			continue
+
+		if already > 0 and remaining == 0:
+			warnings.append(
+				t("{0}: the customs declaration ({1}) is already fully capitalized on this receipt.").format(
+					t(comp), _money(declared)
+				)
+			)
+			continue
+
+		if already > 0:
+			warnings.append(
+				t(
+					"{0}: {1} of the customs declaration's {2} is already capitalized on this receipt; "
+					"only the remaining {3} was added."
+				).format(t(comp), _money(already), _money(declared), _money(remaining))
+			)
+
+		if remaining > 0:
+			out[comp] = round(out.get(comp, 0.0) + remaining, 2)
 
 	if had_cost_line_duty:
 		warnings.append(
-			"Both a Uzbekistan Customs Duty cost line and a cleared customs declaration "
-			"were present; the declaration's duty/excise took precedence and the cost-line "
-			"duty was dropped to avoid double counting."
+			t(
+				"Both a Uzbekistan Customs Duty cost line and a cleared customs declaration "
+				"were present; the declaration's duty/excise took precedence and the cost-line "
+				"duty was dropped to avoid double counting."
+			)
 		)
 	return out, warnings
+
+
+def _money(amount) -> str:
+	"""Group an amount for a warning string.
+
+	No currency symbol: this module is deliberately frappe-free and knows nothing
+	about the company currency. Every amount reaching it is already in that
+	currency, which the surrounding UI states.
+	"""
+	return "{:,.2f}".format(round(float(amount or 0), 2))
 
 
 def line_company_amount(currency, amount, rates, company_currency) -> float | None:

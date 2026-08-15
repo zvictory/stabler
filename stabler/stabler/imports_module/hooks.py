@@ -826,6 +826,106 @@ def resolve_lcv_expense_account(company: str) -> str | None:
 	return discovered
 
 
+def capitalized_components(grn) -> dict[str, float]:
+	"""What this GRN's landed cost vouchers already charge, per component.
+
+	Read back off the vouchers rather than stamped onto the source, because the
+	source is a Customs Declaration that is shared, amendable and re-read on every
+	build — there is nothing on it that could honestly mean "consumed by GRN X".
+	The vouchers, by contrast, ARE the record of what stock valuation carries, and
+	``build_lcv_payload`` writes the component name into each charge's
+	``description``, so the two sides line up without a new field or a migration.
+
+	Drafts count. The build stamps ``lcv_ref`` and appends the GRN row at insert,
+	long before an accountant submits, so a draft already owns its costs; skipping
+	it would offer the same money to a second voucher — which is the bug this
+	exists to close. Cancelled vouchers do not count: their charge is reversed and
+	the money genuinely needs a new voucher. Deleted ones never reach here, the
+	cancel/trash handler having removed their GRN row already.
+	"""
+	names = [row.lcv for row in (grn.get("landed_cost_vouchers") or []) if row.lcv]
+	if not names:
+		return {}
+
+	live = frappe.get_all(
+		"Landed Cost Voucher", filters={"name": ["in", names], "docstatus": ["!=", 2]}, pluck="name"
+	)
+	if not live:
+		return {}
+
+	out: dict[str, float] = {}
+	for charge in frappe.get_all(
+		"Landed Cost Taxes and Charges",
+		filters={"parent": ["in", live], "parenttype": "Landed Cost Voucher"},
+		fields=["description", "amount"],
+	):
+		component = (charge.description or "").strip()
+		if not component:
+			continue
+		out[component] = round(out.get(component, 0.0) + flt(charge.amount), 2)
+	return out
+
+
+def compute_next_lcv(grn, rate_override=None, translate=None) -> dict:
+	"""What the NEXT landed cost voucher on this GRN would carry.
+
+	One implementation for the preview and for the build. They used to be two,
+	and two implementations of a precedence chain is how an accountant approves a
+	preview and posts a different document.
+
+	The order is load-bearing: collect everything including the consumed rows, let
+	the bills supersede the estimates they replaced, and only then take what is
+	still unconsumed. Superseding after the filter would leave estimates whose
+	bill has already been vouchered looking unopposed.
+	"""
+	from stabler.stabler.doctype.customs_declaration.customs_declaration import approved_gtd_for_ci
+
+	company_currency = frappe.get_cached_value("Company", grn.company, "default_currency")
+
+	cost_lines = _collect_cost_lines(grn.commercial_invoice, include_vouchered=True)
+	cost_lines, warnings = lcv_math.supersede_billed(cost_lines)
+	pending = lcv_math.unconsumed(cost_lines)
+
+	resolved_rates, rate_warnings = resolve_line_rates(pending, company_currency, grn.completion_date)
+	warnings.extend(rate_warnings)
+
+	rates = dict(resolved_rates)
+	if rate_override and flt(rate_override) > 0:
+		rates["USD"] = flt(rate_override)
+
+	components, agg_warnings = lcv_math.aggregate_components(
+		pending, rates, company_currency, translate=translate
+	)
+	warnings.extend(agg_warnings)
+
+	# A cleared customs declaration (GTD) is the authoritative source of the
+	# Uzbekistan import duty + excise: its figures REPLACE any cost-line Uzbek
+	# duty (avoid double count); VAT is never capitalized. UZS = company currency.
+	gtd = approved_gtd_for_ci(grn.commercial_invoice)
+	if gtd is not None:
+		components, gtd_warnings = lcv_math.apply_gtd_customs_precedence(
+			components,
+			gtd_duty=gtd[0],
+			gtd_excise=gtd[1],
+			gtd_present=True,
+			capitalized=capitalized_components(grn),
+			translate=translate,
+		)
+		# extend, not reassign: the supersede warnings above must survive a GTD.
+		warnings.extend(gtd_warnings)
+
+	return {
+		"company_currency": company_currency,
+		"cost_lines": cost_lines,
+		"pending": pending,
+		"resolved_rates": resolved_rates,
+		"rates": rates,
+		"components": components,
+		"warnings": warnings,
+		"gtd": gtd,
+	}
+
+
 def _build_and_save_lcv(grn, note: str):
 	"""Collect cost lines -> DRAFT LCV -> append GRN ref -> mark lines consumed."""
 	expense_account = resolve_lcv_expense_account(grn.company)
@@ -844,39 +944,20 @@ def _build_and_save_lcv(grn, note: str):
 		)
 		return None
 
-	cost_lines = _collect_cost_lines(grn.commercial_invoice)
-
 	# A carrier's own bill supersedes the hand-typed guess of the same cost on the
-	# same container, exactly as the GTD supersedes the hand-typed duty below. The
+	# same container, exactly as the GTD supersedes the hand-typed duty. The
 	# dropped rows are deliberately NOT stamped with the LCV name: they were never
 	# consumed, so they stay visible and unvouchered, and unlinking the bill brings
 	# them back into the next voucher.
-	cost_lines, bill_warnings = lcv_math.supersede_billed(cost_lines)
-	for warning in bill_warnings:
-		frappe.logger("stabler.imports").warning(f"GRN {grn.name}: {warning}")
-	source_rows = [ln["name"] for ln in cost_lines]
-
-	company_currency = frappe.get_cached_value("Company", grn.company, "default_currency")
-	rates, rate_warnings = resolve_line_rates(cost_lines, company_currency, grn.completion_date)
-	for warning in rate_warnings:
+	computed = compute_next_lcv(grn)
+	for warning in computed["warnings"]:
 		frappe.logger("stabler.imports").warning(f"GRN {grn.name}: {warning}")
 
-	components, agg_warnings = lcv_math.aggregate_components(cost_lines, rates, company_currency)
-	for warning in agg_warnings:
-		frappe.logger("stabler.imports").warning(f"GRN {grn.name}: {warning}")
-
-	# A cleared customs declaration (GTD) is the authoritative source of the
-	# Uzbekistan import duty + excise: its figures REPLACE any cost-line Uzbek
-	# duty (avoid double count); VAT is never capitalized. UZS = company currency.
-	from stabler.stabler.doctype.customs_declaration.customs_declaration import approved_gtd_for_ci
-
-	gtd = approved_gtd_for_ci(grn.commercial_invoice)
-	if gtd is not None:
-		components, warnings = lcv_math.apply_gtd_customs_precedence(
-			components, gtd_duty=gtd[0], gtd_excise=gtd[1], gtd_present=True
-		)
-		for warning in warnings:
-			frappe.logger("stabler.imports").warning(f"GRN {grn.name}: {warning}")
+	company_currency = computed["company_currency"]
+	pending = computed["pending"]
+	rates = computed["rates"]
+	components = computed["components"]
+	source_rows = [ln["name"] for ln in pending]
 
 	if not components:
 		frappe.logger("stabler.imports").info(f"GRN {grn.name}: no unconsumed landed costs")
@@ -910,7 +991,7 @@ def _build_and_save_lcv(grn, note: str):
 	# exchange rate reached no LCV, so marking it consumed would delete its cost
 	# from valuation for good — the stamp is permanent and no later build looks at
 	# a stamped row again. It stays unstamped and returns once a rate exists.
-	unvaluable = lcv_math.unvaluable_line_names(cost_lines, rates, company_currency)
+	unvaluable = lcv_math.unvaluable_line_names(pending, rates, company_currency)
 	for row_name in source_rows:
 		if row_name in unvaluable:
 			continue
@@ -932,7 +1013,7 @@ def _submitted_prs_for_grn(grn_name) -> list[str]:
 	return out
 
 
-def _collect_cost_lines(commercial_invoice):
+def _collect_cost_lines(commercial_invoice, include_vouchered: bool = False):
 	"""Unconsumed Container Cost Lines across the CI's Import Containers.
 
 	Returns the line dicts that feed ``lcv_math``. Each carries its own ``name``
@@ -947,6 +1028,14 @@ def _collect_cost_lines(commercial_invoice):
 	operator's keyboard. Every source field has to be carried: a line whose source
 	is dropped here reads as hand-typed, and a later bill would supersede real
 	spend right out of the valuation.
+
+	``include_vouchered`` keeps the already-stamped rows in the result. Supersession
+	is computed, never stored: the hand-typed estimate a bill replaced is left
+	unstamped on purpose, so unlinking the bill brings it back. That only works
+	while the bill is still visible — filter the consumed rows out first and the
+	next build sees an estimate with nothing superseding it, and re-capitalizes a
+	cost the bill already paid for. Callers that want the pending set apply
+	``lcv_math.unconsumed`` AFTER supersession, not before it.
 	"""
 	containers = frappe.get_all(
 		"Import Container", filters={"commercial_invoice": commercial_invoice}, pluck="name"
@@ -957,7 +1046,7 @@ def _collect_cost_lines(commercial_invoice):
 		for row in doc.cost_lines or []:
 			if not row.include_in_landed_cost:
 				continue
-			if (row.get("lcv_ref") or "").strip():
+			if not include_vouchered and (row.get("lcv_ref") or "").strip():
 				continue
 			line_dicts.append(
 				{

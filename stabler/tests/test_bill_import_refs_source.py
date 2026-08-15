@@ -655,15 +655,20 @@ class CapitalizationTest(unittest.TestCase):
 		# The preview is where the accountant decides. A preview that still shows
 		# a line the voucher will drop is a preview of a document that does not
 		# exist, and the two screens would disagree about the same import.
-		self.assertIn("lcv_math.supersede_billed(", read(HOOKS))
-		self.assertIn("lcv_math.supersede_billed(", body(self.src, "get_landed_cost_review"))
+		hooks = read(HOOKS)
+		self.assertIn("lcv_math.supersede_billed(", body(hooks, "compute_next_lcv"))
+		# Both paths reach it through that ONE implementation. A second copy of the
+		# precedence chain drifts, and the drift is capitalized into stock valuation.
+		self.assertIn("compute_next_lcv(", body(hooks, "_build_and_save_lcv"))
+		review = body(self.src, "get_landed_cost_review")
+		self.assertIn("compute_next_lcv(", review)
+		self.assertNotIn("lcv_math.supersede_billed(", review)
 
 	def test_the_supersede_warnings_survive_a_gtd(self):
 		# `components, warnings = apply_gtd_customs_precedence(...)` would REBIND
 		# warnings and throw away every supersede message on any import that has
 		# a cleared GTD — which is most of them.
-		src = body(self.src, "get_landed_cost_review")
-		self.assertIn("warnings.extend(gtd_warnings)", src)
+		self.assertIn("warnings.extend(gtd_warnings)", body(read(HOOKS), "compute_next_lcv"))
 
 	def test_the_two_server_owned_markers_survive_a_container_save(self):
 		# The SPA sends cost lines back as a flat list with neither marker on
