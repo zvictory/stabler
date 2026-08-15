@@ -857,12 +857,21 @@ def capitalized_components(grn) -> dict[str, float]:
 	for charge in frappe.get_all(
 		"Landed Cost Taxes and Charges",
 		filters={"parent": ["in", live], "parenttype": "Landed Cost Voucher"},
-		fields=["description", "amount"],
+		# base_amount, NOT amount: `amount` is denominated in the charge's
+		# account_currency, while `base_amount` is the company-currency figure the
+		# voucher pushes into item valuation. The GTD's duty and excise are UZS
+		# company-currency figures, so comparing them against `amount` compares two
+		# different currencies the moment an expense account is not in the company
+		# currency — and _usable_expense_account checks company, is_group and
+		# root_type but never account_currency, so nothing upstream prevents it.
+		# The guard would then fail open silently, which is the one direction that
+		# costs money.
+		fields=["description", "base_amount"],
 	):
 		component = (charge.description or "").strip()
 		if not component:
 			continue
-		out[component] = round(out.get(component, 0.0) + flt(charge.amount), 2)
+		out[component] = round(out.get(component, 0.0) + flt(charge.base_amount), 2)
 	return out
 
 

@@ -664,6 +664,25 @@ class CapitalizationTest(unittest.TestCase):
 		self.assertIn("compute_next_lcv(", review)
 		self.assertNotIn("lcv_math.supersede_billed(", review)
 
+	def test_what_was_already_capitalized_is_read_in_the_company_currency(self):
+		"""stabler-fgt. `amount` is account-currency; `base_amount` is what valuation carries.
+
+		capitalized_components is compared against the GTD's duty and excise, which
+		are UZS company-currency figures. Reading `amount` compares two different
+		currencies the moment an expense account is not in the company currency,
+		and _usable_expense_account validates company / is_group / root_type but
+		never account_currency — so nothing upstream stops it. The guard then fails
+		open and the duty is capitalized twice.
+
+		Asserted at source because the difference only shows on a site with a
+		foreign-currency expense account, which no test site has: the bench suite
+		would stay green through the regression.
+		"""
+		fn = body(read(HOOKS), "capitalized_components")
+		self.assertIn("base_amount", fn)
+		self.assertNotIn('"amount"', fn)
+		self.assertNotIn("charge.amount", fn)
+
 	def test_the_supersede_warnings_survive_a_gtd(self):
 		# `components, warnings = apply_gtd_customs_precedence(...)` would REBIND
 		# warnings and throw away every supersede message on any import that has

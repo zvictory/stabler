@@ -171,5 +171,82 @@ class TestGtdPrecedenceNetsWhatIsAlreadyCapitalized(unittest.TestCase):
 		self.assertEqual(out["Freight"], 500.0)
 
 
+class TestTheGuardDoesNotFailOpen(unittest.TestCase):
+	"""Three ways the netting could hand back MORE than the declaration.
+
+	Every branch below guards a case where the answer is not merely wrong but
+	wrong in the expensive direction: it capitalizes customs money into stock
+	valuation a second time, through a submitted voucher, silently. A guard that
+	fails open is worse than no guard, because the operator stops looking.
+	"""
+
+	def test_a_negative_already_capitalized_never_inflates_the_offer(self):
+		"""stabler-yw1. ``amount`` on a charge row has no non-negative validation.
+
+		A negative charge row — or two rows summing negative — made ``already``
+		negative, and ``remaining = declared - already`` then came out ABOVE the
+		declaration. Measured before the fix: declared 100, capitalized -50,
+		offered 150, no warning. The old branches all tested ``already > 0``, so a
+		negative fell through every one of them into the plain add.
+		"""
+		out, warnings = lcv_math.apply_gtd_customs_precedence(
+			{},
+			gtd_duty=100,
+			gtd_excise=0,
+			gtd_present=True,
+			capitalized={"Uzbekistan Customs Duty": -50},
+		)
+		self.assertLessEqual(
+			out.get("Uzbekistan Customs Duty", 0.0),
+			100.0,
+			"never offer more than the declaration itself",
+		)
+		self.assertEqual(out.get("Uzbekistan Customs Duty"), 100.0)
+		self.assertTrue(warnings, "a negative capitalized figure must not pass silently")
+
+	def test_a_description_that_differs_only_in_case_or_spacing_still_nets(self):
+		"""stabler-j8a. The key is a free-text field an accountant can edit.
+
+		``capitalized_components`` keys on the charge row's ``description``, which
+		is editable Small Text on the voucher. Lowercase it, or let a stray space
+		in, and an exact match scored ``already = 0`` and offered the whole
+		declaration again — the precise failure this whole function exists to
+		prevent, reachable by editing one text box.
+		"""
+		for variant in (
+			"uzbekistan customs duty",
+			"UZBEKISTAN CUSTOMS DUTY",
+			"  Uzbekistan  Customs Duty  ",
+		):
+			with self.subTest(variant=variant):
+				out, _ = lcv_math.apply_gtd_customs_precedence(
+					{},
+					gtd_duty=100,
+					gtd_excise=0,
+					gtd_present=True,
+					capitalized={variant: 100},
+				)
+				self.assertEqual(
+					out,
+					{},
+					f"{variant!r} names the same component and must net against it",
+				)
+
+	def test_a_component_that_merely_starts_the_same_is_not_netted(self):
+		"""The normalization must not over-match, or it swallows a real charge.
+
+		"Uzbekistan Customs Duty Penalty" is a different charge. Netting it would
+		be the opposite failure: a genuinely new cost silently dropped.
+		"""
+		out, _ = lcv_math.apply_gtd_customs_precedence(
+			{},
+			gtd_duty=100,
+			gtd_excise=0,
+			gtd_present=True,
+			capitalized={"Uzbekistan Customs Duty Penalty": 100},
+		)
+		self.assertEqual(out.get("Uzbekistan Customs Duty"), 100.0)
+
+
 if __name__ == "__main__":
 	unittest.main()

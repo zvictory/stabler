@@ -61,6 +61,33 @@ def is_uzbekistan_customs_duty(component) -> bool:
 	return "uzbek" in c and "customs duty" in c
 
 
+def _component_key(name) -> str:
+	"""Fold a charge description to the identity the netting matches on.
+
+	``capitalized_components`` reads the component out of a Landed Cost Taxes and
+	Charges ``description``, which is editable Small Text on the voucher. An
+	accountant who lowercases it or lets a double space in would otherwise score
+	``already = 0``, and the whole declaration gets offered a second time — the
+	exact double capitalization this module exists to prevent, reachable by
+	editing one text box.
+
+	Case and whitespace only. NOT a prefix or fuzzy match: "Uzbekistan Customs
+	Duty Penalty" is a different charge, and folding it in would be the opposite
+	failure — a genuinely new cost silently swallowed.
+	"""
+	return " ".join(str(name or "").split()).casefold()
+
+
+def _by_component(capitalized) -> dict[str, float]:
+	"""Re-key what the vouchers posted, summing descriptions that fold together."""
+	out: dict[str, float] = {}
+	for name, amount in (capitalized or {}).items():
+		key = _component_key(name)
+		if key:
+			out[key] = round(out.get(key, 0.0) + float(amount or 0), 2)
+	return out
+
+
 def apply_gtd_customs_precedence(
 	components, gtd_duty, gtd_excise, gtd_present, capitalized=None, translate=None
 ) -> tuple[dict, list[str]]:
@@ -100,13 +127,28 @@ def apply_gtd_customs_precedence(
 			continue  # superseded by the GTD
 		out[comp] = amt
 
-	posted = capitalized or {}
+	posted = _by_component(capitalized)
 	for comp, declared in (
 		("Uzbekistan Customs Duty", gtd_duty),
 		("Uzbekistan Excise", gtd_excise),
 	):
 		declared = round(float(declared or 0), 2)
-		already = round(float(posted.get(comp) or 0), 2)
+		already = round(float(posted.get(_component_key(comp)) or 0), 2)
+		# A charge row's ``amount`` carries no non-negative validation and the draft
+		# voucher is editable, so ``already`` can arrive negative. Left alone it
+		# makes ``declared - already`` EXCEED the declaration, and every branch
+		# below keys on ``already > 0`` — so a negative used to fall through all of
+		# them straight into the plain add. Clamp at the source: nothing capitalized
+		# is the honest reading of a negative total, and it is the safe one.
+		if already < 0:
+			warnings.append(
+				t(
+					"{0}: the vouchers on this receipt total a negative {1} for this component, "
+					"which cannot be what stock valuation carries. Treated as nothing capitalized "
+					"and the full declaration offered — check the landed cost vouchers before submitting."
+				).format(t(comp), _money(already))
+			)
+			already = 0.0
 		remaining = round(declared - already, 2)
 
 		if already > 0 and remaining < 0:
