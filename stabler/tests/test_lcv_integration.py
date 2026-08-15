@@ -583,3 +583,39 @@ class TestLCVIntegration(FrappeTestCase):
 			sorted((c["component"], c["amount"]) for c in preview["components"]),
 			self._charges(lcv_name),
 		)
+
+	def test_a_voucher_stabler_did_not_register_is_still_counted(self):
+		"""stabler-677. The GRN child row knows only about vouchers stabler built.
+
+		Cancel-then-amend is the standard ERPNext correction, and it ends here:
+		``on_cancel`` deletes the ``GRN LCV Ref`` row, the amended voucher is a new
+		document no hook registers, and it charges the full duty into valuation
+		while being invisible to the netting. The next review then offers the whole
+		declaration again with ``can_create`` true. An accountant creating a voucher
+		by hand in Desk lands in exactly the same place.
+
+		This asserts the END STATE those two paths produce -- a live voucher
+		against this GRN's receipt with no ``GRN LCV Ref`` row -- rather than
+		driving an amend. A real ``lcv.cancel()`` cannot run in this fixture (see
+		the release tests above), and the end state is what the netting actually
+		reads; reaching it by deleting the row is the same state by a shorter road.
+		"""
+		self._seed_cleared_gtd(duty=74_500_000, excise=9_000_000)
+		lcv_name = _build_and_save_lcv(self.grn, note="initial")
+		frappe.get_doc("Landed Cost Voucher", lcv_name).submit()
+
+		# What cancel-then-amend leaves behind: no stabler row, voucher still live.
+		frappe.db.delete("GRN LCV Ref", {"lcv": lcv_name})
+		self.grn.reload()
+		self.assertFalse(
+			[row for row in (self.grn.get("landed_cost_vouchers") or []) if row.lcv == lcv_name],
+			"the fixture must actually reach the post-amend state",
+		)
+
+		components = {c["component"]: c["amount"] for c in self._review()["components"]}
+		self.assertNotIn(
+			"Uzbekistan Customs Duty",
+			components,
+			"the duty is already in stock valuation; offering it again capitalizes it twice",
+		)
+		self.assertNotIn("Uzbekistan Excise", components)

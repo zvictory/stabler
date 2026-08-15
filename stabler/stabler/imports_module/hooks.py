@@ -842,13 +842,48 @@ def capitalized_components(grn) -> dict[str, float]:
 	exists to close. Cancelled vouchers do not count: their charge is reversed and
 	the money genuinely needs a new voucher. Deleted ones never reach here, the
 	cancel/trash handler having removed their GRN row already.
+
+	The voucher set comes from the RECEIPT, not from ``grn.landed_cost_vouchers``.
+	That child row is written by ``_build_and_save_lcv`` and by nothing else, so it
+	only ever knows about vouchers stabler itself built. Two ordinary things escape
+	it entirely, and both end in the same double capitalization:
+
+	  * cancel-then-amend, the standard ERPNext correction. ``on_cancel`` deletes
+	    the child row (``release_cost_lines_for_lcv``); the amended voucher is a new
+	    document that no hook registers, so it charges the full duty into valuation
+	    while remaining invisible here.
+	  * a voucher an accountant creates by hand in Desk against the same receipt.
+
+	``Landed Cost Purchase Receipt`` is the link ERPNext itself keys on, it survives
+	an amend, and it does not depend on stabler having been the author. Reading it
+	costs one extra query and closes both holes at once.
+
+	Known limit, unchanged by this and tracked as stabler-wrk1: the charge totals
+	are the VOUCHER's, not the slice of it allocated to these receipts. A voucher
+	spanning two GRNs therefore nets its whole duty against each. Stabler builds one
+	voucher per GRN so it cannot arise from this code path, and the failure
+	direction is to offer too little — visible, and never a double capitalization.
 	"""
-	names = [row.lcv for row in (grn.get("landed_cost_vouchers") or []) if row.lcv]
+	prs = _submitted_prs_for_grn(grn.name)
+	if not prs:
+		return {}
+
+	names = frappe.get_all(
+		"Landed Cost Purchase Receipt",
+		filters={
+			"parenttype": "Landed Cost Voucher",
+			"receipt_document_type": "Purchase Receipt",
+			"receipt_document": ["in", prs],
+		},
+		pluck="parent",
+	)
 	if not names:
 		return {}
 
 	live = frappe.get_all(
-		"Landed Cost Voucher", filters={"name": ["in", names], "docstatus": ["!=", 2]}, pluck="name"
+		"Landed Cost Voucher",
+		filters={"name": ["in", list(set(names))], "docstatus": ["!=", 2]},
+		pluck="name",
 	)
 	if not live:
 		return {}
