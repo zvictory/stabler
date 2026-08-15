@@ -5547,6 +5547,7 @@ Users,Пользователи
 Users flagged,Помеченные пользователи
 Utilization %,Использование %
 Uzbekistan Customs Duty,Таможенная пошлина Узбекистана
+Uzbekistan Excise,Акциз Узбекистана
 Uzbekistan Port Handling,Портовые сборы (Узбекистан)
 UZEX lot {0} not found.,
 UZS,UZS
@@ -5943,3 +5944,6 @@ Failed to link invoice,Не удалось привязать счет
 Failed to unlink invoice,Не удалось отвязать счет
 Failed to create transport invoice,Не удалось создать транспортный счет
 Agreement {0} is not open for payment.,Договор {0} не открыт для оплаты.
+"{0}: the customs declaration ({1}) is below the {2} already capitalized on this receipt. Nothing was added — cancel the landed cost voucher that over-charged it instead.","{0}: таможенная декларация ({1}) меньше суммы {2}, уже включённой в стоимость этого поступления. Ничего не добавлено — отмените ордер дополнительных расходов, завысивший сумму."
+"{0}: the customs declaration ({1}) is already fully capitalized on this receipt.","{0}: таможенная декларация ({1}) уже полностью включена в стоимость этого поступления."
+"{0}: {1} of the customs declaration's {2} is already capitalized on this receipt; only the remaining {3} was added.","{0}: из суммы таможенной декларации {2} в стоимость этого поступления уже включено {1}; добавлен только остаток {3}."

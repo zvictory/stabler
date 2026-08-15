@@ -192,6 +192,55 @@ class TestLCVIntegration(FrappeTestCase):
 		doc = frappe.get_doc("Landed Cost Voucher", lcv_name)
 		return sorted((row.description, round(row.amount, 2)) for row in doc.taxes)
 
+	def _seed_cleared_gtd(self, duty, excise):
+		"""An Approved, cleared declaration for this CI.
+
+		Inserted straight at Approved: ``Customs Declaration.validate`` returns
+		early while ``is_new()``, so the status pipeline does not apply to the
+		first save and there is no transition to walk through.
+		"""
+		gtd = frappe.new_doc("Customs Declaration")
+		gtd.update(
+			{
+				"company": self.company,
+				"commercial_invoice": self.ci.name,
+				"gtd_number": "26010/110726/1234567",
+				"status": "Approved",
+				"cleared_date": frappe.utils.today(),
+				"duty_amount": duty,
+				"excise_amount": excise,
+			}
+		)
+		gtd.insert(ignore_permissions=True)
+		return gtd
+
+	def _review(self):
+		from stabler.api.imports import get_landed_cost_review
+
+		return get_landed_cost_review(self.grn.name)["preview"]
+
+	def _add_cost_line(self, component, amount, currency=None, **fields):
+		"""Append a cost line, re-reading the container first.
+
+		The build stamps ``lcv_ref`` with ``frappe.db.set_value``, which never
+		reaches the in-memory document. Saving the stale copy from ``setUp``
+		would write the child rows back with the stamp blank and silently undo
+		the very consumption these tests are about.
+		"""
+		container = frappe.get_doc("Import Container", self.container.name)
+		container.append(
+			"cost_lines",
+			{
+				"cost_component": component,
+				"currency": currency or self.company_currency,
+				"amount": amount,
+				"include_in_landed_cost": 1,
+				**fields,
+			},
+		)
+		container.save(ignore_permissions=True)
+		return container.cost_lines[-1].name
+
 	# -- tests --------------------------------------------------------------
 
 	def test_deleted_lcv_releases_cost_lines_and_the_money_comes_back(self):
@@ -402,3 +451,135 @@ class TestLCVIntegration(FrappeTestCase):
 	def test_the_release_handler_is_wired_to_the_cancel_lifecycle(self):
 		registered = frappe.get_hooks("doc_events").get("Landed Cost Voucher", {}).get("on_cancel", [])
 		self.assertIn(RELEASE_HANDLER, registered)
+
+	# -- what the SECOND voucher on the same GRN is allowed to carry -----------
+	#
+	# The release tests above are about money coming back when a voucher stops
+	# existing. These are the mirror image: money that must NOT come back while
+	# the voucher still exists. Both failures look identical from the cost line's
+	# side — a pending amount — which is why they live in one fixture.
+
+	def test_a_second_voucher_on_a_fully_vouchered_grn_carries_nothing(self):
+		"""The declaration has no ``lcv_ref``, so only netting can stop it recurring.
+
+		A cost line is stamped the moment a voucher consumes it and is invisible
+		to every later build. The GTD is read live from the Customs Declaration on
+		each build, so a second voucher offers its duty and excise again — in full,
+		with ``can_create`` true — and submitting it charges the same customs
+		payment to stock valuation twice.
+		"""
+		self._seed_cleared_gtd(duty=74_500_000, excise=9_000_000)
+
+		lcv_name = _build_and_save_lcv(self.grn, note="initial")
+		self.assertEqual(
+			self._charges(lcv_name),
+			sorted(
+				[
+					("Freight", round(LINE_AMOUNT * LINE_RATE, 2)),
+					("Uzbekistan Customs Duty", 74_500_000.0),
+					("Uzbekistan Excise", 9_000_000.0),
+				]
+			),
+		)
+
+		preview = self._review()
+		self.assertEqual(preview["components"], [])
+		self.assertEqual(preview["total"], 0.0)
+		self.assertFalse(preview["can_create"])
+
+	def test_a_cost_added_after_the_first_voucher_still_reaches_a_second(self):
+		# The feature this path exists for. Netting the declaration must not turn
+		# into "a GRN with a voucher is closed" — late costs are the normal case.
+		self._seed_cleared_gtd(duty=74_500_000, excise=9_000_000)
+		_build_and_save_lcv(self.grn, note="initial")
+
+		self._add_cost_line("Customs Clearance Fee", 500_000)
+
+		preview = self._review()
+		self.assertEqual(preview["components"], [{"component": "Customs Clearance Fee", "amount": 500_000.0}])
+		self.assertTrue(preview["can_create"])
+
+	def test_a_re_cleared_declaration_offers_the_difference_not_the_whole_duty(self):
+		# Customs amends a declaration after clearance often enough that ignoring
+		# the change is not an option: the extra duty is real money owed on this
+		# import. Only the extra, though.
+		gtd = self._seed_cleared_gtd(duty=74_500_000, excise=9_000_000)
+		_build_and_save_lcv(self.grn, note="initial")
+
+		gtd.db_set("duty_amount", 80_000_000)
+
+		preview = self._review()
+		self.assertEqual(
+			preview["components"], [{"component": "Uzbekistan Customs Duty", "amount": 5_500_000.0}]
+		)
+		self.assertTrue(preview["can_create"])
+
+	def test_a_superseded_estimate_does_not_return_once_the_bill_is_vouchered(self):
+		"""Supersession is computed, not stored — so it has to be recomputable.
+
+		The hand-typed estimate is deliberately left unstamped so that unlinking
+		the bill brings it back. That only works while the build can still SEE the
+		bill: once the billed line is consumed and filtered out of the candidate
+		set, nothing supersedes, and the estimate the carrier's invoice replaced
+		becomes eligible again beside the invoice that already capitalized.
+		"""
+		if not frappe.db.has_column("Container Cost Line", "purchase_invoice"):
+			self.skipTest("the bill link field is required")
+
+		billed = self._add_cost_line("Freight", 1_000_000)
+		# Written past the Link validation: a real Purchase Invoice fixture would
+		# add a supplier/company/item lifecycle this test says nothing about, and
+		# every reader of the field treats it as an opaque document name.
+		frappe.db.set_value(
+			"Container Cost Line", billed, "purchase_invoice", "ACC-PINV-TEST-0001", update_modified=False
+		)
+
+		lcv_name = _build_and_save_lcv(self.grn, note="initial")
+		self.assertEqual(self._charges(lcv_name), [("Freight", 1_000_000.0)])
+
+		preview = self._review()
+		self.assertEqual(preview["components"], [])
+		self.assertFalse(preview["can_create"])
+
+	def test_unlinking_the_bill_makes_the_hand_typed_estimate_eligible_again(self):
+		"""The escape hatch has to survive the change that made the bill visible.
+
+		The obvious way to stop a superseded estimate resurrecting is to stamp it
+		as consumed. That would close this door: the estimate is left unstamped
+		precisely so that unlinking a mis-attributed bill brings it back. Which
+		works because unlinking does not merely hide the bill from the unconsumed
+		set — it deletes the billed rows outright (``clear_bill_import_refs``,
+		pinned in test_bill_import_refs_source). That deletion is what this
+		reproduces; a real Purchase Invoice fixture would add a supplier/item
+		lifecycle this test says nothing about.
+		"""
+		if not frappe.db.has_column("Container Cost Line", "purchase_invoice"):
+			self.skipTest("the bill link field is required")
+
+		billed = self._add_cost_line("Freight", 1_000_000)
+		frappe.db.set_value(
+			"Container Cost Line", billed, "purchase_invoice", "ACC-PINV-TEST-0002", update_modified=False
+		)
+		self.assertEqual(self._review()["components"], [{"component": "Freight", "amount": 1_000_000.0}])
+
+		frappe.db.delete("Container Cost Line", {"purchase_invoice": "ACC-PINV-TEST-0002"})
+
+		# The estimate seeded in setUp is unopposed again — nothing was vouchered,
+		# so the import is back to carrying the operator's figure.
+		self.assertEqual(
+			self._review()["components"],
+			[{"component": "Freight", "amount": round(LINE_AMOUNT * LINE_RATE, 2)}],
+		)
+
+	def test_the_preview_and_the_build_agree_on_what_the_next_voucher_carries(self):
+		# Two implementations of the same precedence chain is how the accountant
+		# ends up approving a preview and posting a different document.
+		self._seed_cleared_gtd(duty=74_500_000, excise=9_000_000)
+
+		preview = self._review()
+		lcv_name = _build_and_save_lcv(self.grn, note="initial")
+
+		self.assertEqual(
+			sorted((c["component"], c["amount"]) for c in preview["components"]),
+			self._charges(lcv_name),
+		)

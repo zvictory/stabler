@@ -5538,6 +5538,7 @@ Users,Users
 Users flagged,Users flagged
 Utilization %,Utilization %
 Uzbekistan Customs Duty,Uzbekistan Customs Duty
+Uzbekistan Excise,Uzbekistan Excise
 Uzbekistan Port Handling,Uzbekistan Port Handling
 UZEX lot {0} not found.,UZEX lot {0} not found.
 UZS,UZS
@@ -5900,3 +5901,6 @@ Could not create purchase order.,Could not create purchase order.
 Creating…,Creating…
 Purchase order {0} already exists.,Purchase order {0} already exists.
 Agreement {0} is not open for payment.,Agreement {0} is not open for payment.
+"{0}: the customs declaration ({1}) is below the {2} already capitalized on this receipt. Nothing was added — cancel the landed cost voucher that over-charged it instead.","{0}: the customs declaration ({1}) is below the {2} already capitalized on this receipt. Nothing was added — cancel the landed cost voucher that over-charged it instead."
+"{0}: the customs declaration ({1}) is already fully capitalized on this receipt.","{0}: the customs declaration ({1}) is already fully capitalized on this receipt."
+"{0}: {1} of the customs declaration's {2} is already capitalized on this receipt; only the remaining {3} was added.","{0}: {1} of the customs declaration's {2} is already capitalized on this receipt; only the remaining {3} was added."

@@ -5542,6 +5542,7 @@ Users,Фойдаланувчилар
 Users flagged,Белгиланган фойдаланувчилар
 Utilization %,Фойдаланиш %
 Uzbekistan Customs Duty,Ўзбекистон божхона божи
+Uzbekistan Excise,Ўзбекистон акциз солиғи
 Uzbekistan Port Handling,Ўзбекистон порт хизмати
 UZEX lot {0} not found.,
 UZS,UZS
@@ -5938,3 +5939,6 @@ Failed to link invoice,Ҳисобни бириктириб бўлмади
 Failed to unlink invoice,Ҳисобни ажратиб бўлмади
 Failed to create transport invoice,Транспорт ҳисобини яратиб бўлмади
 Agreement {0} is not open for payment.,{0} шартномаси тўловга очиқ эмас.
+"{0}: the customs declaration ({1}) is below the {2} already capitalized on this receipt. Nothing was added — cancel the landed cost voucher that over-charged it instead.","{0}: божхона декларацияси ({1}) ушбу қабулда таннархга аллақачон киритилган {2} суммасидан кам. Ҳеч нарса қўшилмади — суммани ошириб юборган қўшимча харажат ҳужжатини бекор қилинг."
+"{0}: the customs declaration ({1}) is already fully capitalized on this receipt.","{0}: божхона декларацияси ({1}) ушбу қабулда таннархга тўлиқ киритилган."
+"{0}: {1} of the customs declaration's {2} is already capitalized on this receipt; only the remaining {3} was added.","{0}: божхона декларациясидаги {2} сумманинг {1} қисми ушбу қабулда таннархга аллақачон киритилган; фақат қолган {3} қўшилди."

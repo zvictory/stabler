@@ -81,5 +81,95 @@ class TestApplyGtdPrecedence(unittest.TestCase):
 		self.assertFalse(any(lcv_math.is_vat_component(k) for k in out))
 
 
+class TestGtdPrecedenceNetsWhatIsAlreadyCapitalized(unittest.TestCase):
+	"""A declaration is a standing figure, not a document that arrives once.
+
+	Cost lines carry an ``lcv_ref`` stamp, so a second build simply cannot see
+	them again. The GTD has no such stamp: every build re-reads the same cleared
+	declaration. The question a second voucher has to answer is therefore not
+	"what does the declaration say" but "what does it say that stock valuation
+	does not already carry" — answering the first one capitalizes the duty twice,
+	permanently, through a submitted voucher.
+	"""
+
+	def test_a_fully_capitalized_declaration_adds_nothing(self):
+		out, warnings = lcv_math.apply_gtd_customs_precedence(
+			{},
+			gtd_duty=74_500_000,
+			gtd_excise=9_000_000,
+			gtd_present=True,
+			capitalized={"Uzbekistan Customs Duty": 74_500_000, "Uzbekistan Excise": 9_000_000},
+		)
+		self.assertEqual(out, {})
+		# Silence would read as "the declaration was ignored". One line per
+		# component, so the empty preview is explained rather than merely empty.
+		self.assertEqual(len(warnings), 2)
+
+	def test_an_amended_declaration_adds_only_the_difference(self):
+		out, warnings = lcv_math.apply_gtd_customs_precedence(
+			{},
+			gtd_duty=80_000_000,
+			gtd_excise=0,
+			gtd_present=True,
+			capitalized={"Uzbekistan Customs Duty": 74_500_000},
+		)
+		self.assertEqual(out, {"Uzbekistan Customs Duty": 5_500_000.0})
+		self.assertIn("5,500,000.00", warnings[0])
+
+	def test_a_declaration_below_what_was_capitalized_is_never_negative(self):
+		# A negative charge on a Landed Cost Voucher writes a negative valuation
+		# adjustment into the stock ledger of every receipt line. Correcting an
+		# over-capitalization means cancelling the voucher that caused it, which
+		# is a decision with a GL reversal behind it — not one to take silently.
+		out, warnings = lcv_math.apply_gtd_customs_precedence(
+			{},
+			gtd_duty=60_000_000,
+			gtd_excise=0,
+			gtd_present=True,
+			capitalized={"Uzbekistan Customs Duty": 74_500_000},
+		)
+		self.assertEqual(out, {})
+		self.assertEqual(len(warnings), 1)
+		self.assertIn("cancel", warnings[0].lower())
+
+	def test_a_capitalized_cost_line_duty_leaves_the_declarations_delta(self):
+		# Voucher #1 ran before the declaration cleared and capitalized the
+		# operator's 60,000,000 estimate. The declaration then says 74,500,000:
+		# the import owes 14,500,000 more, not 74,500,000 more.
+		out, _ = lcv_math.apply_gtd_customs_precedence(
+			{},
+			gtd_duty=74_500_000,
+			gtd_excise=0,
+			gtd_present=True,
+			capitalized={"Uzbekistan Customs Duty": 60_000_000},
+		)
+		self.assertEqual(out, {"Uzbekistan Customs Duty": 14_500_000.0})
+
+	def test_the_first_voucher_carries_the_whole_declaration(self):
+		out, warnings = lcv_math.apply_gtd_customs_precedence(
+			{"Freight": 100.0},
+			gtd_duty=1_000_000,
+			gtd_excise=300_000,
+			gtd_present=True,
+			capitalized={},
+		)
+		self.assertEqual(out["Uzbekistan Customs Duty"], 1_000_000.0)
+		self.assertEqual(out["Uzbekistan Excise"], 300_000.0)
+		self.assertEqual(warnings, [])
+
+	def test_only_the_declarations_own_components_are_netted(self):
+		# Freight already capitalized is handled by the ``lcv_ref`` stamp on the
+		# cost line. Netting it here as well would swallow a second, genuinely
+		# new freight cost of the same size.
+		out, _ = lcv_math.apply_gtd_customs_precedence(
+			{"Freight": 500.0},
+			gtd_duty=0,
+			gtd_excise=0,
+			gtd_present=True,
+			capitalized={"Freight": 500.0},
+		)
+		self.assertEqual(out["Freight"], 500.0)
+
+
 if __name__ == "__main__":
 	unittest.main()
