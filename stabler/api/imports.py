@@ -8979,7 +8979,9 @@ def _capitalize_linked_bill(
 		return [], []
 
 	if cint(bill.get("docstatus")) == 0:
-		lcv_account = _resolve_company_lcv_account(company)
+		from stabler.stabler.imports_module import hooks as imports_hooks
+
+		lcv_account = imports_hooks.resolve_lcv_expense_account(company)
 		if lcv_account:
 			pi_doc = frappe.get_doc("Purchase Invoice", purchase_invoice)
 			modified = False
