@@ -5902,3 +5902,38 @@ This quotation has no lines.,Ушбу таклифда қаторлар мавж
 Could not create purchase order.,Харид буюртмасини яратиб бўлмади.
 Creating…,Яратилмоқда…
 Purchase order {0} already exists.,{0} харид буюртмаси аллақачон мавжуд.
+Transport Purchase Invoices & Expenses,Транспорт ҳисоб-фактуралари ва харажатлар
+Link transport bill,Транспорт ҳисобини бириктириш
+Create transport bill,Транспорт ҳисобини яратиш
+Total Transport Bills,Жами транспорт ҳисоблари
+Transport Cost / kg,1 кг учун транспорт нархи
+Linked Invoices,Бириктирилган ҳисоблар
+Accounting Routing,Бухгалтерия йўналиши
+Balance Sheet (Landed Cost),Баланс (Landed Cost)
+Zero P&L impact — capitalized via LCV,P&L га тушмайди — LCV орқали таннархга ўтади
+Linked Transport Bills,Бириктирилган транспорт ҳисоблари
+Bill No,Ҳисоб рақами
+Supplier / Carrier,Етказиб берувчи / Ташувчи
+Expense Account,Харажат ҳисоби
+Landed Cost Clearing,Landed Cost ўтиш ҳисоби
+P&L Expense,P&L харажати
+Unlink from CI,CI дан ажратиш
+Transport Purchase Invoice,Транспорт харид ҳисоб-фактураси
+Link existing invoice,Мавжуд ҳисобни бириктириш
+Create new transport invoice,Янги транспорт ҳисобини яратиш
+"Search by bill number, supplier or invoice ID…","Ҳисоб рақами, етказиб берувчи ёки ID орқали қидириш…"
+Loading invoices…,Ҳисоблар юкланмоқда…
+No linkable transport invoices found.,Бириктириш учун транспорт ҳисоблари топилмади.
+"This invoice will be created with the Landed Cost clearing expense account (Balance Sheet) so it capitalizes into inventory and does not hit P&L.","Ушбу ҳисоб-фактура Landed Cost ҳисоби (Баланс) билан яратилади, натижада P&L га кирмай LCV орқали товар таннархига қўшилади."
+Search carrier…,Ташувчини қидириш…
+Bill No (Fatura No),Ҳисоб рақами
+Create & Link to CI,Яратиш ва CI га бириктириш
+Unlink Transport Invoice,Транспорт ҳисобини ажратиш
+Unlink transport invoice {name} from this Commercial Invoice?,{name} транспорт ҳисоби ушбу Тижорат Инвойсидан ажратилсинми?
+Transport invoice {name} linked to CI.,{name} транспорт ҳисоби CI га бириктирилди.
+Transport invoice {name} created and linked.,{name} транспорт ҳисоби яратилди ва бириктирилди.
+Transport invoice unlinked.,Транспорт ҳисоби ажратилди.
+Could not load linkable invoices,Ҳисобларни юклаб бўлмади
+Failed to link invoice,Ҳисобни бириктириб бўлмади
+Failed to unlink invoice,Ҳисобни ажратиб бўлмади
+Failed to create transport invoice,Транспорт ҳисобини яратиб бўлмади

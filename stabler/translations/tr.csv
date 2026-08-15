@@ -5897,3 +5897,38 @@ This quotation has no lines.,Bu teklifte hiç satır yok.
 Could not create purchase order.,Satın alma siparişi oluşturulamadı.
 Creating…,Oluşturuluyor…
 Purchase order {0} already exists.,{0} satın alma siparişi zaten mevcut.
+Transport Purchase Invoices & Expenses,Nakliye Faturaları ve Masraflar
+Link transport bill,Transport faturası bağla
+Create transport bill,Yeni nakliye faturası
+Total Transport Bills,Toplam Nakliye Faturaları
+Transport Cost / kg,Kg Başı Nakliye Maliyeti
+Linked Invoices,Bağlı Faturalar
+Accounting Routing,Muhasebe Yönlendirmesi
+Balance Sheet (Landed Cost),Bilanço (Landed Cost)
+Zero P&L impact — capitalized via LCV,P&L'e etki etmez — LCV ile stoka aktarılır
+Linked Transport Bills,Bağlı Nakliye Faturaları
+Bill No,Fatura No
+Supplier / Carrier,Tedarikçi / Nakliyeci
+Expense Account,Masraf Hesabı
+Landed Cost Clearing,Landed Cost Geçiş Hesabı
+P&L Expense,P&L Gideri
+Unlink from CI,CI Bağlantısını Kaldır
+Transport Purchase Invoice,Nakliye Alış Faturası
+Link existing invoice,Mevcut faturayı bağla
+Create new transport invoice,Yeni nakliye faturası oluştur
+"Search by bill number, supplier or invoice ID…","Fatura no, tedarikçi veya ID ile ara…"
+Loading invoices…,Faturalar yükleniyor…
+No linkable transport invoices found.,Bağlanabilecek nakliye faturası bulunamadı.
+This invoice will be created with the Landed Cost clearing expense account (Balance Sheet) so it capitalizes into inventory and does not hit P&L.,Bu fatura Landed Cost geçiş hesabıyla (Bilanço) oluşturulur; böylece doğrudan P&L'e gitmez ve LCV ile stok değerine aktarılır.
+Search carrier…,Nakliyeci ara…
+Bill No (Fatura No),Fatura No
+Create & Link to CI,Oluştur ve CI'ya Bağla
+Unlink Transport Invoice,Nakliye Faturası Bağlantısını Kaldır
+Unlink transport invoice {name} from this Commercial Invoice?,{name} nakliye faturasının bu Ticari Fatura ile bağlantısı kaldırılsın mı?
+Transport invoice {name} linked to CI.,{name} nakliye faturası CI'ya bağlandı.
+Transport invoice {name} created and linked.,{name} nakliye faturası oluşturuldu ve bağlandı.
+Transport invoice unlinked.,Nakliye faturası bağlantısı kaldırıldı.
+Could not load linkable invoices,Bağlanabilir faturalar yüklenemedi
+Failed to link invoice,Fatura bağlanamadı
+Failed to unlink invoice,Fatura bağlantısı kaldırılamadı
+Failed to create transport invoice,Nakliye faturası oluşturulamadı

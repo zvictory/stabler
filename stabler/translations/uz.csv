@@ -5902,3 +5902,38 @@ This quotation has no lines.,Ushbu taklifda qatorlar mavjud emas.
 Could not create purchase order.,Xarid buyurtmasini yaratib bo'lmadi.
 Creating…,Yaratilmoqda…
 Purchase order {0} already exists.,{0} xarid buyurtmasi allaqachon mavjud.
+Transport Purchase Invoices & Expenses,Transport hisob-fakturalari va xarajatlar
+Link transport bill,Transport hisobini biriktirish
+Create transport bill,Transport hisobini yaratish
+Total Transport Bills,Jami transport hisoblari
+Transport Cost / kg,1 kg uchun transport narxi
+Linked Invoices,Biriktirilgan hisoblar
+Accounting Routing,Buxgalteriya yo‘nalishi
+Balance Sheet (Landed Cost),Balans (Landed Cost)
+Zero P&L impact — capitalized via LCV,P&L ga tushmaydi — LCV orqali tannarxga o‘tadi
+Linked Transport Bills,Biriktirilgan transport hisoblari
+Bill No,Hisob raqami
+Supplier / Carrier,Yetkazib beruvchi / Tashuvchi
+Expense Account,Xarajat hisobi
+Landed Cost Clearing,Landed Cost o‘tish hisobi
+P&L Expense,P&L xarajati
+Unlink from CI,CI dan ajratish
+Transport Purchase Invoice,Transport xarid hisob-fakturasi
+Link existing invoice,Mavjud hisobni biriktirish
+Create new transport invoice,Yangi transport hisobini yaratish
+"Search by bill number, supplier or invoice ID…","Hisob raqami, yetkazib beruvchi yoki ID orqali qidirish…"
+Loading invoices…,Hisoblar yuklanmoqda…
+No linkable transport invoices found.,Biriktirish uchun transport hisoblari topilmadi.
+"This invoice will be created with the Landed Cost clearing expense account (Balance Sheet) so it capitalizes into inventory and does not hit P&L.","Ushbu hisob-faktura Landed Cost hisobi (Balans) bilan yaratiladi, natijada P&L ga kirmay LCV orqali tovar tannarxiga qo‘shiladi."
+Search carrier…,Tashuvchini qidirish…
+Bill No (Fatura No),Hisob raqami
+Create & Link to CI,Yaratish va CI ga biriktirish
+Unlink Transport Invoice,Transport hisobini ajratish
+Unlink transport invoice {name} from this Commercial Invoice?,{name} transport hisobi ushbu Tijorat Invoysidan ajratilsinmi?
+Transport invoice {name} linked to CI.,{name} transport hisobi CI ga biriktirildi.
+Transport invoice {name} created and linked.,{name} transport hisobi yaratildi va biriktirildi.
+Transport invoice unlinked.,Transport hisobi ajratildi.
+Could not load linkable invoices,Hisoblarni yuklab bo‘lmadi
+Failed to link invoice,Hisobni biriktirib bo‘lmadi
+Failed to unlink invoice,Hisobni ajratib bo‘lmadi
+Failed to create transport invoice,Transport hisobini yaratib bo‘lmadi

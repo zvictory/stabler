@@ -87,6 +87,9 @@ class _DB:
 	def count(self, doctype, filters=None):
 		return self.count_result
 
+	def get_default(self, key, default=None):
+		return 2 if key == "currency_precision" else default
+
 
 _ROLES: list[str] = []
 _DOCS: dict[tuple[str, str], object] = {}
@@ -118,6 +121,7 @@ def _install_fakes() -> None:
 	utils.add_months = _add_months
 	utils.now = lambda: "2026-08-15 12:00:00"
 	utils.nowdate = lambda: "2026-08-15"
+	utils.cint = lambda v: int(v or 0)
 	frappe_mod.utils = utils
 	model = types.ModuleType("frappe.model")
 	document = types.ModuleType("frappe.model.document")

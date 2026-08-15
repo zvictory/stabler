@@ -10,7 +10,7 @@ from __future__ import annotations
 import frappe
 from frappe import _
 from frappe.model.document import Document
-from frappe.utils import flt, getdate
+from frappe.utils import cint, flt, getdate
 
 ROW_0_TYPES = ("Down Payment", "Cash Settlement")
 
@@ -56,7 +56,7 @@ class VehicleFinanceScheduleVersion(Document):
 	def validate(self) -> None:
 		self._validate_version_rules()
 		agreement = frappe.get_doc("Vehicle Agreement", self.agreement)
-		precision = int(frappe.db.get_value("Currency", agreement.currency, "fraction") or 2)
+		precision = cint(frappe.db.get_default("currency_precision")) or 2
 		try:
 			validate_rows(
 				[r.as_dict() for r in self.rows],

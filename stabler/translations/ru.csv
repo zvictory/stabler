@@ -5907,3 +5907,38 @@ This quotation has no lines.,В этом коммерческом предлож
 Could not create purchase order.,Не удалось создать заказ на покупку.
 Creating…,Создание…
 Purchase order {0} already exists.,Заказ на покупку {0} уже существует.
+Transport Purchase Invoices & Expenses,Транспортные инвойсы и расходы
+Link transport bill,Привязать транспортный счет
+Create transport bill,Создать транспортный счет
+Total Transport Bills,Всего транспортных счетов
+Transport Cost / kg,Стоимость транспорта на кг
+Linked Invoices,Привязанные счета
+Accounting Routing,Проводка
+Balance Sheet (Landed Cost),Баланс (Landed Cost)
+Zero P&L impact — capitalized via LCV,Без влияния на P&L — капитализируется через LCV
+Linked Transport Bills,Привязанные транспортные счета
+Bill No,Номер счета
+Supplier / Carrier,Поставщик / Перевозчик
+Expense Account,Счет расходов
+Landed Cost Clearing,Клиринговый счет Landed Cost
+P&L Expense,Расход P&L
+Unlink from CI,Отвязать от инвойса
+Transport Purchase Invoice,Транспортный счет-фактура
+Link existing invoice,Привязать существующий счет
+Create new transport invoice,Создать новый транспортный счет
+"Search by bill number, supplier or invoice ID…","Поиск по номеру счета, поставщику или ID…"
+Loading invoices…,Загрузка счетов…
+No linkable transport invoices found.,Счетов для привязки не найдено.
+"This invoice will be created with the Landed Cost clearing expense account (Balance Sheet) so it capitalizes into inventory and does not hit P&L.","Этот счет будет создан со счетом капитализации (Баланс), поэтому он войдет в себестоимость запасов и не пойдет в P&L."
+Search carrier…,Поиск перевозчика…
+Bill No (Fatura No),Номер счета
+Create & Link to CI,Создать и привязать к CI
+Unlink Transport Invoice,Отвязать транспортный счет
+Unlink transport invoice {name} from this Commercial Invoice?,Отвязать транспортный счет {name} от этого коммерческого инвойса?
+Transport invoice {name} linked to CI.,Транспортный счет {name} привязан к CI.
+Transport invoice {name} created and linked.,Транспортный счет {name} создан и привязан.
+Transport invoice unlinked.,Транспортный счет отвязан.
+Could not load linkable invoices,Не удалось загрузить счета
+Failed to link invoice,Не удалось привязать счет
+Failed to unlink invoice,Не удалось отвязать счет
+Failed to create transport invoice,Не удалось создать транспортный счет
