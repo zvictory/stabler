@@ -60,7 +60,7 @@ help:
 	@echo "make lint          — FULL tree lint (CI-equivalent; green as of 2026-07-27)"
 	@echo "make lint-js       — FULL tree ESLint sweep (same, for the SPA)"
 	@echo "make test          — the frappe-free unit modules only (no bench, no DB)"
-	@echo "make test-bench    — the other 15 modules, on a throwaway site (slow, needs a bench)"
+	@echo "make test-bench    — every module NOT in the frappe-free list, on a throwaway site (slow, needs a bench)"
 	@echo "make test-js       — Vitest over the SPA's pure-logic layer (composables/)"
 	@echo "make guards        — CLAUDE.md hard rules (dates / Desk links / striping / tenant / money)"
 	@echo "make prod-drift    — list .py/.json files on prod that are not in git (read-only)"
@@ -132,9 +132,10 @@ compile:
 # tearDownModule, so isolation is no longer what keeps the suite green -- see the
 # single-process pass below, which is what actually holds the line.
 #
-# -P8 is the one place this diverges from ci.yml: 84 interpreter startups are
-# ~35s serial and ~7s at -P8. xargs still exits non-zero if any module fails;
-# only the output interleaves.
+# -P8 is the one place this diverges from ci.yml: one interpreter startup per
+# module in the list, which is the whole cost here. Measured 2026-07-27 at the
+# size the list was then: ~35s serial, ~7s at -P8. xargs still exits non-zero if
+# any module fails; only the output interleaves.
 #
 # The second pass runs the SAME list in ONE interpreter, and is not redundant:
 # `-P8 -n1` structurally cannot catch sys.modules pollution, because no leak ever
@@ -146,10 +147,13 @@ test:
 	@echo "single-process pass (sys.modules leak guard):"
 	@grep -v -e '^#' -e '^$$' .github/frappe-free-tests.txt | xargs $(PY) -m unittest
 
-# The OTHER 15. stabler/tests/ has 99 modules; the 84 above run without a bench,
-# and the rest need a real site (they hit the DB, submit documents, check GL).
-# Do not write the count here: BENCH_TESTS is derived and measured 50 on
-# 2026-08-15, while every prose copy of it still said 15.
+# Everything the frappe-free list does NOT name. Those run without a bench; the
+# rest need a real site (they hit the DB, submit documents, check GL).
+#
+# No count belongs in this comment. Three used to live here -- 15, 84, 99 -- and
+# all three were wrong by the time anyone read them, because a count is a
+# snapshot of a set that changes every time someone adds a test. Name the set and
+# the command instead: `make test-bench` prints how many it derived, every run.
 # The GitLab `bench-tests` job is supposed to cover them but is `when: manual` +
 # `allow_failure: true` and has never once run, so its bootstrap is unproven.
 # Proving them locally first is what earns that job the right to block.
@@ -162,7 +166,7 @@ test:
 TEST_SITE ?= genesis-test.local
 #
 # Derived, not hardcoded: "every test module that is NOT in the frappe-free
-# list". A hardcoded list of 15 goes stale the first time someone adds a test.
+# list". A hardcoded list goes stale the first time someone adds a test.
 # awk rather than `comm <(...)`: process substitution is bash-only and make
 # runs recipes under /bin/sh.
 # (sed uses | as its delimiter, not #: this is a variable assignment, and make

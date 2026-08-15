@@ -1,6 +1,11 @@
 # Test modules under stabler/tests/ that run WITHOUT a bench (no MariaDB,
 # no Redis, no site). CI job 'lint-and-unit' runs exactly this list as its
-# fast gate. Verified 2026-07-26: 84 of 99 modules.
+# fast gate.
+#
+# No count here. This header used to say "Verified 2026-07-26: 84 of 99 modules"
+# and was still saying it on 2026-08-16, when the file held 178 — a 2.1x drift
+# that nobody caught precisely because 84 looked plausible. The file IS the list;
+# `make test` prints how many it read, every run.
 #
 # Adding a test? If it imports frappe only indirectly (or not at all), verify
 # with:  python3 -m unittest stabler.tests.<module>

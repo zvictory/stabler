@@ -35,6 +35,7 @@ Original: `docs/archive/CLAUDE.md.2026-08-15.bak`.
 
 ## Verification note
 
-`make check` does **not** run the 15 bench-dependent test modules (`make test-bench`,
+`make check` does **not** run the bench-dependent test modules — everything
+`.github/frappe-free-tests.txt` does not name (`make test-bench`,
 slow, needs a live MariaDB/Redis). If the change touches DB-dependent code, `make check`
 green is not sufficient proof — say so and request `make test-bench`.
