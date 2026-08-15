@@ -1,7 +1,58 @@
 {
   "permissions": {
     "allow": [
-      "Bash(git commit:*)"
+      "Bash(make check)",
+      "Bash(make test)",
+      "Bash(make test-js)",
+      "Bash(make compile)",
+      "Bash(make guards)",
+      "Bash(make lint)",
+      "Bash(make lint-changed)",
+      "Bash(make lint-js)",
+      "Bash(make lint-js-changed)",
+      "Bash(make fmt)",
+      "Bash(make help)",
+      "Bash(make prod-drift)",
+      "Bash(bd:*)",
+      "Bash(git status:*)",
+      "Bash(git diff:*)",
+      "Bash(git log:*)",
+      "Bash(git show:*)",
+      "Bash(git rev-parse:*)",
+      "Bash(git branch:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git stash:*)",
+      "Bash(git worktree:*)",
+      "Bash(rg:*)",
+      "Bash(ls:*)",
+      "Bash(find:*)",
+      "Bash(wc:*)",
+      "Bash(python -m py_compile:*)",
+      "Bash(node --check:*)",
+      "Read(//Users/zafar/frappe-bench-local/**)"
+    ],
+    "ask": [
+      "Bash(bench --site * migrate)",
+      "Bash(bench --site * run-tests:*)",
+      "Bash(make test-bench)",
+      "Bash(git push:*)"
+    ],
+    "deny": [
+      "Bash(./deploy_stabler.sh:*)",
+      "Bash(git add -A:*)",
+      "Bash(git add .:*)",
+      "Bash(git reset --hard:*)"
+    ]
+  },
+  "hooks": {
+    "PreCompact": [
+      { "matcher": "auto",   "hooks": [{ "type": "command", "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/precompact-handoff.sh" }] },
+      { "matcher": "manual", "hooks": [{ "type": "command", "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/precompact-handoff.sh" }] }
+    ],
+    "SessionStart": [
+      { "matcher": "compact", "hooks": [{ "type": "command", "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/session-start-restore.sh" }] },
+      { "matcher": "resume",  "hooks": [{ "type": "command", "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/session-start-restore.sh" }] }
     ]
   }
 }

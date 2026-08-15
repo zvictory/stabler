@@ -52,3 +52,12 @@
 # - linear.api-key
 # - github.org
 # - github.repo
+
+# --- activated 2026-08-15 (micro-task protocol) -----------------------------
+# Stable ID prefix: CLAUDE.md keys worktrees off <bead-id>
+# (".worktrees/agy-<bead-id>"), so IDs must be predictable and quotable.
+issue-prefix: st
+
+# JSON output: agent-facing. Table output is both token-expensive and brittle.
+json: true
+# ---------------------------------------------------------------------------
