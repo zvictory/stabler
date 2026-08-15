@@ -1,4 +1,5 @@
 {
+  "autoCompactWindow": 400000,
   "permissions": {
     "allow": [
       "Bash(make check)",
@@ -47,12 +48,44 @@
   },
   "hooks": {
     "PreCompact": [
-      { "matcher": "auto",   "hooks": [{ "type": "command", "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/precompact-handoff.sh" }] },
-      { "matcher": "manual", "hooks": [{ "type": "command", "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/precompact-handoff.sh" }] }
+      {
+        "matcher": "auto",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/precompact-handoff.sh"
+          }
+        ]
+      },
+      {
+        "matcher": "manual",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/precompact-handoff.sh"
+          }
+        ]
+      }
     ],
     "SessionStart": [
-      { "matcher": "compact", "hooks": [{ "type": "command", "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/session-start-restore.sh" }] },
-      { "matcher": "resume",  "hooks": [{ "type": "command", "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/session-start-restore.sh" }] }
+      {
+        "matcher": "compact",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/session-start-restore.sh"
+          }
+        ]
+      },
+      {
+        "matcher": "resume",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/session-start-restore.sh"
+          }
+        ]
+      }
     ]
   }
 }
