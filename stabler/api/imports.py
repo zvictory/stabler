@@ -529,6 +529,7 @@ def get_commercial_invoice(name: str):
 		"customs_fee_breakdown": _safe_customs_breakdown(name),
 		"pi_tracking": get_pi_tracking_for_ci(doc),
 		"ci_advance_share": _ci_advance_share(doc) if _cost_visible() else None,
+		"transport_invoices": _get_ci_transport_invoices(doc) if _cost_visible() else None,
 	}
 	rules.mask_named(payload, rules.CI_MASK_FIELDS, _cost_visible())
 	return payload
@@ -2859,6 +2860,383 @@ def ci_transport_costs(commercial_invoice: str) -> dict:
 	)
 
 
+# ---------------------------------------------------------------------------
+# Transport Purchase Invoices (Linked to CI and Landed Cost)
+# ---------------------------------------------------------------------------
+
+
+def _get_ci_transport_invoices(ci_doc) -> dict:
+	"""Fetch all Purchase Invoices linked to this Commercial Invoice.
+
+	Returns invoice list, aggregated totals, and per-kg transport rate.
+	"""
+	from stabler.stabler.imports_module import hooks as imports_hooks
+
+	company = ci_doc.company
+	company_currency = frappe.get_cached_value("Company", company, "default_currency") or "UZS"
+	configured_lcv_account = imports_hooks.resolve_lcv_expense_account(company)
+
+	invoices = frappe.db.sql(
+		"""
+        SELECT pi.name, pi.supplier, s.supplier_name, pi.posting_date, pi.bill_no,
+               pi.grand_total, pi.outstanding_amount, pi.currency, pi.conversion_rate, pi.status, pi.docstatus,
+               pi.custom_import_truck,
+               (SELECT pii.expense_account FROM `tabPurchase Invoice Item` pii WHERE pii.parent = pi.name LIMIT 1) as expense_account,
+               (SELECT pii.item_code FROM `tabPurchase Invoice Item` pii WHERE pii.parent = pi.name LIMIT 1) as item_code
+        FROM `tabPurchase Invoice` pi
+        LEFT JOIN `tabSupplier` s ON s.name = pi.supplier
+        WHERE pi.custom_commercial_invoice = %(ci)s AND pi.docstatus < 2
+        ORDER BY pi.posting_date DESC, pi.creation DESC
+        """,
+		{"ci": ci_doc.name},
+		as_dict=True,
+	)
+
+	total_usd = 0.0
+	total_company_currency = 0.0
+	total_kg = flt(ci_doc.total_kg)
+
+	rows = []
+	for inv in invoices:
+		amt = flt(inv.get("grand_total"))
+		curr = inv.get("currency") or "USD"
+		exp_acc = inv.get("expense_account") or ""
+
+		# Check if expense account routes to Balance Sheet (Landed Cost / Valuation Clearing)
+		is_landed_cost = False
+		if exp_acc:
+			if exp_acc == configured_lcv_account:
+				is_landed_cost = True
+			else:
+				acc_type = frappe.db.get_value("Account", exp_acc, "account_type")
+				if acc_type == "Expenses Included In Valuation":
+					is_landed_cost = True
+
+		rate = flt(inv.get("conversion_rate"))
+		if curr != company_currency and (not rate or rate <= 1.0):
+			try:
+				from stabler.api._accounts import _cbu_rate_on_or_before
+
+				cbu_rate, _ = _cbu_rate_on_or_before(
+					curr, company_currency, inv.get("posting_date") or ci_doc.ci_date or today()
+				)
+				if cbu_rate:
+					rate = flt(cbu_rate)
+				else:
+					rate_val, _, _ = _ci_landed_cost_rate(ci_doc)
+					rate = rate_val or 1.0
+			except Exception:
+				rate_val, _, _ = _ci_landed_cost_rate(ci_doc)
+				rate = rate_val or 1.0
+		elif curr == company_currency:
+			rate = 1.0
+
+		amt_company = amt * rate if curr != company_currency else amt
+		if curr == "USD":
+			total_usd += amt
+		elif company_currency == "USD":
+			total_usd += amt_company
+		else:
+			total_usd += (amt / rate) if rate > 0 else amt
+
+		total_company_currency += amt_company
+
+		rows.append(
+			{
+				"name": inv.get("name"),
+				"supplier": inv.get("supplier"),
+				"supplier_name": inv.get("supplier_name") or inv.get("supplier"),
+				"bill_no": inv.get("bill_no"),
+				"posting_date": str(inv.get("posting_date")) if inv.get("posting_date") else None,
+				"grand_total": amt,
+				"outstanding_amount": flt(inv.get("outstanding_amount")),
+				"currency": curr,
+				"status": inv.get("status"),
+				"docstatus": cint(inv.get("docstatus")),
+				"custom_import_truck": inv.get("custom_import_truck"),
+				"expense_account": exp_acc,
+				"is_landed_cost_account": is_landed_cost,
+				"item_code": inv.get("item_code"),
+			}
+		)
+
+	rate_per_kg_usd = round(total_usd / total_kg, 4) if total_kg > 0 else 0.0
+	rate_per_kg_company = round(total_company_currency / total_kg, 2) if total_kg > 0 else 0.0
+
+	return {
+		"invoices": rows,
+		"invoice_count": len(rows),
+		"total_usd": round(total_usd, 2),
+		"total_company_currency": round(total_company_currency, 2),
+		"company_currency": company_currency,
+		"rate_per_kg_usd": rate_per_kg_usd,
+		"rate_per_kg_company": rate_per_kg_company,
+		"total_kg": total_kg,
+	}
+
+
+@frappe.whitelist()
+def get_ci_transport_invoices(commercial_invoice: str) -> dict:
+	"""Public endpoint to get all linked transport invoices and metrics for a CI."""
+	if not commercial_invoice or not frappe.db.exists("Commercial Invoice", commercial_invoice):
+		frappe.throw(_("Unknown Commercial Invoice: {0}").format(commercial_invoice))
+	ci = frappe.get_doc("Commercial Invoice", commercial_invoice)
+	_assert_imports_access(ci.company)
+	_assert_can_read("Commercial Invoice", commercial_invoice)
+	return _get_ci_transport_invoices(ci)
+
+
+@frappe.whitelist()
+def list_linkable_transport_invoices(
+	company: str,
+	commercial_invoice: str | None = None,
+	search: str | None = None,
+	limit_page_length: int = 50,
+) -> list[dict]:
+	"""List Purchase Invoices eligible to be linked to a Commercial Invoice as transport bills.
+
+	Includes unlinked invoices and invoices currently linked to ``commercial_invoice``.
+	"""
+	if not company:
+		frappe.throw(_("Company is required"))
+	_assert_imports_access(company)
+	_assert_cost_visible()
+
+	from stabler.stabler.imports_module import hooks as imports_hooks
+
+	configured_lcv_account = imports_hooks.resolve_lcv_expense_account(company)
+
+	conditions = ["pi.company = %(company)s", "pi.docstatus < 2"]
+	params = {"company": company, "limit": min(100, max(1, cint(limit_page_length)))}
+
+	if commercial_invoice:
+		conditions.append(
+			"(pi.custom_commercial_invoice IS NULL OR pi.custom_commercial_invoice = '' OR pi.custom_commercial_invoice = %(ci)s)"
+		)
+		params["ci"] = commercial_invoice
+	else:
+		conditions.append("(pi.custom_commercial_invoice IS NULL OR pi.custom_commercial_invoice = '')")
+
+	if search and search.strip():
+		conditions.append(
+			"(pi.name LIKE %(search)s OR pi.bill_no LIKE %(search)s OR pi.supplier LIKE %(search)s OR s.supplier_name LIKE %(search)s)"
+		)
+		params["search"] = f"%{search.strip()}%"
+
+	where_clause = " AND ".join(conditions)
+
+	invoices = frappe.db.sql(
+		f"""
+        SELECT pi.name, pi.supplier, s.supplier_name, pi.posting_date, pi.bill_no,
+               pi.grand_total, pi.outstanding_amount, pi.currency, pi.status, pi.docstatus,
+               pi.custom_commercial_invoice, pi.custom_import_truck,
+               (SELECT pii.expense_account FROM `tabPurchase Invoice Item` pii WHERE pii.parent = pi.name LIMIT 1) as expense_account,
+               (SELECT pii.item_code FROM `tabPurchase Invoice Item` pii WHERE pii.parent = pi.name LIMIT 1) as item_code
+        FROM `tabPurchase Invoice` pi
+        LEFT JOIN `tabSupplier` s ON s.name = pi.supplier
+        WHERE {where_clause}
+        ORDER BY (CASE WHEN pi.custom_commercial_invoice = %(ci_sort)s THEN 0 ELSE 1 END), pi.posting_date DESC, pi.creation DESC
+        LIMIT %(limit)s
+        """,
+		{**params, "ci_sort": commercial_invoice or ""},
+		as_dict=True,
+	)
+
+	out = []
+	for inv in invoices:
+		exp_acc = inv.get("expense_account") or ""
+		is_landed_cost = False
+		if exp_acc:
+			if exp_acc == configured_lcv_account:
+				is_landed_cost = True
+			else:
+				acc_type = frappe.db.get_value("Account", exp_acc, "account_type")
+				if acc_type == "Expenses Included In Valuation":
+					is_landed_cost = True
+
+		out.append(
+			{
+				"name": inv.get("name"),
+				"supplier": inv.get("supplier"),
+				"supplier_name": inv.get("supplier_name") or inv.get("supplier"),
+				"bill_no": inv.get("bill_no"),
+				"posting_date": str(inv.get("posting_date")) if inv.get("posting_date") else None,
+				"grand_total": flt(inv.get("grand_total")),
+				"outstanding_amount": flt(inv.get("outstanding_amount")),
+				"currency": inv.get("currency") or "USD",
+				"status": inv.get("status"),
+				"docstatus": cint(inv.get("docstatus")),
+				"custom_commercial_invoice": inv.get("custom_commercial_invoice"),
+				"is_linked": bool(
+					commercial_invoice and inv.get("custom_commercial_invoice") == commercial_invoice
+				),
+				"custom_import_truck": inv.get("custom_import_truck"),
+				"expense_account": exp_acc,
+				"is_landed_cost_account": is_landed_cost,
+				"item_code": inv.get("item_code"),
+			}
+		)
+	return out
+
+
+@frappe.whitelist()
+def link_transport_purchase_invoice(commercial_invoice: str, purchase_invoice: str) -> dict:
+	"""Link a Purchase Invoice to a Commercial Invoice as a transport bill.
+
+	Ensures the invoice belongs to the same company and sets the Landed Cost clearing account if draft.
+	"""
+	if not commercial_invoice or not frappe.db.exists("Commercial Invoice", commercial_invoice):
+		frappe.throw(_("Unknown Commercial Invoice: {0}").format(commercial_invoice))
+	if not purchase_invoice or not frappe.db.exists("Purchase Invoice", purchase_invoice):
+		frappe.throw(_("Unknown Purchase Invoice: {0}").format(purchase_invoice))
+
+	ci = frappe.get_doc("Commercial Invoice", commercial_invoice)
+	_assert_imports_access(ci.company)
+	_assert_can_write("Commercial Invoice", commercial_invoice)
+	_assert_cost_visible()
+
+	pi = frappe.get_doc("Purchase Invoice", purchase_invoice)
+	if pi.company != ci.company:
+		frappe.throw(
+			_("Purchase Invoice company ({0}) does not match Commercial Invoice company ({1})").format(
+				pi.company, ci.company
+			)
+		)
+	if pi.docstatus == 2:
+		frappe.throw(_("Cannot link a cancelled Purchase Invoice."))
+
+	from stabler.stabler.imports_module import hooks as imports_hooks
+
+	lcv_account = imports_hooks.resolve_lcv_expense_account(ci.company)
+
+	if pi.docstatus == 0 and lcv_account:
+		for itm in pi.items:
+			if itm.expense_account != lcv_account:
+				itm.expense_account = lcv_account
+		pi.custom_commercial_invoice = commercial_invoice
+		pi.save(ignore_permissions=True)
+	else:
+		frappe.db.set_value(
+			"Purchase Invoice", purchase_invoice, "custom_commercial_invoice", commercial_invoice
+		)
+
+	return {"success": True, "commercial_invoice": commercial_invoice, "purchase_invoice": purchase_invoice}
+
+
+@frappe.whitelist()
+def unlink_transport_purchase_invoice(commercial_invoice: str, purchase_invoice: str) -> dict:
+	"""Unlink a Purchase Invoice from a Commercial Invoice."""
+	if not commercial_invoice or not frappe.db.exists("Commercial Invoice", commercial_invoice):
+		frappe.throw(_("Unknown Commercial Invoice: {0}").format(commercial_invoice))
+	if not purchase_invoice or not frappe.db.exists("Purchase Invoice", purchase_invoice):
+		frappe.throw(_("Unknown Purchase Invoice: {0}").format(purchase_invoice))
+
+	ci = frappe.get_doc("Commercial Invoice", commercial_invoice)
+	_assert_imports_access(ci.company)
+	_assert_can_write("Commercial Invoice", commercial_invoice)
+
+	current_ci = frappe.db.get_value("Purchase Invoice", purchase_invoice, "custom_commercial_invoice")
+	if current_ci == commercial_invoice:
+		frappe.db.set_value("Purchase Invoice", purchase_invoice, "custom_commercial_invoice", None)
+
+	return {"success": True, "purchase_invoice": purchase_invoice}
+
+
+@frappe.whitelist()
+def create_transport_purchase_invoice(
+	commercial_invoice: str,
+	supplier: str,
+	amount: float,
+	currency: str = "USD",
+	bill_no: str | None = None,
+	posting_date: str | None = None,
+) -> dict:
+	"""Create a new DRAFT Transport Purchase Invoice linked to Commercial Invoice.
+
+	Uses the Landed Cost clearing expense account (Balance Sheet) by default.
+	"""
+	if not commercial_invoice or not frappe.db.exists("Commercial Invoice", commercial_invoice):
+		frappe.throw(_("Unknown Commercial Invoice: {0}").format(commercial_invoice))
+	if not supplier or not frappe.db.exists("Supplier", supplier):
+		frappe.throw(_("Unknown Supplier: {0}").format(supplier))
+
+	amt = flt(amount)
+	if amt <= 0:
+		frappe.throw(_("Amount must be greater than 0"))
+
+	ci = frappe.get_doc("Commercial Invoice", commercial_invoice)
+	_assert_imports_access(ci.company)
+	_assert_can_write("Commercial Invoice", commercial_invoice)
+	_assert_cost_visible()
+
+	from stabler.stabler.imports_module import hooks as imports_hooks
+	from stabler.stabler.imports_module import payment_math as pm
+
+	imports_hooks._ensure_import_service_item()
+	lcv_account = imports_hooks.resolve_lcv_expense_account(ci.company)
+
+	item_code = (
+		pm.XBORDER_ITEM_CODE
+		if frappe.db.exists("Item", pm.XBORDER_ITEM_CODE)
+		else pm.IMPORT_SERVICE_ITEM_CODE
+	)
+	if not frappe.db.exists("Item", item_code):
+		imports_hooks._ensure_import_service_item()
+		item_code = pm.IMPORT_SERVICE_ITEM_CODE
+
+	ref_bill_no = (
+		bill_no.strip()
+		if (bill_no and bill_no.strip())
+		else f"TRK-{frappe.utils.today()}-{frappe.generate_hash(length=4).upper()}"
+	)
+
+	curr = currency or ci.currency or "USD"
+	company_currency = frappe.get_cached_value("Company", ci.company, "default_currency") or "UZS"
+	conversion_rate = 1.0
+	if curr != company_currency:
+		from stabler.api._accounts import _cbu_rate_on_or_before
+
+		post_d = posting_date or frappe.utils.today()
+		cbu_rate, _ = _cbu_rate_on_or_before(curr, company_currency, post_d)
+		if not cbu_rate:
+			rate_val, _, _ = _ci_landed_cost_rate(ci)
+			cbu_rate = rate_val
+		conversion_rate = flt(cbu_rate) or 1.0
+
+	payload = {
+		"doctype": "Purchase Invoice",
+		"company": ci.company,
+		"supplier": supplier,
+		"currency": curr,
+		"conversion_rate": conversion_rate,
+		"bill_no": ref_bill_no,
+		"posting_date": posting_date or frappe.utils.today(),
+		"custom_commercial_invoice": commercial_invoice,
+		"remarks": f"Transport invoice for Commercial Invoice {ci.ci_number or commercial_invoice}",
+		"items": [
+			{
+				"item_code": item_code,
+				"qty": 1,
+				"rate": amt,
+				"amount": amt,
+				"expense_account": lcv_account,
+				"description": f"Cross-border transport for {ci.ci_number or commercial_invoice}",
+			}
+		],
+	}
+
+	pi = frappe.get_doc(payload)
+	pi.insert(ignore_permissions=True)
+
+	return {
+		"name": pi.name,
+		"bill_no": pi.bill_no,
+		"supplier": pi.supplier,
+		"amount": pi.grand_total,
+		"currency": pi.currency,
+	}
+
+
 def _ci_landed_cost_rate(ci_doc, exchange_rate=None) -> tuple:
 	"""Resolve the rate that converts CI currency into company currency.
 
@@ -2937,7 +3315,17 @@ def calculate_ci_landed_cost_uzs(
 		operational_duties_uzs = 0.0
 		other_expenses_uzs = 0.0
 
-	total_extra_uzs = (operational_transport_usd * rate) + operational_duties_uzs + other_expenses_uzs
+	transport_invoices = _get_ci_transport_invoices(ci_doc)
+	direct_transport_company = flt(transport_invoices.get("total_company_currency", 0.0))
+	direct_transport_usd = flt(transport_invoices.get("total_usd", 0.0))
+
+	if direct_transport_company > 0 and operational_transport_usd == 0:
+		transport_extra_company = direct_transport_company
+	else:
+		total_trans_usd = max(operational_transport_usd, direct_transport_usd)
+		transport_extra_company = total_trans_usd * rate
+
+	total_extra_uzs = transport_extra_company + operational_duties_uzs + other_expenses_uzs
 
 	items_result = []
 	for it in ci_items:

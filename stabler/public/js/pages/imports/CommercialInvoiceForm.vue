@@ -750,7 +750,6 @@ const unlinkedBillsResult = ref(null);
 const selectedUnlinkedBills = ref([]);
 const linkingSelected = ref(false);
 const linkResults = ref([]);
-const unlinkingBill = ref(null);
 
 const unlinkedBillRows = computed(() => unlinkedBillsResult.value?.rows || []);
 const allUnlinkedSelected = computed(
@@ -819,6 +818,8 @@ async function linkSelectedBills() {
 	await Promise.all(refetches);
 }
 
+const unlinkingBill = ref(null);
+
 // What the already-fetched data tells us without another round trip. Both
 // checks mirror gates `clear_bill_import_refs` also enforces server-side —
 // this is a hint to greyed-out the button, never the actual gate. Whether the
@@ -848,6 +849,148 @@ async function unlinkBill(bill) {
 		toast.error(e?.message || t("Failed to unlink the bill."));
 	} finally {
 		unlinkingBill.value = null;
+	}
+}
+
+// ---------------------------------------------------------------------------
+// Transport Purchase Invoices (Linked to CI & Landed Cost)
+// ---------------------------------------------------------------------------
+const transportInvoicesData = ref(null);
+const loadingTransportInvoices = ref(false);
+
+const showTransportModal = ref(false);
+const transportModalTab = ref("existing"); // "existing" | "new"
+const linkableInvoices = ref([]);
+const loadingLinkableInvoices = ref(false);
+const linkableSearch = ref("");
+const linkingInvoiceName = ref(null);
+
+const newTransportForm = ref({
+	supplier: "",
+	supplier_name: "",
+	amount: 0,
+	currency: "USD",
+	bill_no: "",
+	posting_date: "",
+});
+const creatingTransportInvoice = ref(false);
+
+async function fetchTransportInvoices() {
+	if (isCreate.value || !docName.value) {
+		transportInvoicesData.value = null;
+		return;
+	}
+	loadingTransportInvoices.value = true;
+	try {
+		const res = await call("stabler.api.imports.get_ci_transport_invoices", {
+			commercial_invoice: docName.value,
+		});
+		transportInvoicesData.value = res || null;
+	} catch (err) {
+		console.error("Failed to load transport invoices", err);
+		transportInvoicesData.value = null;
+	} finally {
+		loadingTransportInvoices.value = false;
+	}
+}
+
+async function openTransportModal(tab = "existing") {
+	transportModalTab.value = tab;
+	showTransportModal.value = true;
+	newTransportForm.value = {
+		supplier: "",
+		supplier_name: "",
+		amount: 0,
+		currency: form.value.currency || "USD",
+		bill_no: "",
+		posting_date: new Date().toISOString().slice(0, 10),
+	};
+	if (tab === "existing") {
+		await fetchLinkableInvoices();
+	}
+}
+
+function closeTransportModal() {
+	showTransportModal.value = false;
+	linkableInvoices.value = [];
+	linkableSearch.value = "";
+}
+
+async function fetchLinkableInvoices() {
+	loadingLinkableInvoices.value = true;
+	try {
+		const res = await call("stabler.api.imports.list_linkable_transport_invoices", {
+			company: activeCompany.value,
+			commercial_invoice: docName.value,
+			search: linkableSearch.value || undefined,
+		});
+		linkableInvoices.value = res || [];
+	} catch (err) {
+		toast.error(err?.message || t("Could not load linkable invoices"));
+		linkableInvoices.value = [];
+	} finally {
+		loadingLinkableInvoices.value = false;
+	}
+}
+
+async function handleLinkInvoice(inv) {
+	linkingInvoiceName.value = inv.name;
+	try {
+		await call("stabler.api.imports.link_transport_purchase_invoice", {
+			commercial_invoice: docName.value,
+			purchase_invoice: inv.name,
+		});
+		toast.success(t("Transport invoice {name} linked to CI.", { name: inv.bill_no || inv.name }));
+		await Promise.all([
+			fetchTransportInvoices(),
+			fetchCostOverview(),
+			fetchTransportCosts(),
+			fetchLandedCostUzs(),
+		]);
+		closeTransportModal();
+	} catch (err) {
+		toast.error(err?.message || t("Failed to link invoice"));
+	} finally {
+		linkingInvoiceName.value = null;
+	}
+}
+
+function pickTransportSupplier(item) {
+	newTransportForm.value.supplier = item.name;
+	newTransportForm.value.supplier_name = item.supplier_name || item.name;
+}
+
+async function handleCreateTransportInvoice() {
+	if (!newTransportForm.value.supplier) {
+		toast.error(t("Supplier is required"));
+		return;
+	}
+	if (!newTransportForm.value.amount || Number(newTransportForm.value.amount) <= 0) {
+		toast.error(t("Amount must be greater than 0"));
+		return;
+	}
+	creatingTransportInvoice.value = true;
+	try {
+		const res = await call("stabler.api.imports.create_transport_purchase_invoice", {
+			commercial_invoice: docName.value,
+			supplier: newTransportForm.value.supplier,
+			amount: newTransportForm.value.amount,
+			currency: newTransportForm.value.currency,
+			bill_no: newTransportForm.value.bill_no || undefined,
+			posting_date: newTransportForm.value.posting_date || undefined,
+		});
+		toast.success(t("Transport invoice {name} created and linked.", { name: res.bill_no || res.name }));
+		await Promise.all([
+			fetchTransportInvoices(),
+			fetchCostOverview(),
+			fetchTransportCosts(),
+			fetchLandedCostUzs(),
+		]);
+		closeTransportModal();
+	} catch (err) {
+		toast.error(err?.message || t("Failed to create transport invoice"));
+	} finally {
+		creatingTransportInvoice.value = false;
 	}
 }
 
@@ -1444,6 +1587,7 @@ async function loadDoc() {
 		loadLineCategories();
 		await refreshPiTracking();
 		await Promise.all([
+			fetchTransportInvoices(),
 			fetchTransportCosts(),
 			fetchCostOverview(),
 			fetchDiscrepancies(),
@@ -2574,66 +2718,158 @@ watch(
 
 		<!-- 5 Transport, expenses & supplier bills -->
 		<div v-if="!isCreate" class="card mb-3">
-			<div class="card-header d-flex align-items-center justify-content-between">
+			<div class="card-header d-flex align-items-center justify-content-between flex-wrap gap-2">
 				<h3 class="card-title m-0"><i class="ti ti-truck me-2 text-primary"></i>{{ t("Transport, expenses & supplier bills") }}</h3>
-				<div class="card-actions d-flex gap-2">
-					<router-link to="/imports/expenses" class="btn btn-outline-primary btn-sm fw-bold">
-						<i class="ti ti-plus me-1"></i>{{ t("Add expense") }}
+				<div class="card-actions d-flex gap-2 flex-wrap">
+					<button
+						type="button"
+						class="btn btn-primary btn-sm fw-bold"
+						@click="openTransportModal('existing')"
+					>
+						<i class="ti ti-link me-1"></i>{{ t("Link transport bill") }}
+					</button>
+					<button
+						type="button"
+						class="btn btn-outline-primary btn-sm fw-bold"
+						@click="openTransportModal('new')"
+					>
+						<i class="ti ti-plus me-1"></i>{{ t("Create transport bill") }}
+					</button>
+					<router-link to="/imports/expenses" class="btn btn-outline-secondary btn-sm fw-bold">
+						<i class="ti ti-cash me-1"></i>{{ t("Add expense") }}
 					</router-link>
 				</div>
 			</div>
 			<div class="card-body">
-				<h4 class="card-title mb-2">{{ t("Supplier bills") }}</h4>
+				<!-- Transport Landed Cost Summary Banner -->
+				<div v-if="transportInvoicesData" class="row g-3 mb-3">
+					<div class="col-sm-6 col-lg-3">
+						<div class="card card-sm bg-light-subtle">
+							<div class="card-body">
+								<div class="d-flex align-items-center">
+									<div class="subheader">{{ t("Total Transport Bills") }}</div>
+								</div>
+								<div class="h2 mb-0 font-monospace text-primary">
+									{{ fm(transportInvoicesData.total_usd, "USD") }}
+								</div>
+								<div v-if="transportInvoicesData.company_currency !== 'USD'" class="small text-secondary font-monospace mt-1">
+									≈ {{ fn(transportInvoicesData.total_company_currency) }} {{ transportInvoicesData.company_currency }}
+								</div>
+							</div>
+						</div>
+					</div>
+					<div class="col-sm-6 col-lg-3">
+						<div class="card card-sm bg-light-subtle">
+							<div class="card-body">
+								<div class="d-flex align-items-center">
+									<div class="subheader">{{ t("Transport Cost / kg") }}</div>
+								</div>
+								<div class="h2 mb-0 font-monospace text-purple">
+									${{ transportInvoicesData.rate_per_kg_usd }} / kg
+								</div>
+								<div v-if="transportInvoicesData.company_currency !== 'USD'" class="small text-secondary font-monospace mt-1">
+									≈ {{ fn(transportInvoicesData.rate_per_kg_company) }} {{ transportInvoicesData.company_currency }} / kg
+								</div>
+							</div>
+						</div>
+					</div>
+					<div class="col-sm-6 col-lg-3">
+						<div class="card card-sm bg-light-subtle">
+							<div class="card-body">
+								<div class="d-flex align-items-center">
+									<div class="subheader">{{ t("Linked Invoices") }}</div>
+								</div>
+								<div class="h2 mb-0 font-monospace">
+									{{ transportInvoicesData.invoice_count }}
+								</div>
+								<div class="small text-secondary mt-1">
+									{{ t("Across {kg} kg cargo", { kg: fn(transportInvoicesData.total_kg) }) }}
+								</div>
+							</div>
+						</div>
+					</div>
+					<div class="col-sm-6 col-lg-3">
+						<div class="card card-sm bg-light-subtle">
+							<div class="card-body">
+								<div class="d-flex align-items-center">
+									<div class="subheader">{{ t("Accounting Routing") }}</div>
+								</div>
+								<div class="mt-1">
+									<span class="badge bg-success-lt text-success">
+										<i class="ti ti-shield-check me-1"></i>{{ t("Balance Sheet (Landed Cost)") }}
+									</span>
+								</div>
+								<div class="small text-secondary mt-1">
+									{{ t("Zero P&L impact — capitalized via LCV") }}
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+
+				<h4 class="card-title mb-2">{{ t("Linked Transport Bills") }}</h4>
 				<div class="table-responsive mb-3">
 					<table class="table table-sm table-bordered align-middle mb-0">
 						<thead class="table-light">
 							<tr>
-								<th>{{ t("Bill") }}</th>
-								<th>{{ t("Supplier") }}</th>
-								<th>{{ t("Type") }}</th>
-								<th>{{ t("Linked to") }}</th>
+								<th>{{ t("Bill No") }}</th>
+								<th>{{ t("Supplier / Carrier") }}</th>
+								<th>{{ t("Posting Date") }}</th>
 								<th class="text-end">{{ t("Amount") }}</th>
 								<th class="text-end">{{ t("Outstanding") }}</th>
-								<th>{{ t("Due date") }}</th>
+								<th>{{ t("Expense Account") }}</th>
+								<th>{{ t("Status") }}</th>
 								<th>{{ t("Actions") }}</th>
 							</tr>
 						</thead>
-						<tbody>
-							<tr v-for="b in (costOverviewData?.bills || [])" :key="b.name">
+						<tbody v-if="loadingTransportInvoices">
+							<SkeletonRows :rows="3" :cols="8" />
+						</tbody>
+						<tbody v-else>
+							<tr v-if="!transportInvoicesData?.invoices?.length">
+								<td colspan="8" class="text-center text-secondary py-2">{{ t("No supplier bills linked yet.") }}</td>
+							</tr>
+							<tr v-for="b in (transportInvoicesData?.invoices || [])" :key="b.name">
 								<td>
 									<router-link :to="'/purchasing/invoices/' + b.name" class="fw-bold font-monospace text-primary text-decoration-none">
 										{{ b.bill_no || b.name }}
 									</router-link>
+									<span v-if="b.custom_import_truck" class="badge bg-secondary-lt ms-1 font-monospace small">
+										{{ b.custom_import_truck }}
+									</span>
 								</td>
 								<td>{{ b.supplier_name || b.supplier }}</td>
-								<td><span class="badge bg-blue-lt">{{ b.category || 'freight' }}</span></td>
-								<td class="font-monospace small">
-									{{ b.custom_import_container || b.custom_commercial_invoice || b.custom_import_truck || '—' }}
+								<td>{{ b.posting_date ? formatDate(b.posting_date) : '—' }}</td>
+								<td class="text-end font-monospace fw-bold">{{ fm(b.grand_total, b.currency) }}</td>
+								<td class="text-end font-monospace" :class="b.outstanding_amount > 0 ? 'text-danger' : 'text-success'">
+									{{ fm(b.outstanding_amount, b.currency) }}
 								</td>
-								<td class="text-end font-monospace">{{ fm(b.grand_total, costOverviewData?.currency) }}</td>
-								<td class="text-end font-monospace text-danger">{{ fm(b.outstanding_amount, costOverviewData?.currency) }}</td>
 								<td>
-									<span v-if="b.overdue" class="badge bg-danger-lt text-danger">{{ t("overdue") }} {{ formatDate(b.due_date) }}</span>
-									<span v-else>{{ b.due_date ? formatDate(b.due_date) : '—' }}</span>
+									<span v-if="b.is_landed_cost_account" class="badge bg-success-lt text-success" :title="b.expense_account">
+										<i class="ti ti-check me-1"></i>{{ b.expense_account || t("Landed Cost Clearing") }}
+									</span>
+									<span v-else class="badge bg-warning-lt text-warning" :title="b.expense_account">
+										<i class="ti ti-alert-circle me-1"></i>{{ b.expense_account || t("P&L Expense") }}
+									</span>
+								</td>
+								<td>
+									<span class="badge" :class="getStatusBadgeClass('Purchase Invoice', b.status)">{{ b.status }}</span>
 								</td>
 								<td>
 									<button
 										v-if="!billUnlinkBlockedReason(b)"
 										type="button"
-										class="btn btn-outline-secondary btn-sm"
+										class="btn btn-outline-danger btn-sm p-1"
 										:disabled="unlinkingBill === b.name"
+										:title="t('Unlink from CI')"
 										@click="unlinkBill(b)"
 									>
-										<span v-if="unlinkingBill === b.name" class="spinner-border spinner-border-sm"></span>
-										<template v-else>{{ t("Unlink") }}</template>
+										<i class="ti ti-unlink"></i>
 									</button>
 									<span v-else class="text-secondary small" :title="billUnlinkBlockedReason(b)">
 										<i class="ti ti-lock"></i>
 									</span>
 								</td>
-							</tr>
-							<tr v-if="!costOverviewData?.bills?.length">
-								<td colspan="8" class="text-center text-secondary py-2">{{ t("No supplier bills linked yet.") }}</td>
 							</tr>
 						</tbody>
 					</table>
@@ -3678,6 +3914,186 @@ watch(
 						<button type="button" class="btn btn-outline-secondary" @click="multiPiModalOpen = false">{{ t("Cancel") }}</button>
 						<button type="button" class="btn btn-primary" :disabled="multiPiLoading || !multiPiSummary.lines" @click="applyMultiPiAllocation">
 							{{ t("Apply") }}
+						</button>
+					</div>
+				</div>
+			</div>
+		</div>
+
+		<!-- Transport Purchase Invoice Link / Create Modal -->
+		<div v-if="showTransportModal" class="modal d-block" tabindex="-1" style="background: rgba(0, 0, 0, 0.4)">
+			<div class="modal-dialog modal-dialog-centered modal-lg">
+				<div class="modal-content">
+					<div class="modal-header">
+						<h5 class="modal-title">
+							<i class="ti ti-truck me-2 text-primary"></i>{{ t("Transport Purchase Invoice") }}
+						</h5>
+						<button type="button" class="btn-close" @click="closeTransportModal"></button>
+					</div>
+					<div class="modal-body">
+						<ul class="nav nav-tabs mb-3">
+							<li class="nav-item">
+								<a
+									class="nav-link"
+									:class="{ active: transportModalTab === 'existing' }"
+									href="#"
+									@click.prevent="openTransportModal('existing')"
+								>
+									<i class="ti ti-link me-1"></i>{{ t("Link existing invoice") }}
+								</a>
+							</li>
+							<li class="nav-item">
+								<a
+									class="nav-link"
+									:class="{ active: transportModalTab === 'new' }"
+									href="#"
+									@click.prevent="openTransportModal('new')"
+								>
+									<i class="ti ti-plus me-1"></i>{{ t("Create new transport invoice") }}
+								</a>
+							</li>
+						</ul>
+
+						<!-- Tab 1: Existing Invoices -->
+						<div v-if="transportModalTab === 'existing'">
+							<div class="input-icon mb-3">
+								<span class="input-icon-addon"><i class="ti ti-search"></i></span>
+								<input
+									v-model="linkableSearch"
+									type="text"
+									class="form-control"
+									:placeholder="t('Search by bill number, supplier or invoice ID…')"
+									@input="fetchLinkableInvoices"
+								/>
+							</div>
+
+							<div v-if="loadingLinkableInvoices" class="py-4 text-center text-secondary">
+								<span class="spinner-border spinner-border-sm me-2"></span>{{ t("Loading invoices…") }}
+							</div>
+							<div v-else class="table-responsive" style="max-height: 350px; overflow-y: auto;">
+								<table class="table table-sm table-hover align-middle mb-0">
+									<thead class="table-light sticky-top">
+										<tr>
+											<th>{{ t("Bill No") }}</th>
+											<th>{{ t("Supplier") }}</th>
+											<th>{{ t("Date") }}</th>
+											<th class="text-end">{{ t("Amount") }}</th>
+											<th>{{ t("Account") }}</th>
+											<th>{{ t("Status") }}</th>
+											<th style="width: 80px">{{ t("Action") }}</th>
+										</tr>
+									</thead>
+									<tbody>
+										<tr v-if="!linkableInvoices.length">
+											<td colspan="7" class="text-center text-secondary py-3">
+												{{ t("No linkable transport invoices found.") }}
+											</td>
+										</tr>
+										<tr v-for="inv in linkableInvoices" :key="inv.name">
+											<td>
+												<div class="fw-bold font-monospace text-primary">{{ inv.bill_no || inv.name }}</div>
+												<div class="small text-secondary font-monospace">{{ inv.name }}</div>
+											</td>
+											<td>{{ inv.supplier_name || inv.supplier }}</td>
+											<td>{{ inv.posting_date ? formatDate(inv.posting_date) : '—' }}</td>
+											<td class="text-end font-monospace fw-semibold">{{ fm(inv.grand_total, inv.currency) }}</td>
+											<td>
+												<span v-if="inv.is_landed_cost_account" class="badge bg-success-lt" :title="inv.expense_account">
+													{{ t("Landed Cost") }}
+												</span>
+												<span v-else class="badge bg-warning-lt" :title="inv.expense_account">
+													{{ t("P&L") }}
+												</span>
+											</td>
+											<td>
+												<span class="badge" :class="getStatusBadgeClass('Purchase Invoice', inv.status)">{{ inv.status }}</span>
+											</td>
+											<td>
+												<button
+													v-if="!inv.is_linked"
+													type="button"
+													class="btn btn-primary btn-sm"
+													:disabled="linkingInvoiceName === inv.name"
+													@click="handleLinkInvoice(inv)"
+												>
+													<span v-if="linkingInvoiceName === inv.name" class="spinner-border spinner-border-sm me-1"></span>
+													{{ t("Link") }}
+												</button>
+												<span v-else class="badge bg-success-lt">{{ t("Linked") }}</span>
+											</td>
+										</tr>
+									</tbody>
+								</table>
+							</div>
+						</div>
+
+						<!-- Tab 2: Create New Transport Invoice -->
+						<div v-else-if="transportModalTab === 'new'">
+							<div class="alert alert-info py-2 px-3 small mb-3">
+								<i class="ti ti-info-circle me-1"></i>
+								{{ t("This invoice will be created with the Landed Cost clearing expense account (Balance Sheet) so it capitalizes into inventory and does not hit P&L.") }}
+							</div>
+							<div class="row g-3">
+								<div class="col-md-6">
+									<label class="form-label required">{{ t("Supplier / Carrier") }}</label>
+									<Typeahead
+										v-model="newTransportForm.supplier"
+										:search="searchSuppliers"
+										:display="newTransportForm.supplier_name"
+										:placeholder="t('Search carrier…')"
+										@pick="pickTransportSupplier"
+									>
+										<template #item="{ item }">
+											<div class="fw-semibold">{{ item.supplier_name || item.name }}</div>
+											<div class="small text-secondary">{{ item.name }}</div>
+										</template>
+									</Typeahead>
+								</div>
+								<div class="col-md-6">
+									<label class="form-label required">{{ t("Amount") }}</label>
+									<MoneyInput
+										v-model="newTransportForm.amount"
+										:currency="newTransportForm.currency"
+										:language="user.language"
+									/>
+								</div>
+								<div class="col-md-4">
+									<label class="form-label">{{ t("Currency") }}</label>
+									<Select
+										v-model="newTransportForm.currency"
+										:options="currencyOptions"
+										:searchable="false"
+									/>
+								</div>
+								<div class="col-md-4">
+									<label class="form-label">{{ t("Bill No (Fatura No)") }}</label>
+									<input
+										v-model="newTransportForm.bill_no"
+										type="text"
+										class="form-control"
+										:placeholder="t('e.g. TRK-2026-001')"
+									/>
+								</div>
+								<div class="col-md-4">
+									<label class="form-label">{{ t("Posting Date") }}</label>
+									<DateInput v-model="newTransportForm.posting_date" />
+								</div>
+							</div>
+						</div>
+					</div>
+					<div class="modal-footer">
+						<button type="button" class="btn btn-outline-secondary" @click="closeTransportModal">
+							{{ t("Close") }}
+						</button>
+						<button
+							v-if="transportModalTab === 'new'"
+							type="button"
+							class="btn btn-primary"
+							:disabled="creatingTransportInvoice || !newTransportForm.supplier || Number(newTransportForm.amount) <= 0"
+							@click="handleCreateTransportInvoice"
+						>
+							<span v-if="creatingTransportInvoice" class="spinner-border spinner-border-sm me-1"></span>
+							{{ t("Create & Link to CI") }}
 						</button>
 					</div>
 				</div>
