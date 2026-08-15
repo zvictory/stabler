@@ -1,11 +1,5 @@
 # Known-red bench modules — the ratchet.
 #
-# STATUS: this file is a MEASURED RECORD, not yet a gate. Nothing enforces it.
-# The enforcing checks are bead stabler-a93, which cannot land here: the honest
-# ZERO COVERAGE gate it depends on lives on feat/vehicle-finance-work-queue, and
-# that branch derives a different BENCH_TESTS than the one measured below. Do not
-# read a green `make test-bench` as this file having been honoured — until
-# stabler-a93 lands, it has not been.
 #
 # WHY THIS FILE EXISTS
 # `make test-bench` became honest in 44fe689: a module that skips every test, or
@@ -21,9 +15,19 @@
 # The set only tightens. Intention is not a mechanism.
 #
 # MEASURED 2026-08-16, and this pin is the whole validity of the file:
-#   commit    main @ 2d422aa
+#   commit    main @ e8b44ea
 #   command   make test-bench
-#   scope     49 of the modules BENCH_TESTS derives (Makefile:190)
+#   scope     the 49 modules BENCH_TESTS derived on that commit
+#
+# The first version of this file said five. It was wrong, and the ratchet caught
+# it on its first real run. "Red" had been extracted by grepping the output for
+# FAILED, but the gate defines red as a non-zero exit OR zero coverage — and
+# seven modules print "Ran N tests ... OK" and then exit non-zero anyway. Two
+# definitions of the same word, one used to measure and the other to enforce.
+# Re-measured by the gate's own definition: twelve, stable across two full runs
+# on two different commits, so nothing regressed — the old number was simply
+# blind. Take the baseline from the command that enforces it, never from a
+# cheaper command that looks equivalent.
 # Re-measure before trusting it on a different site or a later commit. A stale
 # baseline is worse than no baseline: it reads as verified.
 #
@@ -39,8 +43,22 @@
 #
 # format: <module>  <bead>  <cause>
 
+# --- genuine test failures
 test_approvals_integration           stabler-f74  errors=4; Reference No and Reference Date mandatory for Bank transaction
-test_deploy_migrate_gate             stabler-56v  ZERO COVERAGE, collected-none; unittest collects nothing from the module
-test_related_documents_integration   stabler-97o  ZERO COVERAGE, skipped-3/3; site lacks the seeded fixture, prints OK (skipped=3)
 test_supplier_quotations_api         stabler-cd1  errors=1; fake stabler_settings cannot provide imports_supplier_groups_for
 test_tender_flow_contract            stabler-vcq  failures=1; ':deal="null"' no longer present in the Vue source the contract greps
+
+# --- asserted nothing
+test_deploy_migrate_gate             stabler-56v  ZERO COVERAGE, collected-none; unittest collects nothing from the module
+test_related_documents_integration   stabler-97o  ZERO COVERAGE, skipped-3/3; site lacks the seeded fixture, prints OK (skipped=3)
+
+# --- tests pass, the runner still exits non-zero. One cause, one bead, six lines:
+# when stabler-5gc is fixed all six come out together, and the ratchet will insist,
+# because a listed module that starts passing is itself RED.
+test_crm_analytics                   stabler-5gc  Ran 3 OK; teardown AttributeError frappe.cache
+test_crm_automation                  stabler-5gc  Ran 8 OK; teardown AttributeError frappe.cache
+test_crm_email                       stabler-5gc  Ran 11 OK; teardown AttributeError frappe.cache
+test_tender_documents                stabler-5gc  Ran 31 OK; teardown AttributeError frappe.cache
+test_tender_navigation_context       stabler-5gc  Ran 3 OK; teardown AttributeError frappe.cache
+test_tender_uat_matrix               stabler-5gc  Ran 5 OK; teardown AttributeError frappe.cache
+test_ci_transport_pi_link            stabler-slaa Ran 4 OK; teardown orjson decode error on empty input

@@ -171,43 +171,131 @@ BENCH_TESTS := $(shell ls stabler/tests/test_*.py | sed 's|.*/||; s|\.py$$||' | 
 	| awk 'NR==FNR{sub(/^stabler\.tests\./,"");free[$$0]=1;next} !($$0 in free)' \
 	    .github/frappe-free-tests.txt -)
 
+# The ratchet. When the ZERO COVERAGE check above made this gate honest, five
+# modules went red at once. Demanding all five green before anything may proceed
+# would make the gate permanently red -- and this Makefile already recorded, at
+# the top, what happens then: "a permanently red hook is one everybody bypasses
+# with --no-verify."
+#
+# So the gate is red against a BASELINE, not against zero, and it is enforced in
+# BOTH directions. Four ways to fail, because a ratchet that only checks one
+# direction is a list, not a mechanism:
+#
+#   NEW RED      a module is red and is not listed        -- you broke something
+#   NOW GREEN    a listed module passes                   -- delete its line
+#   STALE ENTRY  a listed module left BENCH_TESTS         -- renamed or deleted
+#   NO BEAD      a line with no bead id in field 2        -- then it is not tracked
+#
+# STALE ENTRY is the one that is easy to leave out and the one that rots the file:
+# rename a module and it silently drops out of both the observed set and the
+# derived set, so the other three checks all agree nothing is wrong while the
+# baseline quietly shrinks.
+#
+# The site pin is parsed, not prose. Two of the five entries are red only because
+# genesis-test.local lacks an app or a fixture; on a richer site they pass, NOW
+# GREEN fires, and the ratchet deletes its own baseline. So a pin mismatch
+# disables the ratchet entirely and every red counts.
+KNOWN_RED := .github/bench-known-red.txt
+
 test-bench:
 	@$(PY) -c "import json,sys; c=json.load(open('$(LOCAL_BENCH)/sites/$(TEST_SITE)/site_config.json')); \
 	 sys.exit(0 if c.get('allow_tests') else 1)" \
 	 || { echo "ERROR: $(TEST_SITE) has allow_tests off (or does not exist)."; \
 	      echo "  bench --site $(TEST_SITE) set-config allow_tests true"; exit 1; }
 	@echo "bench modules: $(words $(BENCH_TESTS))  site: $(TEST_SITE)"
-	@fail=0; mute=0; muted=""; log=`mktemp`; \
+	@obs=`mktemp`; known=`mktemp`; derived=`mktemp`; tmp=`mktemp`; live=`mktemp`; log=`mktemp`; \
+	trap 'rm -f $$obs $$known $$derived $$tmp $$live $$log' EXIT; \
 	for m in $(BENCH_TESTS); do \
 	  echo "--- $$m"; \
+	  red=0; \
 	  ( cd $(LOCAL_BENCH) && bench --site $(TEST_SITE) run-tests \
-	      --module stabler.tests.$$m ) > $$log 2>&1 || fail=1; \
+	      --module stabler.tests.$$m ) > $$log 2>&1 || red=1; \
 	  cat $$log; \
 	  ran=`sed -n 's/^Ran \([0-9][0-9]*\) test.*/\1/p' $$log | tail -1`; \
 	  skip=`sed -n 's/.*(skipped=\([0-9][0-9]*\)).*/\1/p' $$log | tail -1`; \
 	  [ -n "$$ran" ] || ran=0; [ -n "$$skip" ] || skip=0; \
 	  if [ "$$ran" -eq 0 ]; then \
-	    echo "!! ZERO COVERAGE: $$m collected no tests on $(TEST_SITE)."; \
-	    mute=`expr $$mute + 1`; muted="$$muted $$m(collected-none)"; \
+	    echo "!! ZERO COVERAGE: $$m collected no tests on $(TEST_SITE)."; red=1; \
 	  elif [ "$$skip" -eq "$$ran" ]; then \
-	    echo "!! ZERO COVERAGE: $$m skipped all $$ran tests on $(TEST_SITE) -- nothing was asserted."; \
-	    mute=`expr $$mute + 1`; muted="$$muted $$m(skipped-$$ran/$$ran)"; \
+	    echo "!! ZERO COVERAGE: $$m skipped all $$ran tests on $(TEST_SITE) -- nothing was asserted."; red=1; \
 	  fi; \
+	  [ "$$red" = "0" ] || echo "$$m" >> $$obs; \
 	done; \
-	rm -f $$log; \
-	if [ "$$mute" != "0" ]; then \
+	sort -u -o $$obs $$obs; \
+	for m in $(BENCH_TESTS); do echo "$$m"; done | sort > $$derived; \
+	if [ ! -f $(KNOWN_RED) ]; then \
+	  echo "FAIL: $(KNOWN_RED) is missing. Without a baseline every red is red -- restore it or re-measure."; \
+	  exit 1; \
+	fi; \
+	pin=`sed -n 's/^#pin site=//p' $(KNOWN_RED) | head -1`; \
+	if [ -z "$$pin" ]; then \
+	  echo "FAIL: $(KNOWN_RED) has no '#pin site=' line, so it does not say what it was measured on."; \
+	  exit 1; \
+	fi; \
+	awk '!/^#/ && NF' $(KNOWN_RED) > $$tmp; \
+	awk '{print $$1}' $$tmp | sort > $$known; \
+	fail=0; \
+	nobead=`awk 'NF < 2 {print $$1}' $$tmp`; \
+	if [ -n "$$nobead" ]; then \
 	  echo ""; \
-	  echo "ZERO COVERAGE: $$mute of $(words $(BENCH_TESTS)) modules asserted nothing --$$muted"; \
-	  echo "  A module that skips every test still prints OK, so the run reads as proof it is not."; \
-	  echo "  Three causes, all seen here: an optional app is missing on $(TEST_SITE) (install it, THEN"; \
-	  echo "  replay that app's dependent stabler patches -- see the TEST_SITE comment); the site has no"; \
-	  echo "  seeded fixture the module needs; or a test class that does not subclass TestCase, which"; \
-	  echo "  unittest cannot collect at all."; \
+	  for m in $$nobead; do \
+	    echo "NO BEAD: $$m -- an entry with no bead is not known-red, it is ignored. Add the bead id."; \
+	  done; \
+	  fail=1; \
+	fi; \
+	stale=`comm -23 $$known $$derived`; \
+	if [ -n "$$stale" ]; then \
+	  echo ""; \
+	  for m in $$stale; do \
+	    echo "STALE ENTRY: $$m is listed in $(KNOWN_RED) but is not a bench module any more."; \
+	    echo "  Renamed, deleted, or moved to .github/frappe-free-tests.txt. Delete its line."; \
+	  done; \
+	  fail=1; \
+	fi; \
+	if [ "$$pin" != "$(TEST_SITE)" ]; then \
+	  echo ""; \
+	  echo "RATCHET DISABLED: the baseline is pinned to $$pin, this run used $(TEST_SITE)."; \
+	  echo "  A red set measured on one site says nothing about another, so every red counts here."; \
+	  echo "  Re-measure and re-pin if you meant to move sites."; \
+	  if [ -s $$obs ]; then \
+	    sed 's/^/  red: /' $$obs; fail=1; \
+	  fi; \
+	  if [ "$$fail" != "0" ]; then \
+	    echo "FAIL: bench is red -- see the --- and !! markers above."; fi; \
+	  exit $$fail; \
+	fi; \
+	new=`comm -13 $$known $$obs`; \
+	if [ -n "$$new" ]; then \
+	  echo ""; \
+	  for m in $$new; do \
+	    echo "NEW RED: $$m is red and is not in $(KNOWN_RED)."; \
+	    echo "  You broke it -- or it was always broken and needs a bead and a line in that file."; \
+	  done; \
+	  fail=1; \
+	fi; \
+	comm -12 $$known $$derived > $$live; \
+	fixed=`comm -23 $$live $$obs`; \
+	if [ -n "$$fixed" ]; then \
+	  echo ""; \
+	  for m in $$fixed; do \
+	    echo "NOW GREEN: $$m passes but is still listed in $(KNOWN_RED) -- delete its line."; \
+	  done; \
+	  echo "  The set only tightens. An entry that has started passing is as red as a new failure,"; \
+	  echo "  because a baseline nobody prunes stops being a baseline and becomes an excuse."; \
 	  fail=1; \
 	fi; \
 	if [ "$$fail" != "0" ]; then \
-	  echo "FAIL: a bench module is red or proved nothing -- see the --- and !! markers above."; fi; \
-	exit $$fail
+	  echo ""; \
+	  echo "FAIL: the known-red ratchet was violated -- see the messages above."; \
+	  exit 1; \
+	fi; \
+	if [ -s $$obs ]; then \
+	  echo ""; \
+	  echo "ratchet OK: `wc -l < $$obs | tr -d ' '` red, all of them known and beaded, none newly green."; \
+	  sed 's/^/  /' $$obs; \
+	  echo "  Known-red is not green. These are debts recorded in $(KNOWN_RED), not passes."; \
+	fi
+
 
 # Vitest over the SPA's pure-logic layer. Scope is deliberately narrow: the
 # composables (money, date, status, i18n) plus the api/ wrapper -- no component
