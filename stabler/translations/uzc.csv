@@ -1096,6 +1096,7 @@ Could not delete category.,Турғунни ўчириб бўлмади.
 Could not delete the commercial invoice.,Тижорат инвойсини ўчириб бўлмади.
 Could not delete the PI group.,PI гуруҳини ўчириб бўлмади.
 Could not delete the proforma.,Проформани ўчириб бўлмади.
+Could not delete the tender.,Тендерни ўчириб бўлмади.
 Could not delete the vendor category.,Категорияни ўчириб бўлмади.
 Could not detach quotation.,Таклифни ажратиб бўлмади.
 Could not fetch available PI lines.,Мавжуд проформа қаторларини юклаб бўлмади.
@@ -1421,6 +1422,7 @@ Delete proforma,Проформани ўчириш
 Delete stage?,Босқич ўчирилсинми?
 Delete Supplier,Етказиб берувчини ўчириш
 Delete supplier,Етказувчини ўчириш
+Delete tender?,Тендер ўчирилсинми?
 Delete this commercial invoice?,Бу тижорат инвойси ўчирилсинми?
 Delete this deal?,Ушбу битимни Ӯчирилсинми?
 Delete this draft entry?,
@@ -1428,10 +1430,12 @@ Delete this draft transfer?,
 Delete this lead?,Ушбу лидни Ӯчирилсинми?
 Delete this process?,Бу жараённи ўчиришни хоҳлайсизми?
 Delete this proforma?,Бу проформа ўчирилсинми?
+"Delete this tender deal? Deletion is refused while quotations, RFQs or orders reference it.","Бу тендер ўчирилсинми? Котировкалар, RFQ ёки буюртмалар ҳавола қилса, ўчириш рад этилади."
 Delete Vendor Category,Категорияни ўчириш
 deleted,ўчирилади
 Deleting shows everything that depends on this invoice before anything is removed.,Ўчириш аввал бу инвойсга боғлиқ ҳамма нарсани кўрсатади.
 Deleting shows everything that depends on this proforma before anything is removed.,Ўчириш аввал бу проформага боғлиқ ҳамма нарсани кўрсатади.
+Deleting…,Ўчирилмоқда…
 Deliv,Етк.
 Deliver,Етказиш
 Delivered,Етказилган
@@ -1668,6 +1672,7 @@ Edit outlet,Киймасни таҳриф
 Edit period,Даврни таҳрирлаш
 Edit photo report,Сурат ҳисобатини таҳриф
 Edit PI Group,PI гуруҳини таҳрирлаш
+Edit tender,Тендерни таҳрирлаш
 Edit planogram,Планограммани таҳриф
 Edit Price,Нархни таҳрирлаш
 Edit Proforma,Проформани таҳрирлаш
@@ -5079,6 +5084,7 @@ Tender control center,Тендер бошқарув маркази
 Tender created,Тендер яратилди
 Tender CRM,Tender CRM
 Tender dashboard could not be loaded.,Тендер панелини юклаб бўлмади.
+Tender deleted.,Тендер ўчирилди.
 Tender Deadline,Тендер муддати
 Tender details,Тендер тафсилотлари
 Tender documents,Tender hujjatları

@@ -153,15 +153,33 @@ watch(
 			form.items = [];
 			form.files = [];
 			// Intake itemları artık kalıcı; düzenleme kaydı onları silmemeli. Editlenen
-			// kaydın intake'i varsa satırlar geri yüklenir — yoksa (yeni/henüz intake'siz
-			// kayıt) bugünkü gibi boş kalır. Deal çözülemiyorsa sessiz geç: form yine dolar.
+			// kaydın intake'i varsa satırlar + ihale künyesi geri yüklenir — yoksa (yeni/
+			// henüz intake'siz kayıt) bugünkü gibi boş kalır. Deal çözülemiyorsa sessiz
+			// geç: form yine dolar.
 			call("stabler.api.tender.deal_intake", {
 				deal: val.name,
 				company: activeCompany.value,
 			})
 				.then((res) => {
 					if (form.name !== val.name) return; // kullanıcı başka kayda geçti
-					const lines = (res?.intake?.items || []).map((l) => ({
+					const intake = res?.intake || {};
+					if (intake.title) form.title = intake.title;
+					if (intake.tender_no) form.tender_no = intake.tender_no;
+					if (intake.source) form.source = intake.source;
+					if (intake.publication_date) form.publication_date = intake.publication_date;
+					if (intake.submission_deadline || val.deadline) {
+						form.submission_deadline = intake.submission_deadline || val.deadline;
+					}
+					if (intake.currency) form.currency = intake.currency;
+					if (Number(intake.estimated_total) > 0) form.estimated_total = Number(intake.estimated_total);
+					if (Array.isArray(intake.tender_files) && intake.tender_files.length) {
+						form.files = intake.tender_files.map((f) => ({
+							file_name: f.file_name || "",
+							file_url: f.file_url || "",
+							file_size: f.file_size || 0,
+						}));
+					}
+					const lines = (intake.items || []).map((l) => ({
 						item_code: l.item_code || "",
 						item_name: l.item_name || "",
 						qty: Number(l.qty) || 1,

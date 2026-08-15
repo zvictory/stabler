@@ -1094,6 +1094,7 @@ Could not delete category.,Kategori silinemedi.
 Could not delete the commercial invoice.,Ticari fatura silinemedi.
 Could not delete the PI group.,PI grubu silinemedi.
 Could not delete the proforma.,Proforma silinemedi.
+Could not delete the tender.,Tender silinemedi.
 Could not delete the vendor category.,Kategori silinemedi.
 Could not detach quotation.,Teklifin lot bağlantısı kaldırılamadı.
 Could not fetch available PI lines.,Mevcut proforma satırları alınamadı.
@@ -1419,6 +1420,7 @@ Delete proforma,Proformayı sil
 Delete stage?,Aşama silinsin mi?
 Delete Supplier,Tedarikçiyi sil
 Delete supplier,Tedarikçiyi sil
+Delete tender?,Tender silinsin mi?
 Delete this commercial invoice?,Bu ticari fatura silinsin mi?
 Delete this deal?,Bu anlaşmayı silinsin mi?
 Delete this draft entry?,
@@ -1426,10 +1428,12 @@ Delete this draft transfer?,
 Delete this lead?,Bu potansiyeli silinsin mi?
 Delete this process?,Bu süreç silinsin mi?
 Delete this proforma?,Bu proforma silinsin mi?
+"Delete this tender deal? Deletion is refused while quotations, RFQs or orders reference it.","Bu tender silinsin mi? Teklifler, RFQ'lar veya siparişler referans gösteriyorsa silme reddedilir."
 Delete Vendor Category,Kategoriyi sil
 deleted,silinir
 Deleting shows everything that depends on this invoice before anything is removed.,"Silme, hiçbir şey kaldırılmadan önce bu faturaya bağlı her şeyi gösterir."
 Deleting shows everything that depends on this proforma before anything is removed.,"Silme, hiçbir şey kaldırılmadan önce bu proformaya bağlı her şeyi gösterir."
+Deleting…,Siliniyor…
 Deliv,Teslim
 Deliver,Teslim Et
 Delivered,Teslim Edildi
@@ -1666,6 +1670,7 @@ Edit outlet,Satış noktasını düzenle
 Edit period,Dönemi düzenle
 Edit photo report,Fotoğraf raporunu düzenle
 Edit PI Group,PI grubunu düzenle
+Edit tender,Tender'ı düzenle
 Edit planogram,Planogramı düzenle
 Edit Price,Fiyatı Düzenle
 Edit Proforma,Proformayı düzenle
@@ -5075,6 +5080,7 @@ Tender control center,İhale kontrol merkezi
 Tender created,İhale oluşturuldu
 Tender CRM,İhale CRM'i
 Tender dashboard could not be loaded.,İhale panosu yüklenemedi.
+Tender deleted.,Tender silindi.
 Tender Deadline,İhale son tarihi
 Tender details,Tender detayları
 Tender documents,İhale belgeleri

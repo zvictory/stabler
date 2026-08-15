@@ -20,6 +20,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 CRM = (ROOT / "public/js/pages/tender/TenderCrm.vue").read_text(encoding="utf-8")
+DRAWER = (ROOT / "public/js/components/TenderMasterDrawer.vue").read_text(encoding="utf-8")
 CSS = (ROOT / "public/css/stabler-modernist.css").read_text(encoding="utf-8")
 
 # Dikkat: dosyada birden çok </template> var — `<template v-if=…>` blokları da
@@ -175,6 +176,54 @@ class TestTheKpiStripIsHonest(unittest.TestCase):
 	def test_the_policy_kpi_only_turns_green_when_it_is_actually_met(self):
 		"""3/7 iyi haber değil; yeşil bir kutu iyi haber demektir."""
 		self.assertRegex(SCRIPT, r'sev: all\.length && all\.every\(KPI_TESTS\.policy\) \? "ok" : "today"')
+
+
+class TestFullCrudOnTheDrawer(unittest.TestCase):
+	"""Create (New tender) ve Read (kanban/çekmece) zaten vardı; CRUD'un kalan
+	iki hanesi — Edit ve Delete — çekmecenin ayağında. Silme yalnız gözetim
+	rollerine görünür (atama ile aynı politika); kapıyı backend tutar."""
+
+	def test_edit_opens_the_master_drawer_in_edit_mode(self):
+		self.assertIn("function openEditDrawer()", CRM)
+		self.assertIn("@click=\"openEditDrawer\"", TEMPLATE)
+
+	def test_the_master_drawer_is_not_hardwired_to_create(self):
+		"""editingTender null = yeni ihale, dolu = düzenleme; ikisi de aynı
+		bileşene gidiyor olmalı."""
+		self.assertRegex(TEMPLATE, r':deal="editingTender"')
+		self.assertNotIn(':deal="null"', TEMPLATE)
+
+	def test_delete_is_gated_to_oversight_and_confirmed(self):
+		self.assertIn("canDeleteDeal", CRM)
+		self.assertRegex(TEMPLATE, r'v-if="canDeleteDeal"')
+		self.assertIn("const ok = await confirm(", CRM)
+		self.assertIn("stabler.api.crm.delete_deal", CRM)
+
+	def test_the_delete_endpoint_exists_and_shares_the_tender_gate(self):
+		"""crm.delete_deal'in kapısı _require_crm_or_tender olmalı —
+		enable_crm=0 kiracısında tender kanbanı silme yeteneği olmadan
+		çıkıyordu. Şirket kapsamı + link kontrolleri yerinde kalır."""
+		source = (ROOT / "api/crm.py").read_text(encoding="utf-8")
+		block = re.search(
+			r'def delete_deal\(.*?\n\t(.*?)\n\tfrappe\.delete_doc', source, flags=re.S
+		)
+		self.assertIsNotNone(block, "delete_deal bulunamadı")
+		self.assertIn("_require_crm_or_tender()", block.group(1))
+		self.assertIn("_assert_crm_record_company", block.group(1))
+
+	def test_edit_round_trips_the_full_intake(self):
+		"""Düzenleme yalnız itemları geri yüklüyorsa, kayıt diğer künye
+		alanlarını sessizce varsayılana döndürür — yarım restore, veri kaybı."""
+		for field in (
+			"intake.title",
+			"intake.tender_no",
+			"intake.source",
+			"intake.publication_date",
+			"intake.submission_deadline",
+			"intake.tender_files",
+		):
+			with self.subTest(field=field):
+				self.assertIn(field, DRAWER)
 
 
 class TestTheEndpointsExistOnTheServer(unittest.TestCase):

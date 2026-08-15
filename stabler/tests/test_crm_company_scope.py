@@ -804,7 +804,7 @@ class TestCrmCompanyScope(unittest.TestCase):
 		self.assertEqual(resolved, "Portal")
 
 	def test_require_crm_or_tender_gate_allows_tender_only_tenant(self):
-		"""A tender-only tenant (enable_crm=0, enable_tender=1) can save and list deals."""
+		"""A tender-only tenant (enable_crm=0, enable_tender=1) can save, list and delete deals."""
 		original_can_access = self.crm._can_access_module
 		try:
 			self.crm._can_access_module = lambda user, mod: mod == "tender"
@@ -815,6 +815,10 @@ class TestCrmCompanyScope(unittest.TestCase):
 
 			saved = self.crm.save_deal({"name": "DEAL-MIKAS", "organization": "Mikas Tender"}, "Mikas")
 			self.assertEqual(saved["organization"], "Mikas Tender")
+
+			# The tender CRM kanban deletes through the same shared endpoint
+			self.assertEqual(self.crm.delete_deal("DEAL-MIKAS", "Mikas"), "ok")
+			self.assertIn(("CRM Deal", "DEAL-MIKAS"), self.db.deleted)
 
 			# Other CRM endpoints requiring plain _require_crm must be rejected
 			with self.assertRaises(PermissionError):
@@ -831,6 +835,20 @@ class TestCrmCompanyScope(unittest.TestCase):
 				self.crm.list_deals("Mikas")
 			with self.assertRaises(PermissionError):
 				self.crm.save_deal({"organization": "Denied"}, "Mikas")
+			with self.assertRaises(PermissionError):
+				self.crm.delete_deal("DEAL-MIKAS", "Mikas")
+			self.assertNotIn(("CRM Deal", "DEAL-MIKAS"), self.db.deleted)
+		finally:
+			self.crm._can_access_module = original_can_access
+
+	def test_delete_deal_refuses_cross_company_record(self):
+		"""delete_deal keeps company scoping: a deal of another company is not deleted."""
+		original_can_access = self.crm._can_access_module
+		try:
+			self.crm._can_access_module = lambda user, mod: True
+			with self.assertRaises(PermissionError):
+				self.crm.delete_deal("DEAL-OTHER", "Mikas")
+			self.assertNotIn(("CRM Deal", "DEAL-OTHER"), self.db.deleted)
 		finally:
 			self.crm._can_access_module = original_can_access
 

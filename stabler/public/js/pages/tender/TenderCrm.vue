@@ -6,6 +6,7 @@ import { call } from "../../api/client.js";
 import { formatDate } from "../../composables/date.js";
 import { formatMoney } from "../../composables/money.js";
 import { t } from "../../composables/i18n.js";
+import { useConfirm } from "../../composables/useConfirm.js";
 import { useToast } from "../../composables/useToast.js";
 import { useSession } from "../../stores/session.js";
 import { useTenderContext } from "../../composables/useTenderContext.js";
@@ -20,13 +21,15 @@ const { sourcingLocation, documentsLocation, poControlLocation } = useTenderCont
 const session = useSession();
 const { activeCompany, user, currency } = storeToRefs(session);
 const toast = useToast();
+const { confirm } = useConfirm();
 
 const loading = ref(false);
 const viewMode = ref("kanban"); // 'kanban' | 'list'
 const searchQuery = ref("");
 const lanes = ref([]);
 const cards = ref([]);
-const newTenderOpen = ref(false);
+const masterDrawerOpen = ref(false);
+const editingTender = ref(null); // null = yeni ihale; dolu object = düzenleme
 
 // Selected deal drawer
 const drawerOpen = ref(false);
@@ -38,6 +41,14 @@ const dealQuotations = ref(null);
 // Drag and drop state
 const dragCardName = ref("");
 const dragOverLane = ref("");
+
+/* Delete yalnız gözetim rollerinde: atama (assign_tender) ile aynı politika.
+ * Backend (crm.delete_deal) _require_crm_or_tender + link kontrolleriyle korur;
+ * buradaki koşul butonu gereksiz yere sourcing'e göstermemek için. */
+const canDeleteDeal = computed(
+	() => session.isAdmin || session.tenderViews.includes("director")
+);
+const deleting = ref(false);
 
 function checkDealQuery() {
 	if (route.query?.deal) {
@@ -94,6 +105,7 @@ async function assign(deal, user) {
 onMounted(() => {
 	load();
 	loadManagers();
+	session.loadTenderViews().catch(() => {});
 });
 watch(activeCompany, load);
 watch(() => route.query.deal, () => checkDealQuery());
@@ -280,6 +292,50 @@ function closeDrawer() {
 	selectedDeal.value = null;
 }
 
+/* Edit — TenderMasterDrawer'ın düzenleme modu deal alanlarını kendisi
+ * doldurur (intake'ten itemlar/dosyalar geri yüklenir); burada yalnız
+ * karttaki alanları formun beklediği şekle çevirip çekmeceyi açıyoruz. */
+function openEditDrawer() {
+	const c = selectedDeal.value;
+	if (!c) return;
+	editingTender.value = {
+		name: c.name,
+		organization: c.organization || c.lead_name || "",
+		title: c.label || "",
+		currency: c.currency || "",
+		deal_value: c.contract_value || 0,
+		deadline: c.deadline || "",
+	};
+	closeDrawer();
+	masterDrawerOpen.value = true;
+}
+
+async function deleteSelectedDeal() {
+	const c = selectedDeal.value;
+	if (!c || deleting.value) return;
+	const ok = await confirm({
+		title: t("Delete tender?"),
+		body: t("Delete this tender deal? Deletion is refused while quotations, RFQs or orders reference it."),
+		danger: true,
+		confirmLabel: t("Delete"),
+	});
+	if (!ok) return;
+	deleting.value = true;
+	try {
+		await call("stabler.api.crm.delete_deal", {
+			name: c.name,
+			company: activeCompany.value,
+		});
+		toast.success(t("Tender deleted."));
+		closeDrawer();
+		await load();
+	} catch (err) {
+		toast.error(err?.message || t("Could not delete the tender."));
+	} finally {
+		deleting.value = false;
+	}
+}
+
 /* Tasarım dilinde önem RENKLE değil, renk + kare + üç harfli etiketle
  * gösteriliyor; Tabler'ın bg-*-lt rozet sınıflarının burada karşılığı yok.
  * Bu yüzden fonksiyon sınıf değil SEVIYE döndürüyor ve şablon onu data-sev /
@@ -319,7 +375,11 @@ function riskLabel(risk) {
 		</template>
 
 		<template #actions>
-			<button type="button" class="btn btn-primary btn-sm" @click="newTenderOpen = true">
+			<button
+				type="button"
+				class="btn btn-primary btn-sm"
+				@click="editingTender = null; masterDrawerOpen = true"
+			>
 				<i class="ti ti-plus me-1"></i>{{ t("New tender") }}
 			</button>
 			<label class="ds-field crm-search">
@@ -654,8 +714,11 @@ function riskLabel(risk) {
 				</div>
 
 				<footer class="ds-drawer-foot">
+					<button type="button" class="ds-btn ds-btn--primary" @click="openEditDrawer">
+						<i class="ti ti-pencil me-1"></i>{{ t("Edit tender") }}
+					</button>
 					<router-link
-						class="ds-btn ds-btn--primary"
+						class="ds-btn"
 						:to="sourcingLocation(selectedDeal.name)"
 						@click="closeDrawer"
 					>{{ t("Sourcing comparison") }}</router-link>
@@ -670,14 +733,21 @@ function riskLabel(risk) {
 						@click="closeDrawer"
 					>{{ t("PO Control") }}</router-link>
 					<button type="button" class="ds-btn" @click="closeDrawer">{{ t("Close") }}</button>
+					<button
+						v-if="canDeleteDeal"
+						type="button"
+						class="ds-btn crm-dw-del"
+						:disabled="deleting"
+						@click="deleteSelectedDeal"
+					>{{ deleting ? t("Deleting…") : t("Delete") }}</button>
 					<span class="ds-mono crm-dw-src">crm_deal · {{ selectedDeal.name }}</span>
 				</footer>
 			</aside>
 		</template>
 
 		<TenderMasterDrawer
-			v-model:open="newTenderOpen"
-			:deal="null"
+			v-model:open="masterDrawerOpen"
+			:deal="editingTender"
 			@saved="load"
 		/>
 	</TenderPage>
@@ -813,6 +883,17 @@ function riskLabel(risk) {
 
 .crm-dw-chip {
 	margin-left: 8px;
+}
+
+/* Tehlikeli eylem katmanda yok; yalnız burada, footerın ucunda ve gözetim
+ * rollerine görünür. Renk tek başına bilgi değil — buton metni "Delete". */
+.crm-dw-del {
+	color: var(--ds-crit-tx);
+	border-color: var(--ds-crit);
+}
+
+.crm-dw-del:hover:not(:disabled) {
+	background: var(--ds-crit-t);
 }
 
 .crm-dw-empty {

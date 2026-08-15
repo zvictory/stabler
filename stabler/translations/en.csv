@@ -1094,6 +1094,7 @@ Could not delete category.,Could not delete category.
 Could not delete the commercial invoice.,Could not delete the commercial invoice.
 Could not delete the PI group.,Could not delete the PI group.
 Could not delete the proforma.,Could not delete the proforma.
+Could not delete the tender.,Could not delete the tender.
 Could not delete the vendor category.,Could not delete the vendor category.
 Could not detach quotation.,Could not detach quotation.
 Could not fetch available PI lines.,Could not fetch available PI lines.
@@ -1419,6 +1420,7 @@ Delete proforma,Delete proforma
 Delete stage?,Delete stage?
 Delete Supplier,Delete Supplier
 Delete supplier,Delete supplier
+Delete tender?,Delete tender?
 Delete this commercial invoice?,Delete this commercial invoice?
 Delete this deal?,Delete this deal?
 Delete this draft entry?,Delete this draft entry?
@@ -1426,10 +1428,12 @@ Delete this draft transfer?,Delete this draft transfer?
 Delete this lead?,Delete this lead?
 Delete this process?,Delete this process?
 Delete this proforma?,Delete this proforma?
+"Delete this tender deal? Deletion is refused while quotations, RFQs or orders reference it.","Delete this tender deal? Deletion is refused while quotations, RFQs or orders reference it."
 Delete Vendor Category,Delete Vendor Category
 deleted,deleted
 Deleting shows everything that depends on this invoice before anything is removed.,Deleting shows everything that depends on this invoice before anything is removed.
 Deleting shows everything that depends on this proforma before anything is removed.,Deleting shows everything that depends on this proforma before anything is removed.
+Deleting…,Deleting…
 Deliv,Deliv
 Deliver,Deliver
 Delivered,Delivered
@@ -1666,6 +1670,7 @@ Edit outlet,Edit outlet
 Edit period,Edit period
 Edit photo report,Edit photo report
 Edit PI Group,Edit PI Group
+Edit tender,Edit tender
 Edit planogram,Edit planogram
 Edit Price,Edit Price
 Edit Proforma,Edit Proforma
@@ -5076,6 +5081,7 @@ Tender control center,Tender control center
 Tender created,Tender created
 Tender CRM,Tender CRM
 Tender dashboard could not be loaded.,Tender dashboard could not be loaded.
+Tender deleted.,Tender deleted.
 Tender Deadline,Tender Deadline
 Tender details,Tender details
 Tender documents,Tender documents
