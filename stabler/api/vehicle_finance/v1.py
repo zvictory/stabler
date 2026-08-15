@@ -26,9 +26,9 @@ from stabler.api.supplier_payment_guard import assert_supplier_payment_currency
 from stabler.api.vehicle_finance import activation as activation_mod
 from stabler.api.vehicle_finance import allocation as allocation_mod
 from stabler.api.vehicle_finance.permissions import (
+	_assert_capability,
 	_require_agreement_v1,
 	_require_vehicle_finance_module,
-	_assert_capability,
 )
 from stabler.api.vehicle_finance.schedule import build_schedule
 
@@ -286,7 +286,6 @@ def _stock_payload(agreement_doc) -> dict:
 		or frappe.db.get_value("Stock Settings", None, "default_warehouse")
 		or frappe.db.get_value("Warehouse", {"company": agreement_doc.company, "is_group": 0}, "name")
 	)
-	base = frappe.get_cached_value("Company", agreement_doc.company, "default_currency") or "UZS"
 	rates = _to_base_rates({agreement_doc.currency}, agreement_doc.company)
 	conv_rate = rates.get(agreement_doc.currency, 1.0)
 
@@ -821,19 +820,17 @@ def _reschedule_rows(agreement_doc, version_doc, payload: dict) -> list[dict]:
 	elif payload.get("custom_rows"):
 		raise ValueError("Nothing remains to re-plan; custom rows are not expected.")
 
-	result = (
-		[
-			{
-				"sequence": int(row0.sequence),
-				"due_date": str(row0.due_date),
-				"amount": flt(row0.amount),
-				"row_type": row0.row_type,
-				"note": row0.note or "",
-			}
-		]
-		+ closed
-		+ new_rows
-	)
+	result = [
+		{
+			"sequence": int(row0.sequence),
+			"due_date": str(row0.due_date),
+			"amount": flt(row0.amount),
+			"row_type": row0.row_type,
+			"note": row0.note or "",
+		},
+		*closed,
+		*new_rows,
+	]
 	# validate via the frozen Phase 1 rules (sum must equal the fixed total)
 	from stabler.stabler.doctype.vehicle_finance_schedule_version.vehicle_finance_schedule_version import (
 		validate_rows,
