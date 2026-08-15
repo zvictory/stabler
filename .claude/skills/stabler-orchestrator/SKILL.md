@@ -52,6 +52,14 @@ bd update <id> --claim --json
 - **`--append-notes`** holds the running log: `conversation_id`, review findings,
   correction-cycle counter, blockers.
 
+**Before freezing a contract, verify EVERY symbol, path and endpoint in it against the
+codebase. A fabricated path is implemented literally inside a decision-complete contract —
+this is delegation's primary failure mode.** Measured 2026-08-15: the frozen phase-3
+design named `stabler.api.vehicle_finance.v1.*` for all twenty callables; ten of them
+live in `read.py` and `work.py`, and the wrong path reached slice 3a's contract before
+review caught it. Grep the definitions, do not trust a design document — including one
+you wrote.
+
 The contract must be **decision-complete** — agy implements it literally, so any
 gap becomes an invented behaviour. Required sections:
 
