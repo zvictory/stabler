@@ -34,6 +34,12 @@ from stabler.api.vehicle_finance.schedule import build_schedule
 
 _ADVANCE_PREFIX = "VFA-ADV-"
 
+# Rescheduling exists so a struggling party keeps paying, so Restructured must
+# stay collectible — otherwise a reschedule freezes the balance forever and the
+# agreement can never reach Completed. Draft/Review/Approved have no invoice yet;
+# Completed/Terminated are terminal.
+_COLLECTIBLE_STATUSES = ("Active", "Restructured")
+
 
 # --- shared loaders -----------------------------------------------------------
 
@@ -114,7 +120,15 @@ def _to_base_rates(currencies: set[str], company: str) -> dict[str, float]:
 			order_by="date desc",
 			limit=1,
 		)
-		rates[currency] = flt(row[0].exchange_rate) if row else 1.0
+		rate = flt(row[0].exchange_rate) if row else 0.0
+		if rate <= 0:
+			# Never fall back to 1.0: compute_payment_fx treats a 1.0 as a valid
+			# rate, so a missing row would silently post 100 USD as 100 UZS.
+			# money.py refuses the same way — a missing rate stops the document.
+			frappe.throw(
+				_("No exchange rate available from {0} to {1} on {2}.").format(currency, base, today())
+			)
+		rates[currency] = rate
 	return rates
 
 
@@ -528,8 +542,8 @@ def _collect_or_pay(
 ) -> dict:
 	doc = _load_agreement(agreement)
 	_assert_capability(frappe.session.user, doc.company, capability)
-	if doc.agreement_status != "Active":
-		frappe.throw(_("Agreement {0} is not active.").format(doc.name))
+	if doc.agreement_status not in _COLLECTIBLE_STATUSES:
+		frappe.throw(_("Agreement {0} is not open for payment.").format(doc.name))
 	invoice_doctype = "Sales Invoice" if doc.direction == "Disposition" else "Purchase Invoice"
 	invoice_name = doc.sales_invoice or doc.purchase_invoice
 	if not invoice_name:

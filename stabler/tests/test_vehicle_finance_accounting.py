@@ -357,6 +357,24 @@ class VehicleFinanceAccountingTest(FrappeTestCase):
 		self.assertAlmostEqual(flt(pe.paid_amount), 100 * USD_RATE)  # UZS out of bank
 		self.assertEqual(flt(pe.received_amount), 100)  # USD to supplier
 
+	def test_missing_exchange_rate_refuses_to_post(self):
+		"""A missing rate must stop the payment, never post it at 1:1.
+
+		Why it matters: a 100 USD collection into the UZS bank account is worth
+		1 290 000 UZS. Defaulting the rate to 1.0 posts 100 UZS — a silently
+		wrong Payment Entry and a silently wrong GL, with no error anywhere.
+		`money.py` already refuses on a missing rate; this engine must too.
+		"""
+		name = self._make_agreement(direction="Disposition")
+		v1.activate_agreement(name)  # activation itself needs the rate
+		frappe.db.delete("Currency Exchange", {"from_currency": "USD", "to_currency": "UZS"})
+
+		with self.assertRaises(frappe.ValidationError) as caught:
+			v1.collect_customer_payment(name, 100, mode_of_payment="Cash", bank_account=self.bank)
+		self.assertIn("USD", str(caught.exception))
+		# nothing was posted
+		self.assertFalse(frappe.get_all("Vehicle Finance Payment Application", filters={"agreement": name}))
+
 	def test_fifo_override_requires_capability_and_reason(self):
 		name = self._make_agreement(direction="Disposition")
 		v1.activate_agreement(name)
@@ -470,6 +488,44 @@ class VehicleFinanceAccountingTest(FrappeTestCase):
 		)
 		self.assertEqual(len(apps), 2)
 		self.assertEqual(frappe.db.get_value("Vehicle Agreement", name, "agreement_status"), "Restructured")
+
+	def test_collection_continues_after_reschedule(self):
+		"""A restructured agreement must keep collecting on its new schedule.
+
+		Why it matters: rescheduling exists so a struggling customer can keep
+		paying. If Restructured stopped collection, every reschedule would
+		permanently freeze the receivable and the agreement could never reach
+		Completed — the status model's own terminal state.
+		"""
+		name = self._make_agreement(direction="Disposition")
+		v1.activate_agreement(name)
+		v1.collect_customer_payment(name, 400, mode_of_payment="Cash", bank_account=self.bank)
+		v1.approve_reschedule(
+			name,
+			{
+				"plan_type": "Equal Monthly",
+				"installment_count": 2,
+				"first_installment_date": add_months(today(), 2),
+				"reschedule_reason": "Customer hardship",
+			},
+		)
+		self.assertEqual(frappe.db.get_value("Vehicle Agreement", name, "agreement_status"), "Restructured")
+
+		result = v1.collect_customer_payment(name, 200, mode_of_payment="Cash", bank_account=self.bank)
+		self.assertTrue(result["payment_entry"])
+
+		# the new money lands on the NEW version, leaving the old one immutable
+		active_version = frappe.db.get_value("Vehicle Agreement", name, "active_schedule_version")
+		versions = frappe.get_all(
+			"Vehicle Finance Payment Application",
+			filters={"payment_entry": result["payment_entry"], "docstatus": 1},
+			pluck="schedule_version",
+		)
+		self.assertTrue(versions)
+		self.assertEqual(set(versions), {active_version})
+
+		si_name = frappe.db.get_value("Vehicle Agreement", name, "sales_invoice")
+		self.assertEqual(flt(frappe.db.get_value("Sales Invoice", si_name, "outstanding_amount")), 400)
 
 	# --- reconciliation ------------------------------------------------------------------------
 

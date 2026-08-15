@@ -5942,3 +5942,4 @@ Could not load linkable invoices,Не удалось загрузить счет
 Failed to link invoice,Не удалось привязать счет
 Failed to unlink invoice,Не удалось отвязать счет
 Failed to create transport invoice,Не удалось создать транспортный счет
+Agreement {0} is not open for payment.,Договор {0} не открыт для оплаты.

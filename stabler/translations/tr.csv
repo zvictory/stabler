@@ -5932,3 +5932,4 @@ Could not load linkable invoices,Bağlanabilir faturalar yüklenemedi
 Failed to link invoice,Fatura bağlanamadı
 Failed to unlink invoice,Fatura bağlantısı kaldırılamadı
 Failed to create transport invoice,Nakliye faturası oluşturulamadı
+Agreement {0} is not open for payment.,{0} sözleşmesi ödemeye açık değil.

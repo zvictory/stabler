@@ -5899,3 +5899,4 @@ This quotation has no lines.,This quotation has no lines.
 Could not create purchase order.,Could not create purchase order.
 Creating…,Creating…
 Purchase order {0} already exists.,Purchase order {0} already exists.
+Agreement {0} is not open for payment.,Agreement {0} is not open for payment.
