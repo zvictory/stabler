@@ -657,9 +657,7 @@ def _generate_for_agreement(agreement: dict, today_: datetime.date) -> int:
 		)
 		if not event:
 			continue
-		work_status = (
-			policy.WORK_ESCALATED if event == policy.EVENT_PROMISE_BROKEN else policy.WORK_PROMISE
-		)
+		work_status = policy.WORK_ESCALATED if event == policy.EVENT_PROMISE_BROKEN else policy.WORK_PROMISE
 		if _create_work_item(
 			agreement,
 			state,
