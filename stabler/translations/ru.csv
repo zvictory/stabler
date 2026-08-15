@@ -1101,6 +1101,7 @@ Could not delete category.,Не удалось удалить категорию
 Could not delete the commercial invoice.,Не удалось удалить коммерческий инвойс.
 Could not delete the PI group.,Не удалось удалить группу PI.
 Could not delete the proforma.,Не удалось удалить проформу.
+Could not delete the tender.,Не удалось удалить тендер.
 Could not delete the vendor category.,Не удалось удалить категорию.
 Could not detach quotation.,Не удалось отвязать предложение.
 Could not fetch available PI lines.,Не удалось загрузить доступные строки проформы.
@@ -1426,6 +1427,7 @@ Delete proforma,Удалить проформу
 Delete stage?,Удалить этап?
 Delete Supplier,Удалить поставщика
 Delete supplier,Удалить поставщика
+Delete tender?,Удалить тендер?
 Delete this commercial invoice?,Удалить этот коммерческий инвойс?
 Delete this deal?,Удалить эту сделку?
 Delete this draft entry?,
@@ -1433,10 +1435,12 @@ Delete this draft transfer?,
 Delete this lead?,Удалить этот лид?
 Delete this process?,Удалить этот процесс?
 Delete this proforma?,Удалить эту проформу?
+"Delete this tender deal? Deletion is refused while quotations, RFQs or orders reference it.","Удалить эту тендерную сделку? Удаление отклоняется, если на неё ссылаются котировки, RFQ или заказы."
 Delete Vendor Category,Удалить категорию
 deleted,удаляется
 Deleting shows everything that depends on this invoice before anything is removed.,"Удаление сначала покажет всё, что зависит от этого инвойса."
 Deleting shows everything that depends on this proforma before anything is removed.,"Удаление сначала покажет всё, что зависит от этой проформы."
+Deleting…,Удаление…
 Deliv,Доставл.
 Deliver,Доставить
 Delivered,Доставлено
@@ -1673,6 +1677,7 @@ Edit outlet,Редактировать торговую точку
 Edit period,Изменить период
 Edit photo report,Редактировать фотоотчет
 Edit PI Group,Изменить группу PI
+Edit tender,Редактировать тендер
 Edit planogram,Редактировать планограмму
 Edit Price,Редактировать цену
 Edit Proforma,Изменить проформу
@@ -5084,6 +5089,7 @@ Tender control center,Центр управления тендерами
 Tender created,Тендер создан
 Tender CRM,CRM тендеров
 Tender dashboard could not be loaded.,Не удалось загрузить панель тендеров.
+Tender deleted.,Тендер удалён.
 Tender Deadline,Срок тендера
 Tender details,Детали тендера
 Tender documents,Документы тендера

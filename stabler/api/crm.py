@@ -521,7 +521,7 @@ def save_deal(data: str | dict, company=""):
 
 @frappe.whitelist()
 def delete_deal(name: str, company=""):
-	_require_crm()
+	_require_crm_or_tender()
 	company = _require_crm_company(company)
 	_assert_crm_record_company("CRM Deal", name, company, "delete")
 	frappe.delete_doc("CRM Deal", name)

@@ -1096,6 +1096,7 @@ Could not delete category.,Toifani o'chirib bo'lmadi.
 Could not delete the commercial invoice.,Tijorat invoysini o‘chirib bo‘lmadi.
 Could not delete the PI group.,PI guruhini oʻchirib boʻlmadi.
 Could not delete the proforma.,Proformani o‘chirib bo‘lmadi.
+Could not delete the tender.,Tenderni o'chirib bo'lmadi.
 Could not delete the vendor category.,Kategoriyani o'chirib bo'lmadi.
 Could not detach quotation.,Taklifni ajratib bo'lmadi.
 Could not fetch available PI lines.,Mavjud proforma qatorlarini yuklab bo‘lmadi.
@@ -1421,6 +1422,7 @@ Delete proforma,Proformani o‘chirish
 Delete stage?,Bosqich o'chirilsinmi?
 Delete Supplier,Yetkazib beruvchini o'chirish
 Delete supplier,Yetkazuvchini o'chirish
+Delete tender?,Tender o'chirilsinmi?
 Delete this commercial invoice?,Bu tijorat invoysi o‘chirilsinmi?
 Delete this deal?,Ushbu bitimni oʼchirasizmi?
 Delete this draft entry?,
@@ -1428,10 +1430,12 @@ Delete this draft transfer?,
 Delete this lead?,Ushbu lidni oʼchirasizmi?
 Delete this process?,Bu jarayonni o'chirishni xohlaysizmi?
 Delete this proforma?,Bu proforma o‘chirilsinmi?
+"Delete this tender deal? Deletion is refused while quotations, RFQs or orders reference it.","Bu tender o'chirilsinmi? Kotirovkalar, RFQ yoki buyurtmalar havola qilsa, o'chirish rad etiladi."
 Delete Vendor Category,Kategoriyani o'chirish
 deleted,o‘chiriladi
 Deleting shows everything that depends on this invoice before anything is removed.,O‘chirish avval bu invoysga bog‘liq hamma narsani ko‘rsatadi.
 Deleting shows everything that depends on this proforma before anything is removed.,O‘chirish avval bu proformaga bog‘liq hamma narsani ko‘rsatadi.
+Deleting…,O'chirilmoqda…
 Deliv,Yetk.
 Deliver,Yetkazib berish
 Delivered,Yetkazib berilgan
@@ -1668,6 +1672,7 @@ Edit outlet,Savdo nuqtasini tahrirlash
 Edit period,Davrni tahrirlash
 Edit photo report,Fotosuratli hisobotni tahrirlash
 Edit PI Group,PI guruhini tahrirlash
+Edit tender,Tenderni tahrirlash
 Edit planogram,Planogramni tahrirlash
 Edit Price,Narxni tahrirlash
 Edit Proforma,Proformani tahrirlash
@@ -5079,6 +5084,7 @@ Tender control center,Tender boshqaruv markazi
 Tender created,Tender yaratildi
 Tender CRM,Tender CRM
 Tender dashboard could not be loaded.,Tender panelini yuklab bo‘lmadi.
+Tender deleted.,Tender o'chirildi.
 Tender Deadline,Tender muddati
 Tender details,Tender tafsilotlari
 Tender documents,Tender hujjatlari
