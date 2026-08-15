@@ -5987,3 +5987,7 @@ Vehicle / VIN,Transport / VIN
 Work Queues,Ish navbatlari
 agreements,shartnoma
 showing first {n} of {count},{count} tadan birinchi {n} tasi ko'rsatilmoqda
+Add optional note…,Ixtiyoriy izoh qo'shish…
+"Agreement, party, VIN…","Shartnoma, kontragent, VIN…"
+Log outcome or next action note…,Natija yoki keyingi harakat izohi…
+Nothing in this view,Bu ko'rinishda hech narsa yo'q

@@ -5992,3 +5992,7 @@ Vehicle / VIN,Транспорт / VIN
 Work Queues,Очереди работ
 agreements,договоров
 showing first {n} of {count},показаны первые {n} из {count}
+Add optional note…,Добавить примечание (необязательно)…
+"Agreement, party, VIN…","Договор, контрагент, VIN…"
+Log outcome or next action note…,Результат или заметка о следующем действии…
+Nothing in this view,В этом представлении ничего нет
