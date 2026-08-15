@@ -1,0 +1,76 @@
+{
+ "timestamp": "2026-08-15T13:15:39.088Z",
+ "site": "https://mikas.erpstable.com",
+ "pages": [
+  {
+   "route": "/crm/leads",
+   "label": "CRM Leads",
+   "table_rows": 0,
+   "empty_state_shown": false,
+   "status": "PASS"
+  },
+  {
+   "route": "/crm/deals",
+   "label": "CRM Deals",
+   "table_rows": 0,
+   "empty_state_shown": false,
+   "status": "PASS"
+  },
+  {
+   "route": "/tender/my-tenders",
+   "label": "Tender Master records",
+   "table_rows": 0,
+   "empty_state_shown": false,
+   "status": "PASS"
+  },
+  {
+   "route": "/sales/orders",
+   "label": "Sales Orders",
+   "table_rows": 0,
+   "empty_state_shown": false,
+   "status": "PASS"
+  },
+  {
+   "route": "/sales/invoices",
+   "label": "Sales Invoices",
+   "table_rows": 0,
+   "empty_state_shown": false,
+   "status": "PASS"
+  },
+  {
+   "route": "/purchasing/invoices",
+   "label": "Purchase Invoices",
+   "table_rows": 0,
+   "empty_state_shown": false,
+   "status": "PASS"
+  },
+  {
+   "route": "/purchasing/receipts",
+   "label": "Purchase Receipts",
+   "table_rows": 0,
+   "empty_state_shown": false,
+   "status": "PASS"
+  },
+  {
+   "route": "/money/payments",
+   "label": "Payment Entries",
+   "table_rows": 0,
+   "empty_state_shown": false,
+   "status": "PASS"
+  },
+  {
+   "route": "/money/journals",
+   "label": "Journal Entries",
+   "table_rows": 0,
+   "empty_state_shown": true,
+   "status": "PASS"
+  },
+  {
+   "route": "/tender/rfq",
+   "label": "Request for Quotations",
+   "table_rows": 0,
+   "empty_state_shown": false,
+   "status": "PASS"
+  }
+ ]
+}
