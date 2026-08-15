@@ -188,6 +188,34 @@ State acceptance as a **change** you can observe:
 If a criterion could be satisfied by something that did nothing, it is not a
 criterion. Rewrite it.
 
+### Proving a test is load-bearing: graft the old code back
+
+"The change adds six tests and they pass" is not evidence the six tests test the
+change. Measure it — put the pre-fix implementation back and see which of them
+notice:
+
+```python
+import ast
+old_src = open('/tmp/old_version.py').read()
+fn = next(n for n in ast.parse(old_src).body
+          if isinstance(n, ast.FunctionDef) and n.name == TARGET)
+ns = dict(module.__dict__)
+exec(compile(ast.get_source_segment(old_src, fn), 'old', 'exec'), ns)
+module.TARGET = shim(ns[TARGET])   # keep the NEW signature so tests don't TypeError
+# then run each new test individually and record pass/fail
+```
+
+The shim matters: if you graft the old signature too, every test dies with a
+`TypeError` and they all look load-bearing. Keep the new signature and let the
+old *behaviour* through — that isolates behaviour from plumbing.
+
+Measured on 2026-08-16 against the six tests `844ea46` added: four failed on
+revert, two passed. The two that passed guard the path the commit did not
+change, which is correct — but had all six passed, the +6 would have proved
+nothing and the acceptance criterion would have been satisfied by something that
+did nothing. That is the check this section exists to demand, and reading the
+assertions is not a substitute for running them.
+
 ## Ratchet, not big-bang
 
 When a gate is newly honest and the tree fails it, do not demand a clean tree
