@@ -556,5 +556,3 @@ class VehicleFinanceAccountingTest(FrappeTestCase):
 
 		frappe.db.delete("Vehicle Finance Settings", {"company": COMPANY})
 		frappe.db.commit()
-
-
