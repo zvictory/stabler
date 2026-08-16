@@ -346,7 +346,8 @@ DESIGN-ONLY:
 - Preserve the existing information architecture, sample data, screens,
   filters, visual language and everything not listed below. Do not redesign.
 
-The prototype was reviewed and accepted in substance. Fix only these items.
+The prototype's information architecture, sample data and visual language were
+accepted. Its pricing and accounting model were not. Fix only these items.
 
 0. PRICING MODEL REPLACED — one percentage, charged on the principal
 
@@ -701,14 +702,9 @@ amount precision from the currency and keep the rate at high precision.
 
 10. SMALLER CORRECTIONS
 
-- Put a one-line plain-English explanation of Inclusive vs Exclusive directly
-  beside the toggle, not only as a footnote in the quote panel after the choice.
-- Either give the over-20,000 amount an actual "Request Finance Manager
-  pre-approval" action, or drop the message.
 - Add a "receiver identity checked against document" confirmation to Payout, so
   the name half of "name + pickup code" is actually recorded. Refund already
   requires the sender name to be typed.
-- Show a single total commission line next to the fixed/percentage split.
 - Move "Recognized this month" to Reconciliation; keep Operations same-day.
 - Make the Exceptions card a full-width lifecycle strip below the four financial
   cards instead of an orphaned fifth card.
@@ -729,7 +725,7 @@ amount precision from the currency and keep the rate at high precision.
 
 Do not regress: currency lines never summed; commission deferred at
 registration; refund full make-whole with zero profit and loss; cashier cannot
-choose rate, commission account or in-transit account; four independent state
+choose the commission account or the in-transit account; four independent state
 axes; pickup code unavailable (not masked) on reopen and absent from lists,
 drawer, timeline, audit, data attributes, console and storage; five-attempt
 lock with manager-only unlock; real permission-denied modal stating nothing was
