@@ -5949,3 +5949,50 @@ Agreement {0} is not open for payment.,{0} шартномаси тўловга �
 "{0}: the customs declaration ({1}) is already fully capitalized on this receipt.","{0}: божхона декларацияси ({1}) ушбу қабулда таннархга тўлиқ киритилган."
 "{0}: {1} of the customs declaration's {2} is already capitalized on this receipt; only the remaining {3} was added.","{0}: божхона декларациясидаги {2} сумманинг {1} қисми ушбу қабулда таннархга аллақачон киритилган; фақат қолган {3} қўшилди."
 Both a Uzbekistan Customs Duty cost line and a cleared customs declaration were present; the declaration's duty/excise took precedence and the cost-line duty was dropped to avoid double counting.,"Ҳам «Ўзбекистон божхона божи» харажат қатори, ҳам расмийлаштирилган божхона декларацияси мавжуд эди; устунлик декларациянинг божи ва акцизига берилди, харажат қатори эса икки марта ҳисобламаслик учун тушириб қолдирилди."
+Acquisition,Сотиб олиш
+All currencies,Барча валюталар
+Back to all work,Барча ишларга қайтиш
+Contract price,Шартнома нархи
+Critical Overdue,Критик муддати ўтган
+Currency Scorecards,Валюта бўйича кўрсаткичлар
+Disposition,Сотиш
+Due Today,Бугун муддати
+Due within 7 days,7 кун ичида муддати
+Failed to load operations data.,Операция маълумотларини юклаб бўлмади.
+Failed to log follow-up.,Алоқани сақлаб бўлмади.
+Failed to record promise.,Ваъдани ёзиб бўлмади.
+Installments due today,Бугун муддати келадиган тўловлар
+Last contact,Охирги алоқа
+Log Follow-up,Алоқани қайд этиш
+Log follow-up,Алоқани қайд этиш
+Monitoring,Мониторинг
+Next 7 Days,Кейинги 7 кун
+Next action,Кейинги ҳаракат
+"One currency per agreement — totals are listed per currency, never summed.",Ҳар бир шартномага битта валюта — жами суммалар ҳар валюта бўйича кўрсатилади ва ҳеч қачон қўшилмайди.
+Open follow-up or pending promise,Очиқ алоқа ёки кутилаётган ваъда
+Overdue Count,Муддати ўтганлар сони
+Overdue Outstanding,Муддати ўтган қолдиқ
+Past escalation threshold or broken promise,Эскалация чегарасидан ошган ёки ваъда бузилган
+Portfolio Lifecycle,Портфел ҳаёт сикли
+Promise Amount,Ваъда суммаси
+Promise Date,Ваъда санаси
+Promise broken,Ваъда бузилган
+Promise due,Ваъда муддати
+Record Promise,Ваъдани қайд этиш
+Record promise,Ваъдани қайд этиш
+Restructured,Қайта тузилган
+Review,Кўриб чиқилмоқда
+Save Follow-up,Алоқани сақлаш
+Save Promise,Ваъдани сақлаш
+Terminated,Бекор қилинган
+Total Agreements,Жами шартномалар
+USD,USD
+Upcoming due within 7 days,7 кун ичида муддати келади
+Vehicle / VIN,Транспорт / VIN
+Work Queues,Иш навбатлари
+agreements,шартнома
+showing first {n} of {count},{count} тадан биринчи {n} таси кўрсатилмоқда
+Add optional note…,Ихтиёрий изоҳ қўшиш…
+"Agreement, party, VIN…","Шартнома, контрагент, VIN…"
+Log outcome or next action note…,Натижа ёки кейинги ҳаракат изоҳи…
+Nothing in this view,Бу кўринишда ҳеч нарса йўқ

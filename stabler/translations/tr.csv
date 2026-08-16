@@ -5944,3 +5944,50 @@ Agreement {0} is not open for payment.,{0} sözleşmesi ödemeye açık değil.
 "{0}: the customs declaration ({1}) is already fully capitalized on this receipt.","{0}: gümrük beyannamesi ({1}) bu mal kabulünde maliyete tamamen eklenmiş durumda."
 "{0}: {1} of the customs declaration's {2} is already capitalized on this receipt; only the remaining {3} was added.","{0}: gümrük beyannamesindeki {2} tutarının {1} kadarı bu mal kabulünde maliyete zaten eklenmiş; yalnızca kalan {3} eklendi."
 Both a Uzbekistan Customs Duty cost line and a cleared customs declaration were present; the declaration's duty/excise took precedence and the cost-line duty was dropped to avoid double counting.,Hem «Özbekistan Gümrük Vergisi» maliyet satırı hem de kapanmış bir gümrük beyannamesi mevcuttu; öncelik beyannamenin vergi ve ÖTV tutarına verildi ve çift sayımı önlemek için maliyet satırı düşürüldü.
+Acquisition,Alım
+All currencies,Tüm para birimleri
+Back to all work,Tüm işlere dön
+Contract price,Sözleşme bedeli
+Critical Overdue,Kritik gecikme
+Currency Scorecards,Para birimi özeti
+Disposition,Satış
+Due Today,Bugün vadesi
+Due within 7 days,7 gün içinde vadesi
+Failed to load operations data.,Operasyon verileri yüklenemedi.
+Failed to log follow-up.,İletişim kaydı kaydedilemedi.
+Failed to record promise.,Ödeme sözü kaydedilemedi.
+Installments due today,Bugün vadesi gelen taksitler
+Last contact,Son iletişim
+Log Follow-up,İletişim Kaydı
+Log follow-up,İletişim kaydet
+Monitoring,İzleme
+Next 7 Days,Önümüzdeki 7 gün
+Next action,Sonraki aksiyon
+"One currency per agreement — totals are listed per currency, never summed.","Sözleşme başına tek para birimi — toplamlar para birimi bazında listelenir, asla toplanmaz."
+Open follow-up or pending promise,Açık iletişim veya bekleyen söz
+Overdue Count,Geciken sayısı
+Overdue Outstanding,Geciken bakiye
+Past escalation threshold or broken promise,Eskalasyon eşiği aşıldı veya söz bozuldu
+Portfolio Lifecycle,Portföy yaşam döngüsü
+Promise Amount,Söz verilen tutar
+Promise Date,Söz verilen tarih
+Promise broken,Söz bozuldu
+Promise due,Söz vadesi
+Record Promise,Ödeme Sözü Kaydet
+Record promise,Ödeme sözü kaydet
+Restructured,Yeniden yapılandırıldı
+Review,İncelemede
+Save Follow-up,İletişimi Kaydet
+Save Promise,Sözü Kaydet
+Terminated,Feshedildi
+Total Agreements,Toplam sözleşme
+USD,USD
+Upcoming due within 7 days,7 gün içinde vadesi geliyor
+Vehicle / VIN,Araç / VIN
+Work Queues,İş kuyrukları
+agreements,sözleşme
+showing first {n} of {count},{count} kaydın ilk {n} tanesi gösteriliyor
+Add optional note…,İsteğe bağlı not ekleyin…
+"Agreement, party, VIN…","Sözleşme, taraf, VIN…"
+Log outcome or next action note…,Sonuç veya sonraki aksiyon notu…
+Nothing in this view,Bu görünümde kayıt yok

@@ -5911,3 +5911,50 @@ Agreement {0} is not open for payment.,Agreement {0} is not open for payment.
 "{0}: the customs declaration ({1}) is already fully capitalized on this receipt.","{0}: the customs declaration ({1}) is already fully capitalized on this receipt."
 "{0}: {1} of the customs declaration's {2} is already capitalized on this receipt; only the remaining {3} was added.","{0}: {1} of the customs declaration's {2} is already capitalized on this receipt; only the remaining {3} was added."
 Both a Uzbekistan Customs Duty cost line and a cleared customs declaration were present; the declaration's duty/excise took precedence and the cost-line duty was dropped to avoid double counting.,Both a Uzbekistan Customs Duty cost line and a cleared customs declaration were present; the declaration's duty/excise took precedence and the cost-line duty was dropped to avoid double counting.
+Acquisition,Acquisition
+All currencies,All currencies
+Back to all work,Back to all work
+Contract price,Contract price
+Critical Overdue,Critical Overdue
+Currency Scorecards,Currency Scorecards
+Disposition,Disposition
+Due Today,Due Today
+Due within 7 days,Due within 7 days
+Failed to load operations data.,Failed to load operations data.
+Failed to log follow-up.,Failed to log follow-up.
+Failed to record promise.,Failed to record promise.
+Installments due today,Installments due today
+Last contact,Last contact
+Log Follow-up,Log Follow-up
+Log follow-up,Log follow-up
+Monitoring,Monitoring
+Next 7 Days,Next 7 Days
+Next action,Next action
+"One currency per agreement — totals are listed per currency, never summed.","One currency per agreement — totals are listed per currency, never summed."
+Open follow-up or pending promise,Open follow-up or pending promise
+Overdue Count,Overdue Count
+Overdue Outstanding,Overdue Outstanding
+Past escalation threshold or broken promise,Past escalation threshold or broken promise
+Portfolio Lifecycle,Portfolio Lifecycle
+Promise Amount,Promise Amount
+Promise Date,Promise Date
+Promise broken,Promise broken
+Promise due,Promise due
+Record Promise,Record Promise
+Record promise,Record promise
+Restructured,Restructured
+Review,Review
+Save Follow-up,Save Follow-up
+Save Promise,Save Promise
+Terminated,Terminated
+Total Agreements,Total Agreements
+USD,USD
+Upcoming due within 7 days,Upcoming due within 7 days
+Vehicle / VIN,Vehicle / VIN
+Work Queues,Work Queues
+agreements,agreements
+showing first {n} of {count},showing first {n} of {count}
+Add optional note…,Add optional note…
+"Agreement, party, VIN…","Agreement, party, VIN…"
+Log outcome or next action note…,Log outcome or next action note…
+Nothing in this view,Nothing in this view

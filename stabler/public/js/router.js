@@ -134,6 +134,7 @@ import RemittanceHome from "./pages/remittance/RemittanceHome.vue";
 import NewRemittance from "./pages/remittance/NewRemittance.vue";
 import RemittanceTransfers from "./pages/remittance/RemittanceTransfers.vue";
 import InstallmentHome from "./pages/installment/InstallmentHome.vue";
+import Operations from "./pages/installment/Operations.vue";
 import NewContract from "./pages/installment/NewContract.vue";
 import Contracts from "./pages/installment/Contracts.vue";
 import InstallmentOverdue from "./pages/installment/Overdue.vue";
@@ -464,6 +465,7 @@ const routes = [
 		meta: { title: t("Installment"), module: "installment" },
 		children: [
 			{ path: "", redirect: "/installment/new" },
+			{ path: "operations", name: "vf-operations", component: Operations, meta: { title: t("Operations") } },
 			{ path: "new", name: "installment-new", component: NewContract, meta: { title: t("New Contract") } },
 			{ path: "contracts", name: "installment-contracts", component: Contracts, meta: { title: t("Contracts") } },
 			{ path: "overdue", name: "installment-overdue", component: InstallmentOverdue, meta: { title: t("Overdue") } },
