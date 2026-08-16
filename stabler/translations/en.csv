@@ -74,6 +74,10 @@ A valid veterinary certificate is required.,A valid veterinary certificate is re
 "A ≤ {0}%, B ≤ {1}%, C rest — by {2}. Submitted; returns netted.","A ≤ {0}%, B ≤ {1}%, C rest — by {2}. Submitted; returns netted."
 Abbr,Abbr
 Absent,Absent
+I have written it down,I have written it down
+Pickup code,Pickup code
+Transfer registered,Transfer registered
+Write this code down and hand it to the sender now. It is shown once and cannot be recovered.,Write this code down and hand it to the sender now. It is shown once and cannot be recovered.
 absent,absent
 Accept Return,Accept Return
 Accepted,Accepted

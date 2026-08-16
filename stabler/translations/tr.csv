@@ -74,6 +74,10 @@ A valid veterinary certificate is required.,Geçerli bir veteriner sertifikası 
 "A ≤ {0}%, B ≤ {1}%, C rest — by {2}. Submitted; returns netted.","A ≤ {0}%, B ≤ {1}%, C diğer — {2} bazında. Onaylanmış; iadeler netleştirilmiş."
 Abbr,Kısaltma
 Absent,Devamsız
+I have written it down,Yazdım
+Pickup code,Teslim kodu
+Transfer registered,Havale kaydedildi
+Write this code down and hand it to the sender now. It is shown once and cannot be recovered.,Bu kodu yazın ve şimdi gönderene teslim edin. Bir kez gösterilir ve geri getirilemez.
 absent,gelmedi
 Accept Return,
 Accepted,Kabul edildi

@@ -27,6 +27,11 @@ const corridors = ref([]);
 
 const step = ref(1);
 
+// The code the server generated, held only in memory and only until the cashier
+// acknowledges it. It is stored as a digest, so this screen is the one and only
+// place it is ever readable — losing it means the receiver cannot be paid.
+const issued = ref(null);
+
 const form = ref({
 	posting_date: todayIso(),
 	from_city: "",
@@ -165,7 +170,7 @@ async function submit() {
 	}
 	submitting.value = true;
 	try {
-		await call("stabler.api.remittance.create_remittance", {
+		const res = await call("stabler.api.remittance.create_remittance", {
 			company: company.value,
 			posting_date: form.value.posting_date,
 			cash_in_account: form.value.cash_in_account,
@@ -183,12 +188,17 @@ async function submit() {
 			memo: form.value.memo || null,
 			submit: 1,
 		});
-		await router.push("/remittance/transfers");
+		issued.value = { remittance_id: res?.remittance_id || "", pickup_code: res?.pickup_code || "" };
 	} catch (err) {
 		submitError.value = err?.message || t("Failed to create transfer.");
 	} finally {
 		submitting.value = false;
 	}
+}
+
+async function acknowledgeCode() {
+	issued.value = null;
+	await router.push("/remittance/transfers");
 }
 
 onMounted(load);
@@ -199,6 +209,34 @@ onMounted(load);
 		<div class="spinner-border text-primary" role="status"></div>
 	</div>
 	<div v-else-if="error" class="alert alert-danger">{{ error }}</div>
+
+	<!-- ── One-time pickup code ─────────────────────────────────────────────
+	     Shown instead of the form, never beside it: the code is stored as a
+	     digest, so once this screen is dismissed nothing can recover it. -->
+	<div v-else-if="issued" class="row justify-content-center">
+		<div class="col-lg-6">
+			<div class="card">
+				<div class="card-body text-center">
+					<h3 class="card-title">{{ t("Transfer registered") }}</h3>
+					<div class="text-secondary mb-3">{{ issued.remittance_id }}</div>
+
+					<div class="form-label">{{ t("Pickup code") }}</div>
+					<div class="display-6 font-monospace fw-bold mb-3" style="letter-spacing: 0.2em">
+						{{ issued.pickup_code }}
+					</div>
+
+					<div class="alert alert-warning text-start">
+						{{ t("Write this code down and hand it to the sender now. It is shown once and cannot be recovered.") }}
+					</div>
+
+					<button class="btn btn-primary w-100" @click="acknowledgeCode">
+						{{ t("I have written it down") }}
+					</button>
+				</div>
+			</div>
+		</div>
+	</div>
+
 	<div v-else class="row justify-content-center">
 		<div class="col-lg-8">
 			<!-- Step indicator -->

@@ -74,6 +74,10 @@ A valid veterinary certificate is required.,Амалдаги ветеринар�
 "A ≤ {0}%, B ≤ {1}%, C rest — by {2}. Submitted; returns netted.","А ≤ {0}%, B ≤ {1}%, C қолган — {2} бўйича. Тасдиқланган; қайтаришлар нетто."
 Abbr,Қисқартма
 Absent,Йўқ
+I have written it down,Ёзиб олдим
+Pickup code,Олиш коди
+Transfer registered,Пул ўтказмаси рўйхатга олинди
+Write this code down and hand it to the sender now. It is shown once and cannot be recovered.,Бу кодни ёзиб олинг ва ҳозир жўнатувчига беринг. У бир марта кўрсатилади ва қайта тиклаб бўлмайди.
 absent,келмаган
 Accept Return,
 Accepted,Қабул қилинган

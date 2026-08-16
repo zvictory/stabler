@@ -74,6 +74,10 @@ A valid veterinary certificate is required.,Amaldagi veterinariya sertifikati ta
 "A ≤ {0}%, B ≤ {1}%, C rest — by {2}. Submitted; returns netted.","A ≤ {0}%, B ≤ {1}%, C qolgan — {2} bo'yicha. Tasdiqlangan; qaytarishlar netto."
 Abbr,Qisqartma
 Absent,Yo'q
+I have written it down,Yozib oldim
+Pickup code,Olish kodi
+Transfer registered,Pul o'tkazmasi ro'yxatga olindi
+Write this code down and hand it to the sender now. It is shown once and cannot be recovered.,Bu kodni yozib oling va hozir jo'natuvchiga bering. U bir marta ko'rsatiladi va qayta tiklab bo'lmaydi.
 absent,kelmagan
 Accept Return,
 Accepted,Qabul qilingan

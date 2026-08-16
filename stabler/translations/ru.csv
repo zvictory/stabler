@@ -75,6 +75,10 @@ A valid veterinary certificate is required.,Требуется действую�
 "A ≤ {0}%, B ≤ {1}%, C rest — by {2}. Submitted; returns netted.","A ≤ {0}%, B ≤ {1}%, C прочее — по {2}. Проведённые; возвраты нетто."
 Abbr,Сокр.
 Absent,Отсутствует
+I have written it down,Код записан
+Pickup code,Код получения
+Transfer registered,Перевод зарегистрирован
+Write this code down and hand it to the sender now. It is shown once and cannot be recovered.,Запишите этот код и передайте его отправителю сейчас. Он показывается один раз и не может быть восстановлен.
 absent,отсутствовал
 Accept Return,
 Accepted,Принят

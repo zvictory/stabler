@@ -53,7 +53,7 @@ def _load_api():
 	_SANDBOX.evict(*_FAKED)
 
 	frappe = types.ModuleType("frappe")
-	frappe.whitelist = lambda *_a, **_k: (lambda fn: fn)
+	frappe.whitelist = lambda *_a, **_k: lambda fn: fn
 
 	model = types.ModuleType("frappe.model")
 	naming = types.ModuleType("frappe.model.naming")
@@ -155,7 +155,9 @@ class PickupCodeStorage(unittest.TestCase):
 		# verifies with _pickup_code_matches. If the two ever drift, every
 		# migrated transfer silently becomes unpayable.
 		salt = "0123456789abcdef0123456789abcdef"
-		self.assertTrue(self.api._pickup_code_matches(self.api.hash_pickup_code("ABCD2345", salt), "ABCD2345"))
+		self.assertTrue(
+			self.api._pickup_code_matches(self.api.hash_pickup_code("ABCD2345", salt), "ABCD2345")
+		)
 
 
 class PickupCodeGeneration(unittest.TestCase):
