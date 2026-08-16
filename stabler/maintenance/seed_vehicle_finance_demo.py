@@ -274,7 +274,7 @@ def _make_agreement(
 ) -> str:
 	"""One agreement, left in `Active` so the work queue can actually see it.
 
-	The read side filters on `agreement_status in ("Active", "Restructured")`
+	The read side filters on `agreement_status in ("Active", "Rescheduled")`
 	(v1.py:41). The bench fixtures stop at `Approved`, which is correct for what
 	they assert but would produce an empty queue here — a seeder copied from
 	them verbatim looks like it worked and shows nothing.

@@ -271,21 +271,27 @@ export const STATUS_MAP = {
 	},
 	// Vehicle Agreement lifecycle. Without this block only Draft and Completed
 	// resolved — the generic map at the bottom of this file carries no Review,
-	// Approved, Active, Restructured or Terminated — so five of the seven states
-	// rendered bg-secondary-lt and the portfolio lifecycle strip showed a
-	// terminated agreement as identical to a live one.
+	// Approved, Active, Rescheduled, Restructured or Terminated — so six of the
+	// eight states rendered bg-secondary-lt and the portfolio lifecycle strip
+	// showed a terminated agreement as identical to a live one.
 	// Active is blue, not green, because Completed is green by convention
 	// everywhere else in this map; making both green would rebuild the same
 	// can't-tell-them-apart defect one column over.
-	// Restructured is orange on purpose: a rescheduled agreement is an exception
-	// to watch, not a healthy one, and colouring it green hides the risk the
-	// reschedule was taken on to avoid.
+	// Rescheduled is orange on purpose: a re-cut schedule at the same total is
+	// still collectible, but it is an exception to watch, not a healthy one, and
+	// colouring it green hides the risk the reschedule was taken on to avoid.
+	// Restructured is a different thing and must not share that colour: it is
+	// TERMINAL, stamped on the original agreement when a restructure closes it
+	// and opens a successor (docs/decisions/2026-08-16-restructure-closes-and-
+	// reopens.md). Purple, because green would read as settled and red as failed
+	// — the original was neither; it was superseded.
 	"Vehicle Agreement": {
 		Draft: "bg-secondary-lt",
 		Review: "bg-yellow-lt",
 		Approved: "bg-azure-lt",
 		Active: "bg-blue-lt",
-		Restructured: "bg-orange-lt",
+		Rescheduled: "bg-orange-lt",
+		Restructured: "bg-purple-lt",
 		Completed: "bg-green-lt",
 		Terminated: "bg-red-lt",
 	},

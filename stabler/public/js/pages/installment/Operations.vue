@@ -62,6 +62,7 @@ const agreementStatusLabels = computed(() => ({
 	"Review": t("Review"),
 	"Approved": t("Approved"),
 	"Active": t("Active"),
+	"Rescheduled": t("Rescheduled"),
 	"Restructured": t("Restructured"),
 	"Completed": t("Completed"),
 	"Terminated": t("Terminated"),

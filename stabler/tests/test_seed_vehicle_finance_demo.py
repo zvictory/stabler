@@ -243,7 +243,7 @@ class SeederHonestyContract(unittest.TestCase):
 		self.assertIn('currency="UZS"', seed)
 
 	def test_agreements_are_left_collectible(self):
-		"""The read side filters on agreement_status in ("Active", "Restructured").
+		"""The read side filters on agreement_status in ("Active", "Rescheduled").
 		The bench fixtures stop at "Approved", which is right for what they assert
 		and would produce a silently empty queue here."""
 		self.assertIn('agreement.agreement_status = "Active"', _fn("_make_agreement"))

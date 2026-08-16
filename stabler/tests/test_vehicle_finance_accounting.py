@@ -487,15 +487,16 @@ class VehicleFinanceAccountingTest(FrappeTestCase):
 			pluck="name",
 		)
 		self.assertEqual(len(apps), 2)
-		self.assertEqual(frappe.db.get_value("Vehicle Agreement", name, "agreement_status"), "Restructured")
+		self.assertEqual(frappe.db.get_value("Vehicle Agreement", name, "agreement_status"), "Rescheduled")
 
 	def test_collection_continues_after_reschedule(self):
-		"""A restructured agreement must keep collecting on its new schedule.
+		"""A rescheduled agreement must keep collecting on its new schedule.
 
 		Why it matters: rescheduling exists so a struggling customer can keep
-		paying. If Restructured stopped collection, every reschedule would
+		paying. If Rescheduled stopped collection, every reschedule would
 		permanently freeze the receivable and the agreement could never reach
-		Completed — the status model's own terminal state.
+		Completed — the status model's own terminal state. This is also why the
+		reschedule path must not stamp Restructured, which IS terminal.
 		"""
 		name = self._make_agreement(direction="Disposition")
 		v1.activate_agreement(name)
@@ -509,7 +510,7 @@ class VehicleFinanceAccountingTest(FrappeTestCase):
 				"reschedule_reason": "Customer hardship",
 			},
 		)
-		self.assertEqual(frappe.db.get_value("Vehicle Agreement", name, "agreement_status"), "Restructured")
+		self.assertEqual(frappe.db.get_value("Vehicle Agreement", name, "agreement_status"), "Rescheduled")
 
 		result = v1.collect_customer_payment(name, 200, mode_of_payment="Cash", bank_account=self.bank)
 		self.assertTrue(result["payment_entry"])

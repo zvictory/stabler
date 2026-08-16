@@ -34,11 +34,14 @@ from stabler.api.vehicle_finance.schedule import build_schedule
 
 _ADVANCE_PREFIX = "VFA-ADV-"
 
-# Rescheduling exists so a struggling party keeps paying, so Restructured must
+# Rescheduling exists so a struggling party keeps paying, so Rescheduled must
 # stay collectible — otherwise a reschedule freezes the balance forever and the
 # agreement can never reach Completed. Draft/Review/Approved have no invoice yet;
-# Completed/Terminated are terminal.
-_COLLECTIBLE_STATUSES = ("Active", "Restructured")
+# Restructured/Completed/Terminated are terminal. Restructured is NOT a synonym
+# for Rescheduled: it is stamped on the ORIGINAL agreement when a restructure
+# closes it and opens a successor, so it must never be collectible
+# (docs/decisions/2026-08-16-restructure-closes-and-reopens.md).
+_COLLECTIBLE_STATUSES = ("Active", "Rescheduled")
 
 
 # --- shared loaders -----------------------------------------------------------
@@ -923,7 +926,7 @@ def approve_reschedule(agreement: str, payload: dict | None = None) -> dict:
 		new_version.submit()
 
 		doc.flags.vf_internal = True
-		doc.agreement_status = "Restructured"
+		doc.agreement_status = "Rescheduled"
 		doc.active_schedule_version = new_version.name
 		doc.save(ignore_permissions=False)
 		frappe.db.commit()

@@ -48,7 +48,7 @@ describe("getStatusBadgeClass — Vehicle Agreement lifecycle", () => {
 
 	// The five that used to fall through. Naming them individually means the
 	// failure message says WHICH state regressed.
-	it.each(["Review", "Approved", "Active", "Restructured", "Terminated"])(
+	it.each(["Review", "Approved", "Active", "Rescheduled", "Restructured", "Terminated"])(
 		"resolves %s to something other than the fall-through grey",
 		(state) => {
 			expect(VA(state)).not.toBe("bg-secondary-lt");
@@ -70,9 +70,25 @@ describe("getStatusBadgeClass — Vehicle Agreement lifecycle", () => {
 
 	// A rescheduled agreement is an exception to watch. Green would hide the
 	// risk the reschedule was taken on to avoid.
-	it("marks Restructured as an exception rather than a healthy state", () => {
-		expect(VA("Restructured")).toBe("bg-orange-lt");
-		expect(VA("Restructured")).not.toBe(VA("Active"));
+	it("marks Rescheduled as an exception rather than a healthy state", () => {
+		expect(VA("Rescheduled")).toBe("bg-orange-lt");
+		expect(VA("Rescheduled")).not.toBe(VA("Active"));
+	});
+
+	// Rescheduled and Restructured are NOT synonyms: the first is collectible
+	// (same total, new schedule), the second is terminal on the original
+	// agreement once a successor is opened. Sharing a colour would put a closed
+	// contract and a live one in the same bucket on the lifecycle strip — the
+	// exact confusion the vocabulary split was made to end.
+	it("does not draw a restructured agreement like a rescheduled one", () => {
+		expect(VA("Restructured")).not.toBe(VA("Rescheduled"));
+	});
+
+	// Terminal, but neither settled nor failed — so it must not borrow the
+	// colour of either, or the restructure count reads as churn or as revenue.
+	it("does not draw a restructured agreement like a settled or failed one", () => {
+		expect(VA("Restructured")).not.toBe(VA("Completed"));
+		expect(VA("Restructured")).not.toBe(VA("Terminated"));
 	});
 
 	it("still greys a state that is not part of the lifecycle", () => {
