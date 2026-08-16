@@ -1,0 +1,27 @@
+{
+	"actions": [],
+	"doctype": "DocType",
+	"editable_grid": 1,
+	"engine": "InnoDB",
+	"field_order": [
+		"branch",
+		"city",
+		"currency",
+		"account",
+		"evidence_type"
+	],
+	"fields": [
+		{"fieldname": "branch", "fieldtype": "Link", "in_list_view": 1, "label": "Desk", "options": "Branch", "reqd": 1},
+		{"fieldname": "city", "fieldtype": "Data", "in_list_view": 1, "label": "City"},
+		{"fieldname": "currency", "fieldtype": "Link", "in_list_view": 1, "label": "Currency", "options": "Currency", "reqd": 1},
+		{"fieldname": "account", "fieldtype": "Link", "in_list_view": 1, "label": "Cash Account", "options": "Account", "reqd": 1},
+		{"default": "Counted", "fieldname": "evidence_type", "fieldtype": "Select", "in_list_view": 1, "label": "Reconciliation Evidence", "options": "Counted\nWallet balance", "reqd": 1}
+	],
+	"istable": 1,
+	"links": [],
+	"module": "Stabler",
+	"name": "Remittance Cash Desk Account",
+	"permissions": [],
+	"sort_field": "creation",
+	"sort_order": "DESC"
+}

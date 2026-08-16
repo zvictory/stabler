@@ -1,0 +1,46 @@
+{
+	"actions": [],
+	"autoname": "field:company",
+	"doctype": "DocType",
+	"engine": "InnoDB",
+	"field_order": [
+		"company",
+		"section_company_accounts",
+		"receiver_obligation_account",
+		"deferred_commission_account",
+		"commission_income_account",
+		"section_policy",
+		"default_quote_expiry_hours",
+		"max_code_attempts",
+		"lockout_minutes",
+		"require_refund_approval",
+		"section_cash_desks",
+		"cash_desk_accounts"
+	],
+	"fields": [
+		{"fieldname": "company", "fieldtype": "Link", "options": "Company", "reqd": 1, "unique": 1, "in_standard_filter": 1},
+
+		{"fieldname": "section_company_accounts", "fieldtype": "Section Break", "label": "Company Accounts"},
+		{"fieldname": "receiver_obligation_account", "fieldtype": "Link", "label": "Receiver Obligation", "options": "Account", "reqd": 1},
+		{"fieldname": "deferred_commission_account", "fieldtype": "Link", "label": "Deferred Commission", "options": "Account", "reqd": 1},
+		{"fieldname": "commission_income_account", "fieldtype": "Link", "label": "Commission Income", "options": "Account", "reqd": 1},
+
+		{"fieldname": "section_policy", "fieldtype": "Section Break", "label": "Policy"},
+		{"default": "72", "fieldname": "default_quote_expiry_hours", "fieldtype": "Int", "label": "Default Quote Expiry (hours)"},
+		{"default": "5", "fieldname": "max_code_attempts", "fieldtype": "Int", "label": "Max Pickup Code Attempts"},
+		{"default": "30", "fieldname": "lockout_minutes", "fieldtype": "Int", "label": "Lockout (minutes)"},
+		{"default": "1", "fieldname": "require_refund_approval", "fieldtype": "Check", "label": "Refund Requires Approval"},
+
+		{"fieldname": "section_cash_desks", "fieldtype": "Section Break", "label": "Cash Desks"},
+		{"description": "One cash account per desk per currency, so a desk's book balance equals the count in that drawer.", "fieldname": "cash_desk_accounts", "fieldtype": "Table", "label": "Cash Desk Accounts", "options": "Remittance Cash Desk Account"}
+	],
+	"links": [],
+	"module": "Stabler",
+	"name": "Remittance Settings",
+	"permissions": [
+		{"read": 1, "write": 1, "create": 1, "delete": 1, "role": "System Manager"}
+	],
+	"sort_field": "modified",
+	"sort_order": "DESC",
+	"track_changes": 1
+}
