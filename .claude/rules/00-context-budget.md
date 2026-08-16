@@ -7,11 +7,20 @@ description: Context budget and micro-task discipline. Always active.
 The context window is a **consumable resource with a budget**. Auto-compaction is not a
 feature you use; it is an **alarm meaning the unit of work was mis-sized**.
 
+A large window does not retire this rule. Measured 2026-08-17: `.claude/settings.json` sets
+`autoCompactWindow` to 400000, and the `PreCompact` hook still fired **on its own** —
+`.claude/handoff/last-handoff.md` was written by an `auto` trigger on 2026-08-16. The ceiling
+is still being reached; only its height changed.
+
 1. **Exploration never happens on the main thread.** "Where is X", "what does this module
    do", "which tests cover it" → delegate to the `Explore` subagent; it burns its own
-   window and returns a conclusion. Reading 8 files inline costs ~50k tokens; the same
-   answer from a subagent costs ~1.5k. On the main thread, `Read` is for files you are
-   **about to edit** — nothing else.
+   window and returns a conclusion. What you buy is **signal density on the deciding
+   thread**, not a saving. Measured 2026-08-17: a Skeptic subagent spent 105,211 tokens to
+   return ~1.5k of conclusion. Total spend goes **up**; what changes is that the main thread
+   never carries bytes it will not edit. (This line used to claim "8 files inline ≈ 50k vs
+   ~1.5k from a subagent", which read as an economy. It was never measured and the economy
+   is false — only the main-thread figure was ever true.) On the main thread, `Read` is for
+   files you are **about to edit** — nothing else.
 2. **State lives on disk, not in the conversation.** Queue → `bd`. Progress → git commits.
    In-flight position → `.claude/handoff/last-handoff.md`. A fact that exists only in the
    transcript does not exist.

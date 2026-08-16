@@ -21,8 +21,13 @@ this file is paid for in every session.
 
 ### Verification — Definition of Done
 - `make check` = `lint-changed lint-js-changed compile guards test test-js` — the push gate.
-- `make test` = the 84 frappe-free unit modules (fast; no bench, no DB).
-- `make test-bench` = the other 15 modules — **not part of `check`**; needs a live bench.
+- `make test` = the modules listed in `.github/frappe-free-tests.txt` (fast; no bench, no DB).
+- `make test-bench` = the rest, derived by `BENCH_TESTS` — **not part of `check`**; needs a
+  live bench.
+- **Never quote a test count, in this file least of all.** `make test` and `make test-bench`
+  each echo the live one. `84` and `15` sat in the two lines above until 2026-08-17 and both
+  were wrong; because this file says *on conflict, this file wins*, a stale count here
+  outranks the correct one the Makefile prints.
 - For DB-dependent changes `make check` alone is **not** sufficient proof. Say so
   explicitly and request `make test-bench` rather than declaring the task done.
 
