@@ -35,16 +35,28 @@ PROD_APP  ?= /home/frappe/frappe-bench/apps/stabler
 # Files this push would introduce: everything since the last commit `origin`
 # already has, plus anything uncommitted. --diff-filter=d drops deletions, which
 # would otherwise be passed to ruff as nonexistent paths.
+#
+# The fourth line — `git ls-files --others` — is untracked files, and leaving it
+# out cost a rejected push on 2026-08-16. The three `git diff` forms see commits,
+# unstaged tracked changes and the index; a brand-new file is in none of them, so
+# a micro-task that ADDS a module (the normal shape of a new frappe-free one) ran
+# this gate with ruff seeing zero of the new code and printing "no changed .py
+# files, skipping" — green, exit 0, on code it never opened. The first `git push`
+# then ran the same target on the now-committed files and failed. The failure
+# hides only for a file's first commit, which is exactly when it is least
+# reviewed. --exclude-standard keeps .gitignore'd build output out.
 BASE := $(shell git merge-base HEAD origin/main 2>/dev/null || echo HEAD)
 CHANGED_PY := $(shell { \
 	git diff --name-only --diff-filter=d $(BASE) HEAD -- '*.py'; \
 	git diff --name-only --diff-filter=d -- '*.py'; \
 	git diff --cached --name-only --diff-filter=d -- '*.py'; \
+	git ls-files --others --exclude-standard -- '*.py'; \
 	} 2>/dev/null | sort -u)
 CHANGED_JS := $(shell { \
 	git diff --name-only --diff-filter=d $(BASE) HEAD -- '*.js' '*.vue'; \
 	git diff --name-only --diff-filter=d -- '*.js' '*.vue'; \
 	git diff --cached --name-only --diff-filter=d -- '*.js' '*.vue'; \
+	git ls-files --others --exclude-standard -- '*.js' '*.vue'; \
 	} 2>/dev/null | grep -v -e '^stabler/public/js/vendor/' -e '^stabler/public/dist/' | sort -u)
 
 ESLINT := node_modules/.bin/eslint
