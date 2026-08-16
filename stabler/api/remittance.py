@@ -24,8 +24,9 @@ Lifecycle
 Invariant at register: cash_in_base == payout_base + commission_base (balances by
 construction), so payout and refund both balance by reusing the register legs.
 
-Verification is code-only: the pickup code set at register is matched (never
-displayed by any read endpoint) at payout.
+Verification is code-only: the pickup code is generated at register, returned to
+the caller exactly once, and stored only as a salted digest. No read endpoint
+displays it, and the stored value cannot be replayed at payout.
 
 Single-company for now; the intransit account is resolved per company, so a future
 cross-company corridor can settle via a due-to/due-from without reshaping the stages.
@@ -33,6 +34,7 @@ cross-company corridor can settle via a due-to/due-from without reshaping the st
 
 from __future__ import annotations
 
+import hashlib
 import hmac
 import secrets
 
@@ -62,12 +64,53 @@ REMITTANCE_CURRENCIES = ["USD", "EUR", "USDT"]
 _CODE_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"
 _CODE_LEN = 8
 
+# The stored code is readable by anyone who can open the Journal Entry, so it is
+# kept as a salted digest and never in plaintext: `scheme$salt$digest`. Per-record
+# salts rather than a site-wide pepper — a missing conf key on any of the seven
+# tenants would break every payout at once.
+_CODE_SCHEME = "s1"
+_CODE_SALT_BYTES = 16
+
 
 # --------------------------------------------------------------------------- #
 # Helpers
 # --------------------------------------------------------------------------- #
 def _gen_pickup_code() -> str:
 	return "".join(secrets.choice(_CODE_ALPHABET) for _ in range(_CODE_LEN))
+
+
+def hash_pickup_code(code: str, salt: str) -> str:
+	"""Storage form of a pickup code: `scheme$salt$digest`.
+
+	Shared with the migration patch that hashes pre-existing plaintext values,
+	so both sides derive the digest exactly the same way.
+	"""
+	digest = hashlib.sha256(f"{salt}{code.strip().upper()}".encode()).hexdigest()
+	return f"{_CODE_SCHEME}${salt}${digest}"
+
+
+def store_pickup_code(code: str) -> str:
+	"""Hash a freshly generated code under a new random salt."""
+	return hash_pickup_code(code, secrets.token_hex(_CODE_SALT_BYTES))
+
+
+def is_hashed_pickup_code(stored: str) -> bool:
+	parts = (stored or "").strip().split("$")
+	return len(parts) == 3 and parts[0] == _CODE_SCHEME and bool(parts[1]) and bool(parts[2])
+
+
+def _pickup_code_matches(stored: str, provided: str) -> bool:
+	"""Constant-time compare of the provided code against the stored digest.
+
+	A plaintext (unmigrated) stored value never matches — accepting one would
+	reinstate exactly the defect this replaces.
+	"""
+	stored = (stored or "").strip()
+	provided = (provided or "").strip().upper()
+	if not stored or not provided or not is_hashed_pickup_code(stored):
+		return False
+	salt = stored.split("$")[1]
+	return hmac.compare_digest(hash_pickup_code(provided, salt), stored)
 
 
 def _gen_remittance_id(company: str) -> str:
@@ -229,14 +272,14 @@ def create_remittance(
 	corridor: str | None = None,
 	sender_name: str | None = None,
 	receiver_name: str | None = None,
-	pickup_code: str | None = None,
 	memo: str | None = None,
 	submit: int | str = 1,
 ) -> dict:
 	"""Register a remittance: collect the sender's cash into an in-transit liability.
 
-	Returns the remittance_id and the pickup_code — the code is returned ONCE here
-	(hand it to the sender); no read endpoint ever discloses it again.
+	Returns the remittance_id and the pickup_code — the code is generated here,
+	server-side only, and returned ONCE (hand it to the sender). It is stored as a
+	salted digest, so no read endpoint and no Journal Entry field discloses it again.
 
 	commission_percent: when supplied, derives the absolute commission.
 	                    Exclusive: commission = round2(amount × pct / 100).
@@ -328,7 +371,7 @@ def create_remittance(
 	multi_currency = int(send_currency != base_currency or receive_currency != base_currency)
 
 	remittance_id = _gen_remittance_id(company)
-	code = (pickup_code or "").strip().upper() or _gen_pickup_code()
+	code = _gen_pickup_code()
 
 	parts = []
 	if corridor:
@@ -353,7 +396,7 @@ def create_remittance(
 			"cheque_date": getdate(posting_date),
 			"stabler_remittance_id": remittance_id,
 			"stabler_remittance_stage": "Register",
-			"stabler_pickup_code": code,
+			"stabler_pickup_code": store_pickup_code(code),
 			"stabler_sender_name": (sender_name or "")[:140],
 			"stabler_receiver_name": (receiver_name or "")[:140],
 			"accounts": [
@@ -426,9 +469,15 @@ def payout_remittance(
 	_require_company(reg.company)
 	_assert_registered(remittance_id)
 
-	expected = (reg.get("stabler_pickup_code") or "").strip().upper()
-	provided = (pickup_code or "").strip().upper()
-	if not expected or not provided or not hmac.compare_digest(expected, provided):
+	stored = (reg.get("stabler_pickup_code") or "").strip()
+	if stored and not is_hashed_pickup_code(stored):
+		# Registered before patch v86 and the migration has not run on this site.
+		# Fail with the real cause instead of blaming the receiver's code.
+		frappe.throw(
+			"This transfer's pickup code is still stored in the old format. "
+			"Run `bench migrate` on this site (patch v86), then retry.",
+		)
+	if not _pickup_code_matches(stored, pickup_code):
 		frappe.throw("Invalid pickup code.", frappe.PermissionError)
 
 	if not payout_account:

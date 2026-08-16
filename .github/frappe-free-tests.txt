@@ -193,3 +193,4 @@ stabler.tests.test_vehicle_finance_work
 stabler.tests.test_vehicle_finance_chain
 stabler.tests.test_module_sandbox_hygiene
 stabler.tests.test_seed_vehicle_finance_demo
+stabler.tests.test_remittance_pickup_code
