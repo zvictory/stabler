@@ -6004,3 +6004,24 @@ Log outcome or next action note…,Результат или заметка о �
 Nothing in this view,В этом представлении ничего нет
 Promise pending,Обещание в силе
 Open follow-up,Открытый контакт
+"Agreement, vehicle, VIN, party…","Договор, автомобиль, VIN, контрагент…"
+Agreements,Договоры
+All payment states,Все статусы оплаты
+Current,Текущий
+Failed to load agreement.,Не удалось загрузить договор.
+Failed to load agreements.,Не удалось загрузить договоры.
+Health,Состояние
+Next due,Следующий платёж
+No agreements match these filters,Нет договоров по этим фильтрам
+Not Started,Не начат
+Nothing left to pay on this agreement.,По этому договору нечего платить.
+Open agreement,Открыть договор
+Open rows,Открытые строки
+Payment state,Статус оплаты
+Read only,Только чтение
+"Search covers agreement ID, vehicle, VIN and party.","Поиск охватывает номер договора, автомобиль, VIN и контрагента."
+Seq,№
+Showing the first {n} — narrow the search to see the rest.,"Показаны первые {n} — уточните поиск, чтобы увидеть остальные."
+restructured once,реструктуризирован один раз
+restructured twice,реструктуризирован дважды
+restructured {n} times,реструктуризирован {n} раз

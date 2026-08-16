@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { getDocstatusLabel, getStatusBadgeClass } from "../composables/status.js";
+import { STATUS_MAP, getDocstatusLabel, getStatusBadgeClass } from "../composables/status.js";
 
 // CLAUDE.md: "All status badges and labels must be resolved centrally using
 // getStatusBadgeClass. No per-page status mappings." These tests guard the two
@@ -93,6 +93,50 @@ describe("getStatusBadgeClass — Vehicle Agreement lifecycle", () => {
 
 	it("still greys a state that is not part of the lifecycle", () => {
 		expect(VA("Repossessed")).toBe("bg-secondary-lt");
+	});
+});
+
+// Payment health is a SECOND axis, derived in api/vehicle_finance/read.py at two
+// granularities: the agreement (Not Started/Current/Partial/Overdue/Paid) and the
+// individual schedule row (Upcoming/Partial/Overdue/Paid). Both go through one
+// map because the agreement badge in the list and the row badges in the preview
+// drawer sit inches apart.
+describe("getStatusBadgeClass — Vehicle Finance payment health", () => {
+	const PH = (s) => getStatusBadgeClass("Vehicle Finance Payment Health", s);
+
+	it.each(["Not Started", "Current", "Upcoming", "Partial", "Overdue", "Paid"])(
+		"resolves %s without falling through to the generic map",
+		(state) => {
+			expect(STATUS_MAP["Vehicle Finance Payment Health"]).toHaveProperty(state);
+		},
+	);
+
+	// The whole reason the badge exists: an operator scanning the list has to be
+	// able to separate money that is late from money that is merely not due yet.
+	it("does not draw an overdue agreement like a healthy one", () => {
+		expect(PH("Overdue")).toBe("bg-red-lt");
+		expect(PH("Overdue")).not.toBe(PH("Current"));
+		expect(PH("Overdue")).not.toBe(PH("Paid"));
+	});
+
+	// Paid is green across this map, so Current and Upcoming must not be, or a
+	// portfolio with nothing collected yet reads as a portfolio that is settled.
+	it("does not draw money still owed like money already in", () => {
+		expect(PH("Paid")).toBe("bg-green-lt");
+		expect(PH("Current")).not.toBe(PH("Paid"));
+		expect(PH("Upcoming")).not.toBe(PH("Paid"));
+	});
+
+	// The two granularities describe the same idea — not due yet — and are shown
+	// side by side, so disagreeing on the colour would be a defect in itself.
+	it("agrees with itself across the agreement and row vocabularies", () => {
+		expect(PH("Current")).toBe(PH("Upcoming"));
+	});
+
+	// Not Started is an absence, not a state of health: there is nothing to pay
+	// against until the agreement is activated.
+	it("greys an agreement that has nothing to pay against yet", () => {
+		expect(PH("Not Started")).toBe("bg-secondary-lt");
 	});
 });
 

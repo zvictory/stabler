@@ -295,6 +295,37 @@ export const STATUS_MAP = {
 		Completed: "bg-green-lt",
 		Terminated: "bg-red-lt",
 	},
+	// How something is PAYING, which is a different axis from where an agreement
+	// is in its lifecycle ("Vehicle Agreement" above). Neither is a stored field;
+	// both are derived in api/vehicle_finance/read.py, so these keys must stay in
+	// step with two functions there:
+	//   _agreement_schedule_state (read.py:103-110)  Not Started/Current/Partial/Overdue/Paid
+	//   agreement_detail row health (read.py:312-319) Upcoming/Partial/Overdue/Paid
+	//
+	// ONE map for both granularities on purpose. The agreement badge in the list
+	// and the row badges in the preview drawer sit inches apart, and the same
+	// word rendered in two different reds would be a defect in itself.
+	//
+	// Note the agreement-level derivation is EXCLUSIVE and ordered: Paid, else
+	// Overdue, else Partial, else Current. So an overdue agreement that has been
+	// partly paid reports "Overdue" and never "Partial". That is the right
+	// primary signal — overdue carries the urgency — but it means a screen that
+	// also wants to say "partly paid" must derive that from paid/outstanding and
+	// render it as a SECOND badge; it cannot come out of this map.
+	//
+	// Current and Upcoming are blue rather than green for the same reason Active
+	// is blue in the lifecycle block: Paid is green, and making both green
+	// rebuilds the can't-tell-them-apart defect one column over. Not Started is
+	// grey because there is nothing to pay against until activation — it is an
+	// absence, not a state of health.
+	"Vehicle Finance Payment Health": {
+		"Not Started": "bg-secondary-lt",
+		Current: "bg-blue-lt",
+		Upcoming: "bg-blue-lt",
+		Partial: "bg-yellow-lt",
+		Overdue: "bg-red-lt",
+		Paid: "bg-green-lt",
+	},
 	// Tender Master board lanes. These are DERIVED from the child lots
 	// (api/_tender_master_state.py), not typed by anyone — the keys must stay in
 	// step with LANES there and in composables/tenderMaster.js.

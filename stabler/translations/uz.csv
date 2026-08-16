@@ -5999,3 +5999,24 @@ Log outcome or next action note…,Natija yoki keyingi harakat izohi…
 Nothing in this view,Bu ko'rinishda hech narsa yo'q
 Promise pending,Va'da kuchda
 Open follow-up,Ochiq aloqa
+"Agreement, vehicle, VIN, party…","Shartnoma, avtomobil, VIN, kontragent…"
+Agreements,Shartnomalar
+All payment states,Barcha to'lov holatlari
+Current,Joriy
+Failed to load agreement.,Shartnomani yuklab bo'lmadi.
+Failed to load agreements.,Shartnomalarni yuklab bo'lmadi.
+Health,Holat
+Next due,Keyingi to'lov
+No agreements match these filters,Bu filtrlarga mos shartnoma yo'q
+Not Started,Boshlanmagan
+Nothing left to pay on this agreement.,Bu shartnoma bo'yicha to'lanadigan qarz yo'q.
+Open agreement,Shartnomani ochish
+Open rows,Ochiq qatorlar
+Payment state,To'lov holati
+Read only,Faqat o'qish
+"Search covers agreement ID, vehicle, VIN and party.","Qidiruv shartnoma raqami, avtomobil, VIN va kontragentni qamrab oladi."
+Seq,№
+Showing the first {n} — narrow the search to see the rest.,Birinchi {n} ta ko'rsatilmoqda — qolganini ko'rish uchun qidiruvni aniqlashtiring.
+restructured once,bir marta qayta tuzilgan
+restructured twice,ikki marta qayta tuzilgan
+restructured {n} times,{n} marta qayta tuzilgan

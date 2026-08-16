@@ -5999,3 +5999,24 @@ Log outcome or next action note…,Натижа ёки кейинги ҳарак
 Nothing in this view,Бу кўринишда ҳеч нарса йўқ
 Promise pending,Ваъда кучда
 Open follow-up,Очиқ алоқа
+"Agreement, vehicle, VIN, party…","Шартнома, автомобиль, VIN, контрагент…"
+Agreements,Шартномалар
+All payment states,Барча тўлов ҳолатлари
+Current,Жорий
+Failed to load agreement.,Шартномани юклаб бўлмади.
+Failed to load agreements.,Шартномаларни юклаб бўлмади.
+Health,Ҳолат
+Next due,Кейинги тўлов
+No agreements match these filters,Бу филтрларга мос шартнома йўқ
+Not Started,Бошланмаган
+Nothing left to pay on this agreement.,Бу шартнома бўйича тўланадиган қарз йўқ.
+Open agreement,Шартномани очиш
+Open rows,Очиқ қаторлар
+Payment state,Тўлов ҳолати
+Read only,Фақат ўқиш
+"Search covers agreement ID, vehicle, VIN and party.","Қидирув шартнома рақами, автомобиль, VIN ва контрагентни қамраб олади."
+Seq,№
+Showing the first {n} — narrow the search to see the rest.,Биринчи {n} та кўрсатилмоқда — қолганини кўриш учун қидирувни аниқлаштиринг.
+restructured once,бир марта қайта тузилган
+restructured twice,икки марта қайта тузилган
+restructured {n} times,{n} марта қайта тузилган

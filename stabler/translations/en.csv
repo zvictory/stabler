@@ -5961,3 +5961,24 @@ Log outcome or next action note…,Log outcome or next action note…
 Nothing in this view,Nothing in this view
 Promise pending,Promise pending
 Open follow-up,Open follow-up
+"Agreement, vehicle, VIN, party…","Agreement, vehicle, VIN, party…"
+Agreements,Agreements
+All payment states,All payment states
+Current,Current
+Failed to load agreement.,Failed to load agreement.
+Failed to load agreements.,Failed to load agreements.
+Health,Health
+Next due,Next due
+No agreements match these filters,No agreements match these filters
+Not Started,Not Started
+Nothing left to pay on this agreement.,Nothing left to pay on this agreement.
+Open agreement,Open agreement
+Open rows,Open rows
+Payment state,Payment state
+Read only,Read only
+"Search covers agreement ID, vehicle, VIN and party.","Search covers agreement ID, vehicle, VIN and party."
+Seq,Seq
+Showing the first {n} — narrow the search to see the rest.,Showing the first {n} — narrow the search to see the rest.
+restructured once,restructured once
+restructured twice,restructured twice
+restructured {n} times,restructured {n} times

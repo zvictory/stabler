@@ -1,6 +1,6 @@
 <script setup>
 import { computed } from "vue";
-import { useRoute, RouterLink, RouterView } from "vue-router";
+import { useRoute, RouterView } from "vue-router";
 import { t } from "../../composables/i18n.js";
 import ModuleHeader from "../../components/ModuleHeader.vue";
 
@@ -8,6 +8,7 @@ const route = useRoute();
 const tabs = [
 	{ name: "installment-new", path: "/installment/new", label: t("New Contract"), icon: "ti-plus" },
 	{ name: "installment-contracts", path: "/installment/contracts", label: t("Contracts"), icon: "ti-file-invoice" },
+	{ name: "vf-agreements", path: "/installment/agreements", label: t("Agreements"), icon: "ti-file-text" },
 	{ name: "installment-overdue", path: "/installment/overdue", label: t("Overdue"), icon: "ti-alert-triangle" },
 	{ name: "installment-calendar", path: "/installment/calendar", label: t("Calendar"), icon: "ti-calendar" },
 ];

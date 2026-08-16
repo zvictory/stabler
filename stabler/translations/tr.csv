@@ -5994,3 +5994,24 @@ Log outcome or next action note…,Sonuç veya sonraki aksiyon notu…
 Nothing in this view,Bu görünümde kayıt yok
 Promise pending,Söz bekleniyor
 Open follow-up,Açık takip
+"Agreement, vehicle, VIN, party…","Sözleşme, araç, VIN, taraf…"
+Agreements,Sözleşmeler
+All payment states,Tüm ödeme durumları
+Current,Güncel
+Failed to load agreement.,Sözleşme yüklenemedi.
+Failed to load agreements.,Sözleşmeler yüklenemedi.
+Health,Durum
+Next due,Sonraki vade
+No agreements match these filters,Bu filtrelere uyan sözleşme yok
+Not Started,Başlamadı
+Nothing left to pay on this agreement.,Bu sözleşmede ödenecek bir şey kalmadı.
+Open agreement,Sözleşmeyi aç
+Open rows,Açık satırlar
+Payment state,Ödeme durumu
+Read only,Salt okunur
+"Search covers agreement ID, vehicle, VIN and party.","Arama; sözleşme numarası, araç, VIN ve tarafı kapsar."
+Seq,Sıra
+Showing the first {n} — narrow the search to see the rest.,İlk {n} gösteriliyor — geri kalanı için aramayı daraltın.
+restructured once,bir kez yeniden yapılandırıldı
+restructured twice,iki kez yeniden yapılandırıldı
+restructured {n} times,{n} kez yeniden yapılandırıldı
