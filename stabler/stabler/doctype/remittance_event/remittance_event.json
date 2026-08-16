@@ -1,0 +1,32 @@
+{
+	"actions": [],
+	"autoname": "format:REM-EVT-{YYYY}-{######}",
+	"doctype": "DocType",
+	"engine": "InnoDB",
+	"field_order": [
+		"transfer",
+		"event_type",
+		"occurred_at",
+		"actor",
+		"branch",
+		"client_request_id",
+		"details"
+	],
+	"fields": [
+		{"fieldname": "transfer", "fieldtype": "Link", "in_list_view": 1, "label": "Transfer", "options": "Remittance Transfer", "reqd": 1},
+		{"fieldname": "event_type", "fieldtype": "Select", "in_list_view": 1, "label": "Event", "options": "Register\nFailed code attempt\nLock\nUnlock\nPayout\nRefund request\nRefund approval\nRefund completion", "reqd": 1},
+		{"fieldname": "occurred_at", "fieldtype": "Datetime", "in_list_view": 1, "label": "Occurred At", "reqd": 1},
+		{"fieldname": "actor", "fieldtype": "Link", "label": "Actor", "options": "User"},
+		{"fieldname": "branch", "fieldtype": "Link", "label": "Desk", "options": "Branch"},
+		{"description": "The command this event came from, so the audit tab can show a Request ID.", "fieldname": "client_request_id", "fieldtype": "Data", "label": "Client Request ID"},
+		{"description": "Event-specific detail. Never the pickup code, in any form.", "fieldname": "details", "fieldtype": "Small Text", "label": "Details"}
+	],
+	"links": [],
+	"module": "Stabler",
+	"name": "Remittance Event",
+	"permissions": [
+		{"read": 1, "create": 1, "role": "System Manager"}
+	],
+	"sort_field": "creation",
+	"sort_order": "DESC"
+}
