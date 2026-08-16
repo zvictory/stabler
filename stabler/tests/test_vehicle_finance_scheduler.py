@@ -277,6 +277,30 @@ class VehicleFinanceSchedulerTest(FrappeTestCase):
 			"and must report the same outstanding for them",
 		)
 
+	def test_queue_rows_carry_the_chain_position_of_their_agreement(self):
+		"""stabler-vjfd. The predecessor here is Restructured — terminal, so it is
+		NOT collectible and never appears in the queue itself. The successor's row
+		must still say 2/2: the whole point of the ADR's condition is that you
+		learn the history from the row you are working, without going to look for
+		the closed agreement behind it."""
+		original = self._make_active_agreement(first_installment_date=add_months(today(), -2))
+		successor = self._make_active_agreement(first_installment_date=add_months(today(), -2))
+		frappe.db.set_value("Vehicle Agreement", original, "agreement_status", "Restructured")
+		frappe.db.set_value("Vehicle Agreement", successor, "restructured_from", original)
+
+		queue = work.work_queue(company=COMPANY, view=policy.VIEW_OVERDUE, limit=200)
+		mine = [r for r in queue["rows"] if r["agreement"] == successor]
+		self.assertTrue(mine, "the live successor is still collectible and still overdue")
+		self.assertFalse(
+			[r for r in queue["rows"] if r["agreement"] == original],
+			"a Restructured agreement is terminal — it must not be collected against",
+		)
+		for row in mine:
+			self.assertEqual(row["restructured_from"], original)
+			self.assertEqual(row["chain_position"], 2)
+			self.assertEqual(row["chain_length"], 2)
+			self.assertEqual(row["restructure_count"], 1)
+
 	def test_totals_never_merge_two_currencies(self):
 		self._make_active_agreement(first_installment_date=add_months(today(), -2), currency="USD")
 		self._make_active_agreement(first_installment_date=add_months(today(), -2), currency="UZS")

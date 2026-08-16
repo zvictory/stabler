@@ -19,6 +19,7 @@ from frappe.utils import cint, flt, getdate, today
 
 from stabler.api._common import _assert_can_read, _assert_can_write, _require_company
 from stabler.api.approvals import _assert_company_scope
+from stabler.api.vehicle_finance import chain
 from stabler.api.vehicle_finance.permissions import (
 	_ADMIN_ROLES,
 	CAPABILITY_ROLES,
@@ -132,6 +133,49 @@ def _vehicle_finance_state(acquisition_status: str | None, disposition_status: s
 	return "No Agreement"
 
 
+def _chain_positions(names) -> dict[str, dict]:
+	"""Restructure-chain position for each named agreement.
+
+	`chain.positions` needs a CLOSED set — the whole chain, not just the page —
+	so this walks `restructured_from` in both directions until nothing new turns
+	up. Two queries per hop, never one per row: a page of fifty agreements with
+	no restructures anywhere costs exactly two extra queries, and chains are
+	expected to be two or three links long.
+
+	Cancelled agreements are excluded. A restructure that was cancelled did not
+	happen, so it is not part of the history, and a successor pointing at one
+	reads as a chain root.
+	"""
+	wanted = {name for name in names if name}
+	if not wanted:
+		return {}
+
+	predecessor_by_name: dict[str, str | None] = {}
+	queried: set[str] = set()
+	frontier = set(wanted)
+	while frontier:
+		batch = sorted(frontier)
+		queried.update(batch)
+		found = frappe.get_all(
+			"Vehicle Agreement",
+			filters={"name": ["in", batch], "docstatus": ("!=", 2)},
+			fields=["name", "restructured_from"],
+		) + frappe.get_all(
+			"Vehicle Agreement",
+			filters={"restructured_from": ["in", batch], "docstatus": ("!=", 2)},
+			fields=["name", "restructured_from"],
+		)
+		frontier = set()
+		for row in found:
+			predecessor_by_name[row["name"]] = row["restructured_from"] or None
+			frontier.add(row["name"])
+			if row["restructured_from"]:
+				frontier.add(row["restructured_from"])
+		frontier -= queried
+
+	return chain.positions(predecessor_by_name)
+
+
 # --- 1. agreement_list ----------------------------------------------------------
 
 
@@ -183,6 +227,7 @@ def agreement_list(
 			"agreement_status",
 			"owner_user",
 			"active_schedule_version",
+			"restructured_from",
 		],
 		order_by="agreement_date desc, name desc",
 	)
@@ -205,6 +250,11 @@ def agreement_list(
 		bucket["outstanding"] = flt(bucket["outstanding"] + state["outstanding"])
 
 	page = rows[start : start + limit]
+	# Only the page pays for the chain lookup — the rows filtered out above are
+	# never rendered, so their history is nobody's question.
+	chain_by_name = _chain_positions(row["name"] for row in page)
+	for row in page:
+		row.update(chain_by_name.get(row["name"], chain.SOLE_AGREEMENT))
 	return {
 		"rows": page,
 		"totals_by_currency": totals_by_currency,

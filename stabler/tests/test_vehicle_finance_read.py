@@ -376,6 +376,40 @@ class VehicleFinanceReadTest(FrappeTestCase):
 		self.assertIn("600", invariant["message"])
 		self.assertIn("1000", invariant["message"])
 
+	# --- 7. the restructure chain is readable without a second round trip --------
+
+	def test_agreement_list_reports_chain_position_for_both_ends_of_a_chain(self):
+		"""stabler-vjfd / the ADR's condition. The list must answer "how many
+		times was this restructured" from the row itself, so `restructured_from`
+		has to survive the query AND the chain has to be walked FORWARDS too —
+		the successor knows its predecessor, but the closed original does not
+		know its successor, and it is the original people stumble on first."""
+		original = self._make_agreement(direction="Disposition", vin="VF-VIN-CHAIN1")
+		successor = self._make_agreement(direction="Disposition", vin="VF-VIN-CHAIN2")
+		# No writer stamps this yet — that flow is stabler-l0m.3.10. This is what
+		# it will write, and what the serialisers must already be able to read.
+		frappe.db.set_value("Vehicle Agreement", successor, "restructured_from", original)
+
+		by_name = {row["name"]: row for row in read.agreement_list(company=COMPANY, limit=500)["rows"]}
+		self.assertIn(original, by_name, "the closed original stays in the list")
+		self.assertEqual(by_name[successor]["restructured_from"], original)
+
+		self.assertEqual(by_name[original]["chain_position"], 1)
+		self.assertEqual(by_name[successor]["chain_position"], 2)
+		for name in (original, successor):
+			self.assertEqual(by_name[name]["chain_length"], 2, name)
+			self.assertEqual(by_name[name]["restructure_count"], 1, name)
+
+	def test_agreement_list_reports_an_untouched_agreement_as_one_of_one(self):
+		"""The badge has to stay quiet on the ordinary case, and `1/1` must come
+		from the real lookup rather than from a fallback that happens to agree."""
+		plain = self._make_agreement(direction="Disposition", vin="VF-VIN-CHAIN0")
+		row = next(r for r in read.agreement_list(company=COMPANY, limit=500)["rows"] if r["name"] == plain)
+		self.assertIsNone(row["restructured_from"])
+		self.assertEqual(row["chain_position"], 1)
+		self.assertEqual(row["chain_length"], 1)
+		self.assertEqual(row["restructure_count"], 0)
+
 	@classmethod
 	def tearDownClass(cls):
 		super().tearDownClass()

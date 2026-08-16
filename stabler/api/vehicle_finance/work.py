@@ -30,9 +30,10 @@ import frappe
 from frappe import _
 from frappe.utils import flt, getdate, now, today
 
+from stabler.api.vehicle_finance import chain
 from stabler.api.vehicle_finance import work_policy as policy
 from stabler.api.vehicle_finance.permissions import _assert_capability
-from stabler.api.vehicle_finance.read import _guard_view, _has_capability
+from stabler.api.vehicle_finance.read import _chain_positions, _guard_view, _has_capability
 from stabler.api.vehicle_finance.v1 import (
 	_COLLECTIBLE_STATUSES,
 	_currency_precision,
@@ -53,6 +54,7 @@ _AGREEMENT_FIELDS = (
 	"owner_user",
 	"agreement_status",
 	"active_schedule_version",
+	"restructured_from",
 )
 
 _ROW_ACTIONS = ("log_followup", "record_promise", "settle_payment")
@@ -298,6 +300,7 @@ def _queue_rows_for_agreement(
 				"party_name": agreement.get("party_name"),
 				"vehicle_unit": agreement.get("vehicle_unit"),
 				"vin": agreement.get("serial_no"),
+				"restructured_from": agreement.get("restructured_from"),
 				"schedule_row": state["row_name"],
 				"row_sequence": sequence,
 				"due_date": state["due_date"],
@@ -355,6 +358,11 @@ def work_queue(
 		policy.add_currency_total(totals_by_currency, row["currency"], row["outstanding"])
 
 	page = rows[start : start + limit]
+	# One lookup for the page, not one per row: a single agreement usually owns
+	# several queue rows and they all share its chain position.
+	chain_by_name = _chain_positions({row["agreement"] for row in page})
+	for row in page:
+		row.update(chain_by_name.get(row["agreement"], chain.SOLE_AGREEMENT))
 	return {
 		"company": company,
 		"view": view,
