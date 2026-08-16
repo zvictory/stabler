@@ -13,6 +13,7 @@ import EmptyState from "../../components/EmptyState.vue";
 import Select from "../../components/Select.vue";
 import ListToolbar from "../../components/ListToolbar.vue";
 import SkeletonRows from "../../components/SkeletonRows.vue";
+import KpiCard from "../../components/KpiCard.vue";
 
 const session = useSession();
 const { activeCompany, user } = storeToRefs(session);
@@ -92,6 +93,17 @@ const activeQueue = ref({
 	count: 0,
 	totals_by_currency: {},
 	has_more: false,
+});
+
+// KpiCard renders lines[0] as the hero value and the rest as smaller rows, so the
+// order is not cosmetic: whichever currency the payload happened to list first
+// would otherwise become the headline overdue number. Sort by amount so the
+// largest exposure is the one the operator reads.
+const overdueOutstandingLines = computed(() => {
+	const byCurrency = summary.value?.overdue_outstanding_by_currency || {};
+	return Object.entries(byCurrency)
+		.sort((a, b) => b[1] - a[1])
+		.map(([curr, amt]) => formatMoney(amt, curr, user.value.language));
 });
 
 let loadRequestId = 0;
@@ -304,18 +316,16 @@ onMounted(load);
 							:key="curr"
 							class="col-sm-6 col-lg-3"
 						>
-							<div class="card card-sm">
-								<div class="card-body">
-									<div class="d-flex align-items-center">
-										<div class="subheader">{{ curr }}</div>
-										<div class="ms-auto badge bg-azure-lt">{{ val.agreements }} {{ t("agreements") }}</div>
-									</div>
-									<div class="h3 m-0 mt-1 font-monospace">{{ formatMoney(val.outstanding, curr, user.language) }}</div>
-									<div class="text-secondary small mt-1">
-										{{ t("Contract price") }}: {{ formatMoney(val.total_contract_price, curr, user.language) }}
-									</div>
-								</div>
-							</div>
+							<KpiCard
+								:label="curr"
+								:lines="[
+									formatMoney(val.outstanding, curr, user.language),
+									`${t('Contract price')}: ${formatMoney(val.total_contract_price, curr, user.language)}`,
+								]"
+								icon="ti-cash"
+								tone="primary"
+								:badges="[{ label: t('agreements'), value: val.agreements, tone: 'azure' }]"
+							/>
 						</div>
 					</div>
 				</div>
@@ -324,37 +334,30 @@ onMounted(load);
 				<div class="p-3 border-bottom">
 					<div class="row row-cards">
 						<div class="col-sm-6 col-lg-4">
-							<div class="card card-sm">
-								<div class="card-body">
-									<div class="subheader">{{ t("Total Agreements") }}</div>
-									<div class="h2 m-0 mt-1 font-monospace">{{ summary.agreement_count || 0 }}</div>
-								</div>
-							</div>
+							<KpiCard
+								:label="t('Total Agreements')"
+								:value="summary.agreement_count || 0"
+								icon="ti-file-text"
+								tone="primary"
+							/>
 						</div>
 						<div class="col-sm-6 col-lg-4">
-							<div class="card card-sm">
-								<div class="card-body">
-									<div class="subheader">{{ t("Overdue Count") }}</div>
-									<div class="h2 m-0 mt-1 font-monospace text-danger">{{ summary.overdue_count || 0 }}</div>
-								</div>
-							</div>
+							<KpiCard
+								:label="t('Overdue Count')"
+								:value="summary.overdue_count || 0"
+								value-tone="danger"
+								icon="ti-alert-triangle"
+								tone="danger"
+							/>
 						</div>
-						<div
-							v-if="summary.overdue_outstanding_by_currency && Object.keys(summary.overdue_outstanding_by_currency).length"
-							class="col-sm-6 col-lg-4"
-						>
-							<div class="card card-sm">
-								<div class="card-body">
-									<div class="subheader">{{ t("Overdue Outstanding") }}</div>
-									<div
-										v-for="(amt, curr) in summary.overdue_outstanding_by_currency"
-										:key="curr"
-										class="h3 m-0 mt-1 font-monospace text-danger"
-									>
-										{{ formatMoney(amt, curr, user.language) }}
-									</div>
-								</div>
-							</div>
+						<div v-if="overdueOutstandingLines.length" class="col-sm-6 col-lg-4">
+							<KpiCard
+								:label="t('Overdue Outstanding')"
+								:lines="overdueOutstandingLines"
+								value-tone="danger"
+								icon="ti-cash-off"
+								tone="danger"
+							/>
 						</div>
 					</div>
 				</div>
