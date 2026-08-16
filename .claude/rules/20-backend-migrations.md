@@ -11,10 +11,14 @@ paths:
 Moved verbatim out of CLAUDE.md on 2026-08-15.
 Original: `docs/archive/CLAUDE.md.2026-08-15.bak`.
 
-- `patches.txt` has **NO `[post_model_sync]` marker** → every patch runs BEFORE
-  the doctype DDL sync. A patch that reads or writes a **new** column/field must
-  guard with `frappe.db.has_column(...)` (or be placed under a `[post_model_sync]`
-  line), otherwise migrate aborts on "unknown column".
+- `patches.txt` carries **both** markers — `[pre_model_sync]` at line 1 and
+  `[post_model_sync]` at line 41 (measured 2026-08-16; every patch from v81 on is
+  appended under the post-sync half). **Where you put the entry decides whether the
+  doctype DDL has synced yet**, so check which half you are appending to rather than
+  assuming. A patch that reads or writes a **new** column/field and sits above the
+  `[post_model_sync]` line must guard with `frappe.db.has_column(...)`, otherwise
+  migrate aborts on "unknown column". Guarding anyway is the house style: it costs
+  one `if` and survives someone moving the entry.
 - A new module's enable-default at go-live comes from the **doctype field
   `default`** (e.g. `enable_*` Check = `"1"`), NOT from a backfill patch — the
   backfill skips when it runs pre-sync. Set the field default to the intended state.
