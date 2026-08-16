@@ -96,6 +96,13 @@ PROMISE_ERR_EXCEEDS = "amount_exceeds_outstanding"
 PROMISE_ERR_PAST_DATE = "promise_date_in_past"
 PROMISE_ERR_ROW_SETTLED = "row_has_no_outstanding"
 
+# --- queue reason codes ---------------------------------------------------------
+# Why a row is in the queue when no date event fired. Codes rather than
+# sentences, for the same reason as the promise errors above.
+
+REASON_OPEN_PROMISE = "open_promise"
+REASON_OPEN_FOLLOWUP = "open_followup"
+
 
 def as_date(value: object) -> datetime.date:
 	"""Accepts a `date`, a `datetime` or an ISO-ish string. Frappe hands dates
@@ -220,6 +227,34 @@ def row_views(
 	if not views and (has_open_promise or has_open_followup):
 		views.add(VIEW_MONITORING)
 	return frozenset(views)
+
+
+def row_reason(
+	event: str | None,
+	has_open_promise: bool = False,
+	has_open_followup: bool = False,
+) -> str | None:
+	"""The one fact that explains why this row is in the queue.
+
+	`row_views` and this function have to agree, because they answer two halves of
+	the same question: the first decides that a row belongs in a queue, the second
+	says why. A monitoring row has no date event *by definition* — it is neither
+	late, nor due today, nor inside the upcoming window — so `event` is None and
+	the answer has to come from whatever put it in `monitoring`: someone is still
+	working it. Deriving the reason from the event alone returned nothing there,
+	which left the Reason column blank on exactly the rows whose presence is the
+	least self-explanatory.
+
+	A promise outranks a follow-up: it carries a date and an amount, so it is the
+	more specific thing to tell the operator.
+	"""
+	if event:
+		return event
+	if has_open_promise:
+		return REASON_OPEN_PROMISE
+	if has_open_followup:
+		return REASON_OPEN_FOLLOWUP
+	return None
 
 
 def promise_validation_error(

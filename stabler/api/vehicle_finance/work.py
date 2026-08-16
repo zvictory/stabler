@@ -63,6 +63,10 @@ _REASON_BY_EVENT = {
 	policy.EVENT_UPCOMING_7D: "Due within 7 days",
 	policy.EVENT_PROMISE_DUE: "Promise due",
 	policy.EVENT_PROMISE_BROKEN: "Promise broken",
+	# Monitoring rows fire no date event, so these two carry them. Bare English
+	# keys like the rest of this map — the SPA translates them.
+	policy.REASON_OPEN_PROMISE: "Promise pending",
+	policy.REASON_OPEN_FOLLOWUP: "Open follow-up",
 }
 
 _PROMISE_ERRORS = {
@@ -266,17 +270,23 @@ def _queue_rows_for_agreement(
 			)
 		has_open_promise = bool(promise) and promise_event != policy.EVENT_PROMISE_BROKEN
 		contact = contacts.get(sequence)
+		has_open_followup = bool(contact and contact.next_action)
 		views = policy.row_views(
 			state["due_date"],
 			today_,
 			escalation_threshold_days=threshold,
 			has_broken_promise=promise_event == policy.EVENT_PROMISE_BROKEN,
 			has_open_promise=has_open_promise,
-			has_open_followup=bool(contact and contact.next_action),
+			has_open_followup=has_open_followup,
 		)
 		if not views:
 			continue
 		row_event = policy.row_event(state["due_date"], today_)
+		reason = policy.row_reason(
+			promise_event or row_event,
+			has_open_promise=has_open_promise,
+			has_open_followup=has_open_followup,
+		)
 		work_item = items.get((sequence, promise_event)) or items.get((sequence, row_event))
 		rows.append(
 			{
@@ -293,7 +303,7 @@ def _queue_rows_for_agreement(
 				"due_date": state["due_date"],
 				"outstanding": flt(outstanding, precision),
 				"currency": agreement.get("currency"),
-				"reason": _REASON_BY_EVENT.get(promise_event or row_event or ""),
+				"reason": _REASON_BY_EVENT.get(reason or ""),
 				"views": sorted(views),
 				"owner": (work_item or {}).get("owner_user") or agreement.get("owner_user"),
 				"work_status": (work_item or {}).get("work_status") or policy.WORK_UNASSIGNED,

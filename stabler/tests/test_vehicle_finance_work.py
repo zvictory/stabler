@@ -15,7 +15,7 @@ rules that keep the queue honest:
 from __future__ import annotations
 
 import unittest
-from datetime import date
+from datetime import date, timedelta
 
 from stabler.api.vehicle_finance import work_policy as policy
 
@@ -262,6 +262,79 @@ class TestVocabulary(unittest.TestCase):
 	def test_resolved_is_the_only_closed_status(self):
 		self.assertNotIn(policy.WORK_RESOLVED, policy.OPEN_WORK_STATUSES)
 		self.assertEqual(len(policy.OPEN_WORK_STATUSES), len(policy.WORK_STATUSES) - 1)
+
+
+class TestRowReason(unittest.TestCase):
+	"""Bead stabler-1r3y. `row_views` decides that a row belongs in a queue and
+	`row_reason` says why; the bug was that the two disagreed for `monitoring`.
+
+	A monitoring row has no date event by definition, so deriving the reason from
+	the event alone returned None and the Reason column rendered blank on exactly
+	the rows whose presence is the least self-explanatory.
+	"""
+
+	TODAY = date(2026, 6, 15)
+	FAR = date(2026, 8, 20)  # well past the upcoming window, so no date event fires
+
+	def test_a_date_event_is_its_own_reason(self):
+		for event in (
+			policy.EVENT_OVERDUE,
+			policy.EVENT_DUE_TODAY,
+			policy.EVENT_UPCOMING_7D,
+			policy.EVENT_PROMISE_DUE,
+			policy.EVENT_PROMISE_BROKEN,
+		):
+			self.assertEqual(policy.row_reason(event), event)
+
+	def test_an_event_outranks_the_monitoring_facts(self):
+		"""An overdue row that also has a follow-up is overdue first — the urgent
+		fact is the one the operator has to act on."""
+		self.assertEqual(
+			policy.row_reason(policy.EVENT_OVERDUE, has_open_followup=True, has_open_promise=True),
+			policy.EVENT_OVERDUE,
+		)
+
+	def test_an_open_promise_outranks_an_open_followup(self):
+		"""A promise carries a date and an amount; a follow-up carries neither."""
+		self.assertEqual(
+			policy.row_reason(None, has_open_promise=True, has_open_followup=True),
+			policy.REASON_OPEN_PROMISE,
+		)
+
+	def test_an_open_followup_alone_still_explains_the_row(self):
+		self.assertEqual(policy.row_reason(None, has_open_followup=True), policy.REASON_OPEN_FOLLOWUP)
+
+	def test_nothing_qualifying_means_no_reason(self):
+		"""Symmetrical with row_views returning an empty set — such a row is not in
+		the queue at all, so it has nothing to explain."""
+		self.assertIsNone(policy.row_reason(None))
+
+	def test_every_row_the_queue_shows_can_say_why_it_is_there(self):
+		"""The regression guard, and the reason this pair of functions is tested
+		together: for every combination that puts a row in a view, the reason must
+		be something. A queue row with a blank Reason is the original bug."""
+		cases = [
+			{"due": self.TODAY - timedelta(days=12)},
+			{"due": self.TODAY - timedelta(days=3)},
+			{"due": self.TODAY},
+			{"due": self.TODAY + timedelta(days=4)},
+			{"due": self.FAR, "has_open_followup": True},
+			{"due": self.FAR, "has_open_promise": True},
+			{"due": self.FAR, "has_broken_promise": True},
+		]
+		for case in cases:
+			due = case.pop("due")
+			views = policy.row_views(due, self.TODAY, **case)
+			self.assertTrue(views, f"expected {due} {case} to land in a view")
+			event = policy.row_event(due, self.TODAY)
+			if case.get("has_broken_promise"):
+				event = policy.EVENT_PROMISE_BROKEN
+			reason = policy.row_reason(
+				event,
+				has_open_promise=case.get("has_open_promise", False),
+				has_open_followup=case.get("has_open_followup", False),
+			)
+			self.assertIsNotNone(reason, f"row in {sorted(views)} had no reason: {due} {case}")
 
 
 if __name__ == "__main__":

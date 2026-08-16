@@ -49,6 +49,11 @@ const reasonLabels = computed(() => ({
 	"Due within 7 days": t("Due within 7 days"),
 	"Promise due": t("Promise due"),
 	"Promise broken": t("Promise broken"),
+	// Monitoring rows carry no date event, so these two are the only thing that
+	// explains their presence. Without them the Reason cell renders blank on the
+	// rows that need it most.
+	"Promise pending": t("Promise pending"),
+	"Open follow-up": t("Open follow-up"),
 }));
 
 const agreementStatusLabels = computed(() => ({
