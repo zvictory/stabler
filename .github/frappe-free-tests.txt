@@ -197,3 +197,4 @@ stabler.tests.test_remittance_pickup_code
 stabler.tests.test_remittance_settings_doctype
 stabler.tests.test_remittance_transfer_doctype
 stabler.tests.test_remittance_pricing
+stabler.tests.test_remittance_accounting
