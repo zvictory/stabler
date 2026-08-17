@@ -1092,6 +1092,167 @@ def _validate_invoice_inputs(
 	return 1.0
 
 
+#: The fields that tie an invoice line back to what it settles. ERPNext keys
+#: three separate controls off them and every one of them is silently skipped
+#: when they are blank: the over-billing check joins Purchase Invoice Item to
+#: Purchase Order Item on ``po_detail``
+#: (``PurchaseInvoice.status_updater``), ``update_billing_status_in_pr`` only
+#: touches rows that carry ``pr_detail``, and ``set_expense_account`` books the
+#: line to Stock Received But Not Billed when ``purchase_receipt`` is empty.
+#: A bill with these blank is not a bill with a missing reference — it is a bill
+#: nothing is allowed to argue with.
+_RECEIPT_LINK_FIELDS = ("purchase_receipt", "pr_detail", "purchase_order", "po_detail")
+
+
+def _carried_receipt_links(doc) -> dict:
+	"""Links already on a draft's rows, keyed by item code.
+
+	``_apply_invoice_payload`` rebuilds ``items`` from the payload, which throws
+	the old rows away. Without this, a draft raised by
+	``create_purchase_invoice_from_pr`` — which ERPNext links correctly — comes
+	back unlinked the first time anyone edits it, and unlinked is precisely the
+	state in which nothing checks for a second bill. Editing a draft must not be
+	a way to remove the controls.
+	"""
+	carried: dict = {}
+	for line in doc.get("items") or []:
+		link = {field: line.get(field) for field in _RECEIPT_LINK_FIELDS if line.get(field)}
+		if link:
+			carried[line.item_code] = link
+	return carried
+
+
+def _receipt_links(receipt: str, item_codes) -> dict:
+	"""Map each item code to the row of ``receipt`` that settles it.
+
+	Matching is by item code and must be unambiguous. A receipt carrying the
+	same item on two rows cannot say which one a hand-built invoice line pays
+	for, and guessing would put the billed amount against the wrong row: the
+	over-billing check would then clear a line that is already fully billed and
+	block one that is not. In that case the caller is sent to
+	``create_purchase_invoice_from_pr``, which maps row-to-row and does not have
+	to guess.
+
+	``purchase_order`` / ``po_detail`` ride along from the receipt row when it
+	has them, because that pair is what restores the over-billing check against
+	the order.
+	"""
+	rows = frappe.get_all(
+		"Purchase Receipt Item",
+		filters={"parent": receipt, "parenttype": "Purchase Receipt"},
+		fields=["name", "item_code", "purchase_order", "purchase_order_item"],
+		order_by="idx asc",
+	)
+	by_code: dict = {}
+	for row in rows:
+		by_code.setdefault(row.item_code, []).append(row)
+
+	links: dict = {}
+	for code in dict.fromkeys(item_codes):
+		matches = by_code.get(code) or []
+		if not matches:
+			frappe.throw(
+				_(
+					"Purchase Receipt {0} does not contain item {1}, so this bill cannot be linked to it."
+				).format(receipt, code)
+			)
+		if len(matches) > 1:
+			frappe.throw(
+				_(
+					"Purchase Receipt {0} carries item {1} on {2} rows, so which one this bill settles is ambiguous. Bill it from the receipt instead."
+				).format(receipt, code, len(matches))
+			)
+		row = matches[0]
+		link = {"purchase_receipt": receipt, "pr_detail": row.name}
+		if row.purchase_order:
+			link["purchase_order"] = row.purchase_order
+		if row.purchase_order_item:
+			link["po_detail"] = row.purchase_order_item
+		links[code] = link
+	return links
+
+
+def _validate_receipt_for_invoice(company: str, supplier: str, receipt: str, update_stock: int) -> None:
+	"""Refuse a receipt this invoice has no business settling.
+
+	The checks are the ones that would otherwise fail late and confusingly: a
+	draft or cancelled receipt has no ledger entry to clear, another company's or
+	another supplier's receipt would clear a balance that belongs to someone
+	else, and ``update_stock`` on a linked bill would receive goods the receipt
+	already received — the same delivery counted twice into stock.
+	"""
+	row = frappe.db.get_value("Purchase Receipt", receipt, ["company", "supplier", "docstatus"], as_dict=True)
+	if not row:
+		frappe.throw(_("Unknown Purchase Receipt: {0}").format(receipt))
+	if row.docstatus != 1:
+		frappe.throw(_("Purchase Receipt {0} is not submitted, so it cannot be billed.").format(receipt))
+	if row.company != company:
+		frappe.throw(_("Purchase Receipt {0} belongs to another company.").format(receipt))
+	if row.supplier != supplier:
+		frappe.throw(
+			_("Purchase Receipt {0} belongs to supplier {1}, not {2}.").format(
+				receipt, row.supplier, supplier
+			)
+		)
+	if update_stock:
+		frappe.throw(
+			_(
+				"An invoice linked to Purchase Receipt {0} must not update stock — the receipt already took the goods in."
+			).format(receipt)
+		)
+
+
+def _warn_about_unbilled_receipts(company: str, supplier: str, item_codes) -> None:
+	"""Say out loud that these goods may already be on a receipt.
+
+	Not a block. Billing before receiving is a flow ERPNext supports on purpose,
+	so refusing it would break honest work. But an unlinked bill for items that
+	are sitting on an unbilled receipt is also exactly what a duplicate payment
+	looks like, and nothing downstream will say so: with no ``pr_detail`` the
+	over-billing check has nothing to compare and ``per_billed`` never moves.
+	The warning is the only place that difference is visible.
+	"""
+	names = _unbilled_receipts_for(company, supplier, item_codes)
+	if not names:
+		return
+	shown = names[:5]
+	msg = _("This supplier has unbilled Purchase Receipts for these items: {0}.").format(", ".join(shown))
+	if len(names) > len(shown):
+		msg += " " + _("({0} more.)").format(len(names) - len(shown))
+	msg += " " + _(
+		"This invoice is not linked to any of them, so it will not settle them. Bill the receipt instead if these are the same goods."
+	)
+	frappe.msgprint(msg, title=_("Unbilled receipts exist"), indicator="orange")
+
+
+def _unbilled_receipts_for(company: str, supplier: str, item_codes) -> list[str]:
+	"""Submitted receipts from this supplier that still carry one of these items.
+
+	Deliberately narrowed to the items actually being billed. A supplier-wide
+	warning fires on every bill the moment one old receipt is outstanding, and a
+	warning that is always on is read as furniture.
+	"""
+	codes = [c for c in dict.fromkeys(item_codes) if c]
+	if not codes:
+		return []
+	rows = frappe.db.sql(
+		"""
+		SELECT DISTINCT pr.name, pr.posting_date
+		FROM `tabPurchase Receipt` pr
+		INNER JOIN `tabPurchase Receipt Item` pri ON pri.parent = pr.name
+		WHERE pr.company = %(company)s
+		  AND pr.supplier = %(supplier)s
+		  AND pr.docstatus = 1
+		  AND COALESCE(pr.is_return, 0) = 0
+		  AND COALESCE(pr.per_billed, 0) < 100
+		  AND pri.item_code IN %(codes)s
+		ORDER BY pr.posting_date ASC, pr.name ASC
+		""",
+		{"company": company, "supplier": supplier, "codes": codes},
+	)
+	return [r[0] for r in rows]
+
+
 def _apply_invoice_payload(
 	doc,
 	cleaned: list[dict],
@@ -1109,6 +1270,7 @@ def _apply_invoice_payload(
 	commercial_invoice: str | None = None,
 	import_truck: str | None = None,
 	import_container: str | None = None,
+	purchase_receipt: str | None = None,
 ):
 	"""Write validated PI fields + item/tax rows onto `doc` (new or draft)."""
 	doc.posting_date = getdate(posting_date or today())
@@ -1130,6 +1292,14 @@ def _apply_invoice_payload(
 	if frappe.db.has_column("Purchase Invoice", "custom_import_container"):
 		doc.custom_import_container = (import_container or "").strip() or None
 
+	# Resolve the links before the rows are rebuilt: `doc.set("items", [])` below
+	# is what would otherwise drop the ones a draft already carries.
+	links = (
+		_receipt_links(purchase_receipt, [row["item_code"] for row in cleaned])
+		if purchase_receipt
+		else _carried_receipt_links(doc)
+	)
+
 	doc.set("items", [])
 	for row in cleaned:
 		line = doc.append("items", {})
@@ -1149,6 +1319,8 @@ def _apply_invoice_payload(
 		for _df in ("custom_length", "custom_width", "custom_height", "custom_pieces"):
 			if row.get(_df) not in (None, ""):
 				line.set(_df, flt(row.get(_df)))
+		for field, value in (links.get(row["item_code"]) or {}).items():
+			line.set(field, value)
 
 	if (
 		(commercial_invoice or doc.get("custom_commercial_invoice"))
@@ -1195,6 +1367,7 @@ def create_purchase_invoice(
 	commercial_invoice: str | None = None,
 	import_truck: str | None = None,
 	import_container: str | None = None,
+	purchase_receipt: str | None = None,
 ):
 	"""Create a Purchase Invoice as Draft (docstatus=0).
 
@@ -1202,7 +1375,15 @@ def create_purchase_invoice(
 	discount_percentage, discount_amount.
 	When `update_stock` is truthy, `set_warehouse` is required and goods are
 	received into stock on submit. Foreign-currency bills require a positive
-	`conversion_rate` (1 foreign = X company currency)."""
+	`conversion_rate` (1 foreign = X company currency).
+
+	`purchase_receipt` names the receipt this bill settles. Give it and the lines
+	are linked back to that receipt's rows, which is what puts the goods on the
+	warehouse account instead of Stock Received But Not Billed, moves the
+	receipt's `per_billed`, and lets the over-billing check see a second bill for
+	the same delivery. Leave it out and the invoice stands alone — legitimate
+	when the bill genuinely arrives before the goods, and a silent double-payment
+	when it does not."""
 	_require_company(company)
 	_assert_company_scope(company)  # tenant isolation: reject a foreign company arg
 	if not supplier:
@@ -1215,6 +1396,12 @@ def create_purchase_invoice(
 	rate = _validate_invoice_inputs(
 		company, update_stock, set_warehouse, currency, conversion_rate, price_list, taxes_template
 	)
+
+	purchase_receipt = (purchase_receipt or "").strip() or None
+	if purchase_receipt:
+		_validate_receipt_for_invoice(company, supplier, purchase_receipt, update_stock)
+	else:
+		_warn_about_unbilled_receipts(company, supplier, [row["item_code"] for row in cleaned])
 
 	doc = frappe.new_doc("Purchase Invoice")
 	doc.company = company
@@ -1236,6 +1423,7 @@ def create_purchase_invoice(
 		commercial_invoice,
 		import_truck,
 		import_container,
+		purchase_receipt,
 	)
 	doc.insert(ignore_permissions=False)
 	return {
