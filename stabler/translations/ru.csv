@@ -2522,6 +2522,8 @@ Journal Entry,Запись в журнале
 Journal entry cancelled.,Проводка отменена.
 Journal Entry is already submitted.,
 Journal Entry legs,Проводки журнала
+"Journal Entry {0} is the payout of remittance {1} and cannot be cancelled here — the cash has already left the drawer, and a paid-out transfer cannot be refunded either. Escalate it: only an administrator can reverse remittance {1}, on the server.","Запись в журнале {0} — это выплата по переводу {1}, и отменить её здесь нельзя: наличные уже выданы из кассы, а выплаченный перевод вернуть тоже нельзя. Передайте это выше: отменить перевод {1} может только администратор, на сервере."
+"Journal Entry {0} is the {2} entry of remittance {1} and cannot be cancelled here — the ledger would move and the transfer's status would not. No screen in Stabler reverses a remittance yet, so escalate it: only an administrator can reverse remittance {1}, on the server.","Запись в журнале {0} — это проводка этапа «{2}» перевода {1}, и отменить её здесь нельзя: книга сдвинется, а статус перевода — нет. Ни один экран в Stabler пока не отменяет перевод, поэтому передайте это выше: отменить перевод {1} может только администратор, на сервере."
 Journal entry submitted.,Проводка проведена.
 Justification / Reason,Обоснование / Причина
 Kanban,Канбан
@@ -5437,7 +5439,7 @@ Unit price,Цена за единицу
 units,
 Units Sold,Проданных единиц
 units total,единиц всего
-Unknown,
+Unknown,Неизвестно
 Unknown account: {0},
 Unknown agreement: {0},Неизвестный договор: {0}
 Unknown commercial invoice for this company: {0},Неизвестный коммерческий инвойс для этой компании: {0}

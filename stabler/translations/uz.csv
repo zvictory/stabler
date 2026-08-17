@@ -2517,6 +2517,8 @@ Journal Entry,Jurnal yozuvi
 Journal entry cancelled.,Provodka bekor qilindi.
 Journal Entry is already submitted.,
 Journal Entry legs,Jurnal yozuv qatorlari
+"Journal Entry {0} is the payout of remittance {1} and cannot be cancelled here — the cash has already left the drawer, and a paid-out transfer cannot be refunded either. Escalate it: only an administrator can reverse remittance {1}, on the server.","{0} jurnal yozuvi — bu {1} pul o'tkazmasining to'lovi va uni bu yerda bekor qilib bo'lmaydi: naqd pul kassadan allaqachon chiqib ketgan, to'lab berilgan o'tkazmani qaytarib ham bo'lmaydi. Masalani yuqoriga ko'taring: {1} o'tkazmasini faqat administrator, serverda bekor qila oladi."
+"Journal Entry {0} is the {2} entry of remittance {1} and cannot be cancelled here — the ledger would move and the transfer's status would not. No screen in Stabler reverses a remittance yet, so escalate it: only an administrator can reverse remittance {1}, on the server.","{0} jurnal yozuvi — bu {1} pul o'tkazmasining «{2}» bosqichidagi yozuvi va uni bu yerda bekor qilib bo'lmaydi: hisob kitobi siljiydi, o'tkazma holati esa siljimaydi. Stabler'da hozircha hech bir ekran o'tkazmani qaytarmaydi, shuning uchun masalani yuqoriga ko'taring: {1} o'tkazmasini faqat administrator, serverda bekor qila oladi."
 Journal entry submitted.,Provodka tasdiqlandi.
 Justification / Reason,Asoslash / Sabab
 Kanban,Kanban
@@ -5432,7 +5434,7 @@ Unit price,Birlik narxi
 units,
 Units Sold,Sotilgan birliklar
 units total,jami birlik
-Unknown,
+Unknown,Noma'lum
 Unknown account: {0},
 Unknown agreement: {0},Noma’lum shartnoma: {0}
 Unknown commercial invoice for this company: {0},Ushbu kompaniya uchun noma’lum tijorat invoysi: {0}

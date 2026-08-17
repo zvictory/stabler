@@ -2515,6 +2515,8 @@ Journal Entry,Yevmiye Kaydı
 Journal entry cancelled.,Yevmiye kaydı iptal edildi.
 Journal Entry is already submitted.,
 Journal Entry legs,Yevmiye kaydı kalemleri
+"Journal Entry {0} is the payout of remittance {1} and cannot be cancelled here — the cash has already left the drawer, and a paid-out transfer cannot be refunded either. Escalate it: only an administrator can reverse remittance {1}, on the server.","Yevmiye kaydı {0}, {1} numaralı havalenin ödeme kaydıdır ve burada iptal edilemez: nakit kasadan çoktan çıktı, ödemesi yapılmış bir havale iade de edilemez. Konuyu üst kademeye taşıyın: {1} havalesini yalnızca bir yönetici, sunucu tarafında geri alabilir."
+"Journal Entry {0} is the {2} entry of remittance {1} and cannot be cancelled here — the ledger would move and the transfer's status would not. No screen in Stabler reverses a remittance yet, so escalate it: only an administrator can reverse remittance {1}, on the server.","Yevmiye kaydı {0}, {1} numaralı havalenin «{2}» aşamasına ait kaydıdır ve burada iptal edilemez: defter değişir, havalenin durumu değişmez. Stabler'da henüz hiçbir ekran havaleyi geri almaz; bu nedenle konuyu üst kademeye taşıyın: {1} havalesini yalnızca bir yönetici, sunucu tarafında geri alabilir."
 Journal entry submitted.,Yevmiye kaydı onaylandı.
 Justification / Reason,Gerekçe / Neden
 Kanban,Kanban
@@ -5427,7 +5429,7 @@ Unit price,Birim fiyat
 units,
 Units Sold,Satılan Adet
 units total,toplam birim
-Unknown,
+Unknown,Bilinmiyor
 Unknown account: {0},
 Unknown agreement: {0},{0} bilinmeyen sözleşme.
 Unknown commercial invoice for this company: {0},Bu şirket için bilinmeyen ticari fatura: {0}

@@ -1,14 +1,20 @@
-"""Cancelling a remittance stage voucher: refused, and told what to do instead.
+"""Cancelling a remittance stage voucher: refused, and told what is really available.
 
-Three layers, because each one alone passes on a broken guard:
+Four layers, because each one alone passes on a broken guard:
 
 * **Behaviour** — the handler refuses a register / payout / legacy voucher and
   lets an unrelated Journal Entry through untouched.
 * **Registration** — `hooks.py` is read with `ast` and the handler must appear in
-  `doc_events["Journal Entry"]["before_cancel"]`. A guard nobody registered is
+  `doc_events["Journal Entry"]["before_cancel"]`, *and* every path listed there
+  must resolve to a function that exists on disk. A guard nobody registered is
   the exact state this bead found: the module could be perfect and the Money
   screen's Cancel button would still un-post a paid-out transfer. The behavioural
   tests cannot see that, because they call the handler directly.
+* **Reachability** — the refusal makes a claim about the *product* ("nothing you
+  can click reverses a transfer; escalate"), so that claim is measured against
+  the tree rather than asserted in a docstring. See
+  `RemittanceReversalReachabilityTest`; when it goes red the reversal story has
+  changed and the message is now a lie.
 * **Source** — the module must never consult the session user or the request.
   `desk_write_guard` exempts System Managers and headless callers; inheriting
   either exemption here would gut the rule (every Money-screen operator on these
@@ -30,6 +36,7 @@ from __future__ import annotations
 import ast
 import importlib
 import os
+import re
 import types
 import unittest
 
@@ -39,6 +46,15 @@ _MODULE = "stabler.api.remittance_cancel_guard"
 _APP = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 _SRC = os.path.join(_APP, "api", "remittance_cancel_guard.py")
 _HOOKS = os.path.join(_APP, "hooks.py")
+_JS = os.path.join(_APP, "public", "js")
+_API = {
+	name: os.path.join(_APP, "api", f"{name}.py")
+	for name in ("remittance", "remittance_commands", "remittance_accounting")
+}
+
+# Every `stabler.api.remittance*.<fn>` the SPA names. `call("...")` is the only
+# way the SPA reaches the backend, so matching the dotted path finds them all.
+_SPA_CALL = re.compile(r"stabler\.api\.(?:remittance[a-z_]*)\.[a-z_]+")
 
 _SANDBOX = ModuleSandbox()
 
@@ -92,6 +108,48 @@ def _doc_events() -> dict:
 	raise AssertionError("hooks.py has no doc_events assignment")
 
 
+def _module_path(dotted: str) -> str:
+	"""`stabler.api.x` -> the file on disk. Only this app's own modules resolve."""
+	parts = dotted.split(".")
+	return os.path.join(_APP, *parts[1:]) + ".py" if parts[0] == "stabler" else ""
+
+
+def _functions(path: str) -> dict[str, ast.FunctionDef]:
+	"""Top-level `def`s in a module, by name — ast, so no bench and no import."""
+	with open(path, encoding="utf-8") as fh:
+		tree = ast.parse(fh.read())
+	return {node.name: node for node in tree.body if isinstance(node, ast.FunctionDef)}
+
+
+def _resolves(dotted: str) -> bool:
+	"""Does `pkg.mod.fn` name a function that actually exists?"""
+	module, _dot, func = dotted.rpartition(".")
+	path = _module_path(module)
+	return bool(path) and os.path.exists(path) and func in _functions(path)
+
+
+def _whitelisted(path: str) -> set[str]:
+	"""Functions carrying `@frappe.whitelist()` — the only ones the SPA can call."""
+	names = set()
+	for name, node in _functions(path).items():
+		for decorator in node.decorator_list:
+			target = decorator.func if isinstance(decorator, ast.Call) else decorator
+			if isinstance(target, ast.Attribute) and target.attr == "whitelist":
+				names.add(name)
+	return names
+
+
+def _spa_remittance_endpoints() -> set[str]:
+	"""Every remittance endpoint the SPA names, read off `public/js`."""
+	found: set[str] = set()
+	for root, _dirs, files in os.walk(_JS):
+		for name in files:
+			if name.endswith((".vue", ".js")):
+				with open(os.path.join(root, name), encoding="utf-8") as fh:
+					found.update(_SPA_CALL.findall(fh.read()))
+	return found
+
+
 class RemittanceCancelHookRegistrationTest(unittest.TestCase):
 	"""The gap this bead closed was registration, not logic."""
 
@@ -120,6 +178,77 @@ class RemittanceCancelHookRegistrationTest(unittest.TestCase):
 			"stabler.api.remittance_cancel_guard.assert_not_a_remittance_stage",
 			self.events.get("on_cancel", []),
 		)
+
+	def test_every_registered_path_resolves_to_a_real_function(self):
+		"""hooks.py and this test agreeing on a *string* proves nothing about the guard.
+
+		Both sides just spell a dotted path. If that path names no function,
+		Frappe raises on import at cancel time and the voucher goes through
+		unguarded — the precise failure this module exists to prevent. Measured
+		2026-08-17: pointing hooks.py **and** the assertion above at
+		`...remittance_cancel_guard.NO_SUCH_FUNCTION` left this whole class green.
+		Resolving the path is what closes that.
+		"""
+		for path in self.events["before_cancel"]:
+			self.assertTrue(_resolves(path), f"before_cancel names {path}, which does not exist")
+
+
+class RemittanceReversalReachabilityTest(unittest.TestCase):
+	"""What the refusal is *allowed* to promise, measured against the tree.
+
+	The message tells the operator that nothing they can click reverses a
+	transfer and sends them to an administrator instead. That is a claim about
+	the product, not about this module, and the first version of it was false —
+	it named "a Refund from the Remittance screen" that has never existed. A
+	message test alone cannot catch that, because it can only compare the message
+	to itself. So the four facts the message rests on are asserted here.
+
+	**When one of these turns red, the reversal shipped — rewrite the message and
+	its stage branch. Do not relax the assertion.**
+	"""
+
+	def test_the_spa_reaches_no_remittance_reversal(self):
+		"""The load-bearing one: there is no button, so the message must not name one."""
+		endpoints = _spa_remittance_endpoints()
+		self.assertTrue(endpoints, "no remittance endpoint found at all — the regex broke")
+		self.assertEqual(
+			sorted(e for e in endpoints if "refund" in e or "reverse" in e),
+			[],
+		)
+
+	def test_the_legacy_refund_is_whitelisted_but_unreachable_from_the_spa(self):
+		"""Whitelisted is not the same as reachable, and the operator only has the SPA."""
+		self.assertIn("refund_remittance", _whitelisted(_API["remittance"]))
+		self.assertNotIn("stabler.api.remittance.refund_remittance", _spa_remittance_endpoints())
+
+	def test_the_new_transfer_model_has_no_whitelisted_refund_at_all(self):
+		"""`post_refund` exists, but nothing exposes it — only a bench test calls it."""
+		for module in ("remittance_commands", "remittance_accounting"):
+			exposed = {name for name in _whitelisted(_API[module]) if "refund" in name}
+			self.assertEqual(sorted(exposed), [], f"{module} now exposes a refund")
+
+	def test_a_paid_out_transfer_cannot_be_refunded_even_from_the_server(self):
+		"""Why the Payout branch must not hint at a refund at all.
+
+		`refund_remittance` opens with `_assert_registered`, which throws for a
+		Paid Out transfer — so the one voucher an operator is most likely to try
+		to cancel is the one no refund can touch.
+		"""
+		with open(_API["remittance"], encoding="utf-8") as fh:
+			source = fh.read()
+		functions = _functions(_API["remittance"])
+
+		refund = functions["refund_remittance"]
+		called = {
+			node.func.id
+			for node in ast.walk(refund)
+			if isinstance(node, ast.Call) and isinstance(node.func, ast.Name)
+		}
+		self.assertIn("_assert_registered", called)
+
+		gate = ast.get_source_segment(source, functions["_assert_registered"])
+		self.assertIn("Paid Out", gate)
+		self.assertIn("frappe.throw", gate)
 
 
 class RemittanceCancelGuardSourceTest(unittest.TestCase):
@@ -189,22 +318,92 @@ class RemittanceCancelGuardTest(unittest.TestCase):
 		# common case is present-but-empty, not absent.
 		self.guard.assert_not_a_remittance_stage(_Doc("ACC-JV-2026-00005", stabler_remittance_id="  "))
 
-	def test_the_refusal_names_the_way_out(self):
-		"""A refusal that does not say what to press instead is a dead end.
-
-		Refund is the reversal that moves the money AND the transfer's status; the
-		operator who mis-keyed a registration needs to be sent there, not stopped.
-		"""
-		doc = _Doc(
-			"ACC-JV-2026-00006",
-			stabler_remittance_id="REM-2026-00009",
-			stabler_remittance_stage="Register",
-		)
-
+	def _refusal(self, stage: str | None = None) -> str:
+		fields = {"stabler_remittance_id": "REM-2026-00009"}
+		if stage is not None:
+			fields["stabler_remittance_stage"] = stage
 		with self.assertRaises(_Thrown) as caught:
-			self.guard.assert_not_a_remittance_stage(doc)
+			self.guard.assert_not_a_remittance_stage(_Doc("ACC-JV-2026-00006", **fields))
+		return str(caught.exception)
 
-		self.assertIn("Refund", str(caught.exception))
+	# The shapes an instruction to press Refund takes. Bans the imperative, not
+	# the word: the Payout refusal has to be able to say "cannot be refunded".
+	_PRESS_A_REFUND = re.compile(r"(?i)\b(post|press|click|use|open|submit)\b[^.]{0,20}\brefund")
+
+	def test_the_refusal_names_an_exit_that_exists(self):
+		"""A refusal may only send the operator somewhere real.
+
+		This message used to read "post a Refund from the Remittance screen".
+		`RemittanceReversalReachabilityTest` measures that no such screen exists —
+		the SPA calls five remittance endpoints and none of them refunds anything
+		— so that sentence sent an operator with cash in the drawer and a posted
+		three-leg entry to hunt for a button. That is worse than a bare refusal,
+		because it reads as recourse. The only exit that exists today is a person,
+		so the message must name the escalation and must not name a Refund to
+		press. The predecessor of this test asserted `"Refund" in message`, which
+		is exactly what the false version satisfied.
+		"""
+		message = self._refusal("Register")
+		self.assertIn("administrator", message)
+		self.assertNotRegex(message, self._PRESS_A_REFUND)
+		self.assertNotRegex(message, r"(?i)remittance screen")
+
+	def test_the_payout_refusal_does_not_offer_a_refund(self):
+		"""Refund is refused for a paid-out transfer, so this branch cannot suggest it.
+
+		`_assert_registered` throws "has already been paid out" before
+		`refund_remittance` does anything, which makes Payout the stage where the
+		old message was most wrong and most often shown.
+
+		The `cannot be refunded` assertion is what pins the *branch*, not merely
+		the wording. Measured 2026-08-17: replacing `if stage == PAYOUT_STAGE`
+		with `if False` — the payout branch never firing, every paid-out operator
+		getting the generic refusal — left the other three assertions green,
+		because the generic message also escalates, also names no Refund, and
+		still differs from itself at another stage. Only a sentence the payout
+		branch alone carries can see that, and this is the sentence
+		`RemittanceReversalReachabilityTest` independently proves true.
+		"""
+		message = self._refusal("Payout")
+		self.assertNotRegex(message, self._PRESS_A_REFUND)
+		self.assertIn("administrator", message)
+		self.assertIn("cannot be refunded", message)
+		self.assertNotEqual(message, self._refusal("Register"))
+
+	def test_the_payout_stage_string_matches_what_the_writers_write(self):
+		"""Get this constant wrong and the payout branch silently never fires.
+
+		Two writers stamp `stabler_remittance_stage` and they do not stamp it the
+		same way, so both are walked here. The legacy model writes the literal
+		inline (`api/remittance.py:519`). The new model writes `_build_entry`'s
+		`stage` argument (`api/remittance_accounting.py:220`), which `post_payout`
+		feeds from the module constant `PAYOUT` — so reading the constant alone
+		would still pass on the day `post_payout` stopped handing it over, which
+		is the day this guard's payout branch would stop firing for the new model.
+		"""
+		with open(_API["remittance"], encoding="utf-8") as fh:
+			self.assertIn(f'"stabler_remittance_stage": "{self.guard.PAYOUT_STAGE}"', fh.read())
+
+		with open(_API["remittance_accounting"], encoding="utf-8") as fh:
+			source = fh.read()
+		accounting = ast.parse(source)
+		payout = next(
+			ast.literal_eval(node.value)
+			for node in accounting.body
+			if isinstance(node, ast.Assign)
+			and any(isinstance(t, ast.Name) and t.id == "PAYOUT" for t in node.targets)
+		)
+		self.assertEqual(payout, self.guard.PAYOUT_STAGE)
+
+		functions = {node.name: node for node in accounting.body if isinstance(node, ast.FunctionDef)}
+		self.assertIn(
+			'"stabler_remittance_stage": stage',
+			ast.get_source_segment(source, functions["_build_entry"]),
+		)
+		self.assertIn(
+			"_build_entry(transfer, PAYOUT,",
+			ast.get_source_segment(source, functions["post_payout"]),
+		)
 
 	def test_the_explicit_flag_is_the_only_door(self):
 		doc = _Doc(

@@ -2517,6 +2517,8 @@ Journal Entry,Журнал ёзуви
 Journal entry cancelled.,Проводка бекор қилинди.
 Journal Entry is already submitted.,
 Journal Entry legs,Журнал ёзув қаторлари
+"Journal Entry {0} is the payout of remittance {1} and cannot be cancelled here — the cash has already left the drawer, and a paid-out transfer cannot be refunded either. Escalate it: only an administrator can reverse remittance {1}, on the server.","{0} журнал ёзуви — бу {1} пул ўтказмасининг тўлови ва уни бу ерда бекор қилиб бўлмайди: нақд пул кассадан аллақачон чиқиб кетган, тўлаб берилган ўтказмани қайтариб ҳам бўлмайди. Масалани юқорига кўтаринг: {1} ўтказмасини фақат администратор, серверда бекор қила олади."
+"Journal Entry {0} is the {2} entry of remittance {1} and cannot be cancelled here — the ledger would move and the transfer's status would not. No screen in Stabler reverses a remittance yet, so escalate it: only an administrator can reverse remittance {1}, on the server.","{0} журнал ёзуви — бу {1} пул ўтказмасининг «{2}» босқичидаги ёзуви ва уни бу ерда бекор қилиб бўлмайди: ҳисоб китоби силжийди, ўтказма ҳолати эса силжимайди. Stabler'да ҳозирча ҳеч бир экран ўтказмани қайтармайди, шунинг учун масалани юқорига кўтаринг: {1} ўтказмасини фақат администратор, серверда бекор қила олади."
 Journal entry submitted.,Проводка тасдиқланди.
 Justification / Reason,Асослаш / Сабаб
 Kanban,Канбан
@@ -5432,7 +5434,7 @@ Unit price,Бирлик нархи
 units,
 Units Sold,Сотилган бирлик
 units total,жами бирлик
-Unknown,
+Unknown,Номаълум
 Unknown account: {0},
 Unknown agreement: {0},Номаълум шартнома: {0}
 Unknown commercial invoice for this company: {0},Ушбу компания учун номаълум тижорат инвойси: {0}
