@@ -19,6 +19,13 @@ Dropping `exchange_rate` from the payload — the convention `money.py` document
 turns all four red. Dropping `flags.ignore_exchange_rate` alone leaves them
 green, because no rate here happens to be exactly 1; the flag is the backstop for
 that case and `test_remittance_accounting.py` pins it at the source instead.
+
+The register *command* is proved here too, for the same reason: its replay rests
+on a real unique index, its version has to be the token `check_concurrency`
+actually accepts, and its pickup code has to reach the database hashed. A fake
+database can be told to agree with any of those —
+`test_remittance_register_command.py` proves the ordering and the branching, this
+proves the three claims only a real site can settle.
 """
 
 from __future__ import annotations
@@ -27,7 +34,10 @@ import frappe
 from frappe.tests.utils import FrappeTestCase
 from frappe.utils import add_days, nowdate
 
+from stabler.api._common import check_concurrency
+from stabler.api.remittance import is_hashed_pickup_code
 from stabler.api.remittance_accounting import post_payout, post_refund, post_register
+from stabler.api.remittance_commands import register_remittance
 
 #: A 12.5% move, deliberately inside the +/-20% CBU tolerance that
 #: `stabler.api._accounts.validate_exchange_rate` enforces on every foreign row.
@@ -166,6 +176,25 @@ class RemittanceAccountingBenchTest(FrappeTestCase):
 		transfer.insert(ignore_permissions=True)
 		return transfer
 
+	def _register(self, **overrides):
+		"""Drive the whole register command, the way the cashier's screen will."""
+		request = {
+			"company": self.company,
+			"origin_branch": self.origin,
+			"destination_branch": self.destination,
+			"send_currency": self.send,
+			"receive_currency": self.receive,
+			"sender_name": "Bench Sender",
+			"receiver_name": "Bench Receiver",
+			"amount": 1000,
+			"exchange_rate": 0.925,
+			"commission_mode": "Inclusive",
+			"commission_pct": 1,
+			"client_request_id": "bench-req",
+		}
+		request.update(overrides)
+		return register_remittance(**request)
+
 	def _movement(self, account: str, vouchers: list) -> tuple[float, float]:
 		"""Net movement on an account across the given entries, base and currency."""
 		rows = frappe.get_all(
@@ -244,3 +273,63 @@ class RemittanceAccountingBenchTest(FrappeTestCase):
 		# trace in any balance.
 		self.assertEqual(cash_currency, 0.0)
 		self.assertEqual(cash_base, 0.0)
+
+	# --- the register command ------------------------------------------------ #
+
+	def test_register_command_prices_posts_and_transitions(self) -> None:
+		result = self._register(client_request_id="bench-register-1")
+
+		self.assertEqual(result["operational_status"], "Registered")
+		self.assertEqual(result["accounting_status"], "Posted")
+		self.assertFalse(result["replayed"])
+		# The cashier typed 1.000,00 inclusive of 1%; the command priced the triple.
+		self.assertEqual(result["tendered"], 1000.00)
+		self.assertEqual(result["principal"], 990.10)
+		self.assertEqual(result["commission"], 9.90)
+		self.assertEqual(result["receiver_amount"], 915.84)
+
+		obligation_base, obligation_currency = self._movement(
+			self.obligation, [result["register_journal_entry"]]
+		)
+		# The obligation opens at the principal, in the receive currency, and only
+		# because the command actually reached the ledger — this is the assertion
+		# that would have failed for every day the endpoint had no caller.
+		self.assertEqual(obligation_currency, -915.84)
+		self.assertLess(obligation_base, 0.0)
+
+		stored = frappe.db.get_value(
+			"Remittance Transfer", result["name"], ["pickup_code_hash", "verification_status"], as_dict=True
+		)
+		self.assertTrue(is_hashed_pickup_code(stored.pickup_code_hash))
+		self.assertNotIn(result["pickup_code"], stored.pickup_code_hash)
+		self.assertEqual(stored.verification_status, "Active")
+
+	def test_register_command_replay_neither_posts_nor_reissues_the_code(self) -> None:
+		first = self._register(client_request_id="bench-register-2")
+		replay = self._register(client_request_id="bench-register-2")
+
+		self.assertEqual(replay["name"], first["name"])
+		self.assertTrue(replay["replayed"])
+		# The response of a registering call carries a bearer secret. Replaying a
+		# captured request is exactly how someone would ask for it a second time.
+		self.assertIsNone(replay["pickup_code"])
+		self.assertEqual(frappe.db.count("Remittance Transfer", {"client_request_id": "bench-register-2"}), 1)
+		self.assertEqual(frappe.db.count("Journal Entry", {"stabler_remittance_id": first["name"]}), 1)
+
+	def test_register_command_refuses_a_key_reused_with_different_money(self) -> None:
+		self._register(client_request_id="bench-register-3")
+
+		with self.assertRaises(frappe.ValidationError):
+			self._register(client_request_id="bench-register-3", amount=2000)
+
+		self.assertEqual(frappe.db.count("Remittance Transfer", {"client_request_id": "bench-register-3"}), 1)
+
+	def test_register_command_version_is_the_token_check_concurrency_accepts(self) -> None:
+		"""A version the caller cannot hand back is not a version."""
+		result = self._register(client_request_id="bench-register-4")
+
+		check_concurrency("Remittance Transfer", result["name"], result["version"])
+
+		frappe.db.set_value("Remittance Transfer", result["name"], "receiver_name", "Someone Else")
+		with self.assertRaises(Exception):
+			check_concurrency("Remittance Transfer", result["name"], result["version"])
