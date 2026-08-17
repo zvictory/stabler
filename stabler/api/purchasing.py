@@ -2440,7 +2440,7 @@ def _srbnb_account(company: str) -> str | None:
 	return matches[0] if len(matches) == 1 else None
 
 
-def _srbnb_reconciliation(company: str, as_of, total_unbilled: float) -> dict:
+def _srbnb_reconciliation(company: str, as_of, total_unbilled: float, comparable: bool) -> dict:
 	"""Reconcile this report against the SRBNB ledger — the point of the report.
 
 	Sign convention: SRBNB is a liability. A Purchase Receipt credits it, the
@@ -2467,11 +2467,23 @@ def _srbnb_reconciliation(company: str, as_of, total_unbilled: float) -> dict:
 	  taxes make the proportional ``per_billed`` split a poor proxy for the real
 	  SRBNB leg on that receipt.
 
-	Also: ``per_billed`` is current state, not history. A back-dated ``as_of``
+	``comparable`` is what keeps that accusation off a date the two sides do not
+	share. ``per_billed`` is current state, not history: a back-dated ``as_of``
 	cuts off later receipts and ages the rest correctly, but bills raised since
-	then are already reflected — so a historical run under-states the unbilled
-	balance of that date and ``difference`` moves with it. Period snapshots would
-	be the fix; this app has none.
+	then are already reflected, so the list answers *unbilled now* while the
+	ledger answers *owed then*. Their difference is then the invoicing done in
+	between, and printing it as a break accuses an accountant of doing their job.
+	When ``comparable`` is False this returns ``difference: None`` and leaves
+	``gl_balance`` at its real value — both numbers stay visible, only the
+	subtraction is withheld.
+
+	``None`` rather than a number the SPA agrees not to render, because this is
+	whitelisted API surface: a second consumer reading ``difference`` must not be
+	handed a figure that is arithmetically valid and semantically wrong. The
+	honest fix is to derive billing state as of the cut-off from Purchase Invoice
+	Items instead of ``per_billed``, which would also correct which rows appear;
+	that is a separate change, and this flag is what keeps the report truthful
+	until it lands.
 
 	An unconfigured account (or a caller without GL Entry read access) returns
 	``account: None`` with zeros rather than throwing: the receipt list is still
@@ -2479,10 +2491,10 @@ def _srbnb_reconciliation(company: str, as_of, total_unbilled: float) -> dict:
 	``account`` is set.
 	"""
 	if not frappe.has_permission("GL Entry", "read"):
-		return {"account": None, "gl_balance": 0.0, "difference": 0.0}
+		return {"account": None, "gl_balance": 0.0, "difference": 0.0, "comparable": True}
 	account = _srbnb_account(company)
 	if not account:
-		return {"account": None, "gl_balance": 0.0, "difference": 0.0}
+		return {"account": None, "gl_balance": 0.0, "difference": 0.0, "comparable": True}
 	balance = flt(
 		frappe.db.sql(
 			"""
@@ -2499,7 +2511,8 @@ def _srbnb_reconciliation(company: str, as_of, total_unbilled: float) -> dict:
 	return {
 		"account": account,
 		"gl_balance": round(balance, 2),
-		"difference": round(balance - flt(total_unbilled), 2),
+		"difference": round(balance - flt(total_unbilled), 2) if comparable else None,
+		"comparable": comparable,
 	}
 
 
@@ -2551,8 +2564,10 @@ def unbilled_receipts(
 	* Return receipts (``is_return``) are excluded when the column exists on this
 	  site; a credit note is not unbilled exposure. They still move the SRBNB
 	  ledger, so they are one of the things ``srbnb.difference`` can accuse.
-	* ``posting_date <= as_of`` matches the cut-off used for the GL balance, so
-	  the two halves of the reconciliation cover the same period.
+	* ``posting_date <= as_of`` matches the cut-off used for the GL balance, but
+	  only for the receipt's own date. Billing state comes from ``per_billed``,
+	  which carries no date, so the two halves cover the same period only when
+	  ``as_of`` is today or later; ``srbnb.comparable`` says which run this is.
 	* ``status`` is deliberately NOT filtered, unlike ``list_purchase_receipts``.
 	  A receipt manually set to *Closed*, or one carrying *Return Issued*, still
 	  holds its SRBNB credit in the ledger; hiding it from the report would only
@@ -2573,6 +2588,9 @@ def unbilled_receipts(
 	if not frappe.has_permission("Purchase Receipt", "read"):
 		frappe.throw(_("Not permitted to read Purchase Receipt."), frappe.PermissionError)
 	as_of = getdate(as_of or today())
+	# Both sides as ISO strings: this predicate lives in the frappe-free module,
+	# and frappe returns today() as str but getdate() as date.
+	comparable = _unbilled_receipts.reconciliation_comparable(str(as_of), str(getdate(today())))
 	start = max(cint(limit_start), 0)
 	page_length = min(max(cint(limit_page_length) or 50, 1), 200)
 
@@ -2638,7 +2656,7 @@ def unbilled_receipts(
 	return {
 		"rows": rows,
 		"totals": totals,
-		"srbnb": _srbnb_reconciliation(company, as_of, company_total),
+		"srbnb": _srbnb_reconciliation(company, as_of, company_total, comparable),
 		"as_of": str(as_of),
 		"company_currency": frappe.get_cached_value("Company", company, "default_currency") or "",
 		"has_more": start + len(rows) < len(scanned),

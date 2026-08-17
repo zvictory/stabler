@@ -153,6 +153,37 @@ def annotate_rows(rows) -> list[dict]:
 	return out
 
 
+def reconciliation_comparable(as_of_iso: str, today_iso: str) -> bool:
+	"""Whether the SRBNB ledger balance and this report's total measure one instant.
+
+	The ledger side of the reconciliation is genuinely historical — the endpoint
+	sums ``tabGL Entry`` up to ``as_of``. The receipt side is not. It values each
+	row from ``per_billed``, which ERPNext overwrites in place when an invoice is
+	submitted and which therefore carries no date at all. So on a back-dated run
+	the list answers *unbilled now* while the ledger answers *owed then*, and
+	subtracting them measures the invoices raised in between.
+
+	Raising those invoices is the most ordinary thing an accountant does, and the
+	screen renders a non-zero difference as an accusation that someone posted
+	outside the receipt chain. Refusing the comparison is the whole point of this
+	predicate: a report that accuses the innocent gets switched off, and then it
+	catches nothing at all.
+
+	A forward-dated ``as_of`` stays comparable. ERPNext refuses a future posting
+	date on a Purchase Receipt, so no receipt can appear between today and a
+	future cut-off and both sides still describe the same set. (A future-dated
+	*invoice* can still skew it; ERPNext permits those. That skew is out of reach
+	of any flag and needs billing state to be derived per date instead.)
+
+	Both arguments are ISO ``YYYY-MM-DD`` strings, which sort lexicographically
+	exactly as the dates do. Strings and not ``date`` objects because this module
+	may not import frappe, and frappe hands its callers ``today()`` as ``str``
+	while ``getdate()`` returns ``date`` — comparing the two raises ``TypeError``
+	on the default page load, the one path that must never break.
+	"""
+	return as_of_iso >= today_iso
+
+
 def summarise(rows) -> dict:
 	"""Report header over annotated rows: total, per-bucket split, receipt count.
 

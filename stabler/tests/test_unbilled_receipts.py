@@ -19,6 +19,7 @@ from stabler.api._unbilled_receipts import (
 	annotate_rows,
 	billed_percent,
 	bucket_of,
+	reconciliation_comparable,
 	summarise,
 	unbilled_amount,
 )
@@ -268,6 +269,49 @@ class TestSummarise(unittest.TestCase):
 		)
 		self.assertEqual(s["total_unbilled"], 500.0)
 		self.assertEqual(s["receipts"], 3)
+
+
+class TestReconciliationComparable(unittest.TestCase):
+	"""When the SRBNB ledger balance may be subtracted from this report's total.
+
+	The screen renders a non-zero difference as an accusation that someone posted
+	outside the receipt/invoice chain. These tests defend the dates on which that
+	accusation is allowed to be made at all.
+	"""
+
+	def test_a_run_dated_today_is_comparable(self):
+		"""The default view must never degrade into "cannot measure" — it is the
+		one the report is opened on, and it is the one that catches the real
+		break."""
+		self.assertTrue(reconciliation_comparable("2026-08-17", "2026-08-17"))
+
+	def test_a_back_dated_run_is_not_comparable_because_billing_state_is_current(self):
+		"""The ledger half is summed up to the cut-off; the receipt half is valued
+		from per_billed, which ERPNext overwrites in place and which carries no
+		date. So their difference on a past date is the invoicing done since then,
+		and reporting it as a ledger break accuses an accountant of ordinary work.
+		Fails the moment the predicate is loosened to `<=` or dropped."""
+		self.assertFalse(reconciliation_comparable("2026-07-31", "2026-08-17"))
+		self.assertFalse(reconciliation_comparable("2026-08-16", "2026-08-17"))
+
+	def test_a_forward_dated_run_stays_comparable_because_receipts_cannot_be_future_dated(self):
+		"""ERPNext throws on a future posting date for a Purchase Receipt, so no
+		receipt can appear between today and a future cut-off and both halves
+		still describe the same set. This is why the predicate is `>=` and not
+		`==`: tightening it to equality would blank the difference for a reason
+		that does not exist."""
+		self.assertTrue(reconciliation_comparable("2026-08-18", "2026-08-17"))
+		self.assertTrue(reconciliation_comparable("2027-01-01", "2026-08-17"))
+
+	def test_the_boundary_is_the_day_and_not_the_year_or_the_month(self):
+		"""ISO strings are compared lexicographically, which only agrees with date
+		order while the format is zero-padded YYYY-MM-DD. A caller passing a
+		display format (17.08.2026) would silently invert the whole rule, so the
+		boundary is pinned across a month and a year edge."""
+		self.assertFalse(reconciliation_comparable("2026-07-31", "2026-08-01"))
+		self.assertTrue(reconciliation_comparable("2026-08-01", "2026-07-31"))
+		self.assertFalse(reconciliation_comparable("2025-12-31", "2026-01-01"))
+		self.assertTrue(reconciliation_comparable("2026-01-01", "2025-12-31"))
 
 
 if __name__ == "__main__":

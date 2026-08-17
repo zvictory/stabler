@@ -66,13 +66,18 @@ const SRBNB_STYLE = {
 	unknown: { alert: "alert-warning", icon: "ti-alert-circle" },
 	// Neither broken nor clean: the two sides are not comparable right now.
 	filtered: { alert: "alert-info", icon: "ti-filter" },
+	// Same family as `filtered` — not a break, just not measurable on this date.
+	historical: { alert: "alert-info", icon: "ti-calendar-off" },
 };
 
 function blank() {
 	return {
 		rows: [],
 		totals: { total_unbilled: 0, b_0_30: 0, b_31_60: 0, b_61_90: 0, b_90_plus: 0, receipts: 0 },
-		srbnb: { account: null, gl_balance: null, difference: null },
+		// `comparable` defaults true so a new bundle running against an older
+		// payload (assets rebuild before `bench restart`) does not show every
+		// user the historical banner.
+		srbnb: { account: null, gl_balance: null, difference: null, comparable: true },
 		as_of: "",
 		company_currency: "",
 		has_more: false,
@@ -147,7 +152,9 @@ const pagerTotal = computed(() => {
 // stays company-wide, so subtracting the two would then measure the filter, not
 // a break — and telling an accountant someone posted a rogue Journal Entry
 // because they filtered by supplier is the one mistake this banner must never
-// make. `as_of` is not in here: the server receives it and dates both sides.
+// make. The date box is NOT in here — it is a separate reason the two sides stop
+// lining up, and the server decides that one (`srbnb.comparable`) because only
+// the server knows that the ledger half is dated and the billing half is not.
 const reconcilable = computed(() => !supplier.value && !bucket.value);
 
 const srbnbConfigured = computed(() => Boolean(srbnb.value.account));
@@ -155,9 +162,15 @@ const srbnbDifference = computed(() => {
 	const raw = srbnb.value.difference;
 	return raw === null || raw === undefined || raw === "" ? null : Number(raw);
 });
+// Order matters. `unknown` (no account / unreadable ledger) is a setup gap and
+// must be reported even on a back-dated run, so it is checked before
+// `historical`; otherwise a date banner would hide a company that has never
+// configured the account at all.
 const srbnbState = computed(() => {
 	if (!reconcilable.value) return "filtered";
-	if (!srbnbConfigured.value || srbnbDifference.value === null) return "unknown";
+	if (!srbnbConfigured.value) return "unknown";
+	if (srbnb.value.comparable === false) return "historical";
+	if (srbnbDifference.value === null) return "unknown";
 	return Math.abs(srbnbDifference.value) < moneyEpsilon(companyCurrency.value) ? "clean" : "break";
 });
 const srbnbStyle = computed(() => SRBNB_STYLE[srbnbState.value]);
@@ -306,6 +319,7 @@ watch(activeCompany, reload);
 							<template v-if="srbnbState === 'break'">{{ t("Stock Received But Not Billed does not agree with this list.") }}</template>
 							<template v-else-if="srbnbState === 'clean'">{{ t("Stock Received But Not Billed agrees with this list.") }}</template>
 							<template v-else-if="srbnbState === 'filtered'">{{ t("Reconciliation is paused while this list is filtered.") }}</template>
+							<template v-else-if="srbnbState === 'historical'">{{ t("Reconciliation is paused on a past date.") }}</template>
 							<template v-else>{{ t("This list cannot be reconciled against the ledger.") }}</template>
 						</div>
 
@@ -343,6 +357,14 @@ watch(activeCompany, reload);
 						</div>
 						<div v-else-if="srbnbState === 'clean'" class="small mt-2">
 							{{ t("Every amount sitting in Stock Received But Not Billed is explained by a receipt on this list.") }}
+						</div>
+						<div v-else-if="srbnbState === 'historical'" class="small mt-2 d-flex flex-wrap align-items-center gap-2">
+							<span class="flex-fill">
+								{{ t("The ledger balance is taken on that date, but whether a receipt is billed is only known as it stands today — so this list shows current billing status, not the position on that date. Subtracting the two would report the invoices raised since then as a ledger break.") }}
+							</span>
+							<button type="button" class="btn btn-sm btn-outline-secondary text-nowrap" @click="asOf = todayIso()">
+								<i class="ti ti-calendar-up me-1"></i>{{ t("Reconcile as of today") }}
+							</button>
 						</div>
 						<div v-else-if="srbnbState === 'filtered'" class="small mt-2 d-flex flex-wrap align-items-center gap-2">
 							<span class="flex-fill">
@@ -390,7 +412,9 @@ watch(activeCompany, reload);
 							</div>
 							<Select v-model="bucket" size="sm" :options="bucketOptions" style="width: 150px" />
 							<span class="text-secondary small">{{ t("As of") }}</span>
-							<DateInput v-model="asOf" size="sm" style="width: 120px" />
+							<!-- A future cut-off would age every receipt by the gap and mis-grade
+							     the buckets, so the box stops at today. -->
+							<DateInput v-model="asOf" :max="todayIso()" size="sm" style="width: 120px" />
 						</div>
 					</template>
 
