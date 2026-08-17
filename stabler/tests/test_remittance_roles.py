@@ -23,6 +23,13 @@ than hypotheticals:
    raise PermissionError halfway through the transaction. The two grants are
    coupled, and nothing else in the tree says so.
 
+4. **A DocPerm write right on the unfrozen money aggregate.** No command needs
+   one — every mutation runs through ``db_set``, which checks no permission —
+   so the grant serves only the callers that went around the command layer.
+   Remittance Transfer has neither a submit freeze nor a controller-level
+   immutability guard, so those callers can rewrite anything. Write and a
+   freeze are asserted as a pair.
+
 Bench-free on purpose: the bench set is not part of ``make check``, so a test
 that needed one would not gate a push.
 """
@@ -56,6 +63,11 @@ PLANNED_ROLES = {
 # Roles that exist without any stabler patch creating them.
 CORE_ROLES = {"System Manager", "Stabler Admin", "All"}
 
+# Administrator-tier roles. Narrowing what these may do is a whole-app decision,
+# not a remittance one, so the write assertions below exclude them rather than
+# pretending this module gets to rule on them.
+ADMIN_ROLES = {"System Manager", "Stabler Admin"}
+
 REMITTANCE_DOCTYPES = (
 	"remittance_settings",
 	"remittance_cash_desk_account",
@@ -88,6 +100,10 @@ def _perms(name: str) -> list[dict]:
 
 def _roles_with(name: str, right: str) -> set[str]:
 	return {row["role"] for row in _perms(name) if row.get(right)}
+
+
+def _controller_source(name: str) -> str:
+	return _read(os.path.join(_PKG, "stabler", "doctype", name, f"{name}.py"))
 
 
 # --- fake frappe for the patch ----------------------------------------------
@@ -246,14 +262,76 @@ class TestRemittanceTransferPermissions(unittest.TestCase):
 		for row in _perms("remittance_transfer"):
 			self.assertNotIn("delete", row, row)
 
-	def test_only_the_two_operating_roles_can_move_a_transfer(self):
-		# Viewer and Auditor are read-only by definition; if either gains write,
-		# "masked list/detail" and "read-only over JE, event and reconciliation"
-		# have stopped being true.
-		self.assertEqual(
-			_roles_with("remittance_transfer", "write"),
-			{"Remittance Cashier", "Remittance Finance Manager", "System Manager"},
+	def test_no_operating_role_holds_a_docperm_write_on_a_transfer(self):
+		"""Write is not how a transfer moves, so a write grant only opens a side door.
+
+		Every server-side mutation of a transfer runs through
+		``transfer.db_set(...)`` — remittance_accounting.py:260/288/311 and
+		remittance_commands.py:329 — and ``db_set`` writes the column directly
+		with no permission check at all. The single permission-checked write in
+		the command layer is ``transfer.insert()``, which consumes ``create``.
+
+		So a DocPerm ``write`` row is unreachable from inside the command layer
+		*by construction*: the only callers it can ever serve are the ones that
+		went around it — ``PUT /api/resource/Remittance Transfer/<name>`` and
+		``frappe.client.set_value``, both of which Frappe honours straight off
+		the DocPerm row. Those callers get no row lock, no ``client_request_id``
+		replay guard, no Journal Entry and no Remittance Event.
+
+		Concretely, a Cashier holding write could rewrite ``pickup_code_hash``
+		to the digest of a code they chose and collect someone else's payout,
+		reset ``code_attempts`` to defeat the lockout, set ``operational_status``
+		to Paid Out with no Journal Entry behind it, or repoint ``company``.
+		``read_only`` on those fields does not help: it is a form property, and
+		the REST API ignores it.
+		"""
+		self.assertEqual(_roles_with("remittance_transfer", "write") - ADMIN_ROLES, set())
+
+	def test_a_write_grant_may_only_arrive_paired_with_a_freeze(self):
+		"""The tripwire for whoever next decides they need write.
+
+		This asserts an implication, not an absence — write may come back the
+		day something freezes the record alongside it. What must not happen is
+		write arriving alone and silently.
+
+		Vehicle Finance is the precedent these permissions were modelled on, and
+		it survives its write grants only because ``vehicle_agreement.json`` and
+		``vehicle_finance_payment_application.json`` are submittable: submit
+		freezes the document and any later write needs ``allow_on_submit`` per
+		field. Remittance Transfer has no equivalent. It carries no
+		``is_submittable``, and ``RemittanceTransfer.validate`` enforces three
+		arithmetic invariants and nothing else — no state-transition guard, no
+		field immutability, no ``on_update``. Copying the vehicle-finance
+		permission shape without copying its freeze is what made the grant a
+		hole rather than a convenience.
+
+		If this fails, either pair the grant with a real freeze or drop it.
+		Editing the test to accept a third kind of freeze is fine — that edit is
+		the deliberate act this exists to force.
+		"""
+		writers = _roles_with("remittance_transfer", "write") - ADMIN_ROLES
+		freezes = {
+			# Submit freezes the document; later writes need allow_on_submit.
+			"is_submittable": bool(_load_doctype("remittance_transfer").get("is_submittable")),
+			# The Frappe idiom for per-field immutability on update.
+			"controller change guard": any(
+				idiom in _controller_source("remittance_transfer")
+				for idiom in ("has_value_changed", "get_doc_before_save")
+			),
+		}
+		self.assertTrue(
+			not writers or any(freezes.values()),
+			f"{sorted(writers)} now hold DocPerm write on Remittance Transfer, which "
+			"Frappe honours on PUT /api/resource and frappe.client.set_value — outside "
+			"the command layer's row lock, idempotency key, Journal Entry and event "
+			"trail. Nothing freezes the record against those callers: "
+			f"{freezes}. Pair the grant with a freeze, or drop it.",
 		)
+
+	def test_every_role_can_read_a_transfer(self):
+		# Viewer and Auditor are read-only by definition; read is the whole of
+		# what "masked list/detail" and "read-only over JE, event and
+		# reconciliation" are built on.
 		self.assertEqual(
 			_roles_with("remittance_transfer", "read"),
 			PLANNED_ROLES | {"System Manager"},
