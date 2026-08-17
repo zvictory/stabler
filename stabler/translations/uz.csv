@@ -2613,12 +2613,14 @@ Leaf,Barg
 Leave,Ta'til
 leave,
 Leave all unchecked to use role-based access. Checking any replaces it with exactly these modules. Visibility only — backend permissions still apply.,Rol asosidagi kirish huquqlarini qo'llash uchun hammasini belgilasiz qoldiring. Istalgan birini belgilash uni aniq ushbu modullar bilan almashtirib beradi. Faqat ko'rinish — backend ruxsatnomalar amal qiladi.
+Leave and lose the code,Chiqish va kodni yo'qotish
 Leave blank for open-ended.,
 Leave blank to keep the existing token.,
 Leave empty to allow proformas from any vendor.,Har qanday yetkazib beruvchidan proforma qabul qilish uchun boʻsh qoldiring.
 Leave request approved.,
 Leave request rejected.,
 Leave type,Ta'til turi
+Leave without handing over the pickup code?,Olib ketish kodini bermasdan chiqilsinmi?
 Ledger,Aylanmalar
 Ledger spans multiple account currencies; amounts shown in base currency.,Ledger bir nechta hisob valyutalarini qamrab oladi; summalar asosiy valyutada ko'rsatilgan.
 Ledger — all vouchers (reconciles to the balance),Ledger — barcha hujjatlar (balansga mos)
@@ -4922,6 +4924,7 @@ Status name is required,
 Status not found,
 Status Pipeline,Holat bosqichlari
 Status updated.,Holat yangilandi.
+Stay on the receipt,Kvitansiyada qolish
 Step,Qadam
 step,bosqich
 Step #{0} not found on this visit.,Qadam #{0} ushbu tashrif davomida topilmadi.
@@ -5187,6 +5190,7 @@ This BOM has no materials.,Bu BOM da materiallar yo'q.
 This cannot be deleted yet:,Buni hozircha o‘chirib bo‘lmaydi:
 This cannot be undone.,Buni qaytarish mumkin emas.
 This category pool has no boxes left.,Bu kategoriyada quti qolmagan.
+"This code is shown once and is stored only as a digest — nothing in this system can read it back. Leaving this page destroys the only copy, and the money has already been taken: the transfer would then have to be refunded.",Bu kod bir marta ko'rsatiladi va faqat xesh sifatida saqlanadi — bu tizimda hech narsa uni qayta o'qiy olmaydi. Bu sahifadan chiqish yagona nusxani yo'q qiladi va pul allaqachon olingan: o'tkazmani qaytarishga to'g'ri keladi.
 This Commercial Invoice already has a Purchase Invoice.,Bu tijorat fakturasida allaqachon xarid fakturasi bor.
 This correction affects payroll calculations,
 This correction is already {0} and cannot be approved.,

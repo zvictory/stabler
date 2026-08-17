@@ -2611,12 +2611,14 @@ Leaf,Yaprak
 Leave,İzin
 leave,
 Leave all unchecked to use role-based access. Checking any replaces it with exactly these modules. Visibility only — backend permissions still apply.,Rol tabanlı erişimi kullanmak için tümünü işaretsiz bırakın. Herhangi birini işaretlemek erişimi yalnızca bu modüllerle sınırlandırır. Yalnızca görünürlük — arka uç izinleri geçerliliğini korur.
+Leave and lose the code,Çık ve kodu kaybet
 Leave blank for open-ended.,
 Leave blank to keep the existing token.,
 Leave empty to allow proformas from any vendor.,Herhangi bir tedarikçiden proformaya izin vermek için boş bırakın.
 Leave request approved.,
 Leave request rejected.,
 Leave type,İzin türü
+Leave without handing over the pickup code?,Teslim kodunu vermeden çıkılsın mı?
 Ledger,Defter
 Ledger spans multiple account currencies; amounts shown in base currency.,Defter birden fazla hesap para birimini kapsamaktadır; tutarlar temel para biriminde gösterilmektedir.
 Ledger — all vouchers (reconciles to the balance),Defter — tüm belgeler (bakiye ile uyumlu)
@@ -4918,6 +4920,7 @@ Status name is required,
 Status not found,
 Status Pipeline,Durum akışı
 Status updated.,Durum güncellendi.
+Stay on the receipt,Fişte kal
 Step,Adım
 step,adım
 Step #{0} not found on this visit.,Bu ziyarette #{0} numaralı adım bulunamadı.
@@ -5183,6 +5186,7 @@ This BOM has no materials.,Bu BOM'da malzeme yok.
 This cannot be deleted yet:,Bu henüz silinemez:
 This cannot be undone.,Bu işlem geri alınamaz.
 This category pool has no boxes left.,Bu kategoride kalan kutu yok.
+"This code is shown once and is stored only as a digest — nothing in this system can read it back. Leaving this page destroys the only copy, and the money has already been taken: the transfer would then have to be refunded.",Bu kod bir kez gösterilir ve yalnızca özet olarak saklanır — bu sistemde hiçbir şey onu geri okuyamaz. Bu sayfadan çıkmak tek kopyayı yok eder ve para zaten alınmıştır: transferin iade edilmesi gerekir.
 This Commercial Invoice already has a Purchase Invoice.,Bu Ticari Faturanın zaten bir Alış Faturası var.
 This correction affects payroll calculations,
 This correction is already {0} and cannot be approved.,

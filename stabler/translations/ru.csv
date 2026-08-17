@@ -2618,12 +2618,14 @@ Leaf,Лист
 Leave,Отпуск
 leave,
 Leave all unchecked to use role-based access. Checking any replaces it with exactly these modules. Visibility only — backend permissions still apply.,Оставьте всё без отметок для доступа на основе ролей. Установка флажков заменяет его ровно этими модулями. Только видимость — разрешения бэкэнда всё ещё действуют.
+Leave and lose the code,Выйти и потерять код
 Leave blank for open-ended.,
 Leave blank to keep the existing token.,
 Leave empty to allow proformas from any vendor.,"Оставьте пустым, чтобы разрешить проформы от любого поставщика."
 Leave request approved.,
 Leave request rejected.,
 Leave type,Тип отпуска
+Leave without handing over the pickup code?,"Выйти, не передав код получения?"
 Ledger,Обороты
 Ledger spans multiple account currencies; amounts shown in base currency.,Бухгалтерская книга охватывает несколько валют счёта; суммы показаны в базовой валюте.
 Ledger — all vouchers (reconciles to the balance),Книга — все документы (сходится с балансом)
@@ -4927,6 +4929,7 @@ Status name is required,
 Status not found,
 Status Pipeline,Этапы статуса
 Status updated.,Статус обновлён.
+Stay on the receipt,Остаться на квитанции
 Step,Шаг
 step,шаг
 Step #{0} not found on this visit.,Шаг #{0} не найден в этом визите.
@@ -5192,6 +5195,7 @@ This BOM has no materials.,В этой спецификации нет мате�
 This cannot be deleted yet:,Это пока нельзя удалить:
 This cannot be undone.,Это невозможно отменить.
 This category pool has no boxes left.,В этой категории не осталось коробок.
+"This code is shown once and is stored only as a digest — nothing in this system can read it back. Leaving this page destroys the only copy, and the money has already been taken: the transfer would then have to be refunded.","Этот код показывается один раз и хранится только в виде хеша — ничто в этой системе не может прочитать его обратно. Уход с этой страницы уничтожит единственную копию, а деньги уже приняты: перевод придётся вернуть."
 This Commercial Invoice already has a Purchase Invoice.,У этого коммерческого инвойса уже есть счёт на закупку.
 This correction affects payroll calculations,
 This correction is already {0} and cannot be approved.,

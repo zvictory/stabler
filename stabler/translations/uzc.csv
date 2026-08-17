@@ -2613,12 +2613,14 @@ Leaf,Барг
 Leave,Таътил
 leave,
 Leave all unchecked to use role-based access. Checking any replaces it with exactly these modules. Visibility only — backend permissions still apply.,Ролга асосланган қўллаш учун бархасини белгилабнатинг. Ҳарбир белгилаш уни аниқ ушбу модуллар билан алмаштиради. Фақат кўриниш — орқа сўнда рухсатлар амалга асос.
+Leave and lose the code,Чиқиш ва кодни йўқотиш
 Leave blank for open-ended.,
 Leave blank to keep the existing token.,
 Leave empty to allow proformas from any vendor.,Ҳар қандай етказиб берувчидан проформа қабул қилиш учун бўш қолдиринг.
 Leave request approved.,
 Leave request rejected.,
 Leave type,Таътил тури
+Leave without handing over the pickup code?,Олиб кетиш кодини бермасдан чиқилсинми?
 Ledger,Айланмалар
 Ledger spans multiple account currencies; amounts shown in base currency.,Ҳисоб китоби бирнечта ҳисоб валютасига тўхтайди; сумалар асос валютасида кўрсатилади.
 Ledger — all vouchers (reconciles to the balance),Ledger — барча ҳужжатлар (балансга мос)
@@ -4922,6 +4924,7 @@ Status name is required,
 Status not found,
 Status Pipeline,Ҳолат босқичлари
 Status updated.,Ҳолат янгиланди.
+Stay on the receipt,Квитанцияда қолиш
 Step,Қадам
 step,босқич
 Step #{0} not found on this visit.,Қадам №{0} ушбу ташриф сўрида топилмади.
@@ -5187,6 +5190,7 @@ This BOM has no materials.,Бу BOM да материаллар йўқ.
 This cannot be deleted yet:,Буни ҳозирча ўчириб бўлмайди:
 This cannot be undone.,Бу ортига қайтариб бўлмайди.
 This category pool has no boxes left.,Бу категорияда қути қолмаган.
+"This code is shown once and is stored only as a digest — nothing in this system can read it back. Leaving this page destroys the only copy, and the money has already been taken: the transfer would then have to be refunded.",Бу код бир марта кўрсатилади ва фақат хеш сифатида сақланади — бу тизимда ҳеч нарса уни қайта ўқий олмайди. Бу саҳифадан чиқиш ягона нусхани йўқ қилади ва пул аллақачон олинган: ўтказмани қайтаришга тўғри келади.
 This Commercial Invoice already has a Purchase Invoice.,Бу тижорат фактурасида аллақачон харид фактураси бор.
 This correction affects payroll calculations,
 This correction is already {0} and cannot be approved.,
