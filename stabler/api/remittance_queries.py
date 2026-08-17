@@ -219,6 +219,27 @@ QUEUES = (
 #: `policy_configured: False` and no rows until `expires_at` carries data.
 EXPIRY_QUEUES = (EXPIRING_12H, EXPIRED_REFUND_REQUIRED)
 
+#: Each queue's own urgency signal, because `_ORDER` is the wrong one for all six.
+#: Newest-first is right for a list somebody is browsing and wrong for a list
+#: somebody is working: "expiring within 12 hours" sorted by registration date is
+#: very nearly the reverse of soonest-deadline-first, and a locked queue that
+#: ignores `code_attempts` buries the transfer the desk is about to lose.
+#: Recorded as D11 by the design council (2026-08-16-remittance-design-council-
+#: decision.md:201-204); the wording is PROMPT_remittance_design_v2.txt:315-316 —
+#: "soonest expiry first, oldest request first, most failed attempts first".
+#:
+#: Every clause ends on `name` so a page boundary is stable. Without a total order
+#: two rows sharing an expiry can swap between page 1 and page 2, and the cashier
+#: sees one of them twice and the other never.
+_QUEUE_ORDER = {
+	READY_FOR_PAYOUT: "registered_at asc, name asc",
+	EXPIRING_12H: "expires_at asc, name asc",
+	EXPIRED_REFUND_REQUIRED: "expires_at asc, name asc",
+	REFUND_AWAITING_APPROVAL: "registered_at asc, name asc",
+	LOCKED_PICKUP_CODE: "code_attempts desc, registered_at asc, name asc",
+	ACCOUNTING_EXCEPTION: "registered_at asc, name asc",
+}
+
 #: How long "expiring soon" is, in hours. Named after the queue the spec names;
 #: it is a *window over data*, not a deadline this module assigns to anything.
 _EXPIRING_WITHIN_HOURS = 12
@@ -333,7 +354,17 @@ def _queue_shapes(queue: str) -> tuple[dict, ...]:
 			}
 		)
 	if queue == REFUND_AWAITING_APPROVAL:
-		return ({"refund_status": "Requested"},)
+		# Requested AND Approved. `Requested` alone left the approved-but-unpaid
+		# refund in NO queue on the whole screen: `_refund_open` deliberately takes
+		# it off the three payout queues, `LOCKED_PICKUP_CODE` wants a locked code,
+		# and the exception shapes describe a broken row, which this one is not. So
+		# the single state that has a cashier standing at a drawer — origin desk,
+		# counting the cash back out — was the state operations could not see.
+		# PROMPT_remittance_design_v2.txt:271-273 requires it be reachable and
+		# visible. One queue can carry both because the row's own `allowed_actions`
+		# is what separates "approve this" from "pay this refund out"; the screen
+		# reads that array and never infers a button from a status.
+		return ({"refund_status": ["in", ("Requested", "Approved")]},)
 	if queue == LOCKED_PICKUP_CODE:
 		return ({"operational_status": "Registered", "code_locked": 1},)
 	if queue == ACCOUNTING_EXCEPTION:
@@ -365,13 +396,47 @@ def _date_window(field: str, from_date: str | None, to_date: str | None) -> dict
 	return {}
 
 
-def _recency(row: dict) -> tuple:
-	"""Sort key matching `_ORDER`, for the union path where SQL cannot sort.
+def _sort_value(value):
+	"""One comparable per cell: NULL-safe, and type-safe across a mixed column.
 
-	Datetimes come back as objects and can be None; `str` makes both comparable
-	and preserves order, because the rendering is ISO-shaped.
+	The leading flag keeps NULLs in a class of their own, so a `None` is never
+	compared against a datetime. They land first on ascending, which is what
+	MariaDB does — the SQL path and the Python path below must not disagree about
+	where an unset `expires_at` goes.
+
+	Numbers stay numbers: `code_attempts` is an Int, and sorting it as text would
+	rank 9 above 10 — the queue would bury the transfer closest to being lost.
+	Everything else compares as text, which is chronological for a datetime
+	because the rendering is ISO-shaped, and lets a `datetime` object and a stored
+	string sit in the same set without either being converted first.
 	"""
-	return (str(row.get("registered_at") or ""), str(row.get("modified") or ""))
+	if value is None or value == "":
+		return (0, 0.0, "")
+	if isinstance(value, (int, float)) and not isinstance(value, bool):
+		return (1, float(value), "")
+	return (1, 0.0, str(value))
+
+
+def _sorted_by(rows, order_by: str) -> list[dict]:
+	"""`rows` in the order `order_by` asks for, for the union path where SQL cannot.
+
+	One spelling of the order and two executors: the single-shape path hands the
+	string to the database, the union path hands it here. A queue must not be
+	sorted by urgency until the moment a second shape appears and then silently
+	fall back to something else.
+
+	Applied right to left because Python's sort is stable — that is how a
+	multi-key order is built out of single-key passes, and it is the only way to
+	honour a clause that mixes `asc` and `desc`.
+	"""
+	ordered = list(rows)
+	for clause in reversed([part.strip() for part in (order_by or "").split(",") if part.strip()]):
+		field, _sep, direction = clause.partition(" ")
+		ordered.sort(
+			key=lambda row, f=field: _sort_value(row.get(f)),
+			reverse=direction.strip().lower() == "desc",
+		)
+	return ordered
 
 
 def _select(
@@ -430,7 +495,7 @@ def _select(
 		for row in frappe.get_list(TRANSFER, **args):
 			seen[row["name"]] = row
 
-	rows = sorted(seen.values(), key=_recency, reverse=True)
+	rows = _sorted_by(seen.values(), order_by)
 	total = len(rows)
 	if page:
 		return rows[start : start + page], total
@@ -515,12 +580,47 @@ def _currency_filter(currency: str | None) -> dict:
 	return {"send_currency": code} if code else {}
 
 
-def _transfers_named(company: str, names: list[str], fields, extra: dict | None = None) -> list[dict]:
+def _narrow(shapes, extra: dict):
+	"""Stamp one more condition onto every shape. An AND across the whole union."""
+	if not extra:
+		return tuple(shapes)
+	return tuple({**shape, **extra} for shape in shapes)
+
+
+def _desk_shapes(shapes, desk: str | None):
+	"""Narrow every shape to one cash desk — on EITHER leg, which is the point.
+
+	A desk's work on the operations screen sits on both legs. It pays out the
+	transfers arriving at it, and it counts cash back out on refunds of transfers
+	it registered — `complete_refund` happens at the ORIGIN desk. Filtering on one
+	leg would hide half of what that desk owes, which is the same failure this
+	bead was opened for.
+
+	Expressed as doubled shapes rather than as `or_filters`: `or_filters` is
+	already owned by the search term (`_search`), and `_select` unions shapes by
+	name anyway — the route `_refund_open` already takes for its NULL split. The
+	cost is one extra query per shape, paid only when a desk is actually picked.
+	"""
+	branch = (desk or "").strip()
+	if not branch:
+		return tuple(shapes)
+	return tuple(
+		{**shape, leg: branch} for shape in shapes for leg in ("origin_branch", "destination_branch")
+	)
+
+
+def _transfers_named(
+	company: str,
+	names: list[str],
+	fields,
+	extra: dict | None = None,
+	desk: str | None = None,
+) -> list[dict]:
 	"""Rows for a set of names the caller already narrowed, still permission-scoped."""
 	if not names:
 		return []
 	rows, _total = _select(
-		_scoped(company, ({**(extra or {}), "name": ["in", names]},)),
+		_scoped(company, _desk_shapes(({**(extra or {}), "name": ["in", names]},), desk)),
 		fields,
 		order_by=_ORDER,
 	)
@@ -553,7 +653,7 @@ def _event_transfer_names(event_type: str, from_date: str | None, to_date: str |
 # 1. Operations summary
 # --------------------------------------------------------------------------- #
 @frappe.whitelist()
-def operations_summary(company: str, currency: str | None = None) -> dict:
+def operations_summary(company: str, currency: str | None = None, desk: str | None = None) -> dict:
 	"""The scorecards and the six queue counts for one company's operations screen.
 
 	Every money figure is a list of per-currency rows. There is no grand total and
@@ -569,24 +669,32 @@ def operations_summary(company: str, currency: str | None = None) -> dict:
 	`earned_today` is a FLOW (commission that moved to income when a transfer was
 	paid out today). Reporting them under one heading without saying which is
 	which is how a desk double-counts its own revenue.
+
+	`currency` narrows to one send leg, `desk` to one cash desk on either leg. Both
+	narrow the queue COUNTS as well as the scorecards, because the counts sit on
+	the same screen as the queue rows the same two filters narrow — a tile reading
+	11 above a list of 3 is a screen contradicting itself.
 	"""
 	_assert_company_scope(company)  # tenant isolation: reject a foreign company arg
 	company = _require_company(company)
 	today = nowdate()
 	code = _currency_filter(currency)
 
+	def scoped(*shapes):
+		return _scoped(company, _desk_shapes(shapes, desk))
+
 	registered_today, _n = _select(
-		_scoped(company, ({**code, **_date_window("registered_at", today, today)},)),
+		scoped({**code, **_date_window("registered_at", today, today)}),
 		_ROW_FIELDS,
 	)
 	# Read once, split twice. `open_obligation` is what the ledger is still short;
 	# `in_transit` is the payable subset of it. An approved-but-uncompleted refund
 	# is in the first and not the second, and that difference is the whole reason
 	# the two are not the same list — see `_refund_open`.
-	open_obligation, _n = _select(_scoped(company, ({**code, **_OPEN_OBLIGATION},)), _ROW_FIELDS)
+	open_obligation, _n = _select(scoped({**code, **_OPEN_OBLIGATION}), _ROW_FIELDS)
 	in_transit = _payable_rows(open_obligation)
 	paid_out_today = _transfers_named(
-		company, _event_transfer_names("Payout", today, today), _ROW_FIELDS, extra=code
+		company, _event_transfer_names("Payout", today, today), _ROW_FIELDS, extra=code, desk=desk
 	)
 
 	queues = {}
@@ -595,12 +703,17 @@ def operations_summary(company: str, currency: str | None = None) -> dict:
 		if not configured:
 			queues[queue] = {"count": 0, "policy_configured": False}
 			continue
-		_rows, total = _select(_scoped(company, _queue_shapes(queue)), ("name",), limit=1)
+		_rows, total = _select(
+			_scoped(company, _desk_shapes(_narrow(_queue_shapes(queue), code), desk)),
+			("name",),
+			limit=1,
+		)
 		queues[queue] = {"count": total, "policy_configured": True}
 
 	payload = {
 		"company": company,
 		"currency": (currency or "").strip() or None,
+		"desk": (desk or "").strip() or None,
 		"as_of": str(now_datetime()),
 		"scorecards": {
 			"registered_today": {
@@ -638,14 +751,25 @@ def operations_summary(company: str, currency: str | None = None) -> dict:
 # 2. Work queues
 # --------------------------------------------------------------------------- #
 @frappe.whitelist()
-def work_queue(company: str, queue: str, limit=50, offset=0) -> dict:
-	"""One of the six operations queues, paged.
+def work_queue(
+	company: str,
+	queue: str,
+	limit=50,
+	offset=0,
+	currency: str | None = None,
+	desk: str | None = None,
+) -> dict:
+	"""One of the six operations queues, paged, sorted by its own urgency signal.
 
 	The two expiry queues answer `policy_configured: False` with no rows until
 	something actually writes `expires_at`. That flag is the whole contract with
 	the screen: it must render "no expiry policy is configured" rather than "no
 	transfers are expiring", because those are opposite statements and only one of
 	them is true today.
+
+	`currency` and `desk` are the same two filters `operations_summary` takes, and
+	they exist here because a filter that narrowed only the scorecards above the
+	queue read as a filter that had silently failed.
 	"""
 	_assert_company_scope(company)  # tenant isolation: reject a foreign company arg
 	company = _require_company(company)
@@ -659,6 +783,8 @@ def work_queue(company: str, queue: str, limit=50, offset=0) -> dict:
 			{
 				"company": company,
 				"queue": queue,
+				"currency": (currency or "").strip() or None,
+				"desk": (desk or "").strip() or None,
 				"policy_configured": False,
 				"total": 0,
 				"limit": max(1, min(cint(limit) or 50, 200)),
@@ -669,9 +795,11 @@ def work_queue(company: str, queue: str, limit=50, offset=0) -> dict:
 
 	page = max(1, min(cint(limit) or 50, 200))
 	start = max(0, cint(offset))
+	shapes = _desk_shapes(_narrow(_queue_shapes(queue), _currency_filter(currency)), desk)
 	rows, total = _select(
-		_scoped(company, _queue_shapes(queue)),
+		_scoped(company, shapes),
 		_ROW_FIELDS,
+		order_by=_QUEUE_ORDER[queue],
 		limit=page,
 		offset=start,
 	)
@@ -679,6 +807,8 @@ def work_queue(company: str, queue: str, limit=50, offset=0) -> dict:
 		{
 			"company": company,
 			"queue": queue,
+			"currency": (currency or "").strip() or None,
+			"desk": (desk or "").strip() or None,
 			"policy_configured": True,
 			"total": total,
 			"limit": page,

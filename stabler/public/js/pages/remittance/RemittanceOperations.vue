@@ -35,6 +35,8 @@ import { useSession } from "../../stores/session.js";
 import { remittanceApi, REMITTANCE_ACTIONS, REMITTANCE_QUEUES } from "../../api/remittance.js";
 import { formatMoney } from "../../composables/money.js";
 import { formatDateTime } from "../../composables/date.js";
+import { routeLabel } from "../../composables/remittanceRoute.js";
+import { getStatusBadgeClass } from "../../composables/status.js";
 import { t } from "../../composables/i18n.js";
 import { useToast } from "../../composables/useToast.js";
 import { useLatestRequest } from "../../composables/useLatestRequest.js";
@@ -53,6 +55,11 @@ const toast = useToast();
 // and a company switch retires both.
 const summaryTicket = useLatestRequest();
 const queueTicket = useLatestRequest();
+// The desk list needs its own ticket, not a shared one: two fast company switches
+// could otherwise land company A's branches under company B, and a filter picked
+// from them narrows B's queues by a branch B does not have — an empty screen that
+// looks like an answer.
+const deskTicket = useLatestRequest();
 
 // Server order (`remittance_queries.QUEUES`), which is also the order a desk
 // works them.
@@ -84,9 +91,14 @@ const queueMeta = computed(() => ({
 		icon: "ti-clock-exclamation",
 		tone: "red",
 	},
+	// Two states, one queue, because both are unfinished refund work and an
+	// approved one appeared in no queue at all before this. The row's own
+	// `allowed_actions` is what tells them apart — "Approve refund" on one,
+	// "Complete refund" on the other — and the refund badge on the row names the
+	// state outright.
 	[REMITTANCE_QUEUES.REFUND_AWAITING_APPROVAL]: {
-		title: t("Refund awaiting approval"),
-		note: t("A refund was requested and needs a manager decision"),
+		title: t("Refund open"),
+		note: t("Requested and awaiting a decision, or approved and awaiting cash"),
 		icon: "ti-gavel",
 		tone: "yellow",
 	},
@@ -140,6 +152,24 @@ const currencyOptions = computed(() => [
 ]);
 
 const currencyFilter = ref("");
+
+// The desk filter narrows to one cash desk on EITHER leg, which is the server's
+// rule and not this screen's: a desk pays out what arrives at it and counts cash
+// back out on refunds of what it registered, so filtering one leg would hide half
+// of its own work.
+const deskFilter = ref("");
+const desks = ref([]);
+
+const deskOptions = computed(() => [
+	{ value: "", label: t("All cash desks") },
+	...desks.value.map((desk) => ({
+		value: desk.branch,
+		label: desk.city ? `${desk.city} · ${desk.branch}` : desk.branch,
+	})),
+]);
+
+const filtersActive = computed(() => Boolean(currencyFilter.value || deskFilter.value));
+
 const summary = ref(null);
 const summaryLoading = ref(false);
 const summaryError = ref("");
@@ -162,7 +192,8 @@ async function loadSummary() {
 	try {
 		const res = await remittanceApi.operationsSummary(
 			activeCompany.value,
-			currencyFilter.value || null
+			currencyFilter.value || null,
+			deskFilter.value || null
 		);
 		if (!isCurrent()) return;
 		summary.value = res || null;
@@ -185,7 +216,9 @@ async function loadQueue() {
 			activeCompany.value,
 			activeQueue.value,
 			pageLength.value,
-			limitStart.value
+			limitStart.value,
+			currencyFilter.value || null,
+			deskFilter.value || null
 		);
 		if (!isCurrent()) return;
 		queue.value = {
@@ -211,11 +244,43 @@ function reload() {
 	loadQueue();
 }
 
-// The currency argument exists only on `operations_summary` — `work_queue` has
-// no such filter. Only the summary reloads, and the note above the strip says so;
-// reloading the queue here would leave its rows unchanged beside a narrowed
-// scorecard and read as a filter that silently failed.
-watch(currencyFilter, loadSummary);
+// Both filters reach both endpoints, so both regions reload. The queue used to
+// be left alone here because `work_queue` took no such argument, which meant its
+// rows sat unchanged beside a narrowed scorecard — a filter that appears to have
+// silently failed. Reset paging: page 3 of the unfiltered queue is rarely page 3
+// of the filtered one.
+watch([currencyFilter, deskFilter], reload);
+
+function clearFilters() {
+	if (!filtersActive.value) return;
+	currencyFilter.value = "";
+	deskFilter.value = "";
+}
+
+async function loadDesks() {
+	if (!activeCompany.value) {
+		desks.value = [];
+		return;
+	}
+	const isCurrent = deskTicket.take();
+	try {
+		const rows = await remittanceApi.cashDesks(activeCompany.value);
+		if (!isCurrent()) return;
+		// One entry per branch: the settings table carries a row per desk AND
+		// currency, so a desk with three cash accounts would otherwise appear three
+		// times in the filter.
+		const seen = new Map();
+		for (const row of Array.isArray(rows) ? rows : []) {
+			if (!row?.branch || seen.has(row.branch)) continue;
+			seen.set(row.branch, { branch: row.branch, city: row.city || "" });
+		}
+		desks.value = [...seen.values()];
+	} catch {
+		// A desk list that failed to load is a missing filter, not a broken screen:
+		// the queues below are the point and they answer without it.
+		if (isCurrent()) desks.value = [];
+	}
+}
 
 function selectQueue(name) {
 	if (activeQueue.value === name) return;
@@ -293,11 +358,16 @@ function queueHint(name) {
 }
 
 // ---------------------------------------------------------------- row cells --
-function routeCities(row) {
-	const from = row.origin_city || "";
-	const to = row.destination_city || "";
-	if (!from && !to) return "";
-	return `${from || "—"} → ${to || "—"}`;
+// `Tashkent · TAS-C → Istanbul · IST-1`, from the shared composable rather than
+// from a second spelling here. This column used to stack `branch → branch` over
+// `city → city` on two lines while the quote panel wrote the one-line form, and
+// the design of record (PROMPT_remittance_design_v2.txt:141) names only the
+// one-line form.
+function rowRoute(row) {
+	return routeLabel(
+		{ branch: row.origin_branch, city: row.origin_city },
+		{ branch: row.destination_branch, city: row.destination_city }
+	);
 }
 
 // Age from `registered_at`, which is real data on every row. Nothing here is
@@ -338,12 +408,22 @@ function openAction(row, action) {
 watch(activeCompany, () => {
 	summaryTicket.invalidate();
 	queueTicket.invalidate();
+	deskTicket.invalidate();
 	summary.value = null;
 	queue.value = { rows: [], total: 0, policyConfigured: true };
+	// The desks belong to the company that just went away, and so does the pick
+	// made from them — carrying either over would filter the new company's queues
+	// by a branch it does not have and show an honest, wrong, empty screen.
+	desks.value = [];
+	deskFilter.value = "";
+	loadDesks();
 	reload();
 });
 
-onMounted(reload);
+onMounted(() => {
+	loadDesks();
+	reload();
+});
 </script>
 
 <template>
@@ -352,6 +432,15 @@ onMounted(reload);
 		<div class="d-flex align-items-center gap-2 flex-wrap py-2 px-3 border-bottom bg-light">
 			<div class="subheader mb-0">{{ t("Scorecards") }}</div>
 			<Select v-model="currencyFilter" size="sm" :options="currencyOptions" style="width: 160px" />
+			<Select v-model="deskFilter" size="sm" :options="deskOptions" style="width: 200px" />
+			<button
+				v-if="filtersActive"
+				type="button"
+				class="btn btn-sm btn-ghost-secondary"
+				@click="clearFilters"
+			>
+				<i class="ti ti-filter-off me-1"></i>{{ t("Clear filters") }}
+			</button>
 			<div class="ms-auto d-flex align-items-center gap-2">
 				<span v-if="summary?.as_of" class="text-secondary small font-monospace">
 					{{ formatDateTime(summary.as_of) }}
@@ -370,7 +459,7 @@ onMounted(reload);
 		<div class="text-secondary small px-3 py-2 border-bottom">
 			{{
 				t(
-					"Amounts are listed per currency and never summed. The currency filter narrows the scorecards only — the queues below always list every currency."
+					"Amounts are listed per currency and never summed. Both filters narrow the scorecards, the queue counts and the queue rows together."
 				)
 			}}
 		</div>
@@ -531,19 +620,21 @@ onMounted(reload);
 									<span v-if="r.code_locked" class="badge bg-purple-lt text-purple mt-1">
 										<i class="ti ti-lock me-1"></i>{{ t("Locked") }}
 									</span>
+									<!-- An approved refund is money the origin desk still has to count
+									     back out. It reaches this queue beside a requested one, so the
+									     row has to say which of the two it is. -->
+									<span
+										v-if="r.refund_status && r.refund_status !== 'None'"
+										class="badge mt-1"
+										:class="getStatusBadgeClass('Remittance Refund', r.refund_status)"
+									>
+										<i class="ti ti-arrow-back-up me-1"></i>
+										{{ t("Refund: {status}", { status: t(r.refund_status) }) }}
+									</span>
 								</td>
 								<td>{{ r.sender_name || "—" }}</td>
 								<td>{{ r.receiver_name || "—" }}</td>
-								<td>
-									<div class="d-flex align-items-center gap-1 flex-wrap">
-										<span>{{ r.origin_branch || "—" }}</span>
-										<i class="ti ti-arrow-narrow-right text-secondary"></i>
-										<span>{{ r.destination_branch || "—" }}</span>
-									</div>
-									<div v-if="routeCities(r)" class="small text-secondary">
-										{{ routeCities(r) }}
-									</div>
-								</td>
+								<td>{{ rowRoute(r) || "—" }}</td>
 								<td class="text-end font-monospace text-nowrap">
 									{{ formatMoney(r.tendered, r.send_currency, lang) }}
 								</td>

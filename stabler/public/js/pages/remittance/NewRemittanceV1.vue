@@ -53,9 +53,6 @@ const INCLUSIVE = "Inclusive";
 // currency. Stated here so the assumption is visible rather than implied.
 const PRECISION = 2;
 
-const CASH_DESK_CHILD = "Remittance Cash Desk Account";
-const SETTINGS_DOCTYPE = "Remittance Settings";
-
 const company = computed(() => session.activeCompany);
 const language = computed(() => tlang());
 
@@ -408,14 +405,10 @@ watch(
 // Load
 // ---------------------------------------------------------------------------
 async function loadDesks() {
-	const rows = await call("frappe.client.get_list", {
-		doctype: CASH_DESK_CHILD,
-		parent: SETTINGS_DOCTYPE,
-		filters: { parenttype: SETTINGS_DOCTYPE, parent: company.value },
-		fields: ["branch", "city", "currency"],
-		limit_page_length: 0,
-		order_by: "idx asc",
-	});
+	// Through the api module, not a second raw `frappe.client.get_list`: Operations
+	// needs the same list for its desk filter, and two spellings of one read is how
+	// two screens end up disagreeing about which desks exist.
+	const rows = await remittanceApi.cashDesks(company.value);
 	return Array.isArray(rows) ? rows : [];
 }
 
