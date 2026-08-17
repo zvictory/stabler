@@ -107,9 +107,21 @@ lint-js-changed:
 ifeq ($(strip $(CHANGED_JS)),)
 	@echo "eslint: no changed .js/.vue files, skipping."
 else
-	@if [ ! -x $(ESLINT) ]; then \
+	@if [ ! -x $(ESLINT) ] && [ -n "$$CI" ]; then \
 	  echo "eslint: node_modules missing — run 'npm install'."; \
 	  echo "  (the GitLab 'eslint-debt' job covers the tree meanwhile)"; \
+	elif [ ! -x $(ESLINT) ]; then \
+	  echo "eslint: node_modules missing, and $(words $(CHANGED_JS)) .js/.vue file(s) changed."; \
+	  echo "  This gate does not pass by omission. Measured 2026-08-17: a fresh"; \
+	  echo "  'git worktree add' has no node_modules, so a .vue file containing an"; \
+	  echo "  unterminated call went through 'make check' and printed"; \
+	  echo "  'OK — pre-push gate passed'. Two of six gates were off and it said so"; \
+	  echo "  in a line nobody reads. The graceful skip above is for the GitLab"; \
+	  echo "  python image only, which is why it now tests \$$CI."; \
+	  echo "  Fix with ONE of:"; \
+	  echo "    ln -s $(LOCAL_BENCH)/apps/stabler/node_modules node_modules   # in a worktree"; \
+	  echo "    npm install                                                   # in a fresh clone"; \
+	  exit 1; \
 	else \
 	  echo "eslint: $(words $(CHANGED_JS)) changed file(s)"; \
 	  $(ESLINT) $(CHANGED_JS) || exit 1; \
@@ -211,6 +223,23 @@ BENCH_TESTS := $(shell ls stabler/tests/test_*.py | sed 's|.*/||; s|\.py$$||' | 
 # genesis-test.local lacks an app or a fixture; on a richer site they pass, NOW
 # GREEN fires, and the ratchet deletes its own baseline. So a pin mismatch
 # disables the ratchet entirely and every red counts.
+# The log is PARSED with ANSI stripped and DISPLAYED with the colour intact. When
+# frappe colourises, the line is `ESC[32mOK ESC[0m (ESC[33mskipped=3 ESC[0m)`, so
+# the literal `(skipped=` the pattern needs never appears, `skip` falls back to 0,
+# and a module that skipped every one of its tests counts GREEN — restoring exactly
+# the lie 44fe689 removed when it made zero coverage red. Measured 2026-08-17
+# (stabler-c1a6): two runs of one commit on one site, opposite verdicts. Stripping
+# beats NO_COLOR because it protects every future pattern too, and the human still
+# reads the coloured `cat`, not the parse.
+#
+# The lock and the tree guard are one defect seen from two sides, and neither is
+# tidiness. There is one bench, one site and one code path. Two concurrent runs
+# both execute before_tests against the same database, and fixtures.py:145 raises
+# `cannot unpack non-iterable NoneType object` — a FIXTURE failure, which is why
+# the "six modules that flip between runs" (stabler-w2dd) all passed when run
+# alone. Held under one session the same six were identical across three trees.
+# And because `bench` resolves `stabler` through stabler.pth to the MAIN tree, a
+# run started from a worktree measures main and reports it as the branch.
 KNOWN_RED := .github/bench-known-red.txt
 
 test-bench:
@@ -218,17 +247,59 @@ test-bench:
 	 sys.exit(0 if c.get('allow_tests') else 1)" \
 	 || { echo "ERROR: $(TEST_SITE) has allow_tests off (or does not exist)."; \
 	      echo "  bench --site $(TEST_SITE) set-config allow_tests true"; exit 1; }
-	@echo "bench modules: $(words $(BENCH_TESTS))  site: $(TEST_SITE)"
-	@obs=`mktemp`; known=`mktemp`; derived=`mktemp`; tmp=`mktemp`; live=`mktemp`; log=`mktemp`; \
-	trap 'rm -f $$obs $$known $$derived $$tmp $$live $$log' EXIT; \
+	@here=`git rev-parse --show-toplevel 2>/dev/null || pwd`; \
+	here=`cd "$$here" && pwd -P`; \
+	main_tree=`cd $(LOCAL_BENCH)/apps/stabler 2>/dev/null && pwd -P`; \
+	if [ "$$here" != "$$main_tree" ]; then \
+	  echo "REFUSING: test-bench cannot measure this tree."; \
+	  echo "  you are in : $$here"; \
+	  echo "  bench reads: $$main_tree"; \
+	  echo ""; \
+	  echo "  This target does 'cd $(LOCAL_BENCH) && bench run-tests', and the bench"; \
+	  echo "  venv resolves the 'stabler' package through stabler.pth, which points"; \
+	  echo "  at the main tree. So from a worktree or a second clone it imports MAIN's"; \
+	  echo "  code and reports the verdict as if it were this branch's — a silent"; \
+	  echo "  false pass, on exactly the beads where money moves. Verified 2026-08-17"; \
+	  echo "  with a probe module visible only in the worktree: unittest found it,"; \
+	  echo "  the bench raised ModuleNotFoundError."; \
+	  echo ""; \
+	  echo "  Merge the branch into the main tree and run it there, or check the"; \
+	  echo "  branch out in $$main_tree. There is no flag to override this."; \
+	  exit 1; \
+	fi
+	@obs=`mktemp`; known=`mktemp`; derived=`mktemp`; tmp=`mktemp`; live=`mktemp`; log=`mktemp`; clean=`mktemp`; \
+	sha=`git rev-parse --short HEAD`; br=`git rev-parse --abbrev-ref HEAD`; \
+	dirty=`git status --porcelain --untracked-files=no | wc -l | tr -d ' '`; \
+	untr=`git ls-files --others --exclude-standard -- stabler | grep '\.py$$' | wc -l | tr -d ' '`; \
+	lock=$(LOCAL_BENCH)/.stabler-test-bench.lock; \
+	if ! mkdir "$$lock" 2>/dev/null; then \
+	  echo "REFUSING: another test-bench run holds $$lock (pid `cat $$lock/pid 2>/dev/null || echo '?'`)."; \
+	  echo "  One bench, one site, one code path — two concurrent runs measure each"; \
+	  echo "  other. That is stabler-w2dd: the 'six modules flip between runs' was"; \
+	  echo "  never test flakiness. Both processes run before_tests against the same"; \
+	  echo "  site, and fixtures.py:145 raises 'cannot unpack non-iterable NoneType'"; \
+	  echo "  — a FIXTURE failure, which is why the same modules pass when run alone."; \
+	  echo "  Wait for the other run. If it is dead, remove the directory by hand."; \
+	  rm -f $$obs $$known $$derived $$tmp $$live $$log $$clean; \
+	  exit 1; \
+	fi; \
+	echo $$$$ > "$$lock/pid"; \
+	trap 'rm -f $$obs $$known $$derived $$tmp $$live $$log $$clean; rm -f $$lock/pid; rmdir $$lock 2>/dev/null; \
+	      echo ""; echo "measured: $$br @ $$sha on $(TEST_SITE)"' EXIT; \
+	echo "bench modules: $(words $(BENCH_TESTS))  site: $(TEST_SITE)"; \
+	echo "measuring:     $$br @ $$sha"; \
+	[ "$$dirty" = "0" ] || echo "               WARNING: $$dirty modified tracked file(s) — this sha does not describe what ran."; \
+	[ "$$untr" = "0" ] || echo "               WARNING: $$untr untracked .py file(s) under stabler/ — collected by this run, absent from that sha."; \
+	esc=`printf '\033'`; \
 	for m in $(BENCH_TESTS); do \
 	  echo "--- $$m"; \
 	  red=0; \
 	  ( cd $(LOCAL_BENCH) && bench --site $(TEST_SITE) run-tests \
 	      --module stabler.tests.$$m ) > $$log 2>&1 || red=1; \
 	  cat $$log; \
-	  ran=`sed -n 's/^Ran \([0-9][0-9]*\) test.*/\1/p' $$log | tail -1`; \
-	  skip=`sed -n 's/.*(skipped=\([0-9][0-9]*\)).*/\1/p' $$log | tail -1`; \
+	  sed -E "s/$${esc}\[[0-9;]*m//g" $$log > $$clean; \
+	  ran=`sed -n 's/^Ran \([0-9][0-9]*\) test.*/\1/p' $$clean | tail -1`; \
+	  skip=`sed -n 's/.*(skipped=\([0-9][0-9]*\)).*/\1/p' $$clean | tail -1`; \
 	  [ -n "$$ran" ] || ran=0; [ -n "$$skip" ] || skip=0; \
 	  if [ "$$ran" -eq 0 ]; then \
 	    echo "!! ZERO COVERAGE: $$m collected no tests on $(TEST_SITE)."; red=1; \
@@ -323,9 +394,17 @@ test-bench:
 # image with no node. THAT is why the `js-tests` job exists on the node image --
 # without it this step would silently pass in CI and the gate would be a lie.
 test-js:
-	@if [ ! -x $(VITEST) ]; then \
+	@if [ ! -x $(VITEST) ] && [ -n "$$CI" ]; then \
 	  echo "vitest: node_modules missing — run 'npm install'."; \
 	  echo "  (the GitLab 'js-tests' job covers this meanwhile)"; \
+	elif [ ! -x $(VITEST) ]; then \
+	  echo "vitest: node_modules missing, so this gate asserted nothing."; \
+	  echo "  Skipping is correct on the GitLab python image and nowhere else —"; \
+	  echo "  hence the \$$CI test. Locally it means the suite did not run at all."; \
+	  echo "  Fix with ONE of:"; \
+	  echo "    ln -s $(LOCAL_BENCH)/apps/stabler/node_modules node_modules   # in a worktree"; \
+	  echo "    npm install                                                   # in a fresh clone"; \
+	  exit 1; \
 	else \
 	  $(VITEST) run; \
 	fi

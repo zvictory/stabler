@@ -102,11 +102,34 @@ Zafar for the missing business decision.
 ```bash
 git checkout main && git pull --ff-only
 git worktree add -b feat/<tenant-or-module>-<topic> .worktrees/agy-<bead-id> main
+ln -s "$(git rev-parse --show-toplevel)/node_modules" .worktrees/agy-<bead-id>/node_modules
 ```
 
 `fix/…` and `chore/…` for the other two kinds. `.worktrees/` is gitignored
 (`.gitignore:11`), so the worktree never enters a commit. **One writing agent per
 worktree** — never point two at the same directory.
+
+**The symlink is not optional, and it is not a convenience.** A fresh worktree has
+no `node_modules`, and until 2026-08-17 `lint-js-changed` and `test-js` answered
+that by echoing "node_modules missing" and exiting 0. So `make check` printed
+`OK — pre-push gate passed` with two of its six gates switched off — measured by
+putting an unterminated call in a `.vue` file and watching it through. Since most
+of what a delegated agent writes here is Vue, that is the majority of the diff
+going unlinted and untested. The Makefile now FAILS instead outside CI, so a
+worktree without the symlink cannot report a false green; the symlink is what
+makes it report anything at all. `npm ci` is not the alternative — the tracked
+lockfile is out of sync with `package.json` and it exits 1; `npm install` works
+but rewrites the tracked `package-lock.json` inside the worktree.
+
+**`make test-bench` cannot be run from a worktree at all**, and the target now
+refuses. It does `cd $(LOCAL_BENCH) && bench run-tests`, and the bench venv
+resolves the `stabler` package through `stabler.pth`, which points at the MAIN
+tree — so a worktree run measures main's code and reports the verdict as the
+branch's. A bench-gated bead is therefore sequenced, not parallelised: merge it
+into the main tree and run it there. There is also exactly one bench, one pinned
+site (`genesis-test.local`, enforced by the `#pin` line in
+`.github/bench-known-red.txt`), one MariaDB and one redis, so two concurrent runs
+collide inside `before_tests` regardless. The target holds a lock for that.
 
 ## 4. Launch agy
 
@@ -185,7 +208,7 @@ Minimum for every change: `make check` and `git diff --check`. Add by impact:
 |---|---|
 | Frontend | targeted ESLint/Vitest + `bench build --app stabler` |
 | Forms | the `qa-forms` workflow (`.claude/workflows/qa-forms.js`) + direct-route refresh |
-| DB / GL / Payment Entry | focused tests + `make test-bench` |
+| DB / GL / Payment Entry | focused tests + `make test-bench` **in the main tree, one at a time** (section 3) |
 | Patches / doctypes | local migrate rehearsal + re-run for idempotency |
 | Translations | all five catalogs (en, ru, uz, uzc, tr) present; after deploy, Redis lookup |
 | Multi-tenant feature | owner tenant **and** one non-owner leakage smoke test |
