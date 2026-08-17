@@ -1510,6 +1510,7 @@ Cost Lines,Cost Lines
 Cost lines,Cost lines
 Cost must be positive.,Cost must be positive.
 Cost total,Cost total
+Costed Net Weight,Costed Net Weight
 Costs after dividends (office…),Costs after dividends (office…)
 Could not accrue salary.,Could not accrue salary.
 Could not add holiday.,Could not add holiday.
@@ -6496,3 +6497,4 @@ account not set,account not set
 as of {date},as of {date}
 "tax or charges inside a receipt total — only the net goes into this account, so anything the tax table added was never there to clear; or","tax or charges inside a receipt total — only the net goes into this account, so anything the tax table added was never there to clear; or"
 {count} receipts,{count} receipts
+{kg} kg received but not costed (damaged or rejected),{kg} kg received but not costed (damaged or rejected)
