@@ -326,6 +326,7 @@ Preview — read only.,Preview — read only.
 Principal,Principal
 "Principal {0} plus commission {1} must equal {2}, not {3}.","Principal {0} plus commission {1} must equal {2}, not {3}."
 Quote,Quote
+Quote updated — switching how the fee is charged recalculates the amounts.,Quote updated — switching how the fee is charged recalculates the amounts.
 Rate quoted to the sender,Rate quoted to the sender
 Rate the register leg posted at,Rate the register leg posted at
 Rate typed at registration,Rate typed at registration
@@ -384,6 +385,7 @@ Request refund,Request refund
 Requesting a refund does not move money.,Requesting a refund does not move money.
 Reversed,Reversed
 Sales Detail,Sales Detail
+Same as your last transfer,Same as your last transfer
 Saving is blocked until the {count} item(s) above are fixed.,Saving is blocked until the {count} item(s) above are fixed.
 Scorecards,Scorecards
 "Search by remittance id, client reference, sender or receiver name.","Search by remittance id, client reference, sender or receiver name."
@@ -490,6 +492,8 @@ Waiting on,Waiting on
 Wallet balance,Wallet balance
 What goes back to the sender,What goes back to the sender
 What the company owes the receiver until the cash is handed over. Its currency is the only currency this company can pay out in.,What the company owes the receiver until the cash is handed over. Its currency is the only currency this company can pay out in.
+What the customer pays,What the customer pays
+What the receiver collects,What the receiver collects
 What they said,What they said
 Where the commission is recognised once the transfer is paid out. Must be held in the company's base currency.,Where the commission is recognised once the transfer is paid out. Must be held in the company's base currency.
 Where the transfer itself stands.,Where the transfer itself stands.
@@ -6325,6 +6329,7 @@ Yutilgan,Won
 {n} payments excluded — no published rate,{n} payments excluded — no published rate
 {n}d,{n}d
 {pct}% conversion,{pct}% conversion
+{pct}% of principal ({principal}),{pct}% of principal ({principal})
 {proforma} goes back to open and this invoice loses its agreement link.,{proforma} goes back to open and this invoice loses its agreement link.
 {ready} of {total} containers have packing-list rows.,{ready} of {total} containers have packing-list rows.
 {truck} stays in the system but is no longer part of this commercial invoice.,{truck} stays in the system but is no longer part of this commercial invoice.

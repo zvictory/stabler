@@ -82,7 +82,9 @@ I have written it down,Код записан
 "Legacy posts journal entries from the New Transfer form it always has. V1 registers a Remittance Transfer and is the only engine where the payout, refund, operations and reconciliation screens exist.","Legacy проводит журнальные записи из той же формы «Новый перевод». V1 регистрирует Remittance Transfer и является единственным движком, где существуют экраны выплаты, возврата, операций и сверки."
 Legacy — journal entry screens,Legacy — экраны журнальных проводок
 Pickup code,Код получения
+Quote updated — switching how the fee is charged recalculates the amounts.,Расчёт обновлён — смена способа удержания комиссии пересчитывает суммы.
 Remittance engine,Движок переводов
+Same as your last transfer,Как в прошлом переводе
 The V1 engine reads every cash account from the desk table. Add at least one desk before switching to V1.,Движок V1 читает все кассовые счета из таблицы касс. Добавьте хотя бы одну кассу перед переключением на V1.
 The settings payload could not be read.,Не удалось прочитать данные настроек.
 This company runs the {engine} remittance engine. The Transfer V1 screens stay unavailable until it is switched to V1 below.,"Эта компания использует движок переводов {engine}. Экраны Transfer V1 остаются недоступными, пока он не переключён на V1 ниже."
@@ -90,6 +92,8 @@ Transfer registered,Перевод зарегистрирован
 "Transfers registered on V1 stay in their own records and are not shown by the legacy list, which reads journal entries.","Переводы, зарегистрированные в V1, остаются в собственных записях и не отображаются в старом списке, который читает журнальные проводки."
 Transfers registered on the legacy engine stay on the legacy list and are not shown by the V1 screens: they have no Remittance Transfer record behind them.,"Переводы, зарегистрированные на движке legacy, остаются в старом списке и не отображаются на экранах V1: за ними нет записи Remittance Transfer."
 V1 — operations centre,V1 — операционный центр
+What the customer pays,Что платит клиент
+What the receiver collects,Что получает получатель
 Which set of screens this company uses. Changes on save.,Какой набор экранов использует эта компания. Меняется при сохранении.
 Write this code down and hand it to the sender now. It is shown once and cannot be recovered.,Запишите этот код и передайте его отправителю сейчас. Он показывается один раз и не может быть восстановлен.
 absent,отсутствовал
@@ -5896,6 +5900,7 @@ Yutilgan,Выиграно
 {n} payments excluded — no published rate,{n} платежей исключено — курс не опубликован
 {n}d,{n}д
 {pct}% conversion,{pct}% переход
+{pct}% of principal ({principal}),{pct}% от основной суммы ({principal})
 {proforma} goes back to open and this invoice loses its agreement link.,"{proforma} вернётся в открытый статус, а этот инвойс потеряет связь с договорённостью."
 {ready} of {total} containers have packing-list rows.,Упаковочные листы заполнены у {ready} из {total} контейнеров.
 {truck} stays in the system but is no longer part of this commercial invoice.,"{truck} остаётся в системе, но больше не относится к этому инвойсу."

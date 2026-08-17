@@ -31,6 +31,7 @@ import { REMITTANCE_QUEUES, remittanceApi } from "../../api/remittance.js";
 import { useSession } from "../../stores/session.js";
 import { t, tlang } from "../../composables/i18n.js";
 import { formatMoney } from "../../composables/money.js";
+import { currencyLegs, routeLabel } from "../../composables/remittanceRoute.js";
 import { todayIso } from "../../composables/date.js";
 import DateInput from "../../components/DateInput.vue";
 import MoneyInput from "../../components/MoneyInput.vue";
@@ -109,6 +110,14 @@ function pairKey(send, receive) {
 	return `${send}>${receive}`;
 }
 
+// The remembered values as they stood when this form was built, kept beside the
+// live form so the screen can say WHICH figures were filled in for the cashier
+// rather than typed by them. A silently pre-filled percentage is the one number
+// on this form nobody looked at, and it is frozen onto the transfer at register.
+// Re-read after a register, because the next customer's form is built from the
+// values that one just wrote.
+const memorySnapshot = ref(readMemory());
+
 // ---------------------------------------------------------------------------
 // Idempotency
 // ---------------------------------------------------------------------------
@@ -125,7 +134,11 @@ const clientRequestId = ref(newRequestId());
 // Form
 // ---------------------------------------------------------------------------
 function blankForm() {
-	const memory = readMemory();
+	// The snapshot, not storage: `writeMemory` swallows a quota or private-mode
+	// failure, and the form has to be built from the same values the captions
+	// below describe as remembered. Two reads of two different copies would put a
+	// "same as your last transfer" caption on a figure that is not.
+	const memory = memorySnapshot.value;
 	return {
 		posting_date: todayIso(),
 		destination_branch: "",
@@ -159,10 +172,26 @@ watch(
 			form.value.exchange_rate = null;
 			return;
 		}
-		const remembered = readMemory().rates?.[pairKey(send, receive)];
+		const remembered = memorySnapshot.value.rates?.[pairKey(send, receive)];
 		form.value.exchange_rate = Number.isFinite(remembered) ? remembered : null;
 	},
 );
+
+// True exactly while the field still holds the value that was put there for the
+// cashier. One keystroke makes it false, because a caption claiming they did not
+// type this figure has to stop the moment they do — and a stale "same as last
+// time" on a hand-typed rate is worse than no caption at all.
+const pctIsRemembered = computed(() => {
+	const remembered = memorySnapshot.value.commission_pct;
+	return Number.isFinite(remembered) && typedNumber(form.value.commission_pct) === remembered;
+});
+
+const rateIsRemembered = computed(() => {
+	if (!isCrossCurrency.value) return false;
+	const remembered =
+		memorySnapshot.value.rates?.[pairKey(form.value.send_currency, form.value.receive_currency)];
+	return Number.isFinite(remembered) && typedNumber(form.value.exchange_rate) === remembered;
+});
 
 // ---------------------------------------------------------------------------
 // Cash desks
@@ -193,6 +222,16 @@ function deskLabel(desk) {
 const originDesk = computed(() => deskByBranch.value.get(originBranch.value) || null);
 const destinationDesk = computed(
 	() => deskByBranch.value.get(form.value.destination_branch) || null,
+);
+
+// `city · branch`, not the `branch — city` of the selector above: this is the
+// route as it is READ, and the Operations table has to spell it the same way
+// (stabler-t1j9), so the composition lives in `composables/remittanceRoute.js`
+// rather than here.
+const routeText = computed(() => routeLabel(originDesk.value, destinationDesk.value));
+
+const currencyLegsText = computed(() =>
+	currencyLegs(form.value.send_currency, form.value.receive_currency),
 );
 
 const destinationOptions = computed(() =>
@@ -308,6 +347,34 @@ function formatRate(value) {
 }
 
 // ---------------------------------------------------------------------------
+// The mode flip announces itself
+// ---------------------------------------------------------------------------
+// ADR-007: the two modes are NOT inverses. Flipping the toggle is a RE-QUOTE —
+// the figure already typed now means something else, and every amount in the
+// panel moves. Said inline under the toggle rather than in a modal: the cashier
+// flipped it deliberately, and a dialog would make them dismiss news they asked
+// for. What they might miss is that the numbers they had already read changed.
+const modeJustFlipped = ref(false);
+
+watch(
+	() => form.value.commission_mode,
+	() => {
+		// Only when there are amounts to move. On an empty form the flip changes
+		// nothing, and announcing a recalculation that did not happen is noise.
+		modeJustFlipped.value = !!quote.value;
+	},
+);
+
+// Cleared by the next keystroke on either priced figure: from then on the panel
+// shows what the cashier just typed, not what the flip produced.
+watch(
+	() => [form.value.amount, form.value.commission_pct],
+	() => {
+		modeJustFlipped.value = false;
+	},
+);
+
+// ---------------------------------------------------------------------------
 // Load
 // ---------------------------------------------------------------------------
 async function loadDesks() {
@@ -396,12 +463,16 @@ function validate() {
 }
 
 function rememberQuote() {
-	const memory = readMemory();
-	const rates = { ...(memory.rates || {}) };
+	const rates = { ...(memorySnapshot.value.rates || {}) };
 	if (isCrossCurrency.value && appliedRate.value > 0) {
 		rates[pairKey(form.value.send_currency, form.value.receive_currency)] = appliedRate.value;
 	}
-	writeMemory({ commission_pct: Number(form.value.commission_pct), rates });
+	const next = { commission_pct: Number(form.value.commission_pct), rates };
+	writeMemory(next);
+	// Not re-read from storage: `writeMemory` swallows a quota or private-mode
+	// failure, so the stored copy may not exist. What the next form is built from
+	// is what the captions have to describe.
+	memorySnapshot.value = next;
 }
 
 async function register() {
@@ -578,6 +649,12 @@ function finish() {
 									{{ t("Exclusive: you type the principal, and the commission is added on top.") }}
 								</template>
 							</div>
+							<!-- The flip is a re-quote, not a display toggle (ADR-007). Inline
+							     under the control that caused it, so it is read where the
+							     cashier is already looking. -->
+							<div v-if="modeJustFlipped" class="form-text text-primary stbl-mode-notice">
+								<i class="ti ti-refresh me-1"></i>{{ t("Quote updated — switching how the fee is charged recalculates the amounts.") }}
+							</div>
 						</div>
 
 						<div class="col-md-7">
@@ -607,6 +684,12 @@ function finish() {
 								/>
 								<span class="input-group-text">%</span>
 							</div>
+							<!-- This figure was put here, not typed, and it is frozen onto the
+							     transfer at register. Saying so is the difference between a
+							     convenience and a number nobody looked at. -->
+							<div v-if="pctIsRemembered" class="form-text text-secondary">
+								<i class="ti ti-history me-1"></i>{{ t("Same as your last transfer") }}
+							</div>
 						</div>
 
 						<div v-if="isCrossCurrency" class="col-md-7">
@@ -626,6 +709,9 @@ function finish() {
 								/>
 								<span class="input-group-text small text-uppercase">{{ form.receive_currency }}</span>
 							</div>
+							<div v-if="rateIsRemembered" class="form-text text-secondary">
+								<i class="ti ti-history me-1"></i>{{ t("Same as your last transfer") }}
+							</div>
 						</div>
 
 						<div class="col-md-5">
@@ -644,23 +730,50 @@ function finish() {
 					<h3 class="card-title">{{ t("Quote") }}</h3>
 				</div>
 				<div class="card-body">
+					<!-- Seven rows in two named groups, because a flat list of six made
+					     the cashier work out which figures the SENDER is quoted and which
+					     the RECEIVER collects — in a form where the two are in different
+					     currencies. `<div>` is a legal child of `<dl>` and carries the
+					     group heading without pretending to be a term. -->
 					<dl v-if="quote" class="row mb-0 g-1">
+						<dt class="col-4 text-secondary small">{{ t("Route") }}</dt>
+						<dd class="col-8 text-end small mb-0">
+							<div>{{ routeText || "—" }}</div>
+							<div v-if="currencyLegsText" class="stbl-quote-note">{{ currencyLegsText }}</div>
+						</dd>
+
+						<div class="col-12 stbl-quote-group text-secondary">
+							{{ t("What the customer pays") }}
+						</div>
+
 						<dt class="col-6 text-secondary small">{{ t("Principal") }}</dt>
 						<dd class="col-6 text-end font-monospace small mb-0">
 							{{ formatMoney(quote.principal, form.send_currency, language) }}
 						</dd>
 
-						<dt class="col-6 text-secondary small">
-							{{ t("Commission ({pct}%)", { pct: form.commission_pct }) }}
-						</dt>
+						<dt class="col-6 text-secondary small">{{ t("Commission") }}</dt>
 						<dd class="col-6 text-end font-monospace small text-primary mb-0">
 							{{ formatMoney(quote.commission, form.send_currency, language) }}
+							<!-- ALWAYS the principal, never the tendered amount. Under
+							     Inclusive the cashier types the tendered figure, so the
+							     obvious reading — "1% of what I typed" — is the wrong one,
+							     and the base is what makes the commission checkable. -->
+							<div class="stbl-quote-note">
+								{{ t("{pct}% of principal ({principal})", {
+									pct: form.commission_pct,
+									principal: formatMoney(quote.principal, form.send_currency, language),
+								}) }}
+							</div>
 						</dd>
 
 						<dt class="col-6 small fw-semibold">{{ t("Sender hands over") }}</dt>
 						<dd class="col-6 text-end font-monospace small fw-semibold mb-0">
 							{{ formatMoney(quote.tendered, form.send_currency, language) }}
 						</dd>
+
+						<div class="col-12 stbl-quote-group text-secondary">
+							{{ t("What the receiver collects") }}
+						</div>
 
 						<dt class="col-6 text-secondary small">{{ t("Applied rate") }}</dt>
 						<dd class="col-6 text-end font-monospace small mb-0">{{ formatRate(quote.rate) }}</dd>
@@ -715,6 +828,44 @@ function finish() {
 	.stbl-quote {
 		position: sticky;
 		top: 1rem;
+	}
+}
+
+/* The group heading and the rule above it are the same device: they separate
+   what the sender pays from what the receiver collects. */
+.stbl-quote-group {
+	margin-top: 0.5rem;
+	padding-top: 0.5rem;
+	border-top: 1px solid var(--tblr-border-color);
+	font-size: 0.6875rem;
+	font-weight: 600;
+	letter-spacing: 0.04em;
+	text-transform: uppercase;
+}
+
+/* Notes sit under the figure they explain and must never compete with it. */
+.stbl-quote-note {
+	font-size: 0.75rem;
+	font-weight: 400;
+	color: var(--tblr-secondary);
+}
+
+.stbl-mode-notice {
+	animation: stbl-mode-notice-in 0.15s ease-out;
+}
+
+@keyframes stbl-mode-notice-in {
+	from {
+		opacity: 0;
+	}
+	to {
+		opacity: 1;
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.stbl-mode-notice {
+		animation: none;
 	}
 }
 

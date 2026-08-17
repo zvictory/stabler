@@ -81,7 +81,9 @@ I have written it down,Ёзиб олдим
 "Legacy posts journal entries from the New Transfer form it always has. V1 registers a Remittance Transfer and is the only engine where the payout, refund, operations and reconciliation screens exist.","Legacy ўзининг доимий ""Янги ўтказма"" формасидан журнал ёзувларини киритади. V1 эса Remittance Transfer ёзувини рўйхатга олади ва тўлов, қайтариш, операциялар ва солиштириш экранлари фақат шу механизмда мавжуд."
 Legacy — journal entry screens,Legacy — журнал ёзуви экранлари
 Pickup code,Олиш коди
+Quote updated — switching how the fee is charged recalculates the amounts.,Ҳисоб-китоб янгиланди — комиссияни ҳисоблаш усулини ўзгартириш суммаларни қайта ҳисоблайди.
 Remittance engine,Ўтказма механизми
+Same as your last transfer,Охирги ўтказмангиздаги каби
 The V1 engine reads every cash account from the desk table. Add at least one desk before switching to V1.,V1 механизми барча касса ҳисобларини касса жадвалидан ўқийди. V1 га ўтишдан олдин камида битта касса қўшинг.
 The settings payload could not be read.,Созламалар маълумотини ўқиб бўлмади.
 This company runs the {engine} remittance engine. The Transfer V1 screens stay unavailable until it is switched to V1 below.,Бу компания {engine} ўтказма механизмида ишлайди. Қуйида V1 га ўтказилмагунча Transfer V1 экранлари мавжуд бўлмайди.
@@ -89,6 +91,8 @@ Transfer registered,Пул ўтказмаси рўйхатга олинди
 "Transfers registered on V1 stay in their own records and are not shown by the legacy list, which reads journal entries.",V1 да рўйхатга олинган ўтказмалар ўз ёзувларида қолади ва журнал ёзувларини ўқийдиган эски рўйхатда кўринмайди.
 Transfers registered on the legacy engine stay on the legacy list and are not shown by the V1 screens: they have no Remittance Transfer record behind them.,Legacy механизмида рўйхатга олинган ўтказмалар эски рўйхатда қолади ва V1 экранларида кўринмайди: улар ортида Remittance Transfer ёзуви йўқ.
 V1 — operations centre,V1 — операциялар маркази
+What the customer pays,Мижоз нима тўлайди
+What the receiver collects,Олувчи нима олади
 Which set of screens this company uses. Changes on save.,Бу компания қайси экранлар тўпламидан фойдаланади. Сақлашда ўзгаради.
 Write this code down and hand it to the sender now. It is shown once and cannot be recovered.,Бу кодни ёзиб олинг ва ҳозир жўнатувчига беринг. У бир марта кўрсатилади ва қайта тиклаб бўлмайди.
 absent,келмаган
@@ -5891,6 +5895,7 @@ Yutilgan,Ютилган
 {n} payments excluded — no published rate,{n} та тўлов ҳисобга олинмади — курс эълон қилинмаган
 {n}d,{n}к
 {pct}% conversion,{pct}% ўтиш
+{pct}% of principal ({principal}),Асосий сумманинг {pct}% қисми ({principal})
 {proforma} goes back to open and this invoice loses its agreement link.,{proforma} яна очиқ ҳолатга қайтади ва бу инвойс келишув боғланишини йўқотади.
 {ready} of {total} containers have packing-list rows.,{total} контейнердан {ready} тасида қадоқлаш рўйхати сатрлари бор.
 {truck} stays in the system but is no longer part of this commercial invoice.,"{truck} тизимда қолади, лекин бу тижорат инвойсига кирмайди."

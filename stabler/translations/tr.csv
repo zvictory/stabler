@@ -81,7 +81,9 @@ I have written it down,Yazdım
 "Legacy posts journal entries from the New Transfer form it always has. V1 registers a Remittance Transfer and is the only engine where the payout, refund, operations and reconciliation screens exist.","Legacy, her zamanki Yeni Transfer formundan yevmiye kaydı atar. V1 ise bir Remittance Transfer kaydı oluşturur ve ödeme, iade, operasyon ve mutabakat ekranlarının bulunduğu tek motordur."
 Legacy — journal entry screens,Legacy — yevmiye kaydı ekranları
 Pickup code,Teslim kodu
+Quote updated — switching how the fee is charged recalculates the amounts.,Fiyat güncellendi — komisyonun alınma şeklini değiştirmek tutarları yeniden hesaplar.
 Remittance engine,Transfer motoru
+Same as your last transfer,Son transferinizdeki gibi
 The V1 engine reads every cash account from the desk table. Add at least one desk before switching to V1.,V1 motoru tüm kasa hesaplarını kasa tablosundan okur. V1'e geçmeden önce en az bir kasa ekleyin.
 The settings payload could not be read.,Ayar verisi okunamadı.
 This company runs the {engine} remittance engine. The Transfer V1 screens stay unavailable until it is switched to V1 below.,Bu şirket {engine} transfer motorunu çalıştırıyor. Aşağıdan V1'e geçirilene kadar Transfer V1 ekranları kullanılamaz.
@@ -89,6 +91,8 @@ Transfer registered,Havale kaydedildi
 "Transfers registered on V1 stay in their own records and are not shown by the legacy list, which reads journal entries.",V1'de kaydedilen transferler kendi kayıtlarında kalır ve yevmiye kayıtlarını okuyan eski listede görünmez.
 Transfers registered on the legacy engine stay on the legacy list and are not shown by the V1 screens: they have no Remittance Transfer record behind them.,Legacy motorunda kaydedilen transferler eski listede kalır ve V1 ekranlarında görünmez: arkalarında Remittance Transfer kaydı yoktur.
 V1 — operations centre,V1 — operasyon merkezi
+What the customer pays,Müşterinin ödediği
+What the receiver collects,Alıcının aldığı
 Which set of screens this company uses. Changes on save.,Bu şirketin hangi ekran setini kullandığı. Kaydedince değişir.
 Write this code down and hand it to the sender now. It is shown once and cannot be recovered.,Bu kodu yazın ve şimdi gönderene teslim edin. Bir kez gösterilir ve geri getirilemez.
 absent,gelmedi
@@ -5885,6 +5889,7 @@ Yutilgan,Kazanıldı
 {n} payments excluded — no published rate,{n} ödeme hariç — yayımlanmış kur yok
 {n}d,{n}g
 {pct}% conversion,{pct}% geçiş
+{pct}% of principal ({principal}),Ana tutarın %{pct}'i ({principal})
 {proforma} goes back to open and this invoice loses its agreement link.,{proforma} yeniden açık duruma döner ve bu fatura anlaşma bağını kaybeder.
 {ready} of {total} containers have packing-list rows.,{total} konteynerin {ready} tanesinde çeki listesi satırı var.
 {truck} stays in the system but is no longer part of this commercial invoice.,"{truck} sistemde kalır, ancak artık bu ticari faturanın parçası değildir."
