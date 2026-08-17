@@ -206,7 +206,7 @@ class _FakeDB:
 		self.commits += 1
 
 
-def _load(db: _FakeDB, *, roles=("Cashier",)):
+def _load(db: _FakeDB, *, roles=("Remittance Cashier",)):
 	_SANDBOX.evict(*_FAKED)
 
 	frappe = types.ModuleType("frappe")
@@ -335,6 +335,20 @@ class PayoutCommandSourceTest(unittest.TestCase):
 	def test_the_row_is_locked(self):
 		self.assertIn("for_update=True", self.body)
 
+	def test_the_payout_gate_reads_the_same_table_the_read_paths_answer_with(self):
+		"""Offer and enforcement drift apart the moment they are two lists.
+
+		`allowed_actions` is computed from `_remittance_actions`; an endpoint keeping its
+		own role tuple can offer `payout` to a role it then refuses, or refuse the offer
+		to a role that still succeeds. Asserted through the table, and before the lock:
+		a caller who was never allowed one should not hold a row lock while being refused.
+		"""
+		self.assertIn("actions.holds(actions.PAYOUT", self.body)
+		self.assertLess(
+			self.body.index("actions.holds(actions.PAYOUT"),
+			self.body.index("for_update=True"),
+		)
+
 	def test_lock_precedes_the_state_read(self):
 		# Deciding on unlocked state is the double payout: both cashiers see
 		# Registered, both hand over the cash.
@@ -417,6 +431,30 @@ class PayoutTest(unittest.TestCase):
 		request = {"name": self.name, "pickup_code": self.code, "client_request_id": "pay-1"}
 		request.update(overrides)
 		return self.api.payout_transfer(**request)
+
+	def test_a_caller_with_no_remittance_role_cannot_pay_out(self):
+		"""The gate stabler-o6rt found missing: nothing else on this path checks a role.
+
+		Every mutation here goes through `db_set`, which consults no DocPerm; `get_doc`
+		checks no read right; and `_assert_company_scope` returns early for a caller with
+		no Allowed Companies list at all. So before this gate the only thing between an
+		authenticated stranger and the drawer was a transfer name and a code — and a
+		wrong code still cost the receiver an attempt against the lockout.
+		"""
+		api, remittance = _load(self.db, roles=("Remittance Viewer",))
+		name = self.db.add_transfer(pickup_code_hash=remittance.store_pickup_code(self.code))
+
+		with self.assertRaises(_Thrown):
+			api.payout_transfer(name, self.code, client_request_id="pay-1")
+
+		row = self.db.rows[name]
+		self.assertEqual(row["operational_status"], "Registered", "a payout was posted")
+		self.assertEqual(
+			int(row.get("code_attempts") or 0),
+			0,
+			"a caller who may not pay out still burned the receiver's attempt — the role "
+			"has to be checked before the code, not after it",
+		)
 
 	def test_payout_posts_and_transitions_under_the_lock(self):
 		result = self._payout()
@@ -706,7 +744,7 @@ class UnlockTest(unittest.TestCase):
 
 	def test_a_cashier_cannot_unlock(self):
 		"""A lockout a cashier can lift is not a lockout."""
-		api, remittance = _load(self.db, roles=("Cashier",))
+		api, remittance = _load(self.db, roles=("Remittance Cashier",))
 		name = self._locked_transfer(api, remittance)
 
 		with self.assertRaises(_Thrown):

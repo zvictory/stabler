@@ -501,11 +501,14 @@ class RefundCommandSourceTest(unittest.TestCase):
 		created = set(re.findall(r'"([^"]+)"', re.search(r"_ROLES = \((.*?)\)", patch, re.S).group(1)))
 		self.assertIn(MANAGER, created, "the role patch no longer creates the finance manager role")
 
-		gates = "".join(
-			re.search(rf"{tuple_name} = \((.*?)\)", self.src, re.S).group(1)
-			for tuple_name in ("_REFUND_DESK_ROLES", "_REFUND_APPROVER_ROLES")
-		)
-		named = set(re.findall(r'"([^"]+)"', gates))
+		# The gates no longer carry their own role tuples: they read `_remittance_actions`,
+		# the same table every read path answers `allowed_actions` with, so an action
+		# offered to a role the endpoint then refuses is not expressible. That module is
+		# Frappe-free, so the real tuples are read here rather than re-parsed out of source.
+		from stabler.api import _remittance_actions
+
+		named = set(_remittance_actions.DESK_ROLES) | set(_remittance_actions.MANAGER_ROLES)
+		named -= set(_remittance_actions._LEGACY_APPROVER_ROLES)  # pre-existing, not created by v87
 		self.assertIn(MANAGER, named)
 		self.assertEqual(named - created - {"System Manager"}, set())
 

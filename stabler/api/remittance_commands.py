@@ -674,6 +674,15 @@ def payout_transfer(
 	if not key:
 		frappe.throw(_("A client request id is required, so a retry cannot pay out twice."))
 
+	# The role, before the row. Handing over cash was the one mutation in this
+	# module with no role gate: `db_set` consults no DocPerm, `get_doc` checks no
+	# read right, and `_assert_company_scope` passes any caller who has no Allowed
+	# Companies list at all — so the guards below stopped the wrong transfer, never
+	# the wrong person. Read from the same table the read paths answer with, so the
+	# offer and the enforcement cannot drift apart. See stabler-o6rt.
+	if not actions.holds(actions.PAYOUT, frappe.get_roles()):
+		frappe.throw(_("Only the remittance desk can pay out a transfer."), frappe.PermissionError)
+
 	# The lock FIRST — before the state, before the code check, before the posting.
 	# It doubles as the existence check: a row nobody can lock is a row that is not
 	# there, and it is what turns a missing name into a sentence rather than a
@@ -794,8 +803,6 @@ def unlock_pickup_code(name: str, reason: str | None = None) -> dict:
 # user, `db_set` writes columns without consulting permissions, and the refund
 # Journal Entry is inserted with `ignore_permissions=True`. This tuple is the only
 # thing between an authenticated stranger and the origin desk's cash drawer.
-_REFUND_DESK_ROLES = ("Remittance Cashier", "Remittance Finance Manager", "System Manager")
-_REFUND_APPROVER_ROLES = ("Remittance Finance Manager", "System Manager")
 
 
 def _refund_result(transfer, *, replayed: bool) -> dict:
@@ -808,14 +815,14 @@ def _refund_result(transfer, *, replayed: bool) -> dict:
 
 def _assert_refund_desk() -> None:
 	"""The origin desk: it takes the request in and it counts the cash back out."""
-	if not set(_REFUND_DESK_ROLES) & set(frappe.get_roles()):
+	if not actions.holds(actions.REQUEST_REFUND, frappe.get_roles()):
 		frappe.throw(_("Only the remittance desk can request or complete a refund."), frappe.PermissionError)
 
 
 def _assert_refund_manager() -> None:
 	"""The decision. Separate from the desk on purpose: approving your own request
 	is not an approval."""
-	if not set(_REFUND_APPROVER_ROLES) & set(frappe.get_roles()):
+	if not actions.holds(actions.APPROVE_REFUND, frappe.get_roles()):
 		frappe.throw(
 			_("Only a Remittance Finance Manager can approve or reject a refund."),
 			frappe.PermissionError,
