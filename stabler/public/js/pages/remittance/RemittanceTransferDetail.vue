@@ -109,6 +109,9 @@ const quote = computed(() => detail.value?.quote || {});
 const statusAxes = computed(() => detail.value?.status || {});
 const stages = computed(() => detail.value?.stages || []);
 const journalEntries = computed(() => detail.value?.journal_entries || []);
+// Absent on an older payload is not the same claim as false — only an explicit
+// `false` means "you cannot see the ledger"; anything else keeps today's behaviour.
+const journalEntriesVisible = computed(() => detail.value?.journal_entries_visible !== false);
 const codeState = computed(() => detail.value?.code_state || {});
 const refund = computed(() => detail.value?.refund || {});
 const audit = computed(() => detail.value?.audit || {});
@@ -299,8 +302,17 @@ watch(name, load);
 						<div class="card-header">
 							<div class="card-title">{{ t("Journal Entries") }}</div>
 						</div>
-						<div v-if="!journalEntries.length" class="card-body text-secondary small">
+						<div v-if="!journalEntries.length && journalEntriesVisible" class="card-body text-secondary small">
 							{{ t("No journal entry is linked to this transfer.") }}
+						</div>
+						<!-- Names the Auditor, not the Finance Manager. v87 and the module's
+						     role table give JE, event and reconciliation read-only to
+						     Remittance Auditor; the Finance Manager's powers are settings,
+						     account mapping, unlocking a code and approving a refund — none
+						     of which include reading the ledger. Sending the cashier to
+						     someone who gets this same message is worse than saying nothing. -->
+						<div v-else-if="!journalEntries.length" class="card-body text-secondary small">
+							{{ t("You do not have permission to view the ledger for this transfer. Only the Remittance Auditor role can read it.") }}
 						</div>
 						<div v-else class="table-responsive">
 							<table class="table table-sm table-vcenter card-table">
