@@ -1568,6 +1568,10 @@ def get_truck_receipt(name: str):
 				"received_boxes": cint(it.received_boxes),
 				"received_kg": flt(it.received_kg),
 				"condition": it.condition,
+				# Manual fallback price. Without it the form cannot show back what the
+				# operator typed, and the escape hatch for an unpriced line looks empty
+				# on every reload.
+				"rate": flt(it.rate),
 				"damaged_boxes": cint(it.damaged_boxes),
 				"rejected_boxes": cint(it.rejected_boxes),
 				"expiry_date": str(it.expiry_date) if it.expiry_date else None,
@@ -1615,6 +1619,11 @@ def _clean_tr_items(items):
 				"received_boxes": cint(row.get("received_boxes")),
 				"received_kg": flt(row.get("received_kg")),
 				"condition": condition,
+				# Optional: the Purchase Order rate is the normal path. This is the only
+				# way to price a line the PO does not cover, and _create_pr_for_truck_receipt
+				# refuses to post an unpriced line -- so dropping it here would turn the
+				# guard into a dead end at the receiving gate.
+				"rate": flt(row.get("rate")),
 				"damaged_boxes": cint(row.get("damaged_boxes")),
 				"rejected_boxes": cint(row.get("rejected_boxes")),
 				"expiry_date": getdate(row["expiry_date"]) if row.get("expiry_date") else None,
