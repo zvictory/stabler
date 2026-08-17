@@ -344,6 +344,43 @@ export const STATUS_MAP = {
 		Reserved: "bg-orange-lt",
 		Posted: "bg-green-lt",
 	},
+	// The four INDEPENDENT status axes of a Remittance Transfer. They are four
+	// map entries and not one because they are four different questions: a
+	// transfer can be "Paid Out" (operational) while its reversal is a "Posting
+	// Error" (accounting), and a single palette shared between them would let a
+	// green "Posted" be misread as a green "Paid Out". Keys are the doctype's own
+	// Select options (remittance_transfer.json) — the server never invents a
+	// fifth value, so a missing key here means the doctype changed.
+	"Remittance Transfer": {
+		Draft: "bg-secondary-lt",
+		Registered: "bg-blue-lt",
+		"Paid Out": "bg-green-lt",
+		Refunded: "bg-purple-lt",
+		Expired: "bg-orange-lt",
+		Exception: "bg-red-lt",
+	},
+	"Remittance Accounting": {
+		Unposted: "bg-yellow-lt",
+		Posted: "bg-green-lt",
+		Reversed: "bg-purple-lt",
+		"Posting Error": "bg-red-lt",
+	},
+	// The state of the pickup code, never the code. "Locked" is red because it
+	// blocks a payout at the counter and only a Finance Manager can clear it.
+	"Remittance Verification": {
+		"Not Issued": "bg-secondary-lt",
+		Active: "bg-blue-lt",
+		Locked: "bg-red-lt",
+		Consumed: "bg-green-lt",
+		Expired: "bg-orange-lt",
+	},
+	"Remittance Refund": {
+		None: "bg-secondary-lt",
+		Requested: "bg-yellow-lt",
+		Approved: "bg-blue-lt",
+		Rejected: "bg-red-lt",
+		Completed: "bg-green-lt",
+	},
 	"docstatus": {
 		0: "bg-yellow-lt", // Draft
 		1: "bg-green-lt",  // Submitted / Active

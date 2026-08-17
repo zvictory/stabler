@@ -134,6 +134,12 @@ import RepairRequests from "./pages/marketing/RepairRequests.vue";
 import RemittanceHome from "./pages/remittance/RemittanceHome.vue";
 import NewRemittance from "./pages/remittance/NewRemittance.vue";
 import RemittanceTransfers from "./pages/remittance/RemittanceTransfers.vue";
+import RemittanceOperations from "./pages/remittance/RemittanceOperations.vue";
+import RemittancePayout from "./pages/remittance/RemittancePayout.vue";
+import RemittanceRefund from "./pages/remittance/RemittanceRefund.vue";
+import RemittanceTransferDetail from "./pages/remittance/RemittanceTransferDetail.vue";
+import RemittanceReconciliation from "./pages/remittance/RemittanceReconciliation.vue";
+import RemittanceSettings from "./pages/remittance/RemittanceSettings.vue";
 import InstallmentHome from "./pages/installment/InstallmentHome.vue";
 import Operations from "./pages/installment/Operations.vue";
 import Agreements from "./pages/installment/Agreements.vue";
@@ -461,9 +467,28 @@ const routes = [
 		component: RemittanceHome,
 		meta: { title: t("Remittance"), module: "remittance" },
 		children: [
+			// Static on purpose. A child `redirect` is resolved during route matching,
+			// which happens BEFORE any navigation guard — so it cannot read the engine
+			// on a cold load into /remittance, where boot() has not answered yet. The
+			// guard promotes this to /remittance/operations once it has; a Legacy
+			// company keeps the exact landing it has always had.
 			{ path: "", redirect: "/remittance/new" },
 			{ path: "new", name: "remittance-new", component: NewRemittance, meta: { title: t("New Transfer") } },
 			{ path: "transfers", name: "remittance-transfers", component: RemittanceTransfers, meta: { title: t("Transfers") } },
+			// ---------------------------------------------------- Transfer V1 only --
+			// Every name below is in REMITTANCE_V1_ROUTES and unreachable while the
+			// company runs Legacy.
+			{ path: "operations", name: "remittance-operations", component: RemittanceOperations, meta: { title: t("Operations") } },
+			{ path: "payout", name: "remittance-payout", component: RemittancePayout, meta: { title: t("Payout") } },
+			{ path: "refund", name: "remittance-refund", component: RemittanceRefund, meta: { title: t("Refunds") } },
+			// Named `remittance-transfer` and pathed under `transfers/` because two
+			// screens already address this one page and neither can be edited from
+			// here: RemittanceOperations pushes `{ name: "remittance-transfer" }` for
+			// the manager actions, RemittanceTransfers links to the PATH
+			// `/remittance/transfers/<id>`. One record satisfies both.
+			{ path: "transfers/:name", name: "remittance-transfer", component: RemittanceTransferDetail, meta: { title: t("Transfer detail") } },
+			{ path: "reconciliation", name: "remittance-reconciliation", component: RemittanceReconciliation, meta: { title: t("Reconciliation") } },
+			{ path: "settings", name: "remittance-settings", component: RemittanceSettings, meta: { title: t("Settings") } },
 		],
 	},
 	{
@@ -562,6 +587,29 @@ const LANDING_ORDER = [
 	{ key: "installment", path: "/installment" },
 	{ key: "compliance", path: "/admin/compliance" },
 ];
+
+// The Transfer V1 route names, gated on `Remittance Settings.remittance_engine`.
+// Kept as one set so the guard and RemittanceHome's tab strip cannot drift apart —
+// a route in this set with no tab behind it is a screen nothing can reach, and a
+// tab without the matching route is a link that bounces.
+//
+// `remittance-new` and `remittance-transfers` are deliberately absent: both routes
+// predate the engine switch, and a company still on Legacy keeps them. Each points
+// at a thin wrapper that renders the legacy or the V1 variant.
+//
+// `remittance-settings` is absent for a harder reason: it is the ONLY screen that
+// can move a company from Legacy to V1, and every company ships as Legacy. Gating
+// it on V1 made the switch reachable only from behind itself — the whole Transfer
+// V1 surface would have been dead on every tenant, with the screen that says
+// "switch to V1" as the one page you could never open to read it. It is gated on
+// the Finance Manager role instead, which is what the doctype itself gates on.
+const REMITTANCE_V1_ROUTES = new Set([
+	"remittance-operations",
+	"remittance-payout",
+	"remittance-refund",
+	"remittance-transfer",
+	"remittance-reconciliation",
+]);
 
 function landingPath(session) {
 	for (const { key, path } of LANDING_ORDER) {
@@ -672,6 +720,29 @@ router.beforeEach(async (to) => {
 			const dest = landingPath(session);
 			if (to.path === dest) return;
 			return dest;
+		}
+	}
+
+	// Transfer V1 sits behind a per-company engine switch that defaults to Legacy.
+	// The screens it gates — operations centre, payout desk, refund chain,
+	// reconciliation, settings — talk to the V1 endpoints only, so a company still
+	// on Legacy has no business landing on them, whether by tab, by deep link or by
+	// a stale bookmark.
+	//
+	// Reads the same `isRemittanceV1` getter the tab strip reads, on purpose: two
+	// separate answers to "is this company on V1" is how you get a tab that bounces.
+	if (to.path === "/remittance" || to.path.startsWith("/remittance/")) {
+		await session.ensureRemittanceEngine();
+		if (session.isRemittanceV1) {
+			// The V1 landing. Done here and not in the child `redirect` because that
+			// resolves before the engine is known. `redirectedFrom` narrows it to the
+			// bare /remittance landing, so a deliberate click on New Transfer still
+			// opens New Transfer.
+			if (to.name === "remittance-new" && to.redirectedFrom?.path === "/remittance") {
+				return "/remittance/operations";
+			}
+		} else if (REMITTANCE_V1_ROUTES.has(String(to.name || ""))) {
+			return "/remittance/new";
 		}
 	}
 });

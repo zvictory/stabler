@@ -208,3 +208,4 @@ stabler.tests.test_remittance_roles
 stabler.tests.test_remittance_company_scope
 stabler.tests.test_unbilled_receipts
 stabler.tests.test_remittance_actions
+stabler.tests.test_remittance_queries

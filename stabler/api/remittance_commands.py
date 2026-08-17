@@ -522,7 +522,15 @@ def payout_queue(company: str, query: str | None = None, limit=50) -> list[dict]
 	_require_company(company)
 
 	term = (query or "").strip()
-	rows = frappe.get_all(
+	# `get_list`, never `get_all`. `get_all` sets `ignore_permissions`, which turns
+	# `permissions.remittance_transfer_query` off and skips the DocPerm read as well
+	# — and `_assert_company_scope` above deliberately passes a caller who has no
+	# Allowed Companies list at all, so on a `get_all` this endpoint answered any
+	# logged-in user, holding no remittance role, for any company they named: every
+	# payable transfer's sender, receiver, principal, commission and corridor.
+	# `remittance_queries` states the same rule at the top of its own module; this is
+	# the other module that lists this doctype for a screen.
+	rows = frappe.get_list(
 		TRANSFER,
 		filters={
 			"company": company,

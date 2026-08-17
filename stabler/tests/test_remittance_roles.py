@@ -99,7 +99,17 @@ def _perms(name: str) -> list[dict]:
 
 
 def _roles_with(name: str, right: str) -> set[str]:
-	return {row["role"] for row in _perms(name) if row.get(right)}
+	"""Roles holding a DOCUMENT right, which is a permlevel-0 question only.
+
+	`frappe/permissions.py:315` filters the permission rows with
+	`cint(perm.permlevel) == 0` before it computes read/write/create/delete, so a
+	row at a higher level contributes nothing to what a caller may do to the
+	record — it is read exclusively by `Document.get_permlevel_access`, which
+	decides which FIELDS survive a save or a projection. Counting a permlevel-1
+	row here would report a `PUT /api/resource` hole that Frappe does not open,
+	and the tests below are all about document rights.
+	"""
+	return {row["role"] for row in _perms(name) if row.get(right) and not row.get("permlevel")}
 
 
 def _controller_source(name: str) -> str:
@@ -286,6 +296,35 @@ class TestRemittanceTransferPermissions(unittest.TestCase):
 		the REST API ignores it.
 		"""
 		self.assertEqual(_roles_with("remittance_transfer", "write") - ADMIN_ROLES, set())
+
+	def test_the_field_level_write_grant_is_not_a_document_write(self):
+		"""`pickup_code_hash` is permlevel 1, and that grant must stay field-level.
+
+		Cashier and Finance Manager hold `write` at permlevel 1 so Frappe does not
+		blank the digest on insert — `Document.validate_higher_perm_levels` resets a
+		permlevel field the saver cannot write, which would store NULL and leave the
+		transfer unpayable. That grant is invisible to `PUT /api/resource`:
+		`frappe/permissions.py:315` computes document rights from permlevel-0 rows
+		only, so the side door the test above guards stays shut.
+
+		Pinned as its own assertion rather than left to `_roles_with`'s filter,
+		because the next person to see this failure will be tempted to widen the
+		helper, and the reason it is safe to is this line and not that one.
+		"""
+		rows = _perms("remittance_transfer")
+		level_one = [row for row in rows if row.get("permlevel") == 1]
+		self.assertTrue(level_one, "the digest grant is gone — check remittance_transfer.json")
+		for row in level_one:
+			self.assertTrue(row.get("write"), row)
+			# Read at that level would hand the digest back to /api/resource, which
+			# is the whole thing the permlevel was raised to prevent.
+			self.assertFalse(row.get("read"), row)
+			self.assertNotIn("delete", row, row)
+		# And the roles that hold it hold no document write of any kind.
+		self.assertEqual(
+			{row["role"] for row in level_one} - ADMIN_ROLES - _roles_with("remittance_transfer", "write"),
+			{row["role"] for row in level_one} - ADMIN_ROLES,
+		)
 
 	def test_a_write_grant_may_only_arrive_paired_with_a_freeze(self):
 		"""The tripwire for whoever next decides they need write.

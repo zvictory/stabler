@@ -185,7 +185,7 @@ class _FakeDB:
 		row = self.rows.get(filters)
 		return row.get(fieldname) if row else None
 
-	def get_all(self, doctype, filters=None, or_filters=None, fields=None, order_by=None, limit=None):
+	def get_list(self, doctype, filters=None, or_filters=None, fields=None, order_by=None, limit=None):
 		rows = [
 			row
 			for row in self.rows.values()
@@ -236,7 +236,14 @@ def _load(db: _FakeDB, *, roles=("Remittance Cashier",)):
 		return _Doc(db, source)
 
 	frappe.get_doc = _get_doc
-	frappe.get_all = db.get_all
+	# `get_list`, and deliberately no `get_all` attribute at all — the same trick
+	# `test_remittance_queries` uses. `get_all` sets `ignore_permissions`, which
+	# switches `permissions.remittance_transfer_query` off and skips the DocPerm
+	# read; `payout_queue` shipped on it and answered any logged-in caller for any
+	# company they named. A module that reaches for one now raises AttributeError in
+	# every test in this file, not only in the one that greps for it
+	# (`test_remittance_company_scope.ListingEndpointsKeepTheConditionOnTest`).
+	frappe.get_list = db.get_list
 
 	model = types.ModuleType("frappe.model")
 	naming = types.ModuleType("frappe.model.naming")

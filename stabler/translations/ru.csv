@@ -1,5 +1,6 @@
 #,#
 % of total,% от итога
+(empty),(пусто)
 (no name),(без имени)
 (none),(нет)
 (only for half-rate),
@@ -75,9 +76,21 @@ A valid veterinary certificate is required.,Требуется действую�
 "A ≤ {0}%, B ≤ {1}%, C rest — by {2}. Submitted; returns netted.","A ≤ {0}%, B ≤ {1}%, C прочее — по {2}. Проведённые; возвраты нетто."
 Abbr,Сокр.
 Absent,Отсутствует
+Add at least one cash desk before switching {0} to the V1 engine: V1 reads every cash account from this table and cannot register a transfer without one.,Добавьте хотя бы одну кассу перед переключением {0} на движок V1: V1 читает все кассовые счета из этой таблицы и без неё не может зарегистрировать перевод.
+Every user of {company} moves to the {engine} screens when this is saved.,При сохранении все пользователи {company} перейдут на экраны {engine}.
 I have written it down,Код записан
+"Legacy posts journal entries from the New Transfer form it always has. V1 registers a Remittance Transfer and is the only engine where the payout, refund, operations and reconciliation screens exist.","Legacy проводит журнальные записи из той же формы «Новый перевод». V1 регистрирует Remittance Transfer и является единственным движком, где существуют экраны выплаты, возврата, операций и сверки."
+Legacy — journal entry screens,Legacy — экраны журнальных проводок
 Pickup code,Код получения
+Remittance engine,Движок переводов
+The V1 engine reads every cash account from the desk table. Add at least one desk before switching to V1.,Движок V1 читает все кассовые счета из таблицы касс. Добавьте хотя бы одну кассу перед переключением на V1.
+The settings payload could not be read.,Не удалось прочитать данные настроек.
+This company runs the {engine} remittance engine. The Transfer V1 screens stay unavailable until it is switched to V1 below.,"Эта компания использует движок переводов {engine}. Экраны Transfer V1 остаются недоступными, пока он не переключён на V1 ниже."
 Transfer registered,Перевод зарегистрирован
+"Transfers registered on V1 stay in their own records and are not shown by the legacy list, which reads journal entries.","Переводы, зарегистрированные в V1, остаются в собственных записях и не отображаются в старом списке, который читает журнальные проводки."
+Transfers registered on the legacy engine stay on the legacy list and are not shown by the V1 screens: they have no Remittance Transfer record behind them.,"Переводы, зарегистрированные на движке legacy, остаются в старом списке и не отображаются на экранах V1: за ними нет записи Remittance Transfer."
+V1 — operations centre,V1 — операционный центр
+Which set of screens this company uses. Changes on save.,Какой набор экранов использует эта компания. Меняется при сохранении.
 Write this code down and hand it to the sender now. It is shown once and cannot be recovered.,Запишите этот код и передайте его отправителю сейчас. Он показывается один раз и не может быть восстановлен.
 absent,отсутствовал
 Accept Return,
@@ -5833,6 +5846,7 @@ Yutilgan,Выиграно
 {0} has no payable account for {1}. Set the supplier's default payable account first.,У {0} нет счёта кредиторской задолженности для {1}. Сначала задайте счёт по умолчанию для этого поставщика.
 {0} is in {1}. Only bills in {2} or USD can be added to an import's landed cost today.,{0} — в валюте {1}. В себестоимость импорта сегодня можно добавить только счета в {2} или USD.
 {0} is not a group.,{0} не является группой.
+{0} is not a remittance engine. Choose one of: {1}.,{0} не является движком переводов. Выберите один из: {1}.
 {0} is required.,{0} обязателен.
 {0} line item change(s),
 {0} must be a number,{0} должно быть числом

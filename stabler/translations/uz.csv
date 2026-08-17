@@ -1,5 +1,6 @@
 #,#
 % of total,Jami %
+(empty),(bo'sh)
 (no name),(ismsiz)
 (none),(yoʿq)
 (only for half-rate),
@@ -74,9 +75,21 @@ A valid veterinary certificate is required.,Amaldagi veterinariya sertifikati ta
 "A ≤ {0}%, B ≤ {1}%, C rest — by {2}. Submitted; returns netted.","A ≤ {0}%, B ≤ {1}%, C qolgan — {2} bo'yicha. Tasdiqlangan; qaytarishlar netto."
 Abbr,Qisqartma
 Absent,Yo'q
+Add at least one cash desk before switching {0} to the V1 engine: V1 reads every cash account from this table and cannot register a transfer without one.,{0} ni V1 mexanizmiga o'tkazishdan oldin kamida bitta kassa qo'shing: V1 barcha kassa hisoblarini shu jadvaldan o'qiydi va usiz o'tkazmani ro'yxatga ololmaydi.
+Every user of {company} moves to the {engine} screens when this is saved.,"Saqlangach, {company} ning barcha foydalanuvchilari {engine} ekranlariga o'tadi."
 I have written it down,Yozib oldim
+"Legacy posts journal entries from the New Transfer form it always has. V1 registers a Remittance Transfer and is the only engine where the payout, refund, operations and reconciliation screens exist.","Legacy o'zining doimiy ""Yangi o'tkazma"" formasidan jurnal yozuvlarini kiritadi. V1 esa Remittance Transfer yozuvini ro'yxatga oladi va to'lov, qaytarish, operatsiyalar va solishtirish ekranlari faqat shu mexanizmda mavjud."
+Legacy — journal entry screens,Legacy — jurnal yozuvi ekranlari
 Pickup code,Olish kodi
+Remittance engine,O'tkazma mexanizmi
+The V1 engine reads every cash account from the desk table. Add at least one desk before switching to V1.,V1 mexanizmi barcha kassa hisoblarini kassa jadvalidan o'qiydi. V1 ga o'tishdan oldin kamida bitta kassa qo'shing.
+The settings payload could not be read.,Sozlamalar ma'lumotini o'qib bo'lmadi.
+This company runs the {engine} remittance engine. The Transfer V1 screens stay unavailable until it is switched to V1 below.,Bu kompaniya {engine} o'tkazma mexanizmida ishlaydi. Quyida V1 ga o'tkazilmaguncha Transfer V1 ekranlari mavjud bo'lmaydi.
 Transfer registered,Pul o'tkazmasi ro'yxatga olindi
+"Transfers registered on V1 stay in their own records and are not shown by the legacy list, which reads journal entries.",V1 da ro'yxatga olingan o'tkazmalar o'z yozuvlarida qoladi va jurnal yozuvlarini o'qiydigan eski ro'yxatda ko'rinmaydi.
+Transfers registered on the legacy engine stay on the legacy list and are not shown by the V1 screens: they have no Remittance Transfer record behind them.,Legacy mexanizmida ro'yxatga olingan o'tkazmalar eski ro'yxatda qoladi va V1 ekranlarida ko'rinmaydi: ular ortida Remittance Transfer yozuvi yo'q.
+V1 — operations centre,V1 — operatsiyalar markazi
+Which set of screens this company uses. Changes on save.,Bu kompaniya qaysi ekranlar to'plamidan foydalanadi. Saqlashda o'zgaradi.
 Write this code down and hand it to the sender now. It is shown once and cannot be recovered.,Bu kodni yozib oling va hozir jo'natuvchiga bering. U bir marta ko'rsatiladi va qayta tiklab bo'lmaydi.
 absent,kelmagan
 Accept Return,
@@ -5828,6 +5841,7 @@ Yutilgan,Yutilgan
 {0} has no payable account for {1}. Set the supplier's default payable account first.,{0} uchun {1} bo'yicha kreditorlik hisobi yo'q. Avval yetkazib beruvchining standart kreditorlik hisobini belgilang.
 {0} is in {1}. Only bills in {2} or USD can be added to an import's landed cost today.,{0} {1} valyutasida. Bugun import tannarxiga faqat {2} yoki USD dagi hisob-fakturalarni qo‘shish mumkin.
 {0} is not a group.,{0} guruh emas.
+{0} is not a remittance engine. Choose one of: {1}.,{0} o'tkazma mexanizmi emas. Quyidagilardan birini tanlang: {1}.
 {0} is required.,{0} majburiy.
 {0} line item change(s),
 {0} must be a number,{0} raqam bo'lishi kerak

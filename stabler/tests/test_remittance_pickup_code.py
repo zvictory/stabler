@@ -9,20 +9,37 @@ Two defects shipped in the July remittance API and ran on seven tenants:
 2. The same endpoint accepted `pickup_code` from the caller, so nothing
    guaranteed the code was server-generated. A caller could pre-agree a code with
    a receiver.
+3. Hashing it fixed WHAT is stored and not WHO may read it. The v33 Custom Field
+   stayed at permlevel 0 behind `hidden: 1`, and `hidden` is a form hint — Frappe
+   builds the permitted field list from permlevel access alone. So the digest
+   stayed one `/api/resource/Journal Entry?fields=[...]` away from any role with
+   `read` on Journal Entry, which on this bench means core ERPNext accounting
+   roles that are not remittance roles at all. An 8-character draw from a
+   32-glyph alphabet is a bounded offline crack, so "only the digest leaked" is
+   not a defence.
 
-These tests hold both doors shut. The helpers under test are pure stdlib, so the
-module is imported against stubs and stays in the frappe-free set — a bench-only
-test would never run in `make check` and would not gate a push.
+These tests hold all three doors shut. The helpers under test are pure stdlib, so
+the module is imported against stubs and stays in the frappe-free set — a
+bench-only test would never run in `make check` and would not gate a push. The
+permlevel is asserted against the patch SOURCE for the same reason: the field is a
+Custom Field, so there is no doctype JSON to read, and a bench test would not gate.
 """
 
 from __future__ import annotations
 
+import ast
 import importlib
 import inspect
+import os
 import types
 import unittest
 
 from stabler.tests.module_sandbox import ModuleSandbox
+
+_PKG = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+_PATCHES_DIR = os.path.join(_PKG, "patches")
+_PATCHES_TXT = os.path.join(_PKG, "patches.txt")
+_V33 = os.path.join(_PATCHES_DIR, "v33_remittance_stage_fields.py")
 
 _SANDBOX = ModuleSandbox()
 
@@ -184,6 +201,75 @@ class PickupCodeGeneration(unittest.TestCase):
 			self.assertTrue(set(code) <= set(self.api._CODE_ALPHABET))
 			# 0/O and 1/I are the pairs a receiver reads back wrongly over the phone.
 			self.assertFalse(set(code) & set("01OI"))
+
+
+def _read(path: str) -> str:
+	with open(path, encoding="utf-8") as fh:
+		return fh.read()
+
+
+def _v33_fields() -> list[dict]:
+	"""The `_FIELDS` list out of patch v33, read without importing frappe."""
+	tree = ast.parse(_read(_V33))
+	for node in tree.body:
+		if isinstance(node, ast.Assign) and any(
+			isinstance(t, ast.Name) and t.id == "_FIELDS" for t in node.targets
+		):
+			return ast.literal_eval(node.value)
+	raise AssertionError("patch v33 no longer defines _FIELDS")
+
+
+class JournalEntryDigestIsNotReadable(unittest.TestCase):
+	"""The third name for the same secret, closed the same way v89 closed the second.
+
+	`Remittance Transfer.pickup_code_hash` is at permlevel 1 and pinned by
+	`test_remittance_transfer_doctype`. This is the other field holding the same
+	digest — written by the LEGACY register path, which is the path every company
+	runs while `remittance_engine` defaults to Legacy.
+	"""
+
+	def test_the_custom_field_is_defined_at_permlevel_1(self):
+		field = next(f for f in _v33_fields() if f["fieldname"] == "stabler_pickup_code")
+		# Not `hidden`. frappe/model/meta.py get_permitted_fieldnames filters on
+		# `df.permlevel in permlevel_access` and the candidate list it filters
+		# (get_fieldnames_with_value) never consults `hidden`, so a hidden field at
+		# permlevel 0 is a readable field.
+		self.assertEqual(
+			field.get("permlevel"),
+			1,
+			"stabler_pickup_code holds `scheme$salt$digest`; at permlevel 0 any role "
+			"with read on Journal Entry can pull it off /api/resource.",
+		)
+
+	def test_the_other_je_remittance_fields_stay_readable(self):
+		# The gate is on the secret, not on the module. Raising the whole set would
+		# blind the legacy Transfers list, which reads sender/receiver/stage.
+		others = [f for f in _v33_fields() if f["fieldname"] != "stabler_pickup_code"]
+		self.assertTrue(others)
+		for field in others:
+			self.assertFalse(field.get("permlevel"), field["fieldname"])
+
+	def test_a_registered_patch_raises_it_on_sites_that_already_have_the_field(self):
+		# v33's execute() skips fields that already exist, so its dict is dead letter
+		# on every site that has ever migrated. Without a patch the fix ships only to
+		# sites that do not exist yet.
+		registered = {
+			line.strip().rsplit(".", 1)[-1]
+			for line in _read(_PATCHES_TXT).splitlines()
+			if line.strip() and not line.strip().startswith(("#", "["))
+		}
+		movers = []
+		for entry in sorted(os.listdir(_PATCHES_DIR)):
+			if not entry.endswith(".py") or entry == os.path.basename(_V33):
+				continue
+			src = _read(os.path.join(_PATCHES_DIR, entry))
+			if "stabler_pickup_code" in src and "permlevel" in src and "Journal Entry" in src:
+				movers.append(entry[:-3])
+		self.assertTrue(movers, "no patch raises the permlevel of Journal Entry.stabler_pickup_code")
+		self.assertTrue(
+			registered & set(movers),
+			f"{movers} exists but is not listed in patches.txt, so migrate never runs it",
+		)
 
 
 if __name__ == "__main__":
