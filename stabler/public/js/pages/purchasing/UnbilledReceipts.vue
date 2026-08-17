@@ -174,6 +174,12 @@ const srbnbState = computed(() => {
 	return Math.abs(srbnbDifference.value) < moneyEpsilon(companyCurrency.value) ? "clean" : "break";
 });
 const srbnbStyle = computed(() => SRBNB_STYLE[srbnbState.value]);
+// The two signs accuse different documents, and only one of the two lists is
+// true at a time. Positive means something CREDITED the account outside the
+// receipt chain; negative means something DEBITED it that this list cannot see.
+// Offering both lists at once is how an accountant ends up checking four
+// documents to explain one number, three of which cannot produce its sign.
+const srbnbSign = computed(() => Math.sign(srbnbDifference.value || 0));
 
 function searchSuppliers(q) {
 	return call("stabler.api.purchasing.list_suppliers", {
@@ -347,9 +353,14 @@ watch(activeCompany, reload);
 							<div>
 								{{ t("Only two documents may move this account — the Purchase Receipt that credits it and the Purchase Invoice that clears it. A balance no receipt on this list explains means something else wrote to it:") }}
 							</div>
-							<ul class="mb-0 mt-1 ps-3">
-								<li>{{ t("a Journal Entry posted straight to Stock Received But Not Billed; or") }}</li>
-								<li>{{ t("a Purchase Invoice submitted with Update Stock on, which receives and bills in one document and never touches a receipt this list can count.") }}</li>
+							<ul v-if="srbnbSign > 0" class="mb-0 mt-1 ps-3">
+								<li>{{ t("a Journal Entry posted straight to Stock Received But Not Billed, which is not an accepted way to move this account.") }}</li>
+							</ul>
+							<ul v-else class="mb-0 mt-1 ps-3">
+								<li>{{ t("a Purchase Invoice booked to this account without naming the receipt it settles, so the ledger is cleared while the receipt still counts as unbilled here; or") }}</li>
+								<li>{{ t("a return receipt, which debits this account and is deliberately left out of this list; or") }}</li>
+								<li>{{ t("tax or charges inside a receipt total — only the net goes into this account, so anything the tax table added was never there to clear; or") }}</li>
+								<li>{{ t("a Journal Entry posted straight to Stock Received But Not Billed, which is not an accepted way to move this account.") }}</li>
 							</ul>
 							<div class="mt-1">
 								{{ t("Until it is explained, stock value and trade payables are both misstated by the difference.") }}

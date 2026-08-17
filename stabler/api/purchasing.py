@@ -2457,15 +2457,26 @@ def _srbnb_reconciliation(company: str, as_of, total_unbilled: float, comparable
 	What a non-zero difference accuses:
 
 	* **positive** (ledger above the report) — something credited SRBNB outside
-	  the receipt chain. A Journal Entry posted straight to the account (ADR-107
-	  forbids it), or a Purchase Invoice submitted with ``update_stock = 1``,
-	  which posts its own SRBNB leg while no receipt carries the ``per_billed``
-	  that would clear it.
-	* **negative** (report above the ledger) — the report over-states: a return
-	  receipt debited SRBNB and returns are out of this report's scope, or a
-	  receipt was billed by an invoice that never wrote ``per_billed`` back, or
-	  taxes make the proportional ``per_billed`` split a poor proxy for the real
-	  SRBNB leg on that receipt.
+	  the receipt chain. A Journal Entry posted straight to the account, which
+	  ADR-107 forbids.
+	* **negative** (report above the ledger) — something debited SRBNB that this
+	  list cannot see. A return receipt, which debits the account and is out of
+	  this report's scope by design. Or an invoice booked to SRBNB with no link
+	  back to a receipt, so nothing writes ``per_billed`` and the row stays at
+	  full exposure while the ledger has already been cleared —
+	  ``create_purchase_invoice`` in this app produces exactly that. Or tax and
+	  charges inside ``pr.base_grand_total``: the receipt credits SRBNB with
+	  ``base_net_amount``, so anything the tax table added to the total was never
+	  in the account to begin with. That one bites hardest at ``per_billed = 0``,
+	  where no proportional split softens it.
+
+	``update_stock = 1`` on a Purchase Invoice is deliberately **not** listed. It
+	is the intuitive suspect and it is the wrong one: ERPNext routes a stock
+	item's expense account to the **warehouse** account when that flag is on
+	(``PurchaseInvoice.set_expense_account``), and to SRBNB only when it is off.
+	The flag's real effect here is narrower — such an invoice receives and bills
+	in one document, so no Purchase Receipt exists for this list to count. That
+	is a scope gap, not a ledger break, and it cannot move ``difference``.
 
 	``comparable`` is what keeps that accusation off a date the two sides do not
 	share. ``per_billed`` is current state, not history: a back-dated ``as_of``
