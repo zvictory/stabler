@@ -1007,11 +1007,20 @@ def _build_and_save_lcv(grn, note: str):
 		frappe.logger("stabler.imports").info(f"GRN {grn.name}: no unconsumed landed costs")
 		return None
 
+	# Function-level import on purpose: stabler.api.lcv imports stabler.api.imports
+	# at module level, so a top-level import here would be circular.
+	from stabler.api.lcv import effective_distribution_method
+
 	payload = lcv_math.build_lcv_payload(
 		company=grn.company,
 		purchase_receipts=purchase_receipts,
 		components=components,
 		expense_account=expense_account,
+		# Honour the persisted choice and the freeze rule on this build path too;
+		# passing the receipts we already resolved keeps this callable mid-submit.
+		distribute_based_on=effective_distribution_method(
+			"GRN Checklist", grn.name, receipt_names=purchase_receipts
+		),
 	)
 	if payload is None:
 		return None
