@@ -221,11 +221,28 @@ class RemittanceReversalReachabilityTest(unittest.TestCase):
 		self.assertIn("refund_remittance", _whitelisted(_API["remittance"]))
 		self.assertNotIn("stabler.api.remittance.refund_remittance", _spa_remittance_endpoints())
 
-	def test_the_new_transfer_model_has_no_whitelisted_refund_at_all(self):
-		"""`post_refund` exists, but nothing exposes it — only a bench test calls it."""
-		for module in ("remittance_commands", "remittance_accounting"):
-			exposed = {name for name in _whitelisted(_API[module]) if "refund" in name}
-			self.assertEqual(sorted(exposed), [], f"{module} now exposes a refund")
+	def test_the_new_transfer_models_refund_is_whitelisted_but_has_no_screen(self):
+		"""Slice 3 (`stabler-yf1w`) shipped the command; slice 4 wires the screen.
+
+		This used to assert "no whitelisted refund at all", and it went red the day
+		`remittance_commands` grew one — which is what it was for. It is rewritten,
+		not relaxed: what the guard's message actually promises is that no *screen*
+		reverses a transfer and that the exit is a server-side route an administrator
+		has. Both are still true, and both are still measured — the screen half by
+		`test_the_spa_reaches_no_remittance_reversal` above, the server half here.
+
+		When the SPA gains a refund action that test goes red, and the message must
+		be rewritten that day. Do not relax that one either.
+		"""
+		exposed = sorted(name for name in _whitelisted(_API["remittance_commands"]) if "refund" in name)
+		self.assertEqual(exposed, ["approve_refund", "complete_refund", "reject_refund", "request_refund"])
+		for name in exposed:
+			self.assertNotIn(f"stabler.api.remittance_commands.{name}", _spa_remittance_endpoints())
+		# The accounting half stays unexposed: posting is not a command, and a
+		# whitelisted `post_refund` would be a refund with no approval in front of it.
+		self.assertEqual(
+			sorted(name for name in _whitelisted(_API["remittance_accounting"]) if "refund" in name), []
+		)
 
 	def test_a_paid_out_transfer_cannot_be_refunded_even_from_the_server(self):
 		"""Why the Payout branch must not hint at a refund at all.

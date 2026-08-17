@@ -26,6 +26,16 @@ actually accepts, and its pickup code has to reach the database hashed. A fake
 database can be told to agree with any of those —
 `test_remittance_register_command.py` proves the ordering and the branching, this
 proves the three claims only a real site can settle.
+
+The refund *command* (stabler-yf1w) is here for a fourth reason on top of those:
+it is the path where a wrong answer moves cash back out of a drawer. Its state
+machine and its lock discipline are proved frappe-free against a fake that models
+REPEATABLE READ; what only a real site settles is that the reversal balances to
+zero against the register entry it mirrors, that approving reaches no ledger at
+all, that the frozen rate survives ERPNext's validation a second time, and that
+`for_update=True` reaches MariaDB as a locking SELECT rather than being quietly
+dropped — the one assumption every source assertion in the suite depends on and
+none of them can check.
 """
 
 from __future__ import annotations
@@ -37,7 +47,14 @@ from frappe.utils import add_days, nowdate
 from stabler.api._common import check_concurrency
 from stabler.api.remittance import is_hashed_pickup_code
 from stabler.api.remittance_accounting import post_payout, post_refund, post_register
-from stabler.api.remittance_commands import register_remittance
+from stabler.api.remittance_commands import (
+	approve_refund,
+	complete_refund,
+	payout_transfer,
+	register_remittance,
+	reject_refund,
+	request_refund,
+)
 
 #: A 12.5% move, deliberately inside the +/-20% CBU tolerance that
 #: `stabler.api._accounts.validate_exchange_rate` enforces on every foreign row.
@@ -333,3 +350,161 @@ class RemittanceAccountingBenchTest(FrappeTestCase):
 		frappe.db.set_value("Remittance Transfer", result["name"], "receiver_name", "Someone Else")
 		with self.assertRaises(Exception):
 			check_concurrency("Remittance Transfer", result["name"], result["version"])
+
+	# --- the refund command (stabler-yf1w) ----------------------------------- #
+	#
+	# Everything below needs a real ledger, real permissions and a real database.
+	# The frappe-free suite proves the state machine and the lock discipline against
+	# a fake that models REPEATABLE READ; what it cannot prove is that the entries
+	# balance, that the frozen rate survives ERPNext's validation, or that
+	# `for_update=True` reaches MariaDB as a locking SELECT at all.
+
+	def _trail(self, transfer: str) -> list[str]:
+		return [
+			row.event_type
+			for row in frappe.get_all(
+				"Remittance Event",
+				filters={"transfer": transfer},
+				fields=["event_type"],
+				order_by="creation asc",
+			)
+		]
+
+	def _refunded(self, key: str) -> dict:
+		"""Register, request, approve, complete — the whole path, through the commands."""
+		registered = self._register(client_request_id=key)
+		name = registered["name"]
+		request_refund(name=name, reason="Receiver never came", client_request_id=f"{key}-req")
+		approve_refund(name=name, client_request_id=f"{key}-ok")
+		completed = complete_refund(name=name, client_request_id=f"{key}-done")
+		return {"registered": registered, "completed": completed}
+
+	def test_refund_command_leaves_no_balance_anywhere(self) -> None:
+		"""End to end on a real ledger: a registered-then-refunded transfer must
+		leave the obligation and the origin drawer exactly where they started."""
+		done = self._refunded("bench-refund-1")
+		vouchers = [
+			done["registered"]["register_journal_entry"],
+			done["completed"]["refund_journal_entry"],
+		]
+
+		obligation_base, obligation_currency = self._movement(self.obligation, vouchers)
+		self.assertEqual(obligation_base, 0.0)
+		self.assertEqual(obligation_currency, 0.0)
+
+		cash_base, cash_currency = self._movement(self.origin_cash, vouchers)
+		# The sender gets back the 1.000,00 they put on the counter, commission
+		# included — it was never earned.
+		self.assertEqual(cash_currency, 0.0)
+		self.assertEqual(cash_base, 0.0)
+
+		self.assertEqual(done["completed"]["operational_status"], "Refunded")
+		self.assertEqual(done["completed"]["refund_status"], "Completed")
+		self.assertEqual(done["completed"]["accounting_status"], "Reversed")
+
+	def test_approving_a_refund_posts_nothing(self) -> None:
+		"""The decision that defines the slice, measured on the ledger rather than on
+		the response: after an approval there is still exactly one entry."""
+		registered = self._register(client_request_id="bench-refund-2")
+		name = registered["name"]
+		request_refund(name=name, reason="Receiver never came", client_request_id="bench-refund-2-req")
+
+		approved = approve_refund(name=name, client_request_id="bench-refund-2-ok")
+
+		self.assertEqual(approved["refund_status"], "Approved")
+		self.assertIsNone(approved["refund_journal_entry"])
+		self.assertEqual(approved["accounting_status"], "Posted")
+		self.assertEqual(frappe.db.count("Journal Entry", {"stabler_remittance_id": name}), 1)
+
+	def test_refund_row_keeps_the_frozen_rate_after_the_market_moves(self) -> None:
+		"""ADR-008 through the command path: the obligation closes at the rate it
+		opened at, whatever the rate of the refund day is."""
+		registered = self._register(client_request_id="bench-refund-3")
+		name = registered["name"]
+		self._rates(nowdate(), MOVED_RATE)
+		frozen = frappe.db.get_value("Remittance Transfer", name, "register_base_rate")
+
+		request_refund(name=name, reason="Receiver never came", client_request_id="bench-refund-3-req")
+		approve_refund(name=name, client_request_id="bench-refund-3-ok")
+		completed = complete_refund(name=name, client_request_id="bench-refund-3-done")
+
+		stored = frappe.db.get_value(
+			"Journal Entry Account",
+			{"parent": completed["refund_journal_entry"], "account": self.obligation},
+			"exchange_rate",
+		)
+		self.assertAlmostEqual(stored, frozen, places=9)
+
+	def test_a_paid_out_transfer_cannot_then_be_refunded(self) -> None:
+		"""Concurrent payout versus refund, on real rows: whoever writes first wins
+		and the loser refuses. Without the re-check under the lock both would write,
+		and the obligation would be reversed twice."""
+		registered = self._register(client_request_id="bench-refund-4")
+		name = registered["name"]
+		request_refund(name=name, reason="Receiver never came", client_request_id="bench-refund-4-req")
+
+		payout_transfer(
+			name=name, pickup_code=registered["pickup_code"], client_request_id="bench-refund-4-pay"
+		)
+
+		with self.assertRaises(frappe.ValidationError):
+			approve_refund(name=name, client_request_id="bench-refund-4-ok")
+
+		self.assertEqual(frappe.db.get_value("Remittance Transfer", name, "refund_status"), "Requested")
+		self.assertEqual(frappe.db.count("Journal Entry", {"stabler_remittance_id": name}), 2)
+
+	def test_an_approved_refund_refuses_the_later_payout(self) -> None:
+		"""The mirror, and the reason `_assert_payable` reads through the same lock."""
+		registered = self._register(client_request_id="bench-refund-5")
+		name = registered["name"]
+		request_refund(name=name, reason="Receiver never came", client_request_id="bench-refund-5-req")
+		approve_refund(name=name, client_request_id="bench-refund-5-ok")
+
+		with self.assertRaises(frappe.ValidationError):
+			payout_transfer(
+				name=name, pickup_code=registered["pickup_code"], client_request_id="bench-refund-5-pay"
+			)
+
+		self.assertEqual(frappe.db.get_value("Remittance Transfer", name, "operational_status"), "Registered")
+		self.assertEqual(frappe.db.count("Journal Entry", {"stabler_remittance_id": name}), 1)
+
+	def test_the_refund_trail_records_every_step_including_a_rejection(self) -> None:
+		"""The append-only trail is the audit record. A step with no event is a step
+		that, six months later, nobody can prove happened."""
+		registered = self._register(client_request_id="bench-refund-6")
+		name = registered["name"]
+		request_refund(name=name, reason="Receiver never came", client_request_id="bench-refund-6-req")
+		reject_refund(name=name, reason="No proof", client_request_id="bench-refund-6-no")
+		request_refund(name=name, reason="Receipt produced", client_request_id="bench-refund-6-req2")
+		approve_refund(name=name, client_request_id="bench-refund-6-ok")
+		complete_refund(name=name, client_request_id="bench-refund-6-done")
+
+		self.assertEqual(
+			self._trail(name),
+			[
+				"Register",
+				"Refund request",
+				"Refund rejection",
+				"Refund request",
+				"Refund approval",
+				"Refund completion",
+			],
+		)
+
+	def test_the_locked_state_read_really_is_a_locking_select(self) -> None:
+		"""The premise the whole slice rests on, and the one thing no other test in
+		this repo checks.
+
+		The frappe-free suite proves `for_update=True` is written and that a stale row
+		would be refused; an in-memory dict has no isolation level, so neither proves
+		the kwarg reaches the database. If Frappe ever dropped it, every source
+		assertion in the suite would stay green while the refund decided on a
+		pre-race snapshot again.
+		"""
+		name = self._register(client_request_id="bench-refund-7")["name"]
+
+		frappe.db.get_value("Remittance Transfer", name, "name", for_update=True)
+		self.assertIn("for update", (frappe.db.last_query or "").lower())
+
+		frappe.get_doc("Remittance Transfer", name, for_update=True)
+		self.assertIn("for update", (frappe.db.last_query or "").lower())

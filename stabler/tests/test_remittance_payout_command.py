@@ -300,6 +300,10 @@ def _load(db: _FakeDB, *, roles=("Cashier",)):
 
 	accounting.post_payout = _post_payout
 	accounting.post_register = lambda transfer, **_k: {"journal_entry": "JE-REM-0001"}
+	# Imported by the module under test even though no payout path calls it. Its
+	# refund behaviour is proved in `test_remittance_refund_command`; a stub that
+	# posted anything here would only make a payout test lie about a refund.
+	accounting.post_refund = lambda transfer, **_k: {"journal_entry": "JE-REM-0003"}
 
 	_SANDBOX.install({"stabler.api.remittance": remittance, "stabler.api.remittance_accounting": accounting})
 	return importlib.import_module(_MODULE), remittance

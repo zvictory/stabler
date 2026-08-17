@@ -40,8 +40,10 @@ the SPA calls exactly five remittance endpoints — `remittance_accounts`,
 `list_corridors`, `create_remittance`, `list_remittances`, `remittance_detail`
 (`public/js/pages/remittance/`). `refund_remittance` (`api/remittance.py:555`) is
 whitelisted but has no caller under `public/js`; the new `Remittance Transfer`
-model's `post_refund` (`api/remittance_accounting.py:292`) has no whitelisted
-wrapper at all, since `remittance_commands.py` exports only `register_remittance`.
+model's two-step refund (`remittance_commands.request_refund` / `approve_refund` /
+`complete_refund`, stabler-yf1w) is whitelisted as of slice 3 and likewise has no
+caller under `public/js` — the SPA action is slice 4. So the message's claim is
+still about *screens*, and there are still none.
 And even with a button, `refund_remittance` calls `_assert_registered`
 (`api/remittance.py:211`), which throws for a Paid Out transfer — refund is
 impossible for precisely the Payout-stage voucher this guard fires on most.
@@ -49,10 +51,11 @@ impossible for precisely the Payout-stage voucher this guard fires on most.
 the day one of them changes, which is the day this message must be rewritten.
 
 **Building that reversal here was rejected, deliberately.** A whitelisted refund
-command for `Remittance Transfer` plus its SPA action is slice 3 of the parent
-epic (`stabler-yf1w`, two-step Requested → Approved → Completed). Writing it here
-would collide with that slice and pre-empt a design decision that is not this
-bead's to make. So this module fixes the promise, not the product.
+command for `Remittance Transfer` is slice 3 of the parent epic (`stabler-yf1w`,
+two-step Requested → Approved → Completed) and has since landed there, where the
+row lock and the approval separation live; its SPA action is slice 4. Writing it
+here would have collided with that slice and pre-empted a design decision that was
+not this bead's to make. So this module fixes the promise, not the product.
 
 **The exit named is escalation, and it exists.** Nothing an operator can click
 reverses a transfer, so the message says that plainly and sends them to someone
