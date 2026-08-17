@@ -73,7 +73,7 @@
 		{"default": "None", "fieldname": "refund_status", "fieldtype": "Select", "label": "Refund", "options": "None\nRequested\nApproved\nRejected\nCompleted", "reqd": 1},
 
 		{"fieldname": "section_code", "fieldtype": "Section Break", "label": "Pickup Code"},
-		{"description": "Storage form only. The plaintext is shown once at register and never again.", "fieldname": "pickup_code_hash", "fieldtype": "Data", "hidden": 1, "label": "Pickup Code Hash", "no_copy": 1, "read_only": 1},
+		{"description": "Storage form only. The plaintext is shown once at register and never again. permlevel 1: hidden is a form-layout flag and does not gate a field read, so at level 0 any role with read could pull the digest off /api/resource and crack it offline. Only the permlevel-1 rows below carry write, and none of them carries read.", "fieldname": "pickup_code_hash", "fieldtype": "Data", "hidden": 1, "label": "Pickup Code Hash", "no_copy": 1, "permlevel": 1, "read_only": 1},
 		{"default": "0", "fieldname": "code_attempts", "fieldtype": "Int", "label": "Failed Attempts", "no_copy": 1, "read_only": 1},
 		{"default": "0", "fieldname": "code_locked", "fieldtype": "Check", "label": "Code Locked", "no_copy": 1, "read_only": 1},
 		{"fieldname": "code_locked_at", "fieldtype": "Datetime", "label": "Locked At", "no_copy": 1, "read_only": 1},
@@ -94,7 +94,11 @@
 		{"read": 1, "role": "Remittance Auditor"},
 		{"read": 1, "create": 1, "role": "Remittance Cashier"},
 		{"read": 1, "create": 1, "role": "Remittance Finance Manager"},
-		{"read": 1, "create": 1, "write": 1, "role": "System Manager"}
+		{"read": 1, "create": 1, "write": 1, "role": "System Manager"},
+
+		{"permlevel": 1, "role": "Remittance Cashier", "write": 1},
+		{"permlevel": 1, "role": "Remittance Finance Manager", "write": 1},
+		{"permlevel": 1, "role": "System Manager", "write": 1}
 	],
 	"sort_field": "modified",
 	"sort_order": "DESC",

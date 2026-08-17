@@ -88,6 +88,10 @@ def _transfer(api, **overrides):
 	doc.tendered = 1010.00
 	doc.operational_status = "Draft"
 	doc.accounting_status = "Unposted"
+	# Every row `_new_transfer` builds carries one, and the controller now refuses a
+	# new row without it — see PickupCodeDigestSurvivesInsert below for why. A
+	# fixture missing it would be testing a document the app cannot produce.
+	doc.pickup_code_hash = "s1$salt$digest"
 	for key, value in overrides.items():
 		setattr(doc, key, value)
 	return doc
@@ -203,6 +207,96 @@ class CodeAndReplayFields(unittest.TestCase):
 		# Payout and refund reuse it. If a form could edit it, the obligation would
 		# close at a different rate than it opened and never balance to zero.
 		self.assertEqual(self.fields["register_base_rate"]["read_only"], 1)
+
+
+class PickupCodeDigestIsNotReadable(unittest.TestCase):
+	"""`hidden` is a form-layout flag. It does not gate a field read.
+
+	`frappe/model/meta.py:677 get_permitted_fieldnames` builds the readable set from
+	permlevel access and never consults `hidden`, so at permlevel 0 any role holding
+	`read` on the doctype — Remittance Viewer and Remittance Auditor, whose entire
+	permission set is `{read: 1}` — could ask `/api/resource/Remittance Transfer` for
+	`pickup_code_hash` and be given it. The digest is a salted SHA-256 over an
+	8-character code from a 32-glyph alphabet: one record is a bounded offline crack,
+	and what falls out is the bearer token for somebody's cash.
+
+	The permlevel bump has a trap attached, which is why the second test here is not
+	optional bookkeeping. `Document.validate_higher_perm_levels` resets a permlevel
+	field the saving user cannot WRITE, silently and to the field's default. Bump the
+	level without granting write at that level and `_new_transfer` stores NULL,
+	`register_remittance` still hands the cashier a plaintext code, and the transfer
+	is unpayable forever — discovered at the counter, days later, with the money
+	already taken.
+	"""
+
+	def setUp(self):
+		self.dt = _load_doctype("remittance_transfer")
+		self.fields = {f["fieldname"]: f for f in self.dt["fields"]}
+		self.perms = self.dt["permissions"]
+
+	def test_the_digest_is_above_permlevel_zero(self):
+		self.assertGreaterEqual(self.fields["pickup_code_hash"].get("permlevel", 0), 1)
+
+	def test_it_is_the_only_field_lifted_out_of_level_zero(self):
+		# A second field arriving at permlevel 1 would inherit this grant without
+		# anyone deciding it should.
+		lifted = [f["fieldname"] for f in self.dt["fields"] if f.get("permlevel", 0) > 0]
+		self.assertEqual(["pickup_code_hash"], lifted)
+
+	def test_every_role_that_can_create_can_also_write_at_that_level(self):
+		# The trap, pinned. Without this, the fix above turns register into a silent
+		# data-loss bug for exactly the roles that use it.
+		level = self.fields["pickup_code_hash"].get("permlevel", 0)
+		creators = {p["role"] for p in self.perms if p.get("create") and not p.get("permlevel")}
+		writers = {p["role"] for p in self.perms if p.get("permlevel") == level and p.get("write")}
+		self.assertTrue(creators, "no role can create a transfer — the fixture is wrong")
+		self.assertEqual(set(), creators - writers, "a role can register but cannot store the digest")
+
+	def test_nobody_is_granted_read_at_that_level(self):
+		# The whole point. A read grant here would undo the permlevel and be harder
+		# to notice than the permlevel 0 it replaced.
+		level = self.fields["pickup_code_hash"].get("permlevel", 0)
+		readers = [p["role"] for p in self.perms if p.get("permlevel") == level and p.get("read")]
+		self.assertEqual([], readers)
+
+	def test_each_higher_level_role_also_holds_a_level_zero_row(self):
+		# frappe/core/doctype/doctype/doctype.py:1829 `check_level_zero_is_set` throws
+		# on migrate otherwise, which would take the whole doctype sync down.
+		zero = {p["role"] for p in self.perms if not p.get("permlevel")}
+		higher = {p["role"] for p in self.perms if p.get("permlevel")}
+		self.assertEqual(set(), higher - zero)
+
+
+class PickupCodeDigestSurvivesInsert(unittest.TestCase):
+	"""A new row without a digest is a permission failure, and has to say so.
+
+	`_new_transfer` is the only writer and it always supplies one, so an empty value
+	at insert cannot mean a caller forgot. It means the permlevel-1 grant is missing
+	on this site and Frappe blanked the field on the way in — which happens BEFORE
+	`validate` runs (`Document.insert` calls `validate_higher_perm_levels` and then
+	`run_before_save_methods`), so this is the first place the app can see it.
+	"""
+
+	def setUp(self):
+		self.api = _load(_TRANSFER)
+
+	def test_a_new_row_without_the_digest_is_refused(self):
+		doc = _transfer(self.api)
+		doc.pickup_code_hash = None  # what a permlevel reset leaves behind
+		with self.assertRaises(_Thrown):
+			doc.validate()
+
+	def test_an_existing_row_without_one_still_saves(self):
+		# Rows that predate the field must stay writable, and every later write goes
+		# through `db_set`, which does not validate at all. Refusing here would only
+		# strand old data.
+		doc = _transfer(self.api)
+		doc.pickup_code_hash = None
+		doc._is_new = False
+		doc.validate()
+
+	def test_a_new_row_carrying_a_digest_is_fine(self):
+		_transfer(self.api).validate()
 
 
 class EventTrail(unittest.TestCase):
