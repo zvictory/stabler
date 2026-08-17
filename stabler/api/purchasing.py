@@ -2562,7 +2562,7 @@ def cancel_purchase_receipt(name: str):
 	return {"name": doc.name, "docstatus": doc.docstatus, "status": doc.status}
 
 
-def _draft_invoices_by_receipt(receipts) -> dict:
+def _draft_invoices_by_receipt(receipts, *, for_update: bool = False) -> dict:
 	"""Map each receipt to the DRAFT Purchase Invoice already billing it.
 
 	``pi.docstatus = 0``, deliberately not ``< 2``. A *submitted* sibling means
@@ -2572,6 +2572,12 @@ def _draft_invoices_by_receipt(receipts) -> dict:
 	is a reason to refuse a second one, because a draft moves no ``per_billed``
 	— ERPNext writes that on submit — so nothing else in this app can see it.
 
+	``is_return`` is excluded for the same reason, reached from the other side. A
+	debit note is a Purchase Invoice, ERPNext copies ``purchase_receipt`` onto
+	its rows, and ``create_purchase_return`` leaves it a DRAFT unless asked to
+	submit — so a partly billed, partly returned receipt would otherwise lose its
+	path to a bill to a document that bills nothing.
+
 	An empty result is NOT proof that no invoice exists for the receipt. The
 	predicate reads ``Purchase Invoice Item.purchase_receipt``, which only gets
 	written when the bill was raised against a named receipt; an invoice built
@@ -2579,17 +2585,26 @@ def _draft_invoices_by_receipt(receipts) -> dict:
 
 	One query for the whole page. An empty ``receipts`` returns early: ``IN ()``
 	is a syntax error, not an empty match.
+
+	``for_update`` is for the caller that DECIDES on this answer, never for the
+	page read. A plain SELECT lets two operators both see no draft and both
+	insert; the locking read takes the gap lock on the ``purchase_receipt``
+	index range, so the second request waits and then reads the row the first
+	one committed instead of its own stale snapshot.
 	"""
 	names = [name for name in (receipts or []) if name]
 	if not names:
 		return {}
 	rows = frappe.db.sql(
-		"""
+		f"""
 		SELECT pii.purchase_receipt AS receipt, pi.name AS invoice
 		FROM `tabPurchase Invoice Item` pii
 		JOIN `tabPurchase Invoice` pi ON pi.name = pii.parent
-		WHERE pii.purchase_receipt IN %(receipts)s AND pi.docstatus = 0
+		WHERE pii.purchase_receipt IN %(receipts)s
+		  AND pi.docstatus = 0
+		  AND COALESCE(pi.is_return, 0) = 0
 		ORDER BY pi.name ASC
+		{"FOR UPDATE" if for_update else ""}
 		""",
 		{"receipts": names},
 		as_dict=True,
@@ -2613,7 +2628,11 @@ def create_purchase_invoice_from_pr(name: str):
 	move ``per_billed``, so without this the receipt keeps coming back to the
 	unbilled report with its button intact and a second operator — or a second
 	click — piles N drafts onto one receipt. A *submitted* sibling is not
-	refused: that is partial billing, and the remainder still needs a bill.
+	refused: that is partial billing, and the remainder still needs a bill, and
+	neither is a draft debit note, which bills nothing.
+
+	The deciding read locks: without it two requests both see no draft and both
+	insert, which is the second-operator case the guard exists for.
 	"""
 	if not name or not frappe.db.exists("Purchase Receipt", name):
 		frappe.throw(f"Unknown Purchase Receipt: {name}")
@@ -2621,7 +2640,7 @@ def create_purchase_invoice_from_pr(name: str):
 	pr = frappe.get_doc("Purchase Receipt", name)
 	if pr.docstatus != 1:
 		frappe.throw("Only submitted purchase receipts can be billed.")
-	outstanding = _draft_invoices_by_receipt([name]).get(name)
+	outstanding = _draft_invoices_by_receipt([name], for_update=True).get(name)
 	if outstanding:
 		frappe.throw(
 			_(
