@@ -192,10 +192,14 @@ def _load(db: _FakeDB):
 	common._require_company = lambda company: company
 	approvals = types.ModuleType("stabler.api.approvals")
 	approvals._assert_company_scope = lambda company: None
+	# Imported by the payout command, which shares this module with register.
+	approvals._APPROVER_ROLES = ("Accounts Manager", "System Manager", "Stabler Admin")
 
 	remittance = types.ModuleType("stabler.api.remittance")
 	remittance._gen_pickup_code = lambda: "ABC123"
 	remittance.store_pickup_code = lambda code: f"sha256$salt${code}"
+	remittance.is_hashed_pickup_code = lambda stored: bool(stored)
+	remittance._pickup_code_matches = lambda stored, provided: False
 
 	accounting = types.ModuleType("stabler.api.remittance_accounting")
 
@@ -208,6 +212,7 @@ def _load(db: _FakeDB):
 		return {"journal_entry": "JE-REM-0001", "register_base_rate": 1}
 
 	accounting.post_register = _post_register
+	accounting.post_payout = lambda transfer, **_k: {"journal_entry": "JE-REM-0002"}
 
 	_SANDBOX.install(
 		{
