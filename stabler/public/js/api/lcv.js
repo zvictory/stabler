@@ -17,6 +17,17 @@ export const lcvApi = {
 			include,
 		}),
 
+	// Persists how the next voucher spreads its charges ("Qty" | "Amount").
+	// Resolves to the same `distribution` object `getLandedCostReview` returns,
+	// and throws when a submitted voucher has already frozen the basis — the
+	// server is the gate, a disabled control is only the hint.
+	setDistributionMethod: (document_type, document_name, method) =>
+		call("stabler.api.lcv.set_distribution_method", {
+			document_type,
+			document_name,
+			method,
+		}),
+
 	createAdditionalLcv: (document_type, document_name) =>
 		call("stabler.api.lcv.create_additional_lcv", {
 			document_type,

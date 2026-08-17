@@ -6033,3 +6033,43 @@ Showing the first {n} — narrow the search to see the rest.,"Показаны �
 restructured once,реструктуризирован один раз
 restructured twice,реструктуризирован дважды
 restructured {n} times,реструктуризирован {n} раз
+0–30 days,0–30 дней
+31–60 days,31–60 дней
+61–90 days,61–90 дней
+90+ days,90+ дней
+Age (days),Возраст (дней)
+Any age,Любой срок
+Bucket,Интервал
+Create invoice,Создать счёт
+Create purchase invoice,Создать счёт-фактуру покупки
+Draft invoice created.,Черновик счёта создан.
+Draft invoice {name} created.,Черновик счёта {name} создан.
+Every amount sitting in Stock Received But Not Billed is explained by a receipt on this list.,"Каждая сумма на счёте «Товар получен, счёт не выставлен» объясняется приёмкой из этого списка."
+Failed to create the invoice.,Не удалось создать счёт.
+Failed to load unbilled receipts.,Не удалось загрузить приёмки без счетов.
+"No Stock Received But Not Billed account is configured on this company, so the ledger side cannot be read. The difference is not zero — it is unknown. Set the account on the Company, then reload.","Для этой компании не настроен счёт «Товар получен, счёт не выставлен», поэтому сторону учёта прочитать нельзя. Разница не равна нулю — она неизвестна. Укажите счёт в карточке компании и перезагрузите."
+Only two documents may move this account — the Purchase Receipt that credits it and the Purchase Invoice that clears it. A balance no receipt on this list explains means something else wrote to it:,"Этот счёт могут двигать только два документа — приёмка товара, которая его кредитует, и счёт-фактура покупки, которая его закрывает. Остаток, который не объясняет ни одна приёмка из списка, означает, что в него записал кто-то другой:"
+Raise a draft purchase invoice for {receipt} from {supplier}? It creates a payable draft — nothing posts to the ledger until you submit it.,"Создать черновик счёта-фактуры покупки по {receipt} от {supplier}? Будет создан черновик кредиторской задолженности — в учёт ничего не попадёт, пока вы его не отправите."
+Received value,Стоимость поступления
+Reconcile as of today,Сверить на сегодня
+Reconcile the full list,Сверить весь список
+Reconciliation is paused on a past date.,Сверка приостановлена на прошедшую дату.
+Reconciliation is paused while this list is filtered.,"Сверка приостановлена, пока список отфильтрован."
+SRBNB ledger balance,Остаток по счёту SRBNB
+Search matches {shown} of the {loaded} receipts on this page.,Поиск нашёл {shown} из {loaded} приёмок на этой странице.
+Stock Received But Not Billed agrees with this list.,"Счёт «Товар получен, счёт не выставлен» сходится с этим списком."
+Stock Received But Not Billed does not agree with this list.,"Счёт «Товар получен, счёт не выставлен» не сходится с этим списком."
+"The balance of {account} could not be read, so the difference is unknown rather than zero.","Остаток по счёту {account} прочитать не удалось, поэтому разница неизвестна, а не равна нулю."
+"The ledger balance covers the whole company, while the total beside it covers only the filtered receipts — subtracting them would measure the filter, not a ledger break.","Остаток по счёту охватывает всю компанию, а итог рядом — только отфильтрованные приёмки; вычитание измерило бы фильтр, а не расхождение в учёте."
+"The ledger balance is taken on that date, but whether a receipt is billed is only known as it stands today — so this list shows current billing status, not the position on that date. Subtracting the two would report the invoices raised since then as a ledger break.","Остаток по счёту берётся на эту дату, но выставлен ли счёт по приёмке, известно только по состоянию на сегодня — поэтому список показывает текущий статус выставления счетов, а не положение на ту дату. Вычитание одного из другого представило бы счета, выставленные с тех пор, как расхождение в учёте."
+This list cannot be reconciled against the ledger.,Этот список нельзя сверить с учётом.
+Unbilled on this list,Без счёта в этом списке
+"Until it is explained, stock value and trade payables are both misstated by the difference.","Пока это не объяснено, и стоимость запасов, и кредиторская задолженность искажены на величину разницы."
+You need a purchasing or accounts role to see unbilled receipts.,"Чтобы видеть приёмки без счетов, нужна роль в закупках или бухгалтерии."
+"a Journal Entry posted straight to Stock Received But Not Billed, which is not an accepted way to move this account.","запись в журнале, проведённая напрямую на счёт «Товар получен, счёт не выставлен», что не является допустимым способом движения по этому счёту."
+"a Purchase Invoice booked to this account without naming the receipt it settles, so the ledger is cleared while the receipt still counts as unbilled here; or","счёт-фактура покупки, проведённая на этот счёт без указания приёмки, которую она закрывает: в учёте остаток снят, а приёмка здесь всё ещё считается без счёта; или"
+"a return receipt, which debits this account and is deliberately left out of this list; or","возвратная приёмка, которая дебетует этот счёт и намеренно не включена в этот список; или"
+account not set,счёт не указан
+as of {date},на {date}
+"tax or charges inside a receipt total — only the net goes into this account, so anything the tax table added was never there to clear; or","налоги или сборы внутри итога приёмки: на этот счёт попадает только сумма без налогов, поэтому всё, что добавила таблица налогов, там никогда не лежало и закрывать нечего; или"
+{count} receipts,{count} приёмок

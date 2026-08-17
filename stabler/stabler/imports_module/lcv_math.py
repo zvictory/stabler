@@ -18,8 +18,12 @@ replicated:
 * **No product / CIF freight double-capitalization.** Goods value and the CIF
   freight already embedded in the supplier PI are not cost components by design
   (the Container Cost Line doctype has no such component).
-* Distribution is by **Qty** (per-kg), not Amount — frozen-meat landed costs are
-  weight-driven and every item is in Kg.
+* Distribution basis is a **choice**, defaulting to Amount. Stock UOM is Kg with
+  conversion factor 1, so ERPNext's "Qty" basis is distribution by weight: right
+  for freight, wrong for the ad-valorem charges (customs duty, excise, insurance,
+  bank fees) that dominate this landed cost, where cheap-heavy items absorb far
+  more than they cost. The basis is persisted on the source document and frozen
+  once a voucher is submitted — see ``resolve_distribution_method``.
 * Expense account is a single configurable account (Stabler Settings), never the
   hardcoded "Stock Adjustment - MSA".
 """
@@ -396,6 +400,111 @@ def aggregate_components(cost_lines, rates, company_currency, translate=None) ->
 	return components, warnings
 
 
+#: Distribution bases a user may choose. ERPNext v15 types
+#: ``Landed Cost Voucher.distribute_charges_based_on`` as
+#: ``Literal["Qty", "Amount", "Distribute Manually"]``; "Distribute Manually" is
+#: deliberately NOT offered, because ERPNext refuses to submit such a voucher
+#: with more than one charge row (``landed_cost_voucher.py`` ``on_submit``) and a
+#: landed cost build here routinely carries several.
+DISTRIBUTION_METHODS = ("Qty", "Amount")
+
+#: Everything ERPNext itself stores in that field. A voucher created in the Desk
+#: may legitimately carry "Distribute Manually", and the freeze rule has to read
+#: such a basis back faithfully even though nobody may choose it here.
+ERPNEXT_DISTRIBUTION_METHODS = ("Qty", "Amount", "Distribute Manually")
+
+#: Value, not weight, is the honest default: stock UOM is Kg at conversion factor
+#: 1, so "Qty" distributes by weight, and on the real product mix that pushes far
+#: more of the ad-valorem charges (customs duty, excise, insurance, bank fees)
+#: onto cheap-heavy items than they are worth. Freight is the case that wants
+#: weight, which is why "Qty" stays selectable rather than being removed.
+DEFAULT_DISTRIBUTION_METHOD = "Amount"
+
+
+def normalize_distribution_method(value, allowed=ERPNEXT_DISTRIBUTION_METHODS):
+	"""Canonical spelling of *value*, or ``None`` when it names no known basis.
+
+	Case and surrounding whitespace only — the stored value has to reach ERPNext
+	spelled exactly as its Select options are, and "amount" from a hand-written
+	API call is the same instruction as "Amount". Anything else is rejected rather
+	than guessed: a basis this module does not recognize must never be passed
+	through to a voucher.
+	"""
+	text = " ".join(str(value or "").split())
+	if not text:
+		return None
+	for method in allowed:
+		if text.casefold() == method.casefold():
+			return method
+	return None
+
+
+def validate_distribution_method(value) -> str:
+	"""Canonical form of a *selectable* basis, or ``ValueError``.
+
+	The set here is narrower than what ERPNext accepts (see
+	``DISTRIBUTION_METHODS``). Raises rather than falling back to a default: this
+	is the guard on an explicit user choice, and silently storing something other
+	than what was asked for is how a voucher ends up on a basis nobody picked.
+	Callers on a frappe boundary catch this and re-raise it translated.
+	"""
+	method = normalize_distribution_method(value, DISTRIBUTION_METHODS)
+	if method is None:
+		raise ValueError(
+			"Unknown landed cost distribution method: {0!r}. Expected one of: {1}.".format(
+				value, ", ".join(DISTRIBUTION_METHODS)
+			)
+		)
+	return method
+
+
+#: Only a SUBMITTED voucher freezes the distribution basis. A draft has capitalized
+#: nothing for a later charge to net against, and a cancelled one has already given
+#: back what it capitalized (``release_cost_lines_for_lcv`` clears ``lcv_ref``), so
+#: its lines return to the next build. Named and tested here rather than living only
+#: inside the SQL predicate, so widening it to "anything not cancelled" — the obvious
+#: wrong guess — fails a test instead of quietly locking every draft.
+LOCKING_DOCSTATUS = 1
+
+
+def locks_distribution(docstatus) -> bool:
+	"""Whether a voucher in this docstatus freezes the basis for later vouchers."""
+	try:
+		return int(docstatus) == LOCKING_DOCSTATUS
+	except (TypeError, ValueError):
+		return False
+
+
+def resolve_distribution_method(persisted, locked_method=None, default=DEFAULT_DISTRIBUTION_METHOD) -> str:
+	"""The basis the next voucher must be built on.
+
+	Precedence: ``locked_method`` (the basis of a submitted voucher already
+	standing against these receipts) → ``persisted`` (what the operator chose on
+	the source document) → ``default``.
+
+	The lock wins over a later choice because ``apply_gtd_customs_precedence``
+	nets a late customs declaration against what earlier vouchers already
+	capitalized. Those amounts were spread on the first voucher's basis, so
+	posting the remainder on a different one distributes a correction over a
+	distribution it does not match — item-level valuations that no longer add up
+	to the money actually spent, with nothing on either voucher saying why.
+
+	A locked basis is honored even when it is one this module would not offer
+	(a "Distribute Manually" voucher entered in the Desk): reporting the frozen
+	basis truthfully is the point, and a caller that quietly substituted a
+	different one would reintroduce exactly the incoherence above. ``persisted``
+	is read against the offered set only, so a stored value nobody may choose is
+	treated as no choice at all.
+	"""
+	locked = normalize_distribution_method(locked_method)
+	if locked:
+		return locked
+	chosen = normalize_distribution_method(persisted, DISTRIBUTION_METHODS)
+	if chosen:
+		return chosen
+	return normalize_distribution_method(default) or DEFAULT_DISTRIBUTION_METHOD
+
+
 def build_lcv_payload(*, company, purchase_receipts, components, expense_account, distribute_based_on="Qty"):
 	"""Build the DRAFT Landed Cost Voucher dict.
 
@@ -403,6 +512,12 @@ def build_lcv_payload(*, company, purchase_receipts, components, expense_account
 	``{component: amount}`` map from ``aggregate_components``. Returns ``None``
 	when there is nothing to voucher (no PRs or no costs). ``docstatus`` is never
 	set — the accountant reviews and submits (valuation repost caution).
+
+	``distribute_based_on`` is what every caller should resolve with
+	``resolve_distribution_method`` and pass explicitly. The "Qty" default is the
+	historical behavior and is kept only so a caller not yet moved over builds
+	what it built before instead of silently changing basis; it is NOT the system
+	default, which is ``DEFAULT_DISTRIBUTION_METHOD``.
 	"""
 	if not purchase_receipts or not components:
 		return None

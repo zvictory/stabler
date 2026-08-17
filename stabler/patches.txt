@@ -89,3 +89,4 @@ stabler.patches.v84_vehicle_finance_roles
 stabler.patches.v85_vehicle_agreement_rescheduled
 stabler.patches.v86_remittance_pickup_code_hash
 stabler.patches.v87_remittance_roles
+stabler.patches.v88_lcv_distribution_method

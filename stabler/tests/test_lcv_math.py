@@ -1,7 +1,8 @@
 """Unit tests for the Landed Cost Voucher aggregation (Frappe-free).
 
 Covers currency conversion, VAT exclusion, full (never divided) clearance fee,
-multi-LCV delta selection via ``lcv_ref``, and the DRAFT payload shape.
+multi-LCV delta selection via ``lcv_ref``, the distribution basis a voucher is
+built on, and the DRAFT payload shape.
 
     cd /path/to/stabler && PYTHONPATH=$PWD python3 -m unittest stabler.tests.test_lcv_math -v
 """
@@ -222,14 +223,18 @@ class TestUnconsumed(unittest.TestCase):
 
 
 class TestBuildLcvPayload(unittest.TestCase):
-	def test_draft_payload_shape(self):
-		payload = lcv_math.build_lcv_payload(
+	def _payload(self, **kwargs):
+		return lcv_math.build_lcv_payload(
 			company="MSA",
 			purchase_receipts=["PR-1", "PR-2"],
 			components={"Freight": 1_875_000.0, "Insurance": 250_000.0},
 			expense_account="Expenses Included In Valuation - MSA",
+			**kwargs,
 		)
-		self.assertEqual(payload["distribute_charges_based_on"], "Qty")
+
+	def test_draft_payload_shape(self):
+		payload = self._payload(distribute_based_on="Amount")
+		self.assertEqual(payload["distribute_charges_based_on"], "Amount")
 		self.assertEqual(len(payload["purchase_receipts"]), 2)
 		self.assertEqual(payload["purchase_receipts"][0]["receipt_document_type"], "Purchase Receipt")
 		self.assertEqual(len(payload["taxes"]), 2)
@@ -237,6 +242,15 @@ class TestBuildLcvPayload(unittest.TestCase):
 			all(t["expense_account"] == "Expenses Included In Valuation - MSA" for t in payload["taxes"])
 		)
 		self.assertNotIn("docstatus", payload)
+
+	def test_every_offered_basis_reaches_the_voucher(self):
+		# The basis used to be a constant in the API layer, so no caller could vary
+		# it and no voucher recorded anything but "Qty". Whatever the caller
+		# resolved has to arrive on the payload unchanged.
+		for method in lcv_math.DISTRIBUTION_METHODS:
+			with self.subTest(method=method):
+				payload = self._payload(distribute_based_on=method)
+				self.assertEqual(payload["distribute_charges_based_on"], method)
 
 	def test_none_when_no_receipts_or_no_costs(self):
 		self.assertIsNone(
@@ -249,6 +263,87 @@ class TestBuildLcvPayload(unittest.TestCase):
 				company="MSA", purchase_receipts=["PR-1"], components={}, expense_account="X"
 			)
 		)
+
+
+class DistributionMethodTest(unittest.TestCase):
+	"""Which basis a voucher spreads its charges on, and who gets to decide it.
+
+	Stock UOM is Kg at conversion factor 1, so ERPNext's "Qty" basis is
+	distribution by weight. On the real product mix that loads chicken leg
+	quarters with +67.6% of the charges against beef tenderloin's +15.9%, where
+	distributing the same charges by value gives 33.8% / 25.3%. Freight really is
+	weight-driven, so both bases stay reachable — but customs duty, excise,
+	insurance and bank fees are ad valorem, and they are the bulk of it, which is
+	why value is the default rather than weight.
+	"""
+
+	def test_the_default_is_by_value(self):
+		self.assertEqual(lcv_math.DEFAULT_DISTRIBUTION_METHOD, "Amount")
+		self.assertEqual(lcv_math.resolve_distribution_method(None), "Amount")
+
+	def test_only_the_two_erpnext_bases_that_survive_submit_are_offered(self):
+		# "Distribute Manually" is a real ERPNext value, but it refuses to submit
+		# with more than one charge row and a build here routinely carries several.
+		self.assertEqual(lcv_math.DISTRIBUTION_METHODS, ("Qty", "Amount"))
+		self.assertIn("Distribute Manually", lcv_math.ERPNEXT_DISTRIBUTION_METHODS)
+
+	def test_a_persisted_choice_beats_the_default(self):
+		self.assertEqual(lcv_math.resolve_distribution_method("Qty"), "Qty")
+		self.assertEqual(lcv_math.resolve_distribution_method("Amount"), "Amount")
+
+	def test_a_submitted_voucher_freezes_the_basis_over_a_later_choice(self):
+		# The lock is the whole point: a follow-up voucher nets late customs
+		# charges against amounts the first one already spread on ITS basis.
+		self.assertEqual(lcv_math.resolve_distribution_method("Amount", "Qty"), "Qty")
+		self.assertEqual(lcv_math.resolve_distribution_method("Qty", "Amount"), "Amount")
+
+	def test_with_nothing_frozen_the_persisted_choice_stands(self):
+		for locked in (None, "", "   "):
+			with self.subTest(locked=locked):
+				self.assertEqual(lcv_math.resolve_distribution_method("Qty", locked), "Qty")
+
+	def test_a_frozen_basis_nobody_may_choose_is_still_reported_truthfully(self):
+		# A voucher entered in the Desk can carry "Distribute Manually". Reporting
+		# it as something else would hide the very incoherence the lock exists to
+		# prevent.
+		self.assertEqual(
+			lcv_math.resolve_distribution_method(None, "Distribute Manually"), "Distribute Manually"
+		)
+
+	def test_an_unchosen_field_falls_through_to_the_default(self):
+		for persisted in (None, "", "   ", 0):
+			with self.subTest(persisted=persisted):
+				self.assertEqual(lcv_math.resolve_distribution_method(persisted), "Amount")
+
+	def test_a_persisted_value_nobody_may_choose_is_not_trusted(self):
+		# Only the offered set is honored on the way in, so a stray value on the
+		# document cannot smuggle a basis past ``validate_distribution_method``.
+		for persisted in ("Distribute Manually", "Weight", "kg"):
+			with self.subTest(persisted=persisted):
+				self.assertEqual(lcv_math.resolve_distribution_method(persisted), "Amount")
+
+	def test_the_fallback_is_a_parameter_not_a_constant(self):
+		self.assertEqual(lcv_math.resolve_distribution_method(None, None, default="Qty"), "Qty")
+
+	def test_the_validator_accepts_what_is_offered_and_returns_erpnexts_spelling(self):
+		# The stored value reaches ERPNext's Select verbatim, so the canonical
+		# spelling — not the caller's — is what comes back.
+		self.assertEqual(lcv_math.validate_distribution_method("Qty"), "Qty")
+		self.assertEqual(lcv_math.validate_distribution_method(" amount "), "Amount")
+
+	def test_the_validator_rejects_everything_else(self):
+		for bad in (None, "", "   ", "Weight", "Distribute Manually", "Qty!", 1):
+			with self.subTest(method=bad):
+				with self.assertRaises(ValueError):
+					lcv_math.validate_distribution_method(bad)
+
+	def test_the_rejection_names_what_was_asked_for_and_what_is_allowed(self):
+		with self.assertRaises(ValueError) as caught:
+			lcv_math.validate_distribution_method("Weight")
+		message = str(caught.exception)
+		self.assertIn("Weight", message)
+		self.assertIn("Qty", message)
+		self.assertIn("Amount", message)
 
 
 def _billable(component, container, purchase_invoice=None, amount=100.0, **source):
@@ -492,6 +587,36 @@ class LineSourceTest(unittest.TestCase):
 		self.assertEqual(lcv_math.source_document({"import_expense": "IE-7"}), "IE-7")
 		self.assertEqual(lcv_math.source_document({"purchase_invoice": "PINV-7"}), "PINV-7")
 		self.assertEqual(lcv_math.source_document({}), "")
+
+
+class LockingDocstatusTest(unittest.TestCase):
+	"""Which voucher state freezes the basis.
+
+	The freeze exists so ``apply_gtd_customs_precedence`` nets a late customs charge
+	against the same base the first voucher capitalized on. Getting the docstatus
+	wrong in either direction is silent: widen it and every draft locks the basis
+	before anything is posted; narrow it and a second voucher re-splits on a
+	different base than the one it is netting against.
+	"""
+
+	def test_only_a_submitted_voucher_locks(self):
+		self.assertTrue(lcv_math.locks_distribution(1))
+
+	def test_a_draft_does_not_lock_because_it_has_capitalized_nothing(self):
+		self.assertFalse(lcv_math.locks_distribution(0))
+
+	def test_a_cancelled_voucher_does_not_lock_because_it_released_its_lines(self):
+		self.assertFalse(lcv_math.locks_distribution(2))
+
+	def test_junk_never_locks(self):
+		for bad in (None, "", "draft", object()):
+			with self.subTest(docstatus=bad):
+				self.assertFalse(lcv_math.locks_distribution(bad))
+
+	def test_the_constant_is_the_submitted_docstatus(self):
+		# The SQL predicate in stabler/api/lcv.py binds this value; if it drifts,
+		# the query silently starts locking on the wrong state.
+		self.assertEqual(lcv_math.LOCKING_DOCSTATUS, 1)
 
 
 if __name__ == "__main__":

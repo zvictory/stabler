@@ -6028,3 +6028,43 @@ Showing the first {n} — narrow the search to see the rest.,Birinchi {n} ta ko'
 restructured once,bir marta qayta tuzilgan
 restructured twice,ikki marta qayta tuzilgan
 restructured {n} times,{n} marta qayta tuzilgan
+0–30 days,0–30 kun
+31–60 days,31–60 kun
+61–90 days,61–90 kun
+90+ days,90+ kun
+Age (days),Muddat (kun)
+Any age,Har qanday muddat
+Bucket,Oraliq
+Create invoice,Hisob-faktura yaratish
+Create purchase invoice,Xarid hisob-fakturasini yaratish
+Draft invoice created.,Hisob-faktura qoralamasi yaratildi.
+Draft invoice {name} created.,{name} hisob-faktura qoralamasi yaratildi.
+Every amount sitting in Stock Received But Not Billed is explained by a receipt on this list.,"«Tovar qabul qilingan, hisob-faktura yo'q» hisobidagi har bir summa shu ro'yxatdagi qabul bilan izohlanadi."
+Failed to create the invoice.,Hisob-fakturani yaratib bo'lmadi.
+Failed to load unbilled receipts.,Hisob-fakturasiz qabullarni yuklab bo'lmadi.
+"No Stock Received But Not Billed account is configured on this company, so the ledger side cannot be read. The difference is not zero — it is unknown. Set the account on the Company, then reload.","Bu kompaniyada «Tovar qabul qilingan, hisob-faktura yo'q» hisobi sozlanmagan, shuning uchun hisob tomonini o'qib bo'lmaydi. Farq nolga teng emas — u noma'lum. Kompaniyada hisobni belgilang va qayta yuklang."
+Only two documents may move this account — the Purchase Receipt that credits it and the Purchase Invoice that clears it. A balance no receipt on this list explains means something else wrote to it:,Bu hisobni faqat ikki hujjat harakatga keltira oladi — uni kreditlaydigan tovar qabul qilish va uni yopadigan xarid hisob-fakturasi. Ro'yxatdagi hech bir qabul izohlamaydigan qoldiq unga boshqa narsa yozganini bildiradi:
+Raise a draft purchase invoice for {receipt} from {supplier}? It creates a payable draft — nothing posts to the ledger until you submit it.,{supplier} dan {receipt} uchun xarid hisob-fakturasi qoralamasi yaratilsinmi? To'lanadigan qoralama yaratiladi — siz tasdiqlamaguningizcha hisobga hech narsa o'tmaydi.
+Received value,Qabul qilingan qiymat
+Reconcile as of today,Bugungi holatga solishtirish
+Reconcile the full list,To'liq ro'yxatni solishtirish
+Reconciliation is paused on a past date.,O'tgan sanada solishtirish to'xtatilgan.
+Reconciliation is paused while this list is filtered.,"Ro'yxat filtrlangan ekan, solishtirish to'xtatilgan."
+SRBNB ledger balance,SRBNB hisob qoldig'i
+Search matches {shown} of the {loaded} receipts on this page.,Qidiruv bu sahifadagi {loaded} qabuldan {shown} tasini topdi.
+Stock Received But Not Billed agrees with this list.,"«Tovar qabul qilingan, hisob-faktura yo'q» hisobi shu ro'yxat bilan mos keladi."
+Stock Received But Not Billed does not agree with this list.,"«Tovar qabul qilingan, hisob-faktura yo'q» hisobi shu ro'yxat bilan mos kelmaydi."
+"The balance of {account} could not be read, so the difference is unknown rather than zero.","{account} qoldig'ini o'qib bo'lmadi, shuning uchun farq nolga teng emas, balki noma'lum."
+"The ledger balance covers the whole company, while the total beside it covers only the filtered receipts — subtracting them would measure the filter, not a ledger break.","Hisob qoldig'i butun kompaniyani qamrab oladi, yonidagi jami esa faqat filtrlangan qabullarni — ularni ayirish hisobdagi uzilishni emas, filtrni o'lchagan bo'lardi."
+"The ledger balance is taken on that date, but whether a receipt is billed is only known as it stands today — so this list shows current billing status, not the position on that date. Subtracting the two would report the invoices raised since then as a ledger break.","Hisob qoldig'i o'sha sanaga olinadi, lekin qabulga hisob-faktura berilgan-berilmagani faqat bugungi holatga ko'ra ma'lum — shuning uchun bu ro'yxat o'sha sanadagi holatni emas, joriy hisob-faktura holatini ko'rsatadi. Ikkisini ayirish o'shandan beri berilgan hisob-fakturalarni hisobdagi uzilish sifatida ko'rsatgan bo'lardi."
+This list cannot be reconciled against the ledger.,Bu ro'yxatni hisob bilan solishtirib bo'lmaydi.
+Unbilled on this list,Bu ro'yxatda hisob-fakturasiz
+"Until it is explained, stock value and trade payables are both misstated by the difference.","Bu izohlanmaguncha, zaxira qiymati ham, kreditorlik qarzi ham farq miqdorida noto'g'ri ko'rsatiladi."
+You need a purchasing or accounts role to see unbilled receipts.,Hisob-fakturasiz qabullarni ko'rish uchun xarid yoki buxgalteriya roli kerak.
+"a Journal Entry posted straight to Stock Received But Not Billed, which is not an accepted way to move this account.","to'g'ridan-to'g'ri «Tovar qabul qilingan, hisob-faktura yo'q» hisobiga kiritilgan jurnal yozuvi — bu hisobni harakatga keltirishning qabul qilingan yo'li emas."
+"a Purchase Invoice booked to this account without naming the receipt it settles, so the ledger is cleared while the receipt still counts as unbilled here; or","yopayotgan qabulini ko'rsatmasdan shu hisobga kiritilgan xarid hisob-fakturasi — hisobda qoldiq yopiladi, ammo qabul bu yerda hamon hisob-fakturasiz sanaladi; yoki"
+"a return receipt, which debits this account and is deliberately left out of this list; or",shu hisobni debetlaydigan va bu ro'yxatga ataylab kiritilmagan qaytarish qabuli; yoki
+account not set,hisob belgilanmagan
+as of {date},{date} holatiga
+"tax or charges inside a receipt total — only the net goes into this account, so anything the tax table added was never there to clear; or","qabul jamisidagi soliq yoki yig'imlar — bu hisobga faqat sof summa tushadi, shuning uchun soliq jadvali qo'shgan narsa u yerda hech qachon bo'lmagan; yoki"
+{count} receipts,{count} ta qabul

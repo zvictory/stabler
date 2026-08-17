@@ -471,6 +471,13 @@ def _ensure_import_service_item() -> None:
 # Truck Receipt -> partial Purchase Receipt (critique M7) + GRN recompute
 # ---------------------------------------------------------------------------
 
+# The currency the auto Purchase Receipt is tagged with. Resolving it from the
+# Commercial Invoice / Purchase Order instead of pinning it is a separate
+# decision with valuation blast radius and is deliberately deferred — this
+# constant only gives the existing hardcoded value one name, so the payload and
+# the currency guard below cannot drift apart.
+PR_CURRENCY = "USD"
+
 
 def truck_receipt_before_submit(doc, method=None):
 	"""Freeze expected packing before the receipt becomes submitted."""
@@ -557,7 +564,14 @@ def truck_receipt_on_cancel(doc, method=None):
 
 
 def _create_pr_for_truck_receipt(tr) -> None:
-	"""Build + submit the partial Purchase Receipt for one Truck Receipt."""
+	"""Build + submit the partial Purchase Receipt for one Truck Receipt.
+
+	Price resolution per line: the rate typed on the Truck Receipt line wins, else
+	the rate resolved off the POs linked to the Commercial Invoice. A line with
+	neither aborts the submit (``_block_unpriced_lines``) — zero-valued stock is
+	never posted. The remaining ``resolve_po_rate`` warnings stay informational
+	(ambiguous linkage, or a missing PO line that a manual rate covered).
+	"""
 	if tr.get("purchase_receipt"):
 		return  # idempotent — already received
 	grn = frappe.get_doc("GRN Checklist", tr.grn_checklist)
@@ -575,29 +589,60 @@ def _create_pr_for_truck_receipt(tr) -> None:
 
 	po_item_rows = _po_item_rows_for_ci(grn.commercial_invoice)
 	warnings: list[str] = []
-	lines: list[dict] = []
+
+	# Pass 1 — resolve qty and rate for every line, writing nothing. The price
+	# guards below have to be able to abort the whole receipt before the first
+	# insert (batch creation in pass 2 is already a write).
+	resolved: list[dict] = []
 	for it in tr.items or []:
-		qty = receipt_math.good_qty(it.received_kg, it.condition)
 		res = receipt_math.resolve_po_rate(it.grn_item_code, po_item_rows)
 		if res["warning"]:
 			warnings.append(res["warning"])
+		# `rate` is optional on Truck Receipt Item — an absent field reads as blank
+		# and simply falls through to the PO rate.
+		manual_rate = it.get("rate")
+		rate, source = receipt_math.effective_rate(manual_rate, res["rate"])
+		resolved.append(
+			{
+				"idx": it.idx,
+				"item_code": it.grn_item_code,
+				"qty": receipt_math.good_qty(it.received_kg, it.condition),
+				"manual_rate": manual_rate,
+				"po_rate": res["rate"],
+				"rate": rate,
+				"source": source,
+				# Keep the PO linkage whenever it resolved, even when the manual rate
+				# won the price — the linkage is what drives the PO's received/billed
+				# status in ERPNext.
+				"purchase_order": res["purchase_order"],
+				"purchase_order_item": res["purchase_order_item"],
+				"expiry_date": it.get("expiry_date"),
+			}
+		)
+
+	_block_unpriced_lines(tr, grn.commercial_invoice, resolved)
+	_block_foreign_currency_po_rates(tr, resolved, po_item_rows)
+
+	# Pass 2 — every receivable line is priced; batches may be created now.
+	lines: list[dict] = []
+	for row in resolved:
 		batch_no = None
-		if qty > 0:
-			if frappe.db.get_value("Item", it.grn_item_code, "has_batch_no"):
+		if row["qty"] > 0:
+			if frappe.db.get_value("Item", row["item_code"], "has_batch_no"):
 				bname = receipt_math.batch_name(
-					None, grn.commercial_invoice, it.grn_item_code, str(tr.arrival_date)
+					None, grn.commercial_invoice, row["item_code"], str(tr.arrival_date)
 				)
-				batch_no = _ensure_batch(bname, it.grn_item_code, it.get("expiry_date"))
+				batch_no = _ensure_batch(bname, row["item_code"], row["expiry_date"])
 			else:
-				warnings.append(f"Item {it.grn_item_code} is not batch-tracked; received without a batch.")
+				warnings.append(f"Item {row['item_code']} is not batch-tracked; received without a batch.")
 		lines.append(
 			receipt_math.build_pr_line(
-				item_code=it.grn_item_code,
-				qty=qty,
-				rate=res["rate"],
+				item_code=row["item_code"],
+				qty=row["qty"],
+				rate=row["rate"],
 				warehouse=warehouse,
-				purchase_order=res["purchase_order"],
-				purchase_order_item=res["purchase_order_item"],
+				purchase_order=row["purchase_order"],
+				purchase_order_item=row["purchase_order_item"],
 				batch_no=batch_no,
 			)
 		)
@@ -606,7 +651,7 @@ def _create_pr_for_truck_receipt(tr) -> None:
 		company=tr.company,
 		supplier=supplier,
 		posting_date=str(tr.arrival_date),
-		currency="USD",
+		currency=PR_CURRENCY,
 		warehouse=warehouse,
 		lines=lines,
 		truck_receipt_name=tr.name,
@@ -628,8 +673,63 @@ def _create_pr_for_truck_receipt(tr) -> None:
 		)
 
 
+def _block_unpriced_lines(tr, commercial_invoice, resolved) -> None:
+	"""Refuse the receipt when any receivable line has no price at all.
+
+	This used to be a warning in a log file while the Purchase Receipt was built
+	and submitted anyway, so stock entered the warehouse valued at zero: inventory
+	understated, COGS on the eventual sale fiction, gross profit overstated by the
+	whole line. There is no safe partial receipt here — a truck is one document —
+	so the submit stops and a human types the missing number.
+	"""
+	offenders = receipt_math.unpriced_lines(resolved)
+	if not offenders:
+		return
+	named = ", ".join(f"#{row.get('idx')} {row.get('item_code')}" for row in offenders)
+	frappe.throw(
+		frappe._(
+			"Truck Receipt {0} has no rate for: {1}. Receiving would book this stock into the "
+			"warehouse at zero value. Enter a rate on the Truck Receipt line, or price the item on "
+			"a Purchase Order linked to Commercial Invoice {2}, then submit again."
+		).format(tr.name, named, commercial_invoice)
+	)
+
+
+def _block_foreign_currency_po_rates(tr, resolved, po_item_rows) -> None:
+	"""Refuse a PO-sourced rate whose Purchase Order is in another currency.
+
+	The Purchase Receipt is tagged ``PR_CURRENCY``; a rate read off a PO in a
+	different currency would be posted under that label without conversion — a
+	silent mislabel and a wrong valuation. This is a guard, not a migration:
+	resolving the receipt currency properly is deferred, so the receipt stops
+	rather than guessing an exchange rate.
+
+	Which lines count (PO-sourced price, qty > 0), the blank-currency skip and the
+	per-PO dedupe all live in ``receipt_math.mismatched_currency_pos`` so they can
+	be unit-tested without a bench; only the refusal itself is left here.
+	"""
+	mismatched = receipt_math.mismatched_currency_pos(resolved, po_item_rows, PR_CURRENCY)
+	if not mismatched:
+		return
+	named = ", ".join(f"{row['purchase_order']} ({row['currency']})" for row in mismatched)
+	frappe.throw(
+		frappe._(
+			"Truck Receipt {0} takes its rates from a Purchase Order in another currency: {1}. "
+			"The Purchase Receipt is posted in {2}, so those rates would be labelled {2} without "
+			"being converted. Enter the rate in {2} on the Truck Receipt line, or correct the "
+			"Purchase Order currency."
+		).format(tr.name, named, PR_CURRENCY)
+	)
+
+
 def _po_item_rows_for_ci(commercial_invoice) -> list[dict]:
-	"""PO Item rows (name/item_code/rate) across the POs linked to the CI."""
+	"""PO Item rows (name/item_code/rate) across the POs linked to the CI.
+
+	Each row carries its parent PO's ``currency`` as well: a rate is only a number
+	until you know what it is denominated in, and the receipt is tagged with a
+	fixed currency (see ``_create_pr_for_truck_receipt``). The currency rides
+	along so the guard there can refuse a rate read off a PO in another one.
+	"""
 	pos = frappe.get_all(
 		"Commercial Invoice PO Link",
 		filters={"commercial_invoice": commercial_invoice},
@@ -637,6 +737,7 @@ def _po_item_rows_for_ci(commercial_invoice) -> list[dict]:
 	)
 	rows: list[dict] = []
 	for po in {p for p in pos if p}:
+		po_currency = frappe.db.get_value("Purchase Order", po, "currency")
 		for r in frappe.get_all(
 			"Purchase Order Item", filters={"parent": po}, fields=["name", "item_code", "rate"]
 		):
@@ -646,6 +747,7 @@ def _po_item_rows_for_ci(commercial_invoice) -> list[dict]:
 					"purchase_order_item": r.name,
 					"item_code": r.item_code,
 					"rate": r.rate,
+					"currency": po_currency,
 				}
 			)
 	return rows
@@ -1007,11 +1109,20 @@ def _build_and_save_lcv(grn, note: str):
 		frappe.logger("stabler.imports").info(f"GRN {grn.name}: no unconsumed landed costs")
 		return None
 
+	# Function-level import on purpose: stabler.api.lcv imports stabler.api.imports
+	# at module level, so a top-level import here would be circular.
+	from stabler.api.lcv import effective_distribution_method
+
 	payload = lcv_math.build_lcv_payload(
 		company=grn.company,
 		purchase_receipts=purchase_receipts,
 		components=components,
 		expense_account=expense_account,
+		# Honour the persisted choice and the freeze rule on this build path too;
+		# passing the receipts we already resolved keeps this callable mid-submit.
+		distribute_based_on=effective_distribution_method(
+			"GRN Checklist", grn.name, receipt_names=purchase_receipts
+		),
 	)
 	if payload is None:
 		return None

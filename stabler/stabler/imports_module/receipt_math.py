@@ -16,16 +16,32 @@ Key rules encoded here:
   linked to the Commercial Invoice. Exactly one line -> use its rate + linkage;
   none, or several with differing rates -> rate 0 and a warning; several with an
   identical rate -> that rate but no (ambiguous) row linkage.
+* **No zero-valued stock.** A resolved rate of 0 is not a price, it is a missing
+  price. ``effective_rate`` lets a manually entered rate on the Truck Receipt
+  line override the PO rate (the escape hatch — PO linkage is often missing by
+  design of the current flow), and ``unpriced_lines`` names the receivable lines
+  that still have no price at all. The caller blocks the whole receipt on those
+  instead of booking stock into the warehouse at zero value.
 * **Batch naming.** ``{container_number or CI}-{item_code}-{arrival_date}``.
 * **Currency.** Rate/qty are USD/Kg; the PR is tagged ``currency = "USD"`` and
   the USD->company conversion_rate is deliberately left to ERPNext's own
   Currency Exchange defaults (documented assumption — stock items are held in
-  Kg, so uom == stock_uom == "Kg", conversion_factor 1).
+  Kg, so uom == stock_uom == "Kg", conversion_factor 1). How that currency gets
+  resolved is unchanged; ``mismatched_currency_pos`` names the Purchase Orders whose
+  currency is not the receipt's and ``hooks.py`` refuses the receipt over them,
+  rather than mislabelling the rate.
 """
 
 from __future__ import annotations
 
+import math
+
 STOCK_UOM = "Kg"
+
+# Where the rate on a receipt line came from (see ``effective_rate``).
+RATE_SOURCE_MANUAL = "manual"
+RATE_SOURCE_PO = "purchase_order"
+RATE_SOURCE_NONE = "none"
 
 
 def good_qty(received_kg, condition) -> float:
@@ -93,6 +109,101 @@ def resolve_po_rate(item_code, po_item_rows) -> dict:
 			"rate set to 0 — verify manually."
 		),
 	}
+
+
+def _as_float(value) -> float:
+	"""``value`` as a finite float, or 0.0 when it cannot be read as one.
+
+	Blank (``None`` / ``""``), non-numeric text, NaN and infinity all collapse to
+	0.0 instead of raising. Rates arrive from a web form and from PO rows, so
+	"unreadable" is a real input; treating it as *no number* keeps the decision
+	with the price rules below (which refuse to post a 0) rather than letting a
+	``float()`` blow up mid-receipt or letting a NaN sail through ``> 0``.
+	"""
+	try:
+		out = float(value)
+	except (TypeError, ValueError):
+		return 0.0
+	if not math.isfinite(out):
+		return 0.0
+	return out
+
+
+def effective_rate(manual_rate, po_rate) -> tuple[float, str]:
+	"""``(rate, source)``. A manually entered rate wins over the resolved PO rate.
+
+	A manual rate counts only when it reads as a positive number. Blank, zero,
+	negative and unreadable manual input falls through to ``po_rate``; when that
+	is not positive either the line has no price at all and the source is
+	``RATE_SOURCE_NONE`` with a rate of 0.0 — which ``unpriced_lines`` reports and
+	the caller refuses to post. Nothing here raises.
+	"""
+	manual = _as_float(manual_rate)
+	if manual > 0:
+		return round(manual, 4), RATE_SOURCE_MANUAL
+	po = _as_float(po_rate)
+	if po > 0:
+		return round(po, 4), RATE_SOURCE_PO
+	return 0.0, RATE_SOURCE_NONE
+
+
+def unpriced_lines(rows) -> list[dict]:
+	"""Rows that would enter the Purchase Receipt with no price.
+
+	``rows`` is a list of dicts with at least: idx, item_code, qty, manual_rate,
+	po_rate. Only rows with qty > 0 can reach the receipt (``build_pr_payload``
+	drops the rest), so only those can be unpriced — a zero-qty line with no rate
+	is not stock and not a problem.
+
+	Returns the offending row dicts themselves (idx + item_code preserved) so the
+	caller can name them. An empty list means every receivable line has a price.
+	"""
+	offenders: list[dict] = []
+	for row in rows or []:
+		if _as_float(row.get("qty")) <= 0:
+			continue
+		_rate, source = effective_rate(row.get("manual_rate"), row.get("po_rate"))
+		if source == RATE_SOURCE_NONE:
+			offenders.append(row)
+	return offenders
+
+
+def mismatched_currency_pos(resolved, po_item_rows, pr_currency) -> list[dict]:
+	"""Purchase Orders in another currency that priced a line of this receipt.
+
+	``resolved`` is the build path's per-line result: dicts with at least
+	``item_code``, ``qty`` and ``source`` (see ``effective_rate``). ``po_item_rows``
+	is the ``resolve_po_rate`` input with a ``currency`` on each row (its parent
+	PO's). ``pr_currency`` is the currency the Purchase Receipt is tagged with.
+
+	Only a PO-sourced rate can be mislabelled: a manually typed rate is a number in
+	the receipt's currency by definition, and a zero-qty line never reaches the
+	receipt, so neither is compared. A row whose PO carries no currency is skipped
+	too — it cannot be compared, and it is not the mislabel this reports.
+
+	Returns ``[{"purchase_order", "currency"}, ...]``, one entry per offending PO
+	(deduped) ordered by PO name so the caller's message reads the same every run.
+	An empty list means no rate on this receipt was read off a foreign-currency PO.
+	"""
+	priced_from_po = {
+		row.get("item_code")
+		for row in resolved or []
+		if row.get("source") == RATE_SOURCE_PO and _as_float(row.get("qty")) > 0
+	}
+	if not priced_from_po:
+		return []
+	mismatched: dict[str, str] = {}
+	for row in po_item_rows or []:
+		if row.get("item_code") not in priced_from_po:
+			continue
+		currency = row.get("currency")
+		if not currency or currency == pr_currency:
+			continue
+		mismatched[row.get("purchase_order")] = currency
+	return [
+		{"purchase_order": po, "currency": currency}
+		for po, currency in sorted(mismatched.items(), key=lambda pair: str(pair[0]))
+	]
 
 
 def build_pr_line(*, item_code, qty, rate, warehouse, purchase_order, purchase_order_item, batch_no) -> dict:

@@ -27,6 +27,7 @@ const tabs = [
 			{ name: "imports-freight", path: "/imports/freight", label: t("Freight Bookings"), icon: "ti-truck-delivery" },
 			{ name: "imports-expenses", path: "/imports/expenses", label: t("Import Expenses"), icon: "ti-receipt" },
 			{ name: "imports-bills", path: "/imports/bills", label: t("Landed Cost Bills"), icon: "ti-file-dollar" },
+			{ name: "imports-unbilled-receipts", path: "/imports/unbilled-receipts", label: t("Unbilled Receipts"), icon: "ti-receipt-off" },
 			{ name: "imports-transporters", path: "/imports/transporters", label: t("Transport operations desk"), icon: "ti-steering-wheel" },
 		],
 	},
