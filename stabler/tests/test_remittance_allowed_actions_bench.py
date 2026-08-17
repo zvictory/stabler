@@ -85,7 +85,7 @@ class RemittanceAllowedActionsBenchTest(FrappeTestCase):
 		self.payable = self._transfer()
 		self.locked = self._transfer(verification_status="Locked", code_locked=1)
 		self.requested = self._transfer(refund_status="Requested")
-		self.unposted = self._transfer(accounting_status="Unposted")
+		self.unposted = self._corrupted_unposted()
 
 		for email, role in _USERS.items():
 			self._user(email, role)
@@ -122,6 +122,24 @@ class RemittanceAllowedActionsBenchTest(FrappeTestCase):
 		)
 		doc.insert(ignore_permissions=True)
 		return doc.name
+
+	def _corrupted_unposted(self) -> str:
+		"""A Registered row whose obligation was never posted — built AROUND the controller.
+
+		`RemittanceTransfer.validate` refuses this combination outright
+		(`_assert_registered_is_posted`), which is why `_transfer(accounting_status=...)`
+		cannot produce it: the first defence makes the fixture unbuildable. That is the
+		correct behaviour and it is exactly why the queue filter is worth testing — a
+		filter is defence in depth, and defence in depth is only meaningful against the
+		state the earlier defence prevents. So the row is inserted valid and then moved
+		with `db.set_value`, which runs no validation, the same way a bad migration or a
+		hand-edited row would produce it in the field.
+		"""
+		name = self._transfer()
+		frappe.db.set_value(
+			"Remittance Transfer", name, "accounting_status", "Unposted", update_modified=False
+		)
+		return name
 
 	def _user(self, email: str, role: str) -> None:
 		if not frappe.db.exists("User", email):
