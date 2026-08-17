@@ -8,7 +8,7 @@ import frappe
 from frappe import _
 from frappe.utils import cint, flt, getdate, today
 
-from stabler.api import _import_exposure
+from stabler.api import _import_exposure, _unbilled_receipts
 from stabler.api._common import (
 	_assert_can_read,
 	_assert_can_write,
@@ -2399,6 +2399,249 @@ def create_purchase_invoice_from_pr(name: str):
 		"grand_total": flt(doc.grand_total),
 		"supplier": doc.supplier,
 		"purchase_receipt": name,
+	}
+
+
+# ──────────────────────────────────────────────────────────────────────────── #
+# GR/IR — goods received, supplier invoice missing (ADR-107).
+# ──────────────────────────────────────────────────────────────────────────── #
+#: The Company field holding the SRBNB account (ERPNext v15 Company doctype,
+#: Link -> Account, label "Stock Received But Not Billed"). It is the same field
+#: ERPNext's own Purchase Receipt GL posting reads, which is why the report
+#: reconciles against it and not against some account picked by name.
+_SRBNB_COMPANY_FIELD = "stock_received_but_not_billed"
+
+
+def _srbnb_account(company: str) -> str | None:
+	"""The company's Stock Received But Not Billed account, or None if unset.
+
+	Primary source is the Company field. A company set up before that default
+	was filled can still be resolved from its chart of accounts by
+	``account_type``, which ERPNext stamps on the account itself — but only when
+	the match is unambiguous, because reconciling against the wrong account is
+	worse than reporting no reconciliation at all.
+	"""
+	account = None
+	if frappe.db.has_column("Company", _SRBNB_COMPANY_FIELD):
+		account = frappe.get_cached_value("Company", company, _SRBNB_COMPANY_FIELD)
+	if account:
+		return account
+	matches = frappe.get_all(
+		"Account",
+		filters={
+			"company": company,
+			"account_type": "Stock Received But Not Billed",
+			"is_group": 0,
+			"disabled": 0,
+		},
+		pluck="name",
+		limit=2,
+	)
+	return matches[0] if len(matches) == 1 else None
+
+
+def _srbnb_reconciliation(company: str, as_of, total_unbilled: float) -> dict:
+	"""Reconcile this report against the SRBNB ledger — the point of the report.
+
+	Sign convention: SRBNB is a liability. A Purchase Receipt credits it, the
+	Purchase Invoice debits it. ``gl_balance`` is therefore normalised
+	CREDIT-POSITIVE (``SUM(credit - debit)``, cancelled entries excluded) so it
+	is directly comparable to ``total_unbilled``, which is also positive. A clean
+	company reads ``gl_balance ~= total_unbilled`` and ``difference ~= 0``.
+
+	``difference = gl_balance - total_unbilled`` is always company-wide: it
+	ignores the endpoint's ``supplier`` / ``bucket`` filters, because the
+	identity it tests is a company-level one and comparing a filtered subset
+	against the whole ledger would manufacture a break out of a UI filter.
+
+	What a non-zero difference accuses:
+
+	* **positive** (ledger above the report) — something credited SRBNB outside
+	  the receipt chain. A Journal Entry posted straight to the account (ADR-107
+	  forbids it), or a Purchase Invoice submitted with ``update_stock = 1``,
+	  which posts its own SRBNB leg while no receipt carries the ``per_billed``
+	  that would clear it.
+	* **negative** (report above the ledger) — the report over-states: a return
+	  receipt debited SRBNB and returns are out of this report's scope, or a
+	  receipt was billed by an invoice that never wrote ``per_billed`` back, or
+	  taxes make the proportional ``per_billed`` split a poor proxy for the real
+	  SRBNB leg on that receipt.
+
+	Also: ``per_billed`` is current state, not history. A back-dated ``as_of``
+	cuts off later receipts and ages the rest correctly, but bills raised since
+	then are already reflected — so a historical run under-states the unbilled
+	balance of that date and ``difference`` moves with it. Period snapshots would
+	be the fix; this app has none.
+
+	An unconfigured account (or a caller without GL Entry read access) returns
+	``account: None`` with zeros rather than throwing: the receipt list is still
+	the useful half of the report. ``difference`` is only meaningful when
+	``account`` is set.
+	"""
+	if not frappe.has_permission("GL Entry", "read"):
+		return {"account": None, "gl_balance": 0.0, "difference": 0.0}
+	account = _srbnb_account(company)
+	if not account:
+		return {"account": None, "gl_balance": 0.0, "difference": 0.0}
+	balance = flt(
+		frappe.db.sql(
+			"""
+			SELECT COALESCE(SUM(credit - debit), 0)
+			FROM `tabGL Entry`
+			WHERE company = %(company)s
+			  AND account = %(account)s
+			  AND is_cancelled = 0
+			  AND posting_date <= %(as_of)s
+			""",
+			{"company": company, "account": account, "as_of": as_of},
+		)[0][0]
+	)
+	return {
+		"account": account,
+		"gl_balance": round(balance, 2),
+		"difference": round(balance - flt(total_unbilled), 2),
+	}
+
+
+def _unbilled_scan(where: str, params: dict) -> list[dict]:
+	"""Money-only pass over the whole filtered set, for totals that are not per-page.
+
+	Three numeric columns per row, so the aggregate stays correct across every
+	page while the page query itself stays bounded. The arithmetic deliberately
+	happens in ``_unbilled_receipts`` rather than in SQL: the ``per_billed``
+	clamps (blank, over-100, negative) are the part that must be unit-tested, and
+	expressing them twice — once in a SUM, once in Python for the rows — is how
+	the two numbers drift apart.
+	"""
+	return _unbilled_receipts.annotate_rows(
+		frappe.db.sql(
+			f"""
+			SELECT pr.base_grand_total, pr.per_billed,
+			       DATEDIFF(%(as_of)s, pr.posting_date) AS age_days
+			FROM `tabPurchase Receipt` pr
+			WHERE {where}
+			""",
+			params,
+			as_dict=True,
+		)
+	)
+
+
+@frappe.whitelist()
+def unbilled_receipts(
+	company: str,
+	supplier: str | None = None,
+	as_of: str | None = None,
+	bucket: str | None = None,
+	limit_start: int = 0,
+	limit_page_length: int = 50,
+) -> dict:
+	"""Age the goods this company received and never billed, and reconcile to SRBNB.
+
+	Submitted Purchase Receipts (``docstatus = 1``) posted on or before ``as_of``
+	that are not fully billed, aged into 0-30 / 31-60 / 61-90 / 90+ days and
+	valued at what is still unbilled. Each row can be turned into a draft
+	Purchase Invoice with ``create_purchase_invoice_from_pr``.
+
+	Scope notes, all of them deliberate:
+
+	* ``COALESCE(per_billed, 0) < 100`` — a NULL ``per_billed`` makes the plain
+	  comparison NULL, i.e. false, which would drop the never-touched receipts:
+	  the most exposed rows in the report.
+	* Return receipts (``is_return``) are excluded when the column exists on this
+	  site; a credit note is not unbilled exposure. They still move the SRBNB
+	  ledger, so they are one of the things ``srbnb.difference`` can accuse.
+	* ``posting_date <= as_of`` matches the cut-off used for the GL balance, so
+	  the two halves of the reconciliation cover the same period.
+	* ``status`` is deliberately NOT filtered, unlike ``list_purchase_receipts``.
+	  A receipt manually set to *Closed*, or one carrying *Return Issued*, still
+	  holds its SRBNB credit in the ledger; hiding it from the report would only
+	  move that balance into ``srbnb.difference`` and blame the ledger for it.
+	* Imports receipts arrive one per truck, so a single shipment shows as
+	  several rows — that is the physical truth, not duplication.
+
+	``totals`` and every bucket are COMPANY currency (``base_grand_total``);
+	transaction currencies cannot be summed. Per-row ``grand_total`` stays in the
+	row's own ``currency`` for display, alongside its ``base_grand_total``.
+
+	``supplier`` and ``bucket`` are optional filters and narrow ``rows`` and
+	``totals`` together; ``srbnb`` stays company-wide (see
+	``_srbnb_reconciliation``). Rows are oldest-first — most at risk first.
+	"""
+	_require_company(company)
+	_assert_company_scope(company)  # tenant isolation: reject a foreign company arg
+	if not frappe.has_permission("Purchase Receipt", "read"):
+		frappe.throw(_("Not permitted to read Purchase Receipt."), frappe.PermissionError)
+	as_of = getdate(as_of or today())
+	start = max(cint(limit_start), 0)
+	page_length = min(max(cint(limit_page_length) or 50, 1), 200)
+
+	base_conds = [
+		"pr.company = %(company)s",
+		"pr.docstatus = 1",
+		"pr.posting_date <= %(as_of)s",
+		"COALESCE(pr.per_billed, 0) < 100",
+	]
+	if frappe.db.has_column("Purchase Receipt", "is_return"):
+		base_conds.append("COALESCE(pr.is_return, 0) = 0")
+	base_params: dict = {"company": company, "as_of": as_of}
+
+	conds = list(base_conds)
+	params = dict(base_params)
+	if supplier:
+		conds.append("pr.supplier = %(supplier)s")
+		params["supplier"] = supplier
+	if bucket:
+		if bucket not in _unbilled_receipts.BUCKETS:
+			frappe.throw(_("Unknown bucket: {0}").format(bucket), frappe.ValidationError)
+		age_min, age_max = _unbilled_receipts.BUCKET_BOUNDS[bucket]
+		if age_min is not None:
+			conds.append("DATEDIFF(%(as_of)s, pr.posting_date) >= %(age_min)s")
+			params["age_min"] = age_min
+		if age_max is not None:
+			conds.append("DATEDIFF(%(as_of)s, pr.posting_date) <= %(age_max)s")
+			params["age_max"] = age_max
+	where = " AND ".join(conds)
+
+	scanned = _unbilled_scan(where, params)
+	totals = _unbilled_receipts.summarise(scanned)
+
+	page_params = {**params, "limit": page_length, "start": start}
+	rows = _unbilled_receipts.annotate_rows(
+		frappe.db.sql(
+			f"""
+			SELECT pr.name, pr.supplier, pr.supplier_name, pr.posting_date, pr.currency,
+			       pr.grand_total, pr.base_grand_total, pr.per_billed,
+			       DATEDIFF(%(as_of)s, pr.posting_date) AS age_days
+			FROM `tabPurchase Receipt` pr
+			WHERE {where}
+			ORDER BY pr.posting_date ASC, pr.name ASC
+			LIMIT %(limit)s OFFSET %(start)s
+			""",
+			page_params,
+			as_dict=True,
+		)
+	)
+	for row in rows:
+		row["grand_total"] = flt(row.get("grand_total"))
+		row["base_grand_total"] = flt(row.get("base_grand_total"))
+		row["per_billed"] = flt(row.get("per_billed"))
+
+	# The reconciliation is a company-level identity, so it is measured against
+	# the unfiltered total even when the screen is showing one supplier or bucket.
+	company_total = totals["total_unbilled"]
+	if supplier or bucket:
+		base_where = " AND ".join(base_conds)
+		company_totals = _unbilled_receipts.summarise(_unbilled_scan(base_where, base_params))
+		company_total = company_totals["total_unbilled"]
+
+	return {
+		"rows": rows,
+		"totals": totals,
+		"srbnb": _srbnb_reconciliation(company, as_of, company_total),
+		"as_of": str(as_of),
+		"company_currency": frappe.get_cached_value("Company", company, "default_currency") or "",
+		"has_more": start + len(rows) < len(scanned),
 	}
 
 

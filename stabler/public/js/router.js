@@ -75,6 +75,7 @@ import PaymentEntryForm from "./pages/money/PaymentEntryForm.vue";
 import QuotationForm from "./pages/sales/QuotationForm.vue";
 import PurchaseReceipts from "./pages/purchasing/PurchaseReceipts.vue";
 import PurchasingAging from "./pages/purchasing/Aging.vue";
+import UnbilledReceipts from "./pages/purchasing/UnbilledReceipts.vue";
 import InventoryHome from "./pages/inventory/InventoryHome.vue";
 import Items from "./pages/inventory/Items.vue";
 import ItemGroups from "./pages/inventory/ItemGroups.vue";
@@ -244,6 +245,10 @@ const routes = [
 			{ path: "expenses", name: "imports-expenses", component: ImportExpenses, meta: { title: t("Import Expenses"), module: "imports" } },
 			{ path: "landed-cost/:grn", name: "imports-landed-cost", component: LandedCostReview, meta: { title: t("Landed Cost Review"), module: "imports" } },
 			{ path: "bills", name: "imports-bills", component: LandedCostBills, meta: { title: t("Landed Cost Bills"), module: "imports" } },
+			// Same component as purchasing-unbilled-receipts below: imports tenants
+			// reach it under /imports so the module guard keeps gating correctly
+			// (LandedCostReview is the existing precedent for this).
+			{ path: "unbilled-receipts", name: "imports-unbilled-receipts", component: UnbilledReceipts, meta: { title: t("Unbilled Receipts"), module: "imports" } },
 			{ path: "transporters", name: "imports-transporters", component: TransporterCenter, meta: { title: t("Transport operations desk"), module: "imports" } },
 		],
 	},
@@ -356,6 +361,7 @@ const routes = [
 			{ path: "invoices/:name/print", name: "purchasing-invoice-print", component: PurchaseInvoicePrint, meta: { title: t("Invoice") } },
 			{ path: "invoices/:name", name: "purchasing-invoice", component: PurchaseInvoiceForm, meta: { title: t("Purchase Invoice") } },
 			{ path: "aging", name: "purchasing-aging", component: PurchasingAging, meta: { title: t("AP Aging") } },
+			{ path: "unbilled-receipts", name: "purchasing-unbilled-receipts", component: UnbilledReceipts, meta: { title: t("Unbilled Receipts"), module: "purchasing" } },
 			{ path: "landed-cost-review/:document_type/:document_name", name: "purchasing-landed-cost-review", component: LandedCostReview, meta: { title: t("Landed Cost Review") } },
 		],
 	},
