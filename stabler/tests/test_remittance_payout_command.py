@@ -635,6 +635,61 @@ class PayoutQueueTest(unittest.TestCase):
 		self.assertNotIn("pickup_code", row)
 
 
+class QueueAllowedActionsTest(unittest.TestCase):
+	"""The queue answers with the caller's actions, not with a shape the screen filters.
+
+	`test_remittance_actions` proves the table; this proves the WIRING — that
+	`payout_queue` actually consults it, with the caller's real role and the
+	columns the table needs. A perfect table nothing calls is the state this
+	slice was written to leave behind, not to reach.
+	"""
+
+	def setUp(self):
+		self.db = _FakeDB()
+
+	def offered(self, roles):
+		api, _remittance = _load(self.db, roles=roles)
+		return api.payout_queue("Mikas")[0]["allowed_actions"]
+
+	def test_a_cashier_is_offered_the_payout(self):
+		self.db.add_transfer()
+
+		self.assertIn("payout", self.offered(("Remittance Cashier",)))
+
+	def test_a_cashier_is_never_offered_approve_reject_or_unlock(self):
+		"""The acceptance sentence of stabler-qzr9.10, at the endpoint."""
+		self.db.add_transfer(refund_status="Requested", code_locked=1)
+
+		offered = self.offered(("Remittance Cashier",))
+
+		self.assertNotIn("approve_refund", offered)
+		self.assertNotIn("reject_refund", offered)
+		self.assertNotIn("unlock_pickup_code", offered)
+
+	def test_a_finance_manager_is_offered_them_on_the_same_row(self):
+		"""The mirror. Without it the assertion above passes on an empty list."""
+		self.db.add_transfer(refund_status="Requested", code_locked=1)
+
+		offered = self.offered(("Remittance Finance Manager",))
+
+		self.assertIn("approve_refund", offered)
+		self.assertIn("reject_refund", offered)
+		self.assertIn("unlock_pickup_code", offered)
+
+	def test_a_viewer_is_offered_nothing(self):
+		self.db.add_transfer()
+
+		self.assertEqual([], self.offered(("Remittance Viewer",)))
+
+	def test_a_refunded_row_in_the_queue_is_not_offered_the_payout(self):
+		"""The queue's state filter is operational + accounting only, so an
+		approved refund reaches the list. The column that withdraws the action is
+		`refund_status`, and the queue only has it because it selects it."""
+		self.db.add_transfer(refund_status="Approved")
+
+		self.assertNotIn("payout", self.offered(("Remittance Cashier",)))
+
+
 class UnlockTest(unittest.TestCase):
 	def setUp(self):
 		self.db = _FakeDB()
