@@ -121,6 +121,10 @@ const ageClass = (code) => BUCKET_BY_CODE[code]?.text || "";
 // the module guard, so the receipt id only becomes a link when it can be opened.
 const canOpenReceipts = computed(() => session.canAccessModule("purchasing"));
 
+// Same gate, its own name: a row whose bill is already drafted sends the
+// operator to the invoice rather than offering to raise a second one.
+const canOpenInvoices = computed(() => session.canAccessModule("purchasing"));
+
 // The endpoint takes no search argument, so search narrows the page already
 // loaded — same contract as PurchaseReceipts.vue's `filteredRows`.
 const visibleRows = computed(() => {
@@ -508,7 +512,16 @@ watch(activeCompany, reload);
 								</td>
 								<td class="text-end font-monospace fw-semibold">{{ money(r.unbilled_amount) }}</td>
 								<td class="text-end">
+									<router-link
+										v-if="r.draft_invoice && canOpenInvoices"
+										:to="{ path: `/purchasing/invoices/${r.draft_invoice}` }"
+										class="btn btn-sm btn-ghost-secondary text-nowrap"
+									>
+										<i class="ti ti-file-text me-1"></i>{{ t("Open draft {name}", { name: r.draft_invoice }) }}
+									</router-link>
+									<span v-else-if="r.draft_invoice" class="small text-secondary font-monospace">{{ r.draft_invoice }}</span>
 									<button
+										v-else
 										type="button"
 										class="btn btn-sm btn-outline-secondary text-nowrap"
 										:disabled="Boolean(creating)"

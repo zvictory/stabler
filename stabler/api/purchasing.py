@@ -2562,12 +2562,58 @@ def cancel_purchase_receipt(name: str):
 	return {"name": doc.name, "docstatus": doc.docstatus, "status": doc.status}
 
 
+def _draft_invoices_by_receipt(receipts) -> dict:
+	"""Map each receipt to the DRAFT Purchase Invoice already billing it.
+
+	``pi.docstatus = 0``, deliberately not ``< 2``. A *submitted* sibling means
+	the receipt is PARTLY billed, which is legitimate and is exactly the
+	population the unbilled report chases; treating it as a blocker would strand
+	the unbilled remainder with no path to a bill outside the Desk. Only a draft
+	is a reason to refuse a second one, because a draft moves no ``per_billed``
+	— ERPNext writes that on submit — so nothing else in this app can see it.
+
+	An empty result is NOT proof that no invoice exists for the receipt. The
+	predicate reads ``Purchase Invoice Item.purchase_receipt``, which only gets
+	written when the bill was raised against a named receipt; an invoice built
+	without naming one carries no such row link and is invisible here.
+
+	One query for the whole page. An empty ``receipts`` returns early: ``IN ()``
+	is a syntax error, not an empty match.
+	"""
+	names = [name for name in (receipts or []) if name]
+	if not names:
+		return {}
+	rows = frappe.db.sql(
+		"""
+		SELECT pii.purchase_receipt AS receipt, pi.name AS invoice
+		FROM `tabPurchase Invoice Item` pii
+		JOIN `tabPurchase Invoice` pi ON pi.name = pii.parent
+		WHERE pii.purchase_receipt IN %(receipts)s AND pi.docstatus = 0
+		ORDER BY pi.name ASC
+		""",
+		{"receipts": names},
+		as_dict=True,
+	)
+	found: dict = {}
+	for row in rows:
+		# A receipt can carry several draft rows; name the first by document id
+		# so the same row names the same draft on every reload.
+		found.setdefault(row["receipt"], row["invoice"])
+	return found
+
+
 @frappe.whitelist()
 def create_purchase_invoice_from_pr(name: str):
 	"""Create a draft Purchase Invoice from a submitted Purchase Receipt.
 
 	The receipt already moved stock, so the bill must NOT move it again:
 	update_stock is forced to 0 (ERPNext also guards this server-side).
+
+	Refuses a second draft for a receipt that already has one. A draft does not
+	move ``per_billed``, so without this the receipt keeps coming back to the
+	unbilled report with its button intact and a second operator — or a second
+	click — piles N drafts onto one receipt. A *submitted* sibling is not
+	refused: that is partial billing, and the remainder still needs a bill.
 	"""
 	if not name or not frappe.db.exists("Purchase Receipt", name):
 		frappe.throw(f"Unknown Purchase Receipt: {name}")
@@ -2575,6 +2621,13 @@ def create_purchase_invoice_from_pr(name: str):
 	pr = frappe.get_doc("Purchase Receipt", name)
 	if pr.docstatus != 1:
 		frappe.throw("Only submitted purchase receipts can be billed.")
+	outstanding = _draft_invoices_by_receipt([name]).get(name)
+	if outstanding:
+		frappe.throw(
+			_(
+				"Purchase Receipt {0} already has a draft invoice: {1}. Submit or delete that draft instead of raising a second bill for the same goods."
+			).format(name, outstanding)
+		)
 	from erpnext.stock.doctype.purchase_receipt.purchase_receipt import (
 		make_purchase_invoice as _make_pi,
 	)
@@ -2773,6 +2826,11 @@ def unbilled_receipts(
 	  move that balance into ``srbnb.difference`` and blame the ledger for it.
 	* Imports receipts arrive one per truck, so a single shipment shows as
 	  several rows — that is the physical truth, not duplication.
+	* Each row carries ``draft_invoice``: the draft Purchase Invoice already
+	  billing it, or ``None``. A draft moves no ``per_billed`` — ERPNext writes
+	  that on submit — so the row would otherwise keep offering to bill goods it
+	  has already billed once. Empty is NOT proof that no invoice exists; see
+	  ``_draft_invoices_by_receipt`` for what the predicate can and cannot see.
 
 	``totals`` and every bucket are COMPANY currency (``base_grand_total``);
 	transaction currencies cannot be summed. Per-row ``grand_total`` stays in the
@@ -2843,6 +2901,13 @@ def unbilled_receipts(
 		row["grand_total"] = flt(row.get("grand_total"))
 		row["base_grand_total"] = flt(row.get("base_grand_total"))
 		row["per_billed"] = flt(row.get("per_billed"))
+
+	# One batched lookup for the page, after the page query. A draft bill leaves
+	# `per_billed` at 0, so without this the row cannot tell that it has already
+	# been billed once and offers to bill it again.
+	drafts = _draft_invoices_by_receipt([row["name"] for row in rows])
+	for row in rows:
+		row["draft_invoice"] = drafts.get(row["name"])
 
 	# The reconciliation is a company-level identity, so it is measured against
 	# the unfiltered total even when the screen is showing one supplier or bucket.

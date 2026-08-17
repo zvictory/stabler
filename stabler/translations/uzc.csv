@@ -81,7 +81,9 @@ I have written it down,Ёзиб олдим
 "Legacy posts journal entries from the New Transfer form it always has. V1 registers a Remittance Transfer and is the only engine where the payout, refund, operations and reconciliation screens exist.","Legacy ўзининг доимий ""Янги ўтказма"" формасидан журнал ёзувларини киритади. V1 эса Remittance Transfer ёзувини рўйхатга олади ва тўлов, қайтариш, операциялар ва солиштириш экранлари фақат шу механизмда мавжуд."
 Legacy — journal entry screens,Legacy — журнал ёзуви экранлари
 Not ready — this desk cannot take or hand over a transfer.,"Тайёр эмас — бу касса ўтказмани на қабул қила олади, на бера олади."
+Open draft {name},{name} қораламасини очиш
 Pickup code,Олиш коди
+Purchase Receipt {0} already has a draft invoice: {1}. Submit or delete that draft instead of raising a second bill for the same goods.,{0} товар қабул қилиш ҳужжатида аллақачон қоралама ҳисоб-фактура бор: {1}. Худди шу мол учун иккинчи ҳисоб-фактура яратиш ўрнига ўша қораламани тасдиқланг ёки ўчиринг.
 Quote updated — switching how the fee is charged recalculates the amounts.,Ҳисоб-китоб янгиланди — комиссияни ҳисоблаш усулини ўзгартириш суммаларни қайта ҳисоблайди.
 Remittance engine,Ўтказма механизми
 Same as your last transfer,Охирги ўтказмангиздаги каби

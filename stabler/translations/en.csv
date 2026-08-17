@@ -285,6 +285,7 @@ Only a manager can unlock a pickup code.,Only a manager can unlock a pickup code
 Only the remittance desk can pay out a transfer.,Only the remittance desk can pay out a transfer.
 Only the remittance desk can request or complete a refund.,Only the remittance desk can request or complete a refund.
 Open amount,Open amount
+Open draft {name},Open draft {name}
 Open full detail,Open full detail
 Open in-transit liability,Open in-transit liability
 Open obligation by branch and currency,Open obligation by branch and currency
@@ -324,6 +325,7 @@ Posting this reverses the obligation and takes {amount} out of the origin desk. 
 Preview — read only.,Preview — read only.
 Principal,Principal
 "Principal {0} plus commission {1} must equal {2}, not {3}.","Principal {0} plus commission {1} must equal {2}, not {3}."
+Purchase Receipt {0} already has a draft invoice: {1}. Submit or delete that draft instead of raising a second bill for the same goods.,Purchase Receipt {0} already has a draft invoice: {1}. Submit or delete that draft instead of raising a second bill for the same goods.
 Quote,Quote
 Quote updated — switching how the fee is charged recalculates the amounts.,Quote updated — switching how the fee is charged recalculates the amounts.
 Rate quoted to the sender,Rate quoted to the sender

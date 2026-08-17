@@ -81,7 +81,9 @@ I have written it down,Yozib oldim
 "Legacy posts journal entries from the New Transfer form it always has. V1 registers a Remittance Transfer and is the only engine where the payout, refund, operations and reconciliation screens exist.","Legacy o'zining doimiy ""Yangi o'tkazma"" formasidan jurnal yozuvlarini kiritadi. V1 esa Remittance Transfer yozuvini ro'yxatga oladi va to'lov, qaytarish, operatsiyalar va solishtirish ekranlari faqat shu mexanizmda mavjud."
 Legacy — journal entry screens,Legacy — jurnal yozuvi ekranlari
 Not ready — this desk cannot take or hand over a transfer.,"Tayyor emas — bu kassa o'tkazmani na qabul qila oladi, na bera oladi."
+Open draft {name},{name} qoralamasini ochish
 Pickup code,Olish kodi
+Purchase Receipt {0} already has a draft invoice: {1}. Submit or delete that draft instead of raising a second bill for the same goods.,{0} tovar qabul qilish hujjatida allaqachon qoralama hisob-faktura bor: {1}. Xuddi shu mol uchun ikkinchi hisob-faktura yaratish o'rniga o'sha qoralamani tasdiqlang yoki o'chiring.
 Quote updated — switching how the fee is charged recalculates the amounts.,Hisob-kitob yangilandi — komissiyani hisoblash usulini o'zgartirish summalarni qayta hisoblaydi.
 Remittance engine,O'tkazma mexanizmi
 Same as your last transfer,Oxirgi o'tkazmangizdagi kabi

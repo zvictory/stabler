@@ -82,7 +82,9 @@ I have written it down,Код записан
 "Legacy posts journal entries from the New Transfer form it always has. V1 registers a Remittance Transfer and is the only engine where the payout, refund, operations and reconciliation screens exist.","Legacy проводит журнальные записи из той же формы «Новый перевод». V1 регистрирует Remittance Transfer и является единственным движком, где существуют экраны выплаты, возврата, операций и сверки."
 Legacy — journal entry screens,Legacy — экраны журнальных проводок
 Not ready — this desk cannot take or hand over a transfer.,"Не готова — эта касса не может ни принять, ни выдать перевод."
+Open draft {name},Открыть черновик {name}
 Pickup code,Код получения
+Purchase Receipt {0} already has a draft invoice: {1}. Submit or delete that draft instead of raising a second bill for the same goods.,У приёмки товара {0} уже есть черновик счёта: {1}. Проведите или удалите этот черновик вместо создания второго счёта за тот же товар.
 Quote updated — switching how the fee is charged recalculates the amounts.,Расчёт обновлён — смена способа удержания комиссии пересчитывает суммы.
 Remittance engine,Движок переводов
 Same as your last transfer,Как в прошлом переводе
