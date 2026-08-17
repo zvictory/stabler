@@ -2806,6 +2806,7 @@ Minutes worked before overtime begins.,
 Missing,Отсутствует
 Missing document type or name,
 Missing Entry,
+Missing exchange rate,Курс валюты отсутствует
 Missing fields,Недостающие поля
 Missing file,Отсутствует файл
 Missing required,Не хватает обязательного
@@ -3115,6 +3116,7 @@ No exchange rate for this date — enter manually.,Нет курса на эту
 No exchange rate found for this invoice date — landed cost cannot be calculated. Enter a rate above or add the CBU rate.,Курс на дату этого инвойса не найден — себестоимость рассчитать невозможно. Укажите курс выше или добавьте курс ЦБ.
 No exchange rate found for {0} to {1} on {2},
 No exchange rate found for {0} to {1} on {2}: {3},
+"No exchange rate is published for {currencies} on {date}. Revaluing these balances would value them at zero and book their whole amount as an FX loss. Create a Currency Exchange record ({currencies} → {base}) dated {date} or earlier, then reload this document.","Курс {currencies} на {date} не опубликован. Переоценка этих остатков оценит их в ноль и спишет всю сумму как курсовой убыток. Создайте запись Currency Exchange ({currencies} → {base}) с датой {date} или ранее, затем перезагрузите документ."
 No exchange rates yet. Click Refresh now to fetch today's rates from cbu.uz.,Курсы валют пока отсутствуют. Нажмите «Обновить сейчас»
 No expenses recorded for this invoice yet.,По этому инвойсу расходы ещё не записаны.
 No field users yet,Пользователей полей нет

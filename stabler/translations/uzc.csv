@@ -2801,6 +2801,7 @@ Minutes worked before overtime begins.,
 Missing,Йўқ
 Missing document type or name,
 Missing Entry,
+Missing exchange rate,Валюта курси топилмади
 Missing fields,Етишмаётган майдонлар
 Missing file,Файл етишмайди
 Missing required,Májbúriy hújjet jetispeydi
@@ -3110,6 +3111,7 @@ No exchange rate for this date — enter manually.,Ушбу сана учун к
 No exchange rate found for this invoice date — landed cost cannot be calculated. Enter a rate above or add the CBU rate.,Ушбу ҳисоб-фактура санаси учун курс топилмади — якуний таннархни ҳисоблаб бўлмайди. Юқорида курс киритинг ёки МБ курсини қўшинг.
 No exchange rate found for {0} to {1} on {2},
 No exchange rate found for {0} to {1} on {2}: {3},
+"No exchange rate is published for {currencies} on {date}. Revaluing these balances would value them at zero and book their whole amount as an FX loss. Create a Currency Exchange record ({currencies} → {base}) dated {date} or earlier, then reload this document.",{currencies} учун {date} санасига курс эълон қилинмаган. Бу қолдиқларни қайта баҳолаш уларни нолга тенглаштиради ва бутун суммани курс зарари сифатида ёзади. {date} ёки ундан олдинги санага Currency Exchange ёзувини ({currencies} → {base}) яратинг ва ҳужжатни қайта юкланг.
 No exchange rates yet. Click Refresh now to fetch today's rates from cbu.uz.,Ҳалиғача алмаштириш курслари йўқ. cbu.uz дан бугунги курслари олиш учун Янгилаш босинг.
 No expenses recorded for this invoice yet.,Бу инвойс бўйича ҳали харажат қайд этилмаган.
 No field users yet,Ҳалиғача сахра фойдаланувчилари йўқ

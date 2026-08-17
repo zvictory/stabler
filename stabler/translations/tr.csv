@@ -2799,6 +2799,7 @@ Minutes worked before overtime begins.,
 Missing,Eksik
 Missing document type or name,
 Missing Entry,
+Missing exchange rate,Kur kaydı eksik
 Missing fields,Eksik alanlar
 Missing file,Eksik dosya
 Missing required,Zorunlu eksik
@@ -3108,6 +3109,7 @@ No exchange rate for this date — enter manually.,Bu tarih için kur yok — ma
 No exchange rate found for this invoice date — landed cost cannot be calculated. Enter a rate above or add the CBU rate.,Bu fatura tarihi için kur bulunamadı — landed cost hesaplanamıyor. Yukarıya bir kur girin veya CBU kurunu ekleyin.
 No exchange rate found for {0} to {1} on {2},
 No exchange rate found for {0} to {1} on {2}: {3},
+"No exchange rate is published for {currencies} on {date}. Revaluing these balances would value them at zero and book their whole amount as an FX loss. Create a Currency Exchange record ({currencies} → {base}) dated {date} or earlier, then reload this document.",{currencies} için {date} tarihli kur yayınlanmamış. Bu bakiyeleri yeniden değerlemek onları sıfır olarak değerler ve tutarın tamamını kur zararı yazar. {date} veya öncesi tarihli bir Currency Exchange kaydı ({currencies} → {base}) oluşturup belgeyi yeniden yükleyin.
 No exchange rates yet. Click Refresh now to fetch today's rates from cbu.uz.,Henüz döviz kuru yok. Bugünün kurlarını cbu.uz'dan çekmek için Yenile'ye tıklayın.
 No expenses recorded for this invoice yet.,Bu fatura için henüz masraf kaydedilmedi.
 No field users yet,Henüz saha kullanıcısı yok
