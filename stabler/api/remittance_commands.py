@@ -9,14 +9,26 @@ cannot serialise or de-duplicate its own callers.
 
 Three things are load-bearing, in this order.
 
-**The lock comes first.** `frappe.db.get_value(..., for_update=True)` is taken
-before the state is re-read and before anything is written, so two cashiers
-pressing Register on the same row cannot both see `Unposted` and both post the
-obligation. The transition and the Journal Entry submit then share one
+**The lock comes first — and the state is read through it.** Both halves are
+load-bearing, because a lock without a locking read only serialises; it does not
+refresh. This bench runs REPEATABLE READ, where `SELECT ... FOR UPDATE` returns
+the latest committed row but leaves the transaction's consistent-read snapshot
+where it was — and by the time a handler runs, the session and permission reads
+have already opened that snapshot. So the loser of a race blocks on the lock,
+acquires it after the winner commits, and a plain `frappe.get_doc` still hands
+back the *pre-race* row. It would then decide on state that no longer exists: two
+cashiers both seeing `Registered`, both handing over the cash. Hence
+`frappe.db.get_value(..., for_update=True)` to take the lock (and to turn a
+missing row into a sentence instead of a traceback), then
+`frappe.get_doc(..., for_update=True)` to read the state that the decision rests
+on. `register_remittance` is the one exception and stays a plain re-read: it is
+re-reading a row its own transaction just inserted, and a transaction always sees
+its own writes. The transition and the Journal Entry submit then share one
 transaction, which is what makes `Registered + Unposted` unreachable rather than
 merely rejected — `RemittanceTransfer._assert_registered_is_posted` rejects the
 pair, this ordering is what stops it ever being written. Precedent:
-`api/sales.py:3264`, `integrations/uzpay/payme.py:150`.
+`api/sales.py:3264`, `integrations/uzpay/payme.py:150`, `api/crm.py:746` for the
+locked read.
 
 **A replayed key never re-executes.** `client_request_id` carries a real unique
 index (`remittance_transfer.json`), so the duplicate-key race is settled by the
@@ -47,8 +59,8 @@ actually grants (see stabler-tvma) and what `api/organization.py` documents. A
 bypass here would silently outlive the missing role model.
 
 **Payout is the mirror, and reuses all of the above.** `payout_transfer` takes the
-same lock before it reads the state it decides on, transitions and posts in the
-same transaction, appends to the same trail and returns the same version token.
+same lock and reads the state it decides on through it, transitions and posts in
+the same transaction, appends to the same trail and returns the same version token.
 Three things are specific to it.
 
 The pickup code is compared against the stored digest in constant time, through
@@ -599,11 +611,16 @@ def payout_transfer(
 
 	# The lock FIRST — before the state, before the code check, before the posting.
 	# It doubles as the existence check: a row nobody can lock is a row that is not
-	# there. Same ordering as `register_remittance`, for the same reason.
+	# there, and it is what turns a missing name into a sentence rather than a
+	# traceback. Same ordering as `register_remittance`, for the same reason.
 	if not frappe.db.get_value(TRANSFER, name, "name", for_update=True):
 		frappe.throw(_("Transfer {0} does not exist.").format(name))
 
-	transfer = frappe.get_doc(TRANSFER, name)
+	# ...and the state is read THROUGH it. Under REPEATABLE READ the lock alone
+	# serialises without refreshing: a plain `get_doc` answers from the snapshot this
+	# request opened before it blocked, so the loser of the race would wake up, see
+	# the pre-race `Registered`, and pay out a second time. See the module docstring.
+	transfer = frappe.get_doc(TRANSFER, name, for_update=True)
 	# Tenant isolation on the row's own company: the caller never names one here.
 	_assert_company_scope(transfer.company)
 	_require_company(transfer.company)
@@ -654,7 +671,9 @@ def unlock_pickup_code(name: str, reason: str | None = None) -> dict:
 	if not frappe.db.get_value(TRANSFER, name, "name", for_update=True):
 		frappe.throw(_("Transfer {0} does not exist.").format(name))
 
-	transfer = frappe.get_doc(TRANSFER, name)
+	# Locked read, for the reason spelled out in `payout_transfer`: two managers on
+	# the same row must not both read `code_locked = 1` out of a stale snapshot.
+	transfer = frappe.get_doc(TRANSFER, name, for_update=True)
 	_assert_company_scope(transfer.company)
 	_require_company(transfer.company)
 

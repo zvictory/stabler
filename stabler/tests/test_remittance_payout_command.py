@@ -31,6 +31,7 @@ from __future__ import annotations
 
 import importlib
 import os
+import re
 import types
 import unittest
 
@@ -223,7 +224,11 @@ def _load(db: _FakeDB, *, roles=("Cashier",)):
 	frappe.UniqueValidationError = type("UniqueValidationError", (Exception,), {})
 	frappe.DuplicateEntryError = frappe.UniqueValidationError
 
-	def _get_doc(source, name=None):
+	def _get_doc(source, name=None, *, for_update=False):
+		# `for_update` is accepted and ignored: an in-memory dict has no snapshot to
+		# be stale against, so whether the read is a locking one is unobservable
+		# here. That is exactly why `PayoutCommandSourceTest` asserts it in the
+		# source instead.
 		if name is not None:
 			# The whole point of the lock: state read for a decision must be locked.
 			db.require_lock(name, "state read")
@@ -300,6 +305,11 @@ def _load(db: _FakeDB, *, roles=("Cashier",)):
 	return importlib.import_module(_MODULE), remittance
 
 
+# Every read of the transfer row by name. The kwarg each one carries is the whole
+# question below, so the pattern deliberately swallows the argument list.
+_STATE_READS = re.compile(r"frappe\.get_doc\(\s*TRANSFER\s*,\s*name[^)]*\)")
+
+
 def _func_body(src: str, name: str) -> str:
 	start = src.index(f"def {name}(")
 	rest = src[start:]
@@ -334,6 +344,45 @@ class PayoutCommandSourceTest(unittest.TestCase):
 
 	def test_unlock_locks_the_row_before_reading_it(self):
 		self.assertLess(self.unlock.index("for_update=True"), self.unlock.index("frappe.get_doc(TRANSFER"))
+
+	def test_the_state_read_goes_through_the_lock(self):
+		"""Ordering is not enough: the state must be read THROUGH the lock.
+
+		This bench runs REPEATABLE READ. `SELECT ... FOR UPDATE` returns the latest
+		committed row, but it does not advance the transaction's consistent-read
+		snapshot — and in a Frappe request that snapshot is already open by the time
+		the handler runs, established by the session and permission reads. So the
+		loser of a payout race blocks on the lock, acquires it after the winner
+		commits, and a plain `frappe.get_doc` still hands back the pre-race row:
+		`Registered`, `code_locked=0`. The replay branch is skipped, `_assert_payable`
+		passes, and the drawer opens a second time. A lock without a locking read
+		only serialises; it does not refresh.
+
+		The fake database these tests run against cannot see any of that — isolation
+		semantics are not something an in-memory dict has — so this is asserted where
+		it is actually visible: in the source. Same bar as
+		`test_imports_api_invariants`.
+		"""
+		for body, where in ((self.body, "payout_transfer"), (self.unlock, "unlock_pickup_code")):
+			with self.subTest(where):
+				reads = _STATE_READS.findall(body)
+				self.assertTrue(reads, f"{where} no longer reads the transfer row by name")
+				for read in reads:
+					self.assertIn(
+						"for_update=True",
+						read,
+						f"{where} decides on a non-locking read: {read}",
+					)
+
+	def test_register_re_reads_its_own_insert(self):
+		"""`register_remittance` is deliberately NOT the same shape, and is correct.
+
+		It re-reads a row its own transaction just inserted, and own-transaction
+		writes are visible to that transaction whatever the snapshot says — so a
+		plain `reload()` there sees the truth and the defect above cannot reach it.
+		Pinned so nobody "fixes" the third call site by symmetry.
+		"""
+		self.assertIn("transfer.reload()", _func_body(self.src, "register_remittance"))
 
 	def test_the_attempt_is_committed_before_the_refusal(self):
 		"""A throw rolls back — an uncommitted lockout never happened."""
