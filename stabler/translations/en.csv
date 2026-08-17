@@ -1,8 +1,11 @@
 #,#
 % of total,% of total
+(defaults to today),(defaults to today)
+(empty),(empty)
 (no name),(no name)
 (none),(none)
 (only for half-rate),(only for half-rate)
+(optional),(optional)
 "(path to the JSON, or the JSON inline).","(path to the JSON, or the JSON inline)."
 +998 XX XXX XX XX,+998 XX XXX XX XX
 ...,...
@@ -12,11 +15,15 @@
 0–30,0–30
 1 line: price below agreed,1 line: price below agreed
 1 USD =,1 USD =
+1 {currency} =,1 {currency} =
+1. Request the refund,1. Request the refund
 1:1 Foreign Postings,1:1 Foreign Postings
 1C ClientBank Exchange format (.txt). Uzbek bank-client export.,1C ClientBank Exchange format (.txt). Uzbek bank-client export.
 1C Sync Log,1C Sync Log
 2 countries met,2 countries met
 2 countries needed,2 countries needed
+2. Decide,2. Decide
+3. Pay the money back,3. Pay the money back
 31–60,31–60
 5 quotes met,5 quotes met
 5 quotes needed,5 quotes needed
@@ -31,6 +38,8 @@
 70% payment status,70% payment status
 70% PE,70% PE
 90+,90+
+<1h,<1h
+A Finance Manager has to add the cash desk accounts to Remittance Settings before a transfer can be registered.,A Finance Manager has to add the cash desk accounts to Remittance Settings before a transfer can be registered.
 A cancelled bill cannot be linked to an import: {0}.,A cancelled bill cannot be linked to an import: {0}.
 A cancelled Commercial Invoice cannot be invoiced.,A cancelled Commercial Invoice cannot be invoiced.
 A category is required.,A category is required.
@@ -38,9 +47,13 @@ A category named {0} already exists.,A category named {0} already exists.
 A certificate number is required.,A certificate number is required.
 A cleared customs declaration is active: its duty and excise replace any ,A cleared customs declaration is active: its duty and excise replace any 
 A cleared customs declaration is active: its duty and excise replace any Uzbekistan Customs Duty cost line in the next voucher (VAT is never capitalized).,A cleared customs declaration is active: its duty and excise replace any Uzbekistan Customs Duty cost line in the next voucher (VAT is never capitalized).
+"A client request id is required, so a retry cannot pay out twice.","A client request id is required, so a retry cannot pay out twice."
+"A client request id is required, so a retry cannot refund twice.","A client request id is required, so a retry cannot refund twice."
+"A client request id is required, so a retry cannot register twice.","A client request id is required, so a retry cannot register twice."
 A company with this name already exists.,A company with this name already exists.
 A container ahead of its invoice is not corrected automatically — fix it on the container.,A container ahead of its invoice is not corrected automatically — fix it on the container.
 A customer cannot be its own parent.,A customer cannot be its own parent.
+"A desk is configured for {desk}, but the receiver obligation account is held in {actual}. A transfer paying out in {desk} would be refused.","A desk is configured for {desk}, but the receiver obligation account is held in {actual}. A transfer paying out in {desk} would be refused."
 A draft Purchase Invoice is created for review — it is not posted to the ledger until Accounts submits it. The customs docs value is excluded.,A draft Purchase Invoice is created for review — it is not posted to the ledger until Accounts submits it. The customs docs value is excluded.
 A few quick questions and you're ready to sell.,A few quick questions and you're ready to sell.
 A GRN checklist is created from a commercial invoice once cargo is ready to receive.,A GRN checklist is created from a commercial invoice once cargo is ready to receive.
@@ -48,11 +61,17 @@ A group title is required.,A group title is required.
 "A hand-entered {0} cost on container {1} is already capitalized by {2}. The bill was linked, but its cost was not added a second time.","A hand-entered {0} cost on container {1} is already capitalized by {2}. The bill was linked, but its cost was not added a second time."
 A kassir with this Telegram User ID already exists.,A kassir with this Telegram User ID already exists.
 "A line on this order is priced by size, so the measurement columns cannot be hidden.","A line on this order is priced by size, so the measurement columns cannot be hidden."
+"A locked code is reopened by a Finance Manager, never by a timer.","A locked code is reopened by a Finance Manager, never by a timer."
 A mapping for employee {0} with device user ID {1} already exists ({2}).,A mapping for employee {0} with device user ID {1} already exists ({2}).
 A new version is available.,A new version is available.
 A password reset email will be sent. The account is disabled until the user sets a password.,A password reset email will be sent. The account is disabled until the user sets a password.
 A Payroll Attendance Summary for employee {0} and period {1} already exists: {2},A Payroll Attendance Summary for employee {0} and period {1} already exists: {2}
+"A pickup expiry policy is not configured yet, so this transfer does not expire.","A pickup expiry policy is not configured yet, so this transfer does not expire."
 A quotation needs at least one line.,A quotation needs at least one line.
+A reason is required to reject a refund.,A reason is required to reject a refund.
+A reason is required to request a refund.,A reason is required to request a refund.
+A refund was requested and needs a manager decision,A refund was requested and needs a manager decision
+A registered transfer cannot be unposted — the obligation must exist ,A registered transfer cannot be unposted — the obligation must exist 
 A rejection reason is required.,A rejection reason is required.
 A selected location does not belong to this customer chain.,A selected location does not belong to this customer chain.
 A status correction reason is required to move {0} back from {1} to {2}.,A status correction reason is required to move {0} back from {1} to {2}.
@@ -62,6 +81,7 @@ A submitted import order can no longer be edited here.,A submitted import order 
 A submitted truck receipt can no longer be edited.,A submitted truck receipt can no longer be edited.
 A supplier is required.,A supplier is required.
 A tender lot must belong to a Parent Tender.,A tender lot must belong to a Parent Tender.
+A transfer id is required.,A transfer id is required.
 A truck number is required.,A truck number is required.
 A valid commercial invoice for this company is required.,A valid commercial invoice for this company is required.
 A valid email is required,A valid email is required
@@ -69,15 +89,427 @@ A valid supplier is required.,A valid supplier is required.
 A valid truck for this company is required.,A valid truck for this company is required.
 A valid veterinary certificate is required to complete this GRN.,A valid veterinary certificate is required to complete this GRN.
 A valid veterinary certificate is required.,A valid veterinary certificate is required.
+A wrong code costs an attempt and eventually locks the transfer.,A wrong code costs an attempt and eventually locks the transfer.
 "A ≤ {0}%, B ≤ {1}%, C rest — by revenue.","A ≤ {0}%, B ≤ {1}%, C rest — by revenue."
 "A ≤ {0}%, B ≤ {1}%, C rest — by spend.","A ≤ {0}%, B ≤ {1}%, C rest — by spend."
 "A ≤ {0}%, B ≤ {1}%, C rest — by {2}. Submitted; returns netted.","A ≤ {0}%, B ≤ {1}%, C rest — by {2}. Submitted; returns netted."
 Abbr,Abbr
 Absent,Absent
+Accounting,Accounting
+Accounting exception,Accounting exception
+Accounting: {status},Accounting: {status}
+Add at least one cash desk before switching {0} to the V1 engine: ,Add at least one cash desk before switching {0} to the V1 engine: 
+Add desk,Add desk
+Age / expiry,Age / expiry
+Aged open obligations,Aged open obligations
+"All time · the same balance as the card above, split by desk","All time · the same balance as the card above, split by desk"
+Amount the sender hands over,Amount the sender hands over
+Amounts are listed per currency and never summed. The currency filter narrows the scorecards only — the queues below always list every currency.,Amounts are listed per currency and never summed. The currency filter narrows the scorecards only — the queues below always list every currency.
+An exchange rate is required to register a transfer.,An exchange rate is required to register a transfer.
+Any currency,Any currency
+Any status,Any status
+Append-only,Append-only
+Applied rate,Applied rate
+Approval note,Approval note
+Approval records the decision only. No cash leaves the drawer until step 3 is posted — do not pay the sender on the strength of this step.,Approval records the decision only. No cash leaves the drawer until step 3 is posted — do not pay the sender on the strength of this step.
+Approve refund,Approve refund
+Approve this refund?,Approve this refund?
+Approving does not move money.,Approving does not move money.
+Approving records the decision and nothing else. No cash leaves the drawer at this step — the sender is paid back only when the refund is completed.,Approving records the decision and nothing else. No cash leaves the drawer at this step — the sender is paid back only when the refund is completed.
+As of {stamp},As of {stamp}
+Audit,Audit
+Awaiting approval,Awaiting approval
+Balance · all time · sits against obligations nobody has collected,Balance · all time · sits against obligations nobody has collected
+Bank and cash accounts,Bank and cash accounts
+Base currency: {currency},Base currency: {currency}
+Base rate the register leg posted at,Base rate the register leg posted at
+Cash account,Cash account
+"Cash account {account} on desk {branch} could not be read, so its currency was not verified.","Cash account {account} on desk {branch} could not be read, so its currency was not verified."
+"Cash desk row {row} is incomplete. Desk, currency and cash account are all required.","Cash desk row {row} is incomplete. Desk, currency and cash account are all required."
+Cash desks,Cash desks
+Cash in and cash out cover {period}.,Cash in and cash out cover {period}.
+Cash out of this desk,Cash out of this desk
+Cash returned,Cash returned
+Charged at registration,Charged at registration
+"Check the sender's ID at the counter, then type their name exactly as it was registered. The refund is paid to that person and nobody else.","Check the sender's ID at the counter, then type their name exactly as it was registered. The refund is paid to that person and nobody else."
+Choose a company first.,Choose a company first.
+Choose the destination cash desk.,Choose the destination cash desk.
+Client request id,Client request id
+Client request id {0} already registered transfer {1} with different ,Client request id {0} already registered transfer {1} with different 
+Code given to the receiver,Code given to the receiver
+Code locked,Code locked
+Commission ({pct}%),Commission ({pct}%)
+Commission basis,Commission basis
+Commission earned at payout posts in company currency and is derived from the register entry.,Commission earned at payout posts in company currency and is derived from the register entry.
+Commission earned today,Commission earned today
+"Commission is the only remittance position this page can report. The margin between the rate the cashier applied and the market rate is not recognised per transfer — there is no FX margin account, so it stays inside the base valuation of the cash and obligation balances and appears only at period-end exchange-rate revaluation.","Commission is the only remittance position this page can report. The margin between the rate the cashier applied and the market rate is not recognised per transfer — there is no FX margin account, so it stays inside the base valuation of the cash and obligation balances and appears only at period-end exchange-rate revaluation."
+"Commission percentage and exchange rate are not configured here: the cashier enters both at registration, pre-filled with the last value used.","Commission percentage and exchange rate are not configured here: the cashier enters both at registration, pre-filled with the last value used."
+Commission revenue,Commission revenue
+Commission taken at registration but not yet earned. Must be held in the company's base currency.,Commission taken at registration but not yet earned. Must be held in the company's base currency.
+Company accounts,Company accounts
+Complete refund,Complete refund
+Configuration check,Configuration check
+Confirm the sender,Confirm the sender
+Copied,Copied
+Copy code,Copy code
+Could not copy to the clipboard. Read the code off this screen instead.,Could not copy to the clipboard. Read the code off this screen instead.
+Could not load the payout queue.,Could not load the payout queue.
+Could not read the configured remittance cash desks.,Could not read the configured remittance cash desks.
+Could not read this transfer's attempt allowance.,Could not read this transfer's attempt allowance.
+Could not register the transfer.,Could not register the transfer.
+Could not unlock the pickup code.,Could not unlock the pickup code.
+Count the cash,Count the cash
+Counted,Counted
+Created at,Created at
+Created by,Created by
+Deal 360,Deal 360
+Default quote expiry (hours),Default quote expiry (hours)
+Deferred (not yet earned),Deferred (not yet earned)
+Deferred commission,Deferred commission
+"Deferred, still open","Deferred, still open"
+Delivery Notes,Delivery Notes
+Denominated in the send currency,Denominated in the send currency
+Desk,Desk
+Desk {branch} has more than one {currency} account. One account per desk per currency.,Desk {branch} has more than one {currency} account. One account per desk per currency.
+"Desk {branch}: cash account {account} is held in {actual}, but the row declares {declared}. Cash counted at this desk would post to the wrong drawer, so it would be refused.","Desk {branch}: cash account {account} is held in {actual}, but the row declares {declared}. Cash counted at this desk would post to the wrong drawer, so it would be refused."
+Destination cash desk,Destination cash desk
+Done — clear the code,Done — clear the code
+EUR,EUR
+Earned (paid out in period),Earned (paid out in period)
+Effect,Effect
+Engine,Engine
+Engine: not deployed,Engine: not deployed
+Enter a commission percentage of zero or more.,Enter a commission percentage of zero or more.
+Enter an amount and a commission percentage to see the quote.,Enter an amount and a commission percentage to see the quote.
+Enter the exchange rate you quoted the sender.,Enter the exchange rate you quoted the sender.
+Enter the receiver's name.,Enter the receiver's name.
+Enter the sender's name.,Enter the sender's name.
+Every posted stage names the journal entry that carries it.,Every posted stage names the journal entry that carries it.
+Every registered transfer has been paid out or refunded.,Every registered transfer has been paid out or refunded.
+Every user of {company} moves to the {engine} screens when this is saved.,Every user of {company} moves to the {engine} screens when this is saved.
+Evidence,Evidence
+Exception,Exception
+Exceptions only,Exceptions only
+Exceptions: any,Exceptions: any
+Exclude exceptions,Exclude exceptions
+"Exclusive: you type the principal, and the commission is added on top.","Exclusive: you type the principal, and the commission is added on top."
+Expiration time,Expiration time
+Expired / refund required,Expired / refund required
+Expired at,Expired at
+Expired transfers,Expired transfers
+Expiring within 12 hours,Expiring within 12 hours
+Failed attempts,Failed attempts
+Failed code attempts,Failed code attempts
+Failed to load the operations summary.,Failed to load the operations summary.
+Failed to load the queue.,Failed to load the queue.
+Failed to load the reconciliation.,Failed to load the reconciliation.
+Failed to load the transfer.,Failed to load the transfer.
+Find,Find
+Find a transfer,Find a transfer
+"Flow · {period} · charged, earned only on payout","Flow · {period} · charged, earned only on payout"
+Flow · {period} · moved to income at payout,Flow · {period} · moved to income at payout
+From {date},From {date}
+Frozen at registration,Frozen at registration
+Hand over the cash?,Hand over the cash?
+Hand this code to the sender now. It is shown once and is stored only as a digest — nothing in this system can read it back.,Hand this code to the sender now. It is shown once and is stored only as a digest — nothing in this system can read it back.
+Handed to,Handed to
+"Held in {actual}, but this row declares {declared}.","Held in {actual}, but this row declares {declared}."
+I am paying out at this desk.,I am paying out at this desk.
+I handed the code to the sender or wrote it down.,I handed the code to the sender or wrote it down.
+I have counted {amount} and am handing it to {receiver}.,I have counted {amount} and am handing it to {receiver}.
 I have written it down,I have written it down
+In transit / ready for payout,In transit / ready for payout
+Inclusive commission {0} cannot be the whole amount tendered {1}.,Inclusive commission {0} cannot be the whole amount tendered {1}.
+"Inclusive: you type what the sender puts on the counter, and the commission comes out of it.","Inclusive: you type what the sender puts on the counter, and the commission comes out of it."
+Income accounts,Income accounts
+Invalid pickup code. {0} attempt(s) left before this transfer is locked.,Invalid pickup code. {0} attempt(s) left before this transfer is locked.
+Invalid username or password. Please check your credentials.,Invalid username or password. Please check your credentials.
+"It may have been removed, or the reference in the address is wrong.","It may have been removed, or the reference in the address is wrong."
+Last modified,Last modified
+Leave blank for the default,Leave blank for the default
+"Legacy posts journal entries from the New Transfer form it always has. V1 registers a Remittance Transfer and is the only engine where the payout, refund, operations and reconciliation screens exist.","Legacy posts journal entries from the New Transfer form it always has. V1 registers a Remittance Transfer and is the only engine where the payout, refund, operations and reconciliation screens exist."
+Legacy — journal entry screens,Legacy — journal entry screens
+Liability accounts,Liability accounts
+Locked pickup code,Locked pickup code
+Lockout (minutes),Lockout (minutes)
+Manager Cockpit,Manager Cockpit
+"Marked paid out, but the transfer names no payout journal entry.","Marked paid out, but the transfer names no payout journal entry."
+"Marked posted, but the transfer names no register journal entry.","Marked posted, but the transfer names no register journal entry."
+"Marked refunded, but the transfer names no refund journal entry.","Marked refunded, but the transfer names no refund journal entry."
+Master record and journal entries disagree,Master record and journal entries disagree
+Master ↔ journal entry difference,Master ↔ journal entry difference
+Max pickup code attempts,Max pickup code attempts
+New Direct Sales Invoice,New Direct Sales Invoice
+Next step,Next step
+No cash desk is mapped. A desk cannot take cash in or pay it out until it has an account for that currency.,No cash desk is mapped. A desk cannot take cash in or pay it out until it has an account for that currency.
+No company is selected,No company is selected
+No desk is carrying an open obligation,No desk is carrying an open obligation
+No desk is mapped yet. Add one for every desk and currency that takes or pays out cash.,No desk is mapped yet. Add one for every desk and currency that takes or pays out cash.
+No journal entry is linked to this transfer.,No journal entry is linked to this transfer.
+No note given.,No note given.
+No obligation is still open,No obligation is still open
+No open transfer has passed its pickup deadline.,No open transfer has passed its pickup deadline.
+"No other desk is configured, so there is nowhere to send to yet.","No other desk is configured, so there is nowhere to send to yet."
+No pickup expiry policy is configured yet,No pickup expiry policy is configured yet
+No pickup expiry policy is configured yet.,No pickup expiry policy is configured yet.
+"No pickup expiry policy is configured yet: nothing writes an expiry time onto a transfer, so the quote expiry below is stored but not yet enforced.","No pickup expiry policy is configured yet: nothing writes an expiry time onto a transfer, so the quote expiry below is stored but not yet enforced."
+No reason given.,No reason given.
+No refund has been requested for this transfer.,No refund has been requested for this transfer.
+No refund step is open to you on this transfer,No refund step is open to you on this transfer
+No remittance cash desks are configured,No remittance cash desks are configured
+No stage has been recorded for this transfer.,No stage has been recorded for this transfer.
+"No transfer carries an expiry date, so nothing can be reported as expired. This is not the same as nothing having expired.","No transfer carries an expiry date, so nothing can be reported as expired. This is not the same as nothing having expired."
+No transfer matches that search,No transfer matches that search
+No transfer matches these filters,No transfer matches these filters
+No transfers here,No transfers here
+No transfers registered yet,No transfers registered yet
+None available,None available
+Not Issued,Not Issued
+Not configured yet,Not configured yet
+Not locked,Not locked
+Not yet,Not yet
+Nothing has expired,Nothing has expired
+Nothing in this list matches. Try another search or another queue.,Nothing in this list matches. Try another search or another queue.
+Nothing in this period ({period}),Nothing in this period ({period})
+Nothing in this queue,Nothing in this queue
+Nothing is waiting for payout,Nothing is waiting for payout
+Nothing on this screen moves cash until the final step is posted.,Nothing on this screen moves cash until the final step is posted.
+"Nothing records when a transfer expires, so this queue cannot say whether anything has expired. That is not the same as saying nothing has.","Nothing records when a transfer expires, so this queue cannot say whether anything has expired. That is not the same as saying nothing has."
+Nothing registered is still waiting to be collected.,Nothing registered is still waiting to be collected.
+"Nothing sets an expiry deadline on transfers today, so this queue cannot be evaluated. That is not the same as it being empty.","Nothing sets an expiry deadline on transfers today, so this queue cannot be evaluated. That is not the same as it being empty."
+"Obligation posted, code unlocked, no refund in flight","Obligation posted, code unlocked, no refund in flight"
+"Oldest first · no overdue threshold is defined, so none is applied","Oldest first · no overdue threshold is defined, so none is applied"
+"One cash account per desk per currency, so a desk's book balance equals the count in that drawer.","One cash account per desk per currency, so a desk's book balance equals the count in that drawer."
+Only a Remittance Finance Manager can approve or reject a refund.,Only a Remittance Finance Manager can approve or reject a refund.
+Only a Remittance Finance Manager can set the GL accounts and desk mapping for a company.,Only a Remittance Finance Manager can set the GL accounts and desk mapping for a company.
+Only a manager can unlock a pickup code.,Only a manager can unlock a pickup code.
+Only the remittance desk can pay out a transfer.,Only the remittance desk can pay out a transfer.
+Only the remittance desk can request or complete a refund.,Only the remittance desk can request or complete a refund.
+Open amount,Open amount
+Open full detail,Open full detail
+Open in-transit liability,Open in-transit liability
+Open obligation by branch and currency,Open obligation by branch and currency
+Other accounts,Other accounts
+PI Group Container Status,PI Group Container Status
+PI Progress,PI Progress
+Paid Out,Paid Out
+Paid out,Paid out
+Paid out today,Paid out today
+Paid out {0} {1} to {2},Paid out {0} {1} to {2}
+Paid out.,Paid out.
+Parties,Parties
+Parties and route,Parties and route
+Pay out,Pay out
+Pay out another,Pay out another
+Pay this refund back to the sender?,Pay this refund back to the sender?
+Pay {amount} to {receiver} against {reference}. This posts the payout entry and closes the obligation.,Pay {amount} to {receiver} against {reference}. This posts the payout entry and closes the obligation.
+Payments Register,Payments Register
+Payout,Payout
+Payout cash-out,Payout cash-out
+Payout desk,Payout desk
+Pick a company to configure its remittance accounts.,Pick a company to configure its remittance accounts.
+Pick a company to work its refunds.,Pick a company to work its refunds.
+Pickup,Pickup
 Pickup code,Pickup code
+Pickup code is locked,Pickup code is locked
+Pickup code state,Pickup code state
+Pickup code unlocked by {0}. {1},Pickup code unlocked by {0}. {1}
+Pickup code unlocked.,Pickup code unlocked.
+Pickup deadline falls inside the next 12 hours,Pickup deadline falls inside the next 12 hours
+Pickup deadline has passed and the money is still owed,Pickup deadline has passed and the money is still owed
+Pickup expiry,Pickup expiry
+Pickup expiry policy is not configured yet,Pickup expiry policy is not configured yet
+Post the refund,Post the refund
+Posting Error,Posting Error
+Posting this reverses the obligation and takes {amount} out of the origin desk. The pickup code stops working and the transfer can no longer be paid out.,Posting this reverses the obligation and takes {amount} out of the origin desk. The pickup code stops working and the transfer can no longer be paid out.
+Preview — read only.,Preview — read only.
+Principal,Principal
+"Principal {0} plus commission {1} must equal {2}, not {3}.","Principal {0} plus commission {1} must equal {2}, not {3}."
+Quote,Quote
+Rate quoted to the sender,Rate quoted to the sender
+Rate the register leg posted at,Rate the register leg posted at
+Rate typed at registration,Rate typed at registration
+Ready for payout,Ready for payout
+Reason for rejecting,Reason for rejecting
+Reason for the refund,Reason for the refund
+Reason for unlocking (recorded),Reason for unlocking (recorded)
+Receiver,Receiver
+Receiver obligation,Receiver obligation
+Receiver obligation account is not set. It is required before anything can be saved.,Receiver obligation account is not set. It is required before anything can be saved.
+"Receiver obligation account {account} could not be read, so its currency was not verified.","Receiver obligation account {account} could not be read, so its currency was not verified."
+Receiver obligation closed,Receiver obligation closed
+Receiver obligation reversed,Receiver obligation reversed
+Reconciliation,Reconciliation
+Recorded at register,Recorded at register
+"Reference, sender, receiver or desk… ⌘K","Reference, sender, receiver or desk… ⌘K"
+Refund,Refund
+Refund approved by {0}. {1},Refund approved by {0}. {1}
+Refund approved. No money has moved yet.,Refund approved. No money has moved yet.
+Refund awaiting approval,Refund awaiting approval
+Refund cash-out,Refund cash-out
+"Refund for {0} could not be posted at its frozen register rate {1}, which is ","Refund for {0} could not be posted at its frozen register rate {1}, which is "
+Refund of {0} {1} requested: {2},Refund of {0} {1} requested: {2}
+Refund posted. Hand the cash back to the sender.,Refund posted. Hand the cash back to the sender.
+Refund rejected by {0}: {1},Refund rejected by {0}: {1}
+Refund request rejected. The transfer stays as it was.,Refund request rejected. The transfer stays as it was.
+Refund requested. No money has moved.,Refund requested. No money has moved.
+Refund requires approval,Refund requires approval
+Refund trail,Refund trail
+Refund: {status},Refund: {status}
+Refunded,Refunded
+Refunded {0} {1} to {2},Refunded {0} {1} to {2}
+Refunds,Refunds
+Register cash-in,Register cash-in
+Register the first transfer and it will appear here.,Register the first transfer and it will appear here.
+Register transfer,Register transfer
+Registered,Registered
+Registered at,Registered at
+"Registered at the desk, but nothing was ever posted to the ledger.","Registered at the desk, but nothing was ever posted to the ledger."
+Registered by,Registered by
+Registered today,Registered today
+Registered transfers whose obligation has posted appear here.,Registered transfers whose obligation has posted appear here.
+Registered {0} {1} at {2},Registered {0} {1} at {2}
+Reject refund,Reject refund
+Remittance ID,Remittance ID
+Remittance Settings,Remittance Settings
+Remittance engine,Remittance engine
+Remittance id,Remittance id
+"Remittance id, reference, sender or receiver… ⌘K","Remittance id, reference, sender or receiver… ⌘K"
+Remittance is not configured for {company}.,Remittance is not configured for {company}.
+Remittance operations are scoped to one company at a time.,Remittance operations are scoped to one company at a time.
+Remittance settings are managed by the Finance Manager,Remittance settings are managed by the Finance Manager
+Remittance settings saved.,Remittance settings saved.
+Remove desk,Remove desk
+Request refund,Request refund
+Requesting a refund does not move money.,Requesting a refund does not move money.
+Reversed,Reversed
+Sales Detail,Sales Detail
+Saving is blocked until the {count} item(s) above are fixed.,Saving is blocked until the {count} item(s) above are fixed.
+Scorecards,Scorecards
+"Search by remittance id, client reference, sender or receiver name.","Search by remittance id, client reference, sender or receiver name."
+Select a company,Select a company
+Select a company to pay out a transfer.,Select a company to pay out a transfer.
+Select a desk…,Select a desk…
+Select desk…,Select desk…
+Sender,Sender
+Sender handed over,Sender handed over
+Sender hands over,Sender hands over
+Sender paid,Sender paid
+Sender → Receiver,Sender → Receiver
+Sender → receiver,Sender → receiver
+"Settled at the registration rate, not today's rate.","Settled at the registration rate, not today's rate."
+Showing the first {count} — narrow the search to see the rest.,Showing the first {count} — narrow the search to see the rest.
+Showing the first {shown} of {count}.,Showing the first {shown} of {count}.
+Stage timeline,Stage timeline
+"Stored, but not enforced yet — no expiry time is written onto a transfer.","Stored, but not enforced yet — no expiry time is written onto a transfer."
+That is not the name this transfer was registered under.,That is not the name this transfer was registered under.
+That screen is not available yet.,That screen is not available yet.
+The V1 engine reads every cash account from the desk table. Add at least one desk before switching to V1.,The V1 engine reads every cash account from the desk table. Add at least one desk before switching to V1.
+"The accounts every transfer posts to, and the desk that holds the cash.","The accounts every transfer posts to, and the desk that holds the cash."
+The cash and obligation accounts for this payout come from Remittance Settings for this branch. They are applied by the server when the entry posts.,The cash and obligation accounts for this payout come from Remittance Settings for this branch. They are applied by the server when the entry posts.
+"The chart of accounts could not be read, so no account currency on this page was verified: {error}","The chart of accounts could not be read, so no account currency on this page was verified: {error}"
+The commission cannot be the whole amount tendered.,The commission cannot be the whole amount tendered.
+"The company's base currency could not be read, so the two commission accounts were not verified.","The company's base currency could not be read, so the two commission accounts were not verified."
+"The destination desk has no cash account in this currency, so registering will be refused.","The destination desk has no cash account in this currency, so registering will be refused."
+The destination desk has to be a different desk from your own.,The destination desk has to be a different desk from your own.
+The master record and its journal entries disagree,The master record and its journal entries disagree
+"The obligation closes at the same rate it opened at, so the sender gets back exactly what they put on the counter. Any market move since registration is not a shortfall in this drawer and must not be made up out of it.","The obligation closes at the same rate it opened at, so the sender gets back exactly what they put on the counter. Any market move since registration is not a shortfall in this drawer and must not be made up out of it."
+The open obligation is all-time and ignores these dates.,The open obligation is all-time and ignores these dates.
+The payout was refused.,The payout was refused.
+The pickup code for this transfer no longer works.,The pickup code for this transfer no longer works.
+The pickup code for {0} is locked after too many failed attempts. A manager must unlock it.,The pickup code for {0} is locked after too many failed attempts. A manager must unlock it.
+The pickup code for {0} is locked after {1} failed attempts. A manager must unlock it.,The pickup code for {0} is locked after {1} failed attempts. A manager must unlock it.
+The pickup code is locked after {attempts} of {max} failed attempts. A refund does not need it unlocked — completing the refund retires the code for good.,The pickup code is locked after {attempts} of {max} failed attempts. A refund does not need it unlocked — completing the refund retires the code for good.
+"The pickup code is shown once, on the registration receipt. It cannot be read back here or anywhere else.","The pickup code is shown once, on the registration receipt. It cannot be read back here or anywhere else."
+"The pickup code itself is shown once, on the registration receipt, and is never retrievable again.","The pickup code itself is shown once, on the registration receipt, and is never retrievable again."
+"The refund decision, independent of the rest.","The refund decision, independent of the rest."
+The refund is posted and the cash has gone back.,The refund is posted and the cash has gone back.
+"The remittance engine field has not been deployed on this site yet, so which engine this company runs cannot be read here.","The remittance engine field has not been deployed on this site yet, so which engine this company runs cannot be read here."
+"The server decides this from the transfer state and your role. Operational status is {operational}, accounting status is {accounting}, refund status is {refund}.","The server decides this from the transfer state and your role. Operational status is {operational}, accounting status is {accounting}, refund status is {refund}."
+The server did not return a pickup code for this call. Do not hand over cash against this transfer until a Finance Manager has checked it.,The server did not return a pickup code for this call. Do not hand over cash against this transfer until a Finance Manager has checked it.
+The settings payload could not be read.,The settings payload could not be read.
+"The state of the code, never the code.","The state of the code, never the code."
+The step could not be completed. Nothing was changed.,The step could not be completed. Nothing was changed.
+The transfer list could not be loaded.,The transfer list could not be loaded.
+The transfer's status and the journal entries it names do not agree.,The transfer's status and the journal entries it names do not agree.
+This company runs the {engine} remittance engine. The Transfer V1 screens stay unavailable until it is switched to V1 below.,This company runs the {engine} remittance engine. The Transfer V1 screens stay unavailable until it is switched to V1 below.
+"This compares each transfer against the journal entries it names. The ledger-side balances are not read here, so agreement means the master is self-consistent, not that the trial balance was checked.","This compares each transfer against the journal entries it names. The ledger-side balances are not read here, so agreement means the master is self-consistent, not that the trial balance was checked."
+This is the step that moves cash.,This is the step that moves cash.
+This pickup code is locked.,This pickup code is locked.
+This posts the reversal and hands {amount} back to {sender} at the origin desk. The pickup code stops working and the transfer can no longer be paid out.,This posts the reversal and hands {amount} back to {sender} at the origin desk. The pickup code stops working and the transfer can no longer be paid out.
+This reason is written to the transfer's permanent event trail and is what the approving manager reads.,This reason is written to the transfer's permanent event trail and is what the approving manager reads.
+This refund request was rejected.,This refund request was rejected.
+This request was already registered. The pickup code was shown once at that moment and cannot be shown again — a Finance Manager has to reissue the transfer if it was lost.,This request was already registered. The pickup code was shown once at that moment and cannot be shown again — a Finance Manager has to reissue the transfer if it was lost.
+"This screen could not read your employee record, so it cannot tell which desk you are registering from. Ask a Finance Manager to grant the access or to link your desk.","This screen could not read your employee record, so it cannot tell which desk you are registering from. Ask a Finance Manager to grant the access or to link your desk."
+This step was already recorded. Nothing was posted a second time.,This step was already recorded. Nothing was posted a second time.
+This transfer could not be loaded.,This transfer could not be loaded.
+This transfer pays out at,This transfer pays out at
+This transfer was saved without its pickup-code digest. The field is ,This transfer was saved without its pickup-code digest. The field is 
+This will post,This will post
+To {date},To {date}
+Too many wrong attempts — only a manager can reopen it,Too many wrong attempts — only a manager can reopen it
+Too many wrong codes were entered. Ask a manager to unlock it — there is no timer.,Too many wrong codes were entered. Ask a manager to unlock it — there is no timer.
+Total returned to the sender,Total returned to the sender
+Transfer not found,Transfer not found
 Transfer registered,Transfer registered
+Transfer {0} already has a refund request awaiting a decision.,Transfer {0} already has a refund request awaiting a decision.
+Transfer {0} already has a rejected refund request.,Transfer {0} already has a rejected refund request.
+Transfer {0} already has a {1} refund.,Transfer {0} already has a {1} refund.
+Transfer {0} already has an approved refund.,Transfer {0} already has an approved refund.
+"Transfer {0} cannot be refunded: its refund status is {1}, and cash only ","Transfer {0} cannot be refunded: its refund status is {1}, and cash only "
+Transfer {0} does not exist.,Transfer {0} does not exist.
+Transfer {0} has a {1} refund and cannot be paid out.,Transfer {0} has a {1} refund and cannot be paid out.
+Transfer {0} has already been paid out.,Transfer {0} has already been paid out.
+Transfer {0} has already been refunded.,Transfer {0} has already been refunded.
+Transfer {0} has no refund request to approve (refund status is {1}).,Transfer {0} has no refund request to approve (refund status is {1}).
+Transfer {0} has no refund request to reject (refund status is {1}).,Transfer {0} has no refund request to reject (refund status is {1}).
+Transfer {0} has no usable pickup code on file — it is missing or still ,Transfer {0} has no usable pickup code on file — it is missing or still 
+Transfer {0} is {1} and can no longer be refunded.,Transfer {0} is {1} and can no longer be refunded.
+Transfer {0} is {1} and cannot be paid out.,Transfer {0} is {1} and cannot be paid out.
+"Transfer {0} is {1}: the receiver obligation was never posted, so there ","Transfer {0} is {1}: the receiver obligation was never posted, so there "
+Transfer {0} is {1}: there is no posted obligation to reverse.,Transfer {0} is {1}: there is no posted obligation to reverse.
+Transfer {0} is {1}; there is no pickup left to unlock.,Transfer {0} is {1}; there is no pickup left to unlock.
+Transfer {0} was not found.,Transfer {0} was not found.
+Transfer {reference} becomes payable again and the attempt counter goes back to zero. The unlock is recorded against your name.,Transfer {reference} becomes payable again and the attempt counter goes back to zero. The unlock is recorded against your name.
+"Transfers registered on V1 stay in their own records and are not shown by the legacy list, which reads journal entries.","Transfers registered on V1 stay in their own records and are not shown by the legacy list, which reads journal entries."
+Transfers registered on the legacy engine stay on the legacy list and are not shown by the V1 screens: they have no Remittance Transfer record behind them.,Transfers registered on the legacy engine stay on the legacy list and are not shown by the V1 screens: they have no Remittance Transfer record behind them.
+Type the sender name as registered,Type the sender name as registered
+USDT,USDT
+Unbilled Receipts,Unbilled Receipts
+Unknown remittance queue: {0},Unknown remittance queue: {0}
+Unlock,Unlock
+Unlock code,Unlock code
+Unlock pickup code,Unlock pickup code
+Unlock this pickup code?,Unlock this pickup code?
+Unposted,Unposted
+"Until these accounts are saved, every attempt to register a transfer is refused.","Until these accounts are saved, every attempt to register a transfer is refused."
+Username/Email and Password are required.,Username/Email and Password are required.
+V1 — operations centre,V1 — operations centre
+Verify code,Verify code
+Waiting on,Waiting on
+Wallet balance,Wallet balance
+What goes back to the sender,What goes back to the sender
+What the company owes the receiver until the cash is handed over. Its currency is the only currency this company can pay out in.,What the company owes the receiver until the cash is handed over. Its currency is the only currency this company can pay out in.
+What they said,What they said
+Where the commission is recognised once the transfer is paid out. Must be held in the company's base currency.,Where the commission is recognised once the transfer is paid out. Must be held in the company's base currency.
+Where the transfer itself stands.,Where the transfer itself stands.
+Whether the ledger agrees with it.,Whether the ledger agrees with it.
+Which set of screens this company uses. Changes on save.,Which set of screens this company uses. Changes on save.
+Who,Who
+Why is this transfer being returned?,Why is this transfer being returned?
+Why it is an exception,Why it is an exception
+"Widen the date range, or clear the status, currency and exception filters.","Widen the date range, or clear the status, currency and exception filters."
 Write this code down and hand it to the sender now. It is shown once and cannot be recovered.,Write this code down and hand it to the sender now. It is shown once and cannot be recovered.
+Wrong pickup code — attempt {0} of {1},Wrong pickup code — attempt {0} of {1}
+You cannot pay out this transfer.,You cannot pay out this transfer.
+You need a remittance role to see the reconciliation.,You need a remittance role to see the reconciliation.
+You need a remittance role to see this transfer.,You need a remittance role to see this transfer.
+You need a remittance role to see transfers.,You need a remittance role to see transfers.
+Your cash desk,Your cash desk
+"Your desk has no cash account in this currency, so registering will be refused.","Your desk has no cash account in this currency, so registering will be refused."
+Your own cash desk could not be resolved,Your own cash desk could not be resolved
+Your own cash desk could not be resolved.,Your own cash desk could not be resolved.
+"Your user is not linked to an employee record with a branch, so this screen cannot tell which desk you are registering from. Ask a Finance Manager to link it.","Your user is not linked to an employee record with a branch, so this screen cannot tell which desk you are registering from. Ask a Finance Manager to link it."
 absent,absent
 Accept Return,Accept Return
 Accepted,Accepted
@@ -351,6 +783,7 @@ Already shipped as,Already shipped as
 Already Transferred,Already Transferred
 Also delete the linked records,Also delete the linked records
 Ambiguous,Ambiguous
+all time,all time
 ambiguous,ambiguous
 AMC,AMC
 Amend,Amend
@@ -2187,6 +2620,7 @@ Full screen,Full screen
 Fully billed but auto-close did not run — use Close below.,Fully billed but auto-close did not run — use Close below.
 Fully Completed,Fully Completed
 Fully Staged,Fully Staged
+from {from},from {from}
 "furthest past its own threshold, proportionally","furthest past its own threshold, proportionally"
 FX accounts as of {0},FX accounts as of {0}
 FX favorable,FX favorable
@@ -3386,6 +3820,7 @@ Not posted,not posted
 Not ready,Not ready
 Not ready to lock,Not ready to lock
 Not registered,Not registered
+not recorded on this transfer,not recorded on this transfer
 not saved,not saved
 Not set,Not set
 not set,not set
@@ -5195,6 +5630,7 @@ This invoice no longer matches the booked payable.,This invoice no longer matche
 This is the goods invoice of this Commercial Invoice — its link cannot be cleared here.,This is the goods invoice of this Commercial Invoice — its link cannot be cleared here.
 This month,This month
 "This must match exactly the value in raw events (TimePay user ID, badge code, etc.).","This must match exactly the value in raw events (TimePay user ID, badge code, etc.)."
+the receiver,the receiver
 this page only,this page only
 This payment is already cancelled.,This payment is already cancelled.
 This payment is not an installment collection.,This payment is not an installment collection.
@@ -5350,6 +5786,7 @@ Transit,Transit
 Transit ETA,Transit ETA
 Transit ETA (Iran),Transit ETA (Iran)
 Transport,Transport
+transfers,transfers
 transport,transport
 Transport / day — City,Transport / day — City
 Transport / day — District,Transport / day — District
@@ -5503,6 +5940,7 @@ Unmatched Event,Unmatched Event
 "Unmatched events, missing punches","Unmatched events, missing punches"
 Unmatched TimePay users,Unmatched TimePay users
 Unpaid,Unpaid
+unknown,unknown
 unpaid,unpaid
 Unreconciled transactions,Unreconciled transactions
 unsaved changes,unsaved changes
@@ -5520,6 +5958,7 @@ Upcoming,Upcoming
 Update draft decision,Update draft decision
 Update stock,Update stock
 Update tokens,Update tokens
+up to {to},up to {to}
 updated,updated
 Updated,Updated
 Uplift Value,Uplift Value
@@ -5824,6 +6263,7 @@ Yutilgan,Won
 {0} has no payable account for {1}. Set the supplier's default payable account first.,{0} has no payable account for {1}. Set the supplier's default payable account first.
 {0} is in {1}. Only bills in {2} or USD can be added to an import's landed cost today.,{0} is in {1}. Only bills in {2} or USD can be added to an import's landed cost today.
 {0} is not a group.,{0} is not a group.
+{0} is not a remittance engine. Choose one of: {1}.,{0} is not a remittance engine. Choose one of: {1}.
 {0} is required.,{0} is required.
 {0} line item change(s),{0} line item change(s)
 {0} must be a number,{0} must be a number
@@ -5841,9 +6281,11 @@ Yutilgan,Won
 {0}: rate cannot be negative,{0}: rate cannot be negative
 {amount} outstanding,{amount} outstanding
 {bill} unlinked.,{bill} unlinked.
+{branch} — {city},{branch} — {city}
 {container} is already linked to {ci}. Unlink it there first.,{container} is already linked to {ci}. Unlink it there first.
 {container} stays in the system but is no longer part of this commercial invoice.,{container} stays in the system but is no longer part of this commercial invoice.
 {count} ahead,{count} ahead
+{count} attempt(s) left before this code locks.,{count} attempt(s) left before this code locks.
 {count} behind,{count} behind
 {count} below policy,{count} below policy
 {count} blocked at the departure gate,{count} blocked at the departure gate
@@ -5852,17 +6294,27 @@ Yutilgan,Won
 {count} container(s) could not be advanced.,{count} container(s) could not be advanced.
 {count} container(s) will move to {status}.,{count} container(s) will move to {status}.
 {count} deadline <48h,{count} deadline <48h
+{count} failed attempt(s) so far. The lockout limit could not be read.,{count} failed attempt(s) so far. The lockout limit could not be read.
 {count} fully shipped lines hidden,{count} fully shipped lines hidden
 {count} line(s) added,{count} line(s) added
 {count} line(s) changed,{count} line(s) changed
 {count} line(s) differ from PI,{count} line(s) differ from PI
 {count} line(s) removed,{count} line(s) removed
+{count} obligations open · all time,{count} obligations open · all time
 {count} of {total} selected,{count} of {total} selected
 {count} payment(s) totalling {amount} will be re-allocated.,{count} payment(s) totalling {amount} will be re-allocated.
 {count} PI lines,{count} PI lines
 {count} selected,{count} selected
+{count} transfers claim a posting the ledger cannot be matched to.,{count} transfers claim a posting the ledger cannot be matched to.
+{count} transfers · {period},{count} transfers · {period}
+{count}d,{count}d
+{count}h,{count}h
 {doctype} {name} is linked and has no deletion rule — resolve it manually first.,{doctype} {name} is linked and has no deletion rule — resolve it manually first.
 {done}/{total} quote sets complete,{done}/{total} quote sets complete
+{from} – {to},{from} – {to}
+{label} account is not set. It is required before anything can be saved.,{label} account is not set. It is required before anything can be saved.
+"{label} account {account} could not be read, so its currency was not verified.","{label} account {account} could not be read, so its currency was not verified."
+"{label} account {account} is held in {actual}, but it must be held in the company's base currency {expected}. Every transfer would be refused when it posts.","{label} account {account} is held in {actual}, but it must be held in the company's base currency {expected}. Every transfer would be refused when it posts."
 {name} and {count} linked record(s) will be removed. This cannot be undone.,{name} and {count} linked record(s) will be removed. This cannot be undone.
 {name} will be removed. This cannot be undone.,{name} will be removed. This cannot be undone.
 {n} outstanding invoice(s),{n} outstanding invoice(s)

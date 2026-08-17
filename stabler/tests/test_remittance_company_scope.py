@@ -451,5 +451,49 @@ class RemittanceEventHasPermissionTest(unittest.TestCase):
 		)
 
 
+class ListingEndpointsKeepTheConditionOnTest(unittest.TestCase):
+	"""A scoped condition is only worth what the caller lets it run.
+
+	``frappe.get_all`` sets ``ignore_permissions`` (``frappe/__init__.py``: "will
+	**not** check for permissions"), which switches
+	``permission_query_conditions`` off wholesale — the fragment tested above is
+	then never spliced in, and the DocPerm read is never asked for either. Every
+	other layer in this file can be perfectly correct while one caller reading
+	``Remittance Transfer`` with ``get_all`` hands a whole tenant's transfers to a
+	user who holds no remittance role at all.
+
+	``remittance_queries`` pins this for itself. This pins the *other* module that
+	lists the same doctype for a screen: ``remittance_commands.payout_queue``,
+	which shipped on ``get_all`` and returned sender, receiver, principal,
+	commission, tendered and the full corridor for every payable transfer in any
+	company the caller named.
+
+	Source-level on purpose. The commands module needs a bench to import, so a
+	behavioural version of this would live in the bench set and would not gate a
+	push — and this defect is exactly the kind that ships between bench runs.
+	"""
+
+	#: Modules that list Remittance Transfer on behalf of a screen. Both must go
+	#: through the permission-checking path.
+	_LISTING_MODULES = ("remittance_queries.py", "remittance_commands.py")
+
+	def test_no_listing_endpoint_calls_get_all(self):
+		for module in self._LISTING_MODULES:
+			path = os.path.join(_PKG, "api", module)
+			with self.subTest(module=module):
+				with open(path, encoding="utf-8") as fh:
+					src = fh.read()
+				# Matched as a CALL. Both modules name `get_all` in prose to explain
+				# why it is banned, and a scan that tripped over its own rationale
+				# would be deleted the first time somebody documented the rule.
+				# assertFalse over assertNotIn: a failing assertNotIn prints the whole
+				# 1000-line module as the "container" and buries its own message.
+				self.assertFalse(
+					"get_all(" in src,
+					f"{module} lists Remittance Transfer with get_all, which turns "
+					"permissions.remittance_transfer_query off for that read",
+				)
+
+
 if __name__ == "__main__":
 	unittest.main()

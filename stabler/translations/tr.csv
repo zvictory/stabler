@@ -1,5 +1,6 @@
 #,#
 % of total,Toplam %
+(empty),(boş)
 (no name),(isimsiz)
 (none),(yok)
 (only for half-rate),
@@ -74,9 +75,21 @@ A valid veterinary certificate is required.,Geçerli bir veteriner sertifikası 
 "A ≤ {0}%, B ≤ {1}%, C rest — by {2}. Submitted; returns netted.","A ≤ {0}%, B ≤ {1}%, C diğer — {2} bazında. Onaylanmış; iadeler netleştirilmiş."
 Abbr,Kısaltma
 Absent,Devamsız
+Add at least one cash desk before switching {0} to the V1 engine: V1 reads every cash account from this table and cannot register a transfer without one.,{0} şirketini V1 motoruna geçirmeden önce en az bir kasa ekleyin: V1 tüm kasa hesaplarını bu tablodan okur ve kasasız transfer kaydedemez.
+Every user of {company} moves to the {engine} screens when this is saved.,Kaydedildiğinde {company} şirketinin tüm kullanıcıları {engine} ekranlarına geçer.
 I have written it down,Yazdım
+"Legacy posts journal entries from the New Transfer form it always has. V1 registers a Remittance Transfer and is the only engine where the payout, refund, operations and reconciliation screens exist.","Legacy, her zamanki Yeni Transfer formundan yevmiye kaydı atar. V1 ise bir Remittance Transfer kaydı oluşturur ve ödeme, iade, operasyon ve mutabakat ekranlarının bulunduğu tek motordur."
+Legacy — journal entry screens,Legacy — yevmiye kaydı ekranları
 Pickup code,Teslim kodu
+Remittance engine,Transfer motoru
+The V1 engine reads every cash account from the desk table. Add at least one desk before switching to V1.,V1 motoru tüm kasa hesaplarını kasa tablosundan okur. V1'e geçmeden önce en az bir kasa ekleyin.
+The settings payload could not be read.,Ayar verisi okunamadı.
+This company runs the {engine} remittance engine. The Transfer V1 screens stay unavailable until it is switched to V1 below.,Bu şirket {engine} transfer motorunu çalıştırıyor. Aşağıdan V1'e geçirilene kadar Transfer V1 ekranları kullanılamaz.
 Transfer registered,Havale kaydedildi
+"Transfers registered on V1 stay in their own records and are not shown by the legacy list, which reads journal entries.",V1'de kaydedilen transferler kendi kayıtlarında kalır ve yevmiye kayıtlarını okuyan eski listede görünmez.
+Transfers registered on the legacy engine stay on the legacy list and are not shown by the V1 screens: they have no Remittance Transfer record behind them.,Legacy motorunda kaydedilen transferler eski listede kalır ve V1 ekranlarında görünmez: arkalarında Remittance Transfer kaydı yoktur.
+V1 — operations centre,V1 — operasyon merkezi
+Which set of screens this company uses. Changes on save.,Bu şirketin hangi ekran setini kullandığı. Kaydedince değişir.
 Write this code down and hand it to the sender now. It is shown once and cannot be recovered.,Bu kodu yazın ve şimdi gönderene teslim edin. Bir kez gösterilir ve geri getirilemez.
 absent,gelmedi
 Accept Return,
@@ -5822,6 +5835,7 @@ Yutilgan,Kazanıldı
 {0} has no payable account for {1}. Set the supplier's default payable account first.,{0} için {1} şirketinde borç hesabı yok. Önce tedarikçinin varsayılan borç hesabını tanımlayın.
 {0} is in {1}. Only bills in {2} or USD can be added to an import's landed cost today.,{0} {1} para biriminde. İthalat maliyetine bugün yalnızca {2} veya USD cinsinden faturalar eklenebilir.
 {0} is not a group.,{0} bir grup değil.
+{0} is not a remittance engine. Choose one of: {1}.,{0} bir transfer motoru değil. Şunlardan birini seçin: {1}.
 {0} is required.,{0} zorunludur.
 {0} line item change(s),
 {0} must be a number,{0} bir sayı olmalıdır
