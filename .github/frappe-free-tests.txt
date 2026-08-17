@@ -160,6 +160,7 @@ stabler.tests.test_document_form_tdz
 stabler.tests.test_sales_order_fx_guard
 stabler.tests.test_sales_order_action_bar
 stabler.tests.test_translation_csv_wellformed
+stabler.tests.test_translation_harvest_lf
 stabler.tests.test_sales_order_i18n
 stabler.tests.test_sales_box_uom_flag
 stabler.tests.test_sales_order_variant_switch

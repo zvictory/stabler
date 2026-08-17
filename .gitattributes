@@ -1,8 +1,8 @@
-# Translation CSVs are intentionally CRLF-terminated (Frappe writes them that
-# way and the harvest tool round-trips them). Without this, every added row
-# reads as a trailing-whitespace error and drowns out real findings in
+# Translation CSVs are LF-terminated; the harvest tool writes them that way.
+# `eol=lf` keeps checkout stable regardless of a contributor's core.autocrlf.
+# The whitespace flag keeps trailing-space false positives out of
 # `git diff --check`.
-stabler/translations/*.csv whitespace=-trailing-space,-cr-at-eol
+stabler/translations/*.csv text eol=lf whitespace=-trailing-space
 
 # Kendi barındırdığımız yazı tipleri. Google Fonts'a link vermek yasak
 # (kiracı ağları dış CDN'e çıkamıyor), bu yüzden woff2 repoda duruyor.

@@ -109,7 +109,7 @@ def _read_csv(path: Path) -> dict[str, str]:
 def _write_csv(path: Path, rows: dict[str, str]) -> None:
 	path.parent.mkdir(parents=True, exist_ok=True)
 	with path.open("w", encoding="utf-8", newline="") as fh:
-		writer = csv.writer(fh)
+		writer = csv.writer(fh, lineterminator="\n")
 		writer.writerow(["source", "target"])
 		for source in sorted(rows):
 			writer.writerow([source, rows[source]])

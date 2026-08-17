@@ -109,7 +109,11 @@ def main():
 		new_rows = [pair for pair in pairs if pair[0] not in existing]
 		if new_rows:
 			with open(filepath, "a", encoding="utf-8", newline="") as f:
-				writer = csv.writer(f)
+				# Same one-line trap as harvest.py: csv.writer defaults to a CRLF
+				# terminator no matter how the file was opened, so appending here
+				# would put CRLF rows into LF catalogs and re-introduce the mixed
+				# endings this bead removes.
+				writer = csv.writer(f, lineterminator="\n")
 				for src, tr in new_rows:
 					writer.writerow([src, tr])
 			print(f"Added {len(new_rows)} translations to {filename}")
