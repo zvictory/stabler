@@ -213,6 +213,9 @@ def _load(db: _FakeDB):
 
 	accounting.post_register = _post_register
 	accounting.post_payout = lambda transfer, **_k: {"journal_entry": "JE-REM-0002"}
+	# Imported by the module under test even though no register path calls it — see
+	# `test_remittance_refund_command` for what it actually has to do.
+	accounting.post_refund = lambda transfer, **_k: {"journal_entry": "JE-REM-0003"}
 
 	_SANDBOX.install(
 		{

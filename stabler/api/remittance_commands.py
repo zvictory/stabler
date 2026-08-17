@@ -93,6 +93,51 @@ so unlike register there is no payload for a replayed `client_request_id` to
 conflict with. The row lock plus the recorded payout event settle it instead: a
 key replayed against a transfer already paid out under that same key gets the
 original result, and any other second payout is refused.
+
+**Refund is three states, and only the last one moves cash.** `Requested` at the
+origin desk, `Approved` by a Remittance Finance Manager, `Completed` when the cash
+is actually counted back out — plus `Rejected`, which ends the request without
+touching a ledger. Approving deliberately posts nothing: an approval that moved
+money would make the manager's decision and the cashier's count the same event,
+and the sender could be paid from a drawer nobody opened.
+
+The decision that defines this shape (council decision D32) is that
+`approve_refund` re-validates the *operational* state after taking the row lock,
+not merely the caller's role. A role check answers "may this person approve
+refunds", which is true of the manager whatever the row is doing; it says nothing
+about the state at the moment of the write. Concurrent payout versus refund is a
+named acceptance test, not an edge case: the cashier at the destination and the
+manager at the origin act on the same row seconds apart, and without the locked
+re-read the transfer is both paid out *and* refunded, with the second writer
+winning silently and the obligation reversed twice. So every refund step reads
+`operational_status`, `accounting_status` and `refund_status` off
+`frappe.get_doc(..., for_update=True)` — through the lock, for the REPEATABLE READ
+reason spelled out above — and decides on that row only.
+
+`reject_refund` is the one step that does *not* require the transfer to still be
+refundable. A request that sat in the queue while the receiver collected the cash
+must still be closeable, or the row is stranded in `Requested` forever with the
+only exit being a manual edit.
+
+Every refund step is gated on a real role, and that gate is load-bearing rather
+than decorative: `@frappe.whitelist()` admits any authenticated user, `db_set`
+checks no permission, and `remittance_accounting._build_entry` inserts the Journal
+Entry with `ignore_permissions=True`. Nothing else stands between a logged-in
+stranger and a refund. The desk set (request, complete) and the approver set
+(approve, reject) are deliberately different — a cashier who could approve their
+own request is not a control.
+
+**ADR-008 and the CBU band collide, and this module does not resolve it.** A
+refund reverses at the frozen `register_base_rate`, while
+`_accounts.validate_exchange_rate` (wired on `Journal Entry.validate`) refuses any
+foreign row more than +/-20% from the CBU rate of the posting day. A corridor that
+moved that far between registration and refund therefore refuses at JE validate.
+Exempting, widening or approval-gating that band is an open policy decision for
+the business — bead `stabler-22vj` — so nothing here widens it, overrides it or
+invents a second rate. What `complete_refund` does is make the refusal legible:
+the refund's own failure names the transfer and the frozen rate it tried to use,
+and carries the validator's message inside it, instead of surfacing as a bare
+sentence about a conversion rate the cashier never typed.
 """
 
 from __future__ import annotations
@@ -110,7 +155,7 @@ from stabler.api.remittance import (
 	is_hashed_pickup_code,
 	store_pickup_code,
 )
-from stabler.api.remittance_accounting import post_payout, post_register
+from stabler.api.remittance_accounting import post_payout, post_refund, post_register
 
 TRANSFER = "Remittance Transfer"
 EVENT = "Remittance Event"
@@ -723,4 +768,352 @@ def unlock_pickup_code(name: str, reason: str | None = None) -> dict:
 	return _payout_result(transfer, replayed=False)
 
 
-__all__ = ["payout_queue", "payout_transfer", "register_remittance", "unlock_pickup_code"]
+# --------------------------------------------------------------------------- #
+# Refund — three states, and only the last one moves cash
+# --------------------------------------------------------------------------- #
+
+# Who may ask and who may decide, and the gap between them is the control. Both
+# sets are real roles created by `patches/v87_remittance_roles.py`; System Manager
+# is in each because it already holds every DocPerm on the aggregate, so excluding
+# it would only mean a locked-out site is repaired by hand instead of by endpoint.
+#
+# These gates are not belt-and-braces over a permission check that happens
+# elsewhere — there is no such check. `@frappe.whitelist()` admits any logged-in
+# user, `db_set` writes columns without consulting permissions, and the refund
+# Journal Entry is inserted with `ignore_permissions=True`. This tuple is the only
+# thing between an authenticated stranger and the origin desk's cash drawer.
+_REFUND_DESK_ROLES = ("Remittance Cashier", "Remittance Finance Manager", "System Manager")
+_REFUND_APPROVER_ROLES = ("Remittance Finance Manager", "System Manager")
+
+
+def _refund_result(transfer, *, replayed: bool) -> dict:
+	return {
+		**_state(transfer, replayed=replayed),
+		"refund_status": transfer.refund_status,
+		"refund_journal_entry": transfer.refund_journal_entry,
+	}
+
+
+def _assert_refund_desk() -> None:
+	"""The origin desk: it takes the request in and it counts the cash back out."""
+	if not set(_REFUND_DESK_ROLES) & set(frappe.get_roles()):
+		frappe.throw(_("Only the remittance desk can request or complete a refund."), frappe.PermissionError)
+
+
+def _assert_refund_manager() -> None:
+	"""The decision. Separate from the desk on purpose: approving your own request
+	is not an approval."""
+	if not set(_REFUND_APPROVER_ROLES) & set(frappe.get_roles()):
+		frappe.throw(
+			_("Only a Remittance Finance Manager can approve or reject a refund."),
+			frappe.PermissionError,
+		)
+
+
+def _assert_refundable(transfer) -> None:
+	"""The operational facts a refund rests on — re-read under the lock, every step.
+
+	This is council decision D32 in code. The caller's role is checked before the
+	lock because roles do not change per row; *this* cannot be, because it is
+	exactly what a concurrent payout changes. A manager who was allowed to approve
+	when the screen was drawn is still allowed to approve a second later — but the
+	receiver may have collected the cash in between, and approving then would
+	reverse an obligation that a payout has already closed.
+
+	Every field read here comes off `frappe.get_doc(..., for_update=True)`. Reading
+	it off an unlocked `get_doc` under REPEATABLE READ returns the snapshot this
+	request opened before it blocked on the lock, which is the pre-race row — the
+	loser of the race would wake up, see `Registered`, and refund a transfer that
+	was paid out while it waited.
+	"""
+	if transfer.operational_status != "Registered":
+		frappe.throw(
+			_("Transfer {0} is {1} and can no longer be refunded.").format(
+				transfer.name, transfer.operational_status
+			)
+		)
+	if transfer.accounting_status != "Posted":
+		frappe.throw(
+			_("Transfer {0} is {1}: there is no posted obligation to reverse.").format(
+				transfer.name, transfer.accounting_status
+			)
+		)
+
+
+def _already(transfer, *, key: str, event_type: str, refusal: str) -> dict:
+	"""Answer a repeated refund step: the original result, or a refusal.
+
+	A refund step carries no money in its request — every amount comes off the
+	register entry — so unlike register there is no payload for a replay to
+	disagree with. What decides is whether *this* key is the one that took the
+	step, and the trail is the record of that. The most recent event of the kind is
+	the one that counts: a request that was rejected and then made again leaves two.
+	"""
+	taken_under = frappe.db.get_value(
+		EVENT,
+		{"transfer": transfer.name, "event_type": event_type},
+		"client_request_id",
+		order_by="creation desc",
+	)
+	if taken_under and taken_under == key:
+		return _refund_result(transfer, replayed=True)
+	frappe.throw(refusal)
+
+
+def _locked_transfer(name: str, key: str):
+	"""The opening of every refund step: a key, the lock, the state read through it.
+
+	The lock doubles as the existence check — a row nobody can lock is a row that is
+	not there — and the `get_doc` that follows is a *locking* read for the reason in
+	the module docstring. Both halves are load-bearing and neither is negotiable;
+	this helper exists so that no refund step can accidentally acquire only one.
+	"""
+	if not key:
+		frappe.throw(_("A client request id is required, so a retry cannot refund twice."))
+
+	if not frappe.db.get_value(TRANSFER, name, "name", for_update=True):
+		frappe.throw(_("Transfer {0} does not exist.").format(name))
+
+	transfer = frappe.get_doc(TRANSFER, name, for_update=True)
+	# Tenant isolation on the row's own company: the caller never names one here.
+	_assert_company_scope(transfer.company)
+	_require_company(transfer.company)
+	return transfer
+
+
+@frappe.whitelist()
+def request_refund(name: str, reason: str, client_request_id: str) -> dict:
+	"""The sender wants the money back. Records the ask; moves nothing."""
+	_assert_refund_desk()
+
+	key = (client_request_id or "").strip()
+	note = (reason or "").strip()
+	if not note:
+		# A refund request with no reason is an audit trail that explains nothing —
+		# and this is the only field on the whole three-step path that carries why.
+		frappe.throw(_("A reason is required to request a refund."))
+
+	transfer = _locked_transfer(name, key)
+
+	if transfer.refund_status == "Requested":
+		return _already(
+			transfer,
+			key=key,
+			event_type="Refund request",
+			refusal=_("Transfer {0} already has a refund request awaiting a decision.").format(transfer.name),
+		)
+	if transfer.refund_status in ("Approved", "Completed"):
+		frappe.throw(
+			_("Transfer {0} already has a {1} refund.").format(transfer.name, transfer.refund_status)
+		)
+
+	# Locked state, then the decision. A transfer that was paid out while the form
+	# was open has nothing left to refund, and the request must not be recorded as
+	# though it did.
+	_assert_refundable(transfer)
+
+	transfer.db_set({"refund_status": "Requested"}, notify=False)
+	_append_event(
+		transfer,
+		event_type="Refund request",
+		key=key,
+		branch=transfer.origin_branch,
+		details=_("Refund of {0} {1} requested: {2}").format(
+			flt(transfer.tendered, 2), transfer.send_currency, note
+		),
+	)
+
+	return _refund_result(transfer, replayed=False)
+
+
+@frappe.whitelist()
+def approve_refund(name: str, client_request_id: str, note: str | None = None) -> dict:
+	"""A Remittance Finance Manager authorises the refund. Still no cash moves.
+
+	The role is checked first because it needs no row and refusing early avoids
+	holding a lock for a caller who was never allowed one. Everything the decision
+	actually rests on is read afterwards, off the locked row — see `_assert_refundable`.
+	"""
+	_assert_refund_manager()
+
+	key = (client_request_id or "").strip()
+	transfer = _locked_transfer(name, key)
+
+	if transfer.refund_status == "Approved":
+		return _already(
+			transfer,
+			key=key,
+			event_type="Refund approval",
+			refusal=_("Transfer {0} already has an approved refund.").format(transfer.name),
+		)
+
+	# D32: the operational re-check, on the locked row, before anything is written.
+	_assert_refundable(transfer)
+
+	if transfer.refund_status != "Requested":
+		frappe.throw(
+			_("Transfer {0} has no refund request to approve (refund status is {1}).").format(
+				transfer.name, transfer.refund_status
+			)
+		)
+
+	# No posting here, deliberately. The obligation is reversed when the cash is
+	# counted back out at the origin desk, in `complete_refund`, and not a moment
+	# earlier — an approval that posted would let the sender be paid from a drawer
+	# nobody opened.
+	transfer.db_set({"refund_status": "Approved"}, notify=False)
+	_append_event(
+		transfer,
+		event_type="Refund approval",
+		key=key,
+		branch=transfer.origin_branch,
+		details=_("Refund approved by {0}. {1}").format(
+			frappe.session.user, (note or "").strip() or _("No note given.")
+		),
+	)
+
+	return _refund_result(transfer, replayed=False)
+
+
+@frappe.whitelist()
+def reject_refund(name: str, reason: str, client_request_id: str) -> dict:
+	"""A Remittance Finance Manager refuses the request, and says why.
+
+	Deliberately does NOT require the transfer to still be refundable. A request
+	that sat in the queue while the receiver collected the cash must still be
+	closeable — otherwise the row is stranded in `Requested` forever and the only
+	exit is someone editing the database by hand.
+	"""
+	_assert_refund_manager()
+
+	key = (client_request_id or "").strip()
+	note = (reason or "").strip()
+	if not note:
+		frappe.throw(_("A reason is required to reject a refund."))
+
+	transfer = _locked_transfer(name, key)
+
+	if transfer.refund_status == "Rejected":
+		return _already(
+			transfer,
+			key=key,
+			event_type="Refund rejection",
+			refusal=_("Transfer {0} already has a rejected refund request.").format(transfer.name),
+		)
+	if transfer.refund_status != "Requested":
+		frappe.throw(
+			_("Transfer {0} has no refund request to reject (refund status is {1}).").format(
+				transfer.name, transfer.refund_status
+			)
+		)
+
+	transfer.db_set({"refund_status": "Rejected"}, notify=False)
+	_append_event(
+		transfer,
+		event_type="Refund rejection",
+		key=key,
+		branch=transfer.origin_branch,
+		details=_("Refund rejected by {0}: {1}").format(frappe.session.user, note),
+	)
+
+	return _refund_result(transfer, replayed=False)
+
+
+def _post_the_refund(transfer, posting_date: str) -> None:
+	"""Reverse the obligation at the frozen rate, and name the freeze if it refuses.
+
+	ADR-008 reverses at `register_base_rate`, the rate the obligation opened at.
+	`_accounts.validate_exchange_rate` refuses a foreign Journal Entry row more than
+	+/-20% from the CBU rate of the posting day, so a corridor that moved that far
+	between registration and refund is refused *at Journal Entry validate*, by a
+	sentence about a conversion rate the cashier never typed. Whether that band
+	should exempt, widen for, or approval-gate a frozen reversal is an open policy
+	decision (`stabler-22vj`) — it is not silently widened here, and no second rate
+	is invented to slip past it. Only the refusal is made legible, and the
+	validator's own message is carried inside it rather than replaced.
+
+	The re-throw preserves the original exception class, and only `ValidationError`
+	is wrapped: a database or programming fault must not come back dressed as a
+	rejected refund.
+	"""
+	try:
+		post_refund(transfer, posting_date=posting_date)
+	except frappe.ValidationError as err:
+		frappe.throw(
+			_(
+				"Refund for {0} could not be posted at its frozen register rate {1}, which is "
+				"the rate the obligation opened at and the only rate it may close at: {2}"
+			).format(transfer.name, flt(transfer.register_base_rate, 6), str(err)),
+			type(err),
+		)
+
+
+@frappe.whitelist()
+def complete_refund(
+	name: str,
+	client_request_id: str,
+	posting_date: str | None = None,
+) -> dict:
+	"""The cash is counted back out at the origin desk. This is the step that posts."""
+	_assert_refund_desk()
+
+	key = (client_request_id or "").strip()
+	transfer = _locked_transfer(name, key)
+
+	if transfer.refund_status == "Completed":
+		return _already(
+			transfer,
+			key=key,
+			event_type="Refund completion",
+			refusal=_("Transfer {0} has already been refunded.").format(transfer.name),
+		)
+
+	# The same locked re-check as the approval, and for the same reason: an approval
+	# is not a reservation, so the receiver may still have collected the cash between
+	# the two steps.
+	_assert_refundable(transfer)
+
+	if transfer.refund_status != "Approved":
+		frappe.throw(
+			_(
+				"Transfer {0} cannot be refunded: its refund status is {1}, and cash only "
+				"goes back out on an approved refund."
+			).format(transfer.name, transfer.refund_status)
+		)
+
+	_post_the_refund(transfer, posting_date or nowdate())
+	# Only now: `post_refund` has already written `accounting_status = Reversed`, so
+	# no reader sees a Refunded transfer whose obligation is still open. The pickup
+	# code dies with it — the cash left by the origin desk, so there is nothing at
+	# the destination counter left to collect.
+	transfer.db_set(
+		{
+			"operational_status": "Refunded",
+			"refund_status": "Completed",
+			"verification_status": "Expired",
+		},
+		notify=False,
+	)
+	_append_event(
+		transfer,
+		event_type="Refund completion",
+		key=key,
+		branch=transfer.origin_branch,
+		details=_("Refunded {0} {1} to {2}").format(
+			flt(transfer.tendered, 2), transfer.send_currency, transfer.sender_name
+		),
+	)
+
+	return _refund_result(transfer, replayed=False)
+
+
+__all__ = [
+	"approve_refund",
+	"complete_refund",
+	"payout_queue",
+	"payout_transfer",
+	"register_remittance",
+	"reject_refund",
+	"request_refund",
+	"unlock_pickup_code",
+]

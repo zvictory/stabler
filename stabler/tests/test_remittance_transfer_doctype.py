@@ -222,6 +222,13 @@ class EventTrail(unittest.TestCase):
 				"Payout",
 				"Refund request",
 				"Refund approval",
+				# A rejection is a fourth refund outcome, not an approval with a sad
+				# note in `details`. `refund_status` has carried `Rejected` since
+				# qzr9.7 and `reject_refund` is the transition that writes it; without
+				# its own option, the one refund step that ends a request would be the
+				# only transition with no entry in an append-only trail — or would be
+				# filed under the opposite word.
+				"Refund rejection",
 				"Refund completion",
 			],
 		)
