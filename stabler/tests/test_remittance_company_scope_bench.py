@@ -177,7 +177,14 @@ class RemittanceCompanyScopeBenchTest(FrappeTestCase):
 
 	def test_the_viewer_lists_only_its_own_company_transfers(self):
 		frappe.set_user(VIEWER_EMAIL)
-		visible = frappe.get_all("Remittance Transfer", pluck="name")
+		# `get_list`, never `get_all`. frappe/__init__.py:1365 says get_all "will
+		# **not** check for permissions" — it sets ignore_permissions, so
+		# `permission_query_conditions` is never spliced in and this assertion would
+		# fail against correct scoping. `/api/resource` reaches the list through
+		# `frappe.client.get_list`, so get_list is also the call the attacker makes.
+		# limit_page_length=0 defeats the default page of 20, which would otherwise
+		# hide the other company's row behind pagination rather than behind the guard.
+		visible = frappe.get_list("Remittance Transfer", pluck="name", limit_page_length=0)
 		self.assertIn(self.transfer_a, visible)
 		self.assertNotIn(
 			self.transfer_b,
@@ -188,7 +195,14 @@ class RemittanceCompanyScopeBenchTest(FrappeTestCase):
 
 	def test_the_viewer_lists_only_its_own_company_events(self):
 		frappe.set_user(VIEWER_EMAIL)
-		visible = frappe.get_all("Remittance Event", pluck="name")
+		# `get_list`, never `get_all`. frappe/__init__.py:1365 says get_all "will
+		# **not** check for permissions" — it sets ignore_permissions, so
+		# `permission_query_conditions` is never spliced in and this assertion would
+		# fail against correct scoping. `/api/resource` reaches the list through
+		# `frappe.client.get_list`, so get_list is also the call the attacker makes.
+		# limit_page_length=0 defeats the default page of 20, which would otherwise
+		# hide the other company's row behind pagination rather than behind the guard.
+		visible = frappe.get_list("Remittance Event", pluck="name", limit_page_length=0)
 		self.assertIn(self.event_a, visible)
 		self.assertNotIn(
 			self.event_b,
