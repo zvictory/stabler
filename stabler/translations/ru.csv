@@ -5900,7 +5900,7 @@ Yutilgan,Выиграно
 {currency} — not a corridor currency,{currency} — не валюта коридора
 {doctype} {name} is linked and has no deletion rule — resolve it manually first.,{doctype} {name} связан и не имеет правила удаления — сначала разберите связь вручную.
 {done}/{total} quote sets complete,{done}/{total} комплектов предложений собрано
-{kg} kg received but not costed (damaged or rejected),"{kg} кг принято, но не включено в себестоимость (повреждено или отбраковано)"
+"{kg} kg received, not on a purchase receipt","{kg} кг принято, но не попало ни в одну приёмку"
 {name} and {count} linked record(s) will be removed. This cannot be undone.,{name} и связанные записи ({count}) будут удалены. Это нельзя отменить.
 {name} will be removed. This cannot be undone.,{name} будет удалён. Это нельзя отменить.
 {n} outstanding invoice(s),{n} неоплаченных счёт(ов)

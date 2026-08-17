@@ -5895,7 +5895,7 @@ Yutilgan,Ютилган
 {currency} — not a corridor currency,{currency} — коридор валютаси эмас
 {doctype} {name} is linked and has no deletion rule — resolve it manually first.,{doctype} {name} боғланган ва ўчириш қоидаси йўқ — аввал уни қўлда ҳал қилинг.
 {done}/{total} quote sets complete,{done}/{total} таклиф тўплами тўлиқ
-{kg} kg received but not costed (damaged or rejected),"{kg} кг қабул қилинди, лекин таннархга кирмади (шикастланган ёки рад этилган)"
+"{kg} kg received, not on a purchase receipt","{kg} кг қабул қилинди, бирор мол қабулига кирмади"
 {name} and {count} linked record(s) will be removed. This cannot be undone.,{name} ва {count} та боғланган ёзув ўчирилади. Буни қайтариб бўлмайди.
 {name} will be removed. This cannot be undone.,{name} ўчирилади. Буни қайтариб бўлмайди.
 {n} outstanding invoice(s),{n} та тўланмаган ҳисоб-фактура

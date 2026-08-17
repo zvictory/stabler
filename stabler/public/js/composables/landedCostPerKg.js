@@ -32,9 +32,17 @@ function sumField(rows, field) {
  * receipt has booked money or weight yet: a card of zeroes and infinities is
  * worse than no card, and the caller hides the whole panel on `null`.
  *
- * `uncostedKg` is the received weight no receipt paid for — damaged or rejected.
- * It is reported rather than folded away so the reader can reconcile the divisor
+ * `uncostedKg` is the received weight that no Purchase Receipt paid for. It is
+ * reported rather than folded away so the reader can reconcile the divisor
  * against the GRN's own weight instead of suspecting the card of losing kilos.
+ *
+ * It deliberately does NOT claim damage. Damaged and rejected weight is the
+ * commonest cause, but the same subtraction comes out positive when no receipt
+ * was written at all — `_create_pr_for_truck_receipt` gives up when it cannot
+ * resolve a supplier while the Truck Receipt still submits, and a Purchase
+ * Receipt cancelled afterwards leaves the GRN's kilos behind. Printing "N kg
+ * damaged" above a Submit button is the number that starts a supplier claim; the
+ * condition data that would justify it lives on the Truck Receipt, not here.
  */
 export function unitCostAnalysis(payload) {
 	if (!payload) return null;
@@ -68,7 +76,10 @@ export function unitCostAnalysis(payload) {
 	return {
 		costedKg,
 		receivedKg,
-		uncostedKg: Math.max(receivedKg - costedKg, 0),
+		// Rounded to the 2 dp the GRN itself reports (`grn_checklist` rounds
+		// `received_total_kg` there) while the receipt side keeps 3. Without this a
+		// sub-gram rounding residue renders a whole "0.005 kg" sub-line.
+		uncostedKg: Math.max(Math.round((receivedKg - costedKg) * 100) / 100, 0),
 		prTotal,
 		existingLcvTotal,
 		nextLcvTotal,

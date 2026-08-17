@@ -45,6 +45,38 @@ describe("cost per kg when part of the delivery arrived damaged", () => {
 		expect(analysis.uncostedKg).toBe(100);
 	});
 
+	it("reports that weight as uncosted and not as damaged, which it cannot know", () => {
+		// Same arithmetic, no damage anywhere: a truck whose supplier could not be
+		// resolved never gets a Purchase Receipt written, and the GRN still counts
+		// its kilos. The figure is identical to the damaged case, so the module must
+		// not name a cause — a fabricated "100 kg damaged" above a Submit button is
+		// what starts a supplier claim. The label lives in the Vue and says
+		// "not on a purchase receipt"; here the point is that only `uncostedKg`
+		// exists, with no field claiming to be damaged weight.
+		const analysis = unitCostAnalysis({
+			grn: { received_total_kg: 1000 },
+			purchase_receipts: [{ name: "PR-001", base_grand_total: 4500, costed_qty_kg: 900 }],
+			existing_lcvs: [],
+			preview: { total: 0 },
+		});
+		expect(analysis.uncostedKg).toBe(100);
+		expect(Object.keys(analysis)).not.toContain("damagedKg");
+	});
+
+	it("does not raise a sub-line over a rounding residue", () => {
+		// The GRN rounds its weight to 2 dp and the receipt side keeps 3, so the two
+		// can disagree by a fraction of a gram on a delivery where nothing is
+		// missing. "0.005 kg received, not on a purchase receipt" is noise that
+		// reads as a discrepancy.
+		const analysis = unitCostAnalysis({
+			grn: { received_total_kg: 900.0 },
+			purchase_receipts: [{ name: "PR-001", base_grand_total: 4500, costed_qty_kg: 899.995 }],
+			existing_lcvs: [],
+			preview: { total: 0 },
+		});
+		expect(analysis.uncostedKg).toBe(0);
+	});
+
 	it("carries the same divisor through to the landed figure, which is the one that posts", () => {
 		// The voucher spreads its charges over the Landed Cost Items, and those come
 		// from the receipts — the Good weight. A landed cost per kg computed on a

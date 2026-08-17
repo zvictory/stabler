@@ -5895,7 +5895,7 @@ Yutilgan,Yutilgan
 {currency} — not a corridor currency,{currency} — koridor valyutasi emas
 {doctype} {name} is linked and has no deletion rule — resolve it manually first.,{doctype} {name} bog‘langan va o‘chirish qoidasi yo‘q — avval uni qo‘lda hal qiling.
 {done}/{total} quote sets complete,{done}/{total} taklif to'plami to'liq
-{kg} kg received but not costed (damaged or rejected),"{kg} kg qabul qilindi, lekin tannarxga kirmadi (shikastlangan yoki rad etilgan)"
+"{kg} kg received, not on a purchase receipt","{kg} kg qabul qilindi, biror mol qabuliga kirmadi"
 {name} and {count} linked record(s) will be removed. This cannot be undone.,{name} va {count} ta bog‘langan yozuv o‘chiriladi. Buni qaytarib bo‘lmaydi.
 {name} will be removed. This cannot be undone.,{name} o‘chiriladi. Buni qaytarib bo‘lmaydi.
 {n} outstanding invoice(s),{n} ta to'lanmagan hisob-faktura

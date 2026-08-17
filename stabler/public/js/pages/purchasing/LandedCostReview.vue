@@ -242,7 +242,7 @@ watch(documentName, () => load());
 									<div class="text-secondary small fw-semibold text-uppercase">{{ t("Costed Net Weight") }}</div>
 									<div class="h2 mb-0 font-monospace text-primary">{{ unitCostAnalysis.costedKg.toLocaleString() }} <small class="text-muted">{{ t("kg") }}</small></div>
 									<div v-if="unitCostAnalysis.uncostedKg > 0" class="text-secondary small">
-										{{ t("{kg} kg received but not costed (damaged or rejected)", { kg: unitCostAnalysis.uncostedKg.toLocaleString() }) }}
+										{{ t("{kg} kg received, not on a purchase receipt", { kg: unitCostAnalysis.uncostedKg.toLocaleString() }) }}
 									</div>
 								</div>
 								<div class="col-md-3 mb-2 mb-md-0">
