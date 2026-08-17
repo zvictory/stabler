@@ -301,10 +301,17 @@ watch(activeCompany, reload);
 						@click="bucket = ''"
 					/>
 				</div>
+				<!-- `totals` is computed over the bucket-filtered scan, so once a bucket is
+				     picked every other bucket sums to zero. Printing that as money reads as
+				     "there is nothing in 90+" to someone working the 31-60 list, which is the
+				     opposite of true and hides exactly the exposure this strip exists to
+				     escalate. Until the endpoint returns bucket-independent totals
+				     (stabler-mn8r), the unselected buckets say "not measured here" rather
+				     than a number that is wrong. -->
 				<div v-for="b in BUCKETS" :key="b.value" class="col-sm-6 col-lg-2">
 					<KpiCard
 						:label="b.label"
-						:value="money(totals[b.value])"
+						:value="bucket && bucket !== b.value ? '—' : money(totals[b.value])"
 						:icon="b.icon"
 						:tone="b.tone"
 						:value-tone="b.valueTone"
