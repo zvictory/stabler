@@ -3697,6 +3697,28 @@ def get_landed_cost_review(grn_checklist: str, rate=None):
 
 	# Purchase Receipts booked from this GRN's submitted Truck Receipts.
 	pr_names = imports_hooks._submitted_prs_for_grn(grn.name)
+
+	# The weight each receipt's money was actually booked against. Only Good-condition
+	# weight ever reaches a Purchase Receipt (receipt_math.good_qty returns 0 for any
+	# other condition and the zero-qty line is then dropped), whereas the GRN's
+	# ``received_total_kg`` counts every condition, damaged included. Dividing one by
+	# the other is not a cost per kg — the damaged kilos' money is not in the numerator
+	# at all. Ship the costed weight on the *same rows* the totals come from so a client
+	# cannot pair a receipt total with a weight that receipt never paid for.
+	# ``stock_qty`` is stock UOM, which is Kg on this route (receipt_math.STOCK_UOM,
+	# conversion_factor 1).
+	# One query for every receipt, tallied in Python: Frappe v16 refuses an SQL
+	# function spelled as a string in SELECT, so `sum(stock_qty) as ...` parses
+	# fine here and 500s on the live site (test_imports_flow_source guards it).
+	costed_kg: dict = {}
+	if pr_names:
+		for row in frappe.get_all(
+			"Purchase Receipt Item",
+			filters={"parent": ["in", pr_names], "parenttype": "Purchase Receipt"},
+			fields=["parent", "stock_qty"],
+		):
+			costed_kg[row.parent] = costed_kg.get(row.parent, 0.0) + flt(row.stock_qty)
+
 	purchase_receipts = []
 	for pr in pr_names:
 		prd = frappe.db.get_value(
@@ -3716,6 +3738,7 @@ def get_landed_cost_review(grn_checklist: str, rate=None):
 					# (imports_module/hooks.py) while voucher totals are already base
 					# amounts, so the per-kg card must not add the two raw figures.
 					"base_grand_total": flt(prd.base_grand_total),
+					"costed_qty_kg": flt(costed_kg.get(pr, 0.0)),
 					"currency": prd.currency,
 					"docstatus": cint(prd.docstatus),
 				}

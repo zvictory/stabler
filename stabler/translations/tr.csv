@@ -1088,6 +1088,7 @@ Cost Lines,Maliyet Satırları
 Cost lines,Maliyet kalemleri
 Cost must be positive.,Maliyet pozitif olmalıdır.
 Cost total,Toplam maliyet
+Costed Net Weight,Maliyetlenen Net Ağırlık
 Costs after dividends (office…),Temettü sonrası masraflar (ofis…)
 Could not accrue salary.,Maaş tahakkuk ettirilemedi.
 Could not add holiday.,Tatil eklenemedi.
@@ -5888,6 +5889,7 @@ Yutilgan,Kazanıldı
 {currency} — not a corridor currency,{currency} — koridor para birimi değil
 {doctype} {name} is linked and has no deletion rule — resolve it manually first.,{doctype} {name} bağlı ve bir silme kuralı yok — önce elle çözün.
 {done}/{total} quote sets complete,{done}/{total} teklif seti tam
+"{kg} kg received, not on a purchase receipt","{kg} kg teslim alındı, hiçbir mal kabulünde yok"
 {name} and {count} linked record(s) will be removed. This cannot be undone.,{name} ve {count} bağlı kayıt kaldırılacak. Bu geri alınamaz.
 {name} will be removed. This cannot be undone.,{name} kaldırılacak. Bu geri alınamaz.
 {n} outstanding invoice(s),{n} ödenmemiş fatura

@@ -1095,6 +1095,7 @@ Cost Lines,Строки затрат
 Cost lines,Строки затрат
 Cost must be positive.,Себестоимость должна быть положительной.
 Cost total,Итого затрат
+Costed Net Weight,Вес в себестоимости
 Costs after dividends (office…),Расходы после дивидендов (офис…)
 Could not accrue salary.,Не удалось начислить зарплату.
 Could not add holiday.,Не удалось добавить праздник.
@@ -5899,6 +5900,7 @@ Yutilgan,Выиграно
 {currency} — not a corridor currency,{currency} — не валюта коридора
 {doctype} {name} is linked and has no deletion rule — resolve it manually first.,{doctype} {name} связан и не имеет правила удаления — сначала разберите связь вручную.
 {done}/{total} quote sets complete,{done}/{total} комплектов предложений собрано
+"{kg} kg received, not on a purchase receipt","{kg} кг принято, но не попало ни в одну приёмку"
 {name} and {count} linked record(s) will be removed. This cannot be undone.,{name} и связанные записи ({count}) будут удалены. Это нельзя отменить.
 {name} will be removed. This cannot be undone.,{name} будет удалён. Это нельзя отменить.
 {n} outstanding invoice(s),{n} неоплаченных счёт(ов)

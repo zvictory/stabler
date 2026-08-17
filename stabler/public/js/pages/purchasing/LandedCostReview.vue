@@ -7,6 +7,7 @@ import { lcvApi } from "../../api/lcv.js";
 import { t } from "../../composables/i18n.js";
 import { formatDate } from "../../composables/date.js";
 import { formatMoney } from "../../composables/money.js";
+import { unitCostAnalysis as computeUnitCostAnalysis } from "../../composables/landedCostPerKg.js";
 import { useToast } from "../../composables/useToast.js";
 import { useConfirm } from "../../composables/useConfirm.js";
 import { useEscapeBack } from "../../composables/useEscapeBack.js";
@@ -189,51 +190,16 @@ async function cancelLcv(lcvName) {
 
 // Per-kg valuation impact: receipt cost, everything already vouchered, and the
 // voucher about to be created — the one number an accountant is actually after.
-// Imports only. `received_total_kg` is a real weight on a GRN Checklist; on the
-// Purchase Receipt route lcv.py derives it as a plain sum of line `qty`, which is
-// each line's transaction UOM (boxes, pieces, litres in the purchasing flow) and
-// is not a weight at all. A cost "per kg" computed from that would be a fiction.
+// Imports only, because only the GRN route ships `costed_qty_kg`: on the Purchase
+// Receipt route lcv.py has line `qty` in each line's transaction UOM (boxes,
+// pieces, litres in the purchasing flow), which is not a weight at all. A cost
+// "per kg" computed from that would be a fiction. The maths itself lives in
+// `composables/landedCostPerKg.js` so the damaged-goods case has a unit test.
 const showsUnitCost = computed(() => documentType.value === "GRN Checklist");
 
 const unitCostAnalysis = computed(() => {
 	if (!data.value || !showsUnitCost.value) return null;
-	const totalKg = Number(data.value.grn?.received_total_kg || 0);
-	if (totalKg <= 0) return null;
-
-	// Every term must be company currency. `grand_total` is the receipt's own
-	// transaction currency — hardcoded USD for imports (imports_module/hooks.py) —
-	// while a voucher total is already the base_amount sum. Adding those two would
-	// understate the receipt leg by the whole exchange rate.
-	const prTotal = (data.value.purchase_receipts || []).reduce(
-		(acc, pr) => acc + Number(pr.base_grand_total || 0),
-		0
-	);
-	if (prTotal <= 0) return null;
-	// Drafts count. The moment one is created its cost lines are stamped consumed,
-	// so they leave `preview.total`; excluding the draft here would make the landed
-	// figure collapse in the window between Create and Submit — exactly when someone
-	// is reading it to decide whether to submit. Cancelled (2) is excluded: cancelling
-	// releases the lines and they return to the preview.
-	const existingLcvTotal = (data.value.existing_lcvs || [])
-		.filter((lc) => lc.docstatus === 0 || lc.docstatus === 1)
-		.reduce((acc, lc) => acc + Number(lc.total || 0), 0);
-	const nextLcvTotal = Number(data.value.preview?.total || 0);
-	const grandLandedTotal = prTotal + existingLcvTotal + nextLcvTotal;
-
-	const basePerKg = prTotal / totalKg;
-	const landedPerKg = grandLandedTotal / totalKg;
-	const landedIncreasePct = basePerKg > 0 ? ((landedPerKg - basePerKg) / basePerKg) * 100 : 0;
-
-	return {
-		totalKg,
-		prTotal,
-		existingLcvTotal,
-		nextLcvTotal,
-		grandLandedTotal,
-		basePerKg,
-		landedPerKg,
-		landedIncreasePct,
-	};
+	return computeUnitCostAnalysis(data.value);
 });
 
 onMounted(load);
@@ -273,8 +239,11 @@ watch(documentName, () => load());
 						<div class="card-body">
 							<div class="row align-items-center text-center text-md-start">
 								<div class="col-md-3 mb-2 mb-md-0">
-									<div class="text-secondary small fw-semibold text-uppercase">{{ t("Total Net Weight") }}</div>
-									<div class="h2 mb-0 font-monospace text-primary">{{ unitCostAnalysis.totalKg.toLocaleString() }} <small class="text-muted">{{ t("kg") }}</small></div>
+									<div class="text-secondary small fw-semibold text-uppercase">{{ t("Costed Net Weight") }}</div>
+									<div class="h2 mb-0 font-monospace text-primary">{{ unitCostAnalysis.costedKg.toLocaleString() }} <small class="text-muted">{{ t("kg") }}</small></div>
+									<div v-if="unitCostAnalysis.uncostedKg > 0" class="text-secondary small">
+										{{ t("{kg} kg received, not on a purchase receipt", { kg: unitCostAnalysis.uncostedKg.toLocaleString() }) }}
+									</div>
 								</div>
 								<div class="col-md-3 mb-2 mb-md-0">
 									<div class="text-secondary small fw-semibold text-uppercase">{{ t("Base Receipt Cost / kg") }}</div>

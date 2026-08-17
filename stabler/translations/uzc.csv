@@ -1090,6 +1090,7 @@ Cost Lines,Харажат қаторлари
 Cost lines,Харажат қаторлари
 Cost must be positive.,Таннарх мусбат бўлиши керак.
 Cost total,Жами харажат
+Costed Net Weight,Таннархга кирган вазн
 Costs after dividends (office…),Дивиденддан кейинги харажатлар (офис…)
 Could not accrue salary.,Ойликни таҳаккук қилиб бўлмади.
 Could not add holiday.,Байрам қўшиб бўлмади.
@@ -5894,6 +5895,7 @@ Yutilgan,Ютилган
 {currency} — not a corridor currency,{currency} — коридор валютаси эмас
 {doctype} {name} is linked and has no deletion rule — resolve it manually first.,{doctype} {name} боғланган ва ўчириш қоидаси йўқ — аввал уни қўлда ҳал қилинг.
 {done}/{total} quote sets complete,{done}/{total} таклиф тўплами тўлиқ
+"{kg} kg received, not on a purchase receipt","{kg} кг қабул қилинди, бирор мол қабулига кирмади"
 {name} and {count} linked record(s) will be removed. This cannot be undone.,{name} ва {count} та боғланган ёзув ўчирилади. Буни қайтариб бўлмайди.
 {name} will be removed. This cannot be undone.,{name} ўчирилади. Буни қайтариб бўлмайди.
 {n} outstanding invoice(s),{n} та тўланмаган ҳисоб-фактура
