@@ -508,7 +508,18 @@ watch(activeCompany, reload);
 								</td>
 								<td class="text-end font-monospace fw-semibold">{{ money(r.unbilled_amount) }}</td>
 								<td class="text-end">
+									<!-- No module gate on this link: the page's own route carries
+									     meta.module "purchasing", so a user who cannot open a
+									     purchasing document is never here to see the row. -->
+									<router-link
+										v-if="r.draft_invoice"
+										:to="{ path: `/purchasing/invoices/${r.draft_invoice}` }"
+										class="btn btn-sm btn-ghost-secondary text-nowrap"
+									>
+										<i class="ti ti-file-text me-1"></i>{{ t("Open draft {name}", { name: r.draft_invoice }) }}
+									</router-link>
 									<button
+										v-else
 										type="button"
 										class="btn btn-sm btn-outline-secondary text-nowrap"
 										:disabled="Boolean(creating)"
