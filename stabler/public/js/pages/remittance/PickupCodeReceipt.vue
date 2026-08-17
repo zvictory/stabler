@@ -22,9 +22,11 @@
  *     once already. That case renders as a stated fact, never as an empty box
  *     the cashier might read as "the code is blank".
  */
-import { ref } from "vue";
+import { computed, onBeforeUnmount, ref } from "vue";
+import { onBeforeRouteLeave } from "vue-router";
 import { t, tlang } from "../../composables/i18n.js";
 import { formatMoney } from "../../composables/money.js";
+import { useConfirm } from "../../composables/useConfirm.js";
 
 const props = defineProps({
 	remittanceId: { type: String, default: "" },
@@ -61,6 +63,68 @@ async function copyCode() {
 function printReceipt() {
 	window.print();
 }
+
+/**
+ * Leaving this component destroys the code, so leaving has to be deliberate.
+ *
+ * The acknowledgement checkbox used to gate one thing only: this card's own
+ * button. Everything else was still one click away — the module tab strip is
+ * rendered by RemittanceHome OUTSIDE `<router-view>`, so Operations, Payout or
+ * any sidebar link unmounted this component and took the only copy of the code
+ * with it. The cash was already taken by then, and no read path can give the
+ * code back (`assert_no_pickup_code`), which leaves a refund as the only way out.
+ *
+ * Both exits are covered because they are different exits: `onBeforeRouteLeave`
+ * catches every in-app navigation, including the `router.replace` that
+ * RemittanceHome fires when the cashier switches to a Legacy company;
+ * `beforeunload` catches reload and tab-close, which the router never sees.
+ *
+ * Deliberate, not an oversight: this ASKS rather than refusing outright. A hard
+ * block would strand a cashier whose customer has already walked away, and the
+ * escape it would leave them — tick the box — is the one thing they must not do
+ * untruthfully. The dialog is `dismissable: false` so it cannot be waved away by
+ * a click on the backdrop, and staying is the default answer.
+ */
+const { confirm } = useConfirm();
+
+// At risk exactly while a code is on screen and has not been acknowledged. A
+// replay carries no code, and there is nothing to lose once the box is ticked.
+const codeAtRisk = computed(() => !!props.pickupCode && !acknowledged.value);
+
+// Named rather than inlined into the guard so the decision can be executed by a
+// test. This repo has no @vue/test-utils, so an inlined arrow could only ever be
+// asserted as source text — and a `toContain` passes just as happily for a guard
+// wired backwards.
+async function mayLeave() {
+	if (!codeAtRisk.value) return true;
+	return await confirm({
+		title: t("Leave without handing over the pickup code?"),
+		body: t(
+			"This code is shown once and is stored only as a digest — nothing in this system can read it back. Leaving this page destroys the only copy, and the money has already been taken: the transfer would then have to be refunded."
+		),
+		danger: true,
+		confirmLabel: t("Leave and lose the code"),
+		cancelLabel: t("Stay on the receipt"),
+		dismissable: false,
+	});
+}
+
+onBeforeRouteLeave(async (to, from, next) => {
+	next((await mayLeave()) ? undefined : false);
+});
+
+function handleBeforeUnload(event) {
+	if (!codeAtRisk.value) return;
+	// The browser shows its own wording here; the string is ignored by design.
+	event.preventDefault();
+	event.returnValue = "";
+}
+
+window.addEventListener("beforeunload", handleBeforeUnload);
+
+onBeforeUnmount(() => {
+	window.removeEventListener("beforeunload", handleBeforeUnload);
+});
 </script>
 
 <template>

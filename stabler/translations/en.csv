@@ -3032,12 +3032,14 @@ Leaf,Leaf
 Leave,Leave
 leave,leave
 Leave all unchecked to use role-based access. Checking any replaces it with exactly these modules. Visibility only — backend permissions still apply.,Leave all unchecked to use role-based access. Checking any replaces it with exactly these modules. Visibility only — backend permissions still apply.
+Leave and lose the code,Leave and lose the code
 Leave blank for open-ended.,Leave blank for open-ended.
 Leave blank to keep the existing token.,Leave blank to keep the existing token.
 Leave empty to allow proformas from any vendor.,Leave empty to allow proformas from any vendor.
 Leave request approved.,Leave request approved.
 Leave request rejected.,Leave request rejected.
 Leave type,Leave type
+Leave without handing over the pickup code?,Leave without handing over the pickup code?
 Ledger,Ledger
 Ledger spans multiple account currencies; amounts shown in base currency.,Ledger spans multiple account currencies; amounts shown in base currency.
 Ledger — all vouchers (reconciles to the balance),Ledger — all vouchers (reconciles to the balance)
@@ -5341,6 +5343,7 @@ Status name is required,Status name is required
 Status not found,Status not found
 Status Pipeline,Status Pipeline
 Status updated.,Status updated.
+Stay on the receipt,Stay on the receipt
 Step,Step
 step,step
 Step #{0} not found on this visit.,Step #{0} not found on this visit.
@@ -5606,6 +5609,7 @@ This BOM has no materials.,This BOM has no materials.
 This cannot be deleted yet:,This cannot be deleted yet:
 This cannot be undone.,This cannot be undone.
 This category pool has no boxes left.,This category pool has no boxes left.
+"This code is shown once and is stored only as a digest — nothing in this system can read it back. Leaving this page destroys the only copy, and the money has already been taken: the transfer would then have to be refunded.","This code is shown once and is stored only as a digest — nothing in this system can read it back. Leaving this page destroys the only copy, and the money has already been taken: the transfer would then have to be refunded."
 This Commercial Invoice already has a Purchase Invoice.,This Commercial Invoice already has a Purchase Invoice.
 This correction affects payroll calculations,This correction affects payroll calculations
 This correction is already {0} and cannot be approved.,This correction is already {0} and cannot be approved.
