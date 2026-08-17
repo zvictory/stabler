@@ -73,6 +73,7 @@ import { call } from "../../api/client.js";
 import { remittanceApi, REMITTANCE_QUEUES } from "../../api/remittance.js";
 import { t } from "../../composables/i18n.js";
 import { useToast } from "../../composables/useToast.js";
+import { CORRIDOR_CURRENCIES } from "../../composables/remittanceCurrencies.js";
 import Select from "../../components/Select.vue";
 import Typeahead from "../../components/Typeahead.vue";
 import SkeletonRows from "../../components/SkeletonRows.vue";
@@ -441,6 +442,77 @@ function deskCurrencyMismatch(row) {
 	const actual = currencyOf(row.account);
 	if (!actual || actual === row.currency) return null;
 	return actual;
+}
+
+// Per desk (branch), the currencies it actually holds a complete cash-account row
+// for. The factual question the data already answers — not a comparison against
+// an expected set, because nothing records which currencies a desk is SUPPOSED to
+// carry and inventing that record is a migration, not this fix.
+//
+// Every currency is collected, not only the corridor ones: the Currency select on
+// this screen is fed from every enabled Currency, so a desk can legitimately hold
+// a UZS drawer. That row is real, and it is also useless for a transfer.
+const deskReadiness = computed(() => {
+	const map = new Map();
+	for (const row of desks.value) {
+		const branch = row.branch || "";
+		if (!branch) continue;
+		if (!map.has(branch)) map.set(branch, { covered: new Set() });
+		// A row still being filled in has no currency or no account yet; it
+		// contributes nothing rather than counting against the desk. The
+		// half-filled row is already reported by its own blocker below.
+		if (!row.currency || !row.account) continue;
+		map.get(branch).covered.add(row.currency);
+	}
+	return map;
+});
+
+function readinessFor(branch) {
+	return deskReadiness.value.get(branch) || null;
+}
+
+/** This row, on its own: a complete account row in a currency a corridor uses. */
+function rowUsable(row) {
+	return !!row.currency && !!row.account && CORRIDOR_CURRENCIES.includes(row.currency);
+}
+
+// A desk verdict belongs to the desk, not to each of its rows. Rendered on the
+// first row carrying that branch so it is stated once; rows of one branch need
+// not be adjacent, so this is by index rather than by comparing with the row above.
+const firstRowIndexByBranch = computed(() => {
+	const first = new Map();
+	desks.value.forEach((row, index) => {
+		const branch = row.branch || "";
+		if (branch && !first.has(branch)) first.set(branch, index);
+	});
+	return first;
+});
+
+function isFirstRowOfDesk(row, index) {
+	return !!row.branch && firstRowIndexByBranch.value.get(row.branch) === index;
+}
+
+/**
+ * A desk that cannot serve ANY transfer — it holds no corridor currency at all.
+ *
+ * Deliberately the intersection with CORRIDOR_CURRENCIES and NOT `covered.size`.
+ * Two failures came out of the size test in review:
+ *   - it can never fire on saved data, because branch, currency and account are
+ *     all `reqd: 1` on Remittance Cash Desk Account, so a saved desk always
+ *     covers something and the whole signal was inert;
+ *   - and it says nothing about the case that matters — a desk holding only a
+ *     non-corridor currency (a UZS drawer) covers one currency, passes the size
+ *     test, and is reported ready while it can serve nothing.
+ *
+ * The half-filled-row case is deliberately NOT folded in here. It is desk-wide
+ * only by accident of grouping, and folding it in made every row of a desk claim
+ * the desk was unusable while the green badges in the same cell said otherwise.
+ * An unfinished row is reported as an unfinished row, by the existing blocker.
+ */
+function deskNotReady(branch) {
+	const r = readinessFor(branch);
+	if (!r) return false;
+	return !CORRIDOR_CURRENCIES.some((currency) => r.covered.has(currency));
 }
 
 // ---------------------------------------------------------------------------
@@ -1018,6 +1090,7 @@ async function save() {
 								<th style="min-width: 110px">{{ t("Currency") }}</th>
 								<th style="min-width: 220px">{{ t("Cash account") }}</th>
 								<th style="min-width: 150px">{{ t("Evidence") }}</th>
+								<th style="min-width: 160px">{{ t("Readiness") }}</th>
 								<th class="w-1"></th>
 							</tr>
 						</thead>
@@ -1090,6 +1163,22 @@ async function save() {
 								<td>
 									<Select v-model="row.evidence_type" :options="EVIDENCE_OPTIONS" size="sm" />
 								</td>
+								<!-- Per ROW, this row's own usability; per DESK, once, on that desk's
+								     first row. The first draft printed the whole corridor set on
+								     every row, so a three-currency desk repeated the same three
+								     badges three times and said nothing about the row you were
+								     looking at. -->
+								<td>
+									<div v-if="rowUsable(row)" class="badge bg-green-lt text-green">
+										{{ row.currency }}
+									</div>
+									<div v-else-if="row.currency && row.account" class="badge bg-secondary-lt text-secondary">
+										{{ t("{currency} — not a corridor currency", { currency: row.currency }) }}
+									</div>
+									<div v-if="isFirstRowOfDesk(row, i) && deskNotReady(row.branch)" class="text-danger small mt-1">
+										{{ t("Not ready — this desk cannot take or hand over a transfer.") }}
+									</div>
+								</td>
 								<td>
 									<button
 										type="button"
@@ -1102,7 +1191,7 @@ async function save() {
 								</td>
 							</tr>
 							<tr v-if="!desks.length">
-								<td colspan="6" class="text-secondary">
+								<td colspan="7" class="text-secondary">
 									{{
 										t(
 											"No desk is mapped yet. Add one for every desk and currency that takes or pays out cash."
