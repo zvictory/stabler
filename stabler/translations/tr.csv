@@ -6023,3 +6023,43 @@ Showing the first {n} — narrow the search to see the rest.,İlk {n} gösterili
 restructured once,bir kez yeniden yapılandırıldı
 restructured twice,iki kez yeniden yapılandırıldı
 restructured {n} times,{n} kez yeniden yapılandırıldı
+0–30 days,0–30 gün
+31–60 days,31–60 gün
+61–90 days,61–90 gün
+90+ days,90+ gün
+Age (days),Yaş (gün)
+Any age,Tüm yaşlar
+Bucket,Aralık
+Create invoice,Fatura oluştur
+Create purchase invoice,Satın alma faturası oluştur
+Draft invoice created.,Fatura taslağı oluşturuldu.
+Draft invoice {name} created.,{name} fatura taslağı oluşturuldu.
+Every amount sitting in Stock Received But Not Billed is explained by a receipt on this list.,"«Mal Alındı, Fatura Gelmedi» hesabındaki her tutar bu listedeki bir mal kabulüyle açıklanıyor."
+Failed to create the invoice.,Fatura oluşturulamadı.
+Failed to load unbilled receipts.,Faturalanmamış mal kabulleri yüklenemedi.
+"No Stock Received But Not Billed account is configured on this company, so the ledger side cannot be read. The difference is not zero — it is unknown. Set the account on the Company, then reload.","Bu şirkette «Mal Alındı, Fatura Gelmedi» hesabı tanımlı değil, bu yüzden defter tarafı okunamıyor. Fark sıfır değil — bilinmiyor. Hesabı şirket kartında tanımlayıp yeniden yükleyin."
+Only two documents may move this account — the Purchase Receipt that credits it and the Purchase Invoice that clears it. A balance no receipt on this list explains means something else wrote to it:,"Bu hesabı yalnızca iki belge hareket ettirebilir — onu alacaklandıran Mal Kabul Fişi ve onu kapatan Satın Alma Faturası. Bu listedeki hiçbir mal kabulünün açıklamadığı bir bakiye, hesaba başka bir şeyin yazdığı anlamına gelir:"
+Raise a draft purchase invoice for {receipt} from {supplier}? It creates a payable draft — nothing posts to the ledger until you submit it.,{supplier} tedarikçisinden {receipt} için satın alma faturası taslağı oluşturulsun mu? Bir borç taslağı oluşur — siz onaylayana kadar deftere hiçbir şey işlenmez.
+Received value,Kabul edilen değer
+Reconcile as of today,Bugüne göre mutabık kıl
+Reconcile the full list,Tüm listeyi mutabık kıl
+Reconciliation is paused on a past date.,Geçmiş bir tarihte mutabakat duraklatıldı.
+Reconciliation is paused while this list is filtered.,Liste filtreliyken mutabakat duraklatıldı.
+SRBNB ledger balance,SRBNB defter bakiyesi
+Search matches {shown} of the {loaded} receipts on this page.,Arama bu sayfadaki {loaded} mal kabulünden {shown} tanesiyle eşleşti.
+Stock Received But Not Billed agrees with this list.,"«Mal Alındı, Fatura Gelmedi» hesabı bu listeyle uyuşuyor."
+Stock Received But Not Billed does not agree with this list.,"«Mal Alındı, Fatura Gelmedi» hesabı bu listeyle uyuşmuyor."
+"The balance of {account} could not be read, so the difference is unknown rather than zero.","{account} hesabının bakiyesi okunamadı, bu yüzden fark sıfır değil, bilinmiyor."
+"The ledger balance covers the whole company, while the total beside it covers only the filtered receipts — subtracting them would measure the filter, not a ledger break.","Defter bakiyesi tüm şirketi kapsıyor, yanındaki toplam ise yalnızca filtrelenmiş mal kabullerini — ikisini çıkarmak defterdeki kopukluğu değil, filtreyi ölçerdi."
+"The ledger balance is taken on that date, but whether a receipt is billed is only known as it stands today — so this list shows current billing status, not the position on that date. Subtracting the two would report the invoices raised since then as a ledger break.","Defter bakiyesi o tarihte alınır, ancak bir mal kabulünün faturalanıp faturalanmadığı yalnızca bugünkü haliyle bilinir — bu yüzden bu liste o tarihteki durumu değil, güncel faturalama durumunu gösterir. İkisini çıkarmak, o tarihten beri kesilen faturaları defterde bir kopukluk gibi raporlardı."
+This list cannot be reconciled against the ledger.,Bu liste defterle mutabık kılınamıyor.
+Unbilled on this list,Bu listede faturalanmamış
+"Until it is explained, stock value and trade payables are both misstated by the difference.",Bu açıklanana kadar hem stok değeri hem ticari borçlar fark kadar yanlış gösterilir.
+You need a purchasing or accounts role to see unbilled receipts.,Faturalanmamış mal kabullerini görmek için satın alma veya muhasebe rolü gerekir.
+"a Journal Entry posted straight to Stock Received But Not Billed, which is not an accepted way to move this account.","doğrudan «Mal Alındı, Fatura Gelmedi» hesabına atılmış bir yevmiye kaydı; bu hesabı hareket ettirmenin kabul edilen yolu değildir."
+"a Purchase Invoice booked to this account without naming the receipt it settles, so the ledger is cleared while the receipt still counts as unbilled here; or",kapattığı mal kabulünü belirtmeden bu hesaba işlenmiş bir satın alma faturası — defter kapanır ama mal kabulü burada hâlâ faturalanmamış sayılır; ya da
+"a return receipt, which debits this account and is deliberately left out of this list; or",bu hesabı borçlandıran ve bu listeye bilerek alınmayan bir iade mal kabulü; ya da
+account not set,hesap tanımlı değil
+as of {date},{date} itibarıyla
+"tax or charges inside a receipt total — only the net goes into this account, so anything the tax table added was never there to clear; or","mal kabul toplamının içindeki vergi veya masraflar — bu hesaba yalnızca net tutar girer, dolayısıyla vergi tablosunun eklediği hiçbir şey orada hiç bulunmadı; ya da"
+{count} receipts,{count} mal kabulü
