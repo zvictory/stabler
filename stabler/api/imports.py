@@ -1274,6 +1274,39 @@ def list_grn_checklists(
 	return {"rows": rows, "total_count": total}
 
 
+def _po_rate_map(commercial_invoice, item_codes) -> dict:
+	"""Resolved Purchase Order rate per item code — ``None`` where there is none.
+
+	The receiving form warns about a line that would enter stock unpriced *before*
+	the operator clicks Submit, which it can only do if it is told the Purchase
+	Order side of the price. It is resolved here exactly the way the build path
+	resolves it (``hooks._po_item_rows_for_ci`` + ``receipt_math.resolve_po_rate``),
+	so the form and the submit block cannot disagree about which line has no price.
+	``_po_item_rows_for_ci`` queries, so it runs once per request, never per row.
+
+	Anything that does not resolve to a positive rate comes back as ``None``, not
+	0. The form reads ``null`` as "unknown — do not accuse this line"; a 0 would
+	mark every line of every receipt whose Commercial Invoice has no linked
+	Purchase Order as unpriced, which is a false alarm on the common case here (PO
+	creation is manual and linkage is routinely missing). A missing Commercial
+	Invoice or no linked POs degrade to the same "unknown" — this is a hint for the
+	operator, never a gate; the gate is on submit.
+	"""
+	from stabler.stabler.imports_module import receipt_math
+	from stabler.stabler.imports_module.hooks import _po_item_rows_for_ci
+
+	if not commercial_invoice:
+		return {}
+	po_rows = _po_item_rows_for_ci(commercial_invoice)
+	if not po_rows:
+		return {}
+	rates: dict[str, float | None] = {}
+	for code in {c for c in (item_codes or []) if c}:
+		rate = flt(receipt_math.resolve_po_rate(code, po_rows)["rate"])
+		rates[code] = rate if rate > 0 else None
+	return rates
+
+
 @frappe.whitelist()
 def get_grn_checklist(name: str):
 	"""Full GRN Checklist payload: header, items, truck receipts, LCVs, vet cert."""
@@ -1311,6 +1344,8 @@ def get_grn_checklist(name: str):
 				"Landed Cost Voucher", filters={"name": ["in", lcv_names]}, fields=["name", "docstatus"]
 			)
 		}
+
+	po_rates = _po_rate_map(doc.commercial_invoice, [it.item_code for it in (doc.grn_items or [])])
 
 	payload = {
 		"name": doc.name,
@@ -1359,6 +1394,11 @@ def get_grn_checklist(name: str):
 				"variance_kg": flt(it.variance_kg),
 				"variance_percentage": flt(it.variance_percentage),
 				"status": it.status,
+				# The rate the Purchase Receipt would take off the linked Purchase
+				# Order, or None when it does not resolve to one. This is the *create*
+				# path — there is no Truck Receipt yet, so the form has no other way to
+				# tell the operator a line has no price until submit refuses it.
+				"po_rate": po_rates.get(it.item_code),
 			}
 			for it in (doc.grn_items or [])
 		],
@@ -1539,6 +1579,12 @@ def get_truck_receipt(name: str):
 	_assert_imports_access(_company_of("Truck Receipt", name))
 	_assert_can_read("Truck Receipt", name)
 	doc = frappe.get_doc("Truck Receipt", name)
+	grn_ci = (
+		frappe.db.get_value("GRN Checklist", doc.grn_checklist, "commercial_invoice")
+		if doc.grn_checklist
+		else None
+	)
+	po_rates = _po_rate_map(grn_ci, [it.grn_item_code for it in (doc.items or [])])
 	return {
 		"name": doc.name,
 		"modified": str(doc.modified),
@@ -1572,6 +1618,11 @@ def get_truck_receipt(name: str):
 				# operator typed, and the escape hatch for an unpriced line looks empty
 				# on every reload.
 				"rate": flt(it.rate),
+				# The Purchase Order side of the price, or None when it does not
+				# resolve to a positive rate. The form needs both numbers to tell an
+				# unpriced line (neither) from a line the PO already prices; None is
+				# read as "unknown", so a receipt with no linked PO is not accused.
+				"po_rate": po_rates.get(it.grn_item_code),
 				"damaged_boxes": cint(it.damaged_boxes),
 				"rejected_boxes": cint(it.rejected_boxes),
 				"expiry_date": str(it.expiry_date) if it.expiry_date else None,
@@ -1699,9 +1750,22 @@ def update_truck_receipt(name: str, values=None, items=None, modified: str | Non
 def _truck_receipt_po_warnings(doc) -> list[str]:
 	"""Re-derive the PO-rate resolution warnings for a Truck Receipt's lines.
 
-	The submit hook logs these to ``stabler.imports`` but does not return them;
-	we recompute the same ``receipt_math.resolve_po_rate`` decision so the SPA
-	can show the warehouse why a line landed on the Purchase Receipt at rate 0.
+	The submit hook logs these to ``stabler.imports`` but does not return them; we
+	recompute the same ``receipt_math.resolve_po_rate`` decision so the SPA can
+	show the warehouse what the Purchase Order side of the price looked like.
+
+	A warning is dropped when the rate typed on the line is what priced it *and*
+	the Purchase Order resolved no rate at all: those messages end "rate set to 0",
+	which stopped being true the moment the manual rate became the escape hatch for
+	exactly this case. Shown on a receipt that posted correctly, the message
+	describes the defect the operator just avoided — and invites them to cancel a
+	good Purchase Receipt over it.
+
+	Every other warning stays, including the ambiguous-linkage one on a line a
+	manual rate priced: that fires when several Purchase Order lines agree on a
+	rate, and what it reports is the row linkage the Purchase Receipt had to omit.
+	That is true whoever set the price, and it is why the Purchase Order stays
+	"not received" — a real thing to chase, and no accusation about valuation.
 	"""
 	from stabler.stabler.imports_module import receipt_math
 	from stabler.stabler.imports_module.hooks import _po_item_rows_for_ci
@@ -1713,8 +1777,14 @@ def _truck_receipt_po_warnings(doc) -> list[str]:
 		if receipt_math.good_qty(it.received_kg, it.condition) <= 0:
 			continue
 		res = receipt_math.resolve_po_rate(it.grn_item_code, po_rows)
-		if res["warning"]:
-			warnings.append(res["warning"])
+		if not res["warning"]:
+			continue
+		_rate, source = receipt_math.effective_rate(it.get("rate"), res["rate"])
+		# The zero this warning complains about was replaced by the rate typed on
+		# the line, so the receipt posted at the operator's price, not at 0.
+		if source == receipt_math.RATE_SOURCE_MANUAL and res["rate"] <= 0:
+			continue
+		warnings.append(res["warning"])
 	return warnings
 
 

@@ -1,8 +1,9 @@
 """Unit tests for the PR-per-TruckReceipt math (Frappe-free).
 
 Covers PO-rate resolution, the manual-rate override and the unpriced-line block
-that stops zero-valued stock from posting, batch naming, the Good-only qty rule,
-the cold-chain temperature check, and the Purchase Receipt payload shape.
+that stops zero-valued stock from posting, the foreign-currency PO comparison
+behind the submit guard, batch naming, the Good-only qty rule, the cold-chain
+temperature check, and the Purchase Receipt payload shape.
 
     cd /path/to/stabler && PYTHONPATH=$PWD python3 -m unittest stabler.tests.test_receipt_math -v
 """
@@ -302,6 +303,133 @@ class TestZeroValuedStockCannotReachTheReceipt(unittest.TestCase):
 		self.assertEqual(line["rate"], 9.99)
 		self.assertEqual(line["purchase_order"], "PO-1")
 		self.assertEqual(line["purchase_order_item"], "row-a")
+
+
+class TestMismatchedCurrencyPos(unittest.TestCase):
+	"""Which Purchase Orders make the receipt refuse a rate it cannot label.
+
+	The Purchase Receipt is posted in one fixed currency (``PR_CURRENCY`` in
+	``hooks.py``). A rate read off a Purchase Order denominated in another one
+	would be posted under the receipt's label without conversion — not wrong by a
+	rounding, wrong by an exchange rate. ``hooks._block_foreign_currency_po_rates``
+	turns whatever comes back here into the refusal, so every rule of the
+	comparison is pinned below.
+	"""
+
+	PR_CURRENCY = "USD"
+
+	def _line(self, item_code, qty, source=rm.RATE_SOURCE_PO):
+		"""One row of the build path's resolved lines."""
+		return {"idx": 1, "item_code": item_code, "qty": qty, "source": source}
+
+	def _po_row(self, purchase_order, item_code, currency, rate=4.5):
+		return {
+			"purchase_order": purchase_order,
+			"purchase_order_item": "row-a",
+			"item_code": item_code,
+			"rate": rate,
+			"currency": currency,
+		}
+
+	def _call(self, resolved, po_item_rows):
+		return rm.mismatched_currency_pos(resolved, po_item_rows, self.PR_CURRENCY)
+
+	def test_a_foreign_currency_po_that_priced_a_received_line_is_reported(self):
+		# The defect this guards: 1000 Kg priced at 4.50 EUR posted as 4.50 USD.
+		out = self._call([self._line("BEEF", 1000.0)], [self._po_row("PO-1", "BEEF", "EUR")])
+		self.assertEqual(out, [{"purchase_order": "PO-1", "currency": "EUR"}])
+
+	def test_a_po_in_the_receipts_own_currency_is_not_reported(self):
+		# The ordinary case. Reporting it would block every truck.
+		self.assertEqual(self._call([self._line("BEEF", 1000.0)], [self._po_row("PO-1", "BEEF", "USD")]), [])
+
+	def test_a_foreign_po_that_only_priced_a_zero_qty_line_is_not_reported(self):
+		# Damaged/rejected weight is dropped by build_pr_payload, so that rate is
+		# never posted and there is nothing to mislabel.
+		for qty in (0.0, -5.0):
+			with self.subTest(qty=qty):
+				self.assertEqual(
+					self._call([self._line("BEEF", qty)], [self._po_row("PO-1", "BEEF", "EUR")]), []
+				)
+
+	def test_a_foreign_po_whose_line_a_manual_rate_priced_is_not_reported(self):
+		# A rate typed on the Truck Receipt is a number in the receipt's currency by
+		# definition — the PO's currency never reaches the Purchase Receipt. Blocking
+		# here would shut the escape hatch on exactly the operator using it correctly.
+		self.assertEqual(
+			self._call(
+				[self._line("BEEF", 1000.0, source=rm.RATE_SOURCE_MANUAL)],
+				[self._po_row("PO-1", "BEEF", "EUR")],
+			),
+			[],
+		)
+
+	def test_an_unpriced_line_is_not_reported_it_never_posts_at_all(self):
+		self.assertEqual(
+			self._call(
+				[self._line("BEEF", 1000.0, source=rm.RATE_SOURCE_NONE)],
+				[self._po_row("PO-1", "BEEF", "EUR")],
+			),
+			[],
+		)
+
+	def test_a_blank_po_currency_is_not_reported_there_is_nothing_to_compare(self):
+		# Nothing to name in the message either, and an unset currency is not the
+		# mislabel this guard is about.
+		for blank in (None, ""):
+			with self.subTest(currency=blank):
+				self.assertEqual(
+					self._call([self._line("BEEF", 1000.0)], [self._po_row("PO-1", "BEEF", blank)]), []
+				)
+
+	def test_two_lines_from_the_same_offending_po_are_reported_once(self):
+		# The message names Purchase Orders, not rows; a 40-line truck off one EUR PO
+		# must not print that PO forty times.
+		out = self._call(
+			[self._line("BEEF", 1000.0), self._line("LAMB", 500.0)],
+			[self._po_row("PO-1", "BEEF", "EUR"), self._po_row("PO-1", "LAMB", "EUR")],
+		)
+		self.assertEqual(out, [{"purchase_order": "PO-1", "currency": "EUR"}])
+
+	def test_several_offending_pos_come_back_deduped_in_a_stable_order(self):
+		out = self._call(
+			[self._line("LAMB", 500.0), self._line("BEEF", 1000.0), self._line("GOAT", 250.0)],
+			[
+				self._po_row("PO-9", "LAMB", "TRY"),
+				self._po_row("PO-2", "BEEF", "EUR"),
+				self._po_row("PO-2", "GOAT", "EUR"),
+			],
+		)
+		self.assertEqual(
+			out,
+			[
+				{"purchase_order": "PO-2", "currency": "EUR"},
+				{"purchase_order": "PO-9", "currency": "TRY"},
+			],
+		)
+
+	def test_a_foreign_po_line_for_an_item_this_receipt_did_not_price_is_ignored(self):
+		# The CI's POs cover more items than one truck carries. Only the items whose
+		# rate this receipt actually took off a PO can be mislabelled.
+		out = self._call(
+			[self._line("BEEF", 1000.0)],
+			[self._po_row("PO-1", "BEEF", "USD"), self._po_row("PO-2", "CHICKEN", "EUR")],
+		)
+		self.assertEqual(out, [])
+
+	def test_unreadable_qty_does_not_raise_inside_the_guard(self):
+		# Same rule as everywhere else in this module: bad input degrades, it never
+		# blows up inside a submit hook.
+		self.assertEqual(self._call([self._line("BEEF", "junk")], [self._po_row("PO-1", "BEEF", "EUR")]), [])
+		self.assertEqual(
+			self._call([self._line("BEEF", "1000")], [self._po_row("PO-1", "BEEF", "EUR")]),
+			[{"purchase_order": "PO-1", "currency": "EUR"}],
+		)
+
+	def test_nothing_to_compare_is_no_offenders(self):
+		self.assertEqual(self._call([], []), [])
+		self.assertEqual(self._call(None, None), [])
+		self.assertEqual(self._call([self._line("BEEF", 1000.0)], []), [])
 
 
 class TestBuildPrPayload(unittest.TestCase):

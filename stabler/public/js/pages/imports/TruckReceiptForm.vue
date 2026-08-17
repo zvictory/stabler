@@ -11,7 +11,7 @@ import MoneyInput from "../../components/MoneyInput.vue";
 import StatusBadge from "../../components/StatusBadge.vue";
 
 const session = useSession();
-const { activeCompany } = storeToRefs(session);
+const { activeCompany, user } = storeToRefs(session);
 const route = useRoute();
 const router = useRouter();
 const toast = useToast();
@@ -492,7 +492,14 @@ watch(docName, load);
 							<!-- Only Good weight is priced into the purchase receipt. -->
 							<div v-if="it.condition === 'Good'" class="mt-2">
 								<label class="form-label small">{{ t("Rate (USD/kg)") }}</label>
-								<MoneyInput v-model="it.rate" :disabled="!isEditable" />
+								<MoneyInput
+										v-model="it.rate"
+										:language="user.language"
+										:max-fraction-digits="4"
+										hide-currency
+										size="sm"
+										:disabled="!isEditable"
+									/>
 								<div v-if="isUnpriced(it)" class="text-danger small mt-1">
 									{{ t("No purchase order price for this item — enter a rate to submit.") }}
 								</div>

@@ -27,8 +27,9 @@ Key rules encoded here:
   the USD->company conversion_rate is deliberately left to ERPNext's own
   Currency Exchange defaults (documented assumption — stock items are held in
   Kg, so uom == stock_uom == "Kg", conversion_factor 1). How that currency gets
-  resolved is unchanged; ``hooks.py`` merely refuses the receipt when a rate was
-  read off a Purchase Order in a different currency, rather than mislabelling it.
+  resolved is unchanged; ``mismatched_currency_pos`` names the Purchase Orders whose
+  currency is not the receipt's and ``hooks.py`` refuses the receipt over them,
+  rather than mislabelling the rate.
 """
 
 from __future__ import annotations
@@ -165,6 +166,44 @@ def unpriced_lines(rows) -> list[dict]:
 		if source == RATE_SOURCE_NONE:
 			offenders.append(row)
 	return offenders
+
+
+def mismatched_currency_pos(resolved, po_item_rows, pr_currency) -> list[dict]:
+	"""Purchase Orders in another currency that priced a line of this receipt.
+
+	``resolved`` is the build path's per-line result: dicts with at least
+	``item_code``, ``qty`` and ``source`` (see ``effective_rate``). ``po_item_rows``
+	is the ``resolve_po_rate`` input with a ``currency`` on each row (its parent
+	PO's). ``pr_currency`` is the currency the Purchase Receipt is tagged with.
+
+	Only a PO-sourced rate can be mislabelled: a manually typed rate is a number in
+	the receipt's currency by definition, and a zero-qty line never reaches the
+	receipt, so neither is compared. A row whose PO carries no currency is skipped
+	too — it cannot be compared, and it is not the mislabel this reports.
+
+	Returns ``[{"purchase_order", "currency"}, ...]``, one entry per offending PO
+	(deduped) ordered by PO name so the caller's message reads the same every run.
+	An empty list means no rate on this receipt was read off a foreign-currency PO.
+	"""
+	priced_from_po = {
+		row.get("item_code")
+		for row in resolved or []
+		if row.get("source") == RATE_SOURCE_PO and _as_float(row.get("qty")) > 0
+	}
+	if not priced_from_po:
+		return []
+	mismatched: dict[str, str] = {}
+	for row in po_item_rows or []:
+		if row.get("item_code") not in priced_from_po:
+			continue
+		currency = row.get("currency")
+		if not currency or currency == pr_currency:
+			continue
+		mismatched[row.get("purchase_order")] = currency
+	return [
+		{"purchase_order": po, "currency": currency}
+		for po, currency in sorted(mismatched.items(), key=lambda pair: str(pair[0]))
+	]
 
 
 def build_pr_line(*, item_code, qty, rate, warehouse, purchase_order, purchase_order_item, batch_no) -> dict:

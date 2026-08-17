@@ -703,30 +703,15 @@ def _block_foreign_currency_po_rates(tr, resolved, po_item_rows) -> None:
 	silent mislabel and a wrong valuation. This is a guard, not a migration:
 	resolving the receipt currency properly is deferred, so the receipt stops
 	rather than guessing an exchange rate.
+
+	Which lines count (PO-sourced price, qty > 0), the blank-currency skip and the
+	per-PO dedupe all live in ``receipt_math.mismatched_currency_pos`` so they can
+	be unit-tested without a bench; only the refusal itself is left here.
 	"""
-	# Only a PO-sourced rate can be mislabelled: a manually typed rate is a number
-	# in the receipt's currency by definition. Zero-qty lines never reach the
-	# receipt, so their rate is never posted either.
-	priced_from_po = {
-		row["item_code"]
-		for row in resolved
-		if row["source"] == receipt_math.RATE_SOURCE_PO and row["qty"] > 0
-	}
-	if not priced_from_po:
-		return
-	mismatched: dict[str, str] = {}
-	for row in po_item_rows:
-		if row.get("item_code") not in priced_from_po:
-			continue
-		currency = row.get("currency")
-		# A PO with no currency on it cannot be compared — nothing to name in the
-		# message, and it is not the mislabel this guard is about.
-		if not currency or currency == PR_CURRENCY:
-			continue
-		mismatched[row.get("purchase_order")] = currency
+	mismatched = receipt_math.mismatched_currency_pos(resolved, po_item_rows, PR_CURRENCY)
 	if not mismatched:
 		return
-	named = ", ".join(f"{po} ({currency})" for po, currency in sorted(mismatched.items()))
+	named = ", ".join(f"{row['purchase_order']} ({row['currency']})" for row in mismatched)
 	frappe.throw(
 		frappe._(
 			"Truck Receipt {0} takes its rates from a Purchase Order in another currency: {1}. "
