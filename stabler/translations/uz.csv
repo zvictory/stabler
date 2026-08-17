@@ -300,6 +300,7 @@ ahead of the invoice,invoysdan oldinda
 Alerts,
 All,Hammasi
 All attendance exceptions have been resolved or ignored.,
+All cash desks,Barcha kassalar
 All categories,Barcha kategoriyalar
 All companies,Barcha kompaniyalar
 All computed allocation amounts were zero.,
@@ -394,6 +395,7 @@ Amount received,Qabul qilingan summa
 Amount sent,Yuborilgan summa
 Amount to transfer,O'tkazma summasi
 Amounts,Summalar
+"Amounts are listed per currency and never summed. Both filters narrow the scorecards, the queue counts and the queue rows together.","Summalar har bir valyuta bo'yicha alohida ko'rsatiladi va hech qachon qo'shilmaydi. Ikkala filtr ham ko'rsatkichlarni, navbat sonlarini va navbat qatorlarini birga toraytiradi."
 Amounts in,Summalar
 Amounts in company currency,Summalar kompaniya valyutasida
 An allocated invoice does not belong to this customer chain.,Taqsimlanayotgan hisob-faktura ushbu mijozlar zanjiriga tegishli emas.
@@ -4277,6 +4279,7 @@ Refresh preview,
 Refresh token,
 Refresh token (JWT),
 Refreshing…,Yangilanmoqda…
+Refund open,Ochiq qaytarish
 Region,
 Region / Route,Hudud / marshrut
 Register a customs declaration (GTD) for an import to clear it.,Importni rasmiylashtirish uchun bojxona deklaratsiyasini (GTD) ro‘yxatdan o‘tkazing.
@@ -4363,6 +4366,7 @@ Request for quotation,Taklif so'rash
 Request for quotation created as draft.,Narx so'rovi qoralama sifatida yaratildi.
 Request rejected.,So'rov rad etildi.
 Requested,So'ralgan
+"Requested and awaiting a decision, or approved and awaiting cash",So'ralgan va qaror kutmoqda yoki tasdiqlangan va naqd pul kutmoqda
 Requested by,So'rovchi
 Requested items,So'ralgan tovarlar
 Requested Items,So‘ralgan tovarlar

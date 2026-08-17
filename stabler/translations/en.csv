@@ -70,7 +70,6 @@ A Payroll Attendance Summary for employee {0} and period {1} already exists: {2}
 A quotation needs at least one line.,A quotation needs at least one line.
 A reason is required to reject a refund.,A reason is required to reject a refund.
 A reason is required to request a refund.,A reason is required to request a refund.
-A refund was requested and needs a manager decision,A refund was requested and needs a manager decision
 A registered transfer cannot be unposted — the obligation must exist ,A registered transfer cannot be unposted — the obligation must exist 
 A rejection reason is required.,A rejection reason is required.
 A selected location does not belong to this customer chain.,A selected location does not belong to this customer chain.
@@ -102,9 +101,9 @@ Add at least one cash desk before switching {0} to the V1 engine: ,Add at least 
 Add desk,Add desk
 Age / expiry,Age / expiry
 Aged open obligations,Aged open obligations
+All cash desks,All cash desks
 "All time · the same balance as the card above, split by desk","All time · the same balance as the card above, split by desk"
 Amount the sender hands over,Amount the sender hands over
-Amounts are listed per currency and never summed. The currency filter narrows the scorecards only — the queues below always list every currency.,Amounts are listed per currency and never summed. The currency filter narrows the scorecards only — the queues below always list every currency.
 An exchange rate is required to register a transfer.,An exchange rate is required to register a transfer.
 Any currency,Any currency
 Any status,Any status
@@ -347,7 +346,6 @@ Recorded at register,Recorded at register
 Refund,Refund
 Refund approved by {0}. {1},Refund approved by {0}. {1}
 Refund approved. No money has moved yet.,Refund approved. No money has moved yet.
-Refund awaiting approval,Refund awaiting approval
 Refund cash-out,Refund cash-out
 "Refund for {0} could not be posted at its frozen register rate {1}, which is ","Refund for {0} could not be posted at its frozen register rate {1}, which is "
 Refund of {0} {1} requested: {2},Refund of {0} {1} requested: {2}
@@ -815,6 +813,7 @@ Amount received,Amount received
 Amount sent,Amount sent
 Amount to transfer,Amount to transfer
 Amounts,Amounts
+"Amounts are listed per currency and never summed. Both filters narrow the scorecards, the queue counts and the queue rows together.","Amounts are listed per currency and never summed. Both filters narrow the scorecards, the queue counts and the queue rows together."
 Amounts in,Amounts in
 Amounts in company currency,Amounts in company currency
 An allocated invoice does not belong to this customer chain.,An allocated invoice does not belong to this customer chain.
@@ -4698,6 +4697,7 @@ Refresh preview,Refresh preview
 Refresh token,Refresh token
 Refresh token (JWT),Refresh token (JWT)
 Refreshing…,Refreshing…
+Refund open,Refund open
 Region,Region
 Region / Route,Region / Route
 Register a customs declaration (GTD) for an import to clear it.,Register a customs declaration (GTD) for an import to clear it.
@@ -4784,6 +4784,7 @@ Request for quotation,Request for quotation
 Request for quotation created as draft.,Request for quotation created as draft.
 Request rejected.,Request rejected.
 Requested,Requested
+"Requested and awaiting a decision, or approved and awaiting cash","Requested and awaiting a decision, or approved and awaiting cash"
 Requested by,Requested by
 Requested items,Requested items
 Requested Items,Requested Items

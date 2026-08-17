@@ -300,6 +300,7 @@ ahead of the invoice,инвойсдан олдинда
 Alerts,
 All,Ҳамма
 All attendance exceptions have been resolved or ignored.,
+All cash desks,Барча кассалар
 All categories,Барча категориялар
 All companies,Барча компаниялар
 All computed allocation amounts were zero.,
@@ -394,6 +395,7 @@ Amount received,Қабул қилинган сумма
 Amount sent,Юборилган сумма
 Amount to transfer,Ўтказма суммаси
 Amounts,Суммалар
+"Amounts are listed per currency and never summed. Both filters narrow the scorecards, the queue counts and the queue rows together.","Суммалар ҳар бир валюта бўйича алоҳида кўрсатилади ва ҳеч қачон қўшилмайди. Иккала филтр ҳам кўрсаткичларни, навбат сонларини ва навбат қаторларини бирга торайтиради."
 Amounts in,Суммалар
 Amounts in company currency,Суммалар компания валютасида
 An allocated invoice does not belong to this customer chain.,Тақсимланаётган ҳисоб-фактура ушбу мижозлар занжирига тегишли эмас.
@@ -4277,6 +4279,7 @@ Refresh preview,
 Refresh token,
 Refresh token (JWT),
 Refreshing…,Янгиланмоқда…
+Refund open,Очиқ қайтариш
 Region,
 Region / Route,Ҳудуд / маршрут
 Register a customs declaration (GTD) for an import to clear it.,Импортни расмийлаштириш учун божхона декларациясини (ГТД) рўйхатдан ўтказинг.
@@ -4363,6 +4366,7 @@ Request for quotation,Таклиф сўраш
 Request for quotation created as draft.,Нарх сўрови қоралама сифатида яратилди.
 Request rejected.,Сўров рад этилди.
 Requested,Сўралган
+"Requested and awaiting a decision, or approved and awaiting cash",Сўралган ва қарор кутмоқда ёки тасдиқланган ва нақд пул кутмоқда
 Requested by,Сўровчи
 Requested items,Сўралган товарлар
 Requested Items,Сўралган товарлар

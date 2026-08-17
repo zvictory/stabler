@@ -54,8 +54,8 @@ export const remittanceApi = {
 	// back as per-currency rows and never as a total: USD, EUR and USDT are not
 	// added together anywhere in this product. Pass `currency` to narrow to one
 	// send-leg currency.
-	operationsSummary: (company, currency = null) =>
-		call(`${READ}.operations_summary`, { company, currency }),
+	operationsSummary: (company, currency = null, desk = null) =>
+		call(`${READ}.operations_summary`, { company, currency, desk }),
 
 	// One of the six queues, paged. `queue` must be a REMITTANCE_QUEUES value.
 	//
@@ -63,8 +63,26 @@ export const remittanceApi = {
 	// queues answer `false` because nothing writes `expires_at` yet, and the
 	// screen must say "no expiry policy is configured" rather than "nothing is
 	// expiring" — those are opposite claims and only one is true.
-	workQueue: (company, queue, limit = 50, offset = 0) =>
-		call(`${READ}.work_queue`, { company, queue, limit, offset }),
+	//
+	// `currency` narrows the send leg and `desk` narrows to one cash desk on
+	// either leg — the same two the summary takes, so one filter bar can drive
+	// both without a tile counting rows the list below is not showing.
+	workQueue: (company, queue, limit = 50, offset = 0, currency = null, desk = null) =>
+		call(`${READ}.work_queue`, { company, queue, limit, offset, currency, desk }),
+
+	// The company's configured cash desks. One spelling for every screen that
+	// offers a desk — the New Transfer form picks an origin and a destination from
+	// this, Operations filters by it. `Remittance Settings` is a Single per
+	// company, so `parent` is the company name.
+	cashDesks: (company) =>
+		call("frappe.client.get_list", {
+			doctype: "Remittance Cash Desk Account",
+			parent: "Remittance Settings",
+			filters: { parenttype: "Remittance Settings", parent: company },
+			fields: ["branch", "city", "currency"],
+			limit_page_length: 0,
+			order_by: "idx asc",
+		}),
 
 	// The searchable transfer list. Takes one options object because it carries
 	// nine arguments and a positional call would silently transpose two of them.

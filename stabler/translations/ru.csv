@@ -301,6 +301,7 @@ ahead of the invoice,опережает инвойс
 Alerts,
 All,Все
 All attendance exceptions have been resolved or ignored.,
+All cash desks,Все кассы
 All categories,Все категории
 All companies,Все компании
 All computed allocation amounts were zero.,
@@ -396,6 +397,7 @@ Amount received,Сумма получена
 Amount sent,Сумма отправлена
 Amount to transfer,Сумма перевода
 Amounts,Суммы
+"Amounts are listed per currency and never summed. Both filters narrow the scorecards, the queue counts and the queue rows together.","Суммы показаны по каждой валюте отдельно и никогда не складываются. Оба фильтра сужают показатели, счётчики очередей и строки очередей одновременно."
 Amounts in,Суммы в
 Amounts in company currency,Суммы в валюте компании
 An allocated invoice does not belong to this customer chain.,Распределяемый счёт не относится к этой цепочке клиентов.
@@ -4282,6 +4284,7 @@ Refresh preview,
 Refresh token,
 Refresh token (JWT),
 Refreshing…,Обновление…
+Refund open,Возврат в работе
 Region,
 Region / Route,Регион / маршрут
 Register a customs declaration (GTD) for an import to clear it.,Зарегистрируйте таможенную декларацию (ГТД) для оформления импорта.
@@ -4368,6 +4371,7 @@ Request for quotation,Запросить предложение
 Request for quotation created as draft.,Запрос цен создан как черновик.
 Request rejected.,Заявка отклонена.
 Requested,Создано
+"Requested and awaiting a decision, or approved and awaiting cash",Запрошен и ждёт решения либо одобрен и ждёт выдачи наличных
 Requested by,Кем создано
 Requested items,Запрашиваемые позиции
 Requested Items,Запрошенные позиции

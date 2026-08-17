@@ -560,6 +560,204 @@ class QueueTest(unittest.TestCase):
 
 
 # --------------------------------------------------------------------------- #
+# 3b. The approved refund that appeared nowhere
+# --------------------------------------------------------------------------- #
+class ApprovedRefundVisibilityTest(unittest.TestCase):
+	"""An approved refund is unfinished work with a cashier standing at a drawer.
+
+	`approve_refund` posts nothing — the obligation and the deferred commission
+	stay in the GL until `complete_refund` reverses them — so the transfer is
+	waiting on the ORIGIN desk to count the cash back out. It used to match no
+	queue on the whole operations screen: the three payout queues drop it by
+	design (`_refund_open` mirrors what the payout endpoint would refuse),
+	`locked_pickup_code` wants a locked code, and the exception shapes describe a
+	broken row, which an approved refund is not. Work with nobody looking at it is
+	how a desk loses a day.
+	"""
+
+	def _queues_holding(self, queries, name: str) -> set:
+		found = set()
+		for queue in queries.QUEUES:
+			rows = queries.work_queue("Mikas", queue)["rows"]
+			if name in [row["name"] for row in rows]:
+				found.add(queue)
+		return found
+
+	def test_an_approved_refund_reaches_a_queue_at_all(self):
+		# The regression proper. Asserted across all six rather than against the one
+		# so a future filter change cannot fix this queue by breaking another.
+		db, queries = _seeded()
+		approved = db.add_transfer(refund_status="Approved")
+		self.assertEqual({"refund_awaiting_approval"}, self._queues_holding(queries, approved))
+
+	def test_the_queue_carries_both_open_refund_states_and_neither_closed_one(self):
+		db, queries = _seeded()
+		requested = db.add_transfer(refund_status="Requested")
+		approved = db.add_transfer(refund_status="Approved")
+		# Completed: the cash is already back with the sender. Rejected: the transfer
+		# went on living and is payable again. Neither is refund work.
+		db.add_transfer(refund_status="Completed")
+		db.add_transfer(refund_status="Rejected")
+		db.add_transfer(refund_status="None")
+		rows = queries.work_queue("Mikas", "refund_awaiting_approval")["rows"]
+		self.assertEqual({requested, approved}, {row["name"] for row in rows})
+
+	def test_the_tile_counts_what_the_list_shows(self):
+		# The count is what a manager reads before deciding there is nothing to do.
+		# A queue that lists the row and counts it out is worse than one that hides
+		# it, because it looks answered.
+		db, queries = _seeded()
+		db.add_transfer(refund_status="Approved")
+		db.add_transfer(refund_status="Requested")
+		summary = queries.operations_summary("Mikas")
+		rows = queries.work_queue("Mikas", "refund_awaiting_approval")["rows"]
+		self.assertEqual(len(rows), summary["queues"]["refund_awaiting_approval"]["count"])
+		self.assertEqual(2, len(rows))
+
+	def test_an_approved_refund_is_still_not_offered_for_payout(self):
+		# Widening the refund queue must not widen the payable set: paying out a
+		# transfer whose refund was approved hands the same money to two people.
+		db, queries = _seeded()
+		db.add_transfer(refund_status="Approved")
+		self.assertEqual([], queries.work_queue("Mikas", "ready_for_payout")["rows"])
+
+
+# --------------------------------------------------------------------------- #
+# 3c. Each queue leads with what is closest to hurting
+# --------------------------------------------------------------------------- #
+class QueueOrderTest(unittest.TestCase):
+	"""A queue is worked, not browsed, so `registered_at desc` is wrong for all six.
+
+	Every queue used to fall through to `_ORDER` — newest registration first —
+	which for "expiring within 12 hours" is very nearly the reverse of
+	soonest-deadline-first, and for a locked code ignores the one number that says
+	which transfer is about to be lost. D11 in the design council record; the
+	wording is PROMPT_remittance_design_v2.txt:315-316.
+	"""
+
+	def _names(self, queries, queue, **kwargs):
+		return [row["name"] for row in queries.work_queue("Mikas", queue, **kwargs)["rows"]]
+
+	def test_expiring_leads_with_the_soonest_deadline(self):
+		db, queries = _seeded()
+		# Registration order is deliberately the reverse of deadline order. Under
+		# the old default the newest registration led, which put the LAST deadline
+		# at the top of the screen whose entire job is the next one.
+		late = db.add_transfer(registered_at=f"{TODAY} 10:00:00", expires_at=f"{TODAY} 20:00:00")
+		soon = db.add_transfer(registered_at=f"{TODAY} 09:00:00", expires_at=f"{TODAY} 13:00:00")
+		self.assertEqual([soon, late], self._names(queries, "expiring_12h"))
+
+	def test_expired_leads_with_the_one_that_has_been_owed_longest(self):
+		db, queries = _seeded()
+		recent = db.add_transfer(expires_at=f"{TODAY} 10:00:00")
+		oldest = db.add_transfer(expires_at="2026-08-15 10:00:00")
+		self.assertEqual([oldest, recent], self._names(queries, "expired_refund_required"))
+
+	def test_the_payout_and_refund_queues_lead_with_the_oldest_request(self):
+		# Oldest first, because the person who has waited longest is the one whose
+		# patience the desk is spending.
+		db, queries = _seeded()
+		newer = db.add_transfer(registered_at=f"{TODAY} 10:00:00")
+		older = db.add_transfer(registered_at="2026-08-14 08:00:00")
+		self.assertEqual([older, newer], self._names(queries, "ready_for_payout"))
+
+		fresh = db.add_transfer(registered_at=f"{TODAY} 10:30:00", refund_status="Requested")
+		stale = db.add_transfer(registered_at="2026-08-13 08:00:00", refund_status="Approved")
+		self.assertEqual([stale, fresh], self._names(queries, "refund_awaiting_approval"))
+
+	def test_locked_leads_with_the_most_failed_attempts(self):
+		db, queries = _seeded()
+		few = db.add_transfer(code_locked=1, code_attempts=1, registered_at=f"{TODAY} 10:00:00")
+		many = db.add_transfer(code_locked=1, code_attempts=5, registered_at=f"{TODAY} 09:00:00")
+		self.assertEqual([many, few], self._names(queries, "locked_pickup_code"))
+
+	def test_attempts_are_counted_not_spelled_when_the_union_path_sorts(self):
+		# A desk filter doubles every shape, so the rows come back unioned and are
+		# ordered in Python rather than by the database. Sorting an Int as text puts
+		# 9 above 10 — it would bury the transfer nearest to being lost under the one
+		# with one failed attempt. Two-digit values are the only ones that can catch
+		# it, which is why this case is not folded into the test above.
+		db, queries = _seeded()
+		fewer = db.add_transfer(code_locked=1, code_attempts=9)
+		most = db.add_transfer(code_locked=1, code_attempts=10)
+		self.assertEqual([most, fewer], self._names(queries, "locked_pickup_code", desk="Tashkent"))
+
+	def test_a_page_boundary_does_not_show_one_row_twice(self):
+		# Every clause ends on `name`, so rows that tie on the urgency signal still
+		# have a total order. Without it page 2 can repeat a row from page 1 and
+		# silently drop another — the cashier never sees the dropped one.
+		db, queries = _seeded()
+		tied = [db.add_transfer(registered_at=f"{TODAY} 09:00:00") for _ in range(4)]
+		first = self._names(queries, "ready_for_payout", limit=2, offset=0)
+		second = self._names(queries, "ready_for_payout", limit=2, offset=2)
+		self.assertEqual(sorted(tied), sorted(first + second))
+		self.assertEqual(set(), set(first) & set(second))
+
+
+# --------------------------------------------------------------------------- #
+# 3d. The two filters, on both regions of the screen
+# --------------------------------------------------------------------------- #
+class QueueFilterTest(unittest.TestCase):
+	"""The queue takes the same `currency` and `desk` the scorecards take.
+
+	Before this only `operations_summary` had a currency argument, so narrowing
+	the filter left the queue rows and the queue counts untouched beside a
+	narrowed scorecard — which reads as a filter that silently failed.
+	"""
+
+	def test_the_currency_filter_reaches_the_queue_rows(self):
+		db, queries = _seeded()
+		usd = db.add_transfer(send_currency="USD")
+		db.add_transfer(send_currency="EUR")
+		rows = queries.work_queue("Mikas", "ready_for_payout", currency="USD")["rows"]
+		self.assertEqual([usd], [row["name"] for row in rows])
+
+	def test_a_desk_matches_either_leg_because_it_works_both(self):
+		# A desk pays out what arrives at it and counts cash back out on refunds of
+		# what it registered. Filtering one leg would hide half of its own work —
+		# the same shape of blindness this bead was opened for.
+		db, queries = _seeded()
+		outbound = db.add_transfer(origin_branch="Tashkent", destination_branch="Bukhara")
+		inbound = db.add_transfer(origin_branch="Bukhara", destination_branch="Tashkent")
+		db.add_transfer(origin_branch="Bukhara", destination_branch="Samarkand")
+		rows = queries.work_queue("Mikas", "ready_for_payout", desk="Tashkent")["rows"]
+		self.assertEqual({outbound, inbound}, {row["name"] for row in rows})
+
+	def test_a_row_matching_both_legs_is_listed_once(self):
+		# The desk filter is a union of two shapes; a same-desk transfer satisfies
+		# both, and a union that did not dedupe would count it twice in the tile.
+		db, queries = _seeded()
+		db.add_transfer(origin_branch="Tashkent", destination_branch="Tashkent")
+		answer = queries.work_queue("Mikas", "ready_for_payout", desk="Tashkent")
+		self.assertEqual(1, len(answer["rows"]))
+		self.assertEqual(1, answer["total"])
+
+	def test_the_tile_counts_are_narrowed_by_the_same_two_filters(self):
+		# The counts sit directly above the rows. A tile reading 2 over a list of 1
+		# is a screen contradicting itself.
+		db, queries = _seeded()
+		db.add_transfer(send_currency="USD", origin_branch="Tashkent")
+		db.add_transfer(send_currency="EUR", origin_branch="Tashkent")
+		db.add_transfer(send_currency="USD", origin_branch="Bukhara", destination_branch="Bukhara")
+		summary = queries.operations_summary("Mikas", currency="USD", desk="Tashkent")
+		rows = queries.work_queue("Mikas", "ready_for_payout", currency="USD", desk="Tashkent")["rows"]
+		self.assertEqual(1, summary["queues"]["ready_for_payout"]["count"])
+		self.assertEqual(1, len(rows))
+
+	def test_the_answer_repeats_the_filters_it_was_given(self):
+		# The screen renders its own filter state from the response, so a server
+		# that dropped an argument must not answer as though it had applied it.
+		db, queries = _seeded()
+		db.add_transfer()
+		answer = queries.work_queue("Mikas", "ready_for_payout", currency="USD", desk="Tashkent")
+		self.assertEqual("USD", answer["currency"])
+		self.assertEqual("Tashkent", answer["desk"])
+		unfiltered = queries.work_queue("Mikas", "ready_for_payout")
+		self.assertIsNone(unfiltered["currency"])
+		self.assertIsNone(unfiltered["desk"])
+
+
+# --------------------------------------------------------------------------- #
 # 4. The deadline nobody defined
 # --------------------------------------------------------------------------- #
 class ExpiryPolicyTest(unittest.TestCase):

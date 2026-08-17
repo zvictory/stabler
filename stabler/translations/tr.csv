@@ -299,6 +299,7 @@ ahead of the invoice,faturadan ileride
 Alerts,
 All,Tümü
 All attendance exceptions have been resolved or ignored.,
+All cash desks,Tüm kasalar
 All categories,Tüm kategoriler
 All companies,Tüm şirketler
 All computed allocation amounts were zero.,
@@ -393,6 +394,7 @@ Amount received,Alınan tutar
 Amount sent,Gönderilen tutar
 Amount to transfer,Transfer tutarı
 Amounts,Tutarlar
+"Amounts are listed per currency and never summed. Both filters narrow the scorecards, the queue counts and the queue rows together.","Tutarlar her para birimi için ayrı listelenir ve asla toplanmaz. Her iki filtre de skor kartlarını, kuyruk sayılarını ve kuyruk satırlarını birlikte daraltır."
 Amounts in,Tutarlar
 Amounts in company currency,Tutarlar şirket para biriminde
 An allocated invoice does not belong to this customer chain.,Tahsis edilen fatura bu müşteri zincirine ait değil.
@@ -4273,6 +4275,7 @@ Refresh preview,
 Refresh token,
 Refresh token (JWT),
 Refreshing…,Yenileniyor…
+Refund open,Açık iade
 Region,
 Region / Route,Bölge / rota
 Register a customs declaration (GTD) for an import to clear it.,Bir ithalatı kapatmak için gümrük beyannamesi (GTB) kaydedin.
@@ -4359,6 +4362,7 @@ Request for quotation,Teklif iste
 Request for quotation created as draft.,Teklif talebi taslak olarak oluşturuldu.
 Request rejected.,Talep reddedildi.
 Requested,Talep edildi
+"Requested and awaiting a decision, or approved and awaiting cash",Talep edildi ve karar bekliyor ya da onaylandı ve nakit bekliyor
 Requested by,Talep eden
 Requested items,Talep edilen kalemler
 Requested Items,Talep Edilen Kalemler
