@@ -101,9 +101,10 @@ import frappe
 from frappe import _
 from frappe.utils import cint, flt, get_datetime_str, now_datetime, nowdate
 
+from stabler.api import _remittance_actions as actions
 from stabler.api._common import _require_company
 from stabler.api._remittance_pricing import PricingError, price_transfer
-from stabler.api.approvals import _APPROVER_ROLES, _assert_company_scope
+from stabler.api.approvals import _assert_company_scope
 from stabler.api.remittance import (
 	_gen_pickup_code,
 	_pickup_code_matches,
@@ -417,7 +418,9 @@ _DEFAULT_MAX_CODE_ATTEMPTS = 5
 
 # What the payout screen may see. `pickup_code_hash` is deliberately absent: the
 # alphabet is 32 glyphs and the code is 8 long, so handing out the digest hands
-# out the code to anyone willing to spend a few core-seconds on it.
+# out the code to anyone willing to spend a few core-seconds on it. That absence
+# is now ENFORCED rather than observed — `payout_queue` runs the tuple through
+# `actions.assert_safe_fields` before it reaches the query.
 _QUEUE_FIELDS = (
 	"name",
 	"client_request_id",
@@ -436,6 +439,10 @@ _QUEUE_FIELDS = (
 	"operational_status",
 	"accounting_status",
 	"verification_status",
+	# Read for `allowed_actions`, not for display: a transfer with an Approved or
+	# Completed refund is in the queue's state filter but is not payable, and
+	# without this column the queue would offer Pay out on it.
+	"refund_status",
 	"code_locked",
 	"code_attempts",
 	"registered_at",
@@ -470,7 +477,7 @@ def payout_queue(company: str, query: str | None = None, limit=50) -> list[dict]
 	_require_company(company)
 
 	term = (query or "").strip()
-	return frappe.get_all(
+	rows = frappe.get_all(
 		TRANSFER,
 		filters={
 			"company": company,
@@ -481,10 +488,12 @@ def payout_queue(company: str, query: str | None = None, limit=50) -> list[dict]
 			"accounting_status": "Posted",
 		},
 		or_filters=[[field, "like", f"%{term}%"] for field in _QUEUE_SEARCH_FIELDS] if term else None,
-		fields=list(_QUEUE_FIELDS),
+		fields=list(actions.assert_safe_fields(_QUEUE_FIELDS)),
 		order_by="registered_at desc, modified desc",
 		limit=max(1, min(cint(limit) or 50, 200)),
 	)
+	# One role read for the whole page, and the server — not the screen — decides.
+	return actions.assert_no_pickup_code(actions.annotate(rows, frappe.get_roles()))
 
 
 def _assert_payable(transfer) -> None:
@@ -672,11 +681,14 @@ def unlock_pickup_code(name: str, reason: str | None = None) -> dict:
 	from one that was never applied — so until someone decides, the exit is a person
 	who leaves a row in the trail.
 
-	Gated on `_APPROVER_ROLES`, the app's existing money-control manager set,
-	because remittance has no roles of its own yet (stabler-tvma). When it gets
-	them, this is the one line that changes.
+	Gated through `_remittance_actions`, the same table every read path consults,
+	so the offer and the refusal cannot disagree: a caller who is not offered
+	Unlock is a caller this line turns away. The set is the remittance Finance
+	Manager (stabler-tvma created the role) plus the money-control managers this
+	endpoint originally shipped gated on — an Accounts Manager who could unlock
+	before the roles existed can still unlock now.
 	"""
-	if not set(_APPROVER_ROLES) & set(frappe.get_roles()):
+	if not actions.holds(actions.UNLOCK_PICKUP_CODE, frappe.get_roles()):
 		frappe.throw(_("Only a manager can unlock a pickup code."), frappe.PermissionError)
 
 	if not frappe.db.get_value(TRANSFER, name, "name", for_update=True):

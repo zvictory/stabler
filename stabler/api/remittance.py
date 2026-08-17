@@ -42,6 +42,7 @@ import frappe
 from frappe.model.naming import make_autoname
 from frappe.utils import flt, getdate
 
+from stabler.api import _remittance_actions as _actions
 from stabler.api._common import _assert_can_read, _require_company
 from stabler.api.approvals import _assert_company_scope
 from stabler.api.money import (
@@ -647,6 +648,49 @@ def refund_remittance(
 # --------------------------------------------------------------------------- #
 # Reads
 # --------------------------------------------------------------------------- #
+_TRANSFER = "Remittance Transfer"
+
+
+def _transfer_states(remittance_ids: list[str], company: str | None) -> dict:
+	"""The four state axes for each transfer, keyed by remittance id.
+
+	The bridge is `_remittance_accounting._build_entry`, which stamps
+	`stabler_remittance_id = transfer.name` on every stage entry — so the id these
+	JE-shaped reads already carry IS the Remittance Transfer's name.
+
+	`get_all` rather than `get_list` on purpose: this is an enrichment of rows the
+	caller was already allowed to read, and `get_list` would raise for a user who
+	holds Journal Entry read and no remittance role at all — turning a missing
+	button into a broken screen. The role half of the gate is what withholds the
+	actions from that user, and it withholds them by returning an empty list.
+	"""
+	ids = sorted({rid for rid in remittance_ids if rid})
+	if not ids:
+		return {}
+	filters = {"name": ["in", ids]}
+	if company:
+		# Belt to the caller's own company scope: a remittance id is not a secret,
+		# and this read must not become a way to learn another tenant's state.
+		filters["company"] = company
+	rows = frappe.get_all(_TRANSFER, filters=filters, fields=["name", *_actions.STATE_FIELDS])
+	return {row["name"]: row for row in rows}
+
+
+def _annotate_actions(rows: list, company: str | None = None) -> list:
+	"""Stamp `allowed_actions` on JE-shaped remittance rows.
+
+	A legacy `Rem-%` entry has no Remittance Transfer behind it, so it has no state
+	machine and therefore no actions — an empty list, never a missing key, so a
+	client never has to distinguish "no actions" from "this endpoint forgot".
+	"""
+	states = _transfer_states([row.get("stabler_remittance_id") for row in rows], company)
+	roles = frappe.get_roles()  # once for the page, not once per row
+	for row in rows:
+		state = states.get(row.get("stabler_remittance_id"))
+		row["allowed_actions"] = _actions.allowed_actions(state, roles) if state else []
+	return rows
+
+
 @frappe.whitelist()
 def list_remittances(
 	company: str,
@@ -715,7 +759,7 @@ def list_remittances(
 		r["status"] = (
 			_remittance_status(r["stabler_remittance_id"]) if r.get("stabler_remittance_id") else "Legacy"
 		)
-	return rows
+	return _actions.assert_no_pickup_code(_annotate_actions(rows, company))
 
 
 @frappe.whitelist()
@@ -725,6 +769,7 @@ def remittance_detail(name: str) -> dict:
 	_assert_can_read("Journal Entry", name)
 	detail = journal_entry_detail(name)
 	rid = frappe.db.get_value("Journal Entry", name, "stabler_remittance_id")
+	detail["stabler_remittance_id"] = rid
 	if rid:
 		detail["remittance_id"] = rid
 		detail["remittance_status"] = _remittance_status(rid)
@@ -734,4 +779,7 @@ def remittance_detail(name: str) -> dict:
 			fields=["name", "stabler_remittance_stage AS stage", "posting_date", "docstatus"],
 			order_by="creation asc",
 		)
-	return detail
+	# The detail screen is where the buttons are drawn, so it is the read path that
+	# most needs the server to have decided. Scoped on the entry's own company.
+	_annotate_actions([detail], detail.get("company"))
+	return _actions.assert_no_pickup_code(detail)
