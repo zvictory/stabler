@@ -53,10 +53,21 @@ and rejected: there is no precedent for one anywhere in the app, and adding one
 costs a doctype field plus a patch to buy a guarantee `modified` already gives
 inside a single-writer transaction.
 
-Permissions are deliberately NOT ignored on the master row or the event. Today
-that makes this endpoint System-Manager-only, which is what `Remittance Transfer`
-actually grants (see stabler-tvma) and what `api/organization.py` documents. A
-bypass here would silently outlive the missing role model.
+Permissions are deliberately NOT ignored on the master row or the event, so the
+right this endpoint actually spends is `create` — on `Remittance Transfer` for
+`transfer.insert()` and on `Remittance Event` for the trail. Since stabler-tvma
+that is Remittance Cashier, Remittance Finance Manager and System Manager.
+
+It spends no `create` right beyond those and no `write` right at all: every
+mutation after the insert goes through `transfer.db_set(...)`, which writes the
+column directly and checks no permission. That is why the DocPerm rows grant no
+write — a write grant could only ever serve a caller that skipped this module,
+and nothing freezes the record against one. A bypass here would silently outlive
+the role model, which is the whole reason it is not taken.
+
+The SPA still shows the module to admins only: `remittance` is absent from
+`_MODULE_ROLES` in `api/organization.py`. That is a UX gate, not the boundary —
+the boundary is the DocPerm rows above.
 
 **Payout is the mirror, and reuses all of the above.** `payout_transfer` takes the
 same lock and reads the state it decides on through it, transitions and posts in

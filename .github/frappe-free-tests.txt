@@ -202,3 +202,4 @@ stabler.tests.test_remittance_cancel_guard
 stabler.tests.test_remittance_payout_command
 stabler.tests.test_gate_sees_new_files
 stabler.tests.test_fx_unpriced_guard
+stabler.tests.test_remittance_roles

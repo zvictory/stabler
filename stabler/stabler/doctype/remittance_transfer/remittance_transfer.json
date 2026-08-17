@@ -90,7 +90,11 @@
 	"module": "Stabler",
 	"name": "Remittance Transfer",
 	"permissions": [
-		{"read": 1, "write": 1, "create": 1, "delete": 1, "role": "System Manager"}
+		{"read": 1, "role": "Remittance Viewer"},
+		{"read": 1, "role": "Remittance Auditor"},
+		{"read": 1, "create": 1, "role": "Remittance Cashier"},
+		{"read": 1, "create": 1, "role": "Remittance Finance Manager"},
+		{"read": 1, "create": 1, "write": 1, "role": "System Manager"}
 	],
 	"sort_field": "modified",
 	"sort_order": "DESC",
