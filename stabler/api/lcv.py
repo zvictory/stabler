@@ -51,6 +51,36 @@ def _receipt_names_for(document_type: str, document_name: str, review=None) -> l
 	return [pr.get("name") for pr in (review.get("purchase_receipts") or []) if pr.get("name")]
 
 
+def _vouchers_on_receipts(receipt_names, docstatus) -> list:
+	"""``[{lcv, method}]`` of the vouchers in this docstatus against these receipts.
+
+	Through ``tabLanded Cost Purchase Receipt``: that child table is the only link
+	from a receipt back to its vouchers, and it is the same read the
+	``existing_lcvs`` lookup below performs. One query serves both callers so the
+	freeze and the re-stamp can never disagree about which vouchers stand against
+	a document — two copies of this join is how one of them quietly stops
+	engaging the day the other changes.
+	"""
+	names = [n for n in (receipt_names or []) if n]
+	if not names:
+		return []
+
+	placeholders = ", ".join(["%s"] * len(names))
+	return frappe.db.sql(
+		"""
+		SELECT DISTINCT lcpr.parent AS lcv, voucher.distribute_charges_based_on AS method
+		FROM `tabLanded Cost Purchase Receipt` lcpr
+		INNER JOIN `tabLanded Cost Voucher` voucher ON voucher.name = lcpr.parent
+		WHERE lcpr.receipt_document IN ({placeholders})
+			AND lcpr.receipt_document_type = 'Purchase Receipt'
+			AND voucher.docstatus = %s
+		ORDER BY voucher.creation ASC, voucher.name ASC
+	""".format(placeholders=placeholders),
+		(*names, docstatus),
+		as_dict=True,
+	)
+
+
 def _locking_voucher(receipt_names) -> tuple:
 	"""``(voucher, basis)`` of the submitted LCV that froze the distribution basis.
 
@@ -59,33 +89,43 @@ def _locking_voucher(receipt_names) -> tuple:
 	constrains the next one. The earliest submitted voucher wins — it is the one
 	whose basis every later netting in ``apply_gtd_customs_precedence`` is
 	measured against.
-
-	Same read as the ``existing_lcvs`` lookup below, through
-	``tabLanded Cost Purchase Receipt``: that child table is the only link from a
-	receipt back to its vouchers.
 	"""
-	names = [n for n in (receipt_names or []) if n]
-	if not names:
-		return None, None
-
-	placeholders = ", ".join(["%s"] * len(names))
-	rows = frappe.db.sql(
-		"""
-		SELECT lcpr.parent AS lcv, voucher.distribute_charges_based_on AS method
-		FROM `tabLanded Cost Purchase Receipt` lcpr
-		INNER JOIN `tabLanded Cost Voucher` voucher ON voucher.name = lcpr.parent
-		WHERE lcpr.receipt_document IN ({placeholders})
-			AND lcpr.receipt_document_type = 'Purchase Receipt'
-			AND voucher.docstatus = %s
-		ORDER BY voucher.creation ASC, voucher.name ASC
-		LIMIT 1
-	""".format(placeholders=placeholders),
-		(*names, lcv_math.LOCKING_DOCSTATUS),
-		as_dict=True,
-	)
+	rows = _vouchers_on_receipts(receipt_names, lcv_math.LOCKING_DOCSTATUS)
 	if not rows:
 		return None, None
 	return rows[0].get("lcv"), rows[0].get("method")
+
+
+def _restamp_drafts(receipt_names, method: str) -> list:
+	"""Put the chosen basis on every DRAFT voucher standing against these receipts.
+
+	The choice is persisted on the source document, but a draft carries the basis
+	it was BUILT with, and ``submit_landed_cost_voucher`` posts a draft as it
+	stands. On the imports route the draft is built by a background job at GRN
+	submit — before any human can open this screen — so by the time the operator
+	picks a basis the draft already exists with the default one. Without this the
+	screen reports one basis and the ledger uses another: freight the operator
+	spread by weight gets capitalized by value, per-item valuations are wrong for
+	every item whose value-per-kg differs from the average, and nothing anywhere
+	says so.
+
+	Saving is what redistributes. ``LandedCostVoucher.validate`` calls
+	``set_applicable_charges_on_item``, which reads this field — so the amounts
+	are recomputed, not just the label.
+
+	Only drafts. A submitted voucher is what ``_locking_voucher`` refuses to let
+	the basis change under, and this function is unreachable in that case anyway:
+	``set_distribution_method`` throws on a locked state before calling it.
+	"""
+	restamped = []
+	for row in _vouchers_on_receipts(receipt_names, 0):
+		if lcv_math.normalize_distribution_method(row.get("method")) == method:
+			continue
+		voucher = frappe.get_doc("Landed Cost Voucher", row["lcv"])
+		voucher.distribute_charges_based_on = method
+		voucher.save()
+		restamped.append(voucher.name)
+	return restamped
 
 
 def distribution_state(document_type: str, document_name: str, receipt_names=None, review=None) -> dict:
@@ -407,7 +447,13 @@ def set_distribution_method(document_type: str, document_name: str, method: str)
 		)
 
 	frappe.db.set_value(document_type, document_name, DISTRIBUTION_FIELD, method)
-	return distribution_state(document_type, document_name, receipt_names=receipt_names)
+	# Persisting the choice is not enough: a draft built before it was made still
+	# carries the basis it was built with, and Submit posts a draft as it stands.
+	restamped = _restamp_drafts(receipt_names, method)
+
+	state = distribution_state(document_type, document_name, receipt_names=receipt_names)
+	state["restamped"] = restamped
+	return state
 
 
 @frappe.whitelist()
@@ -482,7 +528,17 @@ def create_additional_lcv(document_type: str, document_name: str):
 
 @frappe.whitelist()
 def submit_landed_cost_voucher(name: str):
-	"""Submit a draft Landed Cost Voucher directly from Stabler SPA."""
+	"""Submit a draft Landed Cost Voucher directly from Stabler SPA.
+
+	Refuses a draft whose basis disagrees with one already frozen by a submitted
+	voucher on the same receipts. ``_restamp_drafts`` keeps the operator's choice
+	and the draft in step while the basis is still changeable; this is the case it
+	cannot cover, because ``set_distribution_method`` throws once a voucher is
+	submitted and so never gets to touch a draft that predates the freeze. The
+	basis is verified here rather than corrected: rewriting a voucher at submit
+	time would post numbers the accountant never saw, which is the same defect
+	pointing the other way.
+	"""
 	_assert_can_write("Landed Cost Voucher", name, "submit")
 	_assert_cost_visible()
 
@@ -493,8 +549,30 @@ def submit_landed_cost_voucher(name: str):
 	if lcv.docstatus != 0:
 		frappe.throw(_("Only draft Landed Cost Vouchers can be submitted."))
 
+	receipt_names = [
+		row.receipt_document
+		for row in (lcv.get("purchase_receipts") or [])
+		if row.receipt_document_type == "Purchase Receipt" and row.receipt_document
+	]
+	locked_by, locked_method = _locking_voucher(receipt_names)
+	frozen = lcv_math.normalize_distribution_method(locked_method)
+	mine = lcv_math.normalize_distribution_method(lcv.distribute_charges_based_on)
+	if frozen and mine != frozen:
+		frappe.throw(
+			_(
+				"This voucher distributes on {0}, but {1} already froze the basis at {2} for the "
+				"same receipts. Submitting it would net later customs charges against amounts "
+				"capitalized on a different distribution. Cancel {1}, or rebuild this draft."
+			).format(mine or lcv.distribute_charges_based_on, locked_by, frozen)
+		)
+
 	lcv.submit()
-	return {"status": "ok", "name": lcv.name, "docstatus": lcv.docstatus}
+	return {
+		"status": "ok",
+		"name": lcv.name,
+		"docstatus": lcv.docstatus,
+		"distribute_charges_based_on": lcv.distribute_charges_based_on,
+	}
 
 
 @frappe.whitelist()

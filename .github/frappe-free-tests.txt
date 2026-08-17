@@ -70,6 +70,7 @@ stabler.tests.test_kts_amendment
 stabler.tests.test_landed_ranking
 stabler.tests.test_lcv_gtd_precedence
 stabler.tests.test_lcv_math
+stabler.tests.test_lcv_distribution_restamp
 stabler.tests.test_list_row_ordinals
 stabler.tests.test_master_read_permission
 stabler.tests.test_no_inline_dropdowns
