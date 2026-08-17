@@ -589,5 +589,35 @@ class LineSourceTest(unittest.TestCase):
 		self.assertEqual(lcv_math.source_document({}), "")
 
 
+class LockingDocstatusTest(unittest.TestCase):
+	"""Which voucher state freezes the basis.
+
+	The freeze exists so ``apply_gtd_customs_precedence`` nets a late customs charge
+	against the same base the first voucher capitalized on. Getting the docstatus
+	wrong in either direction is silent: widen it and every draft locks the basis
+	before anything is posted; narrow it and a second voucher re-splits on a
+	different base than the one it is netting against.
+	"""
+
+	def test_only_a_submitted_voucher_locks(self):
+		self.assertTrue(lcv_math.locks_distribution(1))
+
+	def test_a_draft_does_not_lock_because_it_has_capitalized_nothing(self):
+		self.assertFalse(lcv_math.locks_distribution(0))
+
+	def test_a_cancelled_voucher_does_not_lock_because_it_released_its_lines(self):
+		self.assertFalse(lcv_math.locks_distribution(2))
+
+	def test_junk_never_locks(self):
+		for bad in (None, "", "draft", object()):
+			with self.subTest(docstatus=bad):
+				self.assertFalse(lcv_math.locks_distribution(bad))
+
+	def test_the_constant_is_the_submitted_docstatus(self):
+		# The SQL predicate in stabler/api/lcv.py binds this value; if it drifts,
+		# the query silently starts locking on the wrong state.
+		self.assertEqual(lcv_math.LOCKING_DOCSTATUS, 1)
+
+
 if __name__ == "__main__":
 	unittest.main()

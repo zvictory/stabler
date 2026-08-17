@@ -189,14 +189,33 @@ async function cancelLcv(lcvName) {
 
 // Per-kg valuation impact: receipt cost, everything already vouchered, and the
 // voucher about to be created — the one number an accountant is actually after.
+// Imports only. `received_total_kg` is a real weight on a GRN Checklist; on the
+// Purchase Receipt route lcv.py derives it as a plain sum of line `qty`, which is
+// each line's transaction UOM (boxes, pieces, litres in the purchasing flow) and
+// is not a weight at all. A cost "per kg" computed from that would be a fiction.
+const showsUnitCost = computed(() => documentType.value === "GRN Checklist");
+
 const unitCostAnalysis = computed(() => {
-	if (!data.value) return null;
+	if (!data.value || !showsUnitCost.value) return null;
 	const totalKg = Number(data.value.grn?.received_total_kg || 0);
 	if (totalKg <= 0) return null;
 
-	const prTotal = (data.value.purchase_receipts || []).reduce((acc, pr) => acc + Number(pr.grand_total || 0), 0);
+	// Every term must be company currency. `grand_total` is the receipt's own
+	// transaction currency — hardcoded USD for imports (imports_module/hooks.py) —
+	// while a voucher total is already the base_amount sum. Adding those two would
+	// understate the receipt leg by the whole exchange rate.
+	const prTotal = (data.value.purchase_receipts || []).reduce(
+		(acc, pr) => acc + Number(pr.base_grand_total || 0),
+		0
+	);
+	if (prTotal <= 0) return null;
+	// Drafts count. The moment one is created its cost lines are stamped consumed,
+	// so they leave `preview.total`; excluding the draft here would make the landed
+	// figure collapse in the window between Create and Submit — exactly when someone
+	// is reading it to decide whether to submit. Cancelled (2) is excluded: cancelling
+	// releases the lines and they return to the preview.
 	const existingLcvTotal = (data.value.existing_lcvs || [])
-		.filter((lc) => lc.docstatus === 1)
+		.filter((lc) => lc.docstatus === 0 || lc.docstatus === 1)
 		.reduce((acc, lc) => acc + Number(lc.total || 0), 0);
 	const nextLcvTotal = Number(data.value.preview?.total || 0);
 	const grandLandedTotal = prTotal + existingLcvTotal + nextLcvTotal;
@@ -452,7 +471,8 @@ watch(documentName, () => load());
 									@change="changeDistributionMethod"
 								/>
 								<div class="form-hint">
-									{{ t("Stock UOM is Kg for imports, so by weight spreads the charges across the kilograms received. By line value spreads them in proportion to each line's amount. ERPNext calls these two bases Qty and Amount.") }}
+									<template v-if="showsUnitCost">{{ t("Stock UOM is Kg for imports, so by weight spreads the charges across the kilograms received. By line value spreads them in proportion to each line's amount. ERPNext calls these two bases Qty and Amount.") }}</template>
+									<template v-else>{{ t("By weight spreads the charges across the received quantity in stock UOM. By line value spreads them in proportion to each line's amount. ERPNext calls these two bases Qty and Amount.") }}</template>
 								</div>
 								<div v-if="data.distribution.locked" class="form-hint mt-1">
 									<i class="ti ti-lock me-1"></i>

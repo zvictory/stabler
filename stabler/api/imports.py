@@ -3623,7 +3623,7 @@ def get_landed_cost_review(grn_checklist: str, rate=None):
 		prd = frappe.db.get_value(
 			"Purchase Receipt",
 			pr,
-			["supplier", "posting_date", "grand_total", "currency", "docstatus"],
+			["supplier", "posting_date", "grand_total", "base_grand_total", "currency", "docstatus"],
 			as_dict=True,
 		)
 		if prd:
@@ -3633,6 +3633,10 @@ def get_landed_cost_review(grn_checklist: str, rate=None):
 					"supplier": prd.supplier,
 					"posting_date": str(prd.posting_date) if prd.posting_date else None,
 					"grand_total": flt(prd.grand_total),
+					# Company-currency twin. Imports receipts are created in USD
+					# (imports_module/hooks.py) while voucher totals are already base
+					# amounts, so the per-kg card must not add the two raw figures.
+					"base_grand_total": flt(prd.base_grand_total),
 					"currency": prd.currency,
 					"docstatus": cint(prd.docstatus),
 				}

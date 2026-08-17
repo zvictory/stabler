@@ -76,11 +76,11 @@ def _locking_voucher(receipt_names) -> tuple:
 		INNER JOIN `tabLanded Cost Voucher` voucher ON voucher.name = lcpr.parent
 		WHERE lcpr.receipt_document IN ({placeholders})
 			AND lcpr.receipt_document_type = 'Purchase Receipt'
-			AND voucher.docstatus = 1
+			AND voucher.docstatus = %s
 		ORDER BY voucher.creation ASC, voucher.name ASC
 		LIMIT 1
 	""".format(placeholders=placeholders),
-		tuple(names),
+		(*names, lcv_math.LOCKING_DOCSTATUS),
 		as_dict=True,
 	)
 	if not rows:
@@ -297,6 +297,10 @@ def get_landed_cost_review(document_type: str, document_name: str, rate=None):
 					"supplier": pr.supplier,
 					"posting_date": str(pr.posting_date) if pr.posting_date else None,
 					"grand_total": flt(pr.grand_total),
+					# Company-currency twin of grand_total. The per-kg card sums the
+					# receipt leg against voucher totals, which are already base
+					# amounts; without this it would add USD to UZS.
+					"base_grand_total": flt(pr.base_grand_total),
 					"currency": pr.currency,
 					"docstatus": cint(pr.docstatus),
 				}

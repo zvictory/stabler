@@ -458,6 +458,23 @@ def validate_distribution_method(value) -> str:
 	return method
 
 
+#: Only a SUBMITTED voucher freezes the distribution basis. A draft has capitalized
+#: nothing for a later charge to net against, and a cancelled one has already given
+#: back what it capitalized (``release_cost_lines_for_lcv`` clears ``lcv_ref``), so
+#: its lines return to the next build. Named and tested here rather than living only
+#: inside the SQL predicate, so widening it to "anything not cancelled" — the obvious
+#: wrong guess — fails a test instead of quietly locking every draft.
+LOCKING_DOCSTATUS = 1
+
+
+def locks_distribution(docstatus) -> bool:
+	"""Whether a voucher in this docstatus freezes the basis for later vouchers."""
+	try:
+		return int(docstatus) == LOCKING_DOCSTATUS
+	except (TypeError, ValueError):
+		return False
+
+
 def resolve_distribution_method(persisted, locked_method=None, default=DEFAULT_DISTRIBUTION_METHOD) -> str:
 	"""The basis the next voucher must be built on.
 
