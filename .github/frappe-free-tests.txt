@@ -200,3 +200,4 @@ stabler.tests.test_remittance_pricing
 stabler.tests.test_remittance_accounting
 stabler.tests.test_remittance_register_command
 stabler.tests.test_gate_sees_new_files
+stabler.tests.test_remittance_roles
