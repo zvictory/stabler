@@ -2515,6 +2515,8 @@ Journal Entry,Journal Entry
 Journal entry cancelled.,Journal entry cancelled.
 Journal Entry is already submitted.,Journal Entry is already submitted.
 Journal Entry legs,Journal Entry legs
+"Journal Entry {0} is the payout of remittance {1} and cannot be cancelled here — the cash has already left the drawer, and a paid-out transfer cannot be refunded either. Escalate it: only an administrator can reverse remittance {1}, on the server.","Journal Entry {0} is the payout of remittance {1} and cannot be cancelled here — the cash has already left the drawer, and a paid-out transfer cannot be refunded either. Escalate it: only an administrator can reverse remittance {1}, on the server."
+"Journal Entry {0} is the {2} entry of remittance {1} and cannot be cancelled here — the ledger would move and the transfer's status would not. No screen in Stabler reverses a remittance yet, so escalate it: only an administrator can reverse remittance {1}, on the server.","Journal Entry {0} is the {2} entry of remittance {1} and cannot be cancelled here — the ledger would move and the transfer's status would not. No screen in Stabler reverses a remittance yet, so escalate it: only an administrator can reverse remittance {1}, on the server."
 Journal entry submitted.,Journal entry submitted.
 Justification / Reason,Justification / Reason
 Kanban,Kanban
@@ -2797,6 +2799,7 @@ Minutes worked before overtime begins.,Minutes worked before overtime begins.
 Missing,Missing
 Missing document type or name,Missing document type or name
 Missing Entry,Missing Entry
+Missing exchange rate,Missing exchange rate
 Missing fields,Missing fields
 Missing file,Missing file
 Missing required,Missing required
@@ -3106,6 +3109,7 @@ No exchange rate for this date — enter manually.,No exchange rate for this dat
 No exchange rate found for this invoice date — landed cost cannot be calculated. Enter a rate above or add the CBU rate.,No exchange rate found for this invoice date — landed cost cannot be calculated. Enter a rate above or add the CBU rate.
 No exchange rate found for {0} to {1} on {2},No exchange rate found for {0} to {1} on {2}
 No exchange rate found for {0} to {1} on {2}: {3},No exchange rate found for {0} to {1} on {2}: {3}
+"No exchange rate is published for {currencies} on {date}. Revaluing these balances would value them at zero and book their whole amount as an FX loss. Create a Currency Exchange record ({currencies} → {base}) dated {date} or earlier, then reload this document.","No exchange rate is published for {currencies} on {date}. Revaluing these balances would value them at zero and book their whole amount as an FX loss. Create a Currency Exchange record ({currencies} → {base}) dated {date} or earlier, then reload this document."
 No exchange rates yet. Click Refresh now to fetch today's rates from cbu.uz.,No exchange rates yet. Click Refresh now to fetch today's rates from cbu.uz.
 No expenses recorded for this invoice yet.,No expenses recorded for this invoice yet.
 No field users yet,No field users yet

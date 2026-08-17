@@ -44,6 +44,11 @@ permission_query_conditions = {
 	"Vehicle Finance Payment Application": "stabler.api.permissions.vehicle_finance_payment_application_query",
 	"Vehicle Finance Follow-up Log": "stabler.api.permissions.vehicle_finance_follow_up_log_query",
 	"Vehicle Finance Settings": "stabler.api.permissions.vehicle_finance_settings_query",
+	# Remittance — money records with a non-admin read path (Viewer / Auditor /
+	# Cashier / Finance Manager). Remittance Event carries no `company` column of
+	# its own, so it is scoped through its parent transfer.
+	"Remittance Transfer": "stabler.api.permissions.remittance_transfer_query",
+	"Remittance Event": "stabler.api.permissions.remittance_event_query",
 	# Master scoping by owner/territory (gap #46) — safe-by-default: only restricts
 	# users with an explicit Allowed Owner/Territory list; admins unaffected.
 	"Customer": "stabler.api.permissions.customer_query",
@@ -72,6 +77,11 @@ has_permission = {
 	"Vehicle Finance Payment Application": "stabler.api.permissions.company_has_permission",
 	"Vehicle Finance Follow-up Log": "stabler.api.permissions.company_has_permission",
 	"Vehicle Finance Settings": "stabler.api.permissions.company_has_permission",
+	"Remittance Transfer": "stabler.api.permissions.company_has_permission",
+	# NOT company_has_permission: a Remittance Event has no `company` attribute, so
+	# that helper would read None, take its blank-is-allowed branch and permit every
+	# row — wiring that looks correct and scopes nothing.
+	"Remittance Event": "stabler.api.permissions.remittance_event_has_permission",
 	"Customer": "stabler.api.permissions.master_has_permission",
 	"Supplier": "stabler.api.permissions.master_has_permission",
 }
@@ -273,12 +283,24 @@ doc_events = {
 		],
 		"before_cancel": [
 			"stabler.api.desk_write_guard.assert_write_via_stabler",
+			# The desk guard permits stabler.api.* calls, and the Money screen's
+			# Cancel button is one — so a remittance stage voucher needs its own.
+			"stabler.api.remittance_cancel_guard.assert_not_a_remittance_stage",
 		],
 		"on_cancel": [
 			"stabler.stabler.imports_module.hooks.on_journal_entry_cancel",
 		],
 		"on_trash": [
 			"stabler.api.desk_write_guard.assert_write_via_stabler",
+		],
+	},
+	"Exchange Rate Revaluation": {
+		"validate": [
+			# A row with money in it and no published rate is valued at zero by
+			# ERPNext, without an exception — the whole balance becomes an FX
+			# loss. Refuse the document instead. Fires on save and on submit,
+			# and covers Desk-created docs, not just stabler.api.fx_revaluation.
+			"stabler.api.fx_revaluation.assert_positions_priced",
 		],
 	},
 	# Stock Reconciliation / Bank Transaction / Supplier have no other Stabler

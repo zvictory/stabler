@@ -1,4 +1,4 @@
-"""Register a transfer: one lock, one transaction, one pickup code.
+"""The remittance commands: one lock, one transaction, one pickup code.
 
 Until this module existed the remittance master row had no writer. The four beads
 that built the pieces — `get_desk_account`, `Remittance Transfer`, `price_transfer`
@@ -9,14 +9,26 @@ cannot serialise or de-duplicate its own callers.
 
 Three things are load-bearing, in this order.
 
-**The lock comes first.** `frappe.db.get_value(..., for_update=True)` is taken
-before the state is re-read and before anything is written, so two cashiers
-pressing Register on the same row cannot both see `Unposted` and both post the
-obligation. The transition and the Journal Entry submit then share one
+**The lock comes first — and the state is read through it.** Both halves are
+load-bearing, because a lock without a locking read only serialises; it does not
+refresh. This bench runs REPEATABLE READ, where `SELECT ... FOR UPDATE` returns
+the latest committed row but leaves the transaction's consistent-read snapshot
+where it was — and by the time a handler runs, the session and permission reads
+have already opened that snapshot. So the loser of a race blocks on the lock,
+acquires it after the winner commits, and a plain `frappe.get_doc` still hands
+back the *pre-race* row. It would then decide on state that no longer exists: two
+cashiers both seeing `Registered`, both handing over the cash. Hence
+`frappe.db.get_value(..., for_update=True)` to take the lock (and to turn a
+missing row into a sentence instead of a traceback), then
+`frappe.get_doc(..., for_update=True)` to read the state that the decision rests
+on. `register_remittance` is the one exception and stays a plain re-read: it is
+re-reading a row its own transaction just inserted, and a transaction always sees
+its own writes. The transition and the Journal Entry submit then share one
 transaction, which is what makes `Registered + Unposted` unreachable rather than
 merely rejected — `RemittanceTransfer._assert_registered_is_posted` rejects the
 pair, this ordering is what stops it ever being written. Precedent:
-`api/sales.py:3264`, `integrations/uzpay/payme.py:150`.
+`api/sales.py:3264`, `integrations/uzpay/payme.py:150`, `api/crm.py:746` for the
+locked read.
 
 **A replayed key never re-executes.** `client_request_id` carries a real unique
 index (`remittance_transfer.json`), so the duplicate-key race is settled by the
@@ -41,10 +53,46 @@ and rejected: there is no precedent for one anywhere in the app, and adding one
 costs a doctype field plus a patch to buy a guarantee `modified` already gives
 inside a single-writer transaction.
 
-Permissions are deliberately NOT ignored on the master row or the event. Today
-that makes this endpoint System-Manager-only, which is what `Remittance Transfer`
-actually grants (see stabler-tvma) and what `api/organization.py` documents. A
-bypass here would silently outlive the missing role model.
+Permissions are deliberately NOT ignored on the master row or the event, so the
+right this endpoint actually spends is `create` — on `Remittance Transfer` for
+`transfer.insert()` and on `Remittance Event` for the trail. Since stabler-tvma
+that is Remittance Cashier, Remittance Finance Manager and System Manager.
+
+It spends no `create` right beyond those and no `write` right at all: every
+mutation after the insert goes through `transfer.db_set(...)`, which writes the
+column directly and checks no permission. That is why the DocPerm rows grant no
+write — a write grant could only ever serve a caller that skipped this module,
+and nothing freezes the record against one. A bypass here would silently outlive
+the role model, which is the whole reason it is not taken.
+
+The SPA still shows the module to admins only: `remittance` is absent from
+`_MODULE_ROLES` in `api/organization.py`. That is a UX gate, not the boundary —
+the boundary is the DocPerm rows above.
+
+**Payout is the mirror, and reuses all of the above.** `payout_transfer` takes the
+same lock and reads the state it decides on through it, transitions and posts in
+the same transaction, appends to the same trail and returns the same version token.
+Three things are specific to it.
+
+The pickup code is compared against the stored digest in constant time, through
+the helpers in `api/remittance` — a plaintext stored value never matches, and is
+refused with its real cause (an unrun migration) instead of being blamed on the
+receiver. A wrong code costs an attempt; `max_code_attempts` wrong codes lock the
+transfer and only a manager reopens it. There is deliberately **no time-based
+auto-unlock**: `Remittance Settings.lockout_minutes` is not read here, because
+whether a lockout expires on its own is an open policy question and a lockout
+that silently expires is indistinguishable from one that was never applied.
+
+The payout queue selects `Registered` **and** `Posted` positively rather than
+excluding the pair, so a row whose obligation was never posted cannot reach a
+cashier's screen at all — the same invariant `RemittanceTransfer` rejects and the
+register command makes unreachable, enforced a third time at the point of use.
+
+Payout carries no money in its request — the amounts come off the register entry —
+so unlike register there is no payload for a replayed `client_request_id` to
+conflict with. The row lock plus the recorded payout event settle it instead: a
+key replayed against a transfer already paid out under that same key gets the
+original result, and any other second payout is refused.
 """
 
 from __future__ import annotations
@@ -55,12 +103,18 @@ from frappe.utils import cint, flt, get_datetime_str, now_datetime, nowdate
 
 from stabler.api._common import _require_company
 from stabler.api._remittance_pricing import PricingError, price_transfer
-from stabler.api.approvals import _assert_company_scope
-from stabler.api.remittance import _gen_pickup_code, store_pickup_code
-from stabler.api.remittance_accounting import post_register
+from stabler.api.approvals import _APPROVER_ROLES, _assert_company_scope
+from stabler.api.remittance import (
+	_gen_pickup_code,
+	_pickup_code_matches,
+	is_hashed_pickup_code,
+	store_pickup_code,
+)
+from stabler.api.remittance_accounting import post_payout, post_register
 
 TRANSFER = "Remittance Transfer"
 EVENT = "Remittance Event"
+SETTINGS = "Remittance Settings"
 
 # What makes two requests the SAME request. A key replayed with a different value
 # for any of these is a different command wearing a used key, not a retry.
@@ -182,7 +236,8 @@ def _version(name: str) -> str:
 	return get_datetime_str(frappe.db.get_value(TRANSFER, name, "modified"))
 
 
-def _result(transfer, *, pickup_code: str | None, replayed: bool) -> dict:
+def _state(transfer, *, replayed: bool) -> dict:
+	"""What every mutation returns: the money, the three statuses, the version."""
 	return {
 		"name": transfer.name,
 		"version": _version(transfer.name),
@@ -195,6 +250,12 @@ def _result(transfer, *, pickup_code: str | None, replayed: bool) -> dict:
 		"tendered": flt(transfer.tendered, 2),
 		"receiver_amount": flt(transfer.receiver_amount, 2),
 		"register_journal_entry": transfer.register_journal_entry,
+	}
+
+
+def _result(transfer, *, pickup_code: str | None, replayed: bool) -> dict:
+	return {
+		**_state(transfer, replayed=replayed),
 		# Present on the registering call and on no other call, ever.
 		"pickup_code": pickup_code,
 	}
@@ -236,19 +297,18 @@ def _new_transfer(key: str, payload: dict, code: str, *, origin_city, destinatio
 	return transfer
 
 
-def _append_event(transfer, key: str) -> None:
+def _append_event(transfer, *, event_type: str, key: str | None, details: str, branch: str) -> None:
+	"""One way in to the append-only trail, for every command in this module."""
 	frappe.get_doc(
 		{
 			"doctype": EVENT,
 			"transfer": transfer.name,
-			"event_type": "Register",
+			"event_type": event_type,
 			"occurred_at": now_datetime(),
 			"actor": frappe.session.user,
-			"branch": transfer.origin_branch,
+			"branch": branch,
 			"client_request_id": key,
-			"details": _("Registered {0} {1} at {2}").format(
-				flt(transfer.tendered, 2), transfer.send_currency, flt(transfer.exchange_rate, 6)
-			),
+			"details": details,
 		}
 	).insert()
 
@@ -335,9 +395,332 @@ def register_remittance(
 		},
 		notify=False,
 	)
-	_append_event(transfer, key)
+	_append_event(
+		transfer,
+		event_type="Register",
+		key=key,
+		branch=transfer.origin_branch,
+		details=_("Registered {0} {1} at {2}").format(
+			flt(transfer.tendered, 2), transfer.send_currency, flt(transfer.exchange_rate, 6)
+		),
+	)
 
 	return _result(transfer, pickup_code=code, replayed=False)
 
 
-__all__ = ["register_remittance"]
+# --------------------------------------------------------------------------- #
+# Payout
+# --------------------------------------------------------------------------- #
+
+# The doctype's own default, used for a company that has never opened the form.
+_DEFAULT_MAX_CODE_ATTEMPTS = 5
+
+# What the payout screen may see. `pickup_code_hash` is deliberately absent: the
+# alphabet is 32 glyphs and the code is 8 long, so handing out the digest hands
+# out the code to anyone willing to spend a few core-seconds on it.
+_QUEUE_FIELDS = (
+	"name",
+	"client_request_id",
+	"sender_name",
+	"receiver_name",
+	"origin_branch",
+	"origin_city",
+	"destination_branch",
+	"destination_city",
+	"send_currency",
+	"receive_currency",
+	"principal",
+	"commission",
+	"tendered",
+	"receiver_amount",
+	"operational_status",
+	"accounting_status",
+	"verification_status",
+	"code_locked",
+	"code_attempts",
+	"registered_at",
+	"modified",
+)
+
+# What a free-text search matches. The two names are why this endpoint exists:
+# v1 could only match an exact remittance id, so a receiver who had lost the slip
+# sent the cashier off the payout screen to go and find it.
+_QUEUE_SEARCH_FIELDS = ("name", "client_request_id", "receiver_name", "sender_name")
+
+
+def _max_code_attempts(company: str) -> int:
+	"""How many wrong codes lock the transfer, per company."""
+	configured = cint(frappe.db.get_value(SETTINGS, company, "max_code_attempts"))
+	return configured if configured > 0 else _DEFAULT_MAX_CODE_ATTEMPTS
+
+
+def _payout_result(transfer, *, replayed: bool) -> dict:
+	return {
+		**_state(transfer, replayed=replayed),
+		"payout_journal_entry": transfer.payout_journal_entry,
+		"code_locked": cint(transfer.code_locked),
+		"code_attempts": cint(transfer.code_attempts),
+	}
+
+
+@frappe.whitelist()
+def payout_queue(company: str, query: str | None = None, limit=50) -> list[dict]:
+	"""The transfers a cashier may actually pay out, searchable by name."""
+	_assert_company_scope(company)  # tenant isolation: reject a foreign company arg
+	_require_company(company)
+
+	term = (query or "").strip()
+	return frappe.get_all(
+		TRANSFER,
+		filters={
+			"company": company,
+			# Stated as an inclusion, not as "everything except". Registered +
+			# Unposted would debit an obligation that was never created, and an
+			# operational status added later cannot leak into this list by default.
+			"operational_status": "Registered",
+			"accounting_status": "Posted",
+		},
+		or_filters=[[field, "like", f"%{term}%"] for field in _QUEUE_SEARCH_FIELDS] if term else None,
+		fields=list(_QUEUE_FIELDS),
+		order_by="registered_at desc, modified desc",
+		limit=max(1, min(cint(limit) or 50, 200)),
+	)
+
+
+def _assert_payable(transfer) -> None:
+	"""Refuse anything that is not a registered, posted, unlocked transfer.
+
+	Every field read here is read under the row lock. Deciding this on unlocked
+	state is the double payout: both cashiers see `Registered`, both hand over cash.
+	"""
+	if transfer.operational_status != "Registered":
+		frappe.throw(
+			_("Transfer {0} is {1} and cannot be paid out.").format(
+				transfer.name, transfer.operational_status
+			)
+		)
+	if transfer.accounting_status != "Posted":
+		frappe.throw(
+			_(
+				"Transfer {0} is {1}: the receiver obligation was never posted, so there "
+				"is nothing to pay out."
+			).format(transfer.name, transfer.accounting_status)
+		)
+	if transfer.refund_status in ("Approved", "Completed"):
+		# The cash is already committed back to the sender at the origin desk.
+		# A merely *Requested* refund deliberately does not block: it is not yet a
+		# commitment, and letting a request freeze the receiver's cash would make
+		# the refund request a denial-of-service on the person waiting at the counter.
+		frappe.throw(
+			_("Transfer {0} has a {1} refund and cannot be paid out.").format(
+				transfer.name, transfer.refund_status
+			)
+		)
+	if cint(transfer.code_locked):
+		frappe.throw(
+			_(
+				"The pickup code for {0} is locked after too many failed attempts. A manager must unlock it."
+			).format(transfer.name),
+			frappe.PermissionError,
+		)
+
+
+def _refuse_the_code(transfer, key: str) -> None:
+	"""Count the attempt, lock at the limit, and only then refuse.
+
+	`frappe.throw` rolls the transaction back, so the counter has to reach disk
+	*before* the refusal is raised — an uncommitted lockout is not a lockout, and a
+	brute-force attempt that costs nothing is not counted at all. This is the only
+	place in this module that commits, and it is safe precisely here: on this path
+	no money has moved and the only writes are the counter, the lock flag and the
+	trail. The commit releases the row lock, which is correct — this caller is done.
+	"""
+	attempts = cint(transfer.code_attempts) + 1
+	limit = _max_code_attempts(transfer.company)
+	locked = attempts >= limit
+
+	patch = {"code_attempts": attempts}
+	if locked:
+		patch.update({"code_locked": 1, "code_locked_at": now_datetime(), "verification_status": "Locked"})
+	transfer.db_set(patch, notify=False)
+
+	_append_event(
+		transfer,
+		event_type="Failed code attempt",
+		key=key,
+		branch=transfer.destination_branch,
+		details=_("Wrong pickup code — attempt {0} of {1}").format(attempts, limit),
+	)
+	locked_message = _(
+		"The pickup code for {0} is locked after {1} failed attempts. A manager must unlock it."
+	).format(transfer.name, attempts)
+	if locked:
+		_append_event(
+			transfer,
+			event_type="Lock",
+			key=key,
+			branch=transfer.destination_branch,
+			details=locked_message,
+		)
+
+	frappe.db.commit()
+
+	if locked:
+		frappe.throw(locked_message, frappe.PermissionError)
+	frappe.throw(
+		_("Invalid pickup code. {0} attempt(s) left before this transfer is locked.").format(
+			limit - attempts
+		),
+		frappe.PermissionError,
+	)
+
+
+def _verify_the_code(transfer, provided: str, key: str) -> None:
+	"""Constant-time compare against the stored digest, or spend an attempt."""
+	stored = (transfer.pickup_code_hash or "").strip()
+	if not is_hashed_pickup_code(stored):
+		# Missing, or still in the pre-hash plaintext format on a site where the
+		# migration has not run. Neither is the receiver's doing, so neither costs
+		# an attempt: locking a transfer over a deployment gap punishes the wrong
+		# person and hides the real cause.
+		frappe.throw(
+			_(
+				"Transfer {0} has no usable pickup code on file — it is missing or still "
+				"in the pre-hash format. Run `bench migrate` on this site, then retry."
+			).format(transfer.name)
+		)
+	if not _pickup_code_matches(stored, provided):
+		_refuse_the_code(transfer, key)
+
+
+def _replayed_payout(transfer, key: str) -> dict:
+	"""Answer a second payout: the original result, or a refusal.
+
+	Payout carries no money in its request, so unlike register there is no payload
+	to disagree about. What decides is whether *this* key is the one that paid the
+	transfer out, and the trail is the record of that.
+	"""
+	paid_under = frappe.db.get_value(
+		EVENT, {"transfer": transfer.name, "event_type": "Payout"}, "client_request_id"
+	)
+	if paid_under and paid_under == key:
+		return _payout_result(transfer, replayed=True)
+	frappe.throw(_("Transfer {0} has already been paid out.").format(transfer.name))
+
+
+@frappe.whitelist()
+def payout_transfer(
+	name: str,
+	pickup_code: str,
+	client_request_id: str,
+	posting_date: str | None = None,
+) -> dict:
+	"""Verify the receiver's code, close the obligation, hand over the cash."""
+	key = (client_request_id or "").strip()
+	if not key:
+		frappe.throw(_("A client request id is required, so a retry cannot pay out twice."))
+
+	# The lock FIRST — before the state, before the code check, before the posting.
+	# It doubles as the existence check: a row nobody can lock is a row that is not
+	# there, and it is what turns a missing name into a sentence rather than a
+	# traceback. Same ordering as `register_remittance`, for the same reason.
+	if not frappe.db.get_value(TRANSFER, name, "name", for_update=True):
+		frappe.throw(_("Transfer {0} does not exist.").format(name))
+
+	# ...and the state is read THROUGH it. Under REPEATABLE READ the lock alone
+	# serialises without refreshing: a plain `get_doc` answers from the snapshot this
+	# request opened before it blocked, so the loser of the race would wake up, see
+	# the pre-race `Registered`, and pay out a second time. See the module docstring.
+	transfer = frappe.get_doc(TRANSFER, name, for_update=True)
+	# Tenant isolation on the row's own company: the caller never names one here.
+	_assert_company_scope(transfer.company)
+	_require_company(transfer.company)
+
+	if transfer.operational_status == "Paid Out":
+		return _replayed_payout(transfer, key)
+
+	_assert_payable(transfer)
+	_verify_the_code(transfer, pickup_code, key)
+
+	post_payout(transfer, posting_date=posting_date or nowdate())
+	# Only now: the payout entry is submitted, so no reader can see a transfer
+	# marked Paid Out whose obligation is still open.
+	transfer.db_set(
+		{"operational_status": "Paid Out", "verification_status": "Consumed"},
+		notify=False,
+	)
+	_append_event(
+		transfer,
+		event_type="Payout",
+		key=key,
+		branch=transfer.destination_branch,
+		details=_("Paid out {0} {1} to {2}").format(
+			flt(transfer.receiver_amount, 2), transfer.receive_currency, transfer.receiver_name
+		),
+	)
+
+	return _payout_result(transfer, replayed=False)
+
+
+@frappe.whitelist()
+def unlock_pickup_code(name: str, reason: str | None = None) -> dict:
+	"""A manager reopens a locked pickup code. Today this is the only exit.
+
+	`Remittance Settings.lockout_minutes` is deliberately NOT read and no expiry is
+	implemented. Whether a lockout should time out on its own is an open policy
+	question (its own bead), and a lockout that quietly expires is indistinguishable
+	from one that was never applied — so until someone decides, the exit is a person
+	who leaves a row in the trail.
+
+	Gated on `_APPROVER_ROLES`, the app's existing money-control manager set,
+	because remittance has no roles of its own yet (stabler-tvma). When it gets
+	them, this is the one line that changes.
+	"""
+	if not set(_APPROVER_ROLES) & set(frappe.get_roles()):
+		frappe.throw(_("Only a manager can unlock a pickup code."), frappe.PermissionError)
+
+	if not frappe.db.get_value(TRANSFER, name, "name", for_update=True):
+		frappe.throw(_("Transfer {0} does not exist.").format(name))
+
+	# Locked read, for the reason spelled out in `payout_transfer`: two managers on
+	# the same row must not both read `code_locked = 1` out of a stale snapshot.
+	transfer = frappe.get_doc(TRANSFER, name, for_update=True)
+	_assert_company_scope(transfer.company)
+	_require_company(transfer.company)
+
+	if transfer.operational_status != "Registered":
+		frappe.throw(
+			_("Transfer {0} is {1}; there is no pickup left to unlock.").format(
+				transfer.name, transfer.operational_status
+			)
+		)
+	if not cint(transfer.code_locked):
+		# Two managers pressing Unlock must not produce a failure for the second.
+		return _payout_result(transfer, replayed=True)
+
+	# The counter goes back to zero with the flag. Leaving it at the limit would
+	# re-lock on the very next mistyped character, which is not an unlock; the
+	# attempt history survives in the trail, which is where it belongs anyway.
+	transfer.db_set(
+		{
+			"code_locked": 0,
+			"code_attempts": 0,
+			"code_locked_at": None,
+			"verification_status": "Active",
+		},
+		notify=False,
+	)
+	_append_event(
+		transfer,
+		event_type="Unlock",
+		key=None,
+		branch=transfer.destination_branch,
+		details=_("Pickup code unlocked by {0}. {1}").format(
+			frappe.session.user, (reason or "").strip() or _("No reason given.")
+		),
+	)
+
+	return _payout_result(transfer, replayed=False)
+
+
+__all__ = ["payout_queue", "payout_transfer", "register_remittance", "unlock_pickup_code"]

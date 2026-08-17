@@ -6,7 +6,6 @@
 # and was still saying it on 2026-08-16, when the file held 178 — a 2.1x drift
 # that nobody caught precisely because 84 looked plausible. The file IS the list;
 # `make test` prints how many it read, every run.
-#
 # Adding a test? If it imports frappe only indirectly (or not at all), verify
 # with:  python3 -m unittest stabler.tests.<module>
 # and append it here. Bench-dependent tests need no entry -- job 'bench-tests'
@@ -200,5 +199,10 @@ stabler.tests.test_remittance_transfer_doctype
 stabler.tests.test_remittance_pricing
 stabler.tests.test_remittance_accounting
 stabler.tests.test_remittance_register_command
+stabler.tests.test_remittance_cancel_guard
+stabler.tests.test_remittance_payout_command
 stabler.tests.test_gate_sees_new_files
+stabler.tests.test_fx_unpriced_guard
+stabler.tests.test_remittance_roles
+stabler.tests.test_remittance_company_scope
 stabler.tests.test_unbilled_receipts

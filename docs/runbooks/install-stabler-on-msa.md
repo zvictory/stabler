@@ -424,7 +424,7 @@ vurur. Tam liste (`stabler/hooks.py`):
 | hourly | `stabler.tasks.uzex_poll.fetch_and_store` | **RİSKLİ** — her saat UZEX etender API'sine ağ çağrısı. Yeni Deal yalnız `frappe.conf.uzex_keywords` eşleşirse yaratılır (msa'da yoksa Deal yaratmaz), ama **API'ye yine de vurur** ve kimlik bilgisi yoksa hata loglar. **Durdur.** |
 | hourly | `stabler.integrations.one_c.hooks.hourly_sync` | Orta — `onec_mode` "file" (default) iken sadece yerel dizin tarar (no-op). REST'e vurmaz. Yine de gereksizse **durdur.** |
 | hourly | `stabler.integrations.didox.hooks.sync_pending_statuses` | Güvenli — yalnız `didox_doc_id`'li "Sent" ЭСФ satırlarını yoklar; taze msa'da yok → no-op. |
-| daily | `stabler.tasks.cbu_rate_refresh.fetch_and_store` | Görece zararsız — CBU'dan USD/EUR/RUB alıp msa'ya Currency Exchange satırı yazar (idempotent). Genelde İSTENİR. İstemiyorsan durdur. |
+| daily | `stabler.tasks.cbu_rate_refresh.fetch_and_store` | Görece zararsız — CBU'dan USD/EUR/RUB/**CNY** alıp msa'ya Currency Exchange satırı yazar (idempotent). Kaynak liste `_TRACKED`; USDT CBU'da yayınlanmadığı için burada YOK, dönem kapanışında elle girilir (`docs/runbooks/period-close.md`). Genelde İSTENİR. İstemiyorsan durdur. |
 | daily | `stabler.tasks.roi_refresh.daily` | Güvenli — stabler verisi yoksa no-op/boş. |
 | daily | `stabler.service.schedule_engine.generate_rolling_schedule_rows` | Güvenli — Service modülü OFF; veri yok → no-op. |
 | daily | `stabler.tasks.gl_integrity.nightly_scan` | Orta — msa'nın GERÇEK GL'ini tarar (salt-okunur, tutarsızlık loglar). Zararsız ama log gürültüsü yaratabilir. |

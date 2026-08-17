@@ -2522,6 +2522,8 @@ Journal Entry,Запись в журнале
 Journal entry cancelled.,Проводка отменена.
 Journal Entry is already submitted.,
 Journal Entry legs,Проводки журнала
+"Journal Entry {0} is the payout of remittance {1} and cannot be cancelled here — the cash has already left the drawer, and a paid-out transfer cannot be refunded either. Escalate it: only an administrator can reverse remittance {1}, on the server.","Запись в журнале {0} — это выплата по переводу {1}, и отменить её здесь нельзя: наличные уже выданы из кассы, а выплаченный перевод вернуть тоже нельзя. Передайте это выше: отменить перевод {1} может только администратор, на сервере."
+"Journal Entry {0} is the {2} entry of remittance {1} and cannot be cancelled here — the ledger would move and the transfer's status would not. No screen in Stabler reverses a remittance yet, so escalate it: only an administrator can reverse remittance {1}, on the server.","Запись в журнале {0} — это проводка этапа «{2}» перевода {1}, и отменить её здесь нельзя: книга сдвинется, а статус перевода — нет. Ни один экран в Stabler пока не отменяет перевод, поэтому передайте это выше: отменить перевод {1} может только администратор, на сервере."
 Journal entry submitted.,Проводка проведена.
 Justification / Reason,Обоснование / Причина
 Kanban,Канбан
@@ -2804,6 +2806,7 @@ Minutes worked before overtime begins.,
 Missing,Отсутствует
 Missing document type or name,
 Missing Entry,
+Missing exchange rate,Курс валюты отсутствует
 Missing fields,Недостающие поля
 Missing file,Отсутствует файл
 Missing required,Не хватает обязательного
@@ -3113,6 +3116,7 @@ No exchange rate for this date — enter manually.,Нет курса на эту
 No exchange rate found for this invoice date — landed cost cannot be calculated. Enter a rate above or add the CBU rate.,Курс на дату этого инвойса не найден — себестоимость рассчитать невозможно. Укажите курс выше или добавьте курс ЦБ.
 No exchange rate found for {0} to {1} on {2},
 No exchange rate found for {0} to {1} on {2}: {3},
+"No exchange rate is published for {currencies} on {date}. Revaluing these balances would value them at zero and book their whole amount as an FX loss. Create a Currency Exchange record ({currencies} → {base}) dated {date} or earlier, then reload this document.","Курс {currencies} на {date} не опубликован. Переоценка этих остатков оценит их в ноль и спишет всю сумму как курсовой убыток. Создайте запись Currency Exchange ({currencies} → {base}) с датой {date} или ранее, затем перезагрузите документ."
 No exchange rates yet. Click Refresh now to fetch today's rates from cbu.uz.,Курсы валют пока отсутствуют. Нажмите «Обновить сейчас»
 No expenses recorded for this invoice yet.,По этому инвойсу расходы ещё не записаны.
 No field users yet,Пользователей полей нет
@@ -5437,7 +5441,7 @@ Unit price,Цена за единицу
 units,
 Units Sold,Проданных единиц
 units total,единиц всего
-Unknown,
+Unknown,Неизвестно
 Unknown account: {0},
 Unknown agreement: {0},Неизвестный договор: {0}
 Unknown commercial invoice for this company: {0},Неизвестный коммерческий инвойс для этой компании: {0}

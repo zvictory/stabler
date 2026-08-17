@@ -2517,6 +2517,8 @@ Journal Entry,Журнал ёзуви
 Journal entry cancelled.,Проводка бекор қилинди.
 Journal Entry is already submitted.,
 Journal Entry legs,Журнал ёзув қаторлари
+"Journal Entry {0} is the payout of remittance {1} and cannot be cancelled here — the cash has already left the drawer, and a paid-out transfer cannot be refunded either. Escalate it: only an administrator can reverse remittance {1}, on the server.","{0} журнал ёзуви — бу {1} пул ўтказмасининг тўлови ва уни бу ерда бекор қилиб бўлмайди: нақд пул кассадан аллақачон чиқиб кетган, тўлаб берилган ўтказмани қайтариб ҳам бўлмайди. Масалани юқорига кўтаринг: {1} ўтказмасини фақат администратор, серверда бекор қила олади."
+"Journal Entry {0} is the {2} entry of remittance {1} and cannot be cancelled here — the ledger would move and the transfer's status would not. No screen in Stabler reverses a remittance yet, so escalate it: only an administrator can reverse remittance {1}, on the server.","{0} журнал ёзуви — бу {1} пул ўтказмасининг «{2}» босқичидаги ёзуви ва уни бу ерда бекор қилиб бўлмайди: ҳисоб китоби силжийди, ўтказма ҳолати эса силжимайди. Stabler'да ҳозирча ҳеч бир экран ўтказмани қайтармайди, шунинг учун масалани юқорига кўтаринг: {1} ўтказмасини фақат администратор, серверда бекор қила олади."
 Journal entry submitted.,Проводка тасдиқланди.
 Justification / Reason,Асослаш / Сабаб
 Kanban,Канбан
@@ -2799,6 +2801,7 @@ Minutes worked before overtime begins.,
 Missing,Йўқ
 Missing document type or name,
 Missing Entry,
+Missing exchange rate,Валюта курси топилмади
 Missing fields,Етишмаётган майдонлар
 Missing file,Файл етишмайди
 Missing required,Májbúriy hújjet jetispeydi
@@ -3108,6 +3111,7 @@ No exchange rate for this date — enter manually.,Ушбу сана учун к
 No exchange rate found for this invoice date — landed cost cannot be calculated. Enter a rate above or add the CBU rate.,Ушбу ҳисоб-фактура санаси учун курс топилмади — якуний таннархни ҳисоблаб бўлмайди. Юқорида курс киритинг ёки МБ курсини қўшинг.
 No exchange rate found for {0} to {1} on {2},
 No exchange rate found for {0} to {1} on {2}: {3},
+"No exchange rate is published for {currencies} on {date}. Revaluing these balances would value them at zero and book their whole amount as an FX loss. Create a Currency Exchange record ({currencies} → {base}) dated {date} or earlier, then reload this document.",{currencies} учун {date} санасига курс эълон қилинмаган. Бу қолдиқларни қайта баҳолаш уларни нолга тенглаштиради ва бутун суммани курс зарари сифатида ёзади. {date} ёки ундан олдинги санага Currency Exchange ёзувини ({currencies} → {base}) яратинг ва ҳужжатни қайта юкланг.
 No exchange rates yet. Click Refresh now to fetch today's rates from cbu.uz.,Ҳалиғача алмаштириш курслари йўқ. cbu.uz дан бугунги курслари олиш учун Янгилаш босинг.
 No expenses recorded for this invoice yet.,Бу инвойс бўйича ҳали харажат қайд этилмаган.
 No field users yet,Ҳалиғача сахра фойдаланувчилари йўқ
@@ -5432,7 +5436,7 @@ Unit price,Бирлик нархи
 units,
 Units Sold,Сотилган бирлик
 units total,жами бирлик
-Unknown,
+Unknown,Номаълум
 Unknown account: {0},
 Unknown agreement: {0},Номаълум шартнома: {0}
 Unknown commercial invoice for this company: {0},Ушбу компания учун номаълум тижорат инвойси: {0}
