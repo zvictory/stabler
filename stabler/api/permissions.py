@@ -109,6 +109,29 @@ def _company_condition(user: str | None, doctype: str) -> str:
 	return f"({table}.company in ({escaped}) or {table}.company is null or {table}.company = '')"
 
 
+def _parent_company_condition(user: str | None, doctype: str, link_field: str, parent_doctype: str) -> str:
+	"""SQL WHERE fragment scoping `doctype` through a parent row's `company`.
+
+	For records that belong to a company-scoped transaction but carry no
+	``company`` column of their own — ``_company_condition`` would emit
+	``tabX.company``, which is not a column, and the query would error rather
+	than filter. Same escaping and the same blank-is-never-hidden convention as
+	``_company_condition``; only the company's location differs.
+	"""
+	allowed = _allowed_for(user)
+	if not needs_company_restriction(allowed):
+		return ""
+	escaped = ", ".join(frappe.db.escape(c) for c in allowed)
+	table = f"`tab{doctype}`"
+	parent = f"`tab{parent_doctype}`"
+	return (
+		f"({table}.{link_field} in ("
+		f"select `name` from {parent} where "
+		f"`company` in ({escaped}) or `company` is null or `company` = ''"
+		f") or {table}.{link_field} is null or {table}.{link_field} = '')"
+	)
+
+
 def company_has_permission(doc, ptype=None, user=None):
 	"""has_permission hook: deny a single doc whose company is out of scope.
 
@@ -209,6 +232,53 @@ def vehicle_finance_follow_up_log_query(user=None):
 
 def vehicle_finance_settings_query(user=None):
 	return _company_condition(user, "Vehicle Finance Settings")
+
+
+# ---------------------------------------------------------------------------
+# Remittance — the first money doctypes in the app with a non-admin read path
+# (Remittance Viewer / Auditor / Cashier / Finance Manager). Without these two
+# conditions a Viewer restricted to Company A reads Company B's transfers —
+# sender and receiver names, amounts, corridors, the Journal Entry links —
+# straight off /api/resource. Cross-company within a site; the tenants have
+# separate databases, so the site boundary is unaffected.
+# ---------------------------------------------------------------------------
+
+
+def remittance_transfer_query(user=None):
+	return _company_condition(user, "Remittance Transfer")
+
+
+def remittance_event_query(user=None):
+	"""permission_query_conditions for Remittance Event.
+
+	The doctype has no ``company`` field — only a required ``transfer`` link
+	(remittance_event.json) — so the scope is read from the parent transfer.
+	"""
+	return _parent_company_condition(user, "Remittance Event", "transfer", "Remittance Transfer")
+
+
+def remittance_event_has_permission(doc, ptype=None, user=None):
+	"""has_permission hook for Remittance Event — company comes from the parent.
+
+	``company_has_permission`` cannot be reused here: it reads ``doc.company``,
+	which is always None on an event, hits its blank-is-allowed branch and
+	returns True for every row. Returns True to allow, False to deny; never None.
+	"""
+	allowed = _allowed_for(user)
+	if not needs_company_restriction(allowed):
+		return True
+	if doc is None:
+		return True
+	if isinstance(doc, str):
+		transfer = frappe.db.get_value("Remittance Event", doc, "transfer")
+	else:
+		transfer = getattr(doc, "transfer", None)
+	if not transfer:
+		return True
+	company = frappe.db.get_value("Remittance Transfer", transfer, "company")
+	if not company:
+		return True
+	return is_company_allowed(company, allowed)
 
 
 # ---------------------------------------------------------------------------
