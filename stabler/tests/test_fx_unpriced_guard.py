@@ -86,6 +86,44 @@ class UnpricedPositionRuleTest(unittest.TestCase):
 		"""
 		self.assertEqual(find_unpriced_positions([_position(balance=0, rate=0)]), [])
 
+	def test_zero_base_balance_at_zero_rate_is_not_flagged(self):
+		"""The other half of ERPNext's zero_balance branch — the deadlock case.
+
+		`zero_balance` is set with an OR, not an XOR
+		(exchange_rate_revaluation.py:243-244), so a foreign-currency
+		receivable whose *base* balance has netted to zero while the
+		account-currency balance has not is a zero_balance row too. Its
+		else-branch (:293-305) writes `new_exchange_rate = 0` together with a
+		NON-zero gain_loss, so the row survives both
+		`fetch_and_calculate_accounts_data` and
+		`remove_accounts_without_gain_loss` and arrives here with money on one
+		side and rate 0.
+
+		Flagging it deadlocks the close with no in-product exit: ERPNext forces
+		rate 0 for these rows regardless of what Currency Exchange says, so
+		publishing the rate the refusal asks for changes nothing.
+		"""
+		self.assertEqual(
+			find_unpriced_positions([_position(balance=50_000, balance_base=0, rate=0)]),
+			[],
+		)
+
+	def test_money_on_both_sides_with_no_rate_is_still_unpriced(self):
+		"""The defect the guard exists for, restated so neither zero-balance
+		exemption can quietly swallow it."""
+		found = find_unpriced_positions([_position(balance=50_000, balance_base=630_000_000, rate=0)])
+		self.assertEqual(len(found), 1)
+		self.assertEqual(found[0]["balance"], Decimal("50000"))
+
+	def test_absent_base_balance_does_not_disarm_the_rule(self):
+		"""Only an explicit zero — ERPNext stating "this is a zero_balance row"
+		— earns the exemption. A caller that simply omits the base balance says
+		nothing, and must not switch the guard off by omission."""
+		position = _position(rate=0)
+		self.assertNotIn("balance_base", position)
+		self.assertEqual(len(find_unpriced_positions([position])), 1)
+		self.assertEqual(len(find_unpriced_positions([_position(rate=0, balance_base=None)])), 1)
+
 	def test_foreign_currency_liability_is_flagged_too(self):
 		"""A negative balance is a debt: zeroing it fabricates a gain."""
 		found = find_unpriced_positions([_position(balance=-50_000, rate=0)])
@@ -201,6 +239,7 @@ def _row(**overrides) -> dict:
 		"account": "Cash - USDT - M",
 		"account_currency": "USDT",
 		"balance_in_account_currency": 50_000,
+		"balance_in_base_currency": 630_000_000,
 		"new_exchange_rate": 12_600,
 		"zero_balance": 0,
 	}
@@ -246,6 +285,33 @@ class GuardRefusesTest(unittest.TestCase):
 		self.assertIsNone(
 			self.api.assert_positions_priced(
 				_doc([_row(balance_in_account_currency=0, new_exchange_rate=0, zero_balance=1)])
+			)
+		)
+
+	def test_netted_receivable_with_zero_base_balance_passes(self):
+		"""A month-end row ERPNext produced correctly, which the guard must not
+		refuse: base balance netted to zero, account-currency balance did not.
+
+		This is the whole reason the hook has to carry
+		`balance_in_base_currency` through to the rule — reading
+		`balance_in_account_currency` alone sees money and a rate of 0 and
+		throws, and no Currency Exchange record the operator could publish
+		would clear it.
+		"""
+		self.assertIsNone(
+			self.api.assert_positions_priced(
+				_doc(
+					[
+						_row(
+							account="Debtors - USD - M",
+							account_currency="USD",
+							balance_in_account_currency=50_000,
+							balance_in_base_currency=0,
+							new_exchange_rate=0,
+							zero_balance=1,
+						)
+					]
+				)
 			)
 		)
 

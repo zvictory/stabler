@@ -58,6 +58,11 @@
    kuru olmayan bir bakiyeyi `new_rate = 0` ve devasa bir "loss" olarak gösterir —
    bu, 2. adımın atlandığının işaretidir.
 
+   **Kaydedilen belgede satır olduğunu doğrula.** Satırları ERPNext'in kendi
+   `fetch_and_calculate_accounts_data` çağrısı doldurur; satırsız kaydedilmiş bir
+   belge "yeniden değerleme yapıldı" demek değildir — hiçbir şey revalüe edilmemiş
+   demektir. Böyle bir belge çıkarsa dur ve nedenini bul, kapanışa geçme.
+
 4. **Dönemi kapat.** Kapanış tarihi Stabler Settings'te; kural
    `stabler/api/_period_close.py`, uygulaması `period_close.enforce_on_validate`.
 

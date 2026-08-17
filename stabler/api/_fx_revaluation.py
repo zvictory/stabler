@@ -187,17 +187,47 @@ def find_unpriced_positions(positions) -> list[dict]:
 	----------
 	positions:
 		Iterable of mappings with keys ``account``, ``currency``, ``balance``
-		(in the *account* currency) and ``rate`` (account ccy -> base).
+		(in the *account* currency), ``balance_base`` (the same position in the
+		*base* currency) and ``rate`` (account ccy -> base).
 
 	Returns
 	-------
-	The subset that still holds money (``balance`` != 0) while ``rate`` is zero,
-	negative or non-numeric, each as ``{account, currency, balance, rate}`` with
-	Decimal amounts.  Empty list = every position is priced.
+	The subset that still holds money on **both** sides of the ledger while
+	``rate`` is zero, negative or non-numeric, each as
+	``{account, currency, balance, rate}`` with Decimal amounts.  Empty list =
+	every position is priced.
 
-	A position whose ``balance`` is zero is *not* flagged: a drained account
-	legitimately carries rate 0 (ERPNext's own `zero_balance` branch at :286-300
-	sets it deliberately) and revaluing nothing at nothing is not a write-off.
+	Both balances are read because ERPNext's own zero-balance handling is an
+	OR, not an XOR (`exchange_rate_revaluation.py:243-244`):
+
+	    acc.zero_balance = True if (acc.balance == 0
+	                                or acc.balance_in_account_currency == 0) else False
+
+	and *every* row it marks that way is given `new_exchange_rate = 0`
+	deliberately.  The two sub-cases split at :287:
+
+	  * account-currency balance zero, base balance not — a drained drawer with
+	    a base-currency residue; the row is zeroed and written off (:287-292).
+	  * base balance zero, account-currency balance not — the netted
+	    foreign-currency receivable/payable the zero_balance branch exists to
+	    clear.  Its else-branch (:293-305) writes rate 0 **and** a non-zero
+	    `gain_loss`, so the row survives `fetch_and_calculate_accounts_data`
+	    and `remove_accounts_without_gain_loss` and reaches this rule intact.
+
+	Reading ``balance`` alone therefore refuses a document ERPNext produced
+	correctly, and refuses it with no way out: ERPNext forces rate 0 on those
+	rows whatever Currency Exchange says, so the Currency Exchange record the
+	refusal demands would not clear it.  We derive the condition from the two
+	balances rather than from the ``zero_balance`` field so the rule keeps
+	holding if that flag's definition changes — the flag is a conclusion drawn
+	from these same two numbers, and it is stored on a document a Desk user can
+	edit.
+
+	A ``balance_base`` that is absent or ``None`` is **not** a zero: only a
+	value that is actually there and actually zero earns the exemption, so a
+	caller that forgets to map the field keeps being refused rather than
+	switching the guard off silently.
+
 	A negative balance — a foreign-currency liability — is flagged like any
 	other: zeroing a debt fabricates a gain exactly as zeroing an asset
 	fabricates a loss.
@@ -206,6 +236,9 @@ def find_unpriced_positions(positions) -> list[dict]:
 	for p in positions or []:
 		balance = _d(p.get("balance"))
 		if balance == 0:
+			continue
+		balance_base = p.get("balance_base")
+		if balance_base is not None and _d(balance_base) == 0:
 			continue
 		rate = _d(p.get("rate"))
 		if rate > 0:

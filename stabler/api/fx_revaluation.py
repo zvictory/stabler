@@ -40,12 +40,19 @@ def _base_currency(company: str) -> str:
 
 
 def _positions_from_doc(doc) -> list[dict]:
-	"""Normalise an Exchange Rate Revaluation's child rows for the pure rule."""
+	"""Normalise an Exchange Rate Revaluation's child rows for the pure rule.
+
+	Both balances are carried. ERPNext marks a row `zero_balance` when *either*
+	side is zero and then forces `new_exchange_rate = 0` on it deliberately, so
+	a rule fed only `balance_in_account_currency` refuses correct documents —
+	see `find_unpriced_positions` for the two branches.
+	"""
 	return [
 		{
 			"account": row.get("account"),
 			"currency": row.get("account_currency"),
 			"balance": row.get("balance_in_account_currency"),
+			"balance_base": row.get("balance_in_base_currency"),
 			"rate": row.get("new_exchange_rate"),
 		}
 		for row in (doc.get("accounts") or [])
@@ -61,12 +68,25 @@ def assert_positions_priced(doc, method=None) -> None:
 	below.  A guard that only sat inside our own endpoint would not be one.
 
 	Deliberately **not** gated on a per-company `enable_*` setting, unlike
-	`valuation_guard`: the condition it catches has no legitimate form.  A row
-	with money in it and no published rate books the entire balance as an FX
-	loss (see `find_unpriced_positions` for the two ERPNext lines that do it),
-	and ADR-009 makes revaluation the only place remittance FX margin is ever
-	recognised — so the fabricated loss lands directly on profit.  Making that
-	opt-in would reproduce the silence for every tenant that did not opt in.
+	`valuation_guard`, and with no override role, unlike `period_close`: the
+	condition it catches has no legitimate form.  A row with money on *both*
+	sides of the ledger and no published rate books the entire balance as an FX
+	loss (see `find_unpriced_positions` for the ERPNext lines that do it), and
+	ADR-009 makes revaluation the only place remittance FX margin is ever
+	recognised — so the fabricated loss lands directly on profit.  An opt-in
+	flag would reproduce the silence for every tenant that did not opt in, and
+	an override role would let the close proceed by clicking past it, which is
+	the outcome the guard exists to prevent.
+
+	What makes the missing kill-switch acceptable is that **the exit is data,
+	not a deploy**.  Every refusal names a currency and a date, and clears the
+	moment a Currency Exchange record exists for them — one document, on one
+	tenant, by anyone who maintains rates.  That is also why the `zero_balance`
+	false positive was a merge blocker rather than a papercut: those rows are
+	the one case where publishing the rate does *not* clear the refusal,
+	because ERPNext forces rate 0 on them whatever Currency Exchange says.  The
+	rule no longer flags them, so no refusal reachable from here is escapable
+	only by shipping code.
 
 	Raises `frappe.ValidationError` naming each offending account, its currency
 	and the Currency Exchange row that has to exist before the document can be
@@ -264,8 +284,8 @@ def create_fx_revaluation(
 
 	ERPNext's Exchange Rate Revaluation controller (erpnext/accounts/doctype/
 	exchange_rate_revaluation/) reads the live GL balances and populates the
-	account rows automatically when we call `doc.get_accounts()`. We do not
-	hand-roll the GL entries — ERPNext posts them on submit.
+	account rows automatically when we call `doc.fetch_and_calculate_accounts_data()`.
+	We do not hand-roll the GL entries — ERPNext posts them on submit.
 
 	Parameters
 	----------
@@ -290,12 +310,17 @@ def create_fx_revaluation(
 	doc.company = company
 	doc.posting_date = pdate
 
-	# Let ERPNext populate the account rows from GL (its own method)
-	try:
-		doc.get_accounts()
-	except AttributeError:
-		# Older ERPNext versions may expose the same logic differently
-		pass
+	# Let ERPNext populate the account rows from GL (its own method).
+	#
+	# The method is `fetch_and_calculate_accounts_data`
+	# (exchange_rate_revaluation.py:133-138).  There is no `get_accounts` on
+	# that controller, and the `except AttributeError: pass` that used to wrap
+	# the wrong name turned the mistake into a silently empty document: the doc
+	# saved with no rows, so nothing was revalued and the guard on `validate`
+	# had nothing to inspect — the period-close runbook's step 3 appeared to
+	# succeed while doing nothing at all.  Left unguarded on purpose: a wrong
+	# method name must fail loudly rather than save an empty revaluation.
+	doc.fetch_and_calculate_accounts_data()
 
 	doc.insert(ignore_permissions=False)
 
