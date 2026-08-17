@@ -80,10 +80,12 @@ Every user of {company} moves to the {engine} screens when this is saved.,"Са�
 I have written it down,Ёзиб олдим
 "Legacy posts journal entries from the New Transfer form it always has. V1 registers a Remittance Transfer and is the only engine where the payout, refund, operations and reconciliation screens exist.","Legacy ўзининг доимий ""Янги ўтказма"" формасидан журнал ёзувларини киритади. V1 эса Remittance Transfer ёзувини рўйхатга олади ва тўлов, қайтариш, операциялар ва солиштириш экранлари фақат шу механизмда мавжуд."
 Legacy — journal entry screens,Legacy — журнал ёзуви экранлари
+Not ready — this desk cannot take or hand over a transfer.,"Тайёр эмас — бу касса ўтказмани на қабул қила олади, на бера олади."
 Pickup code,Олиш коди
 Quote updated — switching how the fee is charged recalculates the amounts.,Ҳисоб-китоб янгиланди — комиссияни ҳисоблаш усулини ўзгартириш суммаларни қайта ҳисоблайди.
 Remittance engine,Ўтказма механизми
 Same as your last transfer,Охирги ўтказмангиздаги каби
+The destination desk ({branch}) has no {currency} cash account — add it in Remittance Settings before registering.,Манзил кассасида ({branch}) {currency} ҳисоби йўқ — рўйхатга олишдан олдин уни Ўтказма созламаларида қўшинг.
 The V1 engine reads every cash account from the desk table. Add at least one desk before switching to V1.,V1 механизми барча касса ҳисобларини касса жадвалидан ўқийди. V1 га ўтишдан олдин камида битта касса қўшинг.
 The settings payload could not be read.,Созламалар маълумотини ўқиб бўлмади.
 This company runs the {engine} remittance engine. The Transfer V1 screens stay unavailable until it is switched to V1 below.,Бу компания {engine} ўтказма механизмида ишлайди. Қуйида V1 га ўтказилмагунча Transfer V1 экранлари мавжуд бўлмайди.
@@ -5820,6 +5822,7 @@ You are not permitted to view suppliers.,
 You are not permitted to view the audit log.,Сизда ўзгаришлар тарихини кўриш ҳуқуқи йўқ.
 You are not permitted to view this agreement.,Бу шартномани кўришга рухсат йўқ.
 You do not have permission to view landed-cost figures. Ask an imports manager or accountant.,Сизда етказиб бериш қиймати маълумотларини кўриш ҳуқуқи йўқ. Импорт менежери ёки бухгалтерга мурожаат қилинг.
+You do not have permission to view the ledger for this transfer. Only the Remittance Auditor role can read it.,Бу ўтказма бўйича бухгалтерия ёзувларини кўришга рухсатингиз йўқ. Уларни фақат Remittance Auditor роли ўқий олади.
 You have already approved level {0} for this request.,
 You have no approval requests,Сизда тасдиқ сўровлари йўқ
 You have unsaved changes. Leaving this page will discard them.,
@@ -5836,6 +5839,7 @@ You raised this — another user must approve it.,Бу сўровни сиз я�
 You will sign this document in the browser with your own E-IMZO key.,
 "Your books are empty. Get started by adding a customer, recording your first sale, or logging an opening balance.","Сизнинг китобларингиз бўш. Харидор қўшиб, биринчи сотувингизни ёзиб ёки ўзаро баланси қўйиб бошлаинг."
 Your business is ready.,Бизнесингиз тайёр.
+Your desk ({branch}) has no {currency} cash account — add it in Remittance Settings before registering.,Сизнинг кассангизда ({branch}) {currency} ҳисоби йўқ — рўйхатга олишдан олдин уни Ўтказма созламаларида қўшинг.
 Your session has expired. Please sign in again.,"Сессия муддати тугади. Илтимос, қайтадан киринг."
 Your work is on the operations desk,Сизнинг ишингиз операцион столда
 yr,йил
@@ -5887,6 +5891,7 @@ Yutilgan,Ютилган
 {count} payment(s) totalling {amount} will be re-allocated.,"{count} та тўлов, жами {amount}, қайта тақсимланади."
 {count} PI lines,{count} та PI қатори
 {count} selected,{count} та танланди
+{currency} — not a corridor currency,{currency} — коридор валютаси эмас
 {doctype} {name} is linked and has no deletion rule — resolve it manually first.,{doctype} {name} боғланган ва ўчириш қоидаси йўқ — аввал уни қўлда ҳал қилинг.
 {done}/{total} quote sets complete,{done}/{total} таклиф тўплами тўлиқ
 {name} and {count} linked record(s) will be removed. This cannot be undone.,{name} ва {count} та боғланган ёзув ўчирилади. Буни қайтариб бўлмайди.

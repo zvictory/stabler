@@ -81,10 +81,12 @@ Every user of {company} moves to the {engine} screens when this is saved.,При
 I have written it down,Код записан
 "Legacy posts journal entries from the New Transfer form it always has. V1 registers a Remittance Transfer and is the only engine where the payout, refund, operations and reconciliation screens exist.","Legacy проводит журнальные записи из той же формы «Новый перевод». V1 регистрирует Remittance Transfer и является единственным движком, где существуют экраны выплаты, возврата, операций и сверки."
 Legacy — journal entry screens,Legacy — экраны журнальных проводок
+Not ready — this desk cannot take or hand over a transfer.,"Не готова — эта касса не может ни принять, ни выдать перевод."
 Pickup code,Код получения
 Quote updated — switching how the fee is charged recalculates the amounts.,Расчёт обновлён — смена способа удержания комиссии пересчитывает суммы.
 Remittance engine,Движок переводов
 Same as your last transfer,Как в прошлом переводе
+The destination desk ({branch}) has no {currency} cash account — add it in Remittance Settings before registering.,У кассы назначения ({branch}) нет счёта в {currency} — добавьте его в настройках переводов до регистрации.
 The V1 engine reads every cash account from the desk table. Add at least one desk before switching to V1.,Движок V1 читает все кассовые счета из таблицы касс. Добавьте хотя бы одну кассу перед переключением на V1.
 The settings payload could not be read.,Не удалось прочитать данные настроек.
 This company runs the {engine} remittance engine. The Transfer V1 screens stay unavailable until it is switched to V1 below.,"Эта компания использует движок переводов {engine}. Экраны Transfer V1 остаются недоступными, пока он не переключён на V1 ниже."
@@ -5825,6 +5827,7 @@ You are not permitted to view suppliers.,
 You are not permitted to view the audit log.,У вас нет прав на просмотр журнала изменений.
 You are not permitted to view this agreement.,У вас нет доступа к этому договору.
 You do not have permission to view landed-cost figures. Ask an imports manager or accountant.,У вас нет прав просматривать данные стоимости доставки. Обратитесь к менеджеру импорта или бухгалтеру.
+You do not have permission to view the ledger for this transfer. Only the Remittance Auditor role can read it.,У вас нет прав на просмотр проводок по этому переводу. Читать их может только роль Remittance Auditor.
 You have already approved level {0} for this request.,
 You have no approval requests,У вас нет заявок на согласование
 You have unsaved changes. Leaving this page will discard them.,
@@ -5841,6 +5844,7 @@ You raised this — another user must approve it.,Вы создали эту з�
 You will sign this document in the browser with your own E-IMZO key.,
 "Your books are empty. Get started by adding a customer, recording your first sale, or logging an opening balance.","Ваши книги пусты. Начните с добавления клиента, записи первой продажи или ввода начального остатка."
 Your business is ready.,Ваш бизнес готов.
+Your desk ({branch}) has no {currency} cash account — add it in Remittance Settings before registering.,У вашей кассы ({branch}) нет счёта в {currency} — добавьте его в настройках переводов до регистрации.
 Your session has expired. Please sign in again.,"Ваша сессия истекла. Пожалуйста, войдите снова."
 Your work is on the operations desk,Ваша работа — на операционной панели
 yr,г.
@@ -5892,6 +5896,7 @@ Yutilgan,Выиграно
 {count} payment(s) totalling {amount} will be re-allocated.,Будет перераспределено платежей: {count} на сумму {amount}.
 {count} PI lines,{count} строк PI
 {count} selected,Выбрано: {count}
+{currency} — not a corridor currency,{currency} — не валюта коридора
 {doctype} {name} is linked and has no deletion rule — resolve it manually first.,{doctype} {name} связан и не имеет правила удаления — сначала разберите связь вручную.
 {done}/{total} quote sets complete,{done}/{total} комплектов предложений собрано
 {name} and {count} linked record(s) will be removed. This cannot be undone.,{name} и связанные записи ({count}) будут удалены. Это нельзя отменить.

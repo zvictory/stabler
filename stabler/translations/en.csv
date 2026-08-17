@@ -267,6 +267,7 @@ None available,None available
 Not Issued,Not Issued
 Not configured yet,Not configured yet
 Not locked,Not locked
+Not ready — this desk cannot take or hand over a transfer.,Not ready — this desk cannot take or hand over a transfer.
 Not yet,Not yet
 Nothing has expired,Nothing has expired
 Nothing in this list matches. Try another search or another queue.,Nothing in this list matches. Try another search or another queue.
@@ -406,6 +407,7 @@ Stage timeline,Stage timeline
 "Stored, but not enforced yet — no expiry time is written onto a transfer.","Stored, but not enforced yet — no expiry time is written onto a transfer."
 That is not the name this transfer was registered under.,That is not the name this transfer was registered under.
 That screen is not available yet.,That screen is not available yet.
+The destination desk ({branch}) has no {currency} cash account — add it in Remittance Settings before registering.,The destination desk ({branch}) has no {currency} cash account — add it in Remittance Settings before registering.
 The V1 engine reads every cash account from the desk table. Add at least one desk before switching to V1.,The V1 engine reads every cash account from the desk table. Add at least one desk before switching to V1.
 "The accounts every transfer posts to, and the desk that holds the cash.","The accounts every transfer posts to, and the desk that holds the cash."
 The cash and obligation accounts for this payout come from Remittance Settings for this branch. They are applied by the server when the entry posts.,The cash and obligation accounts for this payout come from Remittance Settings for this branch. They are applied by the server when the entry posts.
@@ -506,10 +508,12 @@ Why it is an exception,Why it is an exception
 Write this code down and hand it to the sender now. It is shown once and cannot be recovered.,Write this code down and hand it to the sender now. It is shown once and cannot be recovered.
 Wrong pickup code — attempt {0} of {1},Wrong pickup code — attempt {0} of {1}
 You cannot pay out this transfer.,You cannot pay out this transfer.
+You do not have permission to view the ledger for this transfer. Only the Remittance Auditor role can read it.,You do not have permission to view the ledger for this transfer. Only the Remittance Auditor role can read it.
 You need a remittance role to see the reconciliation.,You need a remittance role to see the reconciliation.
 You need a remittance role to see this transfer.,You need a remittance role to see this transfer.
 You need a remittance role to see transfers.,You need a remittance role to see transfers.
 Your cash desk,Your cash desk
+Your desk ({branch}) has no {currency} cash account — add it in Remittance Settings before registering.,Your desk ({branch}) has no {currency} cash account — add it in Remittance Settings before registering.
 "Your desk has no cash account in this currency, so registering will be refused.","Your desk has no cash account in this currency, so registering will be refused."
 Your own cash desk could not be resolved,Your own cash desk could not be resolved
 Your own cash desk could not be resolved.,Your own cash desk could not be resolved.
@@ -6317,6 +6321,7 @@ Yutilgan,Won
 {count} transfers · {period},{count} transfers · {period}
 {count}d,{count}d
 {count}h,{count}h
+{currency} — not a corridor currency,{currency} — not a corridor currency
 {doctype} {name} is linked and has no deletion rule — resolve it manually first.,{doctype} {name} is linked and has no deletion rule — resolve it manually first.
 {done}/{total} quote sets complete,{done}/{total} quote sets complete
 {from} – {to},{from} – {to}

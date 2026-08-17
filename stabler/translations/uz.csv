@@ -80,10 +80,12 @@ Every user of {company} moves to the {engine} screens when this is saved.,"Saqla
 I have written it down,Yozib oldim
 "Legacy posts journal entries from the New Transfer form it always has. V1 registers a Remittance Transfer and is the only engine where the payout, refund, operations and reconciliation screens exist.","Legacy o'zining doimiy ""Yangi o'tkazma"" formasidan jurnal yozuvlarini kiritadi. V1 esa Remittance Transfer yozuvini ro'yxatga oladi va to'lov, qaytarish, operatsiyalar va solishtirish ekranlari faqat shu mexanizmda mavjud."
 Legacy — journal entry screens,Legacy — jurnal yozuvi ekranlari
+Not ready — this desk cannot take or hand over a transfer.,"Tayyor emas — bu kassa o'tkazmani na qabul qila oladi, na bera oladi."
 Pickup code,Olish kodi
 Quote updated — switching how the fee is charged recalculates the amounts.,Hisob-kitob yangilandi — komissiyani hisoblash usulini o'zgartirish summalarni qayta hisoblaydi.
 Remittance engine,O'tkazma mexanizmi
 Same as your last transfer,Oxirgi o'tkazmangizdagi kabi
+The destination desk ({branch}) has no {currency} cash account — add it in Remittance Settings before registering.,Manzil kassasida ({branch}) {currency} hisobi yo'q — ro'yxatga olishdan oldin uni O'tkazma sozlamalarida qo'shing.
 The V1 engine reads every cash account from the desk table. Add at least one desk before switching to V1.,V1 mexanizmi barcha kassa hisoblarini kassa jadvalidan o'qiydi. V1 ga o'tishdan oldin kamida bitta kassa qo'shing.
 The settings payload could not be read.,Sozlamalar ma'lumotini o'qib bo'lmadi.
 This company runs the {engine} remittance engine. The Transfer V1 screens stay unavailable until it is switched to V1 below.,Bu kompaniya {engine} o'tkazma mexanizmida ishlaydi. Quyida V1 ga o'tkazilmaguncha Transfer V1 ekranlari mavjud bo'lmaydi.
@@ -5820,6 +5822,7 @@ You are not permitted to view suppliers.,
 You are not permitted to view the audit log.,Sizda o'zgarishlar tarixini ko'rish huquqi yo'q.
 You are not permitted to view this agreement.,Bu shartnomani ko‘rishga ruxsatingiz yo‘q.
 You do not have permission to view landed-cost figures. Ask an imports manager or accountant.,Sizda yetkazib berish qiymati ma’lumotlarini ko‘rish huquqi yo‘q. Import menejeri yoki buxgalterga murojaat qiling.
+You do not have permission to view the ledger for this transfer. Only the Remittance Auditor role can read it.,Bu o'tkazma bo'yicha buxgalteriya yozuvlarini ko'rishga ruxsatingiz yo'q. Ularni faqat Remittance Auditor roli o'qiy oladi.
 You have already approved level {0} for this request.,
 You have no approval requests,Sizda tasdiq so'rovlari yo'q
 You have unsaved changes. Leaving this page will discard them.,
@@ -5836,6 +5839,7 @@ You raised this — another user must approve it.,Bu so'rovni siz yaratdingiz �
 You will sign this document in the browser with your own E-IMZO key.,
 "Your books are empty. Get started by adding a customer, recording your first sale, or logging an opening balance.","Sizning kitoplaringiz bo'sh. Xaridor qo'shish, birinchi sotuvi qayd etish yoki ochilish qoldiqlarini kiritish bilan boshlang."
 Your business is ready.,Biznesingiz tayyor.
+Your desk ({branch}) has no {currency} cash account — add it in Remittance Settings before registering.,Sizning kassangizda ({branch}) {currency} hisobi yo'q — ro'yxatga olishdan oldin uni O'tkazma sozlamalarida qo'shing.
 Your session has expired. Please sign in again.,"Sessiya muddati tugadi. Iltimos, qaytadan kiring."
 Your work is on the operations desk,Sizning ishingiz operatsion stolda
 yr,yil
@@ -5887,6 +5891,7 @@ Yutilgan,Yutilgan
 {count} payment(s) totalling {amount} will be re-allocated.,"{count} ta to‘lov, jami {amount}, qayta taqsimlanadi."
 {count} PI lines,{count} ta PI qatori
 {count} selected,{count} ta tanlandi
+{currency} — not a corridor currency,{currency} — koridor valyutasi emas
 {doctype} {name} is linked and has no deletion rule — resolve it manually first.,{doctype} {name} bog‘langan va o‘chirish qoidasi yo‘q — avval uni qo‘lda hal qiling.
 {done}/{total} quote sets complete,{done}/{total} taklif to'plami to'liq
 {name} and {count} linked record(s) will be removed. This cannot be undone.,{name} va {count} ta bog‘langan yozuv o‘chiriladi. Buni qaytarib bo‘lmaydi.
