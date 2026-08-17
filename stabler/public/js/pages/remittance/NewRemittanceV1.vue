@@ -31,6 +31,7 @@ import { REMITTANCE_QUEUES, remittanceApi } from "../../api/remittance.js";
 import { useSession } from "../../stores/session.js";
 import { t, tlang } from "../../composables/i18n.js";
 import { formatMoney } from "../../composables/money.js";
+import { CORRIDOR_CURRENCIES } from "../../composables/remittanceCurrencies.js";
 import { currencyLegs, routeLabel } from "../../composables/remittanceRoute.js";
 import { todayIso } from "../../composables/date.js";
 import DateInput from "../../components/DateInput.vue";
@@ -40,10 +41,6 @@ import EmptyState from "../../components/EmptyState.vue";
 import PickupCodeReceipt from "./PickupCodeReceipt.vue";
 
 const session = useSession();
-
-// ADR-003: only hard currencies cross a corridor. UZS/TRY/AED/RUB never enter
-// this module — local cash exchange is a different product.
-const CURRENCIES = ["USD", "EUR", "USDT"];
 
 // The Remittance Transfer `commission_mode` Select options, verbatim. The server
 // matches case-insensitively, but the stored row spells them this way and a
@@ -251,6 +248,39 @@ const destinationCurrencyMissing = computed(
 		!!destinationDesk.value && !destinationDesk.value.currencies.has(form.value.receive_currency),
 );
 
+// One sentence per problem, rendered under the select that caused it AND returned
+// by `validate()`. Written once because it has to appear twice and must not drift.
+//
+// It lives here rather than only in `validate()` for a reason found in review:
+// `validate()` runs from `register()`, `register()` runs from the Register button,
+// and that button is now disabled under exactly these two conditions — so a
+// message produced only by `validate()` could never reach the screen. The state
+// that blocks the button has to explain itself where the blocked cashier is
+// already looking.
+const originCurrencyProblem = computed(() =>
+	originCurrencyMissing.value
+		? t(
+				"Your desk ({branch}) has no {currency} cash account — add it in Remittance Settings before registering.",
+				{
+					branch: deskLabel(originDesk.value) || originBranch.value,
+					currency: form.value.send_currency,
+				},
+			)
+		: "",
+);
+
+const destinationCurrencyProblem = computed(() =>
+	destinationCurrencyMissing.value
+		? t(
+				"The destination desk ({branch}) has no {currency} cash account — add it in Remittance Settings before registering.",
+				{
+					branch: deskLabel(destinationDesk.value) || form.value.destination_branch,
+					currency: form.value.receive_currency,
+				},
+			)
+		: "",
+);
+
 // ---------------------------------------------------------------------------
 // Quote — mirrors `_remittance_pricing.price_transfer`
 // ---------------------------------------------------------------------------
@@ -449,6 +479,11 @@ function validate() {
 	if (form.value.destination_branch === originBranch.value) {
 		return t("The destination desk has to be a different desk from your own.");
 	}
+	// Kept as a backstop even though the button is disabled in these two states:
+	// `validate()` is the gate, the disabled button is the courtesy. If the
+	// binding is ever loosened, this still refuses before the cash moves.
+	if (originCurrencyProblem.value) return originCurrencyProblem.value;
+	if (destinationCurrencyProblem.value) return destinationCurrencyProblem.value;
 	if (!form.value.sender_name.trim()) return t("Enter the sender's name.");
 	if (!form.value.receiver_name.trim()) return t("Enter the receiver's name.");
 	const amount = typedNumber(form.value.amount);
@@ -594,16 +629,20 @@ function finish() {
 						<!-- 2. Currencies -->
 						<div class="col-md-6">
 							<label class="form-label required">{{ t("Send currency") }}</label>
-							<Select v-model="form.send_currency" :options="CURRENCIES" />
-							<div v-if="originCurrencyMissing" class="form-text text-warning">
-								{{ t("Your desk has no cash account in this currency, so registering will be refused.") }}
+							<Select v-model="form.send_currency" :options="CORRIDOR_CURRENCIES" />
+							<!-- text-danger, not text-warning: this state now DISABLES the
+							     Register button, so it is a refusal and not advice. The old
+							     wording ("registering will be refused") also described a
+							     future event that no longer happens. -->
+							<div v-if="originCurrencyProblem" class="form-text text-danger">
+								{{ originCurrencyProblem }}
 							</div>
 						</div>
 						<div class="col-md-6">
 							<label class="form-label required">{{ t("Receive currency") }}</label>
-							<Select v-model="form.receive_currency" :options="CURRENCIES" />
-							<div v-if="destinationCurrencyMissing" class="form-text text-warning">
-								{{ t("The destination desk has no cash account in this currency, so registering will be refused.") }}
+							<Select v-model="form.receive_currency" :options="CORRIDOR_CURRENCIES" />
+							<div v-if="destinationCurrencyProblem" class="form-text text-danger">
+								{{ destinationCurrencyProblem }}
 							</div>
 						</div>
 
@@ -811,7 +850,7 @@ function finish() {
 					<button
 						type="button"
 						class="btn btn-primary w-100"
-						:disabled="submitting || !quote"
+						:disabled="submitting || !quote || originCurrencyMissing || destinationCurrencyMissing"
 						@click="register"
 					>
 						<span v-if="submitting" class="spinner-border spinner-border-sm me-1"></span>
