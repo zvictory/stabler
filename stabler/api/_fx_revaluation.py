@@ -20,6 +20,10 @@ Precision contract:
 Garbage-safety:
   * Any non-numeric input is treated as 0.
   * Zero book_rate and zero new_rate both yield delta = 0 (no crash).
+
+`find_unpriced_positions` is the one function here that is not arithmetic: it
+decides which positions must not be revalued at all, because the formula above
+is only meaningful when someone actually published `new_rate`.
 """
 
 from __future__ import annotations
@@ -156,3 +160,62 @@ def summarize_revaluation(account_rows: list[dict], base_precision: int = 2) -> 
 		"total_loss": _quantize(total_loss, base_precision),
 		"net_delta": net,
 	}
+
+
+def find_unpriced_positions(positions) -> list[dict]:
+	"""Return the positions that would be revalued at a rate nobody published.
+
+	Why this exists rather than a reminder to publish the rate: nothing on the
+	ERPNext path treats a missing rate as an error.
+
+	  * `erpnext/setup/utils.py:145-154` — no Currency Exchange row, the external
+	    API attempt fails, `except` returns **0.0**.  With Currency Exchange
+	    Settings disabled it returns 0.0 even earlier (:98-99).
+	  * `erpnext/accounts/doctype/exchange_rate_revaluation/`
+	    `exchange_rate_revaluation.py:264-266` — `new_exchange_rate = 0`, so
+	    `new_balance_in_base_currency = balance x 0 = 0`, and the row's
+	    `gain_loss` becomes the negative of the whole book value.
+
+	A drawer holding real money is therefore revalued to ZERO and its entire
+	balance is booked as an FX loss, with no exception raised anywhere on that
+	path.  The silence is the defect; this function is what breaks it.  USDT is
+	the live instance (ADR-006 makes a USDT desk an ordinary Cash leaf, and
+	`tasks/cbu_rate_refresh.py` has no USDT source), but the rule is not about
+	USDT: any currency whose rate was never written fails the same way.
+
+	Parameters
+	----------
+	positions:
+		Iterable of mappings with keys ``account``, ``currency``, ``balance``
+		(in the *account* currency) and ``rate`` (account ccy -> base).
+
+	Returns
+	-------
+	The subset that still holds money (``balance`` != 0) while ``rate`` is zero,
+	negative or non-numeric, each as ``{account, currency, balance, rate}`` with
+	Decimal amounts.  Empty list = every position is priced.
+
+	A position whose ``balance`` is zero is *not* flagged: a drained account
+	legitimately carries rate 0 (ERPNext's own `zero_balance` branch at :286-300
+	sets it deliberately) and revaluing nothing at nothing is not a write-off.
+	A negative balance — a foreign-currency liability — is flagged like any
+	other: zeroing a debt fabricates a gain exactly as zeroing an asset
+	fabricates a loss.
+	"""
+	unpriced = []
+	for p in positions or []:
+		balance = _d(p.get("balance"))
+		if balance == 0:
+			continue
+		rate = _d(p.get("rate"))
+		if rate > 0:
+			continue
+		unpriced.append(
+			{
+				"account": p.get("account") or "",
+				"currency": p.get("currency") or "",
+				"balance": balance,
+				"rate": rate,
+			}
+		)
+	return unpriced

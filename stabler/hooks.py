@@ -281,6 +281,15 @@ doc_events = {
 			"stabler.api.desk_write_guard.assert_write_via_stabler",
 		],
 	},
+	"Exchange Rate Revaluation": {
+		"validate": [
+			# A row with money in it and no published rate is valued at zero by
+			# ERPNext, without an exception — the whole balance becomes an FX
+			# loss. Refuse the document instead. Fires on save and on submit,
+			# and covers Desk-created docs, not just stabler.api.fx_revaluation.
+			"stabler.api.fx_revaluation.assert_positions_priced",
+		],
+	},
 	# Stock Reconciliation / Bank Transaction / Supplier have no other Stabler
 	# doc_events — these blocks exist only to carry the desk-write guard.
 	"Stock Reconciliation": {

@@ -2797,6 +2797,7 @@ Minutes worked before overtime begins.,Minutes worked before overtime begins.
 Missing,Missing
 Missing document type or name,Missing document type or name
 Missing Entry,Missing Entry
+Missing exchange rate,Missing exchange rate
 Missing fields,Missing fields
 Missing file,Missing file
 Missing required,Missing required
@@ -3106,6 +3107,7 @@ No exchange rate for this date — enter manually.,No exchange rate for this dat
 No exchange rate found for this invoice date — landed cost cannot be calculated. Enter a rate above or add the CBU rate.,No exchange rate found for this invoice date — landed cost cannot be calculated. Enter a rate above or add the CBU rate.
 No exchange rate found for {0} to {1} on {2},No exchange rate found for {0} to {1} on {2}
 No exchange rate found for {0} to {1} on {2}: {3},No exchange rate found for {0} to {1} on {2}: {3}
+"No exchange rate is published for {currencies} on {date}. Revaluing these balances would value them at zero and book their whole amount as an FX loss. Create a Currency Exchange record ({currencies} → {base}) dated {date} or earlier, then reload this document.","No exchange rate is published for {currencies} on {date}. Revaluing these balances would value them at zero and book their whole amount as an FX loss. Create a Currency Exchange record ({currencies} → {base}) dated {date} or earlier, then reload this document."
 No exchange rates yet. Click Refresh now to fetch today's rates from cbu.uz.,No exchange rates yet. Click Refresh now to fetch today's rates from cbu.uz.
 No expenses recorded for this invoice yet.,No expenses recorded for this invoice yet.
 No field users yet,No field users yet

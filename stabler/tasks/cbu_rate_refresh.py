@@ -1,6 +1,6 @@
 """Daily Central Bank of Uzbekistan (cbu.uz) exchange rate refresh.
 
-Fetches USD / EUR / RUB → UZS from the CBU public JSON API and upserts
+Fetches USD / EUR / RUB / CNY → UZS from the CBU public JSON API and upserts
 an ERPNext `Currency Exchange` row for today's date. Idempotent: rerun
 on the same day is a no-op (existing rows for today are skipped).
 
@@ -27,6 +27,14 @@ import frappe
 
 _CBU_URL = "https://cbu.uz/uz/arkhiv-kursov-valyut/json/"
 _BASE_CURRENCY = "UZS"
+# USDT is deliberately absent. The CBU publishes no USDT quotation, so adding it
+# here would report it `missing` every single day and still write no rate; and
+# deriving one by assuming USDT = USD is a business decision about a peg, not a
+# refresh task's call to make. It is entered by hand at period close
+# (docs/runbooks/period-close.md). What makes that manual step safe is not the
+# runbook: `stabler.api.fx_revaluation.assert_positions_priced` refuses any
+# Exchange Rate Revaluation holding a USDT balance with no rate behind it, so
+# forgetting the step blocks the close instead of silently zeroing the drawer.
 _TRACKED = ("USD", "EUR", "RUB", "CNY")
 _TIMEOUT = 30
 
