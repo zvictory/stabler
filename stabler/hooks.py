@@ -273,6 +273,9 @@ doc_events = {
 		],
 		"before_cancel": [
 			"stabler.api.desk_write_guard.assert_write_via_stabler",
+			# The desk guard permits stabler.api.* calls, and the Money screen's
+			# Cancel button is one — so a remittance stage voucher needs its own.
+			"stabler.api.remittance_cancel_guard.assert_not_a_remittance_stage",
 		],
 		"on_cancel": [
 			"stabler.stabler.imports_module.hooks.on_journal_entry_cancel",
