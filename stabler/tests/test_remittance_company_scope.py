@@ -1,0 +1,455 @@
+"""Company isolation for Remittance Transfer and Remittance Event.
+
+Until the operating roles landed, both doctypes carried a single System-Manager
+permission row, and admins are exempt from company isolation by design — so
+their absence from the two record-level maps in ``hooks.py`` cost nothing. The
+roles branch grants ``read`` to Remittance Viewer, Auditor, Cashier and Finance
+Manager, which makes remittance the first money data in the app reachable by a
+non-admin. A Viewer whose Allowed Companies list is Company A could then read
+Company B's transfers — sender and receiver names, amounts, corridors, the
+three Journal Entry links — off ``/api/resource``. Cross-company **within a
+site**: the tenants have separate databases, so the site boundary is untouched.
+
+Three layers, because each one alone passes on a broken scope:
+
+* **Shape** — which idiom is correct is decided by the doctype JSONs, so the
+  JSONs are read rather than trusted. Remittance Transfer has a ``company``
+  field; Remittance Event has none, only a required ``transfer`` link. Add a
+  ``company`` column to the event later and this turns red, which is the moment
+  to switch it to the direct condition.
+* **Wiring** — ``hooks.py`` is parsed with ``ast``; both doctypes must appear in
+  both maps and **every** path in either map must resolve to a function that
+  exists on disk. A condition nobody registered scopes nothing, and the
+  behavioural tests cannot see that because they call the functions directly.
+  The event's ``has_permission`` is asserted *not* to be
+  ``company_has_permission``: that helper reads ``doc.company``, which is always
+  None on an event, so it takes its blank-is-allowed branch and returns True for
+  every row — wiring that looks right and scopes nothing.
+* **Behaviour** — the emitted WHERE fragments are run against an in-memory
+  SQLite database holding two companies' rows, and the surviving row set is
+  asserted. This catches an always-true fragment, which a string-shape
+  assertion does not.
+
+**What this file cannot prove.** It is bench-free by design (registered in
+``.github/frappe-free-tests.txt``, so it gates a push). SQLite is not MariaDB
+and nothing here runs Frappe's query builder, so it proves the fragment's own
+logic — not that Frappe splices it into a real ``/api/resource`` query, nor
+that a live Viewer is actually filtered. That belongs on a bench; see
+``stabler/tests/test_remittance_company_scope_bench.py``.
+
+    cd /path/to/stabler && PYTHONPATH=$PWD python3 -m unittest \\
+        stabler.tests.test_remittance_company_scope -v
+"""
+
+from __future__ import annotations
+
+import ast
+import importlib
+import json
+import os
+import sqlite3
+import types
+import unittest
+from types import SimpleNamespace
+
+from stabler.tests.module_sandbox import ModuleSandbox
+
+_PKG = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+_HOOKS = os.path.join(_PKG, "hooks.py")
+_TRANSFER_JSON = os.path.join(_PKG, "stabler", "doctype", "remittance_transfer", "remittance_transfer.json")
+_EVENT_JSON = os.path.join(_PKG, "stabler", "doctype", "remittance_event", "remittance_event.json")
+
+_SANDBOX = ModuleSandbox()
+
+ADMIN_ROLES = ("System Manager", "Stabler Admin")
+
+
+# --- hooks.py / doctype JSON readers (no frappe, no import of the app) ------
+
+
+def _hook_map(name: str) -> dict:
+	"""``permission_query_conditions`` / ``has_permission`` as literal dicts."""
+	with open(_HOOKS, encoding="utf-8") as fh:
+		tree = ast.parse(fh.read())
+	for node in tree.body:
+		if isinstance(node, ast.Assign) and any(
+			isinstance(target, ast.Name) and target.id == name for target in node.targets
+		):
+			return ast.literal_eval(node.value)
+	raise AssertionError(f"hooks.py has no {name} assignment")
+
+
+def _module_functions(dotted_module: str) -> set[str]:
+	"""Top-level function names defined in an app module, read off disk."""
+	assert dotted_module.startswith("stabler."), dotted_module
+	path = os.path.join(_PKG, *dotted_module.split(".")[1:]) + ".py"
+	if not os.path.exists(path):
+		raise AssertionError(f"no module on disk for {dotted_module} (looked at {path})")
+	with open(path, encoding="utf-8") as fh:
+		tree = ast.parse(fh.read())
+	return {node.name for node in tree.body if isinstance(node, ast.FunctionDef)}
+
+
+def _fields(doctype_json: str) -> dict[str, dict]:
+	with open(doctype_json, encoding="utf-8") as fh:
+		return {f["fieldname"]: f for f in json.load(fh)["fields"]}
+
+
+def _roles_with_read(doctype_json: str) -> set[str]:
+	with open(doctype_json, encoding="utf-8") as fh:
+		return {p["role"] for p in json.load(fh).get("permissions", []) if p.get("read")}
+
+
+# --- frappe fakes ----------------------------------------------------------
+
+_ROLES: list[str] = []
+_ALLOWED: list[str] = []
+_VALUES: dict[tuple[str, str, str], object] = {}
+
+
+def _escape(value):
+	"""Mirror frappe.db.escape: quote and backslash-escape, MySQL style."""
+	return "'" + str(value).replace("\\", "\\\\").replace("'", "\\'") + "'"
+
+
+def _get_value(doctype, name, field=None, **_kwargs):
+	return _VALUES.get((doctype, name, field))
+
+
+def _install_fakes() -> None:
+	frappe_mod = types.ModuleType("frappe")
+	frappe_mod._ = lambda s: s
+	frappe_mod.PermissionError = PermissionError
+	frappe_mod.throw = lambda msg, exc=None: (_ for _ in ()).throw(RuntimeError(msg))
+	frappe_mod.whitelist = lambda *a, **k: lambda fn: fn
+	frappe_mod.get_roles = lambda user=None: list(_ROLES)
+	frappe_mod.session = SimpleNamespace(user="viewer@example.com")
+	frappe_mod.logger = lambda name=None: SimpleNamespace(info=lambda *a, **k: None)
+	frappe_mod.get_meta = lambda dt: SimpleNamespace(get_valid_columns=list)
+	frappe_mod.get_doc = lambda *a, **k: None
+	frappe_mod.db = SimpleNamespace(
+		escape=_escape,
+		get_value=_get_value,
+		get_single_value=lambda *a, **k: "",
+		exists=lambda *a, **k: False,
+		sql=lambda *a, **k: [],
+		sql_list=lambda *a, **k: [],
+		get_all=lambda *a, **k: [],
+	)
+	frappe_mod.get_all = lambda *a, **k: []
+
+	utils = types.ModuleType("frappe.utils")
+	utils.get_datetime = lambda v: v
+	frappe_mod.utils = utils
+
+	organization = types.ModuleType("stabler.api.organization")
+	organization._ADMIN_ROLES = ADMIN_ROLES
+	organization._user_allowed_companies = lambda user: list(_ALLOWED)
+
+	_SANDBOX.evict("frappe", "frappe.utils", "stabler.api.organization", "stabler.api.permissions")
+	_SANDBOX.install(
+		{
+			"frappe": frappe_mod,
+			"frappe.utils": utils,
+			"stabler.api.organization": organization,
+		}
+	)
+
+
+def setUpModule():
+	"""Install fakes only when the tests actually run — the bench runner imports
+	every test module up front just to categorise it, and tearDownModule never
+	runs in that process."""
+	global permissions
+	_install_fakes()
+	permissions = importlib.import_module("stabler.api.permissions")
+
+
+def tearDownModule():
+	_SANDBOX.restore()
+
+
+def _restrict_to(*companies: str) -> None:
+	"""Make the session user a non-admin with an explicit Allowed Companies list."""
+	_ROLES[:] = ["Remittance Viewer"]
+	_ALLOWED[:] = list(companies)
+
+
+class RemittanceDoctypeShapeTest(unittest.TestCase):
+	"""What the JSONs say is what decides which scoping idiom is correct."""
+
+	def test_the_transfer_carries_its_own_company_field(self):
+		company = _fields(_TRANSFER_JSON).get("company")
+		self.assertIsNotNone(company, "Remittance Transfer lost its company field")
+		self.assertEqual(company["fieldtype"], "Link")
+		self.assertEqual(company["options"], "Company")
+
+	def test_the_event_carries_no_company_field_only_a_required_transfer_link(self):
+		fields = _fields(_EVENT_JSON)
+		self.assertNotIn(
+			"company",
+			fields,
+			"Remittance Event now has a company column — remittance_event_query should "
+			"switch from the parent join to _company_condition, and this test should say so.",
+		)
+		transfer = fields.get("transfer")
+		self.assertIsNotNone(transfer, "Remittance Event lost its transfer link")
+		self.assertEqual(transfer["options"], "Remittance Transfer")
+		self.assertTrue(
+			transfer.get("reqd"),
+			"the transfer link is the event's only route to a company; unrequired, "
+			"an orphan event would be unscopeable",
+		)
+
+	def test_both_doctypes_are_readable_by_a_non_admin_role(self):
+		# The premise of the whole file. If remittance ever goes back to
+		# admin-only, the scoping is still correct but no longer load-bearing —
+		# and this test is where that shows.
+		for label, path in (("Remittance Transfer", _TRANSFER_JSON), ("Remittance Event", _EVENT_JSON)):
+			with self.subTest(doctype=label):
+				readers = _roles_with_read(path)
+				self.assertTrue(
+					readers - set(ADMIN_ROLES),
+					f"{label} is admin-only again — company scoping is no longer load-bearing",
+				)
+
+
+class RemittanceScopeWiringTest(unittest.TestCase):
+	"""A condition nobody registered scopes nothing."""
+
+	def setUp(self):
+		self.query_map = _hook_map("permission_query_conditions")
+		self.perm_map = _hook_map("has_permission")
+
+	def test_both_remittance_doctypes_are_registered_for_query_conditions(self):
+		self.assertEqual(
+			self.query_map.get("Remittance Transfer"),
+			"stabler.api.permissions.remittance_transfer_query",
+		)
+		self.assertEqual(
+			self.query_map.get("Remittance Event"),
+			"stabler.api.permissions.remittance_event_query",
+		)
+
+	def test_both_remittance_doctypes_are_registered_for_has_permission(self):
+		self.assertEqual(
+			self.perm_map.get("Remittance Transfer"),
+			"stabler.api.permissions.company_has_permission",
+		)
+		self.assertIn("Remittance Event", self.perm_map)
+
+	def test_the_event_does_not_reuse_the_company_field_helper(self):
+		# company_has_permission reads doc.company. A Remittance Event has no such
+		# attribute, so the helper would return True for every row — registered,
+		# green, and scoping nothing.
+		self.assertNotEqual(
+			self.perm_map.get("Remittance Event"),
+			"stabler.api.permissions.company_has_permission",
+			"Remittance Event has no company field; company_has_permission allows every row",
+		)
+		self.assertEqual(
+			self.perm_map.get("Remittance Event"),
+			"stabler.api.permissions.remittance_event_has_permission",
+		)
+
+	def test_every_registered_path_resolves_to_a_real_function(self):
+		# Not remittance-specific on purpose: a typo in any entry silently
+		# disables that doctype's isolation, and Frappe logs it rather than
+		# raising. Both maps, every entry.
+		for map_name, hook_map in (
+			("permission_query_conditions", self.query_map),
+			("has_permission", self.perm_map),
+		):
+			for doctype, path in hook_map.items():
+				with self.subTest(hook=map_name, doctype=doctype):
+					module, _, func = path.rpartition(".")
+					self.assertIn(
+						func,
+						_module_functions(module),
+						f"{map_name}[{doctype!r}] points at {path}, which does not exist",
+					)
+
+
+class RemittanceQueryConditionTest(unittest.TestCase):
+	"""The fragments are run, not just read."""
+
+	def setUp(self):
+		_ROLES.clear()
+		_ALLOWED.clear()
+		_VALUES.clear()
+		self.conn = sqlite3.connect(":memory:")
+		self.conn.execute("CREATE TABLE `tabRemittance Transfer` (name TEXT, company TEXT)")
+		self.conn.execute("CREATE TABLE `tabRemittance Event` (name TEXT, transfer TEXT)")
+		self.conn.executemany(
+			"INSERT INTO `tabRemittance Transfer` VALUES (?, ?)",
+			[("REM-A", "A Co"), ("REM-B", "B Co"), ("REM-NULL", None)],
+		)
+		self.conn.executemany(
+			"INSERT INTO `tabRemittance Event` VALUES (?, ?)",
+			[("EVT-A", "REM-A"), ("EVT-B", "REM-B"), ("EVT-NULL", "REM-NULL")],
+		)
+
+	def tearDown(self):
+		self.conn.close()
+
+	def _select(self, doctype: str, condition: str) -> set[str]:
+		where = f"WHERE {condition}" if condition else ""
+		sql = f"SELECT `tab{doctype}`.name FROM `tab{doctype}` {where}"
+		return {row[0] for row in self.conn.execute(sql).fetchall()}
+
+	# --- safe-by-default: only a restricted non-admin is ever filtered ------
+
+	def test_a_user_with_no_allowed_companies_is_unrestricted(self):
+		_ROLES[:] = ["Remittance Viewer"]
+		_ALLOWED[:] = []
+		self.assertEqual(permissions.remittance_transfer_query("viewer@example.com"), "")
+		self.assertEqual(permissions.remittance_event_query("viewer@example.com"), "")
+
+	def test_an_admin_with_an_allowed_list_is_still_unrestricted(self):
+		for admin_role in ADMIN_ROLES:
+			with self.subTest(role=admin_role):
+				_ROLES[:] = [admin_role]
+				_ALLOWED[:] = ["A Co"]
+				self.assertEqual(permissions.remittance_transfer_query("admin@example.com"), "")
+				self.assertEqual(permissions.remittance_event_query("admin@example.com"), "")
+
+	def test_the_administrator_account_is_unrestricted(self):
+		_restrict_to("A Co")
+		self.assertEqual(permissions.remittance_transfer_query("Administrator"), "")
+		self.assertEqual(permissions.remittance_event_query("Administrator"), "")
+
+	# --- the actual isolation ----------------------------------------------
+
+	def test_the_transfer_condition_hides_the_other_company(self):
+		_restrict_to("A Co")
+		condition = permissions.remittance_transfer_query("viewer@example.com")
+		self.assertTrue(condition, "a restricted viewer got no condition at all")
+		visible = self._select("Remittance Transfer", condition)
+		self.assertEqual(visible, {"REM-A", "REM-NULL"})
+		self.assertNotIn("REM-B", visible)
+
+	def test_the_event_condition_hides_the_other_company_via_its_parent(self):
+		_restrict_to("A Co")
+		condition = permissions.remittance_event_query("viewer@example.com")
+		self.assertTrue(condition, "a restricted viewer got no condition at all")
+		visible = self._select("Remittance Event", condition)
+		self.assertEqual(visible, {"EVT-A", "EVT-NULL"})
+		self.assertNotIn(
+			"EVT-B",
+			visible,
+			"the event trail leaks the other company's transfers: event rows carry "
+			"actor, branch and event_type for a transfer the reader cannot see",
+		)
+
+	def test_the_event_condition_never_names_a_company_column_on_the_event(self):
+		# `tabRemittance Event`.company is not a column; emitting it turns every
+		# list query into an SQL error instead of a filter.
+		_restrict_to("A Co")
+		condition = permissions.remittance_event_query("viewer@example.com")
+		self.assertNotIn("`tabRemittance Event`.company", condition)
+		self.assertIn("`tabRemittance Transfer`", condition)
+
+	def test_a_multi_company_list_shows_exactly_those_companies(self):
+		self.conn.execute("INSERT INTO `tabRemittance Transfer` VALUES ('REM-C', 'C Co')")
+		self.conn.execute("INSERT INTO `tabRemittance Event` VALUES ('EVT-C', 'REM-C')")
+		_restrict_to("A Co", "B Co")
+		self.assertEqual(
+			self._select("Remittance Transfer", permissions.remittance_transfer_query("v@e.com")),
+			{"REM-A", "REM-B", "REM-NULL"},
+		)
+		self.assertEqual(
+			self._select("Remittance Event", permissions.remittance_event_query("v@e.com")),
+			{"EVT-A", "EVT-B", "EVT-NULL"},
+		)
+
+	def test_a_company_name_with_a_quote_is_escaped_not_interpolated(self):
+		# Both fragments, because they build their value list separately: the
+		# parent-join condition has its own `frappe.db.escape` call, and an
+		# escaping regression there is invisible to the transfer assertions.
+		_restrict_to("O'Brien Ltd")
+		for label, condition in (
+			("Remittance Transfer", permissions.remittance_transfer_query("viewer@example.com")),
+			("Remittance Event", permissions.remittance_event_query("viewer@example.com")),
+		):
+			with self.subTest(doctype=label):
+				self.assertNotIn(
+					"'O'Brien Ltd'",
+					condition,
+					f"{label}: the company name reached the SQL unescaped",
+				)
+				# SQLite escapes a quote by doubling it, MySQL by backslashing it;
+				# both dialects agree the value must never reach the SQL raw, which
+				# is what is asserted here. Row sets are checked in the tests above.
+				self.assertIn("\\'", condition)
+
+
+class RemittanceEventHasPermissionTest(unittest.TestCase):
+	"""Single-document access — the path a direct GET takes."""
+
+	def setUp(self):
+		_ROLES.clear()
+		_ALLOWED.clear()
+		_VALUES.clear()
+		_VALUES[("Remittance Event", "EVT-B", "transfer")] = "REM-B"
+		_VALUES[("Remittance Transfer", "REM-A", "company")] = "A Co"
+		_VALUES[("Remittance Transfer", "REM-B", "company")] = "B Co"
+
+	def test_an_unrestricted_user_is_allowed(self):
+		_ROLES[:] = ["Remittance Viewer"]
+		_ALLOWED[:] = []
+		self.assertIs(
+			permissions.remittance_event_has_permission(
+				SimpleNamespace(transfer="REM-B"), "read", "viewer@example.com"
+			),
+			True,
+		)
+
+	def test_the_other_company_event_is_denied(self):
+		_restrict_to("A Co")
+		self.assertIs(
+			permissions.remittance_event_has_permission(
+				SimpleNamespace(transfer="REM-B"), "read", "viewer@example.com"
+			),
+			False,
+		)
+
+	def test_the_own_company_event_is_allowed(self):
+		_restrict_to("A Co")
+		self.assertIs(
+			permissions.remittance_event_has_permission(
+				SimpleNamespace(transfer="REM-A"), "read", "viewer@example.com"
+			),
+			True,
+		)
+
+	def test_a_document_passed_by_name_is_resolved_through_its_transfer(self):
+		_restrict_to("A Co")
+		self.assertIs(
+			permissions.remittance_event_has_permission("EVT-B", "read", "viewer@example.com"),
+			False,
+		)
+
+	def test_it_returns_a_bool_never_none(self):
+		# Frappe treats a None return as falsy and would block the doc.
+		_restrict_to("A Co")
+		for doc in (None, SimpleNamespace(transfer=None), SimpleNamespace(transfer="REM-A")):
+			with self.subTest(doc=doc):
+				self.assertIsInstance(
+					permissions.remittance_event_has_permission(doc, "read", "viewer@example.com"),
+					bool,
+				)
+
+	def test_the_transfer_still_uses_the_shared_company_helper(self):
+		_restrict_to("A Co")
+		self.assertIs(
+			permissions.company_has_permission(SimpleNamespace(company="B Co"), "read", "viewer@example.com"),
+			False,
+		)
+		self.assertIs(
+			permissions.company_has_permission(SimpleNamespace(company="A Co"), "read", "viewer@example.com"),
+			True,
+		)
+
+
+if __name__ == "__main__":
+	unittest.main()
