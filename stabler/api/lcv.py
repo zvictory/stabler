@@ -10,7 +10,7 @@ from stabler.stabler.imports_module import lcv_math
 
 #: Custom Field holding the chosen Landed Cost Voucher distribution basis on the
 #: source document. Created on both source doctypes by patch
-#: ``v87_lcv_distribution_method``.
+#: ``v88_lcv_distribution_method``.
 DISTRIBUTION_FIELD = "custom_landed_cost_distribution"
 
 #: The two source doctypes an LCV review runs on; both carry
