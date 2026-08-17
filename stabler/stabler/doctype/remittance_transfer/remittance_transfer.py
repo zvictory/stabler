@@ -33,7 +33,7 @@ from __future__ import annotations
 import frappe
 from frappe import _
 from frappe.model.document import Document
-from frappe.utils import flt
+from frappe.utils import cint, flt
 
 
 class RemittanceTransfer(Document):
@@ -65,19 +65,53 @@ class RemittanceTransfer(Document):
 			)
 
 	def _assert_new_rows_carry_the_code_digest(self) -> None:
-		"""Only on insert: the one moment `pickup_code_hash` is ever written.
+		"""Only on insert: catch a `pickup_code_hash` that Frappe silently discarded.
 
-		`_new_transfer` is the sole writer and it always supplies a digest, so an
-		empty value here does not mean a caller forgot one — it means the permlevel-1
-		grant is missing on this site and Frappe blanked the field on its way in.
-		Restricted to new rows because every later write goes through `db_set`, which
-		does not run validation, and because rows that predate the field must stay
-		saveable.
+		The failure this exists for is specific. `pickup_code_hash` is permlevel 1, so
+		on a site that never got the permlevel-1 write grant
+		`Document.validate_higher_perm_levels` RESETS it on the way in — no error, no
+		warning — and the register command stores a transfer that can never be paid
+		out. Discovered days later, at the counter.
+
+		It is NOT "every new row must carry a digest". A `Remittance Transfer` is not
+		created only by `_new_transfer`; a Draft row built directly carries no code
+		and needs none, because a Draft cannot be paid out. Reading an empty field as
+		proof of a missing grant was wrong in exactly that case, and the message it
+		threw named a cause that was not there.
+
+		So the guard mirrors `validate_higher_perm_levels`'s own exits: where Frappe
+		cannot have reset anything, an empty digest is the caller's choice and this
+		says nothing. Restricted to new rows because every later write goes through
+		`db_set`, which does not run validation, and because rows that predate the
+		field must stay saveable.
 		"""
 		# `getattr` and not attribute access: a permlevel reset removes the value,
 		# and a row built without the field never had the attribute at all. Both
 		# are the same fact here and only one of them has an attribute to read.
 		if not self.is_new() or getattr(self, "pickup_code_hash", None):
+			return
+		# The paths on which frappe returns before it can reset a single field: three
+		# in `validate_higher_perm_levels` (frappe/model/document.py) and a fourth one
+		# level down, below. Kept in frappe's order and with frappe's names so the
+		# mirror stays checkable against it.
+		if self.flags.ignore_permissions or frappe.flags.in_install:
+			return
+		if frappe.session.user == "Administrator":
+			return
+		# The fourth exit, one level down in `reset_values_if_no_permlevel_access`
+		# (frappe/model/base_document.py:1481): a caller may name fields the reset must
+		# leave alone. Named here too, or this throws about a field nothing touched.
+		if "pickup_code_hash" in (self.flags.get("ignore_permlevel_for_fields") or []):
+			return
+		# The grant itself, asked the way Frappe asks it. Present means nothing was
+		# discarded and the caller simply supplied no code.
+		#
+		# `cint` and not `1 in ...`: `get_permlevel_access` returns `perm.permlevel`
+		# straight off the DocPerm rows, and frappe's own permission check wraps that
+		# same value in `cint` (frappe/permissions.py:315). If it ever arrives as
+		# "1", a bare membership test reads False and this throws at the one user who
+		# DOES hold the grant — refusing the registration it was written to protect.
+		if any(cint(level) == 1 for level in (self.get_permlevel_access("write") or [])):
 			return
 		frappe.throw(
 			_(
