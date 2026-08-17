@@ -112,6 +112,23 @@ def _cmp(value) -> str:
 	return "" if value is None else str(value)
 
 
+def _sort_cmp(value):
+	"""ORDER BY, which is not the same comparison as WHERE.
+
+	`_cmp` above stringifies deliberately, because that is what makes a stored
+	datetime string comparable with a `datetime` bound in a filter. Applying it to
+	ORDER BY as well made this fake sort an INT as text — 9 above 10 — which is
+	not what MariaDB does, and it let `code_attempts desc` look correct on the very
+	path a locked queue actually loads through. Numbers sort as numbers here; a
+	NULL sorts first on ascending, which is MariaDB's behaviour and the module's.
+	"""
+	if value is None or value == "":
+		return (0, 0.0, "")
+	if isinstance(value, (int, float)) and not isinstance(value, bool):
+		return (1, float(value), "")
+	return (1, 0.0, str(value))
+
+
 def _matches(row: dict, field: str, condition) -> bool:
 	value = row.get(field)
 	if not isinstance(condition, (list, tuple)):
@@ -279,7 +296,7 @@ class _FakeDB:
 			]
 		for clause in reversed([part.strip() for part in (order_by or "").split(",") if part.strip()]):
 			field, _sep, direction = clause.partition(" ")
-			rows.sort(key=lambda row, f=field: _cmp(row.get(f)), reverse=direction.strip() == "desc")
+			rows.sort(key=lambda row, f=field: _sort_cmp(row.get(f)), reverse=direction.strip() == "desc")
 
 		start = int(limit_start or 0)
 		rows = rows[start:]
@@ -665,33 +682,41 @@ class QueueOrderTest(unittest.TestCase):
 		stale = db.add_transfer(registered_at="2026-08-13 08:00:00", refund_status="Approved")
 		self.assertEqual([stale, fresh], self._names(queries, "refund_awaiting_approval"))
 
-	def test_locked_leads_with_the_most_failed_attempts(self):
+	def test_attempts_are_counted_rather_than_spelled(self):
+		# 9 against 10, because those are the smallest two values whose numeric and
+		# textual order disagree — with 1 and 5 a text sort passes. Sorting an Int as
+		# text buries the transfer nearest to being lost under the one with a single
+		# failed attempt.
 		db, queries = _seeded()
-		few = db.add_transfer(code_locked=1, code_attempts=1, registered_at=f"{TODAY} 10:00:00")
-		many = db.add_transfer(code_locked=1, code_attempts=5, registered_at=f"{TODAY} 09:00:00")
-		self.assertEqual([many, few], self._names(queries, "locked_pickup_code"))
+		fewer = db.add_transfer(code_locked=1, code_attempts=9)
+		most = db.add_transfer(code_locked=1, code_attempts=10)
+		self.assertEqual([most, fewer], self._names(queries, "locked_pickup_code"))
 
-	def test_attempts_are_counted_not_spelled_when_the_union_path_sorts(self):
+	def test_the_same_holds_once_a_filter_forces_the_union_path(self):
 		# A desk filter doubles every shape, so the rows come back unioned and are
-		# ordered in Python rather than by the database. Sorting an Int as text puts
-		# 9 above 10 — it would bury the transfer nearest to being lost under the one
-		# with one failed attempt. Two-digit values are the only ones that can catch
-		# it, which is why this case is not folded into the test above.
+		# ordered by `_sorted_by` in Python rather than by the database. The two
+		# executors of one order string have to agree, and this queue is where they
+		# would most visibly not.
 		db, queries = _seeded()
 		fewer = db.add_transfer(code_locked=1, code_attempts=9)
 		most = db.add_transfer(code_locked=1, code_attempts=10)
 		self.assertEqual([most, fewer], self._names(queries, "locked_pickup_code", desk="Tashkent"))
 
-	def test_a_page_boundary_does_not_show_one_row_twice(self):
-		# Every clause ends on `name`, so rows that tie on the urgency signal still
-		# have a total order. Without it page 2 can repeat a row from page 1 and
-		# silently drop another — the cashier never sees the dropped one.
-		db, queries = _seeded()
-		tied = [db.add_transfer(registered_at=f"{TODAY} 09:00:00") for _ in range(4)]
-		first = self._names(queries, "ready_for_payout", limit=2, offset=0)
-		second = self._names(queries, "ready_for_payout", limit=2, offset=2)
-		self.assertEqual(sorted(tied), sorted(first + second))
-		self.assertEqual(set(), set(first) & set(second))
+	def test_every_queue_breaks_a_tie_on_the_name(self):
+		# Asserted against the order strings themselves, not against paged output.
+		# The failure this prevents is MariaDB returning tied rows in a different
+		# arrangement for the page-1 query than for the page-2 query, so page 2
+		# repeats a row and silently drops another. No in-process fake can reproduce
+		# that — Python's sort is stable and a dict preserves insertion order, so a
+		# behavioural test here passes with or without the tiebreaker and would be a
+		# green light over nothing.
+		_db, queries = _seeded()
+		for queue in queries.QUEUES:
+			with self.subTest(queue=queue):
+				self.assertTrue(
+					queries._QUEUE_ORDER[queue].endswith("name asc"),
+					f"{queue} has no total order, so its page boundary is not stable",
+				)
 
 
 # --------------------------------------------------------------------------- #

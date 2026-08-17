@@ -55,6 +55,11 @@ const toast = useToast();
 // and a company switch retires both.
 const summaryTicket = useLatestRequest();
 const queueTicket = useLatestRequest();
+// The desk list needs its own ticket, not a shared one: two fast company switches
+// could otherwise land company A's branches under company B, and a filter picked
+// from them narrows B's queues by a branch B does not have — an empty screen that
+// looks like an answer.
+const deskTicket = useLatestRequest();
 
 // Server order (`remittance_queries.QUEUES`), which is also the order a desk
 // works them.
@@ -257,8 +262,10 @@ async function loadDesks() {
 		desks.value = [];
 		return;
 	}
+	const isCurrent = deskTicket.take();
 	try {
 		const rows = await remittanceApi.cashDesks(activeCompany.value);
+		if (!isCurrent()) return;
 		// One entry per branch: the settings table carries a row per desk AND
 		// currency, so a desk with three cash accounts would otherwise appear three
 		// times in the filter.
@@ -271,7 +278,7 @@ async function loadDesks() {
 	} catch {
 		// A desk list that failed to load is a missing filter, not a broken screen:
 		// the queues below are the point and they answer without it.
-		desks.value = [];
+		if (isCurrent()) desks.value = [];
 	}
 }
 
@@ -401,6 +408,7 @@ function openAction(row, action) {
 watch(activeCompany, () => {
 	summaryTicket.invalidate();
 	queueTicket.invalidate();
+	deskTicket.invalidate();
 	summary.value = null;
 	queue.value = { rows: [], total: 0, policyConfigured: true };
 	// The desks belong to the company that just went away, and so does the pick
@@ -618,7 +626,7 @@ onMounted(() => {
 									<span
 										v-if="r.refund_status && r.refund_status !== 'None'"
 										class="badge mt-1"
-										:class="getStatusBadgeClass('Remittance Transfer', r.refund_status)"
+										:class="getStatusBadgeClass('Remittance Refund', r.refund_status)"
 									>
 										<i class="ti ti-arrow-back-up me-1"></i>
 										{{ t("Refund: {status}", { status: t(r.refund_status) }) }}

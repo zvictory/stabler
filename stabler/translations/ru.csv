@@ -4285,6 +4285,7 @@ Refresh token,
 Refresh token (JWT),
 Refreshing…,Обновление…
 Refund open,Возврат в работе
+Refund: {status},Возврат: {status}
 Region,
 Region / Route,Регион / маршрут
 Register a customs declaration (GTD) for an import to clear it.,Зарегистрируйте таможенную декларацию (ГТД) для оформления импорта.

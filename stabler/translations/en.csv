@@ -117,7 +117,6 @@ Approving does not move money.,Approving does not move money.
 Approving records the decision and nothing else. No cash leaves the drawer at this step — the sender is paid back only when the refund is completed.,Approving records the decision and nothing else. No cash leaves the drawer at this step — the sender is paid back only when the refund is completed.
 As of {stamp},As of {stamp}
 Audit,Audit
-Awaiting approval,Awaiting approval
 Balance · all time · sits against obligations nobody has collected,Balance · all time · sits against obligations nobody has collected
 Bank and cash accounts,Bank and cash accounts
 Base currency: {currency},Base currency: {currency}

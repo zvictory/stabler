@@ -4276,6 +4276,7 @@ Refresh token,
 Refresh token (JWT),
 Refreshing…,Yenileniyor…
 Refund open,Açık iade
+Refund: {status},İade: {status}
 Region,
 Region / Route,Bölge / rota
 Register a customs declaration (GTD) for an import to clear it.,Bir ithalatı kapatmak için gümrük beyannamesi (GTB) kaydedin.

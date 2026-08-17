@@ -71,8 +71,12 @@ let listToken = 0;
 const sources = computed(() => [
 	{ key: SOURCE_SEARCH, label: t("Find a transfer"), icon: "ti-search" },
 	{
+		// The queue behind this tab carries Requested AND Approved (stabler-t1j9):
+		// an approved refund is not a decision still to make, it is cash the origin
+		// desk still has to count out. "Awaiting approval" promised only the first
+		// half and the tab listed both.
 		key: REMITTANCE_QUEUES.REFUND_AWAITING_APPROVAL,
-		label: t("Awaiting approval"),
+		label: t("Refund open"),
 		icon: "ti-gavel",
 	},
 	{
