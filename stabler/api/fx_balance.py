@@ -111,7 +111,18 @@ def _balance_journal_entry(doc) -> None:
 
 	if hasattr(doc, "set_total_debit_credit"):
 		doc.set_total_debit_credit()
-	diff = flt(flt(getattr(doc, "total_debit", 0)) - flt(getattr(doc, "total_credit", 0)))
+	# Both sides rounded BEFORE they are subtracted, which is what ERPNext itself
+	# does one line later (journal_entry.py:951). Its accumulator is not rounded as
+	# it goes — only each addend is (:948) — so on a multi-leg entry that closes
+	# exactly the two running sums still land an ulp apart. At UZS magnitudes that
+	# is ~3e-08: inside every tolerance below, and it used to buy an Exchange
+	# Gain/Loss row that `set_amounts_in_company_currency` promptly rounded to zero
+	# and `validate_debit_credit_amount` then refused — "Row N: Both Debit and
+	# Credit values cannot be zero" on a balanced document. A difference ERPNext
+	# cannot see is not a residual; it is float noise, and booking it is worse than
+	# ignoring it.
+	places = doc.precision("total_debit") if hasattr(doc, "precision") else 2
+	diff = flt(getattr(doc, "total_debit", 0), places) - flt(getattr(doc, "total_credit", 0), places)
 	if not diff:
 		return
 

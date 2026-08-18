@@ -70,6 +70,17 @@ MOVED_RATE = 13500.0
 #: The receive leg needs a CBU rate on file too, within tolerance of the rate the
 #: obligation implies (principal / receiver_amount, ~1.081 * REGISTER_RATE here).
 RECEIVE_RATE = 13000.0
+#: A send rate that is not a whole number of base units, so every leg's base
+#: value lands on a fraction of the minor unit. REGISTER_RATE is 12000,00 flat —
+#: every base figure it produces is a whole number of base units, which is why
+#: this whole suite was green over an entry ERPNext would have refused.
+FRACTIONAL_RATE = 12345.67
+#: Tendered under that rate, chosen by measurement. It puts the obligation and
+#: the deferred commission 2,98e-08 away from the cash leg when the three are
+#: re-added as float64 — enough to be seen by anything that subtracts unrounded
+#: floats, and invisible to anything that rounds to the minor unit first.
+#: Neighbouring amounts re-add exactly and prove nothing.
+CENTS_AMOUNT = 12000.99
 
 
 def _ensure(doctype: str, name: str, values: dict) -> str:
@@ -608,6 +619,74 @@ class RemittanceAccountingBenchTest(FrappeTestCase):
 					f"the {stage} totals a cashier reads do not close in base",
 				)
 				self.assertTrue(preview["balanced"])
+
+	def test_a_register_posts_at_a_rate_that_carries_cents(self) -> None:
+		"""A CBU rate with cents used to make registration impossible.
+
+		Not a remittance defect and not a preview defect — a shared one. The
+		`before_validate` hook `fx_balance.auto_balance_fx_residual` subtracted
+		ERPNext's two running totals without rounding them, while ERPNext rounds
+		both sides before subtracting (journal_entry.py:948 and :951). On this
+		three-leg entry the raw sums are 2,98e-08 apart, so the hook called that a
+		rounding residual and appended an Exchange Gain/Loss row for it;
+		`set_amounts_in_company_currency` rounded the row to zero and
+		`validate_debit_credit_amount` refused the document:
+
+		    ValidationError: Row 4: Both Debit and Credit values cannot be zero
+
+		Cash was on the counter and no obligation could be posted. Every tenant
+		using a base currency whose rates carry cents was exposed, which is every
+		UZS tenant on any ordinary day. The decision is pinned frappe-free in
+		test_fx_balance.py; this is the half only a real ledger settles — that
+		ERPNext accepts the entry once the phantom row is gone.
+		"""
+		self._rates(nowdate(), FRACTIONAL_RATE)
+
+		registered = self._register(client_request_id="bench-cents-register", amount=CENTS_AMOUNT)
+
+		entry = registered["register_journal_entry"]
+		self.assertTrue(entry, "the register posted no journal entry")
+		rows = self._entry_rows(entry)
+		self.assertEqual(3, len(rows), "the entry carries a row this app did not write")
+		self.assertEqual(
+			round(sum(row["debit"] for row in rows.values()), 2),
+			round(sum(row["credit"] for row in rows.values()), 2),
+			"the posted entry does not close in base currency",
+		)
+
+	def test_the_preview_balances_when_the_base_figures_carry_cents(self) -> None:
+		"""The case the other balance test cannot see, and the one every real
+		UZS-base tenant is in.
+
+		Under REGISTER_RATE every base figure is a whole number of base units, so
+		a re-derivation of the balance comes out exact by luck and the assertion
+		in the test above it cannot fail. Register at a rate with cents and the
+		legs no longer add up the same way twice: the first version of
+		`posting_preview` re-summed them as float against a fixed 1e-9 epsilon —
+		below one float64 ulp at these magnitudes — and answered
+		`balanced: false` for an entry `_assert_closes` had already proved sound.
+		The screen then prints "This entry does not balance. Do not hand over
+		cash — report it." above a totals row showing two identical numbers.
+
+		Refund rather than Payout because a payout's legs are symmetric and
+		re-add exactly whatever the arithmetic; a refund's do not.
+		"""
+		self._rates(nowdate(), FRACTIONAL_RATE)
+		name = self._approved("bench-preview-cents", amount=CENTS_AMOUNT)
+
+		preview = posting_preview(name, "Refund")
+
+		# The guard on the fixture, and an assertion rather than a comment: re-add
+		# the previewed base column the way the first version did and it does NOT
+		# close. So the line below can only be green on a `balanced` that is the
+		# builder's Decimal verdict. Tidy these numbers into round ones and this
+		# goes red before the one after it can go quietly green again.
+		self.assertNotEqual(
+			sum(row["debit"] for row in preview["rows"]),
+			sum(row["credit"] for row in preview["rows"]),
+			"these legs re-add exactly in float — the fixture cannot see the defect",
+		)
+		self.assertTrue(preview["balanced"], "a sound entry was reported to the cashier as broken")
 
 	def test_the_base_column_holds_the_frozen_rate_not_today_s(self) -> None:
 		"""The limit of the base figures, pinned rather than described.
