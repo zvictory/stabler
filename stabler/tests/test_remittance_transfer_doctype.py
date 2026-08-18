@@ -264,13 +264,19 @@ class PickupCodeDigestIsNotReadable(unittest.TestCase):
 	8-character code from a 32-glyph alphabet: one record is a bounded offline crack,
 	and what falls out is the bearer token for somebody's cash.
 
-	The permlevel bump has a trap attached, which is why the second test here is not
-	optional bookkeeping. `Document.validate_higher_perm_levels` resets a permlevel
-	field the saving user cannot WRITE, silently and to the field's default. Bump the
-	level without granting write at that level and `_new_transfer` stores NULL,
-	`register_remittance` still hands the cashier a plaintext code, and the transfer
-	is unpayable forever — discovered at the counter, days later, with the money
-	already taken.
+	The permlevel bump used to have a trap attached: `validate_higher_perm_levels`
+	resets a permlevel field the saving user cannot WRITE, so bumping the level
+	without granting write at that level made `_new_transfer` store NULL while
+	`register_remittance` still handed the cashier a plaintext code. That is no longer
+	how the digest is written — `_new_transfer` writes it with `db_set` after the
+	insert, below the permlevel layer (stabler-tvvc), and
+	`test_remittance_digest_below_permlevel_bench` proves on a live site that a role
+	holding no permlevel-1 grant at all can still register.
+
+	The grant is KEPT anyway, deliberately: revoking it would mean a permission
+	migration across seven tenants to buy nothing, and it is what keeps a future move
+	of the digest back into the insert payload from being silent data loss. The test
+	below pins it as shipped, not as a gate registration still depends on.
 	"""
 
 	def setUp(self):
@@ -288,8 +294,9 @@ class PickupCodeDigestIsNotReadable(unittest.TestCase):
 		self.assertEqual(["pickup_code_hash"], lifted)
 
 	def test_every_role_that_can_create_can_also_write_at_that_level(self):
-		# The trap, pinned. Without this, the fix above turns register into a silent
-		# data-loss bug for exactly the roles that use it.
+		# Defence in depth, pinned as shipped. Registration no longer depends on this
+		# grant (see the class docstring), but the grant is what would keep a move of
+		# the digest back into the insert payload from being silent data loss.
 		level = self.fields["pickup_code_hash"].get("permlevel", 0)
 		creators = {p["role"] for p in self.perms if p.get("create") and not p.get("permlevel")}
 		writers = {p["role"] for p in self.perms if p.get("permlevel") == level and p.get("write")}

@@ -1,8 +1,10 @@
 """The digest reaches the row, and no longer needs the site to have been migrated.
 
-`pickup_code_hash` is permlevel 1 and stays that way: the SPA really does call
-`frappe.client.get_list` (public/js/api/remittance.js), and permlevel is the only
-thing that keeps a salted pickup digest from coming back on a generic list read.
+`pickup_code_hash` is permlevel 1 and stays that way -- not because of anything this
+SPA calls (it makes no generic read against this doctype), but because
+`/api/resource/Remittance Transfer` answers any session holding `read`, and the
+Viewer and Auditor roles hold exactly `{read: 1}`. Permlevel is the only thing that
+keeps a salted pickup digest out of that read.
 
 What changed is where it is WRITTEN. Carrying it in the insert payload put it in
 reach of `Document.validate_higher_perm_levels`, which silently resets a permlevel
@@ -156,7 +158,16 @@ class DigestIsWrittenBelowPermlevel(FrappeTestCase):
 		try:
 			self._register(key)
 		except frappe.ValidationError as err:
-			self.assertNotIn("permlevel", str(err), "the digest must not be refused any more")
+			# The ONLY failure this test tolerates is the ledger-fixture gap named in
+			# the docstring; anything else means the registration itself was refused.
+			# A refusal at the permission layer raises `frappe.PermissionError`, which
+			# is a plain Exception in frappe (exceptions.py:40) and not a
+			# `ValidationError` -- it is not caught here at all, and errors the test.
+			self.assertIn(
+				"Remittance Settings",
+				str(err),
+				f"registration failed for a reason this test does not tolerate: {err}",
+			)
 
 		stored = frappe.db.get_value(
 			TRANSFER, {"client_request_id": key}, ["name", DIGEST_FIELD], as_dict=True

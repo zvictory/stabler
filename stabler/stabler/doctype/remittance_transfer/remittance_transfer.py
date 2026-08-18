@@ -24,8 +24,11 @@ write that level -- so guarding it inside `validate` meant guarding against our 
 insert, and made every registration depend on a migration (v89) having run on the
 site. `register_remittance` now writes the digest with `db_set` immediately after the
 insert, below the permlevel layer: there is nothing left to reset, so there is nothing
-left to check. The permlevel itself stays -- it is what keeps the digest out of
-`frappe.client.get_list` and `/api/resource`, which the SPA really does call.
+left to check. The permlevel itself stays, and not because of anything this SPA
+calls -- it makes no generic read against this doctype at all. It stays because
+`/api/resource/Remittance Transfer` answers any session holding `read`, and the
+Viewer and Auditor roles hold exactly `{read: 1}`; permlevel is the only thing that
+keeps a salted pickup digest out of that read.
 """
 
 from __future__ import annotations
@@ -33,7 +36,7 @@ from __future__ import annotations
 import frappe
 from frappe import _
 from frappe.model.document import Document
-from frappe.utils import cint, flt
+from frappe.utils import flt
 
 
 class RemittanceTransfer(Document):
