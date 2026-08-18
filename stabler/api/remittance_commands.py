@@ -525,6 +525,29 @@ def _max_code_attempts(company: str) -> int:
 
 
 def _payout_result(transfer, *, replayed: bool) -> dict:
+	"""The response shape of `verify_pickup_code`, `payout_transfer` and `unlock_pickup_code`.
+
+	`locked` was `code_locked`, an int, until v93 dropped the Check it echoed. That
+	is a breaking rename on three whitelisted endpoints, so here is who reads them,
+	measured rather than assumed:
+
+	* `verify_pickup_code` — RemittancePayout.vue:258 awaits it and discards the
+	  result; it advances a step on success and reloads on failure.
+	* `unlock_pickup_code` — :321, same, then `loadDetail()` + `loadQueue()`.
+	* `payout_transfer` — :362 is the only caller that reads the body at all, and
+	  it reads four keys: `receiver_amount`, `payout_journal_entry`,
+	  `operational_status`, `accounting_status`. Never the lock.
+
+	Nothing else calls them. The kassa Telegram bot is the surface that looks like
+	it might — it is a money integration on the same site — and it does not: it
+	lives in `stabler/integrations/kassa/` and carries no reference to remittance,
+	to these endpoints, or to `code_locked`. `stabler-mobile` carries none either.
+	The v93 commit message says that bot is a separate repo which had not been
+	checked; both halves were wrong.
+
+	Add a key here and it costs nothing. Rename one and it costs whatever the four
+	keys above are worth, which is a receipt a cashier hands to somebody.
+	"""
 	return {
 		**_state(transfer, replayed=replayed),
 		"payout_journal_entry": transfer.payout_journal_entry,
