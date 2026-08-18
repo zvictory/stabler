@@ -180,7 +180,6 @@ class _FakeDB:
 			"verification_status": "Active",
 			"refund_status": "None",
 			"code_attempts": 0,
-			"code_locked": 0,
 			"register_journal_entry": "JE-REM-0001",
 			"register_base_rate": FROZEN_RATE,
 			"registered_at": "2026-08-17 09:00:00",

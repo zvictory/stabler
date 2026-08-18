@@ -119,7 +119,7 @@ const canUnlock = computed(() =>
 
 const codeLocked = computed(() => {
 	if (detail.value?.code_state) return Boolean(detail.value.code_state.locked);
-	return Boolean(Number(selected.value?.code_locked || 0));
+	return selected.value?.verification_status === "Locked";
 });
 
 const failedAttempts = computed(() => {
@@ -560,7 +560,7 @@ onMounted(loadQueue);
 									<!-- A lock is not a document status — the queue is Registered +
 									     Posted by construction — so it is a lock chip, not a
 									     StatusBadge. -->
-									<span v-if="Number(row.code_locked)" class="badge bg-red-lt mt-1">
+									<span v-if="row.verification_status === 'Locked'" class="badge bg-red-lt mt-1">
 										<i class="ti ti-lock me-1"></i>{{ t("Code locked") }}
 									</span>
 								</td>

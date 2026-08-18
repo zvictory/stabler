@@ -14,7 +14,7 @@ has a specific failure:
 run through `actions.assert_no_pickup_code` on the way out. The first stops a
 future edit that adds `pickup_code_hash` to a projection; the second stops one
 that builds a response dict by hand. `payout_queue` set the precedent; this
-module holds it on eleven more projections. `code_attempts` and `code_locked`
+module holds it on eleven more projections. `code_attempts` and the verification
 are here on purpose — how many times someone guessed wrong is not the secret,
 and the payout screen cannot show a lockout without it.
 
@@ -73,7 +73,7 @@ JOURNAL = "Journal Entry"
 #: `receive_currency` is what the receiver gets, `registered_at`/`expires_at` is
 #: the age, `registered_by` is the owner, and `next_action` is derived below.
 #:
-#: The four status axes and `code_locked` are here because `_remittance_actions`
+#: The four status axes are here because `_remittance_actions`
 #: needs them to answer — `actions.STATE_FIELDS` is the contract, and dropping one
 #: would silently make `allowed_actions` wrong rather than raise.
 _ROW_FIELDS = (
@@ -96,7 +96,6 @@ _ROW_FIELDS = (
 	"accounting_status",
 	"verification_status",
 	"refund_status",
-	"code_locked",
 	"code_attempts",
 	"registered_by",
 	"registered_at",
@@ -150,8 +149,8 @@ _JOURNAL_FIELDS = (
 #: against. Narrower than `_ROW_FIELDS` because this one is pulled unpaged — but
 #: it still carries every one of `actions.STATE_FIELDS`, because these rows are
 #: annotated too and a MISSING state column does not raise, it reads as None. Drop
-#: `code_locked` here and every locked transfer in the reconciliation list is
-#: offered Pay out.
+#: `verification_status` here and every locked transfer in the reconciliation list
+#: is offered Pay out.
 _RECON_FIELDS = (
 	"name",
 	"company",
@@ -169,7 +168,6 @@ _RECON_FIELDS = (
 	"accounting_status",
 	"verification_status",
 	"refund_status",
-	"code_locked",
 	"code_attempts",
 	"registered_at",
 	"expires_at",
@@ -330,10 +328,28 @@ def _queue_shapes(queue: str) -> tuple[dict, ...]:
 	"""The AND-shapes whose union is `queue`. Company is added by the caller."""
 	if queue == READY_FOR_PAYOUT:
 		# Mirrors `_remittance_actions._payable`: posted obligation, unlocked code,
-		# no refund in flight. `code_locked` is a Check, so it is never NULL and
-		# needs no split.
+		# no refund in flight. `!=` and not a Check comparison since v93.
+		#
+		# Why this needs no NULL split, measured rather than assumed. Frappe rewrites
+		# `!=` on a nullable field as `IFNULL(verification_status, '') <> 'Locked'`
+		# (frappe/database/query.py:700, gated by `_should_apply_ifnull` at :1885,
+		# and a Select IS nullable — :1755 exempts only Check/Float/Int/Currency/
+		# Percent). So a blank axis lands INSIDE this queue, not outside it: the
+		# failure mode here is a row appearing that should not, never money going
+		# invisible. `_refund_open` splits `not in` two lines down for the opposite
+		# reason and says so; the two shapes differ because the operators do.
+		#
+		# `reqd` is NOT what keeps the axis populated — every writer here is
+		# `db_set`, which goes straight to `frappe.db.set_value` and never runs
+		# `validate_mandatory`. What keeps it populated is that `_new_transfer`
+		# inserts an explicit "Not Issued" and every later write names a concrete
+		# option, with v93 covering the rows that predate the field.
 		return _refund_open(
-			{"operational_status": "Registered", "accounting_status": "Posted", "code_locked": 0}
+			{
+				"operational_status": "Registered",
+				"accounting_status": "Posted",
+				"verification_status": ["!=", "Locked"],
+			}
 		)
 	if queue == EXPIRING_12H:
 		horizon = add_to_date(now_datetime(), hours=_EXPIRING_WITHIN_HOURS)
@@ -369,7 +385,7 @@ def _queue_shapes(queue: str) -> tuple[dict, ...]:
 		# reads that array and never infers a button from a status.
 		return ({"refund_status": ["in", ("Requested", "Approved")]},)
 	if queue == LOCKED_PICKUP_CODE:
-		return ({"operational_status": "Registered", "code_locked": 1},)
+		return ({"operational_status": "Registered", "verification_status": "Locked"},)
 	if queue == ACCOUNTING_EXCEPTION:
 		return _EXCEPTION_SHAPES
 	frappe.throw(_("Unknown remittance queue: {0}").format(queue))
@@ -636,10 +652,10 @@ def _event_transfer_names(event_type: str, from_date: str | None, to_date: str |
 	The master carries `registered_at` and nothing else — there is no
 	`paid_out_at`, no `refunded_at`. The append-only event trail is the only place
 	the app records *when* a stage happened, so every "today" and every window
-	that is not about registration is answered from it. Remittance Event has no
-	company column of its own; `permissions.remittance_event_query` scopes it
-	through the parent transfer, and the company filter is applied again when the
-	transfers themselves are fetched.
+	that is not about registration is answered from it. Since v92 the event carries
+	its own `company`, which `permissions.remittance_event_query` scopes with the
+	same `_company_condition` the transfer uses; the company filter is applied
+	again when the transfers themselves are fetched.
 	"""
 	filters = {"event_type": event_type}
 	filters.update(_date_window("occurred_at", from_date, to_date))
@@ -1041,7 +1057,7 @@ def transfer_detail(name: str) -> dict:
 		"code_state": {
 			"attempts": cint(transfer.get("code_attempts")),
 			"max_attempts": _max_code_attempts(transfer.get("company")),
-			"locked": bool(cint(transfer.get("code_locked"))),
+			"locked": transfer.get("verification_status") == "Locked",
 			"locked_at": str(transfer.get("code_locked_at") or "") or None,
 		},
 		"refund": {"status": transfer.get("refund_status"), **_refund_trail(events)},

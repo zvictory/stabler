@@ -219,7 +219,6 @@ class _FakeDB:
 			"accounting_status": "Posted",
 			"verification_status": "Active",
 			"refund_status": "None",
-			"code_locked": 0,
 			"code_attempts": 0,
 			"code_locked_at": None,
 			"expires_at": None,
@@ -491,12 +490,14 @@ class PickupCodeTest(unittest.TestCase):
 		actions.assert_no_pickup_code(queries.operations_summary("Mikas"))
 
 	def test_the_attempt_counter_is_not_the_code(self):
-		# `code_attempts` and `code_locked` are read on purpose — a payout screen
-		# cannot show a lockout without them, and a count of wrong guesses is not
-		# a secret. This pins that distinction so a later "tighten the guard"
+		# `code_attempts` and `verification_status` are read on purpose — a payout
+		# screen cannot show a lockout without them, and a count of wrong guesses is
+		# not a secret. This pins that distinction so a later "tighten the guard"
 		# cannot quietly break the lockout UI.
 		db, queries = _seeded()
-		name = db.add_transfer(code_attempts=3, code_locked=1, code_locked_at=f"{TODAY} 10:00:00")
+		name = db.add_transfer(
+			code_attempts=3, verification_status="Locked", code_locked_at=f"{TODAY} 10:00:00"
+		)
 		detail = queries.transfer_detail(name)
 		self.assertEqual(3, detail["code_state"]["attempts"])
 		self.assertEqual(5, detail["code_state"]["max_attempts"])
@@ -573,7 +574,7 @@ class QueueTest(unittest.TestCase):
 	def test_ready_for_payout_holds_only_what_can_be_paid_out(self):
 		db, queries = _seeded()
 		payable = db.add_transfer()
-		db.add_transfer(code_locked=1)
+		db.add_transfer(verification_status="Locked")
 		db.add_transfer(refund_status="Approved")
 		db.add_transfer(accounting_status="Unposted")
 		rows = queries.work_queue("Mikas", "ready_for_payout")["rows"]
@@ -590,7 +591,7 @@ class QueueTest(unittest.TestCase):
 	def test_locked_and_refund_queues_pick_their_own_rows(self):
 		db, queries = _seeded()
 		db.add_transfer()
-		locked = db.add_transfer(code_locked=1)
+		locked = db.add_transfer(verification_status="Locked")
 		requested = db.add_transfer(refund_status="Requested")
 		self.assertEqual(
 			[locked],
@@ -722,8 +723,8 @@ class QueueOrderTest(unittest.TestCase):
 		# text buries the transfer nearest to being lost under the one with a single
 		# failed attempt.
 		db, queries = _seeded()
-		fewer = db.add_transfer(code_locked=1, code_attempts=9)
-		most = db.add_transfer(code_locked=1, code_attempts=10)
+		fewer = db.add_transfer(verification_status="Locked", code_attempts=9)
+		most = db.add_transfer(verification_status="Locked", code_attempts=10)
 		self.assertEqual([most, fewer], self._names(queries, "locked_pickup_code"))
 
 	def test_the_same_holds_once_a_filter_forces_the_union_path(self):
@@ -732,8 +733,8 @@ class QueueOrderTest(unittest.TestCase):
 		# executors of one order string have to agree, and this queue is where they
 		# would most visibly not.
 		db, queries = _seeded()
-		fewer = db.add_transfer(code_locked=1, code_attempts=9)
-		most = db.add_transfer(code_locked=1, code_attempts=10)
+		fewer = db.add_transfer(verification_status="Locked", code_attempts=9)
+		most = db.add_transfer(verification_status="Locked", code_attempts=10)
 		self.assertEqual([most, fewer], self._names(queries, "locked_pickup_code", desk="Tashkent"))
 
 	def test_every_queue_breaks_a_tie_on_the_name(self):
@@ -884,11 +885,12 @@ class AllowedActionsTest(unittest.TestCase):
 		self.assertIsNone(rows[0]["next_action"])
 
 	def test_a_locked_transfer_is_never_offered_payout(self):
-		# This is what `code_locked` in the projection buys. Drop the column and
-		# `_payable` reads None, decides the code is unlocked, and the
-		# reconciliation screen grows a Pay out button on a locked transfer.
+		# This is what `verification_status` in the projection buys. Drop the column
+		# and `_payable` reads None, which is not the string "Locked", so it decides
+		# the code is unlocked and the reconciliation screen grows a Pay out button
+		# on a locked transfer.
 		db, queries = _seeded(roles=MANAGER)
-		db.add_transfer(code_locked=1)
+		db.add_transfer(verification_status="Locked")
 		rows = queries.reconciliation("Mikas")["aged_open"]["rows"]
 		self.assertEqual(1, len(rows))
 		self.assertNotIn(actions.PAYOUT, rows[0]["allowed_actions"])

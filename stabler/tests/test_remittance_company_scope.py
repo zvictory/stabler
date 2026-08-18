@@ -13,10 +13,11 @@ site**: the tenants have separate databases, so the site boundary is untouched.
 Three layers, because each one alone passes on a broken scope:
 
 * **Shape** — which idiom is correct is decided by the doctype JSONs, so the
-  JSONs are read rather than trusted. Remittance Transfer has a ``company``
-  field; Remittance Event has none, only a required ``transfer`` link. Add a
-  ``company`` column to the event later and this turns red, which is the moment
-  to switch it to the direct condition.
+  JSONs are read rather than trusted. Both doctypes carry a ``company`` field,
+  so both use the same direct condition. The event carried none until v92 and
+  was scoped through its parent transfer by a subquery; that shape is what this
+  bullet used to describe, and the tests below are what turned red when the
+  column landed. Take the column away again and they turn red the other way.
 * **Wiring** — ``hooks.py`` is parsed with ``ast``; both doctypes must appear in
   both maps and **every** path in either map must resolve to a function that
   exists on disk. A condition nobody registered scopes nothing, and the
@@ -184,14 +185,25 @@ class RemittanceDoctypeShapeTest(unittest.TestCase):
 		self.assertEqual(company["fieldtype"], "Link")
 		self.assertEqual(company["options"], "Company")
 
-	def test_the_event_carries_no_company_field_only_a_required_transfer_link(self):
+	def test_the_event_carries_its_own_company_and_still_links_its_transfer(self):
 		fields = _fields(_EVENT_JSON)
-		self.assertNotIn(
-			"company",
-			fields,
-			"Remittance Event now has a company column — remittance_event_query should "
-			"switch from the parent join to _company_condition, and this test should say so.",
+		company = fields.get("company")
+		self.assertIsNotNone(
+			company,
+			"Remittance Event lost its company column — without it the scope has to be "
+			"read through the parent transfer again, which is the subquery v92 deleted.",
 		)
+		self.assertEqual(company["fieldtype"], "Link")
+		self.assertEqual(company["options"], "Company")
+		self.assertTrue(
+			company.get("reqd"),
+			"an event with a blank company is invisible to nobody: the shared condition "
+			"lets a NULL company through by design, so an unrequired column would let an "
+			"event that failed to copy its parent's company be read by every viewer",
+		)
+		# The link stays required even though the scope no longer travels through
+		# it: an event is a fact *about a transfer*, and an orphan one is not a
+		# smaller audit trail, it is a corrupt one.
 		transfer = fields.get("transfer")
 		self.assertIsNotNone(transfer, "Remittance Event lost its transfer link")
 		self.assertEqual(transfer["options"], "Remittance Transfer")
@@ -238,18 +250,16 @@ class RemittanceScopeWiringTest(unittest.TestCase):
 		)
 		self.assertIn("Remittance Event", self.perm_map)
 
-	def test_the_event_does_not_reuse_the_company_field_helper(self):
-		# company_has_permission reads doc.company. A Remittance Event has no such
-		# attribute, so the helper would return True for every row — registered,
-		# green, and scoping nothing.
-		self.assertNotEqual(
-			self.perm_map.get("Remittance Event"),
-			"stabler.api.permissions.company_has_permission",
-			"Remittance Event has no company field; company_has_permission allows every row",
-		)
+	def test_the_event_now_reuses_the_shared_company_helper(self):
+		# The reason it could not, before v92: company_has_permission reads
+		# doc.company, which was always None on an event, so it took its
+		# blank-is-allowed branch and returned True for every row — registered,
+		# green, and scoping nothing. The column is what makes the shared helper
+		# correct here, so this assertion and the shape test above are one fact
+		# split across two files.
 		self.assertEqual(
 			self.perm_map.get("Remittance Event"),
-			"stabler.api.permissions.remittance_event_has_permission",
+			"stabler.api.permissions.company_has_permission",
 		)
 
 	def test_every_registered_path_resolves_to_a_real_function(self):
@@ -279,14 +289,14 @@ class RemittanceQueryConditionTest(unittest.TestCase):
 		_VALUES.clear()
 		self.conn = sqlite3.connect(":memory:")
 		self.conn.execute("CREATE TABLE `tabRemittance Transfer` (name TEXT, company TEXT)")
-		self.conn.execute("CREATE TABLE `tabRemittance Event` (name TEXT, transfer TEXT)")
+		self.conn.execute("CREATE TABLE `tabRemittance Event` (name TEXT, transfer TEXT, company TEXT)")
 		self.conn.executemany(
 			"INSERT INTO `tabRemittance Transfer` VALUES (?, ?)",
 			[("REM-A", "A Co"), ("REM-B", "B Co"), ("REM-NULL", None)],
 		)
 		self.conn.executemany(
-			"INSERT INTO `tabRemittance Event` VALUES (?, ?)",
-			[("EVT-A", "REM-A"), ("EVT-B", "REM-B"), ("EVT-NULL", "REM-NULL")],
+			"INSERT INTO `tabRemittance Event` VALUES (?, ?, ?)",
+			[("EVT-A", "REM-A", "A Co"), ("EVT-B", "REM-B", "B Co"), ("EVT-NULL", "REM-NULL", None)],
 		)
 
 	def tearDown(self):
@@ -328,7 +338,7 @@ class RemittanceQueryConditionTest(unittest.TestCase):
 		self.assertEqual(visible, {"REM-A", "REM-NULL"})
 		self.assertNotIn("REM-B", visible)
 
-	def test_the_event_condition_hides_the_other_company_via_its_parent(self):
+	def test_the_event_condition_hides_the_other_company(self):
 		_restrict_to("A Co")
 		condition = permissions.remittance_event_query("viewer@example.com")
 		self.assertTrue(condition, "a restricted viewer got no condition at all")
@@ -341,17 +351,24 @@ class RemittanceQueryConditionTest(unittest.TestCase):
 			"actor, branch and event_type for a transfer the reader cannot see",
 		)
 
-	def test_the_event_condition_never_names_a_company_column_on_the_event(self):
-		# `tabRemittance Event`.company is not a column; emitting it turns every
-		# list query into an SQL error instead of a filter.
+	def test_the_event_condition_reads_its_own_column_not_the_parent_table(self):
+		# The whole point of v92. A subquery per list query is the cost this
+		# replaced, but correctness is the real reason: the parent join let an
+		# event whose transfer link was blank through unconditionally, and the
+		# fragment had to spell that out in two extra clauses.
 		_restrict_to("A Co")
 		condition = permissions.remittance_event_query("viewer@example.com")
-		self.assertNotIn("`tabRemittance Event`.company", condition)
-		self.assertIn("`tabRemittance Transfer`", condition)
+		self.assertIn("`tabRemittance Event`.company", condition)
+		self.assertNotIn(
+			"`tabRemittance Transfer`",
+			condition,
+			"the event condition still joins its parent — the column it now carries is unused",
+		)
+		self.assertNotIn("select", condition.lower(), "the subquery is back")
 
 	def test_a_multi_company_list_shows_exactly_those_companies(self):
 		self.conn.execute("INSERT INTO `tabRemittance Transfer` VALUES ('REM-C', 'C Co')")
-		self.conn.execute("INSERT INTO `tabRemittance Event` VALUES ('EVT-C', 'REM-C')")
+		self.conn.execute("INSERT INTO `tabRemittance Event` VALUES ('EVT-C', 'REM-C', 'C Co')")
 		_restrict_to("A Co", "B Co")
 		self.assertEqual(
 			self._select("Remittance Transfer", permissions.remittance_transfer_query("v@e.com")),
@@ -384,31 +401,26 @@ class RemittanceQueryConditionTest(unittest.TestCase):
 
 
 class RemittanceEventHasPermissionTest(unittest.TestCase):
-	"""Single-document access — the path a direct GET takes."""
+	"""Single-document access — the path a direct GET takes.
+
+	Before v92 this exercised a bespoke ``remittance_event_has_permission`` that
+	resolved the parent transfer to find a company. The column removed the reason
+	for it, and the function with it. What is asserted here is therefore not new
+	logic but the claim that the *shared* helper is now sufficient for an event —
+	which is only true because the event carries the column, and is exactly the
+	claim that was false before.
+	"""
 
 	def setUp(self):
 		_ROLES.clear()
 		_ALLOWED.clear()
 		_VALUES.clear()
-		_VALUES[("Remittance Event", "EVT-B", "transfer")] = "REM-B"
-		_VALUES[("Remittance Transfer", "REM-A", "company")] = "A Co"
-		_VALUES[("Remittance Transfer", "REM-B", "company")] = "B Co"
-
-	def test_an_unrestricted_user_is_allowed(self):
-		_ROLES[:] = ["Remittance Viewer"]
-		_ALLOWED[:] = []
-		self.assertIs(
-			permissions.remittance_event_has_permission(
-				SimpleNamespace(transfer="REM-B"), "read", "viewer@example.com"
-			),
-			True,
-		)
 
 	def test_the_other_company_event_is_denied(self):
 		_restrict_to("A Co")
 		self.assertIs(
-			permissions.remittance_event_has_permission(
-				SimpleNamespace(transfer="REM-B"), "read", "viewer@example.com"
+			permissions.company_has_permission(
+				SimpleNamespace(company="B Co", transfer="REM-B"), "read", "viewer@example.com"
 			),
 			False,
 		)
@@ -416,27 +428,32 @@ class RemittanceEventHasPermissionTest(unittest.TestCase):
 	def test_the_own_company_event_is_allowed(self):
 		_restrict_to("A Co")
 		self.assertIs(
-			permissions.remittance_event_has_permission(
-				SimpleNamespace(transfer="REM-A"), "read", "viewer@example.com"
+			permissions.company_has_permission(
+				SimpleNamespace(company="A Co", transfer="REM-A"), "read", "viewer@example.com"
 			),
 			True,
 		)
 
-	def test_a_document_passed_by_name_is_resolved_through_its_transfer(self):
-		_restrict_to("A Co")
+	def test_an_unrestricted_user_is_allowed(self):
+		_ROLES[:] = ["Remittance Viewer"]
+		_ALLOWED[:] = []
 		self.assertIs(
-			permissions.remittance_event_has_permission("EVT-B", "read", "viewer@example.com"),
-			False,
+			permissions.company_has_permission(
+				SimpleNamespace(company="B Co", transfer="REM-B"), "read", "viewer@example.com"
+			),
+			True,
 		)
 
-	def test_it_returns_a_bool_never_none(self):
-		# Frappe treats a None return as falsy and would block the doc.
-		_restrict_to("A Co")
-		for doc in (None, SimpleNamespace(transfer=None), SimpleNamespace(transfer="REM-A")):
-			with self.subTest(doc=doc):
-				self.assertIsInstance(
-					permissions.remittance_event_has_permission(doc, "read", "viewer@example.com"),
-					bool,
+	def test_the_bespoke_event_helper_is_gone(self):
+		# Not tidiness. Left on disk it would still be importable, still look like
+		# the right thing to register, and still be one `hooks.py` line away from
+		# scoping the event through a subquery nobody needs. The wiring test above
+		# proves what IS registered; this proves the alternative cannot be.
+		for dead in ("remittance_event_has_permission", "_parent_company_condition"):
+			with self.subTest(name=dead):
+				self.assertFalse(
+					hasattr(permissions, dead),
+					f"{dead} survived v92 — the parent-join scoping path is still reachable",
 				)
 
 	def test_the_transfer_still_uses_the_shared_company_helper(self):
