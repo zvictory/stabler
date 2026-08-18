@@ -324,6 +324,11 @@ class RegisterCommandTest(unittest.TestCase):
 		self.assertEqual([event["event_type"] for event in self.db.events], ["Register"])
 		self.assertEqual(self.db.events[0]["transfer"], result["name"])
 		self.assertEqual(self.db.events[0]["client_request_id"], "req-1")
+		# The event's own permission scope since v92. An event that failed to copy
+		# it is not merely untidy: `permissions._company_condition` lets a blank
+		# company through by design, so it would be readable by every viewer of
+		# every company on the site.
+		self.assertEqual(self.db.events[0]["company"], "Mikas")
 
 	def test_pickup_code_is_returned_once_and_stored_hashed(self):
 		first = self.api.register_remittance(**_request())

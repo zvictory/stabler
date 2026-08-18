@@ -45,8 +45,8 @@ permission_query_conditions = {
 	"Vehicle Finance Follow-up Log": "stabler.api.permissions.vehicle_finance_follow_up_log_query",
 	"Vehicle Finance Settings": "stabler.api.permissions.vehicle_finance_settings_query",
 	# Remittance — money records with a non-admin read path (Viewer / Auditor /
-	# Cashier / Finance Manager). Remittance Event carries no `company` column of
-	# its own, so it is scoped through its parent transfer.
+	# Cashier / Finance Manager). Both carry their own `company` column, so both
+	# use the same direct condition; the event's was added in v92.
 	"Remittance Transfer": "stabler.api.permissions.remittance_transfer_query",
 	"Remittance Event": "stabler.api.permissions.remittance_event_query",
 	# Master scoping by owner/territory (gap #46) — safe-by-default: only restricts
@@ -78,10 +78,7 @@ has_permission = {
 	"Vehicle Finance Follow-up Log": "stabler.api.permissions.company_has_permission",
 	"Vehicle Finance Settings": "stabler.api.permissions.company_has_permission",
 	"Remittance Transfer": "stabler.api.permissions.company_has_permission",
-	# NOT company_has_permission: a Remittance Event has no `company` attribute, so
-	# that helper would read None, take its blank-is-allowed branch and permit every
-	# row — wiring that looks correct and scopes nothing.
-	"Remittance Event": "stabler.api.permissions.remittance_event_has_permission",
+	"Remittance Event": "stabler.api.permissions.company_has_permission",
 	"Customer": "stabler.api.permissions.master_has_permission",
 	"Supplier": "stabler.api.permissions.master_has_permission",
 }

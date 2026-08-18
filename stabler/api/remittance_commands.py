@@ -355,11 +355,19 @@ def _new_transfer(key: str, payload: dict, code: str, *, origin_city, destinatio
 
 
 def _append_event(transfer, *, event_type: str, key: str | None, details: str, branch: str) -> None:
-	"""One way in to the append-only trail, for every command in this module."""
+	"""One way in to the append-only trail, for every command in this module.
+
+	`company` is copied from the transfer rather than left to be read back through
+	the link. It is the event's own permission scope (`permissions.py`), so an
+	event that failed to copy it would be readable by every viewer — which is why
+	the column is `reqd` and why it is set here, in the one place events are made,
+	rather than in each of the nine callers.
+	"""
 	frappe.get_doc(
 		{
 			"doctype": EVENT,
 			"transfer": transfer.name,
+			"company": transfer.company,
 			"event_type": event_type,
 			"occurred_at": now_datetime(),
 			"actor": frappe.session.user,

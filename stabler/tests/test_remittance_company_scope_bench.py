@@ -14,9 +14,14 @@ So this file makes the call the way a restricted user does: it becomes a real
 non-admin user holding Remittance Viewer with an Allowed Companies list of one,
 and reads the list. Two companies, one transfer and one event each.
 
-`Remittance Event` is the interesting half: it has no `company` column, so its
-scope is a subquery through the parent transfer. A join that is right in SQLite
-and wrong in MariaDB fails only here.
+`Remittance Event` is the interesting half. Until v92 it had no `company` column
+and was scoped by a subquery through the parent transfer — a join that is right
+in SQLite and wrong in MariaDB fails only here. It carries the column now and
+uses the same condition as the transfer, so what this file still proves is the
+part SQLite cannot: that the fragment Frappe actually splices into a real
+`/api/resource` list query filters a real Viewer. The event is inserted here
+WITHOUT going through `_append_event`, on purpose — a fixture that used the
+production writer could not tell a working scope from a working fixture.
 
 Bench-only, by derivation: it is not in `.github/frappe-free-tests.txt`, so the
 Makefile's BENCH_TESTS picks it up automatically.
@@ -81,8 +86,8 @@ class RemittanceCompanyScopeBenchTest(FrappeTestCase):
 
 		self.transfer_a = self._transfer(self.company_a)
 		self.transfer_b = self._transfer(self.company_b)
-		self.event_a = self._event(self.transfer_a)
-		self.event_b = self._event(self.transfer_b)
+		self.event_a = self._event(self.transfer_a, self.company_a)
+		self.event_b = self._event(self.transfer_b, self.company_b)
 
 		self._viewer_restricted_to(self.company_a)
 		self.addCleanup(frappe.set_user, "Administrator")
@@ -113,11 +118,12 @@ class RemittanceCompanyScopeBenchTest(FrappeTestCase):
 		doc.insert(ignore_permissions=True)
 		return doc.name
 
-	def _event(self, transfer: str) -> str:
+	def _event(self, transfer: str, company: str) -> str:
 		doc = frappe.get_doc(
 			{
 				"doctype": "Remittance Event",
 				"transfer": transfer,
+				"company": company,
 				"event_type": "Register",
 				"occurred_at": now_datetime(),
 			}
@@ -209,7 +215,7 @@ class RemittanceCompanyScopeBenchTest(FrappeTestCase):
 		self.assertNotIn(
 			self.event_b,
 			visible,
-			"the event trail leaked the other company's transfer; the parent-join "
+			"the event trail leaked the other company's transfer; the company "
 			"condition is the only thing scoping this doctype",
 		)
 

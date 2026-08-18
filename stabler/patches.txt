@@ -93,3 +93,4 @@ stabler.patches.v88_lcv_distribution_method
 stabler.patches.v89_remittance_pickup_hash_permlevel
 stabler.patches.v90_remittance_engine_flag
 stabler.patches.v91_je_pickup_code_permlevel
+stabler.patches.v92_remittance_event_company
