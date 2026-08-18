@@ -52,6 +52,7 @@ from frappe.utils import add_to_date, cint, flt, get_datetime, now_datetime, now
 from stabler.api import _remittance_actions as actions
 from stabler.api._common import _assert_can_read, _require_company
 from stabler.api.approvals import _assert_company_scope
+from stabler.api.remittance_accounting import PAYOUT, REFUND, REGISTER, build_legs
 from stabler.api.remittance_commands import _max_code_attempts, _send_precision
 
 TRANSFER = "Remittance Transfer"
@@ -1196,6 +1197,90 @@ def reconciliation(company: str, from_date: str | None = None, to_date: str | No
 	return actions.assert_no_pickup_code(payload)
 
 
+@frappe.whitelist()
+def posting_preview(name: str, stage: str, posting_date: str | None = None) -> dict:
+	"""The rows one stage will write to the ledger, before it writes them.
+
+	Built by `remittance_accounting.build_legs` — the same call the poster makes,
+	not a second model of it. A screen that computes its own version of a journal
+	entry agrees with the books right up until one of the two is edited, and what
+	is at stake on this particular screen is a cashier counting notes against a
+	number the ledger does not hold.
+
+	WHAT THE BASE COLUMN IS. Every leg carries its amount twice: once in the
+	account's own currency and once in the company's base currency, which is what
+	`debit`/`credit` hold and what the entry balances on. Cross-currency entries do
+	not balance per currency and are not supposed to — the base column is the only
+	place the reader can see it close.
+
+	WHERE THE BASE VALUE COMES FROM, and its limit. At Register the send->base rate
+	is the market rate of the posting day, fetched once. From then on Payout and
+	Refund use `register_base_rate`, frozen at registration and never re-fetched
+	(ADR-008) — which is why a payout mirrors its register leg exactly instead of
+	drifting with the market. So the base figures are honest about the ledger and
+	are NOT a live valuation: a transfer registered in March is still shown at
+	March's rate. That is the accounting intent, not a gap. The gap is upstream —
+	one rate per currency per day, rather than the accounting period's rate table
+	— and it is the same rate the entry itself posts at, so the screen cannot be
+	more accurate than the books it previews.
+
+	Read-only in the strict sense: nothing here inserts, and no draft Journal Entry
+	is created to render a preview.
+
+	Only a stage that is actually reachable is previewed. Asking for a Payout
+	preview of a transfer that has not registered throws the same sentence the
+	payout would, so the screen never shows a plan for something that cannot happen.
+
+	Deliberately keyed on an EXISTING transfer and not on caller-supplied amounts:
+	an endpoint that resolves GL accounts and builds legs from numbers in the
+	request is a convenient way to probe another company's account configuration.
+	The pre-registration preview on New Transfer is therefore not served from here.
+	"""
+	name = (name or "").strip()
+	stage = (stage or "").strip()
+	if not name:
+		frappe.throw(_("A transfer id is required."))
+	if stage not in (REGISTER, PAYOUT, REFUND):
+		frappe.throw(_("{0} is not a remittance posting stage.").format(stage or "—"))
+
+	# @frappe.whitelist() gates the method, not the record — this is the IDOR guard.
+	_assert_can_read(TRANSFER, name)
+	transfer = frappe.get_doc(TRANSFER, name)
+	_assert_company_scope(transfer.company)
+	_require_company(transfer.company)
+
+	built = build_legs(transfer, stage, posting_date or frappe.utils.nowdate())
+	base_currency = frappe.get_cached_value("Company", transfer.company, "default_currency")
+
+	rows = []
+	debit_total = 0.0
+	credit_total = 0.0
+	for leg in built["legs"]:
+		row = {
+			"account": leg["account"],
+			"currency": leg["account_currency"],
+			"debit_in_account_currency": float(leg["debit_in_account_currency"]),
+			"credit_in_account_currency": float(leg["credit_in_account_currency"]),
+			"debit": float(leg["debit"]),
+			"credit": float(leg["credit"]),
+			"exchange_rate": float(leg["exchange_rate"]),
+		}
+		debit_total += row["debit"]
+		credit_total += row["credit"]
+		rows.append(row)
+
+	return {
+		"stage": stage,
+		"base_currency": base_currency,
+		"rows": rows,
+		# Summed from the same rows the screen renders, so a reader adding the
+		# column by eye reaches the figure the totals line shows.
+		"total_debit": debit_total,
+		"total_credit": credit_total,
+		"balanced": abs(debit_total - credit_total) < 1e-9,
+	}
+
+
 __all__ = [
 	"ACCOUNTING_EXCEPTION",
 	"EXPIRED_REFUND_REQUIRED",
@@ -1206,6 +1291,7 @@ __all__ = [
 	"READY_FOR_PAYOUT",
 	"REFUND_AWAITING_APPROVAL",
 	"operations_summary",
+	"posting_preview",
 	"reconciliation",
 	"transfer_detail",
 	"transfers",

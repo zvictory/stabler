@@ -78,6 +78,9 @@ Abbr,Qisqartma
 Absent,Yo'q
 Add at least one cash desk before switching {0} to the V1 engine: V1 reads every cash account from this table and cannot register a transfer without one.,{0} ni V1 mexanizmiga o'tkazishdan oldin kamida bitta kassa qo'shing: V1 barcha kassa hisoblarini shu jadvaldan o'qiydi va usiz o'tkazmani ro'yxatga ololmaydi.
 Check the code,Kodni tekshirish
+Credit ({currency}),Kredit ({currency})
+Debit ({currency}),Debet ({currency})
+Debits equal credits in {currency}.,{currency} bo‘yicha debet kreditga teng.
 Every user of {company} moves to the {engine} screens when this is saved.,"Saqlangach, {company} ning barcha foydalanuvchilari {engine} ekranlariga o'tadi."
 I have checked {receiver}'s identity document.,{receiver} shaxsini tasdiqlovchi hujjatni tekshirdim.
 I have counted {amount} and am handing it back to {sender}.,{amount} miqdorini sanadim va {sender}ga qaytarib beryapman.
@@ -95,9 +98,11 @@ Remittance engine,O'tkazma mexanizmi
 Same as your last transfer,Oxirgi o'tkazmangizdagi kabi
 The destination desk ({branch}) has no {currency} cash account — add it in Remittance Settings before registering.,Manzil kassasida ({branch}) {currency} hisobi yo'q — ro'yxatga olishdan oldin uni O'tkazma sozlamalarida qo'shing.
 The pickup code was refused.,Olib ketish kodi rad etildi.
+The posting could not be previewed.,Provodkani oldindan ko‘rsatib bo‘lmadi.
 The V1 engine reads every cash account from the desk table. Add at least one desk before switching to V1.,V1 mexanizmi barcha kassa hisoblarini kassa jadvalidan o'qiydi. V1 ga o'tishdan oldin kamida bitta kassa qo'shing.
 The settings payload could not be read.,Sozlamalar ma'lumotini o'qib bo'lmadi.
 This company runs the {engine} remittance engine. The Transfer V1 screens stay unavailable until it is switched to V1 below.,Bu kompaniya {engine} o'tkazma mexanizmida ishlaydi. Quyida V1 ga o'tkazilmaguncha Transfer V1 ekranlari mavjud bo'lmaydi.
+This entry does not balance. Do not hand over cash — report it.,Bu provodka tenglashmayapti. Naqd pul bermang — xabar bering.
 Transfer registered,Pul o'tkazmasi ro'yxatga olindi
 "Transfers registered on V1 stay in their own records and are not shown by the legacy list, which reads journal entries.",V1 da ro'yxatga olingan o'tkazmalar o'z yozuvlarida qoladi va jurnal yozuvlarini o'qiydigan eski ro'yxatda ko'rinmaydi.
 Transfers registered on the legacy engine stay on the legacy list and are not shown by the V1 screens: they have no Remittance Transfer record behind them.,Legacy mexanizmida ro'yxatga olingan o'tkazmalar eski ro'yxatda qoladi va V1 ekranlarida ko'rinmaydi: ular ortida Remittance Transfer yozuvi yo'q.
@@ -5869,6 +5874,7 @@ Yutilgan,Yutilgan
 {0} is in {1}. Only bills in {2} or USD can be added to an import's landed cost today.,{0} {1} valyutasida. Bugun import tannarxiga faqat {2} yoki USD dagi hisob-fakturalarni qo‘shish mumkin.
 {0} is not a group.,{0} guruh emas.
 {0} is not a remittance engine. Choose one of: {1}.,{0} o'tkazma mexanizmi emas. Quyidagilardan birini tanlang: {1}.
+{0} is not a remittance posting stage.,{0} pul o‘tkazmasi provodkasining bosqichi emas.
 {0} is required.,{0} majburiy.
 {0} line item change(s),
 {0} must be a number,{0} raqam bo'lishi kerak
@@ -5906,6 +5912,7 @@ Yutilgan,Yutilgan
 {count} payment(s) totalling {amount} will be re-allocated.,"{count} ta to‘lov, jami {amount}, qayta taqsimlanadi."
 {count} PI lines,{count} ta PI qatori
 {count} selected,{count} ta tanlandi
+"{currency} figures use the rate frozen when this transfer was registered, not today's — that is the rate the ledger holds.","{currency} summalari o‘tkazma ro‘yxatdan o‘tkazilgandagi qotirilgan kursda hisoblangan, bugungisida emas — hisobda aynan shu kurs turadi."
 {currency} — not a corridor currency,{currency} — koridor valyutasi emas
 {doctype} {name} is linked and has no deletion rule — resolve it manually first.,{doctype} {name} bog‘langan va o‘chirish qoidasi yo‘q — avval uni qo‘lda hal qiling.
 {done}/{total} quote sets complete,{done}/{total} taklif to'plami to'liq

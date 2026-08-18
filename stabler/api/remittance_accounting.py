@@ -239,22 +239,67 @@ def _plain(value):
 	return float(value) if isinstance(value, Decimal) else value
 
 
+def build_legs(transfer, stage: str, posting_date) -> dict:
+	"""The legs a stage will post — built once, used by the poster and the screen.
+
+	The preview a cashier reads before handing over cash and the entry that
+	actually posts come out of THIS function. That is the whole reason it exists:
+	a screen with its own copy of the arithmetic agrees with the ledger until the
+	day someone edits one of them, and the day it stops agreeing is a day somebody
+	counted money against a number the books never held.
+
+	`_assert_closes` runs inside each builder, so a set of legs that reaches a
+	caller is a set that balances in base currency. The screen does not check that
+	— it shows the totals and lets the reader see it.
+	"""
+	accounts = resolve_accounts(transfer, stage)
+	base = _base_currency(transfer.company)
+
+	if stage == REGISTER:
+		return register_legs(
+			amounts=_amounts_at_register(transfer, posting_date),
+			accounts=accounts,
+			tendered=transfer.tendered,
+			receiver_amount=transfer.receiver_amount,
+			send_currency=transfer.send_currency,
+			receive_currency=transfer.receive_currency,
+			base_currency=base,
+			remark=_("Remittance {0} — Register").format(transfer.name),
+		)
+
+	amounts = _amounts_from_register_entry(transfer)
+
+	if stage == PAYOUT:
+		return payout_legs(
+			amounts=amounts,
+			accounts=accounts,
+			receiver_amount=transfer.receiver_amount,
+			register_base_rate=transfer.register_base_rate,
+			receive_currency=transfer.receive_currency,
+			base_currency=base,
+			remark=_("Remittance {0} — Payout").format(transfer.name),
+		)
+
+	if stage == REFUND:
+		return refund_legs(
+			amounts=amounts,
+			accounts=accounts,
+			tendered=transfer.tendered,
+			receiver_amount=transfer.receiver_amount,
+			register_base_rate=transfer.register_base_rate,
+			send_currency=transfer.send_currency,
+			receive_currency=transfer.receive_currency,
+			base_currency=base,
+			remark=_("Remittance {0} — Refund").format(transfer.name),
+		)
+
+	frappe.throw(_("{0} is not a remittance posting stage.").format(stage))
+
+
 def post_register(transfer, *, posting_date=None, submit: bool = True) -> dict:
 	"""Dr origin desk cash / Cr deferred commission / Cr receiver obligation."""
 	posting_date = posting_date or frappe.utils.nowdate()
-	accounts = resolve_accounts(transfer, REGISTER)
-	amounts = _amounts_at_register(transfer, posting_date)
-
-	built = register_legs(
-		amounts=amounts,
-		accounts=accounts,
-		tendered=transfer.tendered,
-		receiver_amount=transfer.receiver_amount,
-		send_currency=transfer.send_currency,
-		receive_currency=transfer.receive_currency,
-		base_currency=_base_currency(transfer.company),
-		remark=_("Remittance {0} — Register").format(transfer.name),
-	)
+	built = build_legs(transfer, REGISTER, posting_date)
 
 	entry = _build_entry(transfer, REGISTER, built["legs"], posting_date, submit)
 	transfer.db_set(
@@ -271,18 +316,7 @@ def post_register(transfer, *, posting_date=None, submit: bool = True) -> dict:
 def post_payout(transfer, *, posting_date=None, submit: bool = True) -> dict:
 	"""Dr obligation / Cr destination cash ; Dr deferred commission / Cr revenue."""
 	posting_date = posting_date or frappe.utils.nowdate()
-	accounts = resolve_accounts(transfer, PAYOUT)
-	amounts = _amounts_from_register_entry(transfer)
-
-	built = payout_legs(
-		amounts=amounts,
-		accounts=accounts,
-		receiver_amount=transfer.receiver_amount,
-		register_base_rate=transfer.register_base_rate,
-		receive_currency=transfer.receive_currency,
-		base_currency=_base_currency(transfer.company),
-		remark=_("Remittance {0} — Payout").format(transfer.name),
-	)
+	built = build_legs(transfer, PAYOUT, posting_date)
 
 	entry = _build_entry(transfer, PAYOUT, built["legs"], posting_date, submit)
 	transfer.db_set("payout_journal_entry", entry.name, notify=False)
@@ -292,20 +326,7 @@ def post_payout(transfer, *, posting_date=None, submit: bool = True) -> dict:
 def post_refund(transfer, *, posting_date=None, submit: bool = True) -> dict:
 	"""Dr obligation / Dr deferred commission / Cr origin desk cash, in full."""
 	posting_date = posting_date or frappe.utils.nowdate()
-	accounts = resolve_accounts(transfer, REFUND)
-	amounts = _amounts_from_register_entry(transfer)
-
-	built = refund_legs(
-		amounts=amounts,
-		accounts=accounts,
-		tendered=transfer.tendered,
-		receiver_amount=transfer.receiver_amount,
-		register_base_rate=transfer.register_base_rate,
-		send_currency=transfer.send_currency,
-		receive_currency=transfer.receive_currency,
-		base_currency=_base_currency(transfer.company),
-		remark=_("Remittance {0} — Refund").format(transfer.name),
-	)
+	built = build_legs(transfer, REFUND, posting_date)
 
 	entry = _build_entry(transfer, REFUND, built["legs"], posting_date, submit)
 	transfer.db_set({"refund_journal_entry": entry.name, "accounting_status": "Reversed"}, notify=False)
@@ -317,6 +338,7 @@ __all__ = [
 	"REFUND",
 	"REGISTER",
 	"AccountingError",
+	"build_legs",
 	"post_payout",
 	"post_refund",
 	"post_register",

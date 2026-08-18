@@ -166,6 +166,11 @@ export const remittanceApi = {
 	verifyPickupCode: (name, pickup_code, client_request_id) =>
 		call(`${CMD}.verify_pickup_code`, { name, pickup_code, client_request_id }),
 
+	// The journal entry a stage will write, built by the poster's own code so the
+	// screen and the ledger cannot disagree. Read-only: no draft entry is created.
+	postingPreview: (name, stage, posting_date = null) =>
+		call(`${READ}.posting_preview`, { name, stage, posting_date }),
+
 	// A Finance Manager reopens a locked code. The only exit from a lockout —
 	// there is no timer, by design, so that a lockout that lapsed is never
 	// mistaken for one that was never applied.

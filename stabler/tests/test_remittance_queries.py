@@ -58,6 +58,7 @@ _FAKED = (
 	"frappe.utils",
 	"stabler.api._common",
 	"stabler.api.approvals",
+	"stabler.api.remittance_accounting",
 	"stabler.api.remittance_commands",
 )
 
@@ -358,12 +359,24 @@ def _load(db: _FakeDB, *, roles=CASHIER):
 	commands._max_code_attempts = lambda company: 5
 	commands._send_precision = lambda: 2
 
+	# Faked for the same reason as the two above: importing the real one drags in
+	# `frappe.utils.getdate`, ERPNext's exchange-rate helper and the settings
+	# doctype, none of which this suite models. `posting_preview` is proved against
+	# a real ledger in test_remittance_accounting_bench.py, which is the only place
+	# a claim about journal entries means anything.
+	accounting = types.ModuleType("stabler.api.remittance_accounting")
+	accounting.REGISTER = "Register"
+	accounting.PAYOUT = "Payout"
+	accounting.REFUND = "Refund"
+	accounting.build_legs = lambda *_a, **_k: {"legs": []}
+
 	_SANDBOX.install(
 		{
 			"frappe": frappe,
 			"frappe.utils": utils,
 			"stabler.api._common": common,
 			"stabler.api.approvals": approvals,
+			"stabler.api.remittance_accounting": accounting,
 			"stabler.api.remittance_commands": commands,
 		}
 	)
