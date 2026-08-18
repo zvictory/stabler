@@ -1634,6 +1634,10 @@ def sales_invoice_detail(name: str):
 		"due_date": str(doc.due_date) if doc.due_date else None,
 		"customer": doc.customer,
 		"customer_name": doc.customer_name,
+		# The screen reads this back into its price-list control. Without it the
+		# control loads blank, which its rate-refresh reads as a change, and every
+		# stored line rate is overwritten with today's list price on open.
+		"price_list": doc.selling_price_list or "",
 		"currency": doc.currency,
 		"conversion_rate": flt(doc.conversion_rate),
 		"net_total": flt(doc.net_total),

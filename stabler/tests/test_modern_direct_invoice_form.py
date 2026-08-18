@@ -187,3 +187,156 @@ class TestTheRouteUsesIt(unittest.TestCase):
 
 if __name__ == "__main__":
 	unittest.main()
+
+
+class TestSubmittingAnExistingDraftSavesFirst(unittest.TestCase):
+	""" "Kaydet ve Gönder" bir taslakta önce KAYDETMELİ.
+
+	`update_sales_invoice` submit etmez — yalnızca alan düzenlemelerini kalıcı
+	kılar. Dolayısıyla kaydedilmiş bir taslağı göndermek kendi save-then-submit
+	adımını gerektirir. Eksikse buton, sunucunun DÜZENLEME ÖNCESİ kopyasını
+	submit eder: `modified` değişmediği için eşzamanlılık kontrolü de geçer,
+	kullanıcının yazdığı sessizce yok olur ve ekranda yeşil bir başarı bildirimi
+	belirir. Gönderilen fatura GL, SLE ve e-fatura doğurduğu için bu geri
+	alınamaz. Kardeş form `SalesOrderFormModern.vue` aynı sebeple `isDirty` →
+	`save()` → `submit()` yapıyor ve gerekçesini yorumda taşıyor.
+
+	Bu, dalın bitirmek için açıldığı sessiz kaybın ta kendisi — dalın kendi
+	eklediği yazım yolunda.
+	"""
+
+	def setUp(self):
+		self.src = FORM.read_text(encoding="utf-8") if FORM.exists() else ""
+
+	def test_the_existing_draft_branch_saves_before_it_submits(self):
+		branch = self.src.index("if (!isCreate.value)")
+		submit_at = self.src.index("doc.submit()", branch)
+		save_at = self.src.find("doc.save()", branch, submit_at)
+		self.assertNotEqual(
+			save_at,
+			-1,
+			"mevcut taslak dalı kaydetmeden submit ediyor — sunucunun düzenleme öncesi kopyası gönderilir",
+		)
+
+	def test_it_only_saves_when_there_is_something_to_save(self):
+		branch = self.src.index("if (!isCreate.value)")
+		submit_at = self.src.index("doc.submit()", branch)
+		self.assertIn(
+			"isDirty",
+			self.src[branch:submit_at],
+			"temiz bir taslakta da gereksiz yazma yapılıyor",
+		)
+
+
+class TestReopeningADraftNeverRewritesItsRates(unittest.TestCase):
+	"""Kayıtlı bir satırın fiyatı, kullanıcı istemeden yeniden çekilmemeli.
+
+	`fromDetail` `d.price_list` okuyor. Uç bunu döndürmezse model alanı `""`
+	olur; `loadPriceLists()` ise `doc.load()`tan ÖNCE koşup ilk listeyi seçtiği
+	için değer "Standard Selling" → "" diye değişir. Fiyat listesine bağlı bir
+	model izleyicisi o anda tetiklenir ve `fetchRate` her satırın pazarlıkla
+	belirlenmiş `rate`'ini güncel liste fiyatıyla ezer. Taslağı yalnızca AÇMAK
+	faturayı değiştirir; Kaydet ise değişikliği kalıcı kılar.
+
+	İki koşul birden gerekiyor: uç belgenin fiyat listesini döndürmeli, ve
+	oranların yenilenmesi kullanıcı eylemine bağlı olmalı — model değişimine
+	değil, çünkü modeli yükleme de değiştirir.
+	"""
+
+	def setUp(self):
+		self.src = FORM.read_text(encoding="utf-8") if FORM.exists() else ""
+		self.api = (ROOT / "api/sales.py").read_text(encoding="utf-8")
+
+	def test_the_detail_endpoint_returns_the_documents_price_list(self):
+		start = self.api.index("def sales_invoice_detail")
+		end = self.api.index("\ndef ", start + 1)
+		self.assertIn(
+			'"price_list"',
+			self.api[start:end],
+			"uç belge düzeyinde price_list döndürmüyor — fromDetail boş okur ve izleyici tetiklenir",
+		)
+
+	def test_the_rate_refresh_is_not_wired_to_a_model_watcher(self):
+		self.assertNotIn(
+			"watch(() => model.value.price_list",
+			self.src,
+			"oranlar model izleyicisine bağlı — yükleme de modeli değiştirdiği için taslak açmak rate'leri ezer",
+		)
+
+	def test_the_price_list_control_refreshes_rates_on_user_change(self):
+		# İzleyici kalkınca yenileme kaybolmamalı: kullanıcı listeyi gerçekten
+		# değiştirdiğinde oranlar hâlâ tazelenmeli.
+		select_at = self.src.index('v-model="model.price_list"')
+		block = self.src[select_at : select_at + 400]
+		self.assertIn(
+			"refreshAllRates",
+			block,
+			"fiyat listesi kontrolü kullanıcı değişikliğinde oranları tazelemiyor",
+		)
+
+
+class TestTheDocumentsOwnCurrencyIsKept(unittest.TestCase):
+	"""Fatura kendi para biriminde gösterilir ve kaydedilir, oturumunkinde değil.
+
+	`sales_invoice_detail` `currency` döndürüyor. `fromDetail` onu okumazsa ekran
+	tutarları yanlış birimde gösterir ve her güncelleme belgeyi şirket varsayılan
+	birimine yeniden damgalar: satırlar eski birimin büyüklüğünde kalırken
+	`grand_total`, `base_grand_total` ve alacak GL'i FX çarpanı kadar bozulur —
+	hatasız.
+	"""
+
+	def setUp(self):
+		self.src = FORM.read_text(encoding="utf-8") if FORM.exists() else ""
+
+	def test_the_loaded_document_currency_reaches_the_model(self):
+		start = self.src.index("function fromDetail(")
+		end = self.src.index("\n}", start)
+		self.assertIn(
+			"currency",
+			self.src[start:end],
+			"fromDetail belgenin para birimini okumuyor",
+		)
+
+	def test_display_and_payload_prefer_the_documents_currency(self):
+		self.assertIn(
+			"model.value?.currency",
+			self.src,
+			"para birimi oturumdan sabitlenmiş — belgenin kendi birimi yok sayılıyor",
+		)
+
+
+class TestNoTenantIsToldAnotherTenantsName(unittest.TestCase):
+	"""Kapı mesajı bir kiracının adını anmaz.
+
+	`make guards` bunu yakalayamaz: oradaki kiracı-adı denetimi koddaki kiracı-adı
+	karşılaştırmalarını arar, kullanıcıya gösterilen düzyazıyı değil. Metin silinen
+	sayfadan aynen taşındı, ama artık altı kiracının ulaşabildiği yeni bir dosyada.
+	"""
+
+	def setUp(self):
+		self.src = FORM.read_text(encoding="utf-8") if FORM.exists() else ""
+		self.list_form = (ROOT / "public/js/pages/sales/SalesInvoiceForm.vue").read_text(encoding="utf-8")
+
+	def test_the_restricted_banner_names_no_tenant(self):
+		self.assertNotIn(
+			"only enabled for MSA",
+			self.src,
+			"kapı mesajı başka bir kiracının adını söylüyor",
+		)
+
+	def test_the_edit_button_is_gated_on_the_same_flag_as_the_form(self):
+		edit_at = self.list_form.index("/edit`)")
+		block = self.list_form[max(0, edit_at - 400) : edit_at]
+		self.assertIn(
+			"canDirectInvoice",
+			block,
+			"Düzenle butonu modül bayrağına bakmıyor — özelliği olmayan kiracıyı kapı ekranına yollar",
+		)
+		# Ve o hesaplanan değer gerçekten backend'in zorladığı bayrağı okumalı,
+		# yoksa yukarıdaki iddia yalnızca bir ada bakmış olur.
+		gate_at = self.list_form.index("const canDirectInvoice")
+		self.assertIn(
+			"direct_invoicing",
+			self.list_form[gate_at : gate_at + 300],
+			"canDirectInvoice backend'in bayrağını okumuyor",
+		)

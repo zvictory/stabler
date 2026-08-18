@@ -61,7 +61,21 @@ EXEMPT = {
 		"saf kurucu: dict üretir, DB'ye dokunmaz; koruma onu çağıran execute_sales_import'ta, "
 		"oluşturma döngüsünden önce"
 	),
+	(PURCHASE_REL, "_import_order_cols"): (
+		"başka doctype: Purchase Order Item'ın kolonlarını yoklar, üstelik zaten has_column ile"
+	),
+	(PURCHASE_REL, "get_import_order"): (
+		"okuma yolu: Purchase Order satırlarından koli okur, hiçbir Satış Faturası'na yazmaz"
+	),
+	(PURCHASE_REL, "_apply_import_order_payload"): (
+		"Purchase Order Item'a yazar — başka doctype, başka Custom Field'lar, _import_order_cols "
+		"kapısının arkasında; Satış Faturası korumasının konusu değil"
+	),
 }
+
+#: Taramanın kapsamı. `PURCHASE_REL` bilerek İÇERİDE: dışarıda bırakmak, oraya
+#: eklenecek bir Satış Faturası yazanını görünmez kılardı.
+SWEPT = (SALES_REL, IMPORTER_REL, PURCHASE_REL)
 
 
 def _source(rel: str) -> str:
@@ -95,6 +109,15 @@ def _guard_call_lines(node: ast.AST) -> list[int]:
 		for n in ast.walk(node)
 		if isinstance(n, ast.Call) and isinstance(n.func, ast.Name) and n.func.id == GUARD
 	)
+
+
+def _iterates_box_fields(node: ast.AST) -> bool:
+	"""Bu düğüm doğrudan BOX_FIELDS üzerinde dönen bir döngü ya da üreteç mi."""
+	if isinstance(node, ast.For):
+		return isinstance(node.iter, ast.Name) and node.iter.id == "BOX_FIELDS"
+	if isinstance(node, ast.ListComp | ast.SetComp | ast.GeneratorExp):
+		return any(isinstance(gen.iter, ast.Name) and gen.iter.id == "BOX_FIELDS" for gen in node.generators)
+	return False
 
 
 def _touches_box_fields(node: ast.AST) -> bool:
@@ -137,11 +160,19 @@ class TestTheGuardItself(unittest.TestCase):
 	def test_the_guard_checks_both_fields_not_just_the_first(self):
 		# Yarım kayıp da kayıptır: `custom_boxes` varken `custom_box_kg` yoksa
 		# koli sayısı kalır, kilosu sessizce gider.
-		guard_src = ast.get_source_segment(self.src, self.fns[GUARD]) or ""
-		self.assertIn(
-			"BOX_FIELDS",
-			guard_src,
-			"koruma tek bir alan adına sabitlenmiş — iki alanın listesi üzerinden dönmeli",
+		#
+		# "BOX_FIELDS adı gövdede geçiyor" demek yetmez — `has_column(doctype,
+		# BOX_FIELDS[0])` de o iddiayı geçerdi ve tam olarak yasakladığımız şeydir.
+		# Yoklamanın gerçekten iki alanın ÜZERİNDE DÖNDÜĞÜ iddia ediliyor.
+		guard = self.fns[GUARD]
+		over_box_fields = [
+			node
+			for node in ast.walk(guard)
+			if _iterates_box_fields(node) and "has_column" in _called_names(node)
+		]
+		self.assertTrue(
+			over_box_fields,
+			"koruma BOX_FIELDS üzerinde dönerek yoklamıyor — tek alana sabitlenmiş olabilir",
 		)
 
 	def test_both_field_names_are_named_once_in_one_place(self):
@@ -187,12 +218,24 @@ class TestTheGuardFiresAtTheRightMoment(unittest.TestCase):
 		# Koli göndermeyen bir çağıran hiçbir şey kaybetmez; onu engellemek
 		# altı kiracıda doğrudan faturalamayı sebepsiz kırardı.
 		fn = _functions(SALES_REL)["_direct_invoice_item_rows"]
-		guarded_conditionally = any(
-			_guard_call_lines(node) for node in ast.walk(fn) if isinstance(node, ast.If)
+		guarding_ifs = [node for node in ast.walk(fn) if isinstance(node, ast.If) and _guard_call_lines(node)]
+		self.assertEqual(
+			len(guarding_ifs),
+			1,
+			"koruma tam olarak bir koşulun altında olmalı — koşulsuz çağrı koli göndermeyeni de engeller",
 		)
-		self.assertTrue(
-			guarded_conditionally,
-			"koruma koşulsuz çağrılıyor — koli göndermeyen çağıranı da engeller",
+		# Koşulun VARLIĞI yetmez, İÇERİĞİ yargılanmalı: `if rows:` ya da `if True:`
+		# yalnızca varlığa bakan bir iddiayı geçer, oysa ikisi de testin adının
+		# söylediği kuralın tam tersidir.
+		self.assertIn(
+			"BOX_FIELDS",
+			ast.dump(guarding_ifs[0].test),
+			"koşul koli alanlarına bakmıyor — `if rows:` bu testi geçerdi ama kuralı çiğnerdi",
+		)
+		self.assertEqual(
+			set(_guard_call_lines(fn)),
+			set(_guard_call_lines(guarding_ifs[0])),
+			"o koşulun dışında da koruma çağrısı var",
 		)
 
 	def test_the_importer_guards_before_it_creates_anything(self):
@@ -227,7 +270,7 @@ class TestNoWriterCanHideFromThisFile(unittest.TestCase):
 	"""Koli adına dokunan her fonksiyon ya korumalı ya gerekçeli muaf."""
 
 	def test_every_function_touching_box_fields_is_classified(self):
-		for rel in (SALES_REL, IMPORTER_REL):
+		for rel in SWEPT:
 			for name, node in _functions(rel).items():
 				if not _touches_box_fields(node):
 					continue
@@ -241,7 +284,7 @@ class TestNoWriterCanHideFromThisFile(unittest.TestCase):
 	def test_the_sweep_actually_finds_something(self):
 		found = [
 			(rel, name)
-			for rel in (SALES_REL, IMPORTER_REL)
+			for rel in SWEPT
 			for name, node in _functions(rel).items()
 			if _touches_box_fields(node)
 		]

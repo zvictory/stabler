@@ -117,8 +117,9 @@ def _assert_box_columns(doctype: str = "Sales Invoice Item") -> None:
 	if not missing:
 		return
 	frappe.throw(
-		_("Box counts cannot be saved on this site: {0} missing on {1}. Run patch {2} first.").format(
-			", ".join(missing), doctype, "v94_sales_invoice_box_fields"
-		),
+		_(
+			"Box counts cannot be saved on this site: {0} missing on {1}. "
+			"An administrator must re-run patch {2}; bench migrate will not, it has already run once."
+		).format(", ".join(missing), doctype, "v94_sales_invoice_box_fields"),
 		frappe.ValidationError,
 	)

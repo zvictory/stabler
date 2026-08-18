@@ -147,9 +147,12 @@ class TestBothEndpointsShareOneRowBuilder(unittest.TestCase):
 		self.assertIn(self.BUILDER, body, "update kendi satırını kuruyor")
 
 	def test_the_builder_is_where_the_box_fields_live(self):
-		body = _function_body(SALES, self.BUILDER)
+		# `_code_only` şart: yorumsuz gövde olmadan bu iddia sales.py'deki
+		# açıklama satırı ve `it.get("custom_boxes")` OKUMASI sayesinde, iki
+		# YAZMA da silinmişken yeşil kalıyordu.
+		body = _code_only(_function_body(SALES, self.BUILDER))
 		for field in ("custom_boxes", "custom_box_kg"):
-			self.assertIn(field, body, f"{field} ortak kurucuda değil")
+			self.assertIn(f'row["{field}"]', body, f"{field} ortak kurucuda YAZILMIYOR")
 
 
 if __name__ == "__main__":

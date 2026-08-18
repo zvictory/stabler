@@ -16,7 +16,7 @@
  * stock ledger entries and an e-invoice. One button for both would make an
  * irreversible posting the easiest thing on the screen to hit by accident.
  */
-import { ref, computed, watch, onMounted } from "vue";
+import { ref, computed, onMounted } from "vue";
 import { storeToRefs } from "pinia";
 import { useRoute } from "vue-router";
 import { useSession } from "../../stores/session.js";
@@ -50,7 +50,11 @@ const companyAllowed = computed(() => {
 });
 const canInvoice = computed(() => roleAllowed.value && companyAllowed.value);
 
-const currency = computed(() => session.currency || "USD");
+// The document's own currency, not the session's. A draft denominated in
+// anything else would otherwise be displayed in the company default AND
+// re-stamped to it on every update, leaving the rates at the old currency's
+// magnitude while grand_total and the receivable GL move by the FX factor.
+const currency = computed(() => model.value?.currency || session.currency || "USD");
 
 const warehouseOptions = ref([]);
 const priceListOptions = ref([]);
@@ -77,6 +81,7 @@ function blankModel() {
 		due_date: todayIso(),
 		set_warehouse: "",
 		price_list: "",
+		currency: "",
 		remarks: "",
 		items: [blankRow()],
 	};
@@ -119,6 +124,7 @@ function fromDetail(d) {
 		due_date: d.due_date || todayIso(),
 		set_warehouse: d.set_warehouse || "",
 		price_list: d.price_list || "",
+		currency: d.currency || "",
 		remarks: d.remarks || "",
 		items: (d.items || []).map((it) => ({
 			item_code: it.item_code,
@@ -253,7 +259,11 @@ async function refreshAllRates() {
 	}
 }
 
-watch(() => model.value.price_list, refreshAllRates);
+// There is deliberately no model watcher on the price list. Loading a saved draft
+// replaces the whole model, which moves that field and would fire such a watcher
+// with the rows already present — rewriting every negotiated rate with today's
+// list price merely because the document was opened. Rates are refetched only
+// when a person changes the control, or picks a customer (see pickCustomer).
 
 async function pickItem(row, it) {
 	row.item_code = it.name || it.item_code;
@@ -316,6 +326,16 @@ async function submitInvoice() {
 		return;
 	}
 	if (!isCreate.value) {
+		// `update_sales_invoice` never submits — it only persists field edits. So a
+		// draft that is already saved needs its own save-then-submit here, exactly
+		// as SalesOrderFormModern does. Without the save, submit() sends only
+		// {name, modified}; `modified` is unchanged because nothing was written, so
+		// the concurrency check passes and the SERVER's pre-edit copy is posted to
+		// the GL. The user's typing disappears under a green success toast.
+		if (doc.isDirty.value) {
+			const saved = await doc.save();
+			if (!saved) return;
+		}
 		// The engine confirms, submits and reloads.
 		await doc.submit();
 		return;
@@ -396,7 +416,7 @@ const pageTitle = computed(() =>
 				<div class="small">
 					{{
 						t(
-							"Direct Sales Invoicing is only enabled for MSA. For company '{0}', Sales Invoices must be created from a submitted Sales Order.",
+							"Direct Sales Invoicing is not enabled for company {0}. Sales Invoices must be created from a submitted Sales Order.",
 							[activeCompany]
 						)
 					}}
@@ -456,6 +476,7 @@ const pageTitle = computed(() =>
 						:options="priceListOptions"
 						:disabled="!editable"
 						:placeholder="t('Select price list…')"
+						@update:model-value="refreshAllRates"
 					/>
 				</div>
 			</div>

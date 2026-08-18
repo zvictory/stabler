@@ -10,6 +10,7 @@ from frappe.utils import flt, nowtime, today
 
 from stabler.api._common import _assert_box_columns, _require_company
 from stabler.api.approvals import _assert_company_scope
+from stabler.api.organization import module_map_for
 
 ITEM_CODE_REMAP = {
 	"5": "005",
@@ -350,6 +351,20 @@ def execute_sales_import(file_url=None, corrections=None, selected_indices=None,
 		)
 	_require_company(company)
 	_assert_company_scope(company)
+	# The same gate `create_direct_sales_invoice` and `update_sales_invoice` carry.
+	# Without it this endpoint was reachable on all seven tenants — it needs only
+	# Sales Invoice create rights — and it submits, so a tenant that does not own
+	# direct invoicing could post finished invoices through it. It also means the
+	# box-column guard below can now only fire for the one case it claims: a tenant
+	# that switched the flag on after v94 had already run.
+	if not module_map_for(company).get("direct_invoicing"):
+		frappe.throw(
+			_(
+				"Direct Sales Invoicing is not enabled for company {0}. "
+				"Sales Invoices must be created from a submitted Sales Order."
+			).format(company),
+			frappe.ValidationError,
+		)
 
 	content = _get_file_content(file_url)
 	rows = read_excel(content)

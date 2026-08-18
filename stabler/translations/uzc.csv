@@ -77,11 +77,12 @@ A valid veterinary certificate is required.,Амалдаги ветеринар�
 Abbr,Қисқартма
 Absent,Йўқ
 Add at least one cash desk before switching {0} to the V1 engine: V1 reads every cash account from this table and cannot register a transfer without one.,{0} ни V1 механизмига ўтказишдан олдин камида битта касса қўшинг: V1 барча касса ҳисобларини шу жадвалдан ўқийди ва усиз ўтказмани рўйхатга ололмайди.
-Box counts cannot be saved on this site: {0} missing on {1}. Run patch {2} first.,Бу сайтда қути сонини сақлаб бўлмайди: {1} да {0} йўқ. Аввал {2} патчини ишга туширинг.
+"Box counts cannot be saved on this site: {0} missing on {1}. An administrator must re-run patch {2}; bench migrate will not, it has already run once.","Бу сайтда қути сонини сақлаб бўлмайди: {1} да {0} йўқ. Администратор {2} патчини қайта ишга тушириши керак; bench migrate буни қилмайди, у аллақачон ишлаган."
 Check the code,Кодни текшириш
 Credit ({currency}),Кредит ({currency})
 Debit ({currency}),Дебет ({currency})
 Debits equal credits in {currency}.,{currency} бўйича дебет кредитга тенг.
+Direct Sales Invoicing is not enabled for company {0}. Sales Invoices must be created from a submitted Sales Order.,Тўғридан-тўғри ҳисоб-фактура {0} компанияси учун ёқилмаган. Ҳисоб-фактуралар юборилган савдо буюртмасидан яратилиши керак.
 Every user of {company} moves to the {engine} screens when this is saved.,"Сақлангач, {company} нинг барча фойдаланувчилари {engine} экранларига ўтади."
 I have checked {receiver}'s identity document.,{receiver} шахсини тасдиқловчи ҳужжатни текширдим.
 I have counted {amount} and am handing it back to {sender}.,{amount} миқдорини санадим ва {sender}га қайтариб беряпман.

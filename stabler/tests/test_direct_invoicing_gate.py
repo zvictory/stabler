@@ -225,3 +225,51 @@ class TestEveryWriterCarriesTheSameGate(unittest.TestCase):
 
 if __name__ == "__main__":
 	unittest.main()
+
+
+class TestTheImporterCarriesTheGateToo(unittest.TestCase):
+	"""Excel içe aktarma ucu da aynı bayrağa bakmalı.
+
+	`execute_sales_import` yalnızca `has_permission("Sales Invoice", "create")` ve
+	şirket kapsamı istiyordu — modül kapısı yoktu. Yani doğrudan faturalamaya
+	sahip olmayan altı kiracıda da çağrılabiliyordu, üstelik `doc.submit()`
+	ettiği için sonuç taslak değil kesinleşmiş faturaydı: özelliği olmayan bir
+	kiracı, olmadığı bir yetenek üzerinden muhasebe kaydı doğurabiliyordu.
+
+	Kapı ayrıca koli korumasının iddiasını doğru kılıyor: kapı olmadan koruma,
+	bayrağı kapalı kiracılarda HER içe aktarmayı reddederdi — v94'ün bilerek
+	hiçbir şey yaratmadığı yerde. Kapıyla birlikte koruma yalnızca kendi
+	anlattığı tek durum için ateşler: bayrağı v94 koştuktan SONRA açan kiracı.
+	"""
+
+	SOURCE = (ROOT / "stabler/api/sales_import.py").read_text(encoding="utf-8")
+	ENDPOINT = "execute_sales_import"
+
+	def _body(self) -> str:
+		start = self.SOURCE.index(f"def {self.ENDPOINT}(")
+		end = self.SOURCE.find("\ndef ", start + 1)
+		return _code_only(self.SOURCE[start : end if end != -1 else len(self.SOURCE)])
+
+	def test_the_importer_reads_the_tenant_flag(self):
+		self.assertIn(
+			"module_map_for",
+			self._body(),
+			"içe aktarma ucu modül bayrağına bakmıyor — özelliği olmayan kiracı da fatura submit edebilir",
+		)
+
+	def test_it_reads_the_same_flag_name_the_patch_is_gated_on(self):
+		self.assertIn(
+			"direct_invoicing",
+			self._body(),
+			"başka bir bayrağa bakıyor — patch ile içe aktarma farklı kapılara bağlı olamaz",
+		)
+
+	def test_the_gate_runs_before_the_file_is_even_read(self):
+		body = self._body()
+		gate_at = body.index("module_map_for")
+		read_at = body.index("_get_file_content")
+		self.assertLess(
+			gate_at,
+			read_at,
+			"kapı dosya okunduktan sonra — sahibi olmayan kiracının dosyası boşuna işlenir",
+		)
