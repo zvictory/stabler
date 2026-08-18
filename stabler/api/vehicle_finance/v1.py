@@ -25,6 +25,7 @@ from stabler.api.money import payment_defaults_for_invoice
 from stabler.api.supplier_payment_guard import assert_supplier_payment_currency
 from stabler.api.vehicle_finance import activation as activation_mod
 from stabler.api.vehicle_finance import allocation as allocation_mod
+from stabler.api.vehicle_finance import status as agreement_status_machine
 from stabler.api.vehicle_finance.permissions import (
 	_assert_capability,
 	_require_agreement_v1,
@@ -41,7 +42,29 @@ _ADVANCE_PREFIX = "VFA-ADV-"
 # for Rescheduled: it is stamped on the ORIGINAL agreement when a restructure
 # closes it and opens a successor, so it must never be collectible
 # (docs/decisions/2026-08-16-restructure-closes-and-reopens.md).
-_COLLECTIBLE_STATUSES = ("Active", "Rescheduled")
+# Defined by the status machine, re-exported here because `work.py` imports it
+# from this module. One list, so the queue and the machine cannot disagree.
+_COLLECTIBLE_STATUSES = agreement_status_machine.COLLECTIBLE
+
+
+def _set_status(doc, target: str) -> None:
+	"""The only place a Vehicle Agreement's status changes.
+
+	Three of the eight declared states had no writer at all, which is what let a
+	fully paid agreement sit in `Active` for ever. Routing every write through one
+	gate is the condition the backlog entry put on the fix: two endpoints each
+	deciding for themselves what a legal change is, is how the enum grew three
+	unreachable states to begin with.
+	"""
+	current = doc.agreement_status
+	if current == target:
+		return
+	if not agreement_status_machine.can_move(current, target):
+		frappe.throw(
+			_("Agreement {0} cannot move from {1} to {2}.").format(doc.name, current, target),
+			frappe.ValidationError,
+		)
+	doc.agreement_status = target
 
 
 # --- shared loaders -----------------------------------------------------------
@@ -467,7 +490,7 @@ def activate_agreement(agreement: str) -> dict:
 		invoice.submit()
 
 		doc.flags.vf_internal = True
-		doc.agreement_status = "Active"
+		_set_status(doc, "Active")
 		doc.activated_by = frappe.session.user
 		doc.activated_on = now()
 		doc.active_schedule_version = version.name
@@ -658,10 +681,25 @@ def _collect_or_pay(
 		frappe.db.rollback()
 		raise
 
+	outstanding = flt(frappe.db.get_value(invoice_doctype, invoice_name, "outstanding_amount"))
+	# A fully paid agreement leaves the collection queue. Until this existed the
+	# invoice outstanding fell to zero and the status stayed Active for ever, so a
+	# settled agreement kept appearing in the work queue with nothing left to
+	# collect and no way to close it. Rounded at the currency's own precision: a
+	# residue ERPNext itself cannot represent is not an outstanding balance.
+	if round(outstanding, _currency_precision(doc.currency)) <= 0 and agreement_status_machine.is_collectible(
+		doc.agreement_status
+	):
+		doc.flags.vf_internal = True
+		_set_status(doc, "Completed")
+		doc.save(ignore_permissions=False)
+		frappe.db.commit()
+
 	return {
 		**_allocation_payload(doc, version, states, paid, allocations),
 		"payment_entry": pe.name,
-		"invoice_outstanding": flt(frappe.db.get_value(invoice_doctype, invoice_name, "outstanding_amount")),
+		"invoice_outstanding": outstanding,
+		"agreement_status": doc.agreement_status,
 	}
 
 
@@ -879,6 +917,55 @@ def _reschedule_payload(agreement, payload: dict) -> dict:
 
 
 @frappe.whitelist()
+def terminate_agreement(agreement: str, reason: str | None = None) -> dict:
+	"""Close an agreement that will not be collected, and say who decided that.
+
+	The first consumer of the `settlement_writeoff` capability. That capability was
+	defined and granted to Vehicle Finance Manager but no endpoint ever asked for
+	it, so closing an uncollectible agreement was not expressible at all — the only
+	way out of `Active` was paying it off, and there is no such thing as a portfolio
+	where every agreement is paid off.
+
+	WHAT THIS DOES NOT DO, stated rather than implied: it does not touch the
+	invoice. The receivable stays open and the outstanding is returned here so the
+	caller can see exactly what was left on the table. Writing that balance off to a
+	GL account is a posting with its own account mapping and its own approval, and
+	silently booking it from a status endpoint would hide a real loss inside what
+	looks like a housekeeping call.
+
+	The reason is mandatory and lands on the document's timeline. There is no
+	closure-reason column on the doctype, and inventing one for a single string is
+	a schema change where Frappe's own audit trail already answers the question.
+	"""
+	doc = _load_agreement(agreement)
+	_assert_capability(frappe.session.user, doc.company, "settlement_writeoff")
+	reason = (reason or "").strip()
+	if not reason:
+		frappe.throw(_("A termination reason is mandatory."), frappe.ValidationError)
+	if doc.docstatus != 1:
+		frappe.throw(_("Only a submitted agreement can be terminated."), frappe.ValidationError)
+
+	outstanding = 0.0
+	invoice_doctype = "Sales Invoice" if doc.direction == "Disposition" else "Purchase Invoice"
+	invoice_name = doc.sales_invoice or doc.purchase_invoice
+	if invoice_name:
+		outstanding = flt(frappe.db.get_value(invoice_doctype, invoice_name, "outstanding_amount"))
+
+	doc.flags.vf_internal = True
+	_set_status(doc, "Terminated")
+	doc.save(ignore_permissions=False)
+	doc.add_comment("Comment", _("Terminated by {0}: {1}").format(frappe.session.user, reason))
+	frappe.db.commit()
+
+	return {
+		"agreement": doc.name,
+		"status": doc.agreement_status,
+		"reason": reason,
+		"invoice_outstanding": outstanding,
+	}
+
+
+@frappe.whitelist()
 def reschedule_preview(agreement: str, payload: dict | None = None) -> dict:
 	return _reschedule_payload(agreement, payload or {})
 
@@ -888,6 +975,16 @@ def approve_reschedule(agreement: str, payload: dict | None = None) -> dict:
 	payload = payload or {}
 	doc = _load_agreement(agreement)
 	_assert_capability(frappe.session.user, doc.company, "reschedule")
+	# A closed agreement has no future instalments to move. Without this the
+	# endpoint happily superseded the schedule of a paid-off or written-off
+	# agreement and stamped it Rescheduled, reopening it for collection.
+	if agreement_status_machine.is_terminal(doc.agreement_status):
+		frappe.throw(
+			_("Agreement {0} is closed ({1}) and cannot be rescheduled.").format(
+				doc.name, doc.agreement_status
+			),
+			frappe.ValidationError,
+		)
 	version = _active_version(doc)
 	reason = payload.get("reschedule_reason")
 	if not reason:
@@ -926,7 +1023,7 @@ def approve_reschedule(agreement: str, payload: dict | None = None) -> dict:
 		new_version.submit()
 
 		doc.flags.vf_internal = True
-		doc.agreement_status = "Rescheduled"
+		_set_status(doc, "Rescheduled")
 		doc.active_schedule_version = new_version.name
 		doc.save(ignore_permissions=False)
 		frappe.db.commit()

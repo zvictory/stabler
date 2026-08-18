@@ -64,6 +64,7 @@ A submitted import order can no longer be edited here.,
 A submitted truck receipt can no longer be edited.,Тасдиқланган юк қабулини энди таҳрирлаб бўлмайди.
 A supplier is required.,Етказиб берувчи талаб қилинади.
 A tender lot must belong to a Parent Tender.,Тендер лоти Асосий тендерга тегишли бўлиши керак.
+A termination reason is mandatory.,Ёпиш сабаби мажбурий.
 A truck number is required.,Юк машинаси рақами талаб қилинади.
 A valid commercial invoice for this company is required.,Ушбу компания учун ҳақиқий тижорат инвойси талаб қилинади.
 A valid email is required,Тўғри электрон манзил зарур.
@@ -77,6 +78,8 @@ A valid veterinary certificate is required.,Амалдаги ветеринар�
 Abbr,Қисқартма
 Absent,Йўқ
 Add at least one cash desk before switching {0} to the V1 engine: V1 reads every cash account from this table and cannot register a transfer without one.,{0} ни V1 механизмига ўтказишдан олдин камида битта касса қўшинг: V1 барча касса ҳисобларини шу жадвалдан ўқийди ва усиз ўтказмани рўйхатга ололмайди.
+Agreement {0} cannot move from {1} to {2}.,{0} шартномаси {1} ҳолатидан {2} ҳолатига ўта олмайди.
+Agreement {0} is closed ({1}) and cannot be rescheduled.,{0} шартномаси ёпиқ ({1}) ва қайта режалаштириб бўлмайди.
 "Box counts cannot be saved on this site: {0} missing on {1}. An administrator must re-run patch {2}; bench migrate will not, it has already run once.","Бу сайтда қути сонини сақлаб бўлмайди: {1} да {0} йўқ. Администратор {2} патчини қайта ишга тушириши керак; bench migrate буни қилмайди, у аллақачон ишлаган."
 Check the code,Кодни текшириш
 Credit ({currency}),Кредит ({currency})
@@ -90,6 +93,7 @@ I have written it down,Ёзиб олдим
 "Legacy posts journal entries from the New Transfer form it always has. V1 registers a Remittance Transfer and is the only engine where the payout, refund, operations and reconciliation screens exist.","Legacy ўзининг доимий ""Янги ўтказма"" формасидан журнал ёзувларини киритади. V1 эса Remittance Transfer ёзувини рўйхатга олади ва тўлов, қайтариш, операциялар ва солиштириш экранлари фақат шу механизмда мавжуд."
 Legacy — journal entry screens,Legacy — журнал ёзуви экранлари
 Not ready — this desk cannot take or hand over a transfer.,"Тайёр эмас — бу касса ўтказмани на қабул қила олади, на бера олади."
+Only a submitted agreement can be terminated.,Фақат юборилган шартномани ёпиш мумкин.
 Only the remittance desk can verify a pickup code.,Олиб кетиш кодини фақат пул ўтказмалари кассаси текшира олади.
 Open draft {name},{name} қораламасини очиш
 Pay refund cash,Қайтариш нақдини бериш
@@ -98,6 +102,7 @@ Purchase Receipt {0} already has a draft invoice: {1}. Submit or delete that dra
 Quote updated — switching how the fee is charged recalculates the amounts.,Ҳисоб-китоб янгиланди — комиссияни ҳисоблаш усулини ўзгартириш суммаларни қайта ҳисоблайди.
 Remittance engine,Ўтказма механизми
 Same as your last transfer,Охирги ўтказмангиздаги каби
+Terminated by {0}: {1},{0} томонидан ёпилди: {1}
 The destination desk ({branch}) has no {currency} cash account — add it in Remittance Settings before registering.,Манзил кассасида ({branch}) {currency} ҳисоби йўқ — рўйхатга олишдан олдин уни Ўтказма созламаларида қўшинг.
 The pickup code was refused.,Олиб кетиш коди рад этилди.
 The posting could not be previewed.,Проводкани олдиндан кўрсатиб бўлмади.

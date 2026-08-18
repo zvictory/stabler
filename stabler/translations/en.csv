@@ -81,6 +81,7 @@ A submitted import order can no longer be edited here.,A submitted import order 
 A submitted truck receipt can no longer be edited.,A submitted truck receipt can no longer be edited.
 A supplier is required.,A supplier is required.
 A tender lot must belong to a Parent Tender.,A tender lot must belong to a Parent Tender.
+A termination reason is mandatory.,A termination reason is mandatory.
 A transfer id is required.,A transfer id is required.
 A truck number is required.,A truck number is required.
 A valid commercial invoice for this company is required.,A valid commercial invoice for this company is required.
@@ -102,6 +103,8 @@ Add at least one cash desk before switching {0} to the V1 engine: ,Add at least 
 Add desk,Add desk
 Age / expiry,Age / expiry
 Aged open obligations,Aged open obligations
+Agreement {0} cannot move from {1} to {2}.,Agreement {0} cannot move from {1} to {2}.
+Agreement {0} is closed ({1}) and cannot be rescheduled.,Agreement {0} is closed ({1}) and cannot be rescheduled.
 All cash desks,All cash desks
 "All time · the same balance as the card above, split by desk","All time · the same balance as the card above, split by desk"
 Amount the sender hands over,Amount the sender hands over
@@ -291,6 +294,7 @@ Nothing registered is still waiting to be collected.,Nothing registered is still
 Only a Remittance Finance Manager can approve or reject a refund.,Only a Remittance Finance Manager can approve or reject a refund.
 Only a Remittance Finance Manager can set the GL accounts and desk mapping for a company.,Only a Remittance Finance Manager can set the GL accounts and desk mapping for a company.
 Only a manager can unlock a pickup code.,Only a manager can unlock a pickup code.
+Only a submitted agreement can be terminated.,Only a submitted agreement can be terminated.
 Only the remittance desk can pay out a transfer.,Only the remittance desk can pay out a transfer.
 Only the remittance desk can request or complete a refund.,Only the remittance desk can request or complete a refund.
 Only the remittance desk can verify a pickup code.,Only the remittance desk can verify a pickup code.
@@ -415,6 +419,7 @@ Showing the first {count} — narrow the search to see the rest.,Showing the fir
 Showing the first {shown} of {count}.,Showing the first {shown} of {count}.
 Stage timeline,Stage timeline
 "Stored, but not enforced yet — no expiry time is written onto a transfer.","Stored, but not enforced yet — no expiry time is written onto a transfer."
+Terminated by {0}: {1},Terminated by {0}: {1}
 That is not the name this transfer was registered under.,That is not the name this transfer was registered under.
 That screen is not available yet.,That screen is not available yet.
 The destination desk ({branch}) has no {currency} cash account — add it in Remittance Settings before registering.,The destination desk ({branch}) has no {currency} cash account — add it in Remittance Settings before registering.
