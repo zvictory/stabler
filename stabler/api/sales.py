@@ -1679,6 +1679,8 @@ def sales_invoice_detail(name: str):
 				"custom_width": flt(getattr(it, "custom_width", 0)) or None,
 				"custom_height": flt(getattr(it, "custom_height", 0)) or None,
 				"custom_pieces": flt(getattr(it, "custom_pieces", 0)) or None,
+				"custom_boxes": flt(getattr(it, "custom_boxes", 0)) or None,
+				"custom_box_kg": flt(getattr(it, "custom_box_kg", 0)) or None,
 				"warehouse": getattr(it, "warehouse", None),
 				"warehouse_name": (
 					frappe.get_cached_value("Warehouse", it.warehouse, "warehouse_name")
@@ -2389,6 +2391,16 @@ def create_direct_sales_invoice(
 			row["uom"] = it.get("uom")
 		if it.get("description"):
 			row["description"] = it.get("description")
+		# Paranın birimi kilo, ama deponun birimi koli: sevkiyattan kaç koli
+		# çıktığı ve sayımda kaç koli bulunduğu ancak bu alanla konuşulabilir.
+		# Ekran ikisini de topluyor (`boxes` / `box_kg`); doctype alanları
+		# `custom_boxes` / `custom_box_kg`. İki yazımı da kabul ediyoruz.
+		boxes = flt(it.get("custom_boxes") or it.get("boxes") or 0)
+		box_kg = flt(it.get("custom_box_kg") or it.get("box_kg") or 0)
+		if boxes:
+			row["custom_boxes"] = boxes
+		if box_kg:
+			row["custom_box_kg"] = box_kg
 		doc.append("items", row)
 
 	if not doc.items:
