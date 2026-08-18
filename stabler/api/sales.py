@@ -2453,6 +2453,20 @@ def update_sales_invoice(
 	if doc.docstatus != 0:
 		frappe.throw(_("Only draft invoices can be edited."))
 	_assert_company_scope(doc.company)
+	# The same gate `create_direct_sales_invoice` enforces, for the same reason.
+	# Both endpoints write their rows through `_direct_invoice_item_rows`, so a
+	# tenant with the flag off could not CREATE a direct invoice but could replace
+	# every line of an existing draft — including one `create_sales_invoice` derived
+	# from a Sales Order, which is the path the flag exists to keep mandatory. The
+	# company comes off the document rather than an argument because a caller who
+	# could name the company could also name the wrong one.
+	if not module_map_for(doc.company).get("direct_invoicing"):
+		frappe.throw(
+			_(
+				"Direct Sales Invoicing is not enabled for company {0}. Sales Invoices must be created from a submitted Sales Order."
+			).format(doc.company),
+			frappe.ValidationError,
+		)
 
 	if isinstance(items, str):
 		items = frappe.parse_json(items) or []

@@ -53,12 +53,12 @@ class TestItWritesAnInvoiceNotAnOrder(unittest.TestCase):
 	def test_the_document_engine_is_pointed_at_sales_invoice(self):
 		self.assertIn('doctype: "Sales Invoice"', self.src, "doctype Satış Faturası değil")
 
-	#: Which `useDocumentForm` slot each endpoint belongs in. Asserting the SLOT and
-	#: not merely the presence of the name is the whole point: the previous version
-	#: of this test looped over the same five names with `assertIn(api, self.src)`,
-	#: which is true no matter which key holds which endpoint. `detailApi` and
-	#: `updateApi` were transposed — the writer bound to the read slot and the
-	#: reader to the write slot — and all 27 tests on this branch stayed green.
+	#: Hangi ucun hangi `useDocumentForm` slotuna ait olduğu. Adın dosyada geçmesi
+	#: değil, SLOTUN doğru olması iddia ediliyor; bütün mesele bu. Bu testin önceki
+	#: hâli aynı beş adı `assertIn(api, self.src)` ile geziyordu — hangi anahtarın
+	#: hangi ucu tuttuğundan bağımsız olarak doğru bir cümle. `detailApi` ile
+	#: `updateApi` yer değiştirmişti (yazan uç okuma slotunda, okuyan uç yazma
+	#: slotunda) ve bu daldaki 27 testin hepsi yeşil kaldı.
 	BINDINGS = (
 		("detailApi", "sales_invoice_detail"),
 		("createApi", "create_direct_sales_invoice"),
@@ -70,7 +70,7 @@ class TestItWritesAnInvoiceNotAnOrder(unittest.TestCase):
 	)
 
 	def _bound(self, key: str) -> str | None:
-		"""The endpoint bound to `key`, or None if the key is absent."""
+		"""`key`e bağlı uç; anahtar yoksa None."""
 		found = re.search(rf'\b{key}:\s*"([^"]+)"', self.src)
 		return found.group(1) if found else None
 
@@ -80,44 +80,45 @@ class TestItWritesAnInvoiceNotAnOrder(unittest.TestCase):
 				self.assertEqual(
 					self._bound(key),
 					f"stabler.api.sales.{endpoint}",
-					f"{key} does not name {endpoint}; the form calls the wrong endpoint "
-					f"for this slot and no other test on this branch can see it",
+					f"{key} {endpoint} ucunu göstermiyor; form bu slot için yanlış ucu "
+					f"çağırıyor ve bu daldaki başka hiçbir test bunu göremez",
 				)
 
 	def test_the_load_slot_never_names_a_writer(self):
-		"""`detailApi` is called on page load, so it must be safe to merely look.
+		"""`detailApi` sayfa açılışında çağrılır; yalnızca bakmak güvenli olmalı.
 
-		`useDocumentForm.js:60` calls it as `call(detailApi, { name })` — one
-		argument, on mount, before the user has done anything. A mutating endpoint
-		there means opening a document edits it. When this was wrong the damage was
-		masked rather than absent: `update_sales_invoice` runs `check_concurrency`
-		first and threw "Stale request" on the missing `modified`, so the screen
-		merely refused to open. That refusal is not a safety property — it is a
-		staleness check that happened to fire first, and the obvious way to "fix" a
-		page that will not load is to thread `modified` through, which removes it
-		and turns every page view into a save.
+		`useDocumentForm.js:60` onu `call(detailApi, { name })` diye çağırıyor —
+		tek argüman, mount anında, kullanıcı hiçbir şey yapmadan önce. Oraya yazan
+		bir uç koymak, belgeyi açmanın belgeyi değiştirmesi demektir.
 
-		So the rule is about the slot, not about that one endpoint: nothing whose
-		name says it writes may sit in the slot that is called on sight.
+		Bu yanlışken hasar yok değildi, örtülüydü: `update_sales_invoice` önce
+		`check_concurrency` çalıştırıyor ve eksik `modified` yüzünden "Stale
+		request" fırlatıyordu, yani ekran sadece açılmıyordu. O ret bir güvenlik
+		özelliği değil — sırf önce çalışmış bir bayatlık kontrolü. Açılmayan bir
+		sayfayı düzeltmenin bariz yolu `modified`ı geçirmektir, ki bu o kontrolü
+		kaldırır ve her sayfa görüntülemesini bir kayda çevirir.
+
+		Bu yüzden kural o uç hakkında değil, slot hakkında: adı yazdığını söyleyen
+		hiçbir uç, görülür görülmez çağrılan slotta duramaz.
 		"""
 		loader = self._bound("detailApi")
-		self.assertIsNotNone(loader, "detailApi is not bound at all")
+		self.assertIsNotNone(loader, "detailApi hiç bağlanmamış")
 		for verb in ("create_", "update_", "submit_", "cancel_", "amend_", "delete_"):
 			self.assertNotIn(
 				verb,
 				loader.rsplit(".", 1)[-1],
-				f"detailApi names {loader}, which mutates — opening the form would call it",
+				f"detailApi {loader} ucunu gösteriyor, o da yazıyor — formu açmak onu çağırırdı",
 			)
 
 	def test_no_endpoint_is_bound_to_two_slots(self):
-		# The transposition put two endpoints in each other's slot; a duplicate is
-		# the other shape of the same mistake, and it reads as harmless.
+		# Yer değiştirme iki ucu birbirinin slotuna koymuştu; aynı ucun iki slotta
+		# olması ise aynı hatanın öbür biçimi ve zararsız görünüyor.
 		bound = [self._bound(key) for key, _ in self.BINDINGS]
 		present = [b for b in bound if b]
 		self.assertEqual(
 			len(present),
 			len(set(present)),
-			f"an endpoint is bound to more than one slot: {present}",
+			f"bir uç birden fazla slota bağlı: {present}",
 		)
 
 	def test_no_sales_order_endpoint_leaks_in(self):
