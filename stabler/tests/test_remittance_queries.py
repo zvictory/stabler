@@ -38,6 +38,7 @@ import os
 import re
 import types
 import unittest
+from decimal import Decimal
 
 from stabler.api import _remittance_actions as actions
 from stabler.tests.module_sandbox import ModuleSandbox
@@ -58,6 +59,7 @@ _FAKED = (
 	"frappe.utils",
 	"stabler.api._common",
 	"stabler.api.approvals",
+	"stabler.api.remittance_accounting",
 	"stabler.api.remittance_commands",
 )
 
@@ -67,6 +69,8 @@ JOURNAL = "Journal Entry"
 
 NOW = datetime.datetime(2026, 8, 17, 11, 0, 0)
 TODAY = "2026-08-17"
+
+BASE_CURRENCY = "UZS"
 
 CASHIER = ("Remittance Cashier",)
 VIEWER = ("Remittance Viewer",)
@@ -183,6 +187,9 @@ class _FakeDB:
 		#: `True` so the tests that are about something else keep meaning what they
 		#: meant; the tests that are about this flip it.
 		self.journal_readable = True
+		#: What the faked `build_legs` hands back. Empty by default so the tests that
+		#: are about something else stay about it.
+		self.legs: list[dict] = []
 		self._seq = 0
 
 	def add_transfer(self, **fields) -> str:
@@ -317,8 +324,11 @@ def _load(db: _FakeDB, *, roles=CASHIER):
 
 	frappe = types.ModuleType("frappe")
 
-	def _throw(message, *_a, **_k):
-		raise _Thrown(message)
+	def _throw(message, exc=None, *_a, **_k):
+		# The class matters. `posting_preview` refuses with `frappe.PermissionError`,
+		# and to a caller that is a different event from a validation refusal —
+		# collapsing both into `_Thrown` would let a test pass on either one.
+		raise (exc or _Thrown)(message)
 
 	frappe.throw = _throw
 	frappe._ = lambda s: s
@@ -329,6 +339,16 @@ def _load(db: _FakeDB, *, roles=CASHIER):
 		db.journal_readable if doctype == JOURNAL else True
 	)
 	frappe.PermissionError = PermissionError
+
+	def _get_doc(doctype, name, *_a, **_k):
+		# Keyed, unlike `get_all` below: a preview is asked for one named transfer.
+		for row in db.transfers:
+			if row["name"] == name:
+				return types.SimpleNamespace(**row)
+		raise _Thrown(f"{doctype} {name} does not exist")
+
+	frappe.get_doc = _get_doc
+	frappe.get_cached_value = lambda doctype, name, field, *_a, **_k: BASE_CURRENCY
 	frappe.session = types.SimpleNamespace(user="cashier@example.com")
 	# `frappe.get_all` is deliberately NOT defined. It sets ignore_permissions,
 	# which switches the company row filter off; a module that reaches for one
@@ -358,12 +378,26 @@ def _load(db: _FakeDB, *, roles=CASHIER):
 	commands._max_code_attempts = lambda company: 5
 	commands._send_precision = lambda: 2
 
+	# Faked for the same reason as the two above: importing the real one drags in
+	# `frappe.utils.getdate`, ERPNext's exchange-rate helper and the settings
+	# doctype, none of which this suite models. That the legs are the ones the
+	# LEDGER receives is proved in test_remittance_accounting_bench.py against a
+	# real ledger, which is the only place such a claim means anything. What is
+	# provable here is what `posting_preview` does with legs it is handed: who it
+	# hands them to, and whether it repeats the arithmetic instead of reporting it.
+	accounting = types.ModuleType("stabler.api.remittance_accounting")
+	accounting.REGISTER = "Register"
+	accounting.PAYOUT = "Payout"
+	accounting.REFUND = "Refund"
+	accounting.build_legs = lambda *_a, **_k: {"legs": [dict(leg) for leg in db.legs]}
+
 	_SANDBOX.install(
 		{
 			"frappe": frappe,
 			"frappe.utils": utils,
 			"stabler.api._common": common,
 			"stabler.api.approvals": approvals,
+			"stabler.api.remittance_accounting": accounting,
 			"stabler.api.remittance_commands": commands,
 		}
 	)
@@ -1192,6 +1226,185 @@ class JournalEntryVisibilityTest(unittest.TestCase):
 		# condition being handled.
 		self.assertIn('frappe.has_permission(JOURNAL, "read")', _SRC)
 		self.assertNotIn("except frappe.PermissionError", _SRC)
+
+
+# --------------------------------------------------------------------------- #
+# 10. The posting preview answers to the posting, not to the row
+# --------------------------------------------------------------------------- #
+def _leg(account: str, currency: str, side: str, amount: str, rate: str, base: str) -> dict:
+	"""One journal-entry row in the shape `build_legs` emits — base values Decimal.
+
+	`base` is `amount * rate` rounded to the minor unit, which is what
+	`_remittance_accounting._assert_closes` re-derives before it will let a leg
+	through. Kept true here so a reader can check the fixture's arithmetic instead
+	of taking it on faith.
+	"""
+	zero = Decimal(0)
+	return {
+		"account": account,
+		"account_currency": currency,
+		"debit_in_account_currency": Decimal(amount) if side == "debit" else zero,
+		"credit_in_account_currency": Decimal(amount) if side == "credit" else zero,
+		"debit": Decimal(base) if side == "debit" else zero,
+		"credit": Decimal(base) if side == "credit" else zero,
+		"exchange_rate": Decimal(rate),
+	}
+
+
+#: A 49.999,99 USD transfer out of a UZS-base company, paying 44.120,75 EUR.
+#: Every leg's base value is its own amount times its own rate, to the minor
+#: unit, and the two credits close the debit EXACTLY in Decimal:
+#:
+#:     595.641.155,19 + 21.642.221,35 = 617.283.376,54
+#:
+#: In float64 they do not: the same sum lands 1,19e-07 above the debit, which is
+#: a hundred and twenty times the fixed 1e-9 this endpoint first compared
+#: against. Nothing here is contrived to be awkward — UZS is the base currency
+#: `remittance_accounting` itself falls back to, and every base figure a UZS
+#: tenant posts is past ~4,5e6, where 1e-9 is already smaller than one ulp.
+_CENTS_LEGS = (
+	_leg("Origin Desk Cash - U", "USD", "debit", "49999.99", "12345.67", "617283376.54"),
+	_leg("Receiver Obligation - U", "EUR", "credit", "44120.75", "13500.25", "595641155.19"),
+	_leg("Deferred Commission - U", "UZS", "credit", "21642221.35", "1", "21642221.35"),
+)
+
+
+class PostingPreviewGateTest(unittest.TestCase):
+	"""Who may see a journal entry that has not been written yet.
+
+	The payload is GL account names, debits, credits and a transfer's base
+	valuation. `Remittance Viewer` and `Remittance Auditor` hold `read` on
+	Remittance Transfer — masked list and reports is the whole of the Viewer's
+	brief — so gating on the doctype would have let either walk their own list and
+	enumerate every desk cash, obligation, deferred-commission and commission-income
+	account the company has. Gating on Journal Entry read instead would have blanked
+	the preview for everybody, since none of the four remittance roles carries it.
+	So the gate is the action, and these tests are what says so.
+	"""
+
+	def test_a_viewer_is_refused_the_payout_preview(self):
+		db, queries = _seeded(roles=VIEWER)
+		db.legs = list(_CENTS_LEGS)
+		name = db.add_transfer()
+
+		with self.assertRaises(PermissionError):
+			queries.posting_preview(name, "Payout")
+
+	def test_a_cashier_is_shown_the_payout_preview(self):
+		db, queries = _seeded(roles=CASHIER)
+		db.legs = list(_CENTS_LEGS)
+		name = db.add_transfer()
+
+		preview = queries.posting_preview(name, "Payout")
+
+		self.assertEqual(len(_CENTS_LEGS), len(preview["rows"]))
+		self.assertEqual(BASE_CURRENCY, preview["base_currency"])
+
+	def test_a_cashier_is_refused_a_refund_preview_nobody_has_approved(self):
+		"""The state half of the same gate, and the claim the old test name made.
+
+		A cashier holds `complete_refund`; they do not hold it on a transfer whose
+		refund has not been approved. Before the gate, previewing this returned a
+		full reversal plan for a posting `complete_refund` would refuse — a screen
+		showing a cashier the cash they are about to hand back on a refund that was
+		never authorised.
+		"""
+		db, queries = _seeded(roles=CASHIER)
+		db.legs = list(_CENTS_LEGS)
+		name = db.add_transfer()
+
+		with self.assertRaises(PermissionError):
+			queries.posting_preview(name, "Refund")
+
+	def test_the_refund_preview_opens_once_the_refund_is_approved(self):
+		db, queries = _seeded(roles=CASHIER)
+		db.legs = list(_CENTS_LEGS)
+		name = db.add_transfer(refund_status="Approved")
+
+		self.assertTrue(queries.posting_preview(name, "Refund")["rows"])
+
+	def test_a_paid_out_transfer_has_no_payout_left_to_preview(self):
+		db, queries = _seeded(roles=CASHIER)
+		db.legs = list(_CENTS_LEGS)
+		name = db.add_transfer(operational_status="Paid Out")
+
+		with self.assertRaises(PermissionError):
+			queries.posting_preview(name, "Payout")
+
+	def test_register_is_not_a_previewable_stage(self):
+		"""Dropped, rather than left as the one stage with no gate behind it.
+
+		No action covers registering, so there was nothing to check it against; the
+		screen that would want it — New Transfer — has no transfer to key on, and
+		this endpoint refuses caller-supplied amounts by design; and for a transfer
+		that HAS registered, `transfer_detail` already serves the posted entry to
+		whoever may read the ledger. What was left was an ungated one.
+		"""
+		db, queries = _seeded(roles=CASHIER)
+		db.legs = list(_CENTS_LEGS)
+		name = db.add_transfer()
+
+		with self.assertRaises(_Thrown):
+			queries.posting_preview(name, "Register")
+
+
+class PostingPreviewBalanceTest(unittest.TestCase):
+	"""`balanced` restates the builder's verdict. It must never re-derive it.
+
+	`build_legs` proves debit == credit exactly, in Decimal, and raises if it does
+	not (`_remittance_accounting._assert_closes`). The first version of this
+	endpoint threw that proof away: it cast every leg to float, re-added them, and
+	compared the two sums against a fixed 1e-9. On a UZS-base tenant that is well
+	below one float64 ulp, so a sound entry came back `balanced: false` — under
+	which the screen prints "This entry does not balance. Do not hand over cash —
+	report it." above a totals row showing two identical numbers. The cost is a
+	refused payout and an escalation about a ledger fault that does not exist.
+	"""
+
+	def test_an_entry_that_closes_in_decimal_is_reported_balanced(self):
+		db, queries = _seeded(roles=CASHIER)
+		db.legs = list(_CENTS_LEGS)
+		name = db.add_transfer()
+
+		preview = queries.posting_preview(name, "Payout")
+
+		self.assertTrue(
+			preview["balanced"],
+			"an entry the poster proved sound was reported to the cashier as broken",
+		)
+
+	def test_the_fixture_is_one_a_float_re_sum_gets_wrong(self):
+		"""Guards the test above: it only means anything on legs that trip float.
+
+		Without this, someone tidying `_CENTS_LEGS` into round numbers would leave a
+		green test that cannot fail — which is the state the bench suite's balance
+		test was in.
+		"""
+		debit = sum(float(leg["debit"]) for leg in _CENTS_LEGS)
+		credit = sum(float(leg["credit"]) for leg in _CENTS_LEGS)
+
+		self.assertNotEqual(debit, credit, "these legs close in float, so they prove nothing")
+		self.assertEqual(
+			sum(leg["debit"] for leg in _CENTS_LEGS),
+			sum(leg["credit"] for leg in _CENTS_LEGS),
+			"these legs do not close in Decimal either, so the fixture is simply wrong",
+		)
+
+	def test_the_totals_are_the_base_column_the_screen_adds_up(self):
+		db, queries = _seeded(roles=CASHIER)
+		db.legs = list(_CENTS_LEGS)
+		name = db.add_transfer()
+
+		preview = queries.posting_preview(name, "Payout")
+
+		self.assertAlmostEqual(617283376.54, preview["total_debit"], places=2)
+		self.assertAlmostEqual(617283376.54, preview["total_credit"], places=2)
+
+	def test_the_preview_goes_out_through_the_pickup_code_guard(self):
+		# Every other whitelisted return in this module wraps. Nothing in this one
+		# can carry the code today, which is exactly why the wrapper is the thing
+		# that catches the edit which adds a transfer field to the payload.
+		self.assertIn("return actions.assert_no_pickup_code(", _SRC)
 
 
 if __name__ == "__main__":

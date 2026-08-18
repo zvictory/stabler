@@ -35,6 +35,7 @@ import { useSession } from "../../stores/session.js";
 import { REMITTANCE_ACTIONS, remittanceApi } from "../../api/remittance.js";
 import { t } from "../../composables/i18n.js";
 import { formatMoney } from "../../composables/money.js";
+import PostingPreview from "../../components/PostingPreview.vue";
 import { formatDate, formatDateTime, todayIso } from "../../composables/date.js";
 import { useConfirm } from "../../composables/useConfirm.js";
 import { useToast } from "../../composables/useToast.js";
@@ -80,6 +81,9 @@ const cashConfirmed = ref(false);
 const codeVerified = ref(false);
 const identityChecked = ref(false);
 const verifying = ref(false);
+const preview = ref(null);
+const previewLoading = ref(false);
+const previewError = ref("");
 
 // The sentence above is only true because of this line. Without it, editing the
 // box after a successful check — including WHILE the check is in flight, which the
@@ -212,6 +216,8 @@ function backToQueue() {
 	deskConfirmed.value = false;
 	cashConfirmed.value = false;
 	identityChecked.value = false;
+	preview.value = null;
+	previewError.value = "";
 	postingDate.value = todayIso();
 	step.value = STEP.FIND;
 }
@@ -260,6 +266,32 @@ async function toDeskStep() {
 		await loadDetail();
 	} finally {
 		verifying.value = false;
+	}
+}
+
+/** The posting, fetched when the cashier reaches the step that hands cash over. */
+async function toCashStep() {
+	step.value = STEP.CASH;
+	const name = selected.value?.name;
+	if (!name) return;
+	previewLoading.value = true;
+	previewError.value = "";
+	try {
+		const rows = await remittanceApi.postingPreview(name, "Payout", postingDate.value || null);
+		// The cashier may have moved on while this was in flight — same guard as
+		// loadDetail, and on the assignment rather than only on the spinner. One
+		// transfer's journal entry painted onto another's screen is the posting the
+		// next control hands cash against.
+		if (selected.value?.name !== name) return;
+		preview.value = rows;
+	} catch (err) {
+		if (selected.value?.name !== name) return;
+		// A preview that cannot be built is shown as such and never as an empty
+		// table: an empty table reads as "this posts nothing".
+		preview.value = null;
+		previewError.value = err?.message || t("The posting could not be previewed.");
+	} finally {
+		if (selected.value?.name === name) previewLoading.value = false;
 	}
 }
 
@@ -782,7 +814,7 @@ onMounted(loadQueue);
 									type="button"
 									class="btn btn-primary stbl-touch"
 									:disabled="!deskConfirmed || !identityChecked"
-									@click="step = STEP.CASH"
+									@click="toCashStep"
 								>
 									{{ t("Next") }}<i class="ti ti-arrow-right ms-1"></i>
 								</button>
@@ -798,43 +830,19 @@ onMounted(loadQueue);
 								<DateInput v-model="postingDate" />
 							</div>
 
-							<div class="text-secondary small mb-1">{{ t("This will post") }}</div>
-							<div class="table-responsive mb-2">
-								<table class="table table-sm table-no-stripe mb-0">
-									<thead>
-										<tr>
-											<th>{{ t("Effect") }}</th>
-											<th class="text-end">{{ t("Amount") }}</th>
-										</tr>
-									</thead>
-									<tbody>
-										<tr>
-											<td class="small">{{ t("Receiver obligation closed") }}</td>
-											<td class="text-end font-monospace small">
-												{{ formatMoney(receiverAmount, receiveCurrency) }}
-											</td>
-										</tr>
-										<tr>
-											<td class="small">{{ t("Cash out of this desk") }}</td>
-											<td class="text-end font-monospace small">
-												{{ formatMoney(receiverAmount, receiveCurrency) }}
-											</td>
-										</tr>
-									</tbody>
-								</table>
-							</div>
-							<!-- The commission legs post in company currency off the register
-							     entry, and that amount is not on any read endpoint. Stating it
-							     would mean computing it here from a different input than the
-							     server uses. -->
-							<div class="form-text mb-3">
-								{{
-									t(
-										"Commission earned at payout posts in company currency and is derived from the register entry."
-									)
-								}}
-							</div>
-
+							<!-- Was a two-row Effect/Amount table with no debit or credit column
+							     and no total: the balance was implied by printing the same figure
+							     twice, and the commission legs were left out entirely because
+							     this screen had no honest source for them. It has one now. -->
+							<PostingPreview
+								:rows="preview?.rows || []"
+								:base-currency="preview?.base_currency || ''"
+								:total-debit="preview?.total_debit || 0"
+								:total-credit="preview?.total_credit || 0"
+								:balanced="Boolean(preview?.balanced)"
+								:loading="previewLoading"
+								:error="previewError"
+							/>
 							<label class="form-check stbl-touch">
 								<input v-model="cashConfirmed" class="form-check-input" type="checkbox" />
 								<span class="form-check-label">

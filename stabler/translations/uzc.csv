@@ -78,6 +78,9 @@ Abbr,Қисқартма
 Absent,Йўқ
 Add at least one cash desk before switching {0} to the V1 engine: V1 reads every cash account from this table and cannot register a transfer without one.,{0} ни V1 механизмига ўтказишдан олдин камида битта касса қўшинг: V1 барча касса ҳисобларини шу жадвалдан ўқийди ва усиз ўтказмани рўйхатга ололмайди.
 Check the code,Кодни текшириш
+Credit ({currency}),Кредит ({currency})
+Debit ({currency}),Дебет ({currency})
+Debits equal credits in {currency}.,{currency} бўйича дебет кредитга тенг.
 Every user of {company} moves to the {engine} screens when this is saved.,"Сақлангач, {company} нинг барча фойдаланувчилари {engine} экранларига ўтади."
 I have checked {receiver}'s identity document.,{receiver} шахсини тасдиқловчи ҳужжатни текширдим.
 I have counted {amount} and am handing it back to {sender}.,{amount} миқдорини санадим ва {sender}га қайтариб беряпман.
@@ -95,9 +98,12 @@ Remittance engine,Ўтказма механизми
 Same as your last transfer,Охирги ўтказмангиздаги каби
 The destination desk ({branch}) has no {currency} cash account — add it in Remittance Settings before registering.,Манзил кассасида ({branch}) {currency} ҳисоби йўқ — рўйхатга олишдан олдин уни Ўтказма созламаларида қўшинг.
 The pickup code was refused.,Олиб кетиш коди рад этилди.
+The posting could not be previewed.,Проводкани олдиндан кўрсатиб бўлмади.
 The V1 engine reads every cash account from the desk table. Add at least one desk before switching to V1.,V1 механизми барча касса ҳисобларини касса жадвалидан ўқийди. V1 га ўтишдан олдин камида битта касса қўшинг.
 The settings payload could not be read.,Созламалар маълумотини ўқиб бўлмади.
 This company runs the {engine} remittance engine. The Transfer V1 screens stay unavailable until it is switched to V1 below.,Бу компания {engine} ўтказма механизмида ишлайди. Қуйида V1 га ўтказилмагунча Transfer V1 экранлари мавжуд бўлмайди.
+This entry does not balance. Do not hand over cash — report it.,Бу проводка тенглашмаяпти. Нақд пул берманг — хабар беринг.
+This will post,Қуйидагилар китобга ўтказилади
 Transfer registered,Пул ўтказмаси рўйхатга олинди
 "Transfers registered on V1 stay in their own records and are not shown by the legacy list, which reads journal entries.",V1 да рўйхатга олинган ўтказмалар ўз ёзувларида қолади ва журнал ёзувларини ўқийдиган эски рўйхатда кўринмайди.
 Transfers registered on the legacy engine stay on the legacy list and are not shown by the V1 screens: they have no Remittance Transfer record behind them.,Legacy механизмида рўйхатга олинган ўтказмалар эски рўйхатда қолади ва V1 экранларида кўринмайди: улар ортида Remittance Transfer ёзуви йўқ.
@@ -5836,6 +5842,7 @@ You are not permitted to view employees.,
 You are not permitted to view suppliers.,
 You are not permitted to view the audit log.,Сизда ўзгаришлар тарихини кўриш ҳуқуқи йўқ.
 You are not permitted to view this agreement.,Бу шартномани кўришга рухсат йўқ.
+"You cannot make this posting, so it is not previewed.","Сиз бу проводкани амалга ошира олмайсиз, шунинг учун олдиндан кўриш кўрсатилмайди."
 You do not have permission to view landed-cost figures. Ask an imports manager or accountant.,Сизда етказиб бериш қиймати маълумотларини кўриш ҳуқуқи йўқ. Импорт менежери ёки бухгалтерга мурожаат қилинг.
 You do not have permission to view the ledger for this transfer. Only the Remittance Auditor role can read it.,Бу ўтказма бўйича бухгалтерия ёзувларини кўришга рухсатингиз йўқ. Уларни фақат Remittance Auditor роли ўқий олади.
 You have already approved level {0} for this request.,
@@ -5869,6 +5876,7 @@ Yutilgan,Ютилган
 {0} is in {1}. Only bills in {2} or USD can be added to an import's landed cost today.,{0} {1} валютасида. Бугун импорт таннархига фақат {2} ёки USD даги ҳисоб-фактураларни қўшиш мумкин.
 {0} is not a group.,{0} гуруҳ эмас.
 {0} is not a remittance engine. Choose one of: {1}.,{0} ўтказма механизми эмас. Қуйидагилардан бирини танланг: {1}.
+{0} is not a remittance posting stage.,{0} пул ўтказмаси проводкасининг босқичи эмас.
 {0} is required.,{0} керак.
 {0} line item change(s),
 {0} must be a number,{0} сон бўлиши керак
@@ -5906,6 +5914,7 @@ Yutilgan,Ютилган
 {count} payment(s) totalling {amount} will be re-allocated.,"{count} та тўлов, жами {amount}, қайта тақсимланади."
 {count} PI lines,{count} та PI қатори
 {count} selected,{count} та танланди
+"{currency} figures use the one book rate for the day this transfer was registered, frozen since — not today's rate, and not the accounting period's rate table. It is the rate the ledger itself holds.","{currency} суммалари пул ўтказмаси рўйхатга олинган кундаги ягона ҳисоб курси бўйича ҳисобланган ва ўшандан бери ўзгармаган — бу бугунги курс ҳам, ҳисобот даврининг курслар жадвали ҳам эмас. Айнан шу курс ҳисобда сақланади."
 {currency} — not a corridor currency,{currency} — коридор валютаси эмас
 {doctype} {name} is linked and has no deletion rule — resolve it manually first.,{doctype} {name} боғланган ва ўчириш қоидаси йўқ — аввал уни қўлда ҳал қилинг.
 {done}/{total} quote sets complete,{done}/{total} таклиф тўплами тўлиқ

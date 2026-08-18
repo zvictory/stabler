@@ -78,6 +78,9 @@ Abbr,Kısaltma
 Absent,Devamsız
 Add at least one cash desk before switching {0} to the V1 engine: V1 reads every cash account from this table and cannot register a transfer without one.,{0} şirketini V1 motoruna geçirmeden önce en az bir kasa ekleyin: V1 tüm kasa hesaplarını bu tablodan okur ve kasasız transfer kaydedemez.
 Check the code,Kodu doğrula
+Credit ({currency}),Alacak ({currency})
+Debit ({currency}),Borç ({currency})
+Debits equal credits in {currency}.,{currency} cinsinden borç ile alacak eşit.
 Every user of {company} moves to the {engine} screens when this is saved.,Kaydedildiğinde {company} şirketinin tüm kullanıcıları {engine} ekranlarına geçer.
 I have checked {receiver}'s identity document.,{receiver} kişisinin kimlik belgesini kontrol ettim.
 I have counted {amount} and am handing it back to {sender}.,{amount} tutarını saydım ve {sender} kişisine geri veriyorum.
@@ -95,9 +98,12 @@ Remittance engine,Transfer motoru
 Same as your last transfer,Son transferinizdeki gibi
 The destination desk ({branch}) has no {currency} cash account — add it in Remittance Settings before registering.,Hedef kasada ({branch}) {currency} hesabı yok — kaydetmeden önce Havale Ayarları'ndan ekleyin.
 The pickup code was refused.,Teslim kodu reddedildi.
+The posting could not be previewed.,Muhasebe kaydı önizlenemedi.
 The V1 engine reads every cash account from the desk table. Add at least one desk before switching to V1.,V1 motoru tüm kasa hesaplarını kasa tablosundan okur. V1'e geçmeden önce en az bir kasa ekleyin.
 The settings payload could not be read.,Ayar verisi okunamadı.
 This company runs the {engine} remittance engine. The Transfer V1 screens stay unavailable until it is switched to V1 below.,Bu şirket {engine} transfer motorunu çalıştırıyor. Aşağıdan V1'e geçirilene kadar Transfer V1 ekranları kullanılamaz.
+This entry does not balance. Do not hand over cash — report it.,Bu kayıt denkleşmiyor. Nakit vermeyin — bildirin.
+This will post,Şu kayıt işlenecek
 Transfer registered,Havale kaydedildi
 "Transfers registered on V1 stay in their own records and are not shown by the legacy list, which reads journal entries.",V1'de kaydedilen transferler kendi kayıtlarında kalır ve yevmiye kayıtlarını okuyan eski listede görünmez.
 Transfers registered on the legacy engine stay on the legacy list and are not shown by the V1 screens: they have no Remittance Transfer record behind them.,Legacy motorunda kaydedilen transferler eski listede kalır ve V1 ekranlarında görünmez: arkalarında Remittance Transfer kaydı yoktur.
@@ -5830,6 +5836,7 @@ You are not permitted to view employees.,
 You are not permitted to view suppliers.,
 You are not permitted to view the audit log.,Denetim günlüğünü görüntüleme izniniz yok.
 You are not permitted to view this agreement.,Bu sözleşmeyi görüntüleme yetkiniz yok.
+"You cannot make this posting, so it is not previewed.","Bu kaydı işleme yetkiniz yok, bu nedenle ön izleme gösterilmiyor."
 You do not have permission to view landed-cost figures. Ask an imports manager or accountant.,Varış maliyeti rakamlarını görme izniniz yok. Bir ithalat yöneticisine veya muhasebeciye danışın.
 You do not have permission to view the ledger for this transfer. Only the Remittance Auditor role can read it.,Bu transferin muhasebe kayıtlarını görme yetkiniz yok. Bunları yalnızca Remittance Auditor rolü okuyabilir.
 You have already approved level {0} for this request.,
@@ -5863,6 +5870,7 @@ Yutilgan,Kazanıldı
 {0} is in {1}. Only bills in {2} or USD can be added to an import's landed cost today.,{0} {1} para biriminde. İthalat maliyetine bugün yalnızca {2} veya USD cinsinden faturalar eklenebilir.
 {0} is not a group.,{0} bir grup değil.
 {0} is not a remittance engine. Choose one of: {1}.,{0} bir transfer motoru değil. Şunlardan birini seçin: {1}.
+{0} is not a remittance posting stage.,{0} bir havale muhasebe aşaması değil.
 {0} is required.,{0} zorunludur.
 {0} line item change(s),
 {0} must be a number,{0} bir sayı olmalıdır
@@ -5900,6 +5908,7 @@ Yutilgan,Kazanıldı
 {count} payment(s) totalling {amount} will be re-allocated.,"{count} ödeme, toplam {amount}, yeniden dağıtılacak."
 {count} PI lines,{count} PI satırı
 {count} selected,{count} seçildi
+"{currency} figures use the one book rate for the day this transfer was registered, frozen since — not today's rate, and not the accounting period's rate table. It is the rate the ledger itself holds.","{currency} tutarları, bu transferin kaydedildiği güne ait tek defter kuruyla hesaplanmıştır ve o günden beri sabittir — bugünün kuru değildir, muhasebe döneminin kur tablosu da değildir. Muhasebenin tuttuğu kur budur."
 {currency} — not a corridor currency,{currency} — koridor para birimi değil
 {doctype} {name} is linked and has no deletion rule — resolve it manually first.,{doctype} {name} bağlı ve bir silme kuralı yok — önce elle çözün.
 {done}/{total} quote sets complete,{done}/{total} teklif seti tam

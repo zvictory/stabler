@@ -34,6 +34,7 @@ import { useConfirm } from "../../composables/useConfirm.js";
 import { REMITTANCE_ACTIONS, REMITTANCE_QUEUES, remittanceApi } from "../../api/remittance.js";
 import ListToolbar from "../../components/ListToolbar.vue";
 import SkeletonRows from "../../components/SkeletonRows.vue";
+import PostingPreview from "../../components/PostingPreview.vue";
 import EmptyState from "../../components/EmptyState.vue";
 import Pagination from "../../components/Pagination.vue";
 import Select from "../../components/Select.vue";
@@ -109,6 +110,9 @@ const busy = ref("");
 // other direction and had nothing but a warning paragraph — the button was live the
 // moment the card rendered.
 const refundCashConfirmed = ref(false);
+const preview = ref(null);
+const previewLoading = ref(false);
+const previewError = ref("");
 
 // One idempotency key per step, generated on the first attempt and kept until
 // that step succeeds — so a retry after a timeout replays the same key and the
@@ -334,6 +338,10 @@ async function loadDetail() {
 	detailError.value = "";
 	try {
 		detail.value = await remittanceApi.transferDetail(selected.value);
+		// Only when the cash card can actually render: the preview is what that
+		// card's confirmation is about, and fetching it for a transfer nobody may
+		// complete is a request per click with nothing to show for it.
+		if (can(REMITTANCE_ACTIONS.COMPLETE_REFUND)) await loadPreview();
 	} catch (err) {
 		detail.value = null;
 		detailError.value = errText(err, t("This transfer could not be loaded."));
@@ -349,6 +357,8 @@ function resetForms() {
 	rejectReason.value = "";
 	postingDate.value = "";
 	refundCashConfirmed.value = false;
+	preview.value = null;
+	previewError.value = "";
 	requestKeys = new Map();
 }
 
@@ -455,6 +465,30 @@ async function submitReject() {
 		t("Refund request rejected. The transfer stays as it was.")
 	);
 	if (ok) rejectReason.value = "";
+}
+
+/** The reversal this step will post, asked for when the transfer is opened. */
+async function loadPreview() {
+	const name = selected.value;
+	if (!name) return;
+	previewLoading.value = true;
+	previewError.value = "";
+	try {
+		const rows = await remittanceApi.postingPreview(name, "Refund", postingDate.value || null);
+		// The cashier may have opened another transfer while this was in flight.
+		// Guarded on the assignment, not only on the spinner: this table renders
+		// immediately above "I have counted {amount} and am handing it back".
+		if (selected.value !== name) return;
+		preview.value = rows;
+	} catch (err) {
+		if (selected.value !== name) return;
+		// Never an empty table: an empty table reads as "this posts nothing", which
+		// is the opposite of what a refund does.
+		preview.value = null;
+		previewError.value = err?.message || t("The posting could not be previewed.");
+	} finally {
+		if (selected.value === name) previewLoading.value = false;
+	}
 }
 
 async function submitComplete() {
@@ -1084,6 +1118,16 @@ onMounted(loadList);
 									</label>
 									<DateInput id="stbl-refund-posting" v-model="postingDate" />
 								</div>
+
+								<PostingPreview
+									:rows="preview?.rows || []"
+									:base-currency="preview?.base_currency || ''"
+									:total-debit="preview?.total_debit || 0"
+									:total-credit="preview?.total_credit || 0"
+									:balanced="Boolean(preview?.balanced)"
+									:loading="previewLoading"
+									:error="previewError"
+								/>
 
 								<label class="form-check stbl-touch mb-3">
 									<input v-model="refundCashConfirmed" class="form-check-input" type="checkbox" />

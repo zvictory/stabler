@@ -79,6 +79,9 @@ Abbr,Сокр.
 Absent,Отсутствует
 Add at least one cash desk before switching {0} to the V1 engine: V1 reads every cash account from this table and cannot register a transfer without one.,Добавьте хотя бы одну кассу перед переключением {0} на движок V1: V1 читает все кассовые счета из этой таблицы и без неё не может зарегистрировать перевод.
 Check the code,Проверить код
+Credit ({currency}),Кредит ({currency})
+Debit ({currency}),Дебет ({currency})
+Debits equal credits in {currency}.,Дебет равен кредиту в {currency}.
 Every user of {company} moves to the {engine} screens when this is saved.,При сохранении все пользователи {company} перейдут на экраны {engine}.
 I have checked {receiver}'s identity document.,Я проверил удостоверение личности {receiver}.
 I have counted {amount} and am handing it back to {sender}.,Я пересчитал {amount} и возвращаю их {sender}.
@@ -96,9 +99,12 @@ Remittance engine,Движок переводов
 Same as your last transfer,Как в прошлом переводе
 The destination desk ({branch}) has no {currency} cash account — add it in Remittance Settings before registering.,У кассы назначения ({branch}) нет счёта в {currency} — добавьте его в настройках переводов до регистрации.
 The pickup code was refused.,Код получения отклонён.
+The posting could not be previewed.,Не удалось показать предварительную проводку.
 The V1 engine reads every cash account from the desk table. Add at least one desk before switching to V1.,Движок V1 читает все кассовые счета из таблицы касс. Добавьте хотя бы одну кассу перед переключением на V1.
 The settings payload could not be read.,Не удалось прочитать данные настроек.
 This company runs the {engine} remittance engine. The Transfer V1 screens stay unavailable until it is switched to V1 below.,"Эта компания использует движок переводов {engine}. Экраны Transfer V1 остаются недоступными, пока он не переключён на V1 ниже."
+This entry does not balance. Do not hand over cash — report it.,Проводка не сходится. Не выдавайте наличные — сообщите об этом.
+This will post,Будет проведено
 Transfer registered,Перевод зарегистрирован
 "Transfers registered on V1 stay in their own records and are not shown by the legacy list, which reads journal entries.","Переводы, зарегистрированные в V1, остаются в собственных записях и не отображаются в старом списке, который читает журнальные проводки."
 Transfers registered on the legacy engine stay on the legacy list and are not shown by the V1 screens: they have no Remittance Transfer record behind them.,"Переводы, зарегистрированные на движке legacy, остаются в старом списке и не отображаются на экранах V1: за ними нет записи Remittance Transfer."
@@ -5841,6 +5847,7 @@ You are not permitted to view employees.,
 You are not permitted to view suppliers.,
 You are not permitted to view the audit log.,У вас нет прав на просмотр журнала изменений.
 You are not permitted to view this agreement.,У вас нет доступа к этому договору.
+"You cannot make this posting, so it is not previewed.","Вы не можете провести эту операцию, поэтому предварительный просмотр недоступен."
 You do not have permission to view landed-cost figures. Ask an imports manager or accountant.,У вас нет прав просматривать данные стоимости доставки. Обратитесь к менеджеру импорта или бухгалтеру.
 You do not have permission to view the ledger for this transfer. Only the Remittance Auditor role can read it.,У вас нет прав на просмотр проводок по этому переводу. Читать их может только роль Remittance Auditor.
 You have already approved level {0} for this request.,
@@ -5874,6 +5881,7 @@ Yutilgan,Выиграно
 {0} is in {1}. Only bills in {2} or USD can be added to an import's landed cost today.,{0} — в валюте {1}. В себестоимость импорта сегодня можно добавить только счета в {2} или USD.
 {0} is not a group.,{0} не является группой.
 {0} is not a remittance engine. Choose one of: {1}.,{0} не является движком переводов. Выберите один из: {1}.
+{0} is not a remittance posting stage.,{0} не является этапом проводки перевода.
 {0} is required.,{0} обязателен.
 {0} line item change(s),
 {0} must be a number,{0} должно быть числом
@@ -5911,6 +5919,7 @@ Yutilgan,Выиграно
 {count} payment(s) totalling {amount} will be re-allocated.,Будет перераспределено платежей: {count} на сумму {amount}.
 {count} PI lines,{count} строк PI
 {count} selected,Выбрано: {count}
+"{currency} figures use the one book rate for the day this transfer was registered, frozen since — not today's rate, and not the accounting period's rate table. It is the rate the ledger itself holds.",Суммы в {currency} рассчитаны по единому учётному курсу на день регистрации перевода и с тех пор зафиксированы — это не сегодняшний курс и не таблица курсов учётного периода. Именно этот курс хранится в учёте.
 {currency} — not a corridor currency,{currency} — не валюта коридора
 {doctype} {name} is linked and has no deletion rule — resolve it manually first.,{doctype} {name} связан и не имеет правила удаления — сначала разберите связь вручную.
 {done}/{total} quote sets complete,{done}/{total} комплектов предложений собрано

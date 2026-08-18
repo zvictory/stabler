@@ -31,6 +31,8 @@ import frappe
 from frappe.tests.utils import FrappeTestCase
 from frappe.utils import now_datetime
 
+from stabler.api.remittance_queries import posting_preview
+
 VIEWER_EMAIL = "rem-scope-viewer@example.com"
 VIEWER_ROLE = "Remittance Viewer"
 SECOND_COMPANY = "REM Scope Test Co"
@@ -236,6 +238,36 @@ class RemittanceCompanyScopeBenchTest(FrappeTestCase):
 				"Remittance Event", "read", doc=frappe.get_doc("Remittance Event", self.event_a)
 			)
 		)
+
+	def test_the_posting_preview_refuses_the_other_company_transfer(self):
+		"""The newest read on this doctype, held to the isolation the rest are.
+
+		`posting_preview` answers with GL account names, debits, credits and a
+		transfer's base valuation. `@frappe.whitelist()` gates the METHOD and not
+		the record, so without `_assert_can_read` the endpoint would hand the other
+		company's ledger to any caller who could name a transfer id — which is the
+		one thing every other read on this doctype is tested for and this one was
+		not.
+		"""
+		frappe.set_user(VIEWER_EMAIL)
+
+		with self.assertRaises(frappe.PermissionError):
+			posting_preview(self.transfer_b, "Payout")
+
+	def test_reading_a_transfer_does_not_entitle_a_viewer_to_its_posting(self):
+		"""Own company, still refused — because read and post are not one grant.
+
+		A Remittance Viewer holds `read` here: masked list, detail and reports is
+		their entire brief. That is not an entitlement to the desk cash, receiver
+		obligation, deferred-commission and commission-income accounts a journal
+		entry names, nor to `resolve_accounts`'s configuration errors, which turn a
+		loop over their own list into an account-configuration probe. So the gate
+		is the action and not the row, and a Viewer holds none of the actions.
+		"""
+		frappe.set_user(VIEWER_EMAIL)
+
+		with self.assertRaises(frappe.PermissionError):
+			posting_preview(self.transfer_a, "Payout")
 
 	def test_an_administrator_still_sees_both_companies(self):
 		# Isolation that also hides rows from admins would break every back-office
