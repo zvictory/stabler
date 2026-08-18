@@ -11,12 +11,19 @@ crack, and the code it yields is the bearer token for the cash.
 
 The doctype JSON now carries `"permlevel": 1` on the field, which closes the read.
 It also carries three permlevel-1 rows granting `write` (and NOT `read`) to the
-roles that register a transfer, and those rows are load-bearing in a way that is
-easy to miss: `Document.validate_higher_perm_levels` (frappe/model/document.py:946)
-silently RESETS a permlevel field the saving user cannot write. Without the grant,
-`_new_transfer` would insert NULL, `register_remittance` would still hand the
-cashier a plaintext code, and the transfer would be unpayable forever — the failure
-would surface days later at the counter, with the money already taken.
+roles that register a transfer. When this patch was written those rows were
+load-bearing: `Document.validate_higher_perm_levels` (frappe/model/document.py:946)
+silently RESETS a permlevel field the saving user cannot write, so without the grant
+`_new_transfer` inserted NULL, `register_remittance` still handed the cashier a
+plaintext code, and the transfer was unpayable forever.
+
+That dependency is GONE (stabler-tvvc, 2026-08-18). `_new_transfer` writes the digest
+with `db_set` immediately after the insert, below the permlevel layer, so registering
+a transfer no longer asks whether this patch has run on the site. Read the paragraph
+above as the reason this was written, not as a gate the money path still passes
+through. The patch stays in `patches.txt` — an applied entry costs nothing and
+removing it buys nothing — and the write grant stays as defence in depth, so that
+moving the digest back into the insert payload would not silently lose it.
 
 Why this patch exists when the JSON should be enough: measured on this bench,
 `import_file.delete_old_doc` clears the permissions child table only when

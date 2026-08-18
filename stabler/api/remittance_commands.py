@@ -323,7 +323,18 @@ def _replayed(name: str, payload: dict) -> dict:
 
 
 def _new_transfer(key: str, payload: dict, code: str, *, origin_city, destination_city):
-	"""Insert the master row Draft/Unposted. Registered comes after the posting."""
+	"""Insert the master row Draft/Unposted. Registered comes after the posting.
+
+	The digest is written AFTER the insert, not in the payload. `pickup_code_hash` is
+	permlevel 1, and Frappe resets a permlevel field the saving user cannot write --
+	silently, at insert. Carrying it in the payload therefore made every registration
+	depend on the v89 write grant existing on that site, and on a guard to notice when
+	it did not. `db_set` writes below the permlevel layer, so the field cannot be reset
+	and the site no longer has to have been migrated for a cashier to take money.
+
+	Same transaction as the insert, so no other reader ever sees the row without it;
+	and the row is Draft until `register_remittance` posts and promotes it anyway.
+	"""
 	transfer = frappe.get_doc(
 		{
 			"doctype": TRANSFER,
@@ -334,12 +345,12 @@ def _new_transfer(key: str, payload: dict, code: str, *, origin_city, destinatio
 			"accounting_status": "Unposted",
 			"verification_status": "Not Issued",
 			"refund_status": "None",
-			"pickup_code_hash": store_pickup_code(code),
 			"code_attempts": 0,
 			**payload,
 		}
 	)
 	transfer.insert()
+	transfer.db_set("pickup_code_hash", store_pickup_code(code), notify=False)
 	return transfer
 
 

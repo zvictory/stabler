@@ -124,9 +124,9 @@ def _transfer(api, **overrides):
 	doc.tendered = 1010.00
 	doc.operational_status = "Draft"
 	doc.accounting_status = "Unposted"
-	# Every row `_new_transfer` builds carries one, so the fixture does too: a fixture
-	# missing it would be testing a document the register path cannot produce. What
-	# an ABSENT digest means is its own question — PickupCodeDigestSurvivesInsert.
+	# Every registered row carries one, so the fixture does too. Nothing in this class
+	# asserts anything ABOUT it any more: `_new_transfer` writes it with `db_set`,
+	# below the permlevel layer, so it cannot be absent by the time validate runs.
 	doc.pickup_code_hash = "s1$salt$digest"
 	for key, value in overrides.items():
 		setattr(doc, key, value)
@@ -264,13 +264,19 @@ class PickupCodeDigestIsNotReadable(unittest.TestCase):
 	8-character code from a 32-glyph alphabet: one record is a bounded offline crack,
 	and what falls out is the bearer token for somebody's cash.
 
-	The permlevel bump has a trap attached, which is why the second test here is not
-	optional bookkeeping. `Document.validate_higher_perm_levels` resets a permlevel
-	field the saving user cannot WRITE, silently and to the field's default. Bump the
-	level without granting write at that level and `_new_transfer` stores NULL,
-	`register_remittance` still hands the cashier a plaintext code, and the transfer
-	is unpayable forever — discovered at the counter, days later, with the money
-	already taken.
+	The permlevel bump used to have a trap attached: `validate_higher_perm_levels`
+	resets a permlevel field the saving user cannot WRITE, so bumping the level
+	without granting write at that level made `_new_transfer` store NULL while
+	`register_remittance` still handed the cashier a plaintext code. That is no longer
+	how the digest is written — `_new_transfer` writes it with `db_set` after the
+	insert, below the permlevel layer (stabler-tvvc), and
+	`test_remittance_digest_below_permlevel_bench` proves on a live site that a role
+	holding no permlevel-1 grant at all can still register.
+
+	The grant is KEPT anyway, deliberately: revoking it would mean a permission
+	migration across seven tenants to buy nothing, and it is what keeps a future move
+	of the digest back into the insert payload from being silent data loss. The test
+	below pins it as shipped, not as a gate registration still depends on.
 	"""
 
 	def setUp(self):
@@ -288,8 +294,9 @@ class PickupCodeDigestIsNotReadable(unittest.TestCase):
 		self.assertEqual(["pickup_code_hash"], lifted)
 
 	def test_every_role_that_can_create_can_also_write_at_that_level(self):
-		# The trap, pinned. Without this, the fix above turns register into a silent
-		# data-loss bug for exactly the roles that use it.
+		# Defence in depth, pinned as shipped. Registration no longer depends on this
+		# grant (see the class docstring), but the grant is what would keep a move of
+		# the digest back into the insert payload from being silent data loss.
 		level = self.fields["pickup_code_hash"].get("permlevel", 0)
 		creators = {p["role"] for p in self.perms if p.get("create") and not p.get("permlevel")}
 		writers = {p["role"] for p in self.perms if p.get("permlevel") == level and p.get("write")}
@@ -309,119 +316,6 @@ class PickupCodeDigestIsNotReadable(unittest.TestCase):
 		zero = {p["role"] for p in self.perms if not p.get("permlevel")}
 		higher = {p["role"] for p in self.perms if p.get("permlevel")}
 		self.assertEqual(set(), higher - zero)
-
-
-class PickupCodeDigestSurvivesInsert(unittest.TestCase):
-	"""The guard catches a DISCARDED digest, not a missing one.
-
-	`pickup_code_hash` is permlevel 1, so on a site without the permlevel-1 write
-	grant `validate_higher_perm_levels` resets it on the way in — silently, and
-	BEFORE `validate` runs (`Document.insert` calls it and then
-	`run_before_save_methods`), so this is the first place the app can see it. What
-	it stores is a registered transfer nobody can ever pay out.
-
-	The distinction below is the whole test. An empty digest only means that when a
-	reset could actually have happened. Frappe returns from
-	`validate_higher_perm_levels` without touching a field on three paths, and a
-	Draft row built directly on any of them legitimately carries no code — it cannot
-	be paid out either way. Reading empty as proof of a missing grant refused those
-	rows and named a cause that was not there.
-	"""
-
-	def setUp(self):
-		self.api = _load(_TRANSFER)
-
-	def _codeless(self, **overrides):
-		doc = _transfer(self.api, **overrides)
-		doc.pickup_code_hash = None  # what a permlevel reset leaves behind
-		return doc
-
-	def test_a_new_row_whose_digest_was_reset_away_is_refused(self):
-		# The failure this guard exists for: permissions on, no level-1 grant.
-		with self.assertRaises(_Thrown):
-			self._codeless().validate()
-
-	def test_the_refusal_names_the_permlevel_and_the_patch(self):
-		# A cashier reads this at the counter. "Something went wrong" would send the
-		# report to the wrong team; the cause is a patch that has not run.
-		with self.assertRaises(_Thrown) as caught:
-			self._codeless().validate()
-		message = str(caught.exception)
-		self.assertIn("permlevel 1", message)
-		self.assertIn("patch", message)
-
-	def test_a_field_the_caller_exempted_from_the_reset_is_left_alone(self):
-		# frappe/model/base_document.py:1481 — a caller may name fields the permlevel
-		# reset must skip. Named there means nothing was discarded here.
-		doc = self._codeless()
-		doc.flags.ignore_permlevel_for_fields = ["pickup_code_hash"]
-		doc.validate()
-
-	def test_exempting_some_other_field_does_not_excuse_this_one(self):
-		# The exemption is per field. Reading it as a blanket "skip the guard" would
-		# reopen the silent-reset hole for any caller that exempted anything at all.
-		doc = self._codeless()
-		doc.flags.ignore_permlevel_for_fields = ["code_attempts"]
-		with self.assertRaises(_Thrown):
-			doc.validate()
-
-	def test_a_row_inserted_with_ignore_permissions_is_left_alone(self):
-		# `validate_higher_perm_levels` returns on this flag before it resets
-		# anything, so nothing was discarded and there is nothing to report.
-		doc = self._codeless()
-		doc.flags.ignore_permissions = True
-		doc.validate()
-
-	def test_administrator_is_left_alone(self):
-		# Same early return, second path.
-		frappe = self.api.frappe
-		frappe.session.user = "Administrator"
-		self._codeless().validate()
-
-	def test_an_install_is_left_alone(self):
-		# Same early return, third path.
-		frappe = self.api.frappe
-		frappe.flags.in_install = True
-		self._codeless().validate()
-
-	def test_a_patched_site_may_save_a_draft_with_no_code(self):
-		# The grant is there, so the field survived and simply was not supplied. A
-		# Draft carries no pickup code and needs none.
-		doc = self._codeless()
-		doc._permlevel_grants = {"write": [0, 1], "read": [0]}
-		doc.validate()
-
-	def test_the_guard_asks_about_write_and_not_read(self):
-		# The whole narrowing turns on this argument. permlevel 1 is granted for write
-		# ONLY — remittance_transfer.json has no permlevel-1 read row and
-		# test_nobody_is_granted_read_at_that_level forbids one. So a guard that asked
-		# about "read" would find nothing for anyone, ever, and would throw
-		# "run the remittance role patch" at the very cashier who holds the grant.
-		# This fixture grants write at level 1 and read only at level 0: it passes iff
-		# the guard asked the right question.
-		doc = self._codeless()
-		doc._permlevel_grants = {"write": [0, 1], "read": [0]}
-		doc.validate()
-
-	def test_the_grant_is_honoured_even_when_the_level_arrives_as_a_string(self):
-		# `get_permlevel_access` hands back `perm.permlevel` untouched, and frappe's
-		# own check wraps that value in `cint` (frappe/permissions.py:315). A bare
-		# `1 in [...]` would read "1" as absent and refuse the one caller who holds
-		# the grant — the exact registration this guard exists to protect.
-		doc = self._codeless()
-		doc._permlevel_grants = {"write": ["0", "1"], "read": ["0"]}
-		doc.validate()
-
-	def test_an_existing_row_without_one_still_saves(self):
-		# Rows that predate the field must stay writable, and every later write goes
-		# through `db_set`, which does not validate at all. Refusing here would only
-		# strand old data.
-		doc = self._codeless()
-		doc._is_new = False
-		doc.validate()
-
-	def test_a_new_row_carrying_a_digest_is_fine(self):
-		_transfer(self.api).validate()
 
 
 class EventTrail(unittest.TestCase):
