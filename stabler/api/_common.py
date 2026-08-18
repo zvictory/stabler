@@ -81,3 +81,45 @@ def _company_default_warehouse(company: str) -> str | None:
 		w.insert(ignore_permissions=True)
 		return w.name
 	return name
+
+
+#: The two Custom Fields on Sales Invoice Item that carry the warehouse's box
+#: count beside the money's kilos. Created by `v94_sales_invoice_box_fields`;
+#: on MSA production they predate it, made by a separate Django app.
+BOX_FIELDS = ("custom_boxes", "custom_box_kg")
+
+
+def _assert_box_columns(doctype: str = "Sales Invoice Item") -> None:
+	"""Refuse to write a box count into a table that cannot hold one.
+
+	Frappe discards an unknown key before `get_valid_dict()` ever sees it, so
+	writing `custom_boxes` where the Custom Field does not exist loses the count
+	with no error, no log and no failed request — the caller is told the write
+	succeeded and the number is simply gone. That is the mechanism behind the
+	three-week silent loss this branch exists to end.
+
+	`v94_sales_invoice_box_fields` creates the fields on every site that has
+	direct invoicing switched on today. Two gaps remain, and making them loud is
+	all this guard does: a tenant that switches the flag on *after* the patch has
+	run gets no fields, because patches run once; and `execute_sales_import`
+	carries no module gate at all, so it is reachable on the six tenants where
+	the patch deliberately creates nothing — and it submits, so the loss lands in
+	a document that can no longer be edited.
+
+	Both fields are checked, not just the first: half a loss is still a loss. The
+	probe is the database column and not the Custom Field record, because it is
+	the column that decides whether the value survives.
+
+	Call this only where box data is actually present. A site that never sends
+	boxes has nothing to lose and must not be blocked.
+	"""
+	missing = [field for field in BOX_FIELDS if not frappe.db.has_column(doctype, field)]
+	if not missing:
+		return
+	frappe.throw(
+		_(
+			"Box counts cannot be saved on this site: {0} missing on {1}. "
+			"An administrator must re-run patch {2}; bench migrate will not, it has already run once."
+		).format(", ".join(missing), doctype, "v94_sales_invoice_box_fields"),
+		frappe.ValidationError,
+	)

@@ -97,6 +97,14 @@ async function onPaid() {
 const edoOpen = ref(false);
 const canSendEdo = computed(() => Boolean(form.value) && form.value.docstatus === 1 && !form.value.is_return);
 
+// The Edit button routes to the direct-invoice form, which the backend gates on
+// `direct_invoicing`. Without the same condition here the six tenants that do not
+// own the capability get the button on every draft and land on its refusal banner.
+const canDirectInvoice = computed(() => {
+	const flag = session.modules?.direct_invoicing;
+	return flag !== false && flag !== 0;
+});
+
 function openEdo() {
 	actionError.value = "";
 	edoOpen.value = true;
@@ -423,6 +431,15 @@ onMounted(loadDoc);
 			>
 				<span v-if="actionRunning" class="spinner-border spinner-border-sm me-1"></span>
 				<i v-else class="ti ti-copy me-1"></i>{{ t("Amend") }}
+			</button>
+			<button
+				v-if="can.delete && canDirectInvoice"
+				type="button"
+				class="btn btn-outline-secondary"
+				:disabled="actionRunning"
+				@click="router.push(`/sales/invoices/${form.name}/edit`)"
+			>
+				<i class="ti ti-edit me-1"></i>{{ t("Edit") }}
 			</button>
 			<button
 				v-if="can.delete"

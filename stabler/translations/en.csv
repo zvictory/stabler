@@ -122,6 +122,7 @@ Balance · all time · sits against obligations nobody has collected,Balance · 
 Bank and cash accounts,Bank and cash accounts
 Base currency: {currency},Base currency: {currency}
 Base rate the register leg posted at,Base rate the register leg posted at
+"Box counts cannot be saved on this site: {0} missing on {1}. An administrator must re-run patch {2}; bench migrate will not, it has already run once.","Box counts cannot be saved on this site: {0} missing on {1}. An administrator must re-run patch {2}; bench migrate will not, it has already run once."
 Cash account,Cash account
 "Cash account {account} on desk {branch} could not be read, so its currency was not verified.","Cash account {account} on desk {branch} could not be read, so its currency was not verified."
 "Cash desk row {row} is incomplete. Desk, currency and cash account are all required.","Cash desk row {row} is incomplete. Desk, currency and cash account are all required."
@@ -176,6 +177,7 @@ Desk,Desk
 Desk {branch} has more than one {currency} account. One account per desk per currency.,Desk {branch} has more than one {currency} account. One account per desk per currency.
 "Desk {branch}: cash account {account} is held in {actual}, but the row declares {declared}. Cash counted at this desk would post to the wrong drawer, so it would be refused.","Desk {branch}: cash account {account} is held in {actual}, but the row declares {declared}. Cash counted at this desk would post to the wrong drawer, so it would be refused."
 Destination cash desk,Destination cash desk
+Direct Sales Invoicing is not enabled for company {0}. Sales Invoices must be created from a submitted Sales Order.,Direct Sales Invoicing is not enabled for company {0}. Sales Invoices must be created from a submitted Sales Order.
 Done — clear the code,Done — clear the code
 EUR,EUR
 Earned (paid out in period),Earned (paid out in period)

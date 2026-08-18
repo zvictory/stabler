@@ -10,6 +10,7 @@ kanıt ESKİ davranışın öldüğü: adında MSA geçen ama bayrağı kapalı 
 artık geçememeli.
 """
 
+import ast
 import re
 import unittest
 from pathlib import Path
@@ -141,5 +142,134 @@ class TestTheErrorStillExplainsTheRule(unittest.TestCase):
 		self.assertIn("submitted Sales Order", GATE)
 
 
+class TestEveryWriterCarriesTheSameGate(unittest.TestCase):
+	"""Kapı bir uca değil, YETENEĞE ait.
+
+	`create_direct_sales_invoice` bayrağı okuyordu, `update_sales_invoice`
+	okumuyordu — ikisi de aynı paylaşılan satır kurucusundan yazdığı hâlde. Yani
+	bayrağı kapalı bir kiracıda doğrudan fatura yaratılamıyor, ama var olan bir
+	taslağın bütün satırları değiştirilebiliyordu.
+
+	Yukarıdaki testlerin hiçbiri bunu göremezdi: hepsi `_RAW_GATE` üzerinden
+	çalışıyor, o da kaynağın yalnızca `create_direct_sales_invoice`'tan başlayan
+	2600 karakterlik bir dilimi. Bir dilim, dilimin dışındaki eksikliği
+	tanımlayamaz.
+
+	Bu yüzden burada uç ADI sayılmıyor. Kural yapısal: `_direct_invoice_item_rows`
+	çağıran her fonksiyon doğrudan faturalama yazma yolundadır ve bayrağı okumak
+	zorundadır. Sonradan eklenecek üçüncü bir uç da kendiliğinden yakalanır.
+	"""
+
+	WRITER = "_direct_invoice_item_rows"
+	GATE = "module_map_for"
+
+	@classmethod
+	def setUpClass(cls):
+		cls.tree = ast.parse(SALES)
+
+	def _def(self, name: str) -> ast.FunctionDef:
+		for node in ast.walk(self.tree):
+			if isinstance(node, ast.FunctionDef) and node.name == name:
+				return node
+		raise AssertionError(f"{name} bulunamadı")
+
+	def _writers(self) -> dict[str, set[str]]:
+		"""Satır kurucusunu çağıran fonksiyonlar → gövdelerinde çağrılan isimler."""
+		found = {}
+		for node in ast.walk(self.tree):
+			if not isinstance(node, ast.FunctionDef) or node.name == self.WRITER:
+				continue
+			called = {
+				(c.func.id if isinstance(c.func, ast.Name) else getattr(c.func, "attr", ""))
+				for c in ast.walk(node)
+				if isinstance(c, ast.Call)
+			}
+			if self.WRITER in called:
+				found[node.name] = called
+		return found
+
+	def test_at_least_two_endpoints_call_the_row_builder(self):
+		# Bu testin boşa çalışmadığının kanıtı. Kurucu yeniden adlandırılır ya da
+		# satır içine alınırsa aşağıdaki döngüler sıfır kez döner ve yeşil kalırdı —
+		# kapsamı daralan bir test, kapsamı geniş bir testten daha tehlikelidir,
+		# çünkü kanıt diye gösterilir.
+		writers = self._writers()
+		self.assertGreaterEqual(
+			len(writers),
+			2,
+			f"{self.WRITER} çağıran uç sayısı beklenenden az: {sorted(writers)} — "
+			"kurucu yeniden adlandırıldıysa bu sınıfın tamamı sessizce boşa döner",
+		)
+
+	def test_every_writing_endpoint_reads_the_module_map(self):
+		for name, called in sorted(self._writers().items()):
+			with self.subTest(uc=name):
+				self.assertIn(
+					self.GATE,
+					called,
+					f"{name} doğrudan faturalama satırı yazıyor ama {self.GATE} okumuyor — "
+					"bayrağı kapalı kiracıda bu uç açık kalır",
+				)
+
+	def test_every_writing_endpoint_reads_the_same_module_key(self):
+		# Aynı yeteneğin iki ucu iki farklı anahtar okursa kapı kapı olmaktan çıkar.
+		for name in sorted(self._writers()):
+			with self.subTest(uc=name):
+				body = ast.get_source_segment(SALES, self._def(name)) or ""
+				self.assertIn(
+					'"direct_invoicing"',
+					body,
+					f"{name} modül haritasını okuyor ama direct_invoicing anahtarını değil",
+				)
+
+
 if __name__ == "__main__":
 	unittest.main()
+
+
+class TestTheImporterCarriesTheGateToo(unittest.TestCase):
+	"""Excel içe aktarma ucu da aynı bayrağa bakmalı.
+
+	`execute_sales_import` yalnızca `has_permission("Sales Invoice", "create")` ve
+	şirket kapsamı istiyordu — modül kapısı yoktu. Yani doğrudan faturalamaya
+	sahip olmayan altı kiracıda da çağrılabiliyordu, üstelik `doc.submit()`
+	ettiği için sonuç taslak değil kesinleşmiş faturaydı: özelliği olmayan bir
+	kiracı, olmadığı bir yetenek üzerinden muhasebe kaydı doğurabiliyordu.
+
+	Kapı ayrıca koli korumasının iddiasını doğru kılıyor: kapı olmadan koruma,
+	bayrağı kapalı kiracılarda HER içe aktarmayı reddederdi — v94'ün bilerek
+	hiçbir şey yaratmadığı yerde. Kapıyla birlikte koruma yalnızca kendi
+	anlattığı tek durum için ateşler: bayrağı v94 koştuktan SONRA açan kiracı.
+	"""
+
+	SOURCE = (ROOT / "stabler/api/sales_import.py").read_text(encoding="utf-8")
+	ENDPOINT = "execute_sales_import"
+
+	def _body(self) -> str:
+		start = self.SOURCE.index(f"def {self.ENDPOINT}(")
+		end = self.SOURCE.find("\ndef ", start + 1)
+		return _code_only(self.SOURCE[start : end if end != -1 else len(self.SOURCE)])
+
+	def test_the_importer_reads_the_tenant_flag(self):
+		self.assertIn(
+			"module_map_for",
+			self._body(),
+			"içe aktarma ucu modül bayrağına bakmıyor — özelliği olmayan kiracı da fatura submit edebilir",
+		)
+
+	def test_it_reads_the_same_flag_name_the_patch_is_gated_on(self):
+		self.assertIn(
+			"direct_invoicing",
+			self._body(),
+			"başka bir bayrağa bakıyor — patch ile içe aktarma farklı kapılara bağlı olamaz",
+		)
+
+	def test_the_gate_runs_before_the_file_is_even_read(self):
+		body = self._body()
+		gate_at = body.index("module_map_for")
+		read_at = body.index("_get_file_content")
+		self.assertLess(
+			gate_at,
+			read_at,
+			"kapı dosya okunduktan sonra — sahibi olmayan kiracının dosyası boşuna işlenir",
+		)

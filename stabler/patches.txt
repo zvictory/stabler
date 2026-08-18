@@ -95,3 +95,4 @@ stabler.patches.v90_remittance_engine_flag
 stabler.patches.v91_je_pickup_code_permlevel
 stabler.patches.v92_remittance_event_company
 stabler.patches.v93_remittance_verification_axis
+stabler.patches.v94_sales_invoice_box_fields

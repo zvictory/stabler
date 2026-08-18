@@ -77,10 +77,12 @@ A valid veterinary certificate is required.,Geçerli bir veteriner sertifikası 
 Abbr,Kısaltma
 Absent,Devamsız
 Add at least one cash desk before switching {0} to the V1 engine: V1 reads every cash account from this table and cannot register a transfer without one.,{0} şirketini V1 motoruna geçirmeden önce en az bir kasa ekleyin: V1 tüm kasa hesaplarını bu tablodan okur ve kasasız transfer kaydedemez.
+"Box counts cannot be saved on this site: {0} missing on {1}. An administrator must re-run patch {2}; bench migrate will not, it has already run once.","Bu sitede koli sayıları kaydedilemez: {1} üzerinde {0} yok. Bir yönetici {2} patch'ini yeniden çalıştırmalı; bench migrate bunu yapmaz, o bir kez çalıştı."
 Check the code,Kodu doğrula
 Credit ({currency}),Alacak ({currency})
 Debit ({currency}),Borç ({currency})
 Debits equal credits in {currency}.,{currency} cinsinden borç ile alacak eşit.
+Direct Sales Invoicing is not enabled for company {0}. Sales Invoices must be created from a submitted Sales Order.,Doğrudan Satış Faturalama {0} şirketi için etkin değil. Satış Faturaları gönderilmiş bir Satış Siparişinden oluşturulmalıdır.
 Every user of {company} moves to the {engine} screens when this is saved.,Kaydedildiğinde {company} şirketinin tüm kullanıcıları {engine} ekranlarına geçer.
 I have checked {receiver}'s identity document.,{receiver} kişisinin kimlik belgesini kontrol ettim.
 I have counted {amount} and am handing it back to {sender}.,{amount} tutarını saydım ve {sender} kişisine geri veriyorum.

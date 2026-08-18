@@ -8,8 +8,9 @@ import openpyxl
 from frappe import _
 from frappe.utils import flt, nowtime, today
 
-from stabler.api._common import _require_company
+from stabler.api._common import _assert_box_columns, _require_company
 from stabler.api.approvals import _assert_company_scope
+from stabler.api.organization import module_map_for
 
 ITEM_CODE_REMAP = {
 	"5": "005",
@@ -350,6 +351,20 @@ def execute_sales_import(file_url=None, corrections=None, selected_indices=None,
 		)
 	_require_company(company)
 	_assert_company_scope(company)
+	# The same gate `create_direct_sales_invoice` and `update_sales_invoice` carry.
+	# Without it this endpoint was reachable on all seven tenants — it needs only
+	# Sales Invoice create rights — and it submits, so a tenant that does not own
+	# direct invoicing could post finished invoices through it. It also means the
+	# box-column guard below can now only fire for the one case it claims: a tenant
+	# that switched the flag on after v94 had already run.
+	if not module_map_for(company).get("direct_invoicing"):
+		frappe.throw(
+			_(
+				"Direct Sales Invoicing is not enabled for company {0}. "
+				"Sales Invoices must be created from a submitted Sales Order."
+			).format(company),
+			frappe.ValidationError,
+		)
 
 	content = _get_file_content(file_url)
 	rows = read_excel(content)
@@ -383,6 +398,14 @@ def execute_sales_import(file_url=None, corrections=None, selected_indices=None,
 		if isinstance(selected_indices, str):
 			selected_indices = json.loads(selected_indices)
 		payloads = [p for idx, p in enumerate(payloads) if idx in selected_indices]
+
+	# Before the loop, never inside it: the loop turns every exception into an
+	# `errors` entry, which would report a site-wide misconfiguration as a
+	# per-customer hiccup. This importer is box-based by definition — every row it
+	# builds carries `custom_boxes` — so a site that cannot store them must not
+	# import at all rather than submit invoices with the count silently dropped.
+	if payloads:
+		_assert_box_columns()
 
 	created = []
 	errors = []
