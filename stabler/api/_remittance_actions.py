@@ -9,7 +9,7 @@ Two independent gates, and an action is offered only when BOTH open:
 
 * **State.** Derived from the four axes on ``remittance_transfer.json`` —
   ``operational_status``, ``accounting_status``, ``verification_status``,
-  ``refund_status`` — plus ``code_locked``. Each predicate below mirrors the
+  ``refund_status``. Each predicate below mirrors the
   refusal its endpoint already raises; where the two could drift, the test suite
   reads both and compares.
 * **Role.** The four roles ``patches/v87_remittance_roles.py`` creates, plus the
@@ -78,7 +78,6 @@ STATE_FIELDS = (
 	"accounting_status",
 	"verification_status",
 	"refund_status",
-	"code_locked",
 )
 
 #: Never on a read path, in a field list or in a response body — in any shape.
@@ -113,13 +112,6 @@ def _field(state, name: str):
 	return getattr(state, name, None)
 
 
-def _truthy(value) -> bool:
-	"""`code_locked` is a Check: 1, "1", True and None all have to mean something."""
-	if value in (None, "", "0", 0, False):
-		return False
-	return True
-
-
 def _refund_state(state) -> str:
 	"""`refund_status` as a comparable string. Empty and "None" are the same state."""
 	value = _field(state, "refund_status")
@@ -144,13 +136,25 @@ def _payable(state) -> bool:
 		_field(state, "operational_status") == "Registered"
 		and _field(state, "accounting_status") == "Posted"
 		and _refund_state(state) not in ("Approved", "Completed")
-		and not _truthy(_field(state, "code_locked"))
+		and not _locked(state)
 	)
+
+
+def _locked(state) -> bool:
+	"""The pickup code is locked out. One fact, one axis.
+
+	It used to be two: a `code_locked` Check written in the same `db_set` as
+	`verification_status = "Locked"`, and cleared in the same `db_set` as
+	`verification_status = "Active"`. Two columns that can only ever be written
+	together are one column that can drift apart, and every reader had to pick
+	which one it trusted.
+	"""
+	return _field(state, "verification_status") == "Locked"
 
 
 def _unlockable(state) -> bool:
 	"""Mirrors `remittance_commands.unlock_pickup_code`: still Registered, still locked."""
-	return _field(state, "operational_status") == "Registered" and _truthy(_field(state, "code_locked"))
+	return _field(state, "operational_status") == "Registered" and _locked(state)
 
 
 def _refund_requestable(state) -> bool:

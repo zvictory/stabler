@@ -179,7 +179,7 @@ function flags(row) {
 	if (row.accounting_status === "Posting Error" || unposted) {
 		out.push({ key: "accounting", icon: "ti-alert-triangle", cls: "text-red", title: t("Accounting: {status}", { status: t(row.accounting_status) }) });
 	}
-	if (row.code_locked) {
+	if (row.verification_status === "Locked") {
 		out.push({ key: "locked", icon: "ti-lock", cls: "text-red", title: t("Pickup code is locked") });
 	}
 	if (row.refund_status && row.refund_status !== "None") {

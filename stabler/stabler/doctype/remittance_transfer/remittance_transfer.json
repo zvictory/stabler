@@ -32,7 +32,6 @@
 		"section_code",
 		"pickup_code_hash",
 		"code_attempts",
-		"code_locked",
 		"code_locked_at",
 		"expires_at",
 		"section_audit",
@@ -69,13 +68,12 @@
 		{"fieldname": "section_state", "fieldtype": "Section Break", "label": "State"},
 		{"default": "Draft", "fieldname": "operational_status", "fieldtype": "Select", "label": "Operational", "options": "Draft\nRegistered\nPaid Out\nRefunded\nExpired\nException", "reqd": 1, "in_standard_filter": 1},
 		{"default": "Unposted", "fieldname": "accounting_status", "fieldtype": "Select", "label": "Accounting", "options": "Unposted\nPosted\nReversed\nPosting Error", "reqd": 1},
-		{"default": "Not Issued", "fieldname": "verification_status", "fieldtype": "Select", "label": "Verification", "options": "Not Issued\nActive\nLocked\nConsumed\nExpired", "reqd": 1},
+		{"default": "Not Issued", "fieldname": "verification_status", "fieldtype": "Select", "label": "Verification", "options": "Not Issued\nActive\nLocked\nConsumed\nExpired", "read_only": 1, "reqd": 1},
 		{"default": "None", "fieldname": "refund_status", "fieldtype": "Select", "label": "Refund", "options": "None\nRequested\nApproved\nRejected\nCompleted", "reqd": 1},
 
 		{"fieldname": "section_code", "fieldtype": "Section Break", "label": "Pickup Code"},
 		{"description": "Storage form only. The plaintext is shown once at register and never again. permlevel 1: hidden is a form-layout flag and does not gate a field read, so at level 0 any role with read could pull the digest off /api/resource and crack it offline. Only the permlevel-1 rows below carry write, and none of them carries read.", "fieldname": "pickup_code_hash", "fieldtype": "Data", "hidden": 1, "label": "Pickup Code Hash", "no_copy": 1, "permlevel": 1, "read_only": 1},
 		{"default": "0", "fieldname": "code_attempts", "fieldtype": "Int", "label": "Failed Attempts", "no_copy": 1, "read_only": 1},
-		{"default": "0", "fieldname": "code_locked", "fieldtype": "Check", "label": "Code Locked", "no_copy": 1, "read_only": 1},
 		{"fieldname": "code_locked_at", "fieldtype": "Datetime", "label": "Locked At", "no_copy": 1, "read_only": 1},
 		{"description": "When it passes, no money moves by itself — the transfer joins the refund queue.", "fieldname": "expires_at", "fieldtype": "Datetime", "label": "Expires At"},
 

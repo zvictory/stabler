@@ -236,9 +236,42 @@ class CodeAndReplayFields(unittest.TestCase):
 		# guard goes quiet and the unpayable transfer ships again.
 		self.assertIsNone(self.fields["pickup_code_hash"].get("default"))
 
-	def test_the_attempt_counter_and_lock_are_server_owned(self):
-		for fieldname in ("code_attempts", "code_locked"):
+	def test_the_attempt_counter_and_the_verification_axis_are_server_owned(self):
+		for fieldname in ("code_attempts", "verification_status"):
 			self.assertEqual(self.fields[fieldname]["read_only"], 1, fieldname)
+
+	def test_lockedness_is_one_fact_on_one_axis(self):
+		# `code_locked` was a Check that `_refuse_the_code` set in the same db_set
+		# as `verification_status = "Locked"`, and `unlock_pickup_code` cleared in
+		# the same db_set as `verification_status = "Active"`. Two columns that can
+		# only ever be written together are one column that can drift apart, and
+		# the reader had to pick one — the action predicates picked the Check, the
+		# detail screen picked the Select.
+		self.assertNotIn(
+			"code_locked",
+			self.fields,
+			"the lock flag is back; `verification_status == 'Locked'` is the fact",
+		)
+		self.assertIn("Locked", self.fields["verification_status"]["options"].split("\n"))
+
+	def test_the_verification_axis_can_never_be_blank(self):
+		# What the Check bought and the Select does not, unless this is enforced.
+		# `_queue_shapes` filters READY_FOR_PAYOUT with `verification_status !=
+		# "Locked"`, and in SQL a NULL is not `!=` anything — a row with a blank
+		# axis would silently vanish from the payout queue rather than appear in
+		# it. v93 backfills the rows that predate this; `reqd` closes the door
+		# behind them.
+		field = self.fields["verification_status"]
+		self.assertEqual(field["reqd"], 1)
+		self.assertEqual(field["default"], "Not Issued")
+
+	def test_the_lock_timestamp_survives_the_flag(self):
+		# Deliberately NOT removed with `code_locked`. A Select says *that* the code
+		# is locked; only a Datetime says *when*, and the detail screen prints it
+		# beside the state. An enum cannot hold a time — this is the half of the
+		# pair that was never duplication.
+		self.assertEqual(self.fields["code_locked_at"]["fieldtype"], "Datetime")
+		self.assertEqual(self.fields["code_locked_at"]["read_only"], 1)
 
 	def test_a_replay_key_cannot_produce_a_second_transfer(self):
 		# The database refuses the duplicate; the handler turns that into "return the

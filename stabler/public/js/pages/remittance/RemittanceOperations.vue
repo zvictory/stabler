@@ -25,7 +25,7 @@
  *      expiring" — it is "the question cannot be asked yet", and the tile shows
  *      an em dash with the reason rather than a 0 somebody would act on.
  *   2. A pickup code. No field, badge, title attribute, log line, URL or storage
- *      key on this page carries the code or its digest. `code_locked` is shown
+ *      key on this page carries the code or its digest. The locked state is shown
  *      because a lockout is a fact about the transfer, not the secret itself.
  */
 import { computed, onMounted, ref, watch } from "vue";
@@ -617,7 +617,7 @@ onMounted(() => {
 									>
 										{{ r.client_request_id }}
 									</div>
-									<span v-if="r.code_locked" class="badge bg-purple-lt text-purple mt-1">
+									<span v-if="r.verification_status === 'Locked'" class="badge bg-purple-lt text-purple mt-1">
 										<i class="ti ti-lock me-1"></i>{{ t("Locked") }}
 									</span>
 									<!-- An approved refund is money the origin desk still has to count

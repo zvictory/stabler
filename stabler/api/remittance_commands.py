@@ -507,7 +507,6 @@ _QUEUE_FIELDS = (
 	# Completed refund is in the queue's state filter but is not payable, and
 	# without this column the queue would offer Pay out on it.
 	"refund_status",
-	"code_locked",
 	"code_attempts",
 	"registered_at",
 	"modified",
@@ -529,7 +528,7 @@ def _payout_result(transfer, *, replayed: bool) -> dict:
 	return {
 		**_state(transfer, replayed=replayed),
 		"payout_journal_entry": transfer.payout_journal_entry,
-		"code_locked": cint(transfer.code_locked),
+		"locked": transfer.verification_status == "Locked",
 		"code_attempts": cint(transfer.code_attempts),
 	}
 
@@ -597,7 +596,7 @@ def _assert_payable(transfer) -> None:
 				transfer.name, transfer.refund_status
 			)
 		)
-	if cint(transfer.code_locked):
+	if transfer.verification_status == "Locked":
 		frappe.throw(
 			_(
 				"The pickup code for {0} is locked after too many failed attempts. A manager must unlock it."
@@ -622,7 +621,7 @@ def _refuse_the_code(transfer, key: str) -> None:
 
 	patch = {"code_attempts": attempts}
 	if locked:
-		patch.update({"code_locked": 1, "code_locked_at": now_datetime(), "verification_status": "Locked"})
+		patch.update({"verification_status": "Locked", "code_locked_at": now_datetime()})
 	transfer.db_set(patch, notify=False)
 
 	_append_event(
@@ -821,7 +820,7 @@ def unlock_pickup_code(name: str, reason: str | None = None) -> dict:
 		frappe.throw(_("Transfer {0} does not exist.").format(name))
 
 	# Locked read, for the reason spelled out in `payout_transfer`: two managers on
-	# the same row must not both read `code_locked = 1` out of a stale snapshot.
+	# the same row must not both read a Locked verification axis out of a stale snapshot.
 	transfer = frappe.get_doc(TRANSFER, name, for_update=True)
 	_assert_company_scope(transfer.company)
 	_require_company(transfer.company)
@@ -832,7 +831,7 @@ def unlock_pickup_code(name: str, reason: str | None = None) -> dict:
 				transfer.name, transfer.operational_status
 			)
 		)
-	if not cint(transfer.code_locked):
+	if transfer.verification_status != "Locked":
 		# Two managers pressing Unlock must not produce a failure for the second.
 		return _payout_result(transfer, replayed=True)
 
@@ -841,10 +840,9 @@ def unlock_pickup_code(name: str, reason: str | None = None) -> dict:
 	# attempt history survives in the trail, which is where it belongs anyway.
 	transfer.db_set(
 		{
-			"code_locked": 0,
+			"verification_status": "Active",
 			"code_attempts": 0,
 			"code_locked_at": None,
-			"verification_status": "Active",
 		},
 		notify=False,
 	)

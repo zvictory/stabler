@@ -141,7 +141,6 @@ class _FakeDB:
 			"verification_status": "Active",
 			"refund_status": "None",
 			"code_attempts": 0,
-			"code_locked": 0,
 			"register_journal_entry": "JE-REM-0001",
 			"registered_at": "2026-08-17 09:00:00",
 			"modified": "2026-08-17 10:00:00",
@@ -379,7 +378,7 @@ class PayoutCommandSourceTest(unittest.TestCase):
 		the handler runs, established by the session and permission reads. So the
 		loser of a payout race blocks on the lock, acquires it after the winner
 		commits, and a plain `frappe.get_doc` still hands back the pre-race row:
-		`Registered`, `code_locked=0`. The replay branch is skipped, `_assert_payable`
+		`Registered`, `verification_status="Active"`. The replay branch is skipped, `_assert_payable`
 		passes, and the drawer opens a second time. A lock without a locking read
 		only serialises; it does not refresh.
 
@@ -522,7 +521,6 @@ class PayoutTest(unittest.TestCase):
 
 		row = self.db.rows[self.name]
 		self.assertEqual(row["code_attempts"], 5)
-		self.assertEqual(row["code_locked"], 1)
 		self.assertEqual(row["verification_status"], "Locked")
 		self.assertEqual(row["code_locked_at"], "2026-08-17 11:00:00")
 		self.assertIn("Lock", [event["event_type"] for event in self.db.events])
@@ -547,7 +545,7 @@ class PayoutTest(unittest.TestCase):
 			with self.assertRaises(_Thrown):
 				self._payout(pickup_code="ZZZZ9999")
 
-		self.assertEqual(self.db.rows[self.name]["code_locked"], 1)
+		self.assertEqual(self.db.rows[self.name]["verification_status"], "Locked")
 
 	def test_a_plaintext_stored_code_never_opens_the_drawer(self):
 		"""The pre-hash format must not verify — accepting it reinstates the defect
@@ -703,7 +701,7 @@ class QueueAllowedActionsTest(unittest.TestCase):
 
 	def test_a_cashier_is_never_offered_approve_reject_or_unlock(self):
 		"""The acceptance sentence of stabler-qzr9.10, at the endpoint."""
-		self.db.add_transfer(refund_status="Requested", code_locked=1)
+		self.db.add_transfer(refund_status="Requested", verification_status="Locked")
 
 		offered = self.offered(("Remittance Cashier",))
 
@@ -713,7 +711,7 @@ class QueueAllowedActionsTest(unittest.TestCase):
 
 	def test_a_finance_manager_is_offered_them_on_the_same_row(self):
 		"""The mirror. Without it the assertion above passes on an empty list."""
-		self.db.add_transfer(refund_status="Requested", code_locked=1)
+		self.db.add_transfer(refund_status="Requested", verification_status="Locked")
 
 		offered = self.offered(("Remittance Finance Manager",))
 
@@ -743,9 +741,8 @@ class UnlockTest(unittest.TestCase):
 	def _locked_transfer(self, api, remittance):
 		return self.db.add_transfer(
 			pickup_code_hash=remittance.store_pickup_code(self.code),
-			code_locked=1,
-			code_attempts=5,
 			verification_status="Locked",
+			code_attempts=5,
 			code_locked_at="2026-08-17 10:30:00",
 		)
 
@@ -757,7 +754,7 @@ class UnlockTest(unittest.TestCase):
 		with self.assertRaises(_Thrown):
 			api.unlock_pickup_code(name)
 
-		self.assertEqual(self.db.rows[name]["code_locked"], 1)
+		self.assertEqual(self.db.rows[name]["verification_status"], "Locked")
 
 	def test_a_manager_unlocks_and_the_counter_goes_back_to_zero(self):
 		"""Leaving the counter at the limit would re-lock on the next mistype,
@@ -767,7 +764,7 @@ class UnlockTest(unittest.TestCase):
 
 		result = api.unlock_pickup_code(name, reason="ID checked at the desk")
 
-		self.assertEqual(result["code_locked"], 0)
+		self.assertIs(result["locked"], False)
 		self.assertEqual(result["code_attempts"], 0)
 		self.assertEqual(self.db.rows[name]["verification_status"], "Active")
 		self.assertIsNone(self.db.rows[name]["code_locked_at"])
@@ -803,7 +800,7 @@ class UnlockTest(unittest.TestCase):
 		api.unlock_pickup_code(name)
 		result = api.unlock_pickup_code(name)
 
-		self.assertEqual(result["code_locked"], 0)
+		self.assertIs(result["locked"], False)
 		self.assertEqual([event["event_type"] for event in self.db.events], ["Unlock"])
 
 	def test_a_paid_out_transfer_cannot_be_unlocked(self):
@@ -912,7 +909,7 @@ class VerifyPickupCodeTest(unittest.TestCase):
 		"""A lockout that a second endpoint can keep counting past is not a lockout."""
 		name = self.db.add_transfer(
 			pickup_code_hash=self.remittance.store_pickup_code(self.code),
-			code_locked=1,
+			verification_status="Locked",
 			code_attempts=3,
 		)
 

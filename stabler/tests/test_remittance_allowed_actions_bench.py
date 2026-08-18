@@ -83,7 +83,7 @@ class RemittanceAllowedActionsBenchTest(FrappeTestCase):
 		self.destination = _ensure("Branch", "REM-ACT-DEST", {"branch": "REM-ACT-DEST"})
 
 		self.payable = self._transfer()
-		self.locked = self._transfer(verification_status="Locked", code_locked=1)
+		self.locked = self._transfer(verification_status="Locked")
 		self.requested = self._transfer(refund_status="Requested")
 		self.unposted = self._corrupted_unposted()
 

@@ -55,7 +55,6 @@ OPERATIONAL = ("Draft", "Registered", "Paid Out", "Refunded", "Expired", "Except
 ACCOUNTING = ("Unposted", "Posted", "Reversed", "Posting Error")
 VERIFICATION = ("Not Issued", "Active", "Locked", "Consumed", "Expired")
 REFUND = ("None", "Requested", "Approved", "Rejected", "Completed")
-LOCKED = (0, 1)
 
 MANAGER_ONLY = (actions.APPROVE_REFUND, actions.REJECT_REFUND, actions.UNLOCK_PICKUP_CODE)
 
@@ -68,21 +67,19 @@ def _state(**overrides) -> dict:
 		"accounting_status": "Posted",
 		"verification_status": "Active",
 		"refund_status": "None",
-		"code_locked": 0,
 		**overrides,
 	}
 
 
 def _every_state():
-	for operational, accounting, verification, refund, locked in itertools.product(
-		OPERATIONAL, ACCOUNTING, VERIFICATION, REFUND, LOCKED
+	for operational, accounting, verification, refund in itertools.product(
+		OPERATIONAL, ACCOUNTING, VERIFICATION, REFUND
 	):
 		yield _state(
 			operational_status=operational,
 			accounting_status=accounting,
 			verification_status=verification,
 			refund_status=refund,
-			code_locked=locked,
 		)
 
 
@@ -122,7 +119,9 @@ class RoleMatrixTest(unittest.TestCase):
 	def test_a_finance_manager_is_offered_each_of_them_where_the_state_permits(self):
 		"""The mirror. Without it, a table that offers nothing passes the test above."""
 		manager = [actions.FINANCE_MANAGER]
-		self.assertIn(actions.UNLOCK_PICKUP_CODE, actions.allowed_actions(_state(code_locked=1), manager))
+		self.assertIn(
+			actions.UNLOCK_PICKUP_CODE, actions.allowed_actions(_state(verification_status="Locked"), manager)
+		)
 		requested = _state(refund_status="Requested")
 		self.assertIn(actions.APPROVE_REFUND, actions.allowed_actions(requested, manager))
 		self.assertIn(actions.REJECT_REFUND, actions.allowed_actions(requested, manager))
@@ -196,14 +195,21 @@ class StateGateTest(unittest.TestCase):
 		self.assertIn(actions.PAYOUT, self.offered())
 
 	def test_a_locked_code_withdraws_the_payout(self):
-		self.assertNotIn(actions.PAYOUT, self.offered(code_locked=1))
+		self.assertNotIn(actions.PAYOUT, self.offered(verification_status="Locked"))
 
-	def test_a_locked_code_is_read_however_the_check_field_arrives(self):
-		"""`code_locked` is a Check: "1" off a SQL row and 1 off a Document."""
-		for locked in (1, "1", True):
-			self.assertNotIn(actions.PAYOUT, self.offered(code_locked=locked), repr(locked))
-		for unlocked in (0, "0", "", None, False):
-			self.assertIn(actions.PAYOUT, self.offered(code_locked=unlocked), repr(unlocked))
+	def test_only_the_word_Locked_withdraws_the_payout(self):
+		"""The axis is a Select, so the comparison is a string one — not truthiness.
+
+		This is the whole reason the `code_locked` Check could go: it needed
+		`_truthy` to read 1, "1", True and None as one another, because a Check
+		arrives as an int off a Document and as a string off a SQL row. A Select
+		arrives as its own word either way, and every word that is not "Locked"
+		means the code is usable — including the blank one, which v93 backfilled
+		and `reqd` now prevents.
+		"""
+		for unlocked in ("Not Issued", "Active", "Consumed", "Expired", "", None):
+			self.assertIn(actions.PAYOUT, self.offered(verification_status=unlocked), repr(unlocked))
+		self.assertNotIn(actions.PAYOUT, self.offered(verification_status="Locked"))
 
 	def test_an_approved_or_completed_refund_withdraws_the_payout(self):
 		"""Mirrors `_assert_payable`: the cash is committed back to the sender."""
@@ -221,11 +227,11 @@ class StateGateTest(unittest.TestCase):
 			self.assertNotIn(actions.PAYOUT, self.offered(operational_status=operational), operational)
 
 	def test_unlock_is_offered_only_on_a_locked_registered_transfer(self):
-		self.assertIn(actions.UNLOCK_PICKUP_CODE, self.offered(code_locked=1))
-		self.assertNotIn(actions.UNLOCK_PICKUP_CODE, self.offered(code_locked=0))
+		self.assertIn(actions.UNLOCK_PICKUP_CODE, self.offered(verification_status="Locked"))
+		self.assertNotIn(actions.UNLOCK_PICKUP_CODE, self.offered(verification_status="Active"))
 		self.assertNotIn(
 			actions.UNLOCK_PICKUP_CODE,
-			self.offered(operational_status="Paid Out", code_locked=1),
+			self.offered(operational_status="Paid Out", verification_status="Locked"),
 		)
 
 	def test_a_refund_can_only_be_requested_once(self):
@@ -266,7 +272,7 @@ class StateGateTest(unittest.TestCase):
 
 	def test_the_offered_list_is_ordered_and_stable(self):
 		"""A response a client diffs must not reshuffle between requests."""
-		state = _state(refund_status="Requested", code_locked=1)
+		state = _state(refund_status="Requested", verification_status="Locked")
 		first = actions.allowed_actions(state, self.roles)
 		self.assertEqual(first, actions.allowed_actions(state, list(reversed(self.roles))))
 		self.assertEqual(first, [a for a in actions.ACTIONS if a in first])
@@ -277,8 +283,10 @@ class UnpostedObligationTest(unittest.TestCase):
 
 	def test_no_role_is_offered_anything_on_a_registered_unposted_transfer(self):
 		for accounting in ("Unposted", "Reversed", "Posting Error"):
-			for locked, refund in itertools.product(LOCKED, REFUND):
-				state = _state(accounting_status=accounting, code_locked=locked, refund_status=refund)
+			for verification, refund in itertools.product(VERIFICATION, REFUND):
+				state = _state(
+					accounting_status=accounting, verification_status=verification, refund_status=refund
+				)
 				self.assertEqual(
 					[],
 					actions.allowed_actions(state, list(actions.DESK_ROLES)),
@@ -405,7 +413,7 @@ class AnnotateTest(unittest.TestCase):
 			self.assertEqual([], row["allowed_actions"])
 
 	def test_the_same_role_list_serves_every_row(self):
-		rows = [_state(), _state(code_locked=1)]
+		rows = [_state(), _state(verification_status="Locked")]
 		actions.annotate(rows, [actions.FINANCE_MANAGER])
 		self.assertIn(actions.PAYOUT, rows[0]["allowed_actions"])
 		self.assertIn(actions.UNLOCK_PICKUP_CODE, rows[1]["allowed_actions"])
@@ -421,7 +429,6 @@ class StateShapeTest(unittest.TestCase):
 			accounting_status = "Posted"
 			verification_status = "Active"
 			refund_status = "None"
-			code_locked = 0
 
 		self.assertIn(actions.PAYOUT, actions.allowed_actions(_Doc(), [actions.CASHIER]))
 
