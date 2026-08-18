@@ -367,3 +367,22 @@ body {
 }
 
 
+/* Opt-in touch target. A counter is worked on a tablet with a finger, so every
+   control a cashier touches needs 40px — but the rest of the app stays at its
+   compact desktop density, which is why this is a class an author applies and
+   never a rule on `.btn` or `.form-check-input`.
+
+   It lived in RemittancePayout.vue's scoped style, which meant the same class
+   name on any other page was inert markup: `scoped` rewrites the selector to that
+   component's elements only. Nothing said so, and the second page to use it
+   (RemittanceRefund.vue) silently got no target at all. */
+@media (max-width: 767.98px) {
+	.stbl-touch,
+	.stbl-touch .form-check-input {
+		min-height: 40px;
+	}
+
+	.stbl-touch .form-check-input {
+		min-width: 40px;
+	}
+}

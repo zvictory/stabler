@@ -682,6 +682,51 @@ def _replayed_payout(transfer, key: str) -> dict:
 
 
 @frappe.whitelist()
+def verify_pickup_code(name: str, pickup_code: str, client_request_id: str) -> dict:
+	"""Answer whether this code opens this transfer, without handing anything over.
+
+	Why it exists: the payout button used to be clickable with an unverified code,
+	so a wrong code was discovered AFTER the click — an error line under a form that
+	had already asked the cashier to count the cash out. The screen now keeps the
+	button disabled until the code has been checked, and this is the call it makes.
+
+	Why it costs an attempt: verification is verification. An endpoint that compares
+	a code against the stored digest for free is a brute-force oracle standing in
+	front of the counter that exists to stop one, and adding it would leave the money
+	path weaker than it was before the convenience. So the guards below are the ones
+	`payout_transfer` uses, in the same order, and the compare is the same
+	`_verify_the_code` — same counter, same lockout, same trail. What changes is only
+	WHEN a wrong code is discovered, never what it costs.
+
+	A successful check writes nothing and appends no event: the trail records money
+	and refusals, and a correct code read out at the counter is neither.
+	"""
+	key = (client_request_id or "").strip()
+	if not key:
+		frappe.throw(_("A client request id is required, so a refused attempt can be traced."))
+
+	# Role before row, exactly as payout: a caller who may not pay out must not be
+	# able to burn the receiver's attempts by asking the cheaper question instead.
+	if not actions.holds(actions.PAYOUT, frappe.get_roles()):
+		frappe.throw(_("Only the remittance desk can verify a pickup code."), frappe.PermissionError)
+
+	if not frappe.db.get_value(TRANSFER, name, "name", for_update=True):
+		frappe.throw(_("Transfer {0} does not exist.").format(name))
+
+	# ...and the state is read THROUGH the lock, for the reason payout gives: an
+	# answer taken from this request's own snapshot could say "verified" about a
+	# transfer another cashier is paying out at this moment.
+	transfer = frappe.get_doc(TRANSFER, name, for_update=True)
+	_assert_company_scope(transfer.company)
+	_require_company(transfer.company)
+
+	_assert_payable(transfer)
+	_verify_the_code(transfer, pickup_code, key)
+
+	return {"name": transfer.name, "verified": True}
+
+
+@frappe.whitelist()
 def payout_transfer(
 	name: str,
 	pickup_code: str,
@@ -1154,4 +1199,5 @@ __all__ = [
 	"reject_refund",
 	"request_refund",
 	"unlock_pickup_code",
+	"verify_pickup_code",
 ]

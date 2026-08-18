@@ -39,6 +39,7 @@ A category named {0} already exists.,{0} adında bir kategori zaten var.
 A certificate number is required.,Sertifika numarası gereklidir.
 A cleared customs declaration is active: its duty and excise replace any ,
 A cleared customs declaration is active: its duty and excise replace any Uzbekistan Customs Duty cost line in the next voucher (VAT is never capitalized).,Kapatılmış bir gümrük beyannamesi etkin: gümrük vergisi ve ÖTV'si sonraki fişte herhangi bir Özbekistan Gümrük Vergisi maliyet satırının yerini alır (KDV asla sermayeleştirilmez).
+"A client request id is required, so a refused attempt can be traced.",Reddedilen bir denemenin izlenebilmesi için istek kimliği gerekir.
 A company with this name already exists.,Bu isimde bir şirket zaten var.
 A container ahead of its invoice is not corrected automatically — fix it on the container.,Faturasının ilerisinde olan konteyner otomatik düzeltilmez — konteyner sayfasından düzeltin.
 A customer cannot be its own parent.,Bir müşteri kendi ana müşterisi olamaz.
@@ -76,18 +77,24 @@ A valid veterinary certificate is required.,Geçerli bir veteriner sertifikası 
 Abbr,Kısaltma
 Absent,Devamsız
 Add at least one cash desk before switching {0} to the V1 engine: V1 reads every cash account from this table and cannot register a transfer without one.,{0} şirketini V1 motoruna geçirmeden önce en az bir kasa ekleyin: V1 tüm kasa hesaplarını bu tablodan okur ve kasasız transfer kaydedemez.
+Check the code,Kodu doğrula
 Every user of {company} moves to the {engine} screens when this is saved.,Kaydedildiğinde {company} şirketinin tüm kullanıcıları {engine} ekranlarına geçer.
+I have checked {receiver}'s identity document.,{receiver} kişisinin kimlik belgesini kontrol ettim.
+I have counted {amount} and am handing it back to {sender}.,{amount} tutarını saydım ve {sender} kişisine geri veriyorum.
 I have written it down,Yazdım
 "Legacy posts journal entries from the New Transfer form it always has. V1 registers a Remittance Transfer and is the only engine where the payout, refund, operations and reconciliation screens exist.","Legacy, her zamanki Yeni Transfer formundan yevmiye kaydı atar. V1 ise bir Remittance Transfer kaydı oluşturur ve ödeme, iade, operasyon ve mutabakat ekranlarının bulunduğu tek motordur."
 Legacy — journal entry screens,Legacy — yevmiye kaydı ekranları
 Not ready — this desk cannot take or hand over a transfer.,Hazır değil — bu kasa transferi ne alabilir ne verebilir.
+Only the remittance desk can verify a pickup code.,Teslim kodunu yalnızca havale gişesi doğrulayabilir.
 Open draft {name},{name} taslağını aç
+Pay refund cash,İade nakdini öde
 Pickup code,Teslim kodu
 Purchase Receipt {0} already has a draft invoice: {1}. Submit or delete that draft instead of raising a second bill for the same goods.,{0} mal kabul fişinin zaten bir taslak faturası var: {1}. Aynı mal için ikinci bir fatura kesmek yerine o taslağı onaylayın veya silin.
 Quote updated — switching how the fee is charged recalculates the amounts.,Fiyat güncellendi — komisyonun alınma şeklini değiştirmek tutarları yeniden hesaplar.
 Remittance engine,Transfer motoru
 Same as your last transfer,Son transferinizdeki gibi
 The destination desk ({branch}) has no {currency} cash account — add it in Remittance Settings before registering.,Hedef kasada ({branch}) {currency} hesabı yok — kaydetmeden önce Havale Ayarları'ndan ekleyin.
+The pickup code was refused.,Teslim kodu reddedildi.
 The V1 engine reads every cash account from the desk table. Add at least one desk before switching to V1.,V1 motoru tüm kasa hesaplarını kasa tablosundan okur. V1'e geçmeden önce en az bir kasa ekleyin.
 The settings payload could not be read.,Ayar verisi okunamadı.
 This company runs the {engine} remittance engine. The Transfer V1 screens stay unavailable until it is switched to V1 below.,Bu şirket {engine} transfer motorunu çalıştırıyor. Aşağıdan V1'e geçirilene kadar Transfer V1 ekranları kullanılamaz.
