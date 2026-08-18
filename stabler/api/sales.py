@@ -2315,6 +2315,45 @@ def _require_warehouses_for_stock_update(doc) -> None:
 		)
 
 
+def _direct_invoice_item_rows(items, default_warehouse: str | None) -> list[dict]:
+	"""Build Sales Invoice Item rows from an SPA payload.
+
+	Shared by create and update on purpose. When each endpoint built its own
+	rows, a field written by one could be forgotten by the other and nothing
+	said so — which is how the box count went missing for three weeks.
+	"""
+	rows: list[dict] = []
+	for it in items or []:
+		if not isinstance(it, dict):
+			continue
+		item_code = it.get("item_code")
+		if not item_code or not frappe.db.exists("Item", item_code):
+			continue
+		wh = it.get("warehouse") or default_warehouse
+		row = {
+			"item_code": item_code,
+			"qty": flt(it.get("qty") or 1),
+			"rate": flt(it.get("rate") or 0),
+		}
+		if wh:
+			row["warehouse"] = wh
+		if it.get("uom"):
+			row["uom"] = it.get("uom")
+		if it.get("description"):
+			row["description"] = it.get("description")
+		# The money on a line is kilos; the warehouse counts boxes. Both are
+		# kept. The screen sends `boxes` / `box_kg`, the doctype fields are
+		# `custom_boxes` / `custom_box_kg` — accept either spelling.
+		boxes = flt(it.get("custom_boxes") or it.get("boxes") or 0)
+		box_kg = flt(it.get("custom_box_kg") or it.get("box_kg") or 0)
+		if boxes:
+			row["custom_boxes"] = boxes
+		if box_kg:
+			row["custom_box_kg"] = box_kg
+		rows.append(row)
+	return rows
+
+
 @frappe.whitelist()
 def create_direct_sales_invoice(
 	company: str,
@@ -2371,36 +2410,7 @@ def create_direct_sales_invoice(
 
 	doc.update_stock = 1  # Stabler direct sales deduct stock immediately
 
-	for it in items or []:
-		if not isinstance(it, dict):
-			continue
-		item_code = it.get("item_code")
-		if not item_code or not frappe.db.exists("Item", item_code):
-			continue
-		qty = flt(it.get("qty") or 1)
-		rate = flt(it.get("rate") or 0)
-		wh = it.get("warehouse") or doc.set_warehouse
-		row = {
-			"item_code": item_code,
-			"qty": qty,
-			"rate": rate,
-		}
-		if wh:
-			row["warehouse"] = wh
-		if it.get("uom"):
-			row["uom"] = it.get("uom")
-		if it.get("description"):
-			row["description"] = it.get("description")
-		# Paranın birimi kilo, ama deponun birimi koli: sevkiyattan kaç koli
-		# çıktığı ve sayımda kaç koli bulunduğu ancak bu alanla konuşulabilir.
-		# Ekran ikisini de topluyor (`boxes` / `box_kg`); doctype alanları
-		# `custom_boxes` / `custom_box_kg`. İki yazımı da kabul ediyoruz.
-		boxes = flt(it.get("custom_boxes") or it.get("boxes") or 0)
-		box_kg = flt(it.get("custom_box_kg") or it.get("box_kg") or 0)
-		if boxes:
-			row["custom_boxes"] = boxes
-		if box_kg:
-			row["custom_box_kg"] = box_kg
+	for row in _direct_invoice_item_rows(items, doc.set_warehouse):
 		doc.append("items", row)
 
 	if not doc.items:
@@ -2412,6 +2422,89 @@ def create_direct_sales_invoice(
 		doc.submit()
 
 	return {"name": doc.name, "docstatus": doc.docstatus, "grand_total": flt(doc.grand_total)}
+
+
+@frappe.whitelist()
+def update_sales_invoice(
+	name: str,
+	customer: str | None = None,
+	items: str | list[dict] | None = None,
+	posting_date: str | None = None,
+	due_date: str | None = None,
+	set_warehouse: str | None = None,
+	price_list: str | None = None,
+	remarks: str | None = None,
+	currency: str | None = None,
+	modified: str | None = None,
+):
+	"""Replace a draft Sales Invoice's fields and rows (full-row replace).
+
+	Only drafts. A submitted invoice has already written its GL entries, its
+	stock ledger entries and possibly an e-invoice; editing it in place would
+	separate the document from its own ledger and nothing downstream would
+	notice. The supported routes out of a submitted invoice are cancel +
+	`amend_sales_invoice`, or a return.
+	"""
+	_assert_can_write("Sales Invoice", name, "write")
+	if not name or not frappe.db.exists("Sales Invoice", name):
+		frappe.throw(_("Unknown Sales Invoice: {0}").format(name))
+	check_concurrency("Sales Invoice", name, modified)
+	doc = frappe.get_doc("Sales Invoice", name)
+	if doc.docstatus != 0:
+		frappe.throw(_("Only draft invoices can be edited."))
+	_assert_company_scope(doc.company)
+
+	if isinstance(items, str):
+		items = frappe.parse_json(items) or []
+
+	if customer and customer != doc.customer:
+		if not frappe.db.exists("Customer", customer):
+			frappe.throw(_("Please select a valid customer."))
+		doc.customer = customer
+		# Drop the receivable account so set_missing_values re-resolves it for
+		# the new customer. A stale debit_to can carry an account whose
+		# currency no longer matches the document, and that only surfaces at
+		# submit, far from the edit that caused it.
+		doc.debit_to = None
+
+	if posting_date:
+		doc.posting_date = getdate(posting_date)
+	if due_date:
+		doc.due_date = getdate(due_date)
+	if set_warehouse and frappe.db.exists("Warehouse", set_warehouse):
+		doc.set_warehouse = set_warehouse
+	if price_list and frappe.db.exists("Price List", price_list):
+		doc.selling_price_list = price_list
+	if remarks is not None:
+		doc.remarks = remarks.strip()
+	if currency:
+		doc.currency = currency
+
+	if items is not None:
+		rows = _direct_invoice_item_rows(items, doc.set_warehouse)
+		if not rows:
+			frappe.throw(_("No valid line items provided."))
+		# Full replace rather than patching row by row: patching keeps stale
+		# child rows alive and silently breaks their identities and links.
+		doc.set("items", [])
+		for row in rows:
+			doc.append("items", row)
+
+	if doc.update_stock:
+		_require_warehouses_for_stock_update(doc)
+
+	# No hand-rolled recalculation here on purpose: doc.save() runs validate(),
+	# which recalculates taxes and totals. Calling it manually and then setting
+	# fields afterwards is the classic source of totals that disagree with the
+	# rows they are supposed to sum.
+	doc.save(ignore_permissions=False)
+	return {
+		"name": doc.name,
+		"modified": doc.modified,
+		"grand_total": flt(doc.grand_total),
+		"docstatus": doc.docstatus,
+		"status": doc.status,
+	}
 
 
 @frappe.whitelist()

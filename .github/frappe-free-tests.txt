@@ -126,6 +126,7 @@ stabler.tests.test_timepay_client
 stabler.tests.test_timepay_import
 stabler.tests.test_timepay_processor
 stabler.tests.test_transport_tiers
+stabler.tests.test_update_sales_invoice
 stabler.tests.test_uzex_parse
 stabler.tests.test_uzex_status
 stabler.tests.test_uzex_telegram

@@ -43,7 +43,8 @@ def _function_body(src: str, name: str) -> str:
 	return rest[:end]
 
 
-WRITE_PATH = _function_body(SALES, "create_direct_sales_invoice")
+# Yazma yolu artık `create` ile `update`'in paylaştığı tek kurucu.
+WRITE_PATH = _function_body(SALES, "_direct_invoice_item_rows")
 READ_PATH = _function_body(SALES, "sales_invoice_detail")
 
 
@@ -55,7 +56,7 @@ class TestTheWritePathKeepsBoxes(unittest.TestCase):
 			self.assertIn(
 				field,
 				WRITE_PATH,
-				f"create_direct_sales_invoice satırı {field} yazmıyor — ekran topluyor ama belge kaybediyor",
+				f"satır kurucusu {field} yazmıyor — ekran topluyor ama belge kaybediyor",
 			)
 
 	def test_the_row_is_assigned_not_merely_mentioned(self):
