@@ -818,3 +818,124 @@ class UnlockTest(unittest.TestCase):
 
 if __name__ == "__main__":
 	unittest.main()
+
+
+class VerifyPickupCodeTest(unittest.TestCase):
+	"""Verification, asked as its own question — at the same price.
+
+	The payout button used to be clickable with an unverified code: the cashier
+	committed to the hand-over, clicked, and only then learned the code was wrong,
+	as an error line under a form that had already asked for cash to be counted.
+	The screen now gates the button on a verified code, and this is the call it
+	makes.
+
+	The thing worth testing is not that a correct code verifies — it is that
+	verifying costs EXACTLY what paying out costs. An endpoint that compares a
+	code against the stored digest for free is a brute-force oracle sitting in
+	front of the very counter that exists to stop one, and it would be strictly
+	weaker than the path it was added to improve. So every test here is about
+	price and refusal, not about the happy path.
+	"""
+
+	def setUp(self):
+		self.db = _FakeDB()
+		self.api, self.remittance = _load(self.db)
+		self.code = "ABCD2345"
+		self.name = self.db.add_transfer(pickup_code_hash=self.remittance.store_pickup_code(self.code))
+
+	def _verify(self, **overrides):
+		request = {"name": self.name, "pickup_code": self.code, "client_request_id": "check-1"}
+		request.update(overrides)
+		return self.api.verify_pickup_code(**request)
+
+	def test_a_correct_code_verifies_without_paying_anything_out(self):
+		"""The whole point: an answer the screen can gate a button on, and no cash."""
+		result = self._verify()
+
+		self.assertTrue(result["verified"])
+		row = self.db.rows[self.name]
+		self.assertEqual(row["operational_status"], "Registered", "verification paid the transfer out")
+		self.assertIsNone(row.get("payout_journal_entry"), "verification posted a journal entry")
+		self.assertEqual(
+			[event["event_type"] for event in self.db.events],
+			[],
+			"a successful check is not an event — the trail records money and refusals",
+		)
+
+	def test_a_wrong_code_costs_the_attempt_it_would_have_cost_at_payout(self):
+		"""Free verification is a brute-force oracle. This is the test that says so.
+
+		Delete the `_verify_the_code` call from the new command and this is what
+		goes red: the counter stays at zero, and an attacker gets unlimited guesses
+		against a lockout that never advances.
+		"""
+		with self.assertRaises(_Thrown):
+			self._verify(pickup_code="ZZZZ9999")
+
+		row = self.db.rows[self.name]
+		self.assertEqual(int(row.get("code_attempts") or 0), 1, "the wrong code was free")
+		self.assertTrue(self.db.commits, "the attempt was rolled back with the refusal")
+
+	def test_the_attempt_reaches_disk_before_the_refusal(self):
+		"""`frappe.throw` rolls back, so an uncounted attempt is an unreachable lock."""
+		with self.assertRaises(_Thrown):
+			self._verify(pickup_code="ZZZZ9999")
+
+		self.assertTrue(
+			self.db.commits,
+			"the counter has to be committed before the throw, exactly as payout does it",
+		)
+
+	def test_a_caller_who_may_not_pay_out_may_not_verify_either(self):
+		"""Otherwise the role gate on payout is bypassed by asking the cheaper question.
+
+		And a stranger must not be able to burn the receiver's attempts: the role is
+		checked before the code, here as on the payout path.
+		"""
+		api, remittance = _load(self.db, roles=("Remittance Viewer",))
+		name = self.db.add_transfer(pickup_code_hash=remittance.store_pickup_code(self.code))
+
+		with self.assertRaises(_Thrown):
+			api.verify_pickup_code(name, self.code, client_request_id="check-1")
+
+		self.assertEqual(
+			int(self.db.rows[name].get("code_attempts") or 0),
+			0,
+			"a caller who may not pay out still burned the receiver's attempt",
+		)
+
+	def test_a_locked_code_is_refused_without_spending_another_attempt(self):
+		"""A lockout that a second endpoint can keep counting past is not a lockout."""
+		name = self.db.add_transfer(
+			pickup_code_hash=self.remittance.store_pickup_code(self.code),
+			code_locked=1,
+			code_attempts=3,
+		)
+
+		with self.assertRaises(_Thrown):
+			self.api.verify_pickup_code(name, "ZZZZ9999", client_request_id="check-1")
+
+		self.assertEqual(int(self.db.rows[name].get("code_attempts") or 0), 3)
+
+	def test_a_transfer_that_cannot_be_paid_out_cannot_be_verified(self):
+		"""The button this unlocks must never be enabled on an unpayable transfer.
+
+		Same guard, same order as payout: state before code. A cancelled or already
+		paid-out transfer answers 'no' to the screen without touching the counter.
+		"""
+		name = self.db.add_transfer(
+			pickup_code_hash=self.remittance.store_pickup_code(self.code),
+			operational_status="Paid Out",
+		)
+
+		with self.assertRaises(_Thrown):
+			self.api.verify_pickup_code(name, self.code, client_request_id="check-1")
+
+		self.assertEqual(int(self.db.rows[name].get("code_attempts") or 0), 0)
+
+	def test_the_row_is_locked_before_its_state_is_read(self):
+		"""Verification reads the same fields payout decides on, so it takes the same
+		lock — otherwise it answers 'yes' off a snapshot another cashier is paying out."""
+		self._verify()
+
+		self.assertIn(self.name, self.db.locked)

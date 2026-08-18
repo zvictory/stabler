@@ -73,6 +73,13 @@ const pickupCode = ref("");
 
 const deskConfirmed = ref(false);
 const cashConfirmed = ref(false);
+// The three preconditions the Pay out button is gated on. `codeVerified` is the
+// server's answer, never this screen's guess: a non-empty box used to be enough to
+// reach the last step, so a wrong code was discovered after the cashier had already
+// confirmed the count. Any edit to the box drops it back to false.
+const codeVerified = ref(false);
+const identityChecked = ref(false);
+const verifying = ref(false);
 const postingDate = ref(todayIso());
 
 const submitting = ref(false);
@@ -181,6 +188,7 @@ async function loadDetail() {
 
 function clearCode() {
 	pickupCode.value = "";
+	codeVerified.value = false;
 }
 
 function backToQueue() {
@@ -192,6 +200,7 @@ function backToQueue() {
 	unlockReason.value = "";
 	deskConfirmed.value = false;
 	cashConfirmed.value = false;
+	identityChecked.value = false;
 	postingDate.value = todayIso();
 	step.value = STEP.FIND;
 }
@@ -213,9 +222,30 @@ function goStep(n) {
 	step.value = n;
 }
 
-function toDeskStep() {
-	if (!canPayout.value || codeLocked.value || !pickupCode.value) return;
-	step.value = STEP.DESK;
+async function toDeskStep() {
+	if (!canPayout.value || codeLocked.value || !pickupCode.value || verifying.value) return;
+
+	// The code is checked HERE, against the server, before the cashier is asked to
+	// confirm a desk or count a note. It costs the same attempt the payout would
+	// have cost — the counter and the lock live on the server and are re-read on
+	// refusal rather than deduced from it.
+	verifying.value = true;
+	actionError.value = "";
+	try {
+		await remittanceApi.verifyPickupCode(
+			selected.value.name,
+			pickupCode.value,
+			crypto.randomUUID()
+		);
+		codeVerified.value = true;
+		step.value = STEP.DESK;
+	} catch (err) {
+		clearCode();
+		actionError.value = err?.message || t("The pickup code was refused.");
+		await loadDetail();
+	} finally {
+		verifying.value = false;
+	}
 }
 
 function printReceipt() {
@@ -255,7 +285,8 @@ async function unlock() {
 
 async function payout() {
 	if (!selected.value || !canPayout.value) return;
-	if (!pickupCode.value || !deskConfirmed.value || !cashConfirmed.value) return;
+	if (!pickupCode.value || !codeVerified.value) return;
+	if (!deskConfirmed.value || !identityChecked.value || !cashConfirmed.value) return;
 
 	// The dialog names the money, the receiver and the transfer. It does not
 	// name the code, and nothing on this path ever will.
@@ -669,9 +700,11 @@ onMounted(loadQueue);
 								<button
 									type="submit"
 									class="btn btn-primary stbl-touch"
-									:disabled="!canPayout || codeLocked || !pickupCode || detailLoading"
+									:disabled="!canPayout || codeLocked || !pickupCode || detailLoading || verifying"
 								>
-									{{ t("Next") }}<i class="ti ti-arrow-right ms-1"></i>
+									<span v-if="verifying" class="spinner-border spinner-border-sm me-1"></span>
+									{{ t("Check the code") }}
+									<i v-if="!verifying" class="ti ti-arrow-right ms-1"></i>
 								</button>
 							</div>
 						</form>
@@ -706,6 +739,21 @@ onMounted(loadQueue);
 								</span>
 							</label>
 
+							<!-- The code proves the receiver knows the secret; it does not prove
+							     they are the person the sender named. A code read off a
+							     forwarded message is still a correct code, so identity is a
+							     separate confirmation and not a rewording of the one above. -->
+							<label class="form-check stbl-touch">
+								<input v-model="identityChecked" class="form-check-input" type="checkbox" />
+								<span class="form-check-label">
+									{{
+										t("I have checked {receiver}'s identity document.", {
+											receiver: selected.receiver_name || t("the receiver"),
+										})
+									}}
+								</span>
+							</label>
+
 							<div class="d-flex justify-content-between gap-2 mt-4">
 								<button
 									type="button"
@@ -717,7 +765,7 @@ onMounted(loadQueue);
 								<button
 									type="button"
 									class="btn btn-primary stbl-touch"
-									:disabled="!deskConfirmed"
+									:disabled="!deskConfirmed || !identityChecked"
 									@click="step = STEP.CASH"
 								>
 									{{ t("Next") }}<i class="ti ti-arrow-right ms-1"></i>
@@ -795,7 +843,14 @@ onMounted(loadQueue);
 								<button
 									type="button"
 									class="btn btn-primary stbl-touch"
-									:disabled="submitting || !canPayout || !cashConfirmed || !pickupCode"
+									:disabled="
+										submitting ||
+										!canPayout ||
+										!codeVerified ||
+										!identityChecked ||
+										!cashConfirmed ||
+										!pickupCode
+									"
 									@click="payout"
 								>
 									<span v-if="submitting" class="spinner-border spinner-border-sm me-1"></span>

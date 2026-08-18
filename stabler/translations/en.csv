@@ -130,6 +130,7 @@ Cash out of this desk,Cash out of this desk
 Cash returned,Cash returned
 Charged at registration,Charged at registration
 "Check the sender's ID at the counter, then type their name exactly as it was registered. The refund is paid to that person and nobody else.","Check the sender's ID at the counter, then type their name exactly as it was registered. The refund is paid to that person and nobody else."
+Check the code,Check the code
 Choose a company first.,Choose a company first.
 Choose the destination cash desk.,Choose the destination cash desk.
 Client request id,Client request id
@@ -214,6 +215,8 @@ Handed to,Handed to
 "Held in {actual}, but this row declares {declared}.","Held in {actual}, but this row declares {declared}."
 I am paying out at this desk.,I am paying out at this desk.
 I handed the code to the sender or wrote it down.,I handed the code to the sender or wrote it down.
+I have checked {receiver}'s identity document.,I have checked {receiver}'s identity document.
+I have counted {amount} and am handing it back to {sender}.,I have counted {amount} and am handing it back to {sender}.
 I have counted {amount} and am handing it to {receiver}.,I have counted {amount} and am handing it to {receiver}.
 I have written it down,I have written it down
 In transit / ready for payout,In transit / ready for payout
@@ -290,6 +293,7 @@ Open full detail,Open full detail
 Open in-transit liability,Open in-transit liability
 Open obligation by branch and currency,Open obligation by branch and currency
 Other accounts,Other accounts
+Pay refund cash,Pay refund cash
 PI Group Container Status,PI Group Container Status
 PI Progress,PI Progress
 Paid Out,Paid Out
@@ -407,6 +411,7 @@ Stage timeline,Stage timeline
 That is not the name this transfer was registered under.,That is not the name this transfer was registered under.
 That screen is not available yet.,That screen is not available yet.
 The destination desk ({branch}) has no {currency} cash account — add it in Remittance Settings before registering.,The destination desk ({branch}) has no {currency} cash account — add it in Remittance Settings before registering.
+The pickup code was refused.,The pickup code was refused.
 The V1 engine reads every cash account from the desk table. Add at least one desk before switching to V1.,The V1 engine reads every cash account from the desk table. Add at least one desk before switching to V1.
 "The accounts every transfer posts to, and the desk that holds the cash.","The accounts every transfer posts to, and the desk that holds the cash."
 The cash and obligation accounts for this payout come from Remittance Settings for this branch. They are applied by the server when the entry posts.,The cash and obligation accounts for this payout come from Remittance Settings for this branch. They are applied by the server when the entry posts.

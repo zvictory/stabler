@@ -159,6 +159,13 @@ export const remittanceApi = {
 	payoutTransfer: (name, pickup_code, client_request_id, posting_date = null) =>
 		call(`${CMD}.payout_transfer`, { name, pickup_code, client_request_id, posting_date }),
 
+	// Ask whether a code opens a transfer, without handing anything over, so the
+	// Pay out button can be gated on a verified code instead of reporting a wrong
+	// one after the click. It costs the same failed attempt a payout would: a free
+	// check would be a brute-force oracle in front of the lockout.
+	verifyPickupCode: (name, pickup_code, client_request_id) =>
+		call(`${CMD}.verify_pickup_code`, { name, pickup_code, client_request_id }),
+
 	// A Finance Manager reopens a locked code. The only exit from a lockout —
 	// there is no timer, by design, so that a lockout that lapsed is never
 	// mistaken for one that was never applied.

@@ -104,6 +104,11 @@ const approveNote = ref("");
 const rejectReason = ref("");
 const postingDate = ref("");
 const busy = ref("");
+// The refund's counted-cash confirmation. Payout has had one since it shipped
+// (RemittancePayout.vue, "I have counted …"); this side moves the same cash in the
+// other direction and had nothing but a warning paragraph — the button was live the
+// moment the card rendered.
+const refundCashConfirmed = ref(false);
 
 // One idempotency key per step, generated on the first attempt and kept until
 // that step succeeds — so a retry after a timeout replays the same key and the
@@ -343,6 +348,7 @@ function resetForms() {
 	approveNote.value = "";
 	rejectReason.value = "";
 	postingDate.value = "";
+	refundCashConfirmed.value = false;
 	requestKeys = new Map();
 }
 
@@ -453,6 +459,7 @@ async function submitReject() {
 
 async function submitComplete() {
 	if (!can(REMITTANCE_ACTIONS.COMPLETE_REFUND) || busy.value) return;
+	if (!refundCashConfirmed.value) return;
 	const confirmed = await confirm({
 		title: t("Pay this refund back to the sender?"),
 		body: t(
@@ -472,7 +479,10 @@ async function submitComplete() {
 		(key) => remittanceApi.completeRefund(selected.value, key, postingDate.value || null),
 		t("Refund posted. Hand the cash back to the sender.")
 	);
-	if (ok) postingDate.value = "";
+	if (ok) {
+		postingDate.value = "";
+		refundCashConfirmed.value = false;
+	}
 }
 
 // -------------------------------------------------------------------- wiring --
@@ -1075,10 +1085,26 @@ onMounted(loadList);
 									<DateInput id="stbl-refund-posting" v-model="postingDate" />
 								</div>
 
+								<label class="form-check stbl-touch mb-3">
+									<input
+										v-model="refundCashConfirmed"
+										class="form-check-input"
+										type="checkbox"
+									/>
+									<span class="form-check-label">
+										{{
+											t("I have counted {amount} and am handing it back to {sender}.", {
+												amount: money(quote.tendered, transfer.send_currency),
+												sender: transfer.sender_name || t("the sender"),
+											})
+										}}
+									</span>
+								</label>
+
 								<button
 									type="button"
 									class="btn btn-danger w-100"
-									:disabled="!!busy"
+									:disabled="!!busy || !refundCashConfirmed"
 									@click="submitComplete"
 								>
 									<span
@@ -1086,7 +1112,7 @@ onMounted(loadList);
 										class="spinner-border spinner-border-sm me-2"
 									></span>
 									<i v-else class="ti ti-cash me-1"></i>
-									{{ t("Complete refund") }}
+									{{ t("Pay refund cash") }}
 								</button>
 							</div>
 						</div>
