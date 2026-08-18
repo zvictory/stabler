@@ -138,9 +138,9 @@ function fromDetail(d) {
 
 const doc = useDocumentForm({
 	doctype: "Sales Invoice",
-	detailApi: "stabler.api.sales.update_sales_invoice",
+	detailApi: "stabler.api.sales.sales_invoice_detail",
 	createApi: "stabler.api.sales.create_direct_sales_invoice",
-	updateApi: "stabler.api.sales.sales_invoice_detail",
+	updateApi: "stabler.api.sales.update_sales_invoice",
 	submitApi: "stabler.api.sales.submit_sales_invoice",
 	cancelApi: "stabler.api.sales.cancel_sales_invoice",
 	amendApi: "stabler.api.sales.amend_sales_invoice",

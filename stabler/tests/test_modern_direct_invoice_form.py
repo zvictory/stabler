@@ -31,6 +31,7 @@ Ayrıca kapı: sayfa, backend'in ZORLADIĞI bayrakla kapılanmalı. Eski sayfa
 patlardı.
 """
 
+import re
 import unittest
 from pathlib import Path
 
@@ -52,15 +53,72 @@ class TestItWritesAnInvoiceNotAnOrder(unittest.TestCase):
 	def test_the_document_engine_is_pointed_at_sales_invoice(self):
 		self.assertIn('doctype: "Sales Invoice"', self.src, "doctype Satış Faturası değil")
 
-	def test_it_binds_every_invoice_endpoint_including_update(self):
-		for api in (
-			"sales_invoice_detail",
-			"create_direct_sales_invoice",
-			"update_sales_invoice",
-			"submit_sales_invoice",
-			"cancel_sales_invoice",
-		):
-			self.assertIn(api, self.src, f"{api} bağlanmamış")
+	#: Which `useDocumentForm` slot each endpoint belongs in. Asserting the SLOT and
+	#: not merely the presence of the name is the whole point: the previous version
+	#: of this test looped over the same five names with `assertIn(api, self.src)`,
+	#: which is true no matter which key holds which endpoint. `detailApi` and
+	#: `updateApi` were transposed — the writer bound to the read slot and the
+	#: reader to the write slot — and all 27 tests on this branch stayed green.
+	BINDINGS = (
+		("detailApi", "sales_invoice_detail"),
+		("createApi", "create_direct_sales_invoice"),
+		("updateApi", "update_sales_invoice"),
+		("submitApi", "submit_sales_invoice"),
+		("cancelApi", "cancel_sales_invoice"),
+		("amendApi", "amend_sales_invoice"),
+		("deleteApi", "delete_sales_invoice"),
+	)
+
+	def _bound(self, key: str) -> str | None:
+		"""The endpoint bound to `key`, or None if the key is absent."""
+		found = re.search(rf'\b{key}:\s*"([^"]+)"', self.src)
+		return found.group(1) if found else None
+
+	def test_every_endpoint_is_bound_to_the_slot_that_calls_it(self):
+		for key, endpoint in self.BINDINGS:
+			with self.subTest(slot=key):
+				self.assertEqual(
+					self._bound(key),
+					f"stabler.api.sales.{endpoint}",
+					f"{key} does not name {endpoint}; the form calls the wrong endpoint "
+					f"for this slot and no other test on this branch can see it",
+				)
+
+	def test_the_load_slot_never_names_a_writer(self):
+		"""`detailApi` is called on page load, so it must be safe to merely look.
+
+		`useDocumentForm.js:60` calls it as `call(detailApi, { name })` — one
+		argument, on mount, before the user has done anything. A mutating endpoint
+		there means opening a document edits it. When this was wrong the damage was
+		masked rather than absent: `update_sales_invoice` runs `check_concurrency`
+		first and threw "Stale request" on the missing `modified`, so the screen
+		merely refused to open. That refusal is not a safety property — it is a
+		staleness check that happened to fire first, and the obvious way to "fix" a
+		page that will not load is to thread `modified` through, which removes it
+		and turns every page view into a save.
+
+		So the rule is about the slot, not about that one endpoint: nothing whose
+		name says it writes may sit in the slot that is called on sight.
+		"""
+		loader = self._bound("detailApi")
+		self.assertIsNotNone(loader, "detailApi is not bound at all")
+		for verb in ("create_", "update_", "submit_", "cancel_", "amend_", "delete_"):
+			self.assertNotIn(
+				verb,
+				loader.rsplit(".", 1)[-1],
+				f"detailApi names {loader}, which mutates — opening the form would call it",
+			)
+
+	def test_no_endpoint_is_bound_to_two_slots(self):
+		# The transposition put two endpoints in each other's slot; a duplicate is
+		# the other shape of the same mistake, and it reads as harmless.
+		bound = [self._bound(key) for key, _ in self.BINDINGS]
+		present = [b for b in bound if b]
+		self.assertEqual(
+			len(present),
+			len(set(present)),
+			f"an endpoint is bound to more than one slot: {present}",
+		)
 
 	def test_no_sales_order_endpoint_leaks_in(self):
 		for leaked in (
