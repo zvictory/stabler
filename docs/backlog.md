@@ -78,47 +78,40 @@ Also note point (1) is a second, quieter trap: the obligation leg is in the RECE
 
 Decide: exempt remittance vouchers from the band (voucher_type or the stabler_remittance_stage custom field), widen it for them, or treat a frozen rate outside the band as an approval-gated exception. This is a policy call, not a code tweak — the guard is there on purpose.
 
-### A register entry will not post at a send rate that carries cents
+### FX residual toleransi ile farkin olculdugu presizyon ayni sey degil
 
-`rem-fractional-rate` · hata
+`fx-residual-precision` · hata *(kucuk, ama P&L'e yaziyor)*
 
-Found 2026-08-18 while trying to give the posting preview a real-ledger test for
-fractional base values — by running it, not by reading.
+2026-08-18'de olculdu, `fix(fx)` duzeltmesi sirasinda ortaya cikti; o commit'te
+**bilerek degistirilmedi** cunku yedi kiracinin her Journal Entry ve Payment
+Entry'sinde neyin kalinti sayilacagini daraltmak kendi basina bir karar.
 
-Reproduction, on genesis-test.local: in
-`stabler/tests/test_remittance_accounting_bench.py`, publish a Currency Exchange
-rate for TODAY that is not a whole number (12345.67 rather than the suite's flat
-12000.0), then register through `register_remittance`. The register Journal Entry
-is refused on insert:
+`stabler/api/fx_balance.py:_balance_journal_entry` iki farkli presizyon
+kullaniyor:
 
-    frappe.exceptions.ValidationError: Row 4: Both Debit and Credit values cannot be zero
-    erpnext/accounts/doctype/journal_entry/journal_entry.py:931 validate_debit_credit_amount
-    <- stabler/api/remittance_accounting.py:230 _build_entry
+* fark, **belgenin** presizyonunda olculuyor — genesis-test.local'de UZS bir
+  sirkette `JE.precision("total_debit")` = **2**, cunku `currency_precision`
+  bos ve `use_number_format_from_currency` 0, dolayisiyla `get_field_precision`
+  global `#,###.##` formatina dusuyor (frappe/model/meta.py:910-913);
+* tolerans ise **para biriminin** presizyonunda boyutlandiriliyor —
+  `_fx_residual.base_precision_for("UZS")` = **0**, yani birim 1 som.
 
-`register_legs` emits THREE legs (origin cash, deferred commission, receiver
-obligation — `_remittance_accounting.py:288-320`), so row 4 is a row nobody in
-this app wrote. Something in ERPNext's `JournalEntry.validate` chain is appending
-it, and only when the rate carries cents; the same fixture at 12000.0 posts fine,
-which is why the whole bench suite is green and has always been.
+Sonuc: 3 bacakli bir UZS kaydi `residual_tolerance(3, 0) = 1.0 * (3+2) = 5.0`
+tolere ediyor. Farkin gercekte olculdugu presizyonda bu **499 birim**. UZS
+kurlarinda parasal olarak onemsiz, ama Exchange Gain/Loss hesabina kimseye
+sorulmadan yazilan bir tutar ve iki notion'in hangisinin kastedildigi kodda
+yaziyor degildi.
 
-Why it matters beyond a test fixture: UZS CBU rates carry cents in real life. If
-this reproduces on a UZS-base tenant with a real rate, registration fails outright
-on those days — cash on the counter and no obligation posted. It was NOT
-reproduced against a tenant, and the test site's fixture is odd in one way that
-may be the whole story: `_rates` derives send and receive currencies such that
-both are EUR on a USD-base site, and `_ensure` dedupes them onto one Currency
-Exchange row, so the entry carries two different rates for one currency.
+Simdi yaziyor: `_balance_journal_entry` icindeki not ikisini de adlandiriyor ve
+`test_fx_balance.py::ToleranceBoundaryTest` sinirl her iki para birimi sinifinda
+da pinliyor (USD 0,04 kabul / 0,05 red; UZS 4 kabul / 5 red). Yani uyusmazlik
+artik kazara degil, kayitli.
 
-Next step is one measurement, not a fix: print `entry.accounts` before insert
-under a fractional rate and find out what row 4 is. If it is an artefact of the
-fixture's collapsed currency pair, fix the fixture and land the bench test that
-was dropped for this; if it is not, it is a production defect on every tenant
-whose base currency has a rate with cents.
-
-The property this was meant to prove on a real ledger is meanwhile proved
-frappe-free and mutation-checked in `test_remittance_queries.py`
-(`PostingPreviewBalanceTest`), against legs that close in Decimal and do not close
-in float64.
+Karar gereken: ikisi de `doc.precision("total_debit")`'ten mi turetilsin? Bu bir
+**daraltma** olur — bugun kitaplanan 0,05-4,99 arasi UZS farklari artik
+kitaplanmaz ve ERPNext belgeyi "Total Debit must be equal to Total Credit" ile
+reddeder. Once olculmesi gereken: uretimde bu araliga dusen gercek bir kalinti
+var mi. Yoksa daraltma bedava; varsa daraltma o belgeleri kirar.
 
 ### Vehicle Agreement terminal statuses have no writers — Completed, Terminated, Restructured unreachable
 `stabler-2671` · hata
