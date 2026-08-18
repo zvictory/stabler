@@ -30,9 +30,10 @@ function disabledExpression(src, clickHandler, label) {
 	expect(click, `${label}: no button bound to ${clickHandler}`).toBeGreaterThan(-1);
 	const marker = ':disabled="';
 	const start = src.lastIndexOf(marker, click);
-	expect(start, `${label}: the ${clickHandler} button carries no :disabled binding`).toBeGreaterThan(
-		-1
-	);
+	expect(
+		start,
+		`${label}: the ${clickHandler} button carries no :disabled binding`
+	).toBeGreaterThan(-1);
 	const bodyStart = start + marker.length;
 	const end = src.indexOf('"', bodyStart);
 	expect(end, `${label}: unterminated :disabled binding`).toBeGreaterThan(bodyStart);
@@ -51,7 +52,6 @@ function disabledExpression(src, clickHandler, label) {
  * repository source file.
  */
 function gate(expression, flags) {
-	// eslint-disable-next-line no-new-func
 	return new Function(...flags, `return (${expression});`);
 }
 
@@ -88,10 +88,7 @@ describe("Pay out is gated on all three preconditions, not one of them", () => {
 		cashConfirmed: true,
 		pickupCode: "ABCD2345",
 	};
-	const isDisabled = gate(
-		disabledExpression(payoutSrc, "payout", "RemittancePayout.vue"),
-		FLAGS
-	);
+	const isDisabled = gate(disabledExpression(payoutSrc, "payout", "RemittancePayout.vue"), FLAGS);
 	const call = (state) => isDisabled(...FLAGS.map((flag) => state[flag]));
 
 	it("is live only when the code is verified, the identity checked and the cash counted", () => {
@@ -135,11 +132,52 @@ describe("Pay refund cash is gated on a counted-cash confirmation", () => {
 	});
 });
 
+describe("A verified code stops being verified when the code changes", () => {
+	// The gate is only worth having if `codeVerified` describes the string that is
+	// actually in the box. Review found the ref set on a successful check and reset
+	// nowhere: edit the box afterwards — or WHILE the check is in flight, since the
+	// input was still editable — and the button unlocked for a code the server had
+	// never seen. No cash could move (payout_transfer re-verifies) but the cashier
+	// learned after counting and burned an attempt, which is the whole defect back.
+	it("resets codeVerified — the real watcher body, executed", () => {
+		const marker = "watch(pickupCode, () => {";
+		const start = payoutSrc.indexOf(marker);
+		expect(start, "RemittancePayout.vue has no watcher on pickupCode").toBeGreaterThan(-1);
+		const end = payoutSrc.indexOf("});", start);
+		expect(end).toBeGreaterThan(start);
+		const body = payoutSrc.slice(start + marker.length, end);
+
+		const codeVerified = { value: true };
+		// eslint-disable-next-line no-new-func
+		new Function("codeVerified", body)(codeVerified);
+
+		expect(codeVerified.value).toBe(false);
+	});
+
+	it("freezes the code box while the check is in flight", () => {
+		// A shape assertion, and said so plainly: without mounting there is no way
+		// to execute a binding. It is still the cheapest thing that fails if the
+		// input goes editable again, which is how the stale verification was
+		// reachable in the first place.
+		const input = payoutSrc.slice(
+			payoutSrc.indexOf('v-model="pickupCode"'),
+			payoutSrc.indexOf("/>", payoutSrc.indexOf('v-model="pickupCode"'))
+		);
+		expect(input).toContain(':disabled="verifying"');
+	});
+});
+
 describe("The submit handlers refuse what the buttons hide", () => {
 	// A disabled button is a UI affordance, not a guard: the handler is still
 	// reachable from a stale click or a keyboard activation mid-update. Both
 	// handlers therefore repeat the preconditions, and these assertions read the
 	// handler body rather than the template.
+	//
+	// These two ARE the `toContain` this file's preamble complains about, and they
+	// buy less than the blocks above: red when a precondition is deleted, blind to
+	// one inverted in place. They are kept at that price because the guards they
+	// cover are early returns inside async handlers that cannot be executed without
+	// mounting. Trust them exactly that far.
 	it("payout() will not post without a verified code and all three confirmations", () => {
 		const body = handlerBody(payoutSrc, "async function payout()", "const requestId =");
 		for (const flag of ["codeVerified", "identityChecked", "cashConfirmed", "pickupCode"]) {

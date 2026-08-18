@@ -39,6 +39,7 @@ A category named {0} already exists.,{0} adında bir kategori zaten var.
 A certificate number is required.,Sertifika numarası gereklidir.
 A cleared customs declaration is active: its duty and excise replace any ,
 A cleared customs declaration is active: its duty and excise replace any Uzbekistan Customs Duty cost line in the next voucher (VAT is never capitalized).,Kapatılmış bir gümrük beyannamesi etkin: gümrük vergisi ve ÖTV'si sonraki fişte herhangi bir Özbekistan Gümrük Vergisi maliyet satırının yerini alır (KDV asla sermayeleştirilmez).
+"A client request id is required, so a refused attempt can be traced.",Reddedilen bir denemenin izlenebilmesi için istek kimliği gerekir.
 A company with this name already exists.,Bu isimde bir şirket zaten var.
 A container ahead of its invoice is not corrected automatically — fix it on the container.,Faturasının ilerisinde olan konteyner otomatik düzeltilmez — konteyner sayfasından düzeltin.
 A customer cannot be its own parent.,Bir müşteri kendi ana müşterisi olamaz.
@@ -84,6 +85,7 @@ I have written it down,Yazdım
 "Legacy posts journal entries from the New Transfer form it always has. V1 registers a Remittance Transfer and is the only engine where the payout, refund, operations and reconciliation screens exist.","Legacy, her zamanki Yeni Transfer formundan yevmiye kaydı atar. V1 ise bir Remittance Transfer kaydı oluşturur ve ödeme, iade, operasyon ve mutabakat ekranlarının bulunduğu tek motordur."
 Legacy — journal entry screens,Legacy — yevmiye kaydı ekranları
 Not ready — this desk cannot take or hand over a transfer.,Hazır değil — bu kasa transferi ne alabilir ne verebilir.
+Only the remittance desk can verify a pickup code.,Teslim kodunu yalnızca havale gişesi doğrulayabilir.
 Open draft {name},{name} taslağını aç
 Pay refund cash,İade nakdini öde
 Pickup code,Teslim kodu

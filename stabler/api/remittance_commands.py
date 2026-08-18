@@ -1199,4 +1199,5 @@ __all__ = [
 	"reject_refund",
 	"request_refund",
 	"unlock_pickup_code",
+	"verify_pickup_code",
 ]

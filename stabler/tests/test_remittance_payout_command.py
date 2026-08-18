@@ -895,8 +895,12 @@ class VerifyPickupCodeTest(unittest.TestCase):
 		api, remittance = _load(self.db, roles=("Remittance Viewer",))
 		name = self.db.add_transfer(pickup_code_hash=remittance.store_pickup_code(self.code))
 
+		# A WRONG code, deliberately: a correct one never touches the counter no
+		# matter which guard ran first, so asserting on it would prove nothing. This
+		# pair — wrong code, zero attempts — is red if and only if the role gate runs
+		# after the compare.
 		with self.assertRaises(_Thrown):
-			api.verify_pickup_code(name, self.code, client_request_id="check-1")
+			api.verify_pickup_code(name, "ZZZZ9999", client_request_id="check-1")
 
 		self.assertEqual(
 			int(self.db.rows[name].get("code_attempts") or 0),

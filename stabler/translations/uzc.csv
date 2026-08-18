@@ -39,6 +39,7 @@ A category named {0} already exists.,{0} номли турғун аллақач�
 A certificate number is required.,Сертификат рақами талаб қилинади.
 A cleared customs declaration is active: its duty and excise replace any ,
 A cleared customs declaration is active: its duty and excise replace any Uzbekistan Customs Duty cost line in the next voucher (VAT is never capitalized).,Расмийлаштирилган божхона декларацияси фаол: унинг божи ва акцизи кейинги ваучердаги «Ўзбекистон божхона божи» қаторини алмаштиради (ҚҚС ҳеч қачон капиталлаштирилмайди).
+"A client request id is required, so a refused attempt can be traced.","Сўров идентификатори талаб қилинади, шунда рад этилган уринишни кузатиш мумкин."
 A company with this name already exists.,Бу номдаги компания аллақачон мавжуд.
 A container ahead of its invoice is not corrected automatically — fix it on the container.,Инвойсдан олдинда кетган контейнер автоматик тузатилмайди — уни контейнер саҳифасида тузатинг.
 A customer cannot be its own parent.,Мижоз ўзига ўзи бош бўла олмайди.
@@ -84,6 +85,7 @@ I have written it down,Ёзиб олдим
 "Legacy posts journal entries from the New Transfer form it always has. V1 registers a Remittance Transfer and is the only engine where the payout, refund, operations and reconciliation screens exist.","Legacy ўзининг доимий ""Янги ўтказма"" формасидан журнал ёзувларини киритади. V1 эса Remittance Transfer ёзувини рўйхатга олади ва тўлов, қайтариш, операциялар ва солиштириш экранлари фақат шу механизмда мавжуд."
 Legacy — journal entry screens,Legacy — журнал ёзуви экранлари
 Not ready — this desk cannot take or hand over a transfer.,"Тайёр эмас — бу касса ўтказмани на қабул қила олади, на бера олади."
+Only the remittance desk can verify a pickup code.,Олиб кетиш кодини фақат пул ўтказмалари кассаси текшира олади.
 Open draft {name},{name} қораламасини очиш
 Pay refund cash,Қайтариш нақдини бериш
 Pickup code,Олиш коди

@@ -39,6 +39,7 @@ A category named {0} already exists.,{0} nomli toifa allaqachon mavjud.
 A certificate number is required.,Sertifikat raqami talab qilinadi.
 A cleared customs declaration is active: its duty and excise replace any ,
 A cleared customs declaration is active: its duty and excise replace any Uzbekistan Customs Duty cost line in the next voucher (VAT is never capitalized).,Rasmiylashtirilgan bojxona deklaratsiyasi faol: uning boji va aktsizi keyingi vaucherdagi «O‘zbekiston bojxona boji» qatorini almashtiradi (QQS hech qachon kapitallashtirilmaydi).
+"A client request id is required, so a refused attempt can be traced.","So‘rov identifikatori talab qilinadi, shunda rad etilgan urinishni kuzatish mumkin."
 A company with this name already exists.,Bu nomdagi kompaniya allaqachon mavjud.
 A container ahead of its invoice is not corrected automatically — fix it on the container.,Invoysdan oldinda ketgan konteyner avtomatik tuzatilmaydi — uni konteyner sahifasida tuzating.
 A customer cannot be its own parent.,Mijoz oʻziga oʻzi bosh boʻla olmaydi.
@@ -84,6 +85,7 @@ I have written it down,Yozib oldim
 "Legacy posts journal entries from the New Transfer form it always has. V1 registers a Remittance Transfer and is the only engine where the payout, refund, operations and reconciliation screens exist.","Legacy o'zining doimiy ""Yangi o'tkazma"" formasidan jurnal yozuvlarini kiritadi. V1 esa Remittance Transfer yozuvini ro'yxatga oladi va to'lov, qaytarish, operatsiyalar va solishtirish ekranlari faqat shu mexanizmda mavjud."
 Legacy — journal entry screens,Legacy — jurnal yozuvi ekranlari
 Not ready — this desk cannot take or hand over a transfer.,"Tayyor emas — bu kassa o'tkazmani na qabul qila oladi, na bera oladi."
+Only the remittance desk can verify a pickup code.,Olib ketish kodini faqat pul o‘tkazmalari kassasi tekshira oladi.
 Open draft {name},{name} qoralamasini ochish
 Pay refund cash,Qaytarish naqdini berish
 Pickup code,Olish kodi

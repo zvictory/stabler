@@ -40,6 +40,7 @@ A category named {0} already exists.,Категория с именем {0} уж
 A certificate number is required.,Требуется номер сертификата.
 A cleared customs declaration is active: its duty and excise replace any ,
 A cleared customs declaration is active: its duty and excise replace any Uzbekistan Customs Duty cost line in the next voucher (VAT is never capitalized).,Действует оформленная таможенная декларация: её пошлина и акциз заменяют строку «Таможенная пошлина Узбекистана» в следующем ваучере (НДС не капитализируется).
+"A client request id is required, so a refused attempt can be traced.","Требуется идентификатор запроса, чтобы отклонённую попытку можно было отследить."
 A company with this name already exists.,Компания с таким названием уже существует.
 A container ahead of its invoice is not corrected automatically — fix it on the container.,"Контейнер, опережающий свой инвойс, не исправляется автоматически — исправьте его на карточке контейнера."
 A customer cannot be its own parent.,Клиент не может быть родителем самому себе.
@@ -85,6 +86,7 @@ I have written it down,Код записан
 "Legacy posts journal entries from the New Transfer form it always has. V1 registers a Remittance Transfer and is the only engine where the payout, refund, operations and reconciliation screens exist.","Legacy проводит журнальные записи из той же формы «Новый перевод». V1 регистрирует Remittance Transfer и является единственным движком, где существуют экраны выплаты, возврата, операций и сверки."
 Legacy — journal entry screens,Legacy — экраны журнальных проводок
 Not ready — this desk cannot take or hand over a transfer.,"Не готова — эта касса не может ни принять, ни выдать перевод."
+Only the remittance desk can verify a pickup code.,Проверить код получения может только касса переводов.
 Open draft {name},Открыть черновик {name}
 Pay refund cash,Выдать наличные по возврату
 Pickup code,Код получения

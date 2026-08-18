@@ -1086,11 +1086,7 @@ onMounted(loadList);
 								</div>
 
 								<label class="form-check stbl-touch mb-3">
-									<input
-										v-model="refundCashConfirmed"
-										class="form-check-input"
-										type="checkbox"
-									/>
+									<input v-model="refundCashConfirmed" class="form-check-input" type="checkbox" />
 									<span class="form-check-label">
 										{{
 											t("I have counted {amount} and am handing it back to {sender}.", {

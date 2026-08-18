@@ -32,9 +32,27 @@ const tabs = computed(() => {
 		// Legacy — the strip this module has always had, plus the way in to Settings.
 		// A company that has not switched its engine loses no tab.
 		return [
-			{ name: "remittance-new", path: "/remittance/new", label: t("New Transfer"), icon: "ti-plus", show: true },
-			{ name: "remittance-transfers", path: "/remittance/transfers", label: t("Transfers"), icon: "ti-list", show: true },
-			{ name: "remittance-settings", path: "/remittance/settings", label: t("Settings"), icon: "ti-settings", show: canManage.value },
+			{
+				name: "remittance-new",
+				path: "/remittance/new",
+				label: t("New Transfer"),
+				icon: "ti-plus",
+				show: true,
+			},
+			{
+				name: "remittance-transfers",
+				path: "/remittance/transfers",
+				label: t("Transfers"),
+				icon: "ti-list",
+				show: true,
+			},
+			{
+				name: "remittance-settings",
+				path: "/remittance/settings",
+				label: t("Settings"),
+				icon: "ti-settings",
+				show: canManage.value,
+			},
 		].filter((tab) => tab.show);
 	}
 
@@ -44,13 +62,55 @@ const tabs = computed(() => {
 	// refund chain has no other way in at all — the row buttons for the refund
 	// actions push to the read-only transfer detail page.
 	const list = [
-		{ name: "remittance-new", path: "/remittance/new", label: t("New Transfer"), icon: "ti-plus", show: true },
-		{ name: "remittance-operations", path: "/remittance/operations", label: t("Operations"), icon: "ti-layout-dashboard", show: true },
-		{ name: "remittance-payout", path: "/remittance/payout", label: t("Payout"), icon: "ti-cash-banknote", show: true },
-		{ name: "remittance-refund", path: "/remittance/refund", label: t("Refunds"), icon: "ti-receipt-refund", show: true },
-		{ name: "remittance-transfers", path: "/remittance/transfers", label: t("Transfers"), icon: "ti-list", show: true },
-		{ name: "remittance-reconciliation", path: "/remittance/reconciliation", label: t("Reconciliation"), icon: "ti-scale", show: true },
-		{ name: "remittance-settings", path: "/remittance/settings", label: t("Settings"), icon: "ti-settings", show: canManage.value },
+		{
+			name: "remittance-new",
+			path: "/remittance/new",
+			label: t("New Transfer"),
+			icon: "ti-plus",
+			show: true,
+		},
+		{
+			name: "remittance-operations",
+			path: "/remittance/operations",
+			label: t("Operations"),
+			icon: "ti-layout-dashboard",
+			show: true,
+		},
+		{
+			name: "remittance-payout",
+			path: "/remittance/payout",
+			label: t("Payout"),
+			icon: "ti-cash-banknote",
+			show: true,
+		},
+		{
+			name: "remittance-refund",
+			path: "/remittance/refund",
+			label: t("Refunds"),
+			icon: "ti-receipt-refund",
+			show: true,
+		},
+		{
+			name: "remittance-transfers",
+			path: "/remittance/transfers",
+			label: t("Transfers"),
+			icon: "ti-list",
+			show: true,
+		},
+		{
+			name: "remittance-reconciliation",
+			path: "/remittance/reconciliation",
+			label: t("Reconciliation"),
+			icon: "ti-scale",
+			show: true,
+		},
+		{
+			name: "remittance-settings",
+			path: "/remittance/settings",
+			label: t("Settings"),
+			icon: "ti-settings",
+			show: canManage.value,
+		},
 	];
 	return list.filter((tab) => tab.show);
 });
@@ -75,7 +135,7 @@ watch(
 </script>
 
 <template>
-	<ModuleHeader :title='t("Remittance")' icon="ti-send" :tabs="tabs" :active-tab="activeTab" />
+	<ModuleHeader :title="t('Remittance')" icon="ti-send" :tabs="tabs" :active-tab="activeTab" />
 
 	<div class="page-body">
 		<div class="container-xl">
@@ -83,3 +143,37 @@ watch(
 		</div>
 	</div>
 </template>
+
+<style scoped>
+/* The module header is one row that never wraps (`flex-nowrap`), with the title
+   pinned (`flex-shrink-0`) and the tab strip scrolling horizontally under it. On
+   a desk that is fine; on the tablet a cashier works the counter with, remittance
+   carries the most tabs of any module and the last of them sit off-screen behind
+   a horizontal scroll nobody discovers.
+
+   Below 992px the title goes and the strip takes the row. The title is the one
+   thing on that row a cashier never needs: the tab strip says where they are, and
+   the sidebar says which module they are in.
+
+   Scoped and `:deep`, deliberately NOT a rule in stabler.css: ModuleHeader is
+   shared by every module and all seven tenants, and hiding page titles app-wide
+   is a decision for all of them, not a side effect of the remittance redesign. */
+@media (max-width: 991.98px) {
+	:deep(.stbl-module-title) {
+		display: none;
+	}
+
+	:deep(.stbl-module-tabs) {
+		width: 100%;
+	}
+}
+
+/* Same 40px the counter's own controls get — a tab is a touch target too. */
+@media (max-width: 767.98px) {
+	:deep(.stbl-module-tabs .nav-link) {
+		align-items: center;
+		display: flex;
+		min-height: 40px;
+	}
+}
+</style>
