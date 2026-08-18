@@ -96,6 +96,7 @@ stabler.tests.test_seed_tender_demo
 stabler.tests.test_sea_lifecycle_source
 stabler.tests.test_si_box_field_patch
 stabler.tests.test_si_box_fields
+stabler.tests.test_si_box_write_guard
 stabler.tests.test_sidebar_profile_menu
 stabler.tests.test_sod_rules
 stabler.tests.test_stage_event_axis

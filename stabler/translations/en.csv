@@ -122,6 +122,7 @@ Balance · all time · sits against obligations nobody has collected,Balance · 
 Bank and cash accounts,Bank and cash accounts
 Base currency: {currency},Base currency: {currency}
 Base rate the register leg posted at,Base rate the register leg posted at
+Box counts cannot be saved on this site: {0} missing on {1}. Run patch {2} first.,Box counts cannot be saved on this site: {0} missing on {1}. Run patch {2} first.
 Cash account,Cash account
 "Cash account {account} on desk {branch} could not be read, so its currency was not verified.","Cash account {account} on desk {branch} could not be read, so its currency was not verified."
 "Cash desk row {row} is incomplete. Desk, currency and cash account are all required.","Cash desk row {row} is incomplete. Desk, currency and cash account are all required."

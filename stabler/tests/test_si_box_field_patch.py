@@ -140,21 +140,24 @@ class TestThePatchIsSafeToRunAnywhere(unittest.TestCase):
 		self.assertIn("table_exists", self.src)
 
 
-class TestTheWritePathStillNeedsAGuard(unittest.TestCase):
-	"""Patch yeterli değil ve bunu söylemek testin işi.
+class TestThePatchIsNotAloneAnymore(unittest.TestCase):
+	"""Patch tek başına yetmez; yetmediği yer artık ölçülüyor.
 
-	Patch alanları yaratır; ama yazım yolu hâlâ korumasız, yani patch'in
-	çalışmadığı ya da alanın elle silindiği bir sitede kayıp yine sessiz olur.
-	Bu test o boşluğu KAYIT ALTINA alır — kırmızı değil, çünkü koruma bilerek
-	ayrı bir iş. Koruma eklendiği gün burası da güncellenmeli.
+	Patch alanları, doğrudan faturalama BUGÜN açık olan sitelerde yaratır.
+	Bayrağı patch koştuktan sonra açan kiracıda alan yoktur, çünkü patch'ler bir
+	kez çalışır; `execute_sales_import` ise hiçbir modül kapısı taşımadığı için
+	kapalı altı kiracıda da çağrılabilir. O boşluğu sessizden sesliye çeviren
+	koruma `api/_common.py::_assert_box_columns`, ayrıntılı testi
+	`test_si_box_write_guard.py`. Burada yalnızca patch'in yalnız olmadığını
+	kilitliyoruz — bu iddia düşerse patch sessiz kayba geri döner.
 	"""
 
-	def test_the_write_is_still_unguarded_and_that_is_recorded(self):
+	def test_the_write_path_calls_the_guard(self):
 		self.assertIn('row["custom_boxes"] = boxes', SALES)
-		self.assertNotIn(
-			'has_column("Sales Invoice Item", "custom_boxes")',
+		self.assertIn(
+			"_assert_box_columns()",
 			SALES,
-			"yazım yolu artık korumalı — bu testin varsayımı değişti, docstring'i ve bu iddiayı güncelle",
+			"yazım yolu yeniden korumasız — patch tek başına yeni kiracıyı kurtarmaz",
 		)
 
 

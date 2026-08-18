@@ -10,6 +10,8 @@ from frappe import _
 from frappe.utils import cint, flt, getdate, today
 
 from stabler.api._common import (
+	BOX_FIELDS,
+	_assert_box_columns,
 	_assert_can_read,
 	_assert_can_write,
 	_require_company,
@@ -2351,6 +2353,12 @@ def _direct_invoice_item_rows(items, default_warehouse: str | None) -> list[dict
 		if box_kg:
 			row["custom_box_kg"] = box_kg
 		rows.append(row)
+	# Frappe drops an unknown key before `get_valid_dict()`, so on a site whose
+	# Custom Fields were never created the box count vanishes with no error at
+	# all. Only rows that actually carry box data can lose anything, so a caller
+	# that sends none is never blocked by this.
+	if any(field in row for row in rows for field in BOX_FIELDS):
+		_assert_box_columns()
 	return rows
 
 

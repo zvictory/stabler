@@ -77,6 +77,7 @@ A valid veterinary certificate is required.,Geçerli bir veteriner sertifikası 
 Abbr,Kısaltma
 Absent,Devamsız
 Add at least one cash desk before switching {0} to the V1 engine: V1 reads every cash account from this table and cannot register a transfer without one.,{0} şirketini V1 motoruna geçirmeden önce en az bir kasa ekleyin: V1 tüm kasa hesaplarını bu tablodan okur ve kasasız transfer kaydedemez.
+Box counts cannot be saved on this site: {0} missing on {1}. Run patch {2} first.,Bu sitede koli sayıları kaydedilemez: {1} üzerinde {0} yok. Önce {2} patch'ini çalıştırın.
 Check the code,Kodu doğrula
 Credit ({currency}),Alacak ({currency})
 Debit ({currency}),Borç ({currency})

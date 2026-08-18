@@ -8,7 +8,7 @@ import openpyxl
 from frappe import _
 from frappe.utils import flt, nowtime, today
 
-from stabler.api._common import _require_company
+from stabler.api._common import _assert_box_columns, _require_company
 from stabler.api.approvals import _assert_company_scope
 
 ITEM_CODE_REMAP = {
@@ -383,6 +383,14 @@ def execute_sales_import(file_url=None, corrections=None, selected_indices=None,
 		if isinstance(selected_indices, str):
 			selected_indices = json.loads(selected_indices)
 		payloads = [p for idx, p in enumerate(payloads) if idx in selected_indices]
+
+	# Before the loop, never inside it: the loop turns every exception into an
+	# `errors` entry, which would report a site-wide misconfiguration as a
+	# per-customer hiccup. This importer is box-based by definition — every row it
+	# builds carries `custom_boxes` — so a site that cannot store them must not
+	# import at all rather than submit invoices with the count silently dropped.
+	if payloads:
+		_assert_box_columns()
 
 	created = []
 	errors = []

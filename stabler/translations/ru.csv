@@ -78,6 +78,7 @@ A valid veterinary certificate is required.,Требуется действую�
 Abbr,Сокр.
 Absent,Отсутствует
 Add at least one cash desk before switching {0} to the V1 engine: V1 reads every cash account from this table and cannot register a transfer without one.,Добавьте хотя бы одну кассу перед переключением {0} на движок V1: V1 читает все кассовые счета из этой таблицы и без неё не может зарегистрировать перевод.
+Box counts cannot be saved on this site: {0} missing on {1}. Run patch {2} first.,На этом сайте нельзя сохранить количество коробок: {0} отсутствует в {1}. Сначала выполните патч {2}.
 Check the code,Проверить код
 Credit ({currency}),Кредит ({currency})
 Debit ({currency}),Дебет ({currency})
