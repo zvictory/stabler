@@ -11,9 +11,11 @@ gate a push.
 
 from __future__ import annotations
 
+import ast
 import importlib
 import json
 import os
+import re
 import types
 import unittest
 
@@ -29,6 +31,12 @@ _SANDBOX = ModuleSandbox()
 def tearDownModule():
 	"""The fakes below are process-wide — hand ``sys.modules`` back intact."""
 	_SANDBOX.restore()
+
+
+def _source(module: str) -> str:
+	"""The api module's text, for invariants no behavioural test can reach."""
+	with open(os.path.join(_PKG, "api", module), encoding="utf-8") as fh:
+		return fh.read()
 
 
 def _load_doctype(name: str) -> dict:
@@ -254,16 +262,83 @@ class CodeAndReplayFields(unittest.TestCase):
 		)
 		self.assertIn("Locked", self.fields["verification_status"]["options"].split("\n"))
 
-	def test_the_verification_axis_can_never_be_blank(self):
-		# What the Check bought and the Select does not, unless this is enforced.
-		# `_queue_shapes` filters READY_FOR_PAYOUT with `verification_status !=
-		# "Locked"`, and in SQL a NULL is not `!=` anything — a row with a blank
-		# axis would silently vanish from the payout queue rather than appear in
-		# it. v93 backfills the rows that predate this; `reqd` closes the door
-		# behind them.
+	def test_the_verification_axis_is_declared_the_way_the_writers_assume(self):
+		# A regression guard on the JSON, and nothing more than that. `reqd` does
+		# NOT keep this column populated: every writer in remittance_commands.py is
+		# `db_set`, which reaches `frappe.db.set_value` without running
+		# `validate_mandatory`. The claim that it did was in this test until the
+		# pre-merge review measured it — along with the claim that a blank axis
+		# would vanish from the payout queue, which Frappe's IFNULL rewrite makes
+		# false in the opposite direction. Both were also already true on `main`, so
+		# neither assertion below could ever have gone red for this branch. They
+		# stay because the default is what a fresh insert lands on; what actually
+		# keeps the axis populated is asserted in the test underneath.
 		field = self.fields["verification_status"]
 		self.assertEqual(field["reqd"], 1)
 		self.assertEqual(field["default"], "Not Issued")
+
+	def test_every_db_write_of_the_axis_names_a_real_option(self):
+		"""This is the invariant the payout queue actually rests on.
+
+		`_queue_shapes` filters READY_FOR_PAYOUT with one clause,
+		`verification_status != "Locked"`, and reads the result as "the code is not
+		locked". That is only true while every value the column can hold is one of
+		the Select's own options — a typo (`"locked"`), a None, or a value threaded
+		in through a variable would each be read as *unlocked* and put a Pay out
+		button on a transfer nobody may pay out. `reqd` cannot help: these writes
+		are all `db_set`, which never runs `validate_mandatory`.
+
+		Source-level and `ast`-based on purpose. The behavioural tests can only
+		exercise the writes they happen to call; this has to hold for the ones
+		nobody thought to test. Reads are excluded by construction — only dict
+		literals passed to `db_set` or `insert`-shaped `frappe.get_doc` are walked,
+		so `_payout_result` echoing the column back into a response is not a write
+		and is not judged as one.
+		"""
+		tree = ast.parse(_source("remittance_commands.py"))
+		options = set(self.fields["verification_status"]["options"].split("\n"))
+
+		written = []
+		for node in ast.walk(tree):
+			if not isinstance(node, ast.Call):
+				continue
+			func = node.func
+			name = func.attr if isinstance(func, ast.Attribute) else getattr(func, "id", "")
+			# `update` is here because the Lock write is built as a `patch` dict and
+			# handed to `db_set` a line later (remittance_commands.py:624). Without
+			# it this test walked five of the six writes and called that "every".
+			if name not in ("db_set", "set_value", "get_doc", "update"):
+				continue
+			for arg in node.args:
+				if not isinstance(arg, ast.Dict):
+					continue
+				for key, value in zip(arg.keys, arg.values, strict=True):
+					if isinstance(key, ast.Constant) and key.value == "verification_status":
+						written.append(value)
+
+		# The walk is only as good as its list of call names, and the first version
+		# of it was not: `patch.update({...})` was missing, so it judged five of the
+		# six writes and reported "every". This counts the literal-valued writes in
+		# the raw text and refuses to pass while the walk reaches fewer of them —
+		# an under-covering test is worse than an absent one, because it is quoted
+		# as proof.
+		in_text = len(re.findall(r'"verification_status":\s*"', _source("remittance_commands.py")))
+		self.assertGreaterEqual(
+			len(written),
+			in_text,
+			f"the AST walk reached {len(written)} of {in_text} literal writes — an idiom "
+			"in this module writes the axis by a call this test does not walk",
+		)
+		for value in written:
+			label = ast.dump(value)
+			with self.subTest(write=label):
+				self.assertIsInstance(
+					value,
+					ast.Constant,
+					"the axis is written from something other than a literal, so no test "
+					f"can tell what lands in the column: {label}",
+				)
+				self.assertIn(value.value, options)
 
 	def test_the_lock_timestamp_survives_the_flag(self):
 		# Deliberately NOT removed with `code_locked`. A Select says *that* the code

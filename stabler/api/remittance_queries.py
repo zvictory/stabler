@@ -328,11 +328,22 @@ def _queue_shapes(queue: str) -> tuple[dict, ...]:
 	"""The AND-shapes whose union is `queue`. Company is added by the caller."""
 	if queue == READY_FOR_PAYOUT:
 		# Mirrors `_remittance_actions._payable`: posted obligation, unlocked code,
-		# no refund in flight. `!=` and not a Check comparison since v93 — in SQL a
-		# NULL is not `!=` anything, so a row with a blank verification axis would
-		# vanish from this queue rather than appear in it. `verification_status` is
-		# `reqd` with a default and v93 backfilled the rows that predate it, which
-		# is what makes the single clause safe and keeps this shape unsplit.
+		# no refund in flight. `!=` and not a Check comparison since v93.
+		#
+		# Why this needs no NULL split, measured rather than assumed. Frappe rewrites
+		# `!=` on a nullable field as `IFNULL(verification_status, '') <> 'Locked'`
+		# (frappe/database/query.py:700, gated by `_should_apply_ifnull` at :1885,
+		# and a Select IS nullable — :1755 exempts only Check/Float/Int/Currency/
+		# Percent). So a blank axis lands INSIDE this queue, not outside it: the
+		# failure mode here is a row appearing that should not, never money going
+		# invisible. `_refund_open` splits `not in` two lines down for the opposite
+		# reason and says so; the two shapes differ because the operators do.
+		#
+		# `reqd` is NOT what keeps the axis populated — every writer here is
+		# `db_set`, which goes straight to `frappe.db.set_value` and never runs
+		# `validate_mandatory`. What keeps it populated is that `_new_transfer`
+		# inserts an explicit "Not Issued" and every later write names a concrete
+		# option, with v93 covering the rows that predate the field.
 		return _refund_open(
 			{
 				"operational_status": "Registered",
@@ -641,10 +652,10 @@ def _event_transfer_names(event_type: str, from_date: str | None, to_date: str |
 	The master carries `registered_at` and nothing else — there is no
 	`paid_out_at`, no `refunded_at`. The append-only event trail is the only place
 	the app records *when* a stage happened, so every "today" and every window
-	that is not about registration is answered from it. Remittance Event has no
-	company column of its own; `permissions.remittance_event_query` scopes it
-	through the parent transfer, and the company filter is applied again when the
-	transfers themselves are fetched.
+	that is not about registration is answered from it. Since v92 the event carries
+	its own `company`, which `permissions.remittance_event_query` scopes with the
+	same `_company_condition` the transfer uses; the company filter is applied
+	again when the transfers themselves are fetched.
 	"""
 	filters = {"event_type": event_type}
 	filters.update(_date_window("occurred_at", from_date, to_date))
