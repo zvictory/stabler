@@ -518,6 +518,7 @@ Why it is an exception,Why it is an exception
 "Widen the date range, or clear the status, currency and exception filters.","Widen the date range, or clear the status, currency and exception filters."
 Write this code down and hand it to the sender now. It is shown once and cannot be recovered.,Write this code down and hand it to the sender now. It is shown once and cannot be recovered.
 Wrong pickup code — attempt {0} of {1},Wrong pickup code — attempt {0} of {1}
+"You cannot make this posting, so it is not previewed.","You cannot make this posting, so it is not previewed."
 You cannot pay out this transfer.,You cannot pay out this transfer.
 You do not have permission to view the ledger for this transfer. Only the Remittance Auditor role can read it.,You do not have permission to view the ledger for this transfer. Only the Remittance Auditor role can read it.
 You need a remittance role to see the reconciliation.,You need a remittance role to see the reconciliation.
@@ -6337,7 +6338,7 @@ Yutilgan,Won
 {count} transfers · {period},{count} transfers · {period}
 {count}d,{count}d
 {count}h,{count}h
-"{currency} figures use the rate frozen when this transfer was registered, not today's — that is the rate the ledger holds.","{currency} figures use the rate frozen when this transfer was registered, not today's — that is the rate the ledger holds."
+"{currency} figures use the one book rate for the day this transfer was registered, frozen since — not today's rate, and not the accounting period's rate table. It is the rate the ledger itself holds.","{currency} figures use the one book rate for the day this transfer was registered, frozen since — not today's rate, and not the accounting period's rate table. It is the rate the ledger itself holds."
 {currency} — not a corridor currency,{currency} — not a corridor currency
 {doctype} {name} is linked and has no deletion rule — resolve it manually first.,{doctype} {name} is linked and has no deletion rule — resolve it manually first.
 {done}/{total} quote sets complete,{done}/{total} quote sets complete

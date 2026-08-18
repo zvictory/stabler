@@ -277,8 +277,15 @@ async function toCashStep() {
 	previewLoading.value = true;
 	previewError.value = "";
 	try {
-		preview.value = await remittanceApi.postingPreview(name, "Payout", postingDate.value || null);
+		const rows = await remittanceApi.postingPreview(name, "Payout", postingDate.value || null);
+		// The cashier may have moved on while this was in flight — same guard as
+		// loadDetail, and on the assignment rather than only on the spinner. One
+		// transfer's journal entry painted onto another's screen is the posting the
+		// next control hands cash against.
+		if (selected.value?.name !== name) return;
+		preview.value = rows;
 	} catch (err) {
+		if (selected.value?.name !== name) return;
 		// A preview that cannot be built is shown as such and never as an empty
 		// table: an empty table reads as "this posts nothing".
 		preview.value = null;

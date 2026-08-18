@@ -45,6 +45,8 @@ number with no meaning and a screen that renders it is lying at a cash desk.
 
 from __future__ import annotations
 
+from decimal import Decimal
+
 import frappe
 from frappe import _
 from frappe.utils import add_to_date, cint, flt, get_datetime, now_datetime, nowdate
@@ -52,7 +54,7 @@ from frappe.utils import add_to_date, cint, flt, get_datetime, now_datetime, now
 from stabler.api import _remittance_actions as actions
 from stabler.api._common import _assert_can_read, _require_company
 from stabler.api.approvals import _assert_company_scope
-from stabler.api.remittance_accounting import PAYOUT, REFUND, REGISTER, build_legs
+from stabler.api.remittance_accounting import PAYOUT, REFUND, build_legs
 from stabler.api.remittance_commands import _max_code_attempts, _send_precision
 
 TRANSFER = "Remittance Transfer"
@@ -1197,6 +1199,15 @@ def reconciliation(company: str, from_date: str | None = None, to_date: str | No
 	return actions.assert_no_pickup_code(payload)
 
 
+#: The stage a caller may preview, and the action that entitles them to it. The
+#: gate is the action and not `read` on the doctype — see `posting_preview`.
+#: Register is absent on purpose, and the docstring says why.
+_PREVIEW_STAGES = {
+	PAYOUT: actions.PAYOUT,
+	REFUND: actions.COMPLETE_REFUND,
+}
+
+
 @frappe.whitelist()
 def posting_preview(name: str, stage: str, posting_date: str | None = None) -> dict:
 	"""The rows one stage will write to the ledger, before it writes them.
@@ -1227,9 +1238,26 @@ def posting_preview(name: str, stage: str, posting_date: str | None = None) -> d
 	Read-only in the strict sense: nothing here inserts, and no draft Journal Entry
 	is created to render a preview.
 
-	Only a stage that is actually reachable is previewed. Asking for a Payout
-	preview of a transfer that has not registered throws the same sentence the
-	payout would, so the screen never shows a plan for something that cannot happen.
+	WHO MAY ASK. The gate is the action, not `read` on the doctype. This payload is
+	GL account names, debits, credits and a transfer's base valuation — the class of
+	content `transfer_detail` withholds from a caller who cannot read Journal Entry.
+	Doctype read would be the wrong gate: `Remittance Viewer` and `Remittance
+	Auditor` hold it, and a loop over their own list would enumerate every desk cash,
+	obligation, deferred-commission and commission-income account the company has,
+	with `resolve_accounts`'s configuration errors as a bonus probe. Journal Entry
+	read would be the wrong gate too — none of the four remittance roles carries it,
+	so gating on that would blank the preview on the one screen it exists for. What
+	is left is the right one: a caller sees the legs of a posting they may actually
+	make on THIS transfer, decided by the same `allowed_actions` that decides whether
+	the button exists. So a stage that cannot happen is not previewed, whether the
+	reason is the caller's roles or the state the transfer already reached.
+
+	Register is not previewable here, and that is not an oversight. It is the one
+	stage with no action to gate it; no screen asks for it, because the screen that
+	would — New Transfer — has no transfer yet, and this endpoint refuses
+	caller-supplied amounts by design (below); and once a transfer HAS registered,
+	`transfer_detail` already serves the entry that was actually posted. The
+	pre-registration preview stays unbuilt rather than half-built.
 
 	Deliberately keyed on an EXISTING transfer and not on caller-supplied amounts:
 	an endpoint that resolves GL accounts and builds legs from numbers in the
@@ -1240,7 +1268,7 @@ def posting_preview(name: str, stage: str, posting_date: str | None = None) -> d
 	stage = (stage or "").strip()
 	if not name:
 		frappe.throw(_("A transfer id is required."))
-	if stage not in (REGISTER, PAYOUT, REFUND):
+	if stage not in _PREVIEW_STAGES:
 		frappe.throw(_("{0} is not a remittance posting stage.").format(stage or "—"))
 
 	# @frappe.whitelist() gates the method, not the record — this is the IDOR guard.
@@ -1249,12 +1277,22 @@ def posting_preview(name: str, stage: str, posting_date: str | None = None) -> d
 	_assert_company_scope(transfer.company)
 	_require_company(transfer.company)
 
+	if _PREVIEW_STAGES[stage] not in actions.allowed_actions(transfer, frappe.get_roles()):
+		frappe.throw(_("You cannot make this posting, so it is not previewed."), frappe.PermissionError)
+
 	built = build_legs(transfer, stage, posting_date or frappe.utils.nowdate())
 	base_currency = frappe.get_cached_value("Company", transfer.company, "default_currency")
 
 	rows = []
-	debit_total = 0.0
-	credit_total = 0.0
+	# Summed as Decimal, because `build_legs` already proved these two EXACTLY equal
+	# (`_remittance_accounting._assert_closes` raises otherwise) and re-adding them as
+	# float reopens a question that was closed. A fixed 1e-9 epsilon is below one
+	# float64 ulp above ~4.5e6, and the base currency this app falls back to is UZS —
+	# so the float version answered "does not balance" for sound entries, under which
+	# the screen tells a cashier to refuse the payout and report a ledger fault that
+	# does not exist. The screen's verdict has to be the builder's verdict.
+	debit_total = Decimal(0)
+	credit_total = Decimal(0)
 	for leg in built["legs"]:
 		row = {
 			"account": leg["account"],
@@ -1265,20 +1303,25 @@ def posting_preview(name: str, stage: str, posting_date: str | None = None) -> d
 			"credit": float(leg["credit"]),
 			"exchange_rate": float(leg["exchange_rate"]),
 		}
-		debit_total += row["debit"]
-		credit_total += row["credit"]
+		debit_total += leg["debit"]
+		credit_total += leg["credit"]
 		rows.append(row)
 
-	return {
-		"stage": stage,
-		"base_currency": base_currency,
-		"rows": rows,
-		# Summed from the same rows the screen renders, so a reader adding the
-		# column by eye reaches the figure the totals line shows.
-		"total_debit": debit_total,
-		"total_credit": credit_total,
-		"balanced": abs(debit_total - credit_total) < 1e-9,
-	}
+	# Wrapped like every other whitelisted return in this module. Nothing here can
+	# carry the code today — the payload is built from legs — and that is the point:
+	# the guard is what catches the future edit that adds a transfer field to it.
+	return actions.assert_no_pickup_code(
+		{
+			"stage": stage,
+			"base_currency": base_currency,
+			"rows": rows,
+			# Summed from the same legs the rows are projected from, so a reader
+			# adding the column by eye reaches the figure the totals line shows.
+			"total_debit": float(debit_total),
+			"total_credit": float(credit_total),
+			"balanced": debit_total == credit_total,
+		}
+	)
 
 
 __all__ = [

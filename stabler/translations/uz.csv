@@ -103,6 +103,7 @@ The V1 engine reads every cash account from the desk table. Add at least one des
 The settings payload could not be read.,Sozlamalar ma'lumotini o'qib bo'lmadi.
 This company runs the {engine} remittance engine. The Transfer V1 screens stay unavailable until it is switched to V1 below.,Bu kompaniya {engine} o'tkazma mexanizmida ishlaydi. Quyida V1 ga o'tkazilmaguncha Transfer V1 ekranlari mavjud bo'lmaydi.
 This entry does not balance. Do not hand over cash — report it.,Bu provodka tenglashmayapti. Naqd pul bermang — xabar bering.
+This will post,Quyidagilar kitobga o'tkaziladi
 Transfer registered,Pul o'tkazmasi ro'yxatga olindi
 "Transfers registered on V1 stay in their own records and are not shown by the legacy list, which reads journal entries.",V1 da ro'yxatga olingan o'tkazmalar o'z yozuvlarida qoladi va jurnal yozuvlarini o'qiydigan eski ro'yxatda ko'rinmaydi.
 Transfers registered on the legacy engine stay on the legacy list and are not shown by the V1 screens: they have no Remittance Transfer record behind them.,Legacy mexanizmida ro'yxatga olingan o'tkazmalar eski ro'yxatda qoladi va V1 ekranlarida ko'rinmaydi: ular ortida Remittance Transfer yozuvi yo'q.
@@ -5841,6 +5842,7 @@ You are not permitted to view employees.,
 You are not permitted to view suppliers.,
 You are not permitted to view the audit log.,Sizda o'zgarishlar tarixini ko'rish huquqi yo'q.
 You are not permitted to view this agreement.,Bu shartnomani ko‘rishga ruxsatingiz yo‘q.
+"You cannot make this posting, so it is not previewed.","Siz bu provodkani amalga oshira olmaysiz, shuning uchun oldindan ko'rish ko'rsatilmaydi."
 You do not have permission to view landed-cost figures. Ask an imports manager or accountant.,Sizda yetkazib berish qiymati ma’lumotlarini ko‘rish huquqi yo‘q. Import menejeri yoki buxgalterga murojaat qiling.
 You do not have permission to view the ledger for this transfer. Only the Remittance Auditor role can read it.,Bu o'tkazma bo'yicha buxgalteriya yozuvlarini ko'rishga ruxsatingiz yo'q. Ularni faqat Remittance Auditor roli o'qiy oladi.
 You have already approved level {0} for this request.,
@@ -5912,7 +5914,7 @@ Yutilgan,Yutilgan
 {count} payment(s) totalling {amount} will be re-allocated.,"{count} ta to‘lov, jami {amount}, qayta taqsimlanadi."
 {count} PI lines,{count} ta PI qatori
 {count} selected,{count} ta tanlandi
-"{currency} figures use the rate frozen when this transfer was registered, not today's — that is the rate the ledger holds.","{currency} summalari o‘tkazma ro‘yxatdan o‘tkazilgandagi qotirilgan kursda hisoblangan, bugungisida emas — hisobda aynan shu kurs turadi."
+"{currency} figures use the one book rate for the day this transfer was registered, frozen since — not today's rate, and not the accounting period's rate table. It is the rate the ledger itself holds.","{currency} summalari pul o'tkazmasi ro'yxatga olingan kundagi yagona hisob kursi bo'yicha hisoblangan va o'shandan beri o'zgarmagan — bu bugungi kurs ham, hisobot davrining kurslar jadvali ham emas. Aynan shu kurs hisobda saqlanadi."
 {currency} — not a corridor currency,{currency} — koridor valyutasi emas
 {doctype} {name} is linked and has no deletion rule — resolve it manually first.,{doctype} {name} bog‘langan va o‘chirish qoidasi yo‘q — avval uni qo‘lda hal qiling.
 {done}/{total} quote sets complete,{done}/{total} taklif to'plami to'liq

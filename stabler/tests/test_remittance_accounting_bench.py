@@ -46,7 +46,12 @@ from frappe.utils import add_days, nowdate
 
 from stabler.api._common import check_concurrency
 from stabler.api.remittance import is_hashed_pickup_code
-from stabler.api.remittance_accounting import post_payout, post_refund, post_register
+from stabler.api.remittance_accounting import (
+	_base_precision,
+	post_payout,
+	post_refund,
+	post_register,
+)
 from stabler.api.remittance_commands import (
 	approve_refund,
 	complete_refund,
@@ -519,10 +524,23 @@ class RemittanceAccountingBenchTest(FrappeTestCase):
 	# the preview to the rows the ledger actually received, field by field, rather
 	# than to a second expectation written here.
 
-	def _preview_rows(self, name: str, stage: str) -> dict:
+	def _preview_rows(self, name: str, stage: str) -> tuple[dict, dict]:
 		"""Preview keyed by account, so a row order change is not a false failure."""
 		preview = posting_preview(name, stage)
 		return {row["account"]: row for row in preview["rows"]}, preview
+
+	def _approved(self, key: str, **overrides) -> str:
+		"""An approved refund nobody has completed — the only state Refund previews.
+
+		`posting_preview` is gated on `allowed_actions`, so a refund preview is
+		only reachable where `complete_refund` is: on a transfer whose refund has
+		been approved. Driving the commands rather than setting the field keeps
+		this fixture and the gate honest about the same state machine.
+		"""
+		name = self._register(client_request_id=key, **overrides)["name"]
+		request_refund(name=name, reason="Receiver never came", client_request_id=f"{key}-req")
+		approve_refund(name=name, client_request_id=f"{key}-ok")
+		return name
 
 	def _entry_rows(self, voucher: str) -> dict:
 		rows = frappe.get_all(
@@ -547,11 +565,10 @@ class RemittanceAccountingBenchTest(FrappeTestCase):
 		day one of them was edited, which is a cashier counting notes against a
 		number the books do not hold.
 		"""
-		transfer = self._transfer()
-		post_register(transfer, posting_date=add_days(nowdate(), -1))
-		transfer.reload()
+		name = self._register(client_request_id="bench-preview-1")["name"]
+		transfer = frappe.get_doc("Remittance Transfer", name)
 
-		shown, preview = self._preview_rows(transfer.name, "Payout")
+		shown, preview = self._preview_rows(name, "Payout")
 		paid = post_payout(transfer, posting_date=nowdate())
 		posted = self._entry_rows(paid["journal_entry"])
 
@@ -559,7 +576,7 @@ class RemittanceAccountingBenchTest(FrappeTestCase):
 		for account, row in posted.items():
 			for field in ("debit", "credit", "debit_in_account_currency", "credit_in_account_currency"):
 				self.assertAlmostEqual(
-					shown[account][field.replace("debit_in_account_currency", "debit_in_account_currency")],
+					shown[account][field],
 					row[field],
 					places=6,
 					msg=f"{account}.{field} was previewed as one figure and posted as another",
@@ -571,16 +588,25 @@ class RemittanceAccountingBenchTest(FrappeTestCase):
 		"""A cross-currency entry balances in base ONLY, so the base column is the
 		only place a reader can see it close. If the totals a screen prints did not
 		close, the reader would have no way to tell a sound posting from a broken
-		one — which is the state all three screens were in."""
-		transfer = self._transfer()
-		post_register(transfer, posting_date=add_days(nowdate(), -1))
-		transfer.reload()
+		one — which is the state all three screens were in.
 
-		for stage in ("Register", "Payout", "Refund"):
+		Compared at the base currency's own precision, not at an arbitrary six
+		places: the claim is about two figures a cashier reads off a screen, and
+		the screen renders them to the minor unit.
+		"""
+		payable = self._register(client_request_id="bench-preview-2")["name"]
+		refundable = self._approved("bench-preview-3")
+		places = _base_precision()
+
+		for name, stage in ((payable, "Payout"), (refundable, "Refund")):
 			with self.subTest(stage=stage):
-				preview = posting_preview(transfer.name, stage)
+				preview = posting_preview(name, stage)
 				self.assertTrue(preview["rows"], f"{stage} previewed no rows at all")
-				self.assertAlmostEqual(preview["total_debit"], preview["total_credit"], places=6)
+				self.assertEqual(
+					round(preview["total_debit"], places),
+					round(preview["total_credit"], places),
+					f"the {stage} totals a cashier reads do not close in base",
+				)
 				self.assertTrue(preview["balanced"])
 
 	def test_the_base_column_holds_the_frozen_rate_not_today_s(self) -> None:
@@ -592,13 +618,11 @@ class RemittanceAccountingBenchTest(FrappeTestCase):
 		Anyone who later decides the screen should show a current valuation has to
 		break this test to do it, and will find this sentence.
 		"""
-		transfer = self._transfer()
-		post_register(transfer, posting_date=add_days(nowdate(), -1))
+		name = self._register(client_request_id="bench-preview-11")["name"]
 		self._rates(nowdate(), MOVED_RATE)
-		transfer.reload()
-		frozen = transfer.register_base_rate
+		frozen = frappe.db.get_value("Remittance Transfer", name, "register_base_rate")
 
-		shown, _ = self._preview_rows(transfer.name, "Payout")
+		shown, _ = self._preview_rows(name, "Payout")
 
 		self.assertAlmostEqual(shown[self.obligation]["exchange_rate"], frozen, places=9)
 
@@ -610,33 +634,62 @@ class RemittanceAccountingBenchTest(FrappeTestCase):
 		entry and read it back — leaving a draft Journal Entry per glance at the
 		screen, and an accounting_status the transfer never asked for.
 		"""
-		transfer = self._transfer()
-		post_register(transfer, posting_date=add_days(nowdate(), -1))
-		transfer.reload()
+		payable = self._register(client_request_id="bench-preview-5")["name"]
+		refundable = self._approved("bench-preview-6")
 		before = frappe.db.count("Journal Entry")
 
-		posting_preview(transfer.name, "Payout")
-		posting_preview(transfer.name, "Refund")
+		posting_preview(payable, "Payout")
+		posting_preview(refundable, "Refund")
 
 		self.assertEqual(frappe.db.count("Journal Entry"), before, "a preview created an entry")
-		transfer.reload()
+		transfer = frappe.get_doc("Remittance Transfer", payable)
 		self.assertEqual(transfer.payout_journal_entry, None)
 		self.assertEqual(transfer.accounting_status, "Posted")
 
 	def test_a_stage_that_cannot_happen_is_not_previewed(self) -> None:
 		"""The screen must not show a plan for a posting the command would refuse.
 
-		A payout preview needs the register entry to mirror; an unregistered
-		transfer has none, and `_amounts_from_register_entry` says so in the same
-		sentence the payout would.
+		Three ways a stage stops being reachable, all refused by one gate —
+		`allowed_actions`, the same answer that decides whether the button is on the
+		screen at all. Only the first of the three used to be refused, and only as a
+		side effect of `_amounts_from_register_entry` finding no register entry: a
+		Refund preview of a transfer nobody had approved returned a full reversal
+		plan, and so did a Payout preview of a transfer already paid out.
 		"""
-		transfer = self._transfer()
+		never_registered = self._transfer()
+		with self.assertRaises(frappe.PermissionError):
+			posting_preview(never_registered.name, "Payout")
+
+		no_refund_approved = self._register(client_request_id="bench-preview-7")["name"]
+		with self.assertRaises(frappe.PermissionError):
+			posting_preview(no_refund_approved, "Refund")
+
+		registered = self._register(client_request_id="bench-preview-8")
+		payout_transfer(
+			name=registered["name"],
+			pickup_code=registered["pickup_code"],
+			client_request_id="bench-preview-8-pay",
+		)
+		with self.assertRaises(frappe.PermissionError):
+			posting_preview(registered["name"], "Payout")
+
+	def test_register_is_not_a_previewable_stage(self) -> None:
+		"""Removed rather than left as the one stage with no gate behind it.
+
+		No action covers registering, so there was nothing to check a caller
+		against; the screen that would want it — New Transfer — has no transfer to
+		key on, and this endpoint refuses caller-supplied amounts by design; and
+		once a transfer HAS registered, `transfer_detail` already serves the posted
+		entry to whoever may read the ledger. What was left was an ungated read of
+		every GL account the company keeps.
+		"""
+		name = self._register(client_request_id="bench-preview-9")["name"]
 
 		with self.assertRaises(frappe.ValidationError):
-			posting_preview(transfer.name, "Payout")
+			posting_preview(name, "Register")
 
 	def test_an_unknown_stage_is_refused(self) -> None:
-		transfer = self._transfer()
+		name = self._register(client_request_id="bench-preview-10")["name"]
 
 		with self.assertRaises(frappe.ValidationError):
-			posting_preview(transfer.name, "Settle")
+			posting_preview(name, "Settle")

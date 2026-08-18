@@ -474,8 +474,14 @@ async function loadPreview() {
 	previewLoading.value = true;
 	previewError.value = "";
 	try {
-		preview.value = await remittanceApi.postingPreview(name, "Refund", postingDate.value || null);
+		const rows = await remittanceApi.postingPreview(name, "Refund", postingDate.value || null);
+		// The cashier may have opened another transfer while this was in flight.
+		// Guarded on the assignment, not only on the spinner: this table renders
+		// immediately above "I have counted {amount} and am handing it back".
+		if (selected.value !== name) return;
+		preview.value = rows;
 	} catch (err) {
+		if (selected.value !== name) return;
 		// Never an empty table: an empty table reads as "this posts nothing", which
 		// is the opposite of what a refund does.
 		preview.value = null;

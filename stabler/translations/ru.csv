@@ -104,6 +104,7 @@ The V1 engine reads every cash account from the desk table. Add at least one des
 The settings payload could not be read.,Не удалось прочитать данные настроек.
 This company runs the {engine} remittance engine. The Transfer V1 screens stay unavailable until it is switched to V1 below.,"Эта компания использует движок переводов {engine}. Экраны Transfer V1 остаются недоступными, пока он не переключён на V1 ниже."
 This entry does not balance. Do not hand over cash — report it.,Проводка не сходится. Не выдавайте наличные — сообщите об этом.
+This will post,Будет проведено
 Transfer registered,Перевод зарегистрирован
 "Transfers registered on V1 stay in their own records and are not shown by the legacy list, which reads journal entries.","Переводы, зарегистрированные в V1, остаются в собственных записях и не отображаются в старом списке, который читает журнальные проводки."
 Transfers registered on the legacy engine stay on the legacy list and are not shown by the V1 screens: they have no Remittance Transfer record behind them.,"Переводы, зарегистрированные на движке legacy, остаются в старом списке и не отображаются на экранах V1: за ними нет записи Remittance Transfer."
@@ -5846,6 +5847,7 @@ You are not permitted to view employees.,
 You are not permitted to view suppliers.,
 You are not permitted to view the audit log.,У вас нет прав на просмотр журнала изменений.
 You are not permitted to view this agreement.,У вас нет доступа к этому договору.
+"You cannot make this posting, so it is not previewed.","Вы не можете провести эту операцию, поэтому предварительный просмотр недоступен."
 You do not have permission to view landed-cost figures. Ask an imports manager or accountant.,У вас нет прав просматривать данные стоимости доставки. Обратитесь к менеджеру импорта или бухгалтеру.
 You do not have permission to view the ledger for this transfer. Only the Remittance Auditor role can read it.,У вас нет прав на просмотр проводок по этому переводу. Читать их может только роль Remittance Auditor.
 You have already approved level {0} for this request.,
@@ -5917,7 +5919,7 @@ Yutilgan,Выиграно
 {count} payment(s) totalling {amount} will be re-allocated.,Будет перераспределено платежей: {count} на сумму {amount}.
 {count} PI lines,{count} строк PI
 {count} selected,Выбрано: {count}
-"{currency} figures use the rate frozen when this transfer was registered, not today's — that is the rate the ledger holds.","Суммы в {currency} посчитаны по курсу, зафиксированному при регистрации перевода, а не по сегодняшнему — именно этот курс хранится в учёте."
+"{currency} figures use the one book rate for the day this transfer was registered, frozen since — not today's rate, and not the accounting period's rate table. It is the rate the ledger itself holds.",Суммы в {currency} рассчитаны по единому учётному курсу на день регистрации перевода и с тех пор зафиксированы — это не сегодняшний курс и не таблица курсов учётного периода. Именно этот курс хранится в учёте.
 {currency} — not a corridor currency,{currency} — не валюта коридора
 {doctype} {name} is linked and has no deletion rule — resolve it manually first.,{doctype} {name} связан и не имеет правила удаления — сначала разберите связь вручную.
 {done}/{total} quote sets complete,{done}/{total} комплектов предложений собрано

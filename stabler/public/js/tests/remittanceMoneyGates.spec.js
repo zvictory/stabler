@@ -167,6 +167,49 @@ describe("A verified code stops being verified when the code changes", () => {
 	});
 });
 
+describe("A preview that resolves late does not paint onto another transfer", () => {
+	// Review found the guard present and in the wrong place, which is worse than
+	// absent: both handlers captured `name` before the await and then checked it
+	// only in `finally`, on the spinner. `preview.value = ...` ran whatever the
+	// cashier had moved on to, so transfer A's journal entry could render on
+	// transfer B's screen — on Refund, directly above "I have counted {amount}
+	// and am handing it back to {sender}."
+	//
+	// So this asserts ORDER, not presence. A `toContain` was green on the broken
+	// version. Both assignments need the guard: the one in `try` and the one in
+	// `catch`, which is why the count is two rather than one.
+	it.each([
+		[
+			"RemittancePayout.vue",
+			payoutSrc,
+			"async function toCashStep()",
+			"if (selected.value?.name !== name) return;",
+		],
+		[
+			"RemittanceRefund.vue",
+			refundSrc,
+			"async function loadPreview()",
+			"if (selected.value !== name) return;",
+		],
+	])("%s guards the assignment and not just the spinner", (_file, src, signature, guard) => {
+		const body = handlerBody(src, signature, "} finally {");
+		const guarded = body.indexOf(guard);
+		const assigned = body.indexOf("preview.value =");
+
+		expect(guarded, `${signature} never re-checks the selection after its await`).toBeGreaterThan(
+			-1
+		);
+		expect(assigned, `${signature} assigns no preview`).toBeGreaterThan(-1);
+		expect(guarded, "the guard runs after the assignment it exists to prevent").toBeLessThan(
+			assigned
+		);
+		expect(
+			body.split(guard).length - 1,
+			`${signature} guards one of its two assignments — try and catch both assign`
+		).toBe(2);
+	});
+});
+
 describe("The submit handlers refuse what the buttons hide", () => {
 	// A disabled button is a UI affordance, not a guard: the handler is still
 	// reachable from a stale click or a keyboard activation mid-update. Both

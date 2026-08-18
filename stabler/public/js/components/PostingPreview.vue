@@ -22,6 +22,8 @@
  * ledger would be a day somebody counted cash against it.
  */
 import { computed } from "vue";
+import { storeToRefs } from "pinia";
+import { useSession } from "../stores/session.js";
 import { t } from "../composables/i18n.js";
 import { formatMoney } from "../composables/money.js";
 
@@ -35,11 +37,18 @@ const props = defineProps({
 	error: { type: String, default: "" },
 });
 
+// Read here rather than taken as a prop, the way VoucherDrawer does it: this
+// table sits on the Refund card directly above `money(quote.tendered, ...)`,
+// which passes the language. Two formats for the same money on the screen where
+// notes are counted is worse than either format on its own.
+const session = useSession();
+const { user } = storeToRefs(session);
+
 const hasRows = computed(() => props.rows.length > 0);
 
 /** Blank rather than 0,00: a zero in a debit cell reads as a posted zero. */
 function money(amount, currency) {
-	return Number(amount) ? formatMoney(amount, currency) : "";
+	return Number(amount) ? formatMoney(amount, currency, user.value?.language) : "";
 }
 </script>
 
@@ -90,10 +99,10 @@ function money(amount, currency) {
 						<td></td>
 						<td></td>
 						<td class="text-end font-monospace small">
-							{{ formatMoney(totalDebit, baseCurrency) }}
+							{{ formatMoney(totalDebit, baseCurrency, user?.language) }}
 						</td>
 						<td class="text-end font-monospace small">
-							{{ formatMoney(totalCredit, baseCurrency) }}
+							{{ formatMoney(totalCredit, baseCurrency, user?.language) }}
 						</td>
 					</tr>
 				</tfoot>
@@ -112,7 +121,7 @@ function money(amount, currency) {
 			<div class="mt-1">
 				{{
 					t(
-						"{currency} figures use the rate frozen when this transfer was registered, not today's — that is the rate the ledger holds.",
+						"{currency} figures use the one book rate for the day this transfer was registered, frozen since — not today's rate, and not the accounting period's rate table. It is the rate the ledger itself holds.",
 						{ currency: baseCurrency }
 					)
 				}}

@@ -78,6 +78,48 @@ Also note point (1) is a second, quieter trap: the obligation leg is in the RECE
 
 Decide: exempt remittance vouchers from the band (voucher_type or the stabler_remittance_stage custom field), widen it for them, or treat a frozen rate outside the band as an approval-gated exception. This is a policy call, not a code tweak — the guard is there on purpose.
 
+### A register entry will not post at a send rate that carries cents
+
+`rem-fractional-rate` · hata
+
+Found 2026-08-18 while trying to give the posting preview a real-ledger test for
+fractional base values — by running it, not by reading.
+
+Reproduction, on genesis-test.local: in
+`stabler/tests/test_remittance_accounting_bench.py`, publish a Currency Exchange
+rate for TODAY that is not a whole number (12345.67 rather than the suite's flat
+12000.0), then register through `register_remittance`. The register Journal Entry
+is refused on insert:
+
+    frappe.exceptions.ValidationError: Row 4: Both Debit and Credit values cannot be zero
+    erpnext/accounts/doctype/journal_entry/journal_entry.py:931 validate_debit_credit_amount
+    <- stabler/api/remittance_accounting.py:230 _build_entry
+
+`register_legs` emits THREE legs (origin cash, deferred commission, receiver
+obligation — `_remittance_accounting.py:288-320`), so row 4 is a row nobody in
+this app wrote. Something in ERPNext's `JournalEntry.validate` chain is appending
+it, and only when the rate carries cents; the same fixture at 12000.0 posts fine,
+which is why the whole bench suite is green and has always been.
+
+Why it matters beyond a test fixture: UZS CBU rates carry cents in real life. If
+this reproduces on a UZS-base tenant with a real rate, registration fails outright
+on those days — cash on the counter and no obligation posted. It was NOT
+reproduced against a tenant, and the test site's fixture is odd in one way that
+may be the whole story: `_rates` derives send and receive currencies such that
+both are EUR on a USD-base site, and `_ensure` dedupes them onto one Currency
+Exchange row, so the entry carries two different rates for one currency.
+
+Next step is one measurement, not a fix: print `entry.accounts` before insert
+under a fractional rate and find out what row 4 is. If it is an artefact of the
+fixture's collapsed currency pair, fix the fixture and land the bench test that
+was dropped for this; if it is not, it is a production defect on every tenant
+whose base currency has a rate with cents.
+
+The property this was meant to prove on a real ledger is meanwhile proved
+frappe-free and mutation-checked in `test_remittance_queries.py`
+(`PostingPreviewBalanceTest`), against legs that close in Decimal and do not close
+in float64.
+
 ### Vehicle Agreement terminal statuses have no writers — Completed, Terminated, Restructured unreachable
 `stabler-2671` · hata
 
