@@ -259,7 +259,7 @@ test-bench:
 	  echo "  venv resolves the 'stabler' package through stabler.pth, which points"; \
 	  echo "  at the main tree. So from a worktree or a second clone it imports MAIN's"; \
 	  echo "  code and reports the verdict as if it were this branch's — a silent"; \
-	  echo "  false pass, on exactly the beads where money moves. Verified 2026-08-17"; \
+	  echo "  false pass, on exactly the branches where money moves. Verified 2026-08-17"; \
 	  echo "  with a probe module visible only in the worktree: unittest found it,"; \
 	  echo "  the bench raised ModuleNotFoundError."; \
 	  echo ""; \

@@ -9,7 +9,6 @@ this file is paid for in every session.
 
 | Where the rules live | Loads when |
 |---|---|
-| `.claude/rules/00-context-budget.md` | always — session protocol |
 | `.claude/rules/10-frontend.md` | you touch `*.vue`, `*.js`, `public/`, `www/` |
 | `.claude/rules/20-backend-migrations.md` | you touch `*.py`, `patches.txt`, doctype JSON |
 | `.claude/rules/30-tenant-modules.md` | you touch routes, APIs, doctypes, patches |
@@ -65,14 +64,23 @@ this file is paid for in every session.
 - Implementation delegated to Antigravity (`agy`) follows one canonical workflow:
   `.claude/skills/stabler-orchestrator/SKILL.md` (what Claude executes) and
   `docs/runbooks/claude-antigravity-orchestration.md` (the human-facing runbook).
-- `agy` works only inside `.worktrees/agy-<bead-id>` on a feature branch, leaves its
-  changes uncommitted, and **never** merges, pushes, deploys, touches production or
-  closes the parent bead. Claude reviews the full diff independently before accepting it.
+- `agy` works only inside `.worktrees/agy-<task>` on a feature branch, leaves its
+  changes uncommitted, and **never** merges, pushes, deploys or touches production.
+  Claude reviews the full diff independently before accepting it.
 - Pre-merge review: the read-only `stabler-diff-reviewer` agent (`.claude/agents/`).
 
-## Work queue
-Single source of truth: **beads (`bd`)**. No markdown TODO lists.
+## How work is done
+Test first. There is no tracker, no ticket ceremony, no micro-task protocol —
+those were removed on 2026-08-18 because they cost more than they returned.
 
-    bd ready  →  /mt <id>  →  make check  →  /mt-done <id>  →  /clear
+    failing test  →  code  →  make check  →  commit
 
-One micro-task per session. See `.claude/rules/00-context-budget.md`.
+- **Write the test before the code, and prove it red for the right reason.** Mutate
+  the fix away and watch that exact test fail. A test never seen red proves nothing —
+  it is the only check that catches a test which passes for the wrong reason.
+- A test must encode WHY the behaviour matters, not just what it does.
+- One commit per coherent change, explicit paths, `make check` green **per commit**.
+- Touches the DB? `make check` is not proof. Say so, and run `make test-bench`.
+- **What to work on next comes from Zafar.** `docs/backlog.md` is an archive of
+  findings already measured (file:line, reproduction) — read it when it is relevant,
+  do not treat it as a queue to burn down.

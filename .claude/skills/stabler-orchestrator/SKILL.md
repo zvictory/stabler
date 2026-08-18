@@ -1,13 +1,13 @@
 ---
 name: stabler-orchestrator
-description: Use when delegating Stabler implementation work to the Antigravity (agy) CLI — writing the bead contract, launching agy in an isolated worktree, reviewing the diff independently, running the verification gates, and merging to main. Also use when asked how the Claude→agy→review loop works, or before any production deploy decision.
+description: Use when delegating Stabler implementation work to the Antigravity (agy) CLI — writing the implementation contract, launching agy in an isolated worktree, reviewing the diff independently, running the verification gates, and merging to main. Also use when asked how the Claude→agy→review loop works, or before any production deploy decision.
 ---
 
 # Stabler orchestration — Claude specs, Antigravity implements, Claude verifies
 
 You are the architect, reviewer and integrator. Antigravity (`agy`) is an
 implementation subagent that runs in an isolated git worktree and does exactly
-one bead's contract. Human-facing walkthrough and the measured CLI facts live in
+one task's contract. Human-facing walkthrough and the measured CLI facts live in
 `docs/runbooks/claude-antigravity-orchestration.md` — read it when you need the
 exact invocation; this file is the workflow you follow.
 
@@ -22,14 +22,14 @@ exact invocation; this file is the workflow you follow.
 | `git add <explicit paths>`, commit, `--no-ff` merge, push | — |
 
 Antigravity **never** deploys, touches production or SSH, merges, pushes,
-rewrites history, or closes the parent bead. Production deployment **always**
+or rewrites history. Production deployment **always**
 requires explicit approval from Zafar — one `bench restart` blips all seven
 tenants.
 
 ## 0. Discover before you ask
 
-Read the code before forming questions. `bd prime`, `bd ready --json`,
-`git status --short --branch`, `git worktree list --porcelain`. Never disturb
+Read the code before forming questions. `git status --short --branch`,
+`git worktree list --porcelain`, `git log --oneline -10`. Never disturb
 in-flight work: if the tree is dirty or another worktree holds a branch, do not
 stash, checkout over it, reformat or stage anything you do not own — open your
 own branch and worktree instead.
@@ -37,20 +37,13 @@ own branch and worktree instead.
 Only ask Zafar when a **business decision** is missing (which account, which
 rounding rule, which tenant owns it). Never ask what the code can answer.
 
-## 1. Bead first, then the contract
+## 1. The contract, before anything else
 
-`bd` is the only tracker. Do not create `REQUIREMENT.md`, `IMPLEMENTATION.md`,
-`REVIEW.md`, task lists or any second tracking system.
-
-```bash
-bd create --title "<what>" --description "<why>" --type task|bug|feature|chore -p 0-4 \
-  --design-file <contract.md> --json
-bd update <id> --claim --json
-```
-
-- **`--design`** holds the immutable implementation contract.
-- **`--append-notes`** holds the running log: `conversation_id`, review findings,
-  correction-cycle counter, blockers.
+One file: `docs/plans/<yyyy-mm-dd>-<topic>.md`, the repository's existing
+convention. It holds the frozen contract and, appended below it, the running log —
+`conversation_id`, review findings, correction-cycle counter, blockers. Do not
+split it into `REQUIREMENT.md` / `IMPLEMENTATION.md` / `REVIEW.md`, and do not
+stand up a tracker; there is none (`bd` was removed 2026-08-18).
 
 **Before freezing a contract, verify EVERY symbol, path and endpoint in it against the
 codebase. A fabricated path is implemented literally inside a decision-complete contract —
@@ -101,8 +94,8 @@ Zafar for the missing business decision.
 
 ```bash
 git checkout main && git pull --ff-only
-git worktree add -b feat/<tenant-or-module>-<topic> .worktrees/agy-<bead-id> main
-ln -s "$(git rev-parse --show-toplevel)/node_modules" .worktrees/agy-<bead-id>/node_modules
+git worktree add -b feat/<tenant-or-module>-<topic> .worktrees/agy-<task> main
+ln -s "$(git rev-parse --show-toplevel)/node_modules" .worktrees/agy-<task>/node_modules
 ```
 
 `fix/…` and `chore/…` for the other two kinds. `.worktrees/` is gitignored
@@ -125,7 +118,7 @@ but rewrites the tracked `package-lock.json` inside the worktree.
 refuses. It does `cd $(LOCAL_BENCH) && bench run-tests`, and the bench venv
 resolves the `stabler` package through `stabler.pth`, which points at the MAIN
 tree — so a worktree run measures main's code and reports the verdict as the
-branch's. A bench-gated bead is therefore sequenced, not parallelised: merge it
+branch's. A bench-gated task is therefore sequenced, not parallelised: merge it
 into the main tree and run it there. There is also exactly one bench, one pinned
 site (`genesis-test.local`, enforced by the `#pin` line in
 `.github/bench-known-red.txt`), one MariaDB and one redis, so two concurrent runs
@@ -138,7 +131,7 @@ which adds a schema-validated `structured_output` object to the envelope — rea
 that, never parse the free-text `.response`.
 
 ```bash
-cd .worktrees/agy-<bead-id>
+cd .worktrees/agy-<task>
 agy \
   --model gemini-3.1-pro-high \
   --effort high \
@@ -148,25 +141,25 @@ agy \
   --output-format json \
   --json-schema .worktrees/agy-report.schema.json \
   --print-timeout 60m \
-  --print "<bounded implementation instruction>" > /tmp/agy-<bead-id>.json
+  --print "<bounded implementation instruction>" > /tmp/agy-<task>.json
 ```
 
 `--dangerously-skip-permissions` is permitted **only while all six controls hold
-at once**: execution is inside `.worktrees/agy-<bead-id>`; `--sandbox` is on; no
+at once**: execution is inside `.worktrees/agy-<task>`; `--sandbox` is on; no
 `--add-dir` widens the scope; the prompt forbids production, SSH, deploy, merge,
 push, destructive git and unrelated files; you wait for agy to exit before
 touching that worktree; you review the complete diff before accepting it. If any
 one of those is false, drop the flag.
 
 Instruct agy to leave its changes **uncommitted**. Record `conversation_id` in
-bead notes immediately — without it you cannot resume for fixes.
+the contract log immediately — without it you cannot resume for fixes.
 
 ## 5. Review independently
 
 Treat the completion report as a claim, not evidence. Then:
 
 ```bash
-cd .worktrees/agy-<bead-id>
+cd .worktrees/agy-<task>
 git status --short
 git diff $(git merge-base HEAD origin/main)
 ```
@@ -176,7 +169,7 @@ existing callers and interfaces, and run the deterministic checks yourself.
 Delegate the adversarial pass to the `stabler-diff-reviewer` agent, then
 adjudicate its findings — it is read-only and cannot fix anything.
 
-Classify into bead notes as **P0** (correctness, money, security, data loss),
+Classify in the contract log as **P0** (correctness, money, security, data loss),
 **P1** (contract violation, missing acceptance criterion), **P2** (rule
 violation, missing i18n/state), **P3** (polish). Fix P0–P2 before merging.
 
@@ -196,7 +189,7 @@ agy --conversation <conversation-id> --mode accept-edits --sandbox \
     --print "<exact findings and the exact required corrections>"
 ```
 
-After the third failed cycle: stop. Leave the bead open/in progress, write the
+After the third failed cycle: stop. Leave the branch as it is, write the
 blocker and the evidence into notes, and ask Zafar for direction. Do not silently
 finish the work yourself and call the delegation a success.
 
@@ -220,7 +213,7 @@ deploy script, tracker or browser framework.
 ## 8. Integrate
 
 ```bash
-cd .worktrees/agy-<bead-id>
+cd .worktrees/agy-<task>
 git add <explicit paths>            # never `git add -A`; translations as five CSVs
 git commit                          # trailer: Co-Authored-By: Claude <noreply@anthropic.com>
 git fetch origin && git merge origin/main     # merge, never rebase
@@ -229,8 +222,7 @@ cd <main tree> && git checkout main
 git merge --no-ff feat/<...> && git push      # one chain
 git rev-parse main origin/main                # must match
 git status --porcelain                        # must be empty
-bd close <id> --reason "<what shipped>"
-git worktree remove .worktrees/agy-<bead-id>  # only the one you created
+git worktree remove .worktrees/agy-<task>  # only the one you created
 ```
 
 The commit trailer carries **no model version** — a pinned name goes stale and
