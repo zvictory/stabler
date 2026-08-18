@@ -57,7 +57,7 @@ import TenderDocuments from "./pages/tender/TenderDocuments.vue";
 import SalesInvoices from "./pages/sales/SalesInvoices.vue";
 import DeliveryNotes from "./pages/sales/DeliveryNotes.vue";
 import SalesInvoiceForm from "./pages/sales/SalesInvoiceForm.vue";
-import NewDirectInvoicePage from "./pages/sales/NewDirectInvoicePage.vue";
+import SalesInvoiceFormModern from "./pages/sales/SalesInvoiceFormModern.vue";
 import SalesReturnForm from "./pages/sales/SalesReturnForm.vue";
 import POS from "./pages/pos.vue";
 import SalesAging from "./pages/sales/Aging.vue";
@@ -339,13 +339,14 @@ const routes = [
 			{ path: "orders/:name", name: "sales-order", component: SalesOrderForm, meta: { title: t("Sales Order") } },
 			{ path: "invoices", name: "sales-invoices", component: SalesInvoices, meta: { title: t("Sales Invoices") } },
 			{ path: "delivery-notes", name: "sales-delivery-notes", component: DeliveryNotes, meta: { title: t("Delivery Notes") } },
-			{ path: "invoices/new", name: "sales-invoice-new", component: NewDirectInvoicePage, meta: { title: t("New Direct Sales Invoice") } },
+			{ path: "invoices/new", name: "sales-invoice-new", component: SalesInvoiceFormModern, meta: { title: t("New Direct Sales Invoice") } },
 			{ path: "returns/new", name: "sales-return-new", component: SalesReturnForm, meta: { title: t("New Sales Return") } },
 			{ path: "returns/:name", redirect: to => `/sales/invoices/${to.params.name}` },
 			{ path: "pos", redirect: "/pos" },
 			{ path: "reports", redirect: "/reports" },
 			{ path: "invoices/:name/print", name: "sales-invoice-print", component: InvoicePrint, meta: { title: t("Invoice") } },
 			{ path: "invoices/:name/waybill", name: "sales-invoice-waybill", component: Waybill, meta: { title: t("Yuk xati") } },
+			{ path: "invoices/:name/edit", name: "sales-invoice-edit", component: SalesInvoiceFormModern, meta: { title: t("Sales Invoice") } },
 			{ path: "invoices/:name", name: "sales-invoice", component: SalesInvoiceForm, meta: { title: t("Sales Invoice") } },
 			{ path: "aging", name: "sales-aging", component: SalesAging, meta: { title: t("AR Aging") } },
 			{ path: "reserved-stock", name: "sales-reserved-stock", component: ReservedStock, meta: { title: t("Reserved Stock") } },

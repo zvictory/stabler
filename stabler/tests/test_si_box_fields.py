@@ -6,7 +6,7 @@ DEPONUN gerçeği kolidir: sevkiyattan kaç koli çıktığı, sayımda kaç kol
 bulunduğu, eksik teslim ve iade tartışmasında kimin haklı olduğu koli
 üzerinden konuşulur. İki sayı birbirinin yerine geçmez; ikisi de saklanmalı.
 
-Ekran bunu zaten topluyor (`NewDirectInvoicePage.vue`, satır başına
+Ekran bunu zaten topluyor (`SalesInvoiceFormModern.vue`, satır başına
 `boxes` ve `box_kg`) ve payload'a koyuyor. Göç sırasında backend'in iki ucu
 da bu alanları sessizce düşürmeye başladı: `create_direct_sales_invoice`
 satır sözlüğüne yazmıyordu, `sales_invoice_detail` de geri okumuyordu. Eski

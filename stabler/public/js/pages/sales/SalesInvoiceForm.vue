@@ -427,6 +427,15 @@ onMounted(loadDoc);
 			<button
 				v-if="can.delete"
 				type="button"
+				class="btn btn-outline-secondary"
+				:disabled="actionRunning"
+				@click="router.push(`/sales/invoices/${form.name}/edit`)"
+			>
+				<i class="ti ti-edit me-1"></i>{{ t("Edit") }}
+			</button>
+			<button
+				v-if="can.delete"
+				type="button"
 				class="btn btn-outline-danger"
 				:class="{ 'ms-auto': !can.cancel }"
 				:disabled="actionRunning"
