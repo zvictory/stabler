@@ -1,0 +1,996 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mikas Tender — İş Akışı ve Form Katmanı · Mockup (2026-08-17)</title>
+<style>
+:root{
+  --bg:#f6f7f9; --card:#fff; --line:#e3e6ea; --line2:#eef0f3;
+  --ink:#1c2430; --ink2:#5a6675; --ink3:#8b95a3;
+  --primary:#2563eb; --primary-d:#1d4ed8; --primary-t:#eff4ff;
+  --ok:#0f8a5f; --ok-bg:#e8f6ef;
+  --warn:#a86300; --warn-bg:#fdf3e2;
+  --dang:#c02636; --dang-bg:#fdecee;
+  --info:#1f6fb2; --info-bg:#e9f2fa;
+  --ink-dark:#1a2234;
+  --mono:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,monospace;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);
+  font:14px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;}
+.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+.wrap{max-width:1400px;margin:0 auto;padding:0 20px 120px}
+
+/* ---------- topbar ---------- */
+.topbar{background:var(--card);border-bottom:1px solid var(--line);position:sticky;top:0;z-index:40}
+.topbar .wrap{padding-top:14px;padding-bottom:0}
+.crumb{color:var(--ink3);font-size:12.5px;margin-bottom:4px}
+.h1row{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+h1{font-size:20px;margin:0;font-weight:650;letter-spacing:-.01em}
+.srcline{color:var(--ink2);font-size:12.5px;margin:6px 0 0}
+.srcline code{background:var(--line2);padding:1px 5px;border-radius:4px;font-size:11.5px}
+.rail{display:flex;gap:8px;margin:14px 0 0;border-top:1px solid var(--line2);padding-top:10px;overflow-x:auto}
+.step{flex:1;min-width:190px;border:1px solid var(--line);border-radius:8px;background:#fbfcfd;
+  padding:8px 12px;cursor:pointer;transition:.12s;text-align:left;font-family:inherit}
+.step:hover{border-color:#c9d2dd;background:#fff}
+.step.on{border-color:var(--primary);background:var(--primary-t);box-shadow:inset 0 0 0 1px var(--primary)}
+.step .n{font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--ink3)}
+.step.on .n{color:var(--primary)}
+.step .t{font-weight:600;font-size:13.5px;margin-top:1px}
+.step .s{font-size:12px;color:var(--ink2);margin-top:1px}
+
+/* ---------- cards ---------- */
+.card{background:var(--card);border:1px solid var(--line);border-radius:10px;margin-top:16px;overflow:hidden}
+.card>header{padding:12px 16px;border-bottom:1px solid var(--line2);display:flex;
+  align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.card>header h2{font-size:14.5px;margin:0;font-weight:650}
+.card>header .sub{font-size:12.5px;color:var(--ink3);font-weight:400;margin-left:6px}
+.body{padding:14px 16px}
+.body.tight{padding:0}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media(max-width:1000px){.grid2{grid-template-columns:1fr}}
+
+/* ---------- buttons / chips ---------- */
+.btn{border:1px solid var(--line);background:#fff;color:var(--ink);border-radius:7px;
+  padding:6px 12px;font-size:13px;cursor:pointer;font-weight:500;transition:.12s;white-space:nowrap;font-family:inherit}
+.btn:hover{background:#f4f6f8;border-color:#c9d2dd}
+.btn.primary{background:var(--primary);border-color:var(--primary);color:#fff}
+.btn.primary:hover{background:var(--primary-d)}
+.btn.sm{padding:3px 9px;font-size:12px;border-radius:6px}
+.chip{display:inline-flex;align-items:center;gap:4px;padding:1px 8px;border-radius:20px;
+  font-size:11.5px;font-weight:600;border:1px solid transparent;white-space:nowrap}
+.chip.ok{background:var(--ok-bg);color:var(--ok)}
+.chip.warn{background:var(--warn-bg);color:var(--warn)}
+.chip.dang{background:var(--dang-bg);color:var(--dang)}
+.chip.info{background:var(--info-bg);color:var(--info)}
+.chip.mut{background:var(--line2);color:var(--ink2)}
+.chip.new{background:var(--primary-t);color:var(--primary-d);border-color:#c7d9fb}
+
+/* ---------- annotations ---------- */
+.note{border-left:3px solid var(--line);padding:8px 12px;margin:12px 0 0;font-size:12.5px;
+  color:var(--ink2);background:#fafbfc;border-radius:0 6px 6px 0}
+.note.bad{border-left-color:var(--dang);background:var(--dang-bg);color:#8f2130}
+.note.good{border-left-color:var(--ok);background:var(--ok-bg);color:#0b6b4a}
+.note.adr{border-left-color:var(--primary);background:var(--primary-t);color:#1b4494}
+.note b{font-weight:650}
+.note code,.tbl code{font-family:var(--mono);font-size:11.5px;background:rgba(0,0,0,.05);padding:1px 4px;border-radius:3px}
+.flag{display:inline-flex;width:17px;height:17px;border-radius:50%;align-items:center;justify-content:center;
+  font-size:11px;font-weight:800;color:#fff;flex:none}
+.flag.bad{background:var(--dang)}
+.flag.good{background:var(--ok)}
+
+/* ---------- tables ---------- */
+.tbl{width:100%;border-collapse:collapse;font-size:13px}
+.tbl th{text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--ink3);
+  font-weight:700;padding:8px 12px;border-bottom:1px solid var(--line);background:#fbfcfd}
+.tbl td{padding:8px 12px;border-bottom:1px solid var(--line2);vertical-align:top}
+.tbl tr:last-child td{border-bottom:0}
+.tbl tr.hi td{background:var(--ok-bg)}
+.tbl .num{text-align:right;font-family:var(--mono);font-variant-numeric:tabular-nums}
+
+/* ---------- mock app shell ---------- */
+.app{border:1px solid var(--line);border-radius:10px;overflow:hidden;background:#fff}
+.app-top{display:flex;align-items:center;gap:10px;padding:8px 14px;background:var(--ink-dark);color:#e8ecf2;font-size:12.5px}
+.app-top .mod{font-weight:650;color:#fff}
+.app-top .sep{opacity:.4}
+.app-nav{display:flex;gap:2px;padding:0 10px;background:#f8fafc;border-bottom:1px solid var(--line)}
+.app-nav span{padding:8px 11px;font-size:12.5px;color:var(--ink2);border-bottom:2px solid transparent;cursor:default}
+.app-nav span.on{color:var(--primary-d);border-bottom-color:var(--primary);font-weight:600}
+.app-body{padding:16px;background:#fbfcfd}
+.pagehead{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px;flex-wrap:wrap}
+.pagehead h3{margin:0;font-size:16px;font-weight:650}
+.pagehead .kick{font-size:11.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--ink3);font-weight:700}
+
+/* ---------- form mock ---------- */
+.sec{border:1px solid var(--line);border-radius:8px;background:#fff;margin-bottom:12px}
+.sec>.h{display:flex;align-items:center;gap:8px;padding:9px 13px;border-bottom:1px solid var(--line2);background:#fbfcfd}
+.sec>.h .ltr{width:20px;height:20px;border-radius:5px;background:var(--ink-dark);color:#fff;font-size:11px;
+  font-weight:800;display:flex;align-items:center;justify-content:center;flex:none}
+.sec>.h .ttl{font-weight:650;font-size:13.5px}
+.sec>.b{padding:12px 13px}
+.fgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px 14px}
+.fgrid.c3{grid-template-columns:repeat(3,1fr)}
+.fgrid.c2{grid-template-columns:repeat(2,1fr)}
+@media(max-width:880px){.fgrid,.fgrid.c3,.fgrid.c2{grid-template-columns:1fr 1fr}}
+.f{display:flex;flex-direction:column;gap:3px;min-width:0}
+.f.span2{grid-column:span 2}
+.f label{font-size:11.5px;color:var(--ink2);font-weight:600}
+.f label .req{color:var(--dang)}
+.inp{border:1px solid var(--line);border-radius:6px;padding:6px 9px;font-size:13px;background:#fff;
+  min-height:32px;display:flex;align-items:center;justify-content:space-between;gap:6px;color:var(--ink)}
+.inp.ph{color:var(--ink3)}
+.inp .car{color:var(--ink3);font-size:10px}
+.inp.money{font-family:var(--mono);justify-content:flex-end;font-variant-numeric:tabular-nums}
+.hint{font-size:11px;color:var(--ink3)}
+.hint.key{font-family:var(--mono);font-size:10.5px;color:var(--primary-d)}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:7px;overflow:hidden}
+.seg span{padding:5px 13px;font-size:12.5px;cursor:default;background:#fff;border-right:1px solid var(--line);font-weight:500}
+.seg span:last-child{border-right:0}
+.seg span.on{background:var(--ok);color:#fff;font-weight:650}
+.seg span.on.no{background:var(--dang)}
+.seg.view span.on{background:var(--ink-dark);color:#fff}
+.drop{border:1.5px dashed var(--line);border-radius:8px;padding:16px;text-align:center;color:var(--ink3);font-size:12.5px;background:#fbfcfd}
+.filerow{display:flex;align-items:center;gap:9px;padding:7px 10px;border:1px solid var(--line);border-radius:7px;margin-top:8px;font-size:12.5px;background:#fff}
+.filerow .nm{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.filerow .sz{color:var(--ink3);font-size:11.5px;font-family:var(--mono)}
+.footbar{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:11px 13px;
+  border-top:1px solid var(--line);background:#fbfcfd;flex-wrap:wrap;border-radius:0 0 8px 8px}
+.checks{display:flex;gap:6px;flex-wrap:wrap}
+
+/* ---------- kanban ---------- */
+.phaselbl{display:flex;align-items:center;gap:8px;margin:2px 0 8px;font-size:11px;font-weight:800;
+  letter-spacing:.08em;text-transform:uppercase;color:var(--ink3)}
+.phaselbl i{flex:1;height:1px;background:var(--line);font-style:normal}
+.board{display:flex;gap:9px;overflow-x:auto;padding-bottom:6px}
+.lane{flex:none;width:186px;background:#f2f4f7;border:1px solid var(--line);border-radius:8px;padding:8px}
+.lane.post{background:#eef2f7;border-style:dashed}
+.lane>.lh{display:flex;align-items:center;justify-content:space-between;gap:6px;margin-bottom:7px}
+.lane>.lh .nm{font-size:12px;font-weight:700}
+.lane>.lh .ct{font-size:11px;color:var(--ink3);font-family:var(--mono)}
+.kcard{background:#fff;border:1px solid var(--line);border-radius:7px;padding:8px;margin-bottom:7px;font-size:12px}
+.kcard .t{font-weight:650;font-size:12.5px;line-height:1.3}
+.kcard .sub{color:var(--ink3);font-size:11px;margin-top:1px;font-family:var(--mono)}
+.kcard .val{font-family:var(--mono);font-weight:650;margin-top:5px;font-size:12.5px}
+.kcard .met{display:flex;align-items:center;gap:5px;margin-top:5px;flex-wrap:wrap}
+.dots{display:inline-flex;gap:2px}
+.dots i{width:6px;height:6px;border-radius:50%;background:var(--line);display:inline-block}
+.dots i.on{background:var(--ok)}
+.bar{height:4px;background:var(--line2);border-radius:3px;overflow:hidden;margin-top:5px}
+.bar i{display:block;height:100%;background:var(--primary)}
+.bar i.ok{background:var(--ok)}
+.bar i.warn{background:var(--warn)}
+.who{width:20px;height:20px;border-radius:50%;background:var(--ink-dark);color:#fff;font-size:9.5px;
+  font-weight:700;display:inline-flex;align-items:center;justify-content:center;flex:none}
+.anno{position:relative;border:1.5px dashed var(--primary);border-radius:9px;padding:9px;background:var(--primary-t)}
+.anno .lbl{position:absolute;top:-9px;left:10px;background:var(--primary);color:#fff;font-size:10px;
+  font-weight:700;padding:1px 7px;border-radius:10px;letter-spacing:.03em}
+
+/* ---------- drawer ---------- */
+.drawer{border:1px solid var(--line);border-radius:9px;background:#fff;overflow:hidden;box-shadow:0 6px 22px rgba(20,30,50,.09)}
+.drawer .dh{padding:11px 14px;border-bottom:1px solid var(--line2);display:flex;justify-content:space-between;
+  align-items:flex-start;gap:10px;background:#fbfcfd}
+.drawer .dh .k{font-size:11px;color:var(--ink3);font-family:var(--mono)}
+.drawer .dh .ti{font-weight:650;font-size:14.5px;margin-top:1px}
+.drawer .db{padding:12px 14px}
+.deflist{width:100%;border-collapse:collapse;font-size:12.5px}
+.deflist th{text-align:left;font-weight:600;color:var(--ink2);padding:6px 0;width:150px;
+  border-bottom:1px solid var(--line2);vertical-align:top}
+.deflist td{padding:6px 0;border-bottom:1px solid var(--line2)}
+.steps{display:flex;gap:3px;flex-wrap:wrap;margin-top:4px}
+.steps span{font-size:10.5px;padding:2px 7px;border-radius:11px;background:var(--line2);color:var(--ink3);font-weight:600}
+.steps span.done{background:#dff0e6;color:var(--ok)}
+.steps span.now{background:var(--primary);color:#fff}
+
+/* ---------- misc ---------- */
+.kpis{display:grid;grid-template-columns:repeat(5,1fr);gap:9px;margin-bottom:12px}
+@media(max-width:900px){.kpis{grid-template-columns:repeat(2,1fr)}}
+.kpi{background:#fff;border:1px solid var(--line);border-radius:8px;padding:9px 11px}
+.kpi .k{font-size:10.5px;text-transform:uppercase;letter-spacing:.05em;color:var(--ink3);font-weight:700}
+.kpi .v{font-size:19px;font-weight:680;font-family:var(--mono);margin-top:2px;letter-spacing:-.02em}
+.kpi .n{font-size:11px;color:var(--ink3)}
+.toolbar{display:flex;gap:7px;align-items:center;flex-wrap:wrap;margin-bottom:10px}
+.srch{border:1px solid var(--line);border-radius:7px;padding:5px 10px;font-size:12.5px;color:var(--ink3);background:#fff;min-width:190px}
+.pane{display:none}
+.pane.on{display:block}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:12px;color:var(--ink2);margin-top:8px}
+.legend span{display:inline-flex;align-items:center;gap:5px}
+.round{display:flex;align-items:center;gap:9px;padding:9px 11px;border:1px solid var(--line);border-radius:8px;
+  background:#fff;margin-bottom:7px;flex-wrap:wrap}
+.round .rn{width:26px;height:26px;border-radius:7px;background:var(--ink-dark);color:#fff;font-size:11.5px;
+  font-weight:700;display:flex;align-items:center;justify-content:center;flex:none}
+.round.cur{border-color:var(--primary);background:var(--primary-t)}
+.rolechip{font-size:10.5px;padding:1px 7px;border-radius:5px;font-weight:700;letter-spacing:.02em}
+.rolechip.customs{background:#efe7fb;color:#5b34a8}
+.rolechip.logistics{background:#e2f1fb;color:#1a5f8f}
+.rolechip.finance{background:#fdf0dd;color:#8f5b00}
+.rolechip.general{background:var(--line2);color:var(--ink2)}
+footer{margin-top:26px;padding-top:14px;border-top:1px solid var(--line);color:var(--ink3);font-size:12px}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="wrap">
+    <div class="crumb">docs/plans/assets · Mikas · kiracı: mikas</div>
+    <div class="h1row">
+      <h1>Mikas Tender — İş Akışı ve Form Katmanı</h1>
+      <span class="chip info">mockup · 2026-08-17</span>
+      <span class="chip mut">tasarım kurulu kararı eki</span>
+    </div>
+    <p class="srcline">
+      Karar dokümanı: <code>docs/plans/2026-08-17-mikas-tender-workflow-formlari-tasarim-kurulu-karari.md</code> ·
+      Plan kaynağı: <code>belge_merkezi_draft.html</code> + <code>tender-flow-map.html</code> (ikisi de ship) ·
+      Ekran metinleri İngilizce (uygulama English-first), açıklamalar Türkçe.
+    </p>
+    <div class="rail">
+      <button class="step on" data-p="p1"><div class="n">01</div><div class="t">İhale Giriş Merkezi</div><div class="s">tek yazar + sözleşme</div></button>
+      <button class="step" data-p="p2"><div class="n">02</div><div class="t">Kanban + Çekmece</div><div class="s">değer, SLA, karar</div></button>
+      <button class="step" data-p="p3"><div class="n">03</div><div class="t">Sourcing</div><div class="s">tur → teklif → ödül → PO</div></button>
+      <button class="step" data-p="p4"><div class="n">04</div><div class="t">Belge Merkezi</div><div class="s">rol kapısı + hazırlık</div></button>
+      <button class="step" data-p="p5"><div class="n">05</div><div class="t">Kazanım Sonrası</div><div class="s">türetilen operasyon</div></button>
+    </div>
+  </div>
+</div>
+
+<div class="wrap">
+
+<!-- ══════════════════════════════ PANE 1 ══════════════════════════════ -->
+<section class="pane on" id="p1">
+
+  <div class="card">
+    <header>
+      <h2>1 · İhale Giriş Merkezi <span class="sub">tek form, tek yazar — bugün iki form var</span></h2>
+      <span class="chip new">ADR-201 · 202 · 203 · 206</span>
+    </header>
+    <div class="body">
+      <div class="note bad">
+        <span class="flag bad">!</span> <b>Bugün:</b> girişi <code>components/TenderMasterDrawer.vue</code> (kanban "New tender")
+        yapıyor, değerlendirmeyi <code>pages/tender/TenderIntake.vue</code> — ve o panel
+        <b>PO kontrol panosuna gömülü</b> (<code>PoControlBoard.vue:315</code>), yani kazanım sonrası ekranında.
+        İkisi aynı JSON'a yazıyor; biri kaydettiğinde diğerinin alanları boşalıyor.
+      </div>
+      <div class="note good">
+        <span class="flag good">✓</span> <b>Hedef:</b> tek çekmece, beş bölüm. <b>E — Değerlendirme</b> bölümü yeni:
+        GO/NO-GO, garanti, ceza, satın alma yöntemi buraya taşınıyor. PO panosundaki panel salt-okuma özete dönüyor.
+      </div>
+
+      <div class="app" style="margin-top:14px">
+        <div class="app-top"><span class="mod">Stabler</span><span class="sep">·</span><span>Tender</span><span class="sep">/</span><span>CRM Board</span></div>
+        <div class="app-body">
+          <div class="drawer">
+            <div class="dh">
+              <div>
+                <div class="k">CRM Deal · deal_type: Tender · new</div>
+                <div class="ti">Tender Intake Center</div>
+              </div>
+              <button class="btn sm">✕</button>
+            </div>
+            <div class="db">
+
+              <!-- A -->
+              <div class="sec">
+                <div class="h"><span class="ltr">A</span><span class="ttl">Who is the Tender From?</span>
+                  <span class="chip ok" style="margin-left:auto">Typeahead · Customer</span></div>
+                <div class="b">
+                  <div class="fgrid c3">
+                    <div class="f span2">
+                      <label>Customer / Buyer <span class="req">*</span></label>
+                      <div class="inp">Navoi Mining &amp; Smelting Combine <span class="car">▾</span></div>
+                      <div class="hint">Mevcut Customer'dan seç · <code>customerSearcher</code> — listede yoksa Sales → Customers</div>
+                    </div>
+                    <div class="f">
+                      <label>&nbsp;</label>
+                      <button class="btn sm">+ New customer ↗ Sales</button>
+                    </div>
+                  </div>
+                  <div class="note" style="margin-top:10px">
+                    Bu bölüm bugün doğru çalışıyor (<code>TenderMasterDrawer.vue:331</code>). Kusur, PO panosundaki
+                    ikinci formun aynı bilgiyi <b>düz metin</b> olarak istemesi (<code>TenderIntake.vue:292</code>) —
+                    o alan ADR-201 ile kalkıyor.
+                  </div>
+                </div>
+              </div>
+
+              <!-- B -->
+              <div class="sec">
+                <div class="h"><span class="ltr">B</span><span class="ttl">Tender Information</span>
+                  <span class="chip dang" style="margin-left:auto"><span class="flag bad">!</span> bugün kaydedilmiyor</span></div>
+                <div class="b">
+                  <div class="fgrid">
+                    <div class="f span2"><label>Tender Title <span class="req">*</span></label>
+                      <div class="inp">UZEX Supply Tender 2026 — Construction Materials</div>
+                      <div class="hint key">intake.title → <b>sözleşmeye eklenecek</b></div></div>
+                    <div class="f"><label>Tender No</label><div class="inp">UZEX-2026-CM-042</div>
+                      <div class="hint key">Deal.tender_no ✓</div></div>
+                    <div class="f"><label>Source</label><div class="inp">UZEX <span class="car">▾</span></div>
+                      <div class="hint key">Deal.source ✓</div></div>
+                    <div class="f"><label>Publication Date</label><div class="inp">10.08.2026</div>
+                      <div class="hint key">intake.publication_date → <b>eklenecek</b></div></div>
+                    <div class="f"><label>Bid Deadline <span class="req">*</span></label>
+                      <div class="inp">25.08.2026 18:00</div>
+                      <div class="hint key" style="color:var(--dang)">bugün <code>submission_deadline</code> → hedef <code>bid_deadline</code></div></div>
+                    <div class="f"><label>Delivery Deadline</label><div class="inp ph">gg.aa.yyyy</div>
+                      <div class="hint key">intake.delivery_deadline ✓</div></div>
+                    <div class="f"><label>Estimated Total</label><div class="inp money">250 000.00</div>
+                      <div class="hint key">intake.estimated_total → <b>eklenecek</b></div></div>
+                  </div>
+                  <div class="note bad">
+                    <span class="flag bad">!</span> <b>Kusur #3 / #4.</b> <code>_clean_intake</code> çıktısını whitelist'ten
+                    kuruyor (<code>tender.py:1366-1417</code>); <code>title</code>, <code>publication_date</code>,
+                    <code>submission_deadline</code> ve <code>tender_files</code> o listede <b>yok</b> — sessizce düşüyorlar.
+                    <code>estimated_total</code>/<code>currency</code>/<code>source</code>/<code>tender_no</code> kurtuluyor
+                    ama intake'e değil, <code>crm.save_deal</code> üzerinden <b>Deal alanlarına</b> yazılıyor
+                    (<code>crm.py:463</code>). Son tarih ikiye bölünmüş: form <code>submission_deadline</code> gönderiyor,
+                    sistem <code>bid_deadline</code> okuyor, <code>save_deal</code>'in kabul ettiği
+                    <code>tender_deadline</code> ise hiç gönderilmiyor — <b>tarih hiçbir yere ulaşmıyor</b>.
+                  </div>
+                </div>
+              </div>
+
+              <!-- C -->
+              <div class="sec">
+                <div class="h"><span class="ltr">C</span><span class="ttl">Tender Files</span>
+                  <span class="chip dang" style="margin-left:auto"><span class="flag bad">!</span> liste kaydedilmiyor</span></div>
+                <div class="b">
+                  <div class="drop">📎 Drop the tender document here, or click to browse<br>
+                    <span style="font-size:11.5px">PDF, PNG, JPG, XLSX — multiple files</span></div>
+                  <div class="filerow"><span>📄</span><span class="nm">tender_uzex_2026_cm.pdf</span><span class="sz">2.4 MB</span><button class="btn sm">✕</button></div>
+                  <div class="filerow"><span>🖼️</span><span class="nm">uzex_portal_screenshot.png</span><span class="sz">850 KB</span><button class="btn sm">✕</button></div>
+                  <div class="note bad">
+                    <span class="flag bad">!</span> Dosyalar <code>upload_file</code> ile gerçekten yükleniyor, ama
+                    <code>tender_files</code> anahtarı sözleşmede olmadığı için <b>referans listesi</b> kaydedilmiyor —
+                    dosya sunucuda kalıyor, ihaleye bağı kayboluyor.
+                  </div>
+                </div>
+              </div>
+
+              <!-- D -->
+              <div class="sec">
+                <div class="h"><span class="ltr">D</span><span class="ttl">Requested Items</span>
+                  <span class="chip ok" style="margin-left:auto">✓ çalışıyor · RFQ'ya akıyor</span></div>
+                <div class="b body tight" style="padding:0">
+                  <table class="tbl">
+                    <thead><tr><th style="width:34px">#</th><th>Item</th><th class="num">Qty</th><th style="width:70px">UOM</th><th class="num">Price</th><th class="num">Amount</th><th style="width:34px"></th></tr></thead>
+                    <tbody>
+                      <tr><td class="mono">1</td><td>Çimento M-400<div class="hint">CEM-400</div></td><td class="num">5 000</td><td>ton</td><td class="num">85.00</td><td class="num">425 000.00</td><td><button class="btn sm">✕</button></td></tr>
+                      <tr><td class="mono">2</td><td>Armatura A-III Ø12mm<div class="hint">ARM-D12</div></td><td class="num">120</td><td>ton</td><td class="num">620.00</td><td class="num">74 400.00</td><td><button class="btn sm">✕</button></td></tr>
+                      <tr><td class="mono">3</td><td>Geotextile 200g/m²<div class="hint">GEO-200</div></td><td class="num">8 000</td><td>m²</td><td class="num">1.20</td><td class="num">9 600.00</td><td><button class="btn sm">✕</button></td></tr>
+                    </tbody>
+                  </table>
+                </div>
+                <div class="footbar" style="border-radius:0">
+                  <button class="btn sm">+ Add item</button>
+                  <div><span class="hint">3 items · Total</span> <b class="mono">509 000.00 USD</b></div>
+                </div>
+                <div class="b" style="padding-top:0">
+                  <div class="note good"><span class="flag good">✓</span> Item satırları kalıcı
+                  (<code>clean_intake_items</code> — absent koru, present değiştir) ve
+                  <code>sourcing.get_quotation_defaults</code> ile RFQ→teklif zincirine akıyor. Omurga bu.</div>
+                </div>
+              </div>
+
+              <!-- E -->
+              <div class="sec" style="border-color:var(--primary)">
+                <div class="h" style="background:var(--primary-t)"><span class="ltr" style="background:var(--primary)">E</span>
+                  <span class="ttl">Evaluation &amp; Decision</span>
+                  <span class="chip new" style="margin-left:auto">YENİ — ADR-206</span></div>
+                <div class="b">
+                  <div class="fgrid">
+                    <div class="f"><label>Purchase method</label><div class="inp">Tender <span class="car">▾</span></div>
+                      <div class="hint">auction / shop / selection / tender</div></div>
+                    <div class="f"><label>Bid guarantee</label><div class="inp money">12 500.00</div></div>
+                    <div class="f"><label>Guarantee return date</label><div class="inp">30.11.2026</div></div>
+                    <div class="f"><label>Penalty %/day</label><div class="inp money">0.50</div></div>
+                    <div class="f span2"><label>Participation decision</label>
+                      <div><span class="seg"><span class="on">GO</span><span>NO-GO</span></span>
+                      <span class="chip mut" style="margin-left:8px">stamped: director@mikas · 17.08.2026 09:12</span></div>
+                      <div class="hint">Damga sunucuda oluşur — <code>go_no_go_at/by</code>, client'tan okunmaz</div></div>
+                    <div class="f"><label>Certificate required</label><div class="inp">Yes <span class="car">▾</span></div></div>
+                    <div class="f"><label>Volume / unit</label><div class="inp">5 000 · ton</div></div>
+                  </div>
+                  <div class="note adr">
+                    <b>ADR-206.</b> Katılma kararı pre-win'de veriliyor; formu bugün post-win ekranında duruyor.
+                    Buraya taşınıyor. <b>ADR-202</b> ile birlikte: bu bölümü doldurup kaydettikten sonra D bölümünden
+                    bir item eklemek artık kararı silmez — gönderilmeyen anahtar korunur.
+                  </div>
+                </div>
+              </div>
+
+              <div class="footbar">
+                <div class="checks">
+                  <span class="chip ok">✓ Customer</span>
+                  <span class="chip ok">✓ Tender info</span>
+                  <span class="chip ok">✓ Files (2)</span>
+                  <span class="chip ok">✓ Items (3) · USD</span>
+                  <span class="chip ok">✓ Decision: GO</span>
+                </div>
+                <div style="display:flex;gap:8px"><button class="btn">Cancel</button><button class="btn primary">Save tender</button></div>
+              </div>
+
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <header><h2>Sözleşme — hangi alan nereye yazılır</h2>
+      <span class="chip new">ADR-202</span></header>
+    <div class="body tight">
+      <table class="tbl">
+        <thead><tr><th style="width:210px">Form alanı</th><th style="width:230px">Hedef anahtar</th><th style="width:130px">Bugün</th><th>Karar</th></tr></thead>
+        <tbody>
+          <tr><td>Customer / Buyer</td><td class="mono">CRM Deal.organization</td><td><span class="chip ok">yazılıyor</span></td><td>Değişiklik yok.</td></tr>
+          <tr><td>Tender No · Source · Currency</td><td class="mono">CRM Deal.tender_no / source / currency</td><td><span class="chip ok">yazılıyor</span></td><td><code>crm.save_deal</code> üzerinden; değişiklik yok.</td></tr>
+          <tr class="hi"><td>Tender Title</td><td class="mono">intake.title</td><td><span class="chip dang">düşüyor</span></td><td>Whitelist'e eklenir.</td></tr>
+          <tr class="hi"><td>Publication Date</td><td class="mono">intake.publication_date</td><td><span class="chip dang">düşüyor</span></td><td>Whitelist'e eklenir.</td></tr>
+          <tr class="hi"><td>Bid Deadline</td><td class="mono">intake.bid_deadline</td><td><span class="chip dang">yanlış ad</span></td><td><b>ADR-203:</b> tek ad. Okumada bir sürüm <code>or submission_deadline</code> toleransı.</td></tr>
+          <tr><td>Estimated Total</td><td class="mono">CRM Deal.deal_value</td><td><span class="chip warn">yazılıyor, okunmuyor</span></td><td><code>save_deal</code> yazıyor ama <code>crm_board</code> <code>deal_value</code>'yu hiç okumuyor — <b>ADR-204</b> türetme sırasına alır.</td></tr>
+          <tr class="hi"><td>Tender Files</td><td class="mono">intake.tender_files[]</td><td><span class="chip dang">düşüyor</span></td><td>Whitelist'e eklenir (dosyalar zaten yükleniyor).</td></tr>
+          <tr><td>Requested Items</td><td class="mono">intake.items[]</td><td><span class="chip ok">yazılıyor</span></td><td>Değişiklik yok — absent koru / present değiştir.</td></tr>
+          <tr class="hi"><td>E bölümü (GO, garanti, ceza, yöntem)</td><td class="mono">intake.go_no_go, guarantee_*, penalty_pct_per_day, purchase_method</td><td><span class="chip warn">başka formda</span></td><td><b>ADR-206</b> ile buraya; <b>ADR-202</b> ile artık silinmez.</td></tr>
+          <tr><td>Belge kontrol listesi</td><td class="mono">intake.documents[]</td><td><span class="chip dang">siliniyor</span></td><td><b>ADR-205:</b> intake payload'ı bu anahtara <b>hiç dokunmaz</b>.</td></tr>
+          <tr><td>Atama / sunum / hazırlık damgaları</td><td class="mono">assigned_*, submitted_*, ready_*</td><td><span class="chip ok">korunuyor</span></td><td>Sunucu-sahipli; client'tan okunmaz. Değişiklik yok.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="card">
+    <header><h2>Kaydet akışı — bugün vs hedef</h2></header>
+    <div class="body">
+      <div class="grid2">
+        <div>
+          <div class="note bad" style="margin-top:0"><span class="flag bad">!</span> <b>Bugün — tam nesne PUT</b></div>
+          <table class="tbl" style="margin-top:8px;border:1px solid var(--line);border-radius:8px">
+            <tbody>
+              <tr><td>Çekmece <code>{items, tender_files, documents: []}</code> gönderir</td></tr>
+              <tr><td><code>_clean_intake</code> çıktıyı <b>sıfırdan</b> kurar (<code>:1366</code>)</td></tr>
+              <tr><td>Gönderilmeyen 18 anahtar → <span class="chip dang">"" / 0</span></td></tr>
+              <tr><td><code>documents: []</code> → <span class="chip dang">liste silinir</span> (<code>:1407</code>)</td></tr>
+              <tr><td><code>go_no_go</code> boşalınca damga da silinir (<code>:1385-1387</code>)</td></tr>
+              <tr><td><b>Sonuç:</b> ihaleyi düzenlemek kararı ve belge listesini siler</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div>
+          <div class="note good" style="margin-top:0"><span class="flag good">✓</span> <b>Hedef — PATCH</b></div>
+          <table class="tbl" style="margin-top:8px;border:1px solid var(--line);border-radius:8px">
+            <tbody>
+              <tr><td>Çekmece yalnız <b>değişen</b> bölümü gönderir</td></tr>
+              <tr><td>Sözleşmede olan + gönderilmeyen → <span class="chip ok">korunur</span></td></tr>
+              <tr><td>Sözleşmede olmayan anahtar → <span class="chip warn">reddedilir</span> (Zafar kararı, §9.1)</td></tr>
+              <tr><td><code>documents</code> → intake payload'ı dokunmaz</td></tr>
+              <tr><td>Sunucu-sahipli damgalar → bugünkü gibi client'tan okunmaz</td></tr>
+              <tr><td><b>Sonuç:</b> iki ekran aynı kaydı bozmadan paylaşabilir</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════════════════ PANE 2 ══════════════════════════════ -->
+<section class="pane" id="p2">
+  <div class="card">
+    <header>
+      <h2>2 · Tender CRM — tek seviyeli kanban <span class="sub">13 şerit, iki faz</span></h2>
+      <span class="chip new">ADR-204 · 207</span>
+    </header>
+    <div class="body">
+      <div class="app">
+        <div class="app-top"><span class="mod">Stabler</span><span class="sep">·</span><span>Tender</span><span class="sep">/</span><span>CRM Board</span></div>
+        <div class="app-nav"><span>Desk</span><span>Portfolio</span><span class="on">CRM Board</span><span>Sourcing</span><span>RFQ</span><span>Documents</span><span>PO Control</span><span>Customs</span><span>Logistics</span></div>
+        <div class="app-body">
+          <div class="pagehead">
+            <div><div class="kick">Tender</div><h3>Tender CRM</h3></div>
+            <div style="display:flex;gap:7px;align-items:center">
+              <span class="srch">🔍 Search tenders…</span>
+              <span class="seg view"><span class="on">Kanban</span><span>List</span></span>
+              <button class="btn sm">↻ Refresh</button>
+              <button class="btn primary sm">+ New tender</button>
+            </div>
+          </div>
+
+          <div class="kpis">
+            <div class="kpi"><div class="k">Open tenders</div><div class="v">14</div><div class="n">pre-win 9 · post-win 5</div></div>
+            <div class="kpi"><div class="k">Pipeline value</div><div class="v">1.24M</div><div class="n">türetilmiş — ADR-204</div></div>
+            <div class="kpi"><div class="k">Deadline &lt; 48h</div><div class="v" style="color:var(--dang)">2</div><div class="n">risk çipi kırmızı</div></div>
+            <div class="kpi"><div class="k">SLA aşımı</div><div class="v" style="color:var(--warn)">3</div><div class="n">YENİ — ADR-207</div></div>
+            <div class="kpi"><div class="k">Docs ready</div><div class="v">61%</div><div class="n">zorunlu belgeler</div></div>
+          </div>
+
+          <div class="phaselbl">PRE-WIN · sürüklenebilir <i></i></div>
+          <div class="board">
+            <div class="lane">
+              <div class="lh"><span class="nm">Seen</span><span class="ct">2</span></div>
+              <div class="kcard">
+                <div class="t">Almalyk MMC — cable lot</div><div class="sub">CRM-DEAL-051</div>
+                <div class="val">— <span class="hint" style="font-weight:400">no value yet</span></div>
+                <div class="met"><span class="chip mut">3d</span><span class="dots"><i></i><i></i><i></i><i></i><i></i></span></div>
+              </div>
+              <div class="kcard">
+                <div class="t">Quvasoy Cement — spare parts</div><div class="sub">CRM-DEAL-052</div>
+                <div class="val">18 400.00</div>
+                <div class="met"><span class="chip dang">SLA 5/3d</span></div>
+              </div>
+            </div>
+            <div class="lane">
+              <div class="lh"><span class="nm">GO</span><span class="ct">1</span></div>
+              <div class="kcard">
+                <div class="t">Navoi MSC — geotextile</div><div class="sub">CRM-DEAL-049</div>
+                <div class="val">96 000.00</div>
+                <div class="met"><span class="chip warn">4d left</span><span class="who">SM</span></div>
+                <div class="bar"><i class="warn" style="width:40%"></i></div>
+              </div>
+            </div>
+            <div class="lane" style="width:210px">
+              <div class="lh"><span class="nm">Sourcing</span><span class="ct">3</span></div>
+              <div class="anno" style="margin-bottom:7px">
+                <span class="lbl">KART ANATOMİSİ</span>
+                <div class="kcard" style="margin:0">
+                  <div class="t">UZEX Supply 2026 — CM</div>
+                  <div class="sub">CRM-DEAL-042 · UZEX-2026-CM-042</div>
+                  <div class="val">509 000.00 <span class="hint" style="font-weight:400">USD</span></div>
+                  <div class="met">
+                    <span class="chip dang">25.08 · 2d</span>
+                    <span class="chip warn">SLA 16/14d</span>
+                  </div>
+                  <div class="met">
+                    <span class="hint">quotes</span><span class="dots"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i></i></span>
+                    <span class="hint mono">4/5</span><span class="chip mut">1 ülke</span>
+                  </div>
+                  <div class="bar"><i style="width:71%"></i></div>
+                  <div class="met"><span class="hint mono">docs 71%</span><span style="margin-left:auto" class="who">SM</span></div>
+                </div>
+              </div>
+              <div class="kcard"><div class="t">Bekobod Metal — rebar</div><div class="sub">CRM-DEAL-045</div><div class="val">212 000.00</div>
+                <div class="met"><span class="chip ok">policy met</span><span class="dots"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i></span></div></div>
+            </div>
+            <div class="lane"><div class="lh"><span class="nm">Priced</span><span class="ct">1</span></div>
+              <div class="kcard"><div class="t">Angren TES — valves</div><div class="sub">CRM-DEAL-047</div><div class="val">74 300.00</div>
+                <div class="met"><span class="chip info">bid ready</span></div></div></div>
+            <div class="lane"><div class="lh"><span class="nm">Submitted</span><span class="ct">2</span></div>
+              <div class="kcard"><div class="t">Navoi MSC — pumps</div><div class="sub">CRM-DEAL-039</div><div class="val">301 000.00</div>
+                <div class="met"><span class="chip mut">submitted 12.08</span></div></div></div>
+            <div class="lane"><div class="lh"><span class="nm">Won</span><span class="ct">1</span></div>
+              <div class="kcard"><div class="t">Quvasoy Cement — geo</div><div class="sub">CRM-DEAL-044</div><div class="val">128 900.00</div>
+                <div class="met"><span class="chip ok">won 14.08</span></div></div></div>
+            <div class="lane"><div class="lh"><span class="nm">Lost</span><span class="ct">1</span></div>
+              <div class="kcard"><div class="t">Olmaliq — belts</div><div class="sub">CRM-DEAL-036</div><div class="val">—</div>
+                <div class="met"><span class="chip mut">price</span></div></div></div>
+          </div>
+
+          <div class="phaselbl" style="margin-top:12px">POST-WIN · türetilir, sürüklenemez <i></i></div>
+          <div class="board">
+            <div class="lane post"><div class="lh"><span class="nm">PO Created</span><span class="ct">2</span></div>
+              <div class="kcard"><div class="t">UZEX Supply 2026 — CM</div><div class="sub">PO-2026-00042</div><div class="met"><span class="chip info">PO ✓</span></div></div></div>
+            <div class="lane post"><div class="lh"><span class="nm">Customs</span><span class="ct">1</span></div>
+              <div class="kcard"><div class="t">Navoi MSC — pumps</div><div class="sub">GTD approved</div><div class="met"><span class="chip ok">cleared</span></div></div></div>
+            <div class="lane post"><div class="lh"><span class="nm">In Transit</span><span class="ct">1</span></div>
+              <div class="kcard"><div class="t">Quvasoy Cement — geo</div><div class="sub">FB-2026-0112</div><div class="met"><span class="chip info">transit</span></div></div></div>
+            <div class="lane post"><div class="lh"><span class="nm">Delivered</span><span class="ct">0</span></div></div>
+            <div class="lane post"><div class="lh"><span class="nm">Invoiced</span><span class="ct">1</span></div>
+              <div class="kcard"><div class="t">Bekobod Metal — rebar</div><div class="sub">SI-2026-0341</div></div></div>
+            <div class="lane post"><div class="lh"><span class="nm">Done</span><span class="ct">1</span></div>
+              <div class="kcard"><div class="t">Angren TES — valves</div><div class="sub">closed 03.08</div></div></div>
+          </div>
+
+          <div class="legend">
+            <span><span class="chip dang">25.08 · 2d</span> son tarih + risk (mevcut)</span>
+            <span><span class="chip warn">SLA 16/14d</span> aşamada geçen gün / eşik — <b>yeni</b></span>
+            <span><span class="dots"><i class="on"></i><i class="on"></i><i class="on"></i><i></i><i></i></span> teklif sayacı ≥5 politikası</span>
+            <span><span class="bar" style="width:40px;display:inline-block;vertical-align:middle"><i style="width:60%"></i></span> belge hazırlığı</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="grid2" style="margin-top:14px">
+        <div>
+          <div class="note bad" style="margin-top:0"><span class="flag bad">!</span> <b>Kusur #5 — kart değeri.</b>
+            <code>crm_board</code> değeri <code>intake.contract_value || intake.budget</code> ile okuyor
+            (<code>tender.py:2750</code>); <code>_clean_intake</code> bu iki anahtarı hiç yazmıyor. Tek yedek yol
+            <code>annual_revenue</code> kolonu (<code>:2751-2752</code>) — ona da hiçbir Stabler kodu yazmıyor.
+            Çekmecenin girdiği tutar <code>deal_value</code>'ya gidiyor, board onu <b>okumuyor</b> → değer <b>0</b>.</div>
+          <div class="note adr"><b>ADR-204.</b> Değer türetilir: (1) deal'e bağlı SO toplamı → (2) intake item
+            toplamı → (3) <code>Deal.deal_value</code>. Üçü de yoksa <b>"—"</b>, sıfır değil.</div>
+          <div class="note bad"><span class="flag bad">!</span> <b>Kusur #7 — hazırlık yüzdesi yanlış anahtarı sayıyor.</b>
+            Kart <code>d.get("status") == "ready"</code> sayıyor (<code>tender.py:2754-2756</code>), ama depolanan satırlarda
+            <code>status</code> yok — tamamlanma <code>done</code> alanında (<code>_tender_documents.py:105,118</code>).
+            Belge satırı olan kart <b>%0</b>, hiç satırı olmayan kart sabit <b>%50</b> gösteriyor.</div>
+          <div class="note adr"><b>ADR-204b.</b> Kart kendi aritmetiğini yapmaz; belge merkezinin
+            <code>readiness_pct</code>'ini çağırır. Satır yoksa yüzde yoktur — "—".</div>
+        </div>
+        <div>
+          <div class="note bad" style="margin-top:0"><span class="flag bad">!</span> <b>SLA görünmüyor.</b>
+            <code>_tender_sla.py</code> eşikleri (seen 3 · go 5 · sourcing 14 · priced 3 · submitted 30 gün)
+            hesaplanıyor ama yalnız <code>TenderFlow.vue</code> / <code>TenderOverview.vue</code>'da çiziliyor —
+            kararın verildiği kanbanda yok.</div>
+          <div class="note adr"><b>ADR-207.</b> Karta yaş rozeti, şerit başlığına eşik aşan sayacı.
+            Renk <code>getStatusBadgeClass</code>'tan; bileşen içi renk haritası yazılmaz.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <header><h2>Kart çekmecesi <span class="sub">atama + aşama + değerlendirme</span></h2>
+      <span class="chip new">ADR-206</span></header>
+    <div class="body">
+      <div class="grid2">
+        <div class="drawer">
+          <div class="dh">
+            <div><div class="k">CRM-DEAL-042 · Sourcing</div><div class="ti">UZEX Supply Tender 2026 — Construction Materials</div></div>
+            <button class="btn sm">✕</button>
+          </div>
+          <div class="db">
+            <table class="deflist">
+              <tr><th>Buyer / Customer</th><td>Navoi Mining &amp; Smelting Combine</td></tr>
+              <tr><th>Value</th><td><span class="mono">509 000.00 USD</span> <span class="chip mut">from items</span></td></tr>
+              <tr><th>Quote set</th><td><span class="dots"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i></i></span>
+                <span class="mono">4/5</span> · <span class="chip warn">below policy</span></td></tr>
+              <tr><th>Readiness</th><td><span class="mono">71%</span><div class="bar"><i style="width:71%"></i></div></td></tr>
+              <tr><th>Bid deadline</th><td><span class="mono">25.08.2026</span> <span class="chip dang">2 days</span></td></tr>
+              <tr><th>Stage age</th><td><span class="mono">16 / 14 d</span> <span class="chip warn">SLA aşıldı</span> <span class="chip new">yeni</span></td></tr>
+              <tr><th>Assigned to</th><td><div class="inp" style="max-width:220px">Sardor M. (Tender Sourcing) <span class="car">▾</span></div>
+                <div class="hint">Assignment initializes document center</div></td></tr>
+              <tr><th>Decision</th><td><span class="seg"><span class="on">GO</span><span>NO-GO</span></span>
+                <span class="chip mut" style="margin-left:6px">director@mikas · 11.08</span> <span class="chip new">E bölümü</span></td></tr>
+            </table>
+            <div style="margin-top:12px">
+              <div class="hint" style="font-weight:700;text-transform:uppercase;letter-spacing:.05em">Stage progress</div>
+              <div class="steps">
+                <span class="done">Seen</span><span class="done">GO</span><span class="now">Sourcing</span>
+                <span>Priced</span><span>Submitted</span><span>Won</span>
+                <span>PO</span><span>Customs</span><span>Transit</span><span>Delivered</span><span>Invoiced</span><span>Done</span>
+              </div>
+            </div>
+            <div style="margin-top:12px;display:flex;gap:7px;flex-wrap:wrap">
+              <button class="btn sm">Sourcing comparison →</button>
+              <button class="btn sm">Document center →</button>
+              <button class="btn sm">PO control →</button>
+              <button class="btn sm">Edit tender</button>
+            </div>
+          </div>
+        </div>
+        <div>
+          <div class="note good" style="margin-top:0"><span class="flag good">✓</span> Bu çekmece bugün büyük ölçüde
+            doğru: <code>ds-*</code> tasarım dili, atama, teklif sayacı, hazırlık yüzdesi, aşama şeridi
+            (<code>TenderCrm.vue:575-660</code>).</div>
+          <div class="note adr"><b>Eklenen üç satır:</b> türetilmiş değer (ADR-204), aşama yaşı + SLA rozeti (ADR-207),
+            GO/NO-GO kararı ve damgası (ADR-206). Yeni bileşen yok.</div>
+          <div class="note"><b>Zafar kararı (§9.3):</b> E bölümü çekmecede mi kalsın, yoksa çekmecede ayrı bir
+            "Evaluation" sekmesi mi olsun? Çekmece uzuyor; sekme bir tık ekliyor.</div>
+          <div class="note bad"><span class="flag bad">!</span> <b>Bugünkü tuzak:</b> "Edit tender" düğmesi giriş
+            çekmecesini açıyor; kaydedince bu ekranda gördüğün GO kararı, garanti ve belge listesi siliniyor
+            (kusur #1 ve #2). ADR-202/205 bunu kapatana kadar bu düğme bir veri kaybı yoludur.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════════════════ PANE 3 ══════════════════════════════ -->
+<section class="pane" id="p3">
+  <div class="card">
+    <header><h2>3 · Sourcing — tur → teklif → karşılaştırma → ödül → PO</h2>
+      <span class="chip new">ADR-208 · 209</span></header>
+    <div class="body">
+      <div class="note good" style="margin-top:0"><span class="flag good">✓</span> <b>Zincir kapalı.</b>
+        RFQ item'ları intake'ten doluyor · teklif çekmecesi RFQ satırlarıyla açılıyor
+        (<code>sourcing.get_quotation_defaults</code>) · cevap tura bağlanıyor
+        (<code>Supplier Quotation.custom_rfq</code>) · ödül onaylanınca PO taslağı kuruluyor
+        (<code>purchasing.create_po_from_quotation</code>, idempotent). Eksik olan: <b>turun ekranda görünmemesi</b>
+        ve bu üç ekranın hâlâ ham Bootstrap olması.</div>
+
+      <div class="app" style="margin-top:14px">
+        <div class="app-top"><span class="mod">Stabler</span><span class="sep">·</span><span>Tender</span><span class="sep">/</span><span>Sourcing</span></div>
+        <div class="app-body">
+          <div class="pagehead">
+            <div><div class="kick">CRM-DEAL-042 · UZEX Supply Tender 2026</div><h3>Sourcing Workspace</h3></div>
+            <div style="display:flex;gap:7px"><button class="btn sm">Change tender ▾</button><button class="btn primary sm">+ New RFQ</button></div>
+          </div>
+
+          <div class="card" style="margin-top:0">
+            <header><h2>Requests for Quotation <span class="sub">turlara göre — 2 tur, 7 davet</span></h2>
+              <span class="chip new">ADR-208 · yeni gruplama</span></header>
+            <div class="body">
+              <div class="round">
+                <span class="rn">1</span>
+                <div style="flex:1;min-width:180px">
+                  <b>RFQ-2026-00031</b> <span class="hint">· raised 11.08 · due 15.08</span>
+                  <div class="hint">5 suppliers invited · 4 responded</div>
+                </div>
+                <span class="dots"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i></i></span>
+                <span class="chip mut">4/5</span>
+                <span class="chip mut">closed</span>
+                <button class="btn sm">Open</button>
+              </div>
+              <div class="round cur">
+                <span class="rn">2</span>
+                <div style="flex:1;min-width:180px">
+                  <b>RFQ-2026-00038</b> <span class="hint">· raised 15.08 · due 19.08</span>
+                  <div class="hint">2 suppliers re-invited (negotiation) · 1 responded</div>
+                </div>
+                <span class="dots"><i class="on"></i><i></i></span>
+                <span class="chip warn">1/2</span>
+                <span class="chip info">current round</span>
+                <button class="btn sm">Print / send</button>
+                <button class="btn sm">Record quotation</button>
+              </div>
+              <div class="note"><b>Bugün:</b> RFQ'lar düz liste; "responded" tur bazlı hesaplanıyor
+                (<code>get_rfq</code> + <code>custom_rfq</code>) ama ekranda tur kavramı yok
+                (<code>SourcingWorkspace.vue:404-413</code>). <b>Hedef:</b> yalnız gruplama + oran etiketi.
+                Yeni doctype veya alan gerekmez.</div>
+            </div>
+          </div>
+
+          <div class="card">
+            <header><h2>Quotation entry <span class="sub">RFQ'dan prefill — rate boş gelir</span></h2>
+              <span class="chip ok">✓ ship</span></header>
+            <div class="body tight">
+              <table class="tbl">
+                <thead><tr><th>Item</th><th class="num">Qty</th><th>UOM</th><th class="num">Rate</th><th class="num">Amount</th></tr></thead>
+                <tbody>
+                  <tr><td>Çimento M-400 <span class="hint">CEM-400</span></td><td class="num">5 000</td><td>ton</td><td class="num" style="color:var(--ink3)">— giriniz</td><td class="num" style="color:var(--ink3)">—</td></tr>
+                  <tr><td>Armatura A-III Ø12mm</td><td class="num">120</td><td>ton</td><td class="num" style="color:var(--ink3)">— giriniz</td><td class="num" style="color:var(--ink3)">—</td></tr>
+                  <tr><td>Geotextile 200g/m²</td><td class="num">8 000</td><td>m²</td><td class="num" style="color:var(--ink3)">— giriniz</td><td class="num" style="color:var(--ink3)">—</td></tr>
+                </tbody>
+              </table>
+            </div>
+            <div class="footbar">
+              <span class="hint">Satırlar RFQ'dan geldi · <code>get_quotation_defaults(deal, rfq)</code> · <b>rate asla prefill edilmez</b></span>
+              <div style="display:flex;gap:7px"><button class="btn">Save draft</button><button class="btn primary">Submit quotation</button></div>
+            </div>
+          </div>
+
+          <div class="card">
+            <header><h2>Comparison <span class="sub">landed cost + politika</span></h2>
+              <span class="chip ok">✓ ship · <span class="mono">_landed.rank_quotations_landed</span></span></header>
+            <div class="body tight">
+              <table class="tbl">
+                <thead><tr><th>Supplier</th><th>Country</th><th>Round</th><th class="num">Price</th><th class="num">Freight+duty</th><th class="num">Landed</th><th>Flags</th></tr></thead>
+                <tbody>
+                  <tr><td>Karaganda Cement LLP</td><td>KZ</td><td class="mono">2</td><td class="num">486 200.00</td><td class="num">31 500.00</td><td class="num"><b>517 700.00</b></td><td><span class="chip ok">cheapest landed</span></td></tr>
+                  <tr><td>Termez Trade MChJ</td><td>UZ</td><td class="mono">1</td><td class="num">479 900.00</td><td class="num">44 800.00</td><td class="num">524 700.00</td><td><span class="chip info">cheapest price</span></td></tr>
+                  <tr><td>Nur Stroy Invest</td><td>UZ</td><td class="mono">1</td><td class="num">501 000.00</td><td class="num">26 100.00</td><td class="num">527 100.00</td><td></td></tr>
+                  <tr><td>Sarybulak Supply</td><td>KZ</td><td class="mono">1</td><td class="num">512 400.00</td><td class="num" style="color:var(--warn)">tahmin eksik</td><td class="num" style="color:var(--ink3)">—</td><td><span class="chip warn">incomplete estimate</span></td></tr>
+                </tbody>
+              </table>
+            </div>
+            <div class="footbar">
+              <div class="checks"><span class="chip warn">4 quotes · min 5 ✕</span><span class="chip ok">2 countries ✓</span></div>
+              <span class="hint">KDV kapitalize edilmez (IAS 2 §11) — <code>_landed.py</code></span>
+            </div>
+          </div>
+
+          <div class="card">
+            <header><h2>Award decision <span class="sub">en ucuz ≠ seçilen olabilir, gerekçe yazılır</span></h2>
+              <span class="chip ok">✓ ship · <span class="mono">Tender Sourcing Decision</span></span></header>
+            <div class="body">
+              <div class="fgrid c2">
+                <div class="f"><label>Selected quotation</label><div class="inp">SQ-2026-00119 · Karaganda Cement LLP <span class="car">▾</span></div></div>
+                <div class="f"><label>Technical result</label><div class="inp">Compliant <span class="car">▾</span></div></div>
+                <div class="f span2"><label>Selection reason <span class="req">*</span></label>
+                  <div class="inp" style="min-height:52px;align-items:flex-start">Lowest landed cost; 2nd round price improvement of 3.4% after negotiation.</div></div>
+                <div class="f"><label>Policy exception</label><div class="inp">Yes — only 4 quotes <span class="car">▾</span></div></div>
+                <div class="f"><label>Exception reason <span class="req">*</span></label><div class="inp">Deadline in 2 days; 5th supplier did not respond in either round.</div></div>
+              </div>
+              <div class="footbar" style="margin-top:12px;border:1px solid var(--line);border-radius:8px">
+                <div class="checks">
+                  <span class="chip mut">Draft</span>
+                  <span class="hint">→ direktör onayı · <code>approved_by</code> sunucuda damgalanır</span>
+                </div>
+                <div style="display:flex;gap:7px">
+                  <button class="btn sm">Create purchase order</button>
+                  <button class="btn primary sm">Approve award</button>
+                </div>
+              </div>
+              <div class="note adr"><b>ADR-209.</b> Bu üç ekranda (<code>SourcingWorkspace.vue</code>,
+                <code>QuotationEntryDrawer.vue</code>, <code>rfq/*.vue</code>) hiç <code>ds-*</code> yok —
+                mantık doğru, kabuk eski. Taşıma sırası: sözleşme (dilim 1) → tek yazar (2) → kart (3) →
+                tur (4) → <b>form katmanı (5)</b>.</div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════════════════ PANE 4 ══════════════════════════════ -->
+<section class="pane" id="p4">
+  <div class="card">
+    <header><h2>4 · Belge Merkezi <span class="sub">okuma dört göze açık, yazma satırın rolüne göre</span></h2>
+      <span class="chip new">ADR-205</span></header>
+    <div class="body">
+      <div class="note good" style="margin-top:0"><span class="flag good">✓</span> <b>vgk.1 / .2 / .4 ship:</b>
+        rol kapısı (<code>DOC_ROLE_WRITER_VIEWS</code>), lot seçici (<code>tender_document_targets</code>),
+        çift sekme temizliği, hazır olma yüzdesi (<code>readiness_pct</code>, <code>_tender_documents.py:182</code>).</div>
+
+      <div class="app" style="margin-top:14px">
+        <div class="app-top"><span class="mod">Stabler</span><span class="sep">·</span><span>Tender</span><span class="sep">/</span><span>Document Center</span>
+          <span style="margin-left:auto" class="chip info">signed in as: declarant</span></div>
+        <div class="app-body">
+          <div class="pagehead">
+            <div><div class="kick">CRM-DEAL-042 · Navoi MSC</div><h3>Document Center</h3></div>
+            <div style="display:flex;gap:9px;align-items:center">
+              <div style="text-align:right"><div class="hint">Readiness</div><div class="mono" style="font-size:19px;font-weight:680">71%</div></div>
+              <button class="btn sm">Change lot ▾</button>
+            </div>
+          </div>
+
+          <div class="card" style="margin-top:0">
+            <header><h2>Requirements <span class="sub">7 satır · 5 zorunlu · 2 eksik</span></h2></header>
+            <div class="body tight">
+              <table class="tbl">
+                <thead><tr><th style="width:230px">Requirement</th><th style="width:110px">Role</th><th style="width:100px">Required</th><th>Status</th><th style="width:190px">Action</th></tr></thead>
+                <tbody>
+                  <tr><td>ГТД (customs declaration)</td><td><span class="rolechip customs">customs</span></td><td>✓</td>
+                    <td><span class="chip dang">missing</span></td><td><button class="btn sm primary">Upload</button></td></tr>
+                  <tr><td>Certificate of origin</td><td><span class="rolechip customs">customs</span></td><td>✓</td>
+                    <td><span class="chip ok">gtd_origin.pdf</span> <span class="hint">14.08</span></td><td><button class="btn sm">Replace</button></td></tr>
+                  <tr><td>CMR</td><td><span class="rolechip logistics">logistics</span></td><td>✓</td>
+                    <td><span class="chip dang">missing</span></td><td><span class="hint">✕ not your role</span></td></tr>
+                  <tr><td>Packing list</td><td><span class="rolechip logistics">logistics</span></td><td>—</td>
+                    <td><span class="chip ok">pl_042.xlsx</span></td><td><span class="hint">✕ not your role</span></td></tr>
+                  <tr><td>Invoice</td><td><span class="rolechip finance">finance</span></td><td>✓</td>
+                    <td><span class="chip ok">inv_042.pdf</span></td><td><span class="hint">✕ not your role</span></td></tr>
+                  <tr><td>Technical specification</td><td><span class="rolechip general">general</span></td><td>✓</td>
+                    <td><span class="chip ok">tech_spec.pdf</span></td><td><span class="hint">✕ not your role</span></td></tr>
+                  <tr><td>Price offer</td><td><span class="rolechip general">general</span></td><td>—</td>
+                    <td><span class="chip mut">waived</span> <span class="hint">"not requested by buyer"</span></td><td><span class="hint">✕ not your role</span></td></tr>
+                </tbody>
+              </table>
+            </div>
+            <div class="footbar">
+              <span class="hint">Okuma: dört tender görünümünden herhangi biri · Yazma: satırın <code>role</code> alanına uyan görünüm + direktör</span>
+              <span class="chip warn">2 required missing</span>
+            </div>
+          </div>
+
+          <div class="card">
+            <header><h2>Lot picker <span class="sub"><code>?deal=</code> yoksa çıkmaz sokak değil</span></h2></header>
+            <div class="body tight">
+              <table class="tbl">
+                <thead><tr><th>Tender</th><th style="width:150px">Stage</th><th style="width:130px">Missing required</th><th style="width:180px">Readiness</th><th style="width:80px"></th></tr></thead>
+                <tbody>
+                  <tr><td>UZEX Supply 2026 — CM <span class="hint">CRM-DEAL-042</span></td><td>Sourcing</td><td><span class="chip dang">2</span></td>
+                    <td><div class="bar"><i style="width:71%"></i></div><span class="hint mono">71%</span></td><td><button class="btn sm">Open →</button></td></tr>
+                  <tr><td>Navoi MSC — pumps <span class="hint">CRM-DEAL-039</span></td><td>Submitted</td><td><span class="chip warn">1</span></td>
+                    <td><div class="bar"><i class="warn" style="width:86%"></i></div><span class="hint mono">86%</span></td><td><button class="btn sm">Open →</button></td></tr>
+                  <tr><td>Quvasoy Cement — geo <span class="hint">CRM-DEAL-044</span></td><td>Won</td><td><span class="chip ok">0</span></td>
+                    <td><div class="bar"><i class="ok" style="width:100%"></i></div><span class="hint mono">100%</span></td><td><button class="btn sm">Open →</button></td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="grid2" style="margin-top:14px">
+        <div>
+          <div class="note bad" style="margin-top:0"><span class="flag bad">!</span> <b>Kusur #2 — bu liste siliniyor.</b>
+            Kanban çekmecesinden ihaleyi düzenlemek <code>documents: []</code> gönderiyor
+            (<code>TenderMasterDrawer.vue:279</code>); <code>_merge_client_documents</code> client listesinde olmayan
+            satırı düşürüyor (<code>tender.py:1331-1352</code>). Yüklenmiş dosyaya bağlı satırlar dahil <b>tümü</b> gider.</div>
+          <div class="note adr"><b>ADR-205.</b> <code>_clean_intake</code> <code>documents</code>'a dokunmaz; prior'ı
+            aynen taşır. Listeyi yalnız belge uçları ve açık bir "requirement düzenle" eylemi değiştirir.</div>
+        </div>
+        <div>
+          <div class="note"><b>Mimari kalıntı (ADR-210, ertelendi).</b> Gereksinim katalogu iki katmanda yaşıyor:
+            lot seviyesi <code>CRM Deal.custom_tender_intake.documents</code> + tender seviyesi
+            <code>Tender Master.custom_tender_documents</code> (<code>v76:28</code>). Tek-seviyeli mimaride
+            Tender Master aktif akıştan çıktı ama katalog hâlâ orada. Yön: katalog şirket ayarına taşınır,
+            Tender Master salt-okuma arşive döner — <b>bu dilimde değil</b> (16 tüketici dosya).</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════════════════ PANE 5 ══════════════════════════════ -->
+<section class="pane" id="p5">
+  <div class="card">
+    <header><h2>5 · Kazanım sonrası — Won bir duvar değil, bir geçiş</h2>
+      <span class="chip ok">✓ türetme ship</span></header>
+    <div class="body">
+      <div class="note good" style="margin-top:0"><span class="flag good">✓</span> Post-win şeritleri kanban'da ve
+        <b>elle set edilmiyor</b> — operasyonel kayıtlardan türetiliyor. Eksik olan link alanları da kapandı:
+        <code>v81_crm_deal_customs_freight_refs.py</code> Customs Declaration, Freight Booking ve Import Container'a
+        <code>custom_crm_deal</code> ekliyor ve PO üzerinden geriye dolduruyor.</div>
+
+      <div class="card" style="margin-top:14px">
+        <header><h2>Şerit türetme kuralı</h2></header>
+        <div class="body tight">
+          <table class="tbl">
+            <thead><tr><th style="width:150px">Şerit</th><th>Kural</th><th style="width:290px">Veri kaynağı</th><th style="width:90px">Durum</th></tr></thead>
+            <tbody>
+              <tr><td><b>PO Created</b></td><td>Won + en az bir PO var</td><td class="mono">Purchase Order.custom_crm_deal</td><td><span class="chip ok">ship</span></td></tr>
+              <tr><td><b>Customs</b></td><td>PO var + beyanname Submitted/Approved</td><td class="mono">Customs Declaration.custom_crm_deal</td><td><span class="chip ok">ship · v81</span></td></tr>
+              <tr><td><b>In Transit</b></td><td>Gümrük geçti + yük "In Transit"</td><td class="mono">Freight Booking.custom_crm_deal</td><td><span class="chip ok">ship · v81</span></td></tr>
+              <tr><td><b>Delivered</b></td><td>Yük "Delivered" veya <code>per_received</code> ≥ %100</td><td class="mono">Freight Booking.status + PO receipt</td><td><span class="chip ok">ship</span></td></tr>
+              <tr><td><b>Invoiced</b></td><td>Satış faturası oluştu</td><td class="mono">Sales Invoice → SO → Deal</td><td><span class="chip ok">ship</span></td></tr>
+              <tr><td><b>Done</b></td><td>Faturalandı + teslim onayı</td><td>terminal</td><td><span class="chip ok">ship</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="card">
+        <header><h2>Dört pano, tek veri <span class="sub">rol penceresi = aynı boardun filtresi</span></h2>
+          <span class="chip new">ADR-209</span></header>
+        <div class="body">
+          <div class="grid2">
+            <div>
+              <table class="tbl" style="border:1px solid var(--line);border-radius:8px">
+                <thead><tr><th>Pano</th><th>Şeritler</th><th>ds-*</th></tr></thead>
+                <tbody>
+                  <tr><td><b>Declarant Queue</b><div class="hint">/tender/customs</div></td>
+                    <td class="hint">missing_docs · ready · declared · inspection · released</td><td><span class="chip dang">yok</span></td></tr>
+                  <tr><td><b>Logist Board</b><div class="hint">/tender/logistics</div></td>
+                    <td class="hint">planning · booking · transit · border · delivered · accepted</td><td><span class="chip dang">yok</span></td></tr>
+                  <tr><td><b>PO Control</b><div class="hint">/tender/po-control</div></td>
+                    <td class="hint">PO durumları + landed cost + intake paneli</td><td><span class="chip dang">yok</span></td></tr>
+                  <tr><td><b>CRM Board</b><div class="hint">/tender/crm</div></td>
+                    <td class="hint">13 şerit (pre + post)</td><td><span class="chip ok">var</span></td></tr>
+                </tbody>
+              </table>
+            </div>
+            <div>
+              <div class="note" style="margin-top:0"><b>Karar değil, gözlem:</b> dört pano da aynı deal kümesine bakıyor,
+                üçü kendi şerit sözlüğünü taşıyor. Birleştirme <b>önerilmiyor</b> — rol pencereleri dar olduğu için
+                işe yarıyor (deklarant 6 şeritlik bir CRM board'u istemiyor).</div>
+              <div class="note adr"><b>ADR-209 kapsamı:</b> şerit yapıları korunur, yalnız <b>kabuk</b> tek dile taşınır —
+                <code>ds-*</code>, dense listelerde <code>StatusIcon</code>, filtrelerde <code>FilterChips</code>,
+                KPI şeridinde <code>KpiCard</code>. Bugün bu üç bileşen tender'da <b>hiç</b> kullanılmıyor.</div>
+              <div class="note"><b>Ertelenen:</b> garanti iadesi otomasyonu (ADR-211) — tarih milestone üretiyor,
+                takip elle. Bu dilimde yalnız kart rozetine yansır.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <header><h2>Uygulama sırası <span class="sub">sözleşme düzelmeden ekran taşınmaz</span></h2></header>
+        <div class="body tight">
+          <table class="tbl">
+            <thead><tr><th style="width:44px">#</th><th style="width:170px">Dilim</th><th>İçerik</th><th style="width:260px">Doğrulama</th></tr></thead>
+            <tbody>
+              <tr><td class="mono">1</td><td><b>Sözleşme</b></td><td>ADR-202 + 205 + 203 — PATCH semantiği, bilinmeyen anahtar reddi, <code>documents</code> dokunulmaz, tek son tarih adı</td><td>saf birim testi + <code>make check</code>; DB davranışı <b><code>make test-bench</code></b></td></tr>
+              <tr><td class="mono">2</td><td><b>Tek yazar</b></td><td>ADR-201 + 206 — çekmeceye E bölümü, PO panosundaki panel salt-okuma</td><td>SPA kaynak-kontrat testi + <code>en.csv</code></td></tr>
+              <tr><td class="mono">3</td><td><b>Kart doğruları</b></td><td>ADR-204 + 207 — değer türetme, SLA rozeti/sayaç</td><td><code>test_tender_sla.py</code> uzatması</td></tr>
+              <tr><td class="mono">4</td><td><b>Tur görünürlüğü</b></td><td>ADR-208 — RFQ şeridi gruplama, cevap oranı</td><td><code>test_sourcing_spa.py</code> uzatması</td></tr>
+              <tr><td class="mono">5</td><td><b>Form katmanı</b></td><td>ADR-209 — sourcing üçlüsü → belge merkezi → post-win panoları</td><td>ekran başına ayrı bead</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  Mikas · tender · mockup 2026-08-17 — karar dokümanının ekidir, tek başına bir spesifikasyon değildir.
+  Kusur iddiaları kaynak okumasıyla <code>dosya:satır</code> düzeyinde doğrulanmıştır; DB davranışı bench koşusuna işaretlidir.
+</footer>
+</div>
+
+<script>
+document.querySelectorAll(".step").forEach(function (b) {
+  b.addEventListener("click", function () {
+    document.querySelectorAll(".step").forEach(function (x) { x.classList.remove("on"); });
+    document.querySelectorAll(".pane").forEach(function (x) { x.classList.remove("on"); });
+    b.classList.add("on");
+    var pane = document.getElementById(b.dataset.p);
+    if (pane) pane.classList.add("on");
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  });
+});
+</script>
+</body>
+</html>

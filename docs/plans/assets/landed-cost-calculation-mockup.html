@@ -1,0 +1,679 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Landed Cost Calculation — Stabler mockup</title>
+<style>
+:root{
+  --bg:#f6f7f9; --card:#fff; --line:#e3e6ea; --line2:#eef0f3;
+  --ink:#1c2430; --ink2:#5a6675; --ink3:#8b95a3;
+  --primary:#2563eb; --primary-d:#1d4ed8;
+  --ok:#0f8a5f; --ok-bg:#e8f6ef;
+  --warn:#a86300; --warn-bg:#fdf3e2;
+  --dang:#c02636; --dang-bg:#fdecee;
+  --info:#1f6fb2; --info-bg:#e9f2fa;
+  --mono:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,monospace;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);
+  font:14px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;}
+.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+.wrap{max-width:1400px;margin:0 auto;padding:0 20px 140px}
+
+/* ---------- header ---------- */
+.topbar{background:var(--card);border-bottom:1px solid var(--line);position:sticky;top:0;z-index:40}
+.topbar .wrap{padding-top:14px;padding-bottom:0}
+.crumb{color:var(--ink3);font-size:12.5px;margin-bottom:4px}
+.crumb a{color:var(--ink3);text-decoration:none}
+.h1row{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+h1{font-size:20px;margin:0;font-weight:650;letter-spacing:-.01em}
+.srcline{color:var(--ink2);font-size:13px;margin:6px 0 0}
+.srcline a{color:var(--primary);text-decoration:none}
+.srcline a:hover{text-decoration:underline}
+
+/* ---------- step rail ---------- */
+.rail{display:flex;gap:8px;margin:14px 0 0;border-top:1px solid var(--line2);padding-top:10px;
+  overflow-x:auto}
+.step{flex:1;min-width:210px;border:1px solid var(--line);border-radius:8px;background:#fbfcfd;
+  padding:8px 12px;cursor:pointer;transition:.12s;text-align:left}
+.step:hover{border-color:#c9d2dd;background:#fff}
+.step.on{border-color:var(--primary);background:#f2f6ff;box-shadow:inset 0 0 0 1px var(--primary)}
+.step .n{font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--ink3)}
+.step.on .n{color:var(--primary)}
+.step .t{font-weight:600;font-size:13.5px;margin-top:1px}
+.step .s{font-size:12px;color:var(--ink2);margin-top:1px}
+
+/* ---------- cards ---------- */
+.card{background:var(--card);border:1px solid var(--line);border-radius:10px;margin-top:16px;overflow:hidden}
+.card>header{padding:12px 16px;border-bottom:1px solid var(--line2);display:flex;
+  align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.card>header h2{font-size:14.5px;margin:0;font-weight:650}
+.card>header .sub{font-size:12.5px;color:var(--ink3);font-weight:400;margin-left:6px}
+.body{padding:14px 16px}
+.body.tight{padding:0}
+
+/* ---------- buttons ---------- */
+.btn{border:1px solid var(--line);background:#fff;color:var(--ink);border-radius:7px;
+  padding:6px 12px;font-size:13px;cursor:pointer;font-weight:500;transition:.12s;white-space:nowrap}
+.btn:hover:not(:disabled){background:#f4f6f8;border-color:#c9d2dd}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.btn-primary{background:var(--primary);border-color:var(--primary);color:#fff}
+.btn-primary:hover:not(:disabled){background:var(--primary-d);border-color:var(--primary-d)}
+.btn-ghost{border-color:transparent;background:transparent;color:var(--ink2)}
+.btn-ghost:hover{background:#f0f2f5}
+.btn-sm{padding:3px 9px;font-size:12px}
+
+/* ---------- kpi ---------- */
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:16px}
+.kpi{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px 14px}
+.kpi .l{font-size:11.5px;text-transform:uppercase;letter-spacing:.05em;color:var(--ink3);font-weight:600}
+.kpi .v{font-size:21px;font-weight:640;margin-top:5px;letter-spacing:-.02em}
+.kpi .d{font-size:12px;color:var(--ink2);margin-top:2px}
+.up{color:var(--dang)}
+
+/* ---------- tables ---------- */
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{text-align:left;font-weight:600;font-size:11.5px;text-transform:uppercase;letter-spacing:.04em;
+  color:var(--ink3);padding:9px 10px;border-bottom:1px solid var(--line);white-space:nowrap;
+  background:#fafbfc;position:sticky;top:0}
+td{padding:8px 10px;border-bottom:1px solid var(--line2);vertical-align:middle}
+tbody tr:nth-child(even) td{background:#fbfcfd}
+tbody tr:hover td{background:#f4f8ff}
+.num{text-align:right;font-family:var(--mono);font-variant-numeric:tabular-nums;white-space:nowrap}
+.scroll{overflow-x:auto}
+tfoot td{border-top:2px solid var(--line);border-bottom:none;font-weight:650;background:#fafbfc!important}
+
+/* charge grid specifics */
+.linked td{position:relative}
+.linked td:first-child{box-shadow:inset 2px 0 0 var(--primary)}
+.srcchip{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;color:var(--primary);
+  text-decoration:none;font-family:var(--mono)}
+.srcchip:hover{text-decoration:underline}
+.srcchip.manual{color:var(--ink3)}
+.statictxt{color:var(--ink2)}
+.excluded td{opacity:.45}
+.excluded .amt{text-decoration:line-through}
+.locked{background:#fdf9ee!important}
+
+select,input[type=text],input[type=number]{border:1px solid var(--line);border-radius:6px;
+  padding:4px 7px;font-size:12.5px;background:#fff;color:var(--ink);font-family:inherit;max-width:100%}
+select:focus,input:focus{outline:2px solid #bfd4ff;outline-offset:-1px;border-color:var(--primary)}
+input.num{font-family:var(--mono);text-align:right;width:110px}
+input.bad{border-color:var(--dang);background:var(--dang-bg)}
+
+.badge{display:inline-block;padding:1.5px 7px;border-radius:20px;font-size:11px;font-weight:600;
+  white-space:nowrap;border:1px solid transparent}
+.b-ok{background:var(--ok-bg);color:var(--ok);border-color:#bfe5d4}
+.b-info{background:var(--info-bg);color:var(--info);border-color:#c6dcef}
+.b-warn{background:var(--warn-bg);color:var(--warn);border-color:#f0dcb4}
+.b-dang{background:var(--dang-bg);color:var(--dang);border-color:#f3c6cc}
+.b-mut{background:#f0f2f5;color:var(--ink2);border-color:#e0e4e9}
+
+/* ---------- alerts ---------- */
+.alerts{margin-top:16px;display:flex;flex-direction:column;gap:8px}
+.alert{border-radius:9px;padding:10px 14px;font-size:13px;display:flex;gap:10px;
+  align-items:flex-start;border:1px solid}
+.a-dang{background:var(--dang-bg);border-color:#f3c6cc;color:#7d1a26}
+.a-warn{background:var(--warn-bg);border-color:#f0dcb4;color:#6d4100}
+.a-info{background:var(--info-bg);border-color:#c6dcef;color:#164a75}
+.alert .ic{font-weight:800;font-size:13px;line-height:1.35}
+.alert b{font-weight:650}
+.alert .fix{margin-left:auto;flex-shrink:0}
+
+/* ---------- balance strip ---------- */
+.balance{position:sticky;bottom:0;background:#fff;border-top:1px solid var(--line);
+  padding:9px 16px;font-size:13px;display:flex;gap:14px;align-items:center;flex-wrap:wrap}
+.balance.off{background:var(--warn-bg);border-top-color:#f0dcb4}
+.balance.on{background:var(--ok-bg);border-top-color:#bfe5d4}
+
+/* ---------- voucher plan ---------- */
+.plan{display:flex;flex-direction:column;gap:7px}
+.prow{display:flex;align-items:center;gap:10px;padding:7px 10px;border:1px solid var(--line2);
+  border-radius:7px;font-size:12.5px;background:#fbfcfd}
+.prow .basis{font-weight:600;min-width:150px}
+.prow .meta{color:var(--ink2);flex:1}
+
+/* ---------- footer ---------- */
+.footbar{position:fixed;left:0;right:0;bottom:0;background:#fff;border-top:1px solid var(--line);
+  box-shadow:0 -2px 12px rgba(20,30,45,.07);z-index:50}
+.footbar .inner{max-width:1400px;margin:0 auto;padding:11px 20px;display:flex;align-items:center;
+  gap:14px;flex-wrap:wrap}
+.footbar .tot{font-size:13px;color:var(--ink2)}
+.footbar .tot b{color:var(--ink);font-family:var(--mono);font-size:14.5px}
+.footbar .sp{flex:1}
+
+.hint{font-size:12px;color:var(--ink3);margin-top:8px}
+.sect{font-size:11.5px;text-transform:uppercase;letter-spacing:.05em;color:var(--ink3);
+  font-weight:650;margin:14px 0 7px}
+.note{background:#fffdf5;border:1px dashed #e6d5a8;border-radius:8px;padding:9px 12px;
+  font-size:12.5px;color:#6d5400;margin-top:12px}
+.exp{cursor:pointer;user-select:none;color:var(--ink3);font-size:11px}
+.subrow td{background:#f7f9fc!important;font-size:12px;color:var(--ink2)}
+@media(max-width:1100px){.kpis{grid-template-columns:repeat(2,1fr)}}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="wrap">
+    <div class="crumb"><a href="#">Imports</a> › <a href="#">Landed cost</a> › LCC-2026-00034</div>
+    <div class="h1row">
+      <h1>Landed Cost Calculation · LCC-2026-00034</h1>
+      <span class="badge b-mut" id="docStatus">Draft</span>
+    </div>
+    <p class="srcline">
+      Kaynak: <a href="#">CI-2026-00279</a> · <a href="#">GRN-2026-00188</a> ·
+      3 reefer konteyner · 8 kalem · 78 000 kg dondurulmuş et ·
+      USD→UZS <span class="mono">12 340</span>
+    </p>
+    <div class="rail">
+      <button class="step" data-go="src"><span class="n">Adım 1</span>
+        <div class="t">Kaynak</div><div class="s">CI-2026-00279 · 8 kalem</div></button>
+      <button class="step on" data-go="chg"><span class="n">Adım 2</span>
+        <div class="t">Masraflar</div><div class="s" id="railChg">—</div></button>
+      <button class="step" data-go="alc"><span class="n">Adım 3</span>
+        <div class="t">Dağıt ve post et</div><div class="s" id="railAlc">—</div></button>
+    </div>
+  </div>
+</div>
+
+<div class="wrap">
+
+  <!-- KPI -->
+  <div class="kpis">
+    <div class="kpi"><div class="l">Toplam net ağırlık</div>
+      <div class="v mono">78 000</div><div class="d">kg · 3 reefer konteyner</div></div>
+    <div class="kpi"><div class="l">Temel maliyet / kg</div>
+      <div class="v mono" id="kpiBase">—</div><div class="d">mal bedeli, masrafsız</div></div>
+    <div class="kpi"><div class="l">Landed maliyet / kg</div>
+      <div class="v mono" id="kpiLanded">—</div><div class="d">kapitalize masraflar dahil</div></div>
+    <div class="kpi"><div class="l">Artış</div>
+      <div class="v mono up" id="kpiUp">—</div><div class="d" id="kpiUpD">—</div></div>
+  </div>
+
+  <!-- ADIM 1 : kaynak -->
+  <div class="card" id="src">
+    <header>
+      <h2>1 · Kaynak <span class="sub">imports — ikinci kaynak eklenebilir</span></h2>
+      <button class="btn btn-sm btn-ghost">Değiştir</button>
+    </header>
+    <div class="body scroll">
+      <table>
+        <thead><tr><th>Konteyner</th><th class="num">Net kg</th><th class="num">Koli</th>
+          <th class="num">Mal bedeli (USD)</th><th>Kalem</th><th>GTD</th></tr></thead>
+        <tbody id="ctnBody"></tbody>
+      </table>
+      <div class="hint">Aşama 1 = masraf → konteyner. Aşama 2 = konteyner payı → o konteynerin kalemleri.
+        <code>source_type = Purchasing</code> olduğunda bu bölüm tamamen gizlenir (ADR-004).</div>
+    </div>
+  </div>
+
+  <!-- ADIM 2 : masraflar -->
+  <div class="card" id="chg">
+    <header>
+      <h2>2 · Masraflar <span class="sub" id="chgSub"></span></h2>
+      <div style="display:flex;gap:7px">
+        <button class="btn btn-sm">+ Manuel masraf</button>
+        <button class="btn btn-sm btn-primary">Faturalardan çek</button>
+      </div>
+    </header>
+    <div class="body tight scroll">
+      <table>
+        <thead><tr>
+          <th style="width:26px"></th><th>Kaynak</th><th>Masraf tipi</th>
+          <th class="num">Tutar</th><th class="num">Tutar (UZS)</th>
+          <th>Dağıtım şekli</th><th>Uygulanacak</th><th>Durum</th>
+        </tr></thead>
+        <tbody id="chgBody"></tbody>
+        <tfoot><tr>
+          <td colspan="3">Kapitalize edilecek toplam</td>
+          <td class="num" id="chgTotUsd"></td><td class="num" id="chgTotUzs"></td>
+          <td colspan="3" style="font-weight:400;color:var(--ink2)" id="chgTotNote"></td>
+        </tr></tfoot>
+      </table>
+    </div>
+    <div class="body" style="border-top:1px solid var(--line2)">
+      <div class="sect">Oluşacak voucher planı — ERPNext kısıtı (ADR-002)</div>
+      <div class="plan" id="planBox"></div>
+      <div class="note">
+        <b>Neden birden fazla voucher?</b> ERPNext v15'te
+        <code>distribute_charges_based_on = "Distribute Manually"</code> iken
+        <code>len(taxes) &gt; 1</code> submit'te <code>frappe.throw</code> ediyor
+        (<code>landed_cost_voucher.py:218</code>). Ağırlık / eşit / manuel / doğrudan dağıtımlar
+        native değil, bu yüzden <b>masraf satırı başına bir voucher</b> üretilir.
+        <code>By Value</code> → native <code>Amount</code> ve <code>By Quantity</code> → native
+        <code>Qty</code> grupları tek voucher'da çok satır taşıyabilir.
+        Satırları tek tax satırında toplamak <b>yasak</b>: <code>capitalized_components()</code>
+        her component'i <code>description</code> üzerinden okuyup GTD netlemesini oradan sürüyor.
+      </div>
+    </div>
+  </div>
+
+  <!-- uyarılar -->
+  <div class="alerts" id="alerts"></div>
+
+  <!-- ADIM 3 : dağıtım -->
+  <div class="card" id="alc">
+    <header>
+      <h2>3 · Dağıtım önizlemesi <span class="sub">kalem başına önce / sonra birim maliyet</span></h2>
+      <div style="display:flex;gap:7px;align-items:center">
+        <label style="font-size:12.5px;color:var(--ink2)">Varsayılan şekil</label>
+        <select id="defMethod">
+          <option value="value">By Value</option>
+          <option value="weight" selected>By Weight</option>
+          <option value="qty">By Quantity</option>
+          <option value="equal">Equal</option>
+        </select>
+      </div>
+    </header>
+
+    <div class="body tight scroll">
+      <table>
+        <thead><tr>
+          <th style="width:22px"></th><th>Kalem</th><th>Konteyner</th>
+          <th class="num">Miktar</th><th class="num">Ağırlık kg</th>
+          <th class="num">Önceki birim</th><th class="num">Dağıtılan (USD)</th>
+          <th class="num">Sonraki birim</th><th class="num">Δ birim</th><th class="num">Δ %</th>
+        </tr></thead>
+        <tbody id="alcBody"></tbody>
+        <tfoot><tr>
+          <td></td><td colspan="4">Toplam</td>
+          <td class="num" id="alcBefore"></td><td class="num" id="alcAlloc"></td>
+          <td class="num" id="alcAfter"></td><td class="num" id="alcDelta"></td>
+          <td class="num" id="alcPct"></td>
+        </tr></tfoot>
+      </table>
+    </div>
+    <div class="balance" id="balance"></div>
+  </div>
+
+  <div class="note" style="margin-top:16px">
+    <b>Bu mockup gerçek matematiği çalıştırıyor.</b> Dağıtım şekillerini değiştir,
+    <code>Manual</code> seç ve hücrelere tutar yaz, KDV satırının include'ını aç, bir masrafı
+    tek konteynere yönlendir — önizleme, uyarılar, voucher planı ve post butonu anında
+    yeniden hesaplanır. Yuvarlama largest-remainder ile yapılır, kalan kuruşlar en büyük
+    ondalık artığı olan satırlara gider ve toplam <b>kuruşuna kadar</b> tutar (ADR-005).
+  </div>
+
+  <div class="note" style="margin-top:12px;background:#fdf1f2;border-color:#e8bfc5;color:#7d1a26">
+    <b>Şunu dene — asıl mesele bu.</b> Sağ üstteki <i>Varsayılan şekil</i>'i
+    <code>By Weight</code> yap, sonra <code>By Value</code> yap ve son iki kolona bak.
+    <br><br>
+    Ağırlıkla: <b>Chicken Leg Quarters</b> (1,35 $/kg) <b>+%67,6</b> artış alıyor,
+    <b>Beef Tenderloin</b> (16,50 $/kg) yalnız <b>+%15,9</b> — ucuz-ağır ürün, pahalı-hafif
+    ürünün maliyetini <b>4,3 katı</b> oranında sübvanse ediyor.
+    Değerle: %33,8'e karşı %25,3 — fark neredeyse kapanıyor.
+    Bu %50 puanlık sapma MSA'nın brüt marjından büyüktür.
+    <br><br>
+    Aynı anda alt taraftaki <b>voucher planına</b> bak: <code>By Weight</code>'te
+    <b>10 voucher</b>, <code>By Value</code>'da <b>2 voucher</b>. Sebebi ERPNext'in
+    <code>Distribute Manually</code> + tek tax satırı kısıtı (ADR-002) — ağırlık native
+    değil, değer native.
+    <br><br>
+    Bugün üretimde <code>distribute_charges_based_on</code> sabit <code>"Qty"</code>, ve
+    ithalatta stok UOM'u <code>Kg</code> olduğu için (<code>receipt_math.py:28</code>)
+    <b>bu fiilen ağırlık bazlı dağıtımdır</b> — navlun için doğru, ad valorem gümrük
+    vergisi ve sigorta için yanlış. Doğru cevap tek bir dropdown değil,
+    <b>masraf satırı başına baz</b> (ADR-003): navlun ağırlıkla, gümrük vergisi değerle,
+    demuraj doğrudan tek konteynere, sertifika eşit. Bu ekran onu yapabiliyor.
+  </div>
+</div>
+
+<!-- footer -->
+<div class="footbar">
+  <div class="inner">
+    <div class="tot">Kapitalize edilecek: <b id="footTot">—</b></div>
+    <div class="tot">Voucher: <b id="footVou">—</b></div>
+    <div class="sp"></div>
+    <span id="footMsg" style="font-size:12.5px"></span>
+    <button class="btn">Taslak kaydet</button>
+    <button class="btn btn-primary" id="postBtn">Landed cost post et</button>
+  </div>
+</div>
+
+<script>
+"use strict";
+const FX = 12340, P = 2, F = 100;
+const fmt  = (n,d=2)=> n.toLocaleString('tr-TR',{minimumFractionDigits:d,maximumFractionDigits:d});
+const fmt0 = n => n.toLocaleString('tr-TR',{maximumFractionDigits:0});
+
+/* ---------------- demo data ---------------- */
+const containers = [
+  {id:'MSKU1234567', gtd:'GTD-2026-041288 · cleared'},
+  {id:'TCNU7654321', gtd:'GTD-2026-041301 · cleared'},
+  {id:'HLXU2468013', gtd:'—'}
+];
+// Dondurulmuş et — hepsi Kg stok UOM'unda (receipt_math.STOCK_UOM = "Kg").
+// Kasten ucuz-ağır (tavuk but) ile pahalı-hafif (bonfile) yan yana:
+// ağırlık bazlı dağıtımın çapraz sübvansiyonu burada görünür hale geliyor.
+const items = [
+  {c:'MSKU1234567', code:'BEF-BIQ-FRZ', name:'Beef Bone-In Quarter, frozen', qty:16000, uom:'kg', kg:16000, box:800,  rate:3.85},
+  {c:'MSKU1234567', code:'BEF-TRM-8020',name:'Beef Trimmings 80/20, frozen', qty:10000, uom:'kg', kg:10000, box:500,  rate:4.20},
+  {c:'TCNU7654321', code:'CHK-LEG-QTR', name:'Chicken Leg Quarters, frozen', qty:20000, uom:'kg', kg:20000, box:1333, rate:1.35},
+  {c:'TCNU7654321', code:'BEF-LIV-FRZ', name:'Beef Liver, frozen',           qty:7000,  uom:'kg', kg:7000,  box:350,  rate:2.10},
+  {c:'HLXU2468013', code:'BEF-TND-FRZ', name:'Beef Tenderloin, frozen',      qty:4000,  uom:'kg', kg:4000,  box:200,  rate:16.50},
+  {c:'HLXU2468013', code:'BEF-STR-FRZ', name:'Beef Striploin, frozen',       qty:6000,  uom:'kg', kg:6000,  box:300,  rate:12.80},
+  {c:'HLXU2468013', code:'LMB-CRC-FRZ', name:'Lamb Carcass, frozen',         qty:9000,  uom:'kg', kg:9000,  box:450,  rate:6.90},
+  {c:'HLXU2468013', code:'CHK-BRF-FRZ', name:'Chicken Breast Fillet, frozen',qty:6000,  uom:'kg', kg:6000,  box:300,  rate:3.60}
+];
+items.forEach(i=> i.amount = +(i.qty * i.rate).toFixed(2));
+
+const charges = [
+  {id:'c1', src:'PINV-2026-00412', srcType:'bill', comp:'Freight (reefer, sea)',      amt:24000, basis:'weight', target:'all', inc:true},
+  {id:'c2', src:'PINV-2026-00415', srcType:'bill', comp:'Iran Port & THC',            amt:4200,  basis:'weight', target:'all', inc:true},
+  {id:'c3', src:'IMP-EXP-2026-00088', srcType:'exp', comp:'Iran Storage (reefer plug)',amt:2800, basis:'weight', target:'all', inc:true},
+  {id:'c4', src:'IMP-EXP-2026-00091', srcType:'exp', comp:'Iran Demurrage',           amt:3100,  basis:'direct', target:'TCNU7654321', inc:true},
+  {id:'c5', src:'PINV-2026-00431', srcType:'bill', comp:'Cross-Border Transport',     amt:12600, basis:'weight', target:'all', inc:true},
+  {id:'c6', src:'PINV-2026-00433', srcType:'bill', comp:'Insurance',                  amt:2975,  basis:'value',  target:'all', inc:true},
+  {id:'c7', src:'GTD-2026-041288', srcType:'gtd',  comp:'Uzbekistan Customs Duty',    amt:44616, basis:'value',  target:'all', inc:true, locked:true},
+  {id:'c8', src:'IMP-EXP-2026-00097', srcType:'exp', comp:'Uzbekistan Port Handling', amt:1450,  basis:'equal',  target:'all', inc:true},
+  {id:'c9', src:'IMP-EXP-2026-00099', srcType:'exp', comp:'Customs Clearance Fee',    amt:890,   basis:'equal',  target:'all', inc:true},
+  {id:'c10',src:'IMP-EXP-2026-00101', srcType:'exp', comp:'Certificate (vet/border)', amt:640,   basis:'equal',  target:'all', inc:true},
+  {id:'c11',src:'PINV-2026-00434', srcType:'bill', comp:'VAT (recoverable)',          amt:49970, basis:'value',  target:'all', inc:false, vat:true}
+];
+const manual = {};                     // manual[chargeId][itemIdx] = number
+
+const BASIS = {
+  value :{label:'By Value',        native:'Amount'},
+  qty   :{label:'By Quantity',     native:'Qty'},
+  weight:{label:'By Weight',       native:null},
+  equal :{label:'Equal',           native:null},
+  manual:{label:'Manual',          native:null},
+  direct:{label:'Direct assignment',native:null}
+};
+
+/* ------------- largest-remainder allocation (ADR-005) ------------- */
+function split(amount, drivers){
+  const tot = drivers.reduce((a,b)=>a+b,0);
+  if(tot<=0) return null;
+  const exact = drivers.map(d => amount*d/tot);
+  const base  = exact.map(x => Math.floor(x*F)/F);
+  let left    = Math.round((amount - base.reduce((a,b)=>a+b,0))*F);
+  const order = exact.map((x,i)=>({i,fr:x*F-Math.floor(x*F)}))
+                     .sort((a,b)=> b.fr-a.fr || a.i-b.i);
+  const out = base.slice();
+  for(let k=0;k<left;k++) out[order[k%order.length].i] = +(out[order[k%order.length].i]+1/F).toFixed(P);
+  return out.map(x=>+x.toFixed(P));
+}
+const driverOf = (it,b)=> b==='value'? it.amount : b==='qty'? it.qty : b==='weight'? it.kg : 1;
+
+/* ------------- engine: two-stage allocation ------------- */
+function compute(){
+  const perItem = items.map(()=>0);
+  const perItemByCharge = {};
+  const warn = [], block = [];
+
+  charges.forEach(ch=>{
+    perItemByCharge[ch.id] = items.map(()=>0);
+    if(!ch.inc) return;
+    if(ch.vat){ block.push({t:'İade edilebilir KDV kapitalize edilemez',
+        d:`<b>${ch.comp}</b> satırının include'ı açık. IAS 2 §11 — iade edilebilir vergi alış maliyetine girmez. <code>is_vat_component()</code> bunu <b>bloklar</b>.`}); return; }
+
+    const basis = ch.basis;
+    if(basis==='manual'){
+      const m = manual[ch.id] || {};
+      let sum = 0;
+      items.forEach((_,i)=>{ const v = +(m[i]||0); perItemByCharge[ch.id][i]=v; perItem[i]+=v; sum+=v; });
+      sum = +sum.toFixed(P);
+      if(Math.abs(sum-ch.amt) > 0.001)
+        block.push({t:'Manuel dağıtım dengesiz',
+          d:`<b>${ch.comp}</b>: ${fmt(sum)} / ${fmt(ch.amt)} USD girildi · <b>${fmt(+(ch.amt-sum).toFixed(P))}</b> kaldı.`, manual:ch.id});
+      return;
+    }
+
+    // stage 1 — charge → containers in scope
+    const scope = ch.target==='all' ? containers.map(c=>c.id) : [ch.target];
+    const subBasis = basis==='direct' ? 'weight' : basis;
+    const cDrv = scope.map(cid => basis==='equal' ? 1
+        : items.filter(i=>i.c===cid).reduce((a,i)=>a+driverOf(i,subBasis),0));
+    const cShare = scope.length===1 ? [ch.amt] : split(ch.amt, cDrv);
+    if(!cShare){ block.push({t:'Dağıtım sürücüsü sıfır',
+        d:`<b>${ch.comp}</b> için <b>${BASIS[basis].label}</b> sürücüsü toplamı 0. Şekli değiştirin.`}); return; }
+
+    // stage 2 — container share → that container's items
+    scope.forEach((cid,ci)=>{
+      const idx = items.map((it,i)=>it.c===cid?i:-1).filter(i=>i>=0);
+      const drv = idx.map(i => basis==='equal' ? 1 : driverOf(items[i], subBasis));
+      const sh  = split(cShare[ci], drv);
+      if(!sh){ block.push({t:'Konteyner içi sürücü sıfır',
+          d:`<b>${ch.comp}</b> · ${cid} içinde <b>${BASIS[basis].label}</b> sürücüsü 0.`}); return; }
+      idx.forEach((i,k)=>{ perItemByCharge[ch.id][i]=sh[k]; perItem[i]+=sh[k]; });
+    });
+
+    if(basis==='qty'){
+      const uoms = new Set(items.filter(i=> ch.target==='all'||i.c===ch.target).map(i=>i.uom));
+      if(uoms.size>1) warn.push({t:'Karışık stok UOM',
+        d:`<b>${ch.comp}</b> <code>By Quantity</code> ile dağıtılıyor ama hedef sette ${uoms.size} farklı UOM var (${[...uoms].join(', ')}). ${fmt0(items.reduce((a,i)=>a+i.qty,0))} "birim" anlamlı bir toplam değil.`});
+    }
+    if(basis==='equal') warn.push({t:'Equal dağıtım',
+      d:`<b>${ch.comp}</b> eşit bölünüyor — 2 $'lık SKU ile 40 000 $'lık SKU aynı payı taşır. Yalnız belge başı ücretler için uygundur.`, soft:true});
+    if(ch.locked) warn.push({t:'GTD önceliği devrede',
+      d:`<b>${ch.comp}</b> gümrük beyannamesinden geliyor. <code>apply_gtd_customs_precedence()</code> elle girilmiş Özbekistan gümrük vergisi satırlarını <b>değiştirir</b>. Satır kilitli — açmak için açık onay gerekir.`, soft:true, info:true});
+  });
+
+  return {perItem, perItemByCharge, warn, block};
+}
+
+/* ------------- voucher plan (ADR-002) ------------- */
+function plan(){
+  const inc = charges.filter(c=>c.inc && !c.vat);
+  const out = [];
+  ['value','qty'].forEach(b=>{
+    const g = inc.filter(c=>c.basis===b);
+    if(g.length) out.push({basis:BASIS[b].label, mode:BASIS[b].native, vouchers:1,
+      taxRows:g.length, total:g.reduce((a,c)=>a+c.amt,0), names:g.map(c=>c.comp), native:true});
+  });
+  inc.filter(c=>!['value','qty'].includes(c.basis)).forEach(c=>{
+    out.push({basis:BASIS[c.basis].label, mode:'Distribute Manually', vouchers:1,
+      taxRows:1, total:c.amt, names:[c.comp], native:false});
+  });
+  return out;
+}
+
+/* ---------------- render ---------------- */
+function render(){
+  const r = compute(), pl = plan();
+  const totInc = charges.filter(c=>c.inc&&!c.vat).reduce((a,c)=>a+c.amt,0);
+  const goods  = items.reduce((a,i)=>a+i.amount,0);
+  const kg     = items.reduce((a,i)=>a+i.kg,0);
+  const vouCount = pl.reduce((a,p)=>a+p.vouchers,0);
+
+  /* containers */
+  document.getElementById('ctnBody').innerHTML = containers.map(c=>{
+    const its = items.filter(i=>i.c===c.id);
+    return `<tr><td class="mono">${c.id}</td>
+      <td class="num">${fmt0(its.reduce((a,i)=>a+i.kg,0))}</td>
+      <td class="num">${fmt0(its.reduce((a,i)=>a+i.box,0))}</td>
+      <td class="num">${fmt(its.reduce((a,i)=>a+i.amount,0))}</td>
+      <td>${its.length}</td>
+      <td>${c.gtd==='—'?'<span class="badge b-mut">yok</span>':'<span class="badge b-ok">'+c.gtd+'</span>'}</td></tr>`;
+  }).join('');
+
+  /* charges */
+  document.getElementById('chgBody').innerHTML = charges.map(ch=>{
+    const cls = [ch.srcType!=='manual'?'linked':'', !ch.inc?'excluded':'', ch.locked?'locked':''].join(' ');
+    const chip = ch.srcType==='gtd'
+      ? `<span class="srcchip" style="color:var(--warn)">⛓ ${ch.src}</span>`
+      : `<a class="srcchip" href="#" onclick="return false">🔗 ${ch.src}</a>`;
+    const opts = Object.entries(BASIS).map(([k,v])=>
+      `<option value="${k}"${ch.basis===k?' selected':''}>${v.label}</option>`).join('');
+    const tgt = ['all',...containers.map(c=>c.id)].map(t=>
+      `<option value="${t}"${ch.target===t?' selected':''}>${t==='all'?'Tüm kalemler':t}</option>`).join('');
+    let st = ch.vat ? '<span class="badge b-dang">İade edilebilir KDV</span>'
+           : ch.locked ? '<span class="badge b-warn">GTD kilitli</span>'
+           : !ch.inc ? '<span class="badge b-mut">Hariç</span>'
+           : ch.basis==='manual' ? '<span class="badge b-info">Manuel</span>'
+           : '<span class="badge b-ok">Dağıtıldı</span>';
+    return `<tr class="${cls}">
+      <td><input type="checkbox" ${ch.inc?'checked':''} onchange="setInc('${ch.id}',this.checked)"></td>
+      <td>${chip}</td>
+      <td class="statictxt">${ch.comp}</td>
+      <td class="num amt">${fmt(ch.amt)}</td>
+      <td class="num amt" style="color:var(--ink2)">${fmt0(ch.amt*FX)}</td>
+      <td><select ${ch.vat?'disabled':''} onchange="setBasis('${ch.id}',this.value)">${opts}</select></td>
+      <td><select ${ch.vat||ch.basis==='manual'?'disabled':''} onchange="setTarget('${ch.id}',this.value)">${tgt}</select></td>
+      <td>${st}</td></tr>`;
+  }).join('');
+  document.getElementById('chgTotUsd').textContent = fmt(totInc);
+  document.getElementById('chgTotUzs').textContent = fmt0(totInc*FX);
+  document.getElementById('chgTotNote').textContent =
+    `${charges.filter(c=>c.inc&&!c.vat).length} satır kapitalize · ${charges.filter(c=>!c.inc||c.vat).length} hariç`;
+  document.getElementById('chgSub').textContent =
+    `${charges.length} satır · ${charges.filter(c=>c.srcType==='bill').length} fatura · ${charges.filter(c=>c.srcType==='exp').length} masraf · 1 GTD`;
+
+  /* plan */
+  document.getElementById('planBox').innerHTML = pl.map(p=>`
+    <div class="prow">
+      <span class="badge ${p.native?'b-ok':'b-info'}">${p.mode}</span>
+      <span class="basis">${p.basis}</span>
+      <span class="meta">${p.names.join(' · ')}</span>
+      <span class="mono">${fmt(p.total)} USD</span>
+      <span class="badge b-mut">${p.taxRows} tax satırı</span>
+      <span class="badge b-mut">${p.vouchers} voucher</span>
+    </div>`).join('') +
+    `<div class="prow" style="background:#f2f6ff;border-color:#c9dbff">
+       <b style="min-width:150px">TOPLAM</b>
+       <span class="meta">${pl.filter(p=>p.native).length} native gruplu + ${pl.filter(p=>!p.native).length} manuel voucher</span>
+       <span class="mono">${fmt(totInc)} USD</span>
+       <span class="badge b-info"><b>${vouCount} Landed Cost Voucher</b></span></div>`;
+
+  /* allocation table */
+  const manualCharges = charges.filter(c=>c.inc && !c.vat && c.basis==='manual');
+  document.getElementById('alcBody').innerHTML = items.map((it,i)=>{
+    const alloc = +r.perItem[i].toFixed(P);
+    const before = it.rate, after = +((it.amount+alloc)/it.qty).toFixed(4);
+    const d = +(after-before).toFixed(4), pct = before>0? d/before*100 : 0;
+    let cell = `<span class="mono">${fmt(alloc)}</span>`;
+    if(manualCharges.length===1){
+      const ch = manualCharges[0], v = (manual[ch.id]||{})[i] || '';
+      const other = +(alloc - (+(v||0))).toFixed(P);
+      cell = `<input class="num" type="number" step="0.01" value="${v}" placeholder="0.00"
+                onchange="setManual('${ch.id}',${i},this.value)">` +
+             (other>0?`<div style="font-size:11px;color:var(--ink3)">+${fmt(other)} diğer</div>`:'');
+    }
+    const subs = charges.filter(c=>c.inc&&!c.vat&&r.perItemByCharge[c.id][i]>0)
+      .map(c=>`${c.comp} ${fmt(r.perItemByCharge[c.id][i])}`).join(' · ');
+    return `<tr>
+      <td><span class="exp" onclick="tog(${i})" id="e${i}">▸</span></td>
+      <td><b>${it.name}</b><div style="font-size:11.5px;color:var(--ink3)" class="mono">${it.code}</div></td>
+      <td class="mono" style="font-size:12px">${it.c}</td>
+      <td class="num">${fmt0(it.qty)} <span style="color:var(--ink3);font-size:11px">${it.uom}</span></td>
+      <td class="num">${fmt0(it.kg)}</td>
+      <td class="num">${fmt(before,4)}</td>
+      <td class="num">${cell}</td>
+      <td class="num"><b>${fmt(after,4)}</b></td>
+      <td class="num">${fmt(d,4)}</td>
+      <td class="num" style="color:var(--dang)">+${fmt(pct,1)}%</td></tr>
+      <tr class="subrow" id="s${i}" style="display:none"><td></td>
+        <td colspan="9">${subs||'—'}</td></tr>`;
+  }).join('');
+
+  const allocT = +r.perItem.reduce((a,b)=>a+b,0).toFixed(P);
+  document.getElementById('alcBefore').textContent = fmt(goods);
+  document.getElementById('alcAlloc').textContent  = fmt(allocT);
+  document.getElementById('alcAfter').textContent  = fmt(goods+allocT);
+  document.getElementById('alcDelta').textContent  = fmt(allocT);
+  document.getElementById('alcPct').textContent    = '+'+fmt(allocT/goods*100,1)+'%';
+
+  /* balance strip */
+  const bal = document.getElementById('balance');
+  const diff = +(totInc-allocT).toFixed(P);
+  if(manualCharges.length){
+    const ch=manualCharges[0], m=manual[ch.id]||{};
+    const sum=+items.reduce((a,_,i)=>a+(+(m[i]||0)),0).toFixed(P), left=+(ch.amt-sum).toFixed(P);
+    bal.className = 'balance ' + (Math.abs(left)<0.001?'on':'off');
+    bal.innerHTML = `<b>${ch.comp}</b> manuel dağıtım:
+      <span class="mono">${fmt(sum)}</span> / <span class="mono">${fmt(ch.amt)}</span> USD girildi ·
+      <b class="mono">${fmt(left)}</b> kaldı
+      ${Math.abs(left)<0.001?'<span class="badge b-ok">dengeli</span>':
+        `<span class="sp" style="flex:1"></span>
+         <button class="btn btn-sm" onclick="spread('${ch.id}')">Kalanı değere göre dağıt</button>
+         <button class="btn btn-sm" onclick="zero('${ch.id}')">Gerisini sıfırla</button>`}`;
+  } else {
+    bal.className='balance on';
+    bal.innerHTML = `Mutabakat: dağıtılan <span class="mono">${fmt(allocT)}</span> =
+      kapitalize <span class="mono">${fmt(totInc)}</span> ·
+      fark <b class="mono">${fmt(diff)}</b>
+      <span class="badge ${Math.abs(diff)<0.001?'b-ok':'b-dang'}">
+      ${Math.abs(diff)<0.001?'invariant sağlandı (Σ pay = Σ masraf)':'invariant BOZUK'}</span>`;
+  }
+
+  /* KPI */
+  document.getElementById('kpiBase').textContent   = fmt(goods/kg,4);
+  document.getElementById('kpiLanded').textContent = fmt((goods+allocT)/kg,4);
+  document.getElementById('kpiUp').textContent     = '+'+fmt(allocT/goods*100,1)+'%';
+  document.getElementById('kpiUpD').textContent    = fmt(allocT)+' USD kapitalize';
+
+  /* alerts */
+  const A=[];
+  r.block.forEach(b=>A.push(`<div class="alert a-dang"><span class="ic">✕</span>
+     <div><b>${b.t}</b><br>${b.d}</div></div>`));
+  r.warn.forEach(w=>A.push(`<div class="alert ${w.info?'a-info':'a-warn'}">
+     <span class="ic">${w.info?'ℹ':'!'}</span><div><b>${w.t}</b><br>${w.d}</div></div>`));
+  if(!r.block.length) A.push(`<div class="alert a-info"><span class="ic">✓</span>
+     <div><b>Preflight geçti</b><br>${vouCount} voucher üretilecek, her
+     <code>Distribute Manually</code> voucher'ı tam 1 tax satırı taşıyor,
+     Σ <code>applicable_charges</code> − <code>total_taxes_and_charges</code> = 0.00 —
+     ERPNext'in <code>2/(10^precision)</code> toleransının içinde.</div></div>`);
+  document.getElementById('alerts').innerHTML = A.join('');
+
+  /* footer + rail */
+  const blocked = r.block.length>0;
+  document.getElementById('footTot').textContent = fmt(totInc)+' USD';
+  document.getElementById('footVou').textContent = vouCount;
+  document.getElementById('postBtn').disabled = blocked;
+  document.getElementById('footMsg').innerHTML = blocked
+    ? `<span style="color:var(--dang)">${r.block.length} blokaj — taslak kaydedilebilir, post edilemez</span>`
+    : `<span style="color:var(--ok)">${vouCount} voucher hazır</span>`;
+  document.getElementById('railChg').textContent =
+    `${charges.filter(c=>c.inc&&!c.vat).length} masraf · ${fmt0(totInc)} USD`;
+  document.getElementById('railAlc').textContent =
+    `${[...new Set(charges.filter(c=>c.inc&&!c.vat).map(c=>BASIS[c.basis].label))].join(', ')||'—'}`;
+}
+
+/* ---------------- actions ---------------- */
+function setInc(id,v){ charges.find(c=>c.id===id).inc=v; render(); }
+function setBasis(id,v){ const c=charges.find(c=>c.id===id);
+  c.basis=v; if(v==='direct'&&c.target==='all') c.target=containers[0].id;
+  if(v==='manual') manual[id]=manual[id]||{}; render(); }
+function setTarget(id,v){ charges.find(c=>c.id===id).target=v; render(); }
+function setManual(id,i,v){ manual[id]=manual[id]||{}; manual[id][i]= v===''?0:+v; render(); }
+function spread(id){ const ch=charges.find(c=>c.id===id), m=manual[id]||{};
+  const sum=items.reduce((a,_,i)=>a+(+(m[i]||0)),0), left=+(ch.amt-sum).toFixed(P);
+  const free=items.map((_,i)=>i).filter(i=>!(+(m[i]||0)>0));
+  if(!free.length) return;
+  const sh=split(left, free.map(i=>items[i].amount));
+  free.forEach((i,k)=> m[i]=sh[k]); manual[id]=m; render(); }
+function zero(id){ const m=manual[id]||{}; items.forEach((_,i)=> m[i]=m[i]||0); manual[id]=m;
+  const ch=charges.find(c=>c.id===id); const sum=items.reduce((a,_,i)=>a+(+(m[i]||0)),0);
+  const first=items.findIndex((_,i)=>+(m[i]||0)>0);
+  if(first>=0) m[first]=+(m[first]+(ch.amt-sum)).toFixed(P); render(); }
+function tog(i){ const e=document.getElementById('s'+i), b=document.getElementById('e'+i);
+  const on=e.style.display==='none'; e.style.display=on?'table-row':'none'; b.textContent=on?'▾':'▸'; }
+
+document.getElementById('defMethod').onchange = e=>{
+  charges.forEach(c=>{ if(!c.vat && !c.locked && c.basis!=='direct' && c.basis!=='manual') c.basis=e.target.value; });
+  render();
+};
+document.querySelectorAll('.step').forEach(s=> s.onclick=()=>{
+  document.querySelectorAll('.step').forEach(x=>x.classList.remove('on'));
+  s.classList.add('on');
+  document.getElementById(s.dataset.go).scrollIntoView({behavior:'smooth',block:'start'});
+});
+document.getElementById('postBtn').onclick = ()=>{
+  const n = plan().reduce((a,p)=>a+p.vouchers,0);
+  document.getElementById('docStatus').textContent='Posted';
+  document.getElementById('docStatus').className='badge b-ok';
+  alert(`${n} adet Landed Cost Voucher oluşturulacak ve submit edilecek.\n\n`+
+    `preflight_calculation() geçti:\n`+
+    `· her Distribute Manually voucher'ında tam 1 tax satırı\n`+
+    `· Σ applicable_charges − total_taxes_and_charges = 0.00\n`+
+    `· negatif pay yok\n`+
+    `· her masrafın en az 1 sıfır-olmayan sürücülü hedefi var\n\n`+
+    `Bu mockup; gerçek submit lcv.submit_landed_cost_voucher()'a delege eder.`);
+};
+render();
+</script>
+</body>
+</html>
