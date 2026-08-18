@@ -78,6 +78,41 @@ Also note point (1) is a second, quieter trap: the obligation leg is in the RECE
 
 Decide: exempt remittance vouchers from the band (voucher_type or the stabler_remittance_stage custom field), widen it for them, or treat a frozen rate outside the band as an approval-gated exception. This is a policy call, not a code tweak — the guard is there on purpose.
 
+### FX residual toleransi ile farkin olculdugu presizyon ayni sey degil
+
+`fx-residual-precision` · hata *(kucuk, ama P&L'e yaziyor)*
+
+2026-08-18'de olculdu, `fix(fx)` duzeltmesi sirasinda ortaya cikti; o commit'te
+**bilerek degistirilmedi** cunku yedi kiracinin her Journal Entry ve Payment
+Entry'sinde neyin kalinti sayilacagini daraltmak kendi basina bir karar.
+
+`stabler/api/fx_balance.py:_balance_journal_entry` iki farkli presizyon
+kullaniyor:
+
+* fark, **belgenin** presizyonunda olculuyor — genesis-test.local'de UZS bir
+  sirkette `JE.precision("total_debit")` = **2**, cunku `currency_precision`
+  bos ve `use_number_format_from_currency` 0, dolayisiyla `get_field_precision`
+  global `#,###.##` formatina dusuyor (frappe/model/meta.py:910-913);
+* tolerans ise **para biriminin** presizyonunda boyutlandiriliyor —
+  `_fx_residual.base_precision_for("UZS")` = **0**, yani birim 1 som.
+
+Sonuc: 3 bacakli bir UZS kaydi `residual_tolerance(3, 0) = 1.0 * (3+2) = 5.0`
+tolere ediyor. Farkin gercekte olculdugu presizyonda bu **499 birim**. UZS
+kurlarinda parasal olarak onemsiz, ama Exchange Gain/Loss hesabina kimseye
+sorulmadan yazilan bir tutar ve iki notion'in hangisinin kastedildigi kodda
+yaziyor degildi.
+
+Simdi yaziyor: `_balance_journal_entry` icindeki not ikisini de adlandiriyor ve
+`test_fx_balance.py::ToleranceBoundaryTest` sinirl her iki para birimi sinifinda
+da pinliyor (USD 0,04 kabul / 0,05 red; UZS 4 kabul / 5 red). Yani uyusmazlik
+artik kazara degil, kayitli.
+
+Karar gereken: ikisi de `doc.precision("total_debit")`'ten mi turetilsin? Bu bir
+**daraltma** olur — bugun kitaplanan 0,05-4,99 arasi UZS farklari artik
+kitaplanmaz ve ERPNext belgeyi "Total Debit must be equal to Total Credit" ile
+reddeder. Once olculmesi gereken: uretimde bu araliga dusen gercek bir kalinti
+var mi. Yoksa daraltma bedava; varsa daraltma o belgeleri kirar.
+
 ### Vehicle Agreement terminal statuses have no writers — Completed, Terminated, Restructured unreachable
 `stabler-2671` · hata
 

@@ -66,6 +66,16 @@ _COMPANY_VALUES = {
 	"cost_center": COST_CENTER,
 }
 
+#: The precision ERPNext actually reports for a Journal Entry's money fields on
+#: the UZS company this app runs on. MEASURED on genesis-test.local rather than
+#: assumed: `JE.precision("total_debit")` is 2, NOT 0, because `currency_precision`
+#: is unset and `use_number_format_from_currency` is 0, so `get_field_precision`
+#: falls through to the global "#,###.##" (frappe/model/meta.py:910-913). The
+#: module's own `base_precision_for("UZS")` says 0 — the two notions disagree, on
+#: purpose and in the open; see the note in `_balance_journal_entry`. Both are
+#: pinned below so the mismatch cannot drift unnoticed.
+DOC_PRECISION = 2
+
 
 def tearDownModule():
 	"""The fakes below are process-wide — hand ``sys.modules`` back intact."""
@@ -91,7 +101,15 @@ def _flt(value, precision=None):
 	return round(number, precision) if precision is not None else number
 
 
-def _load():
+def _load(currency: str = BASE):
+	"""Load the module under fakes, with the company booking in `currency`.
+
+	The currency is a parameter because `residual_tolerance` is sized from
+	`base_precision_for`, which splits the world into 2-decimal currencies and
+	whole-unit ones. A file that only ever exercised one of them could not tell a
+	tolerance that is right from one that is two orders of magnitude wrong.
+	"""
+	_COMPANY_VALUES["default_currency"] = currency
 	_SANDBOX.evict(_MODULE, "frappe", "frappe.utils")
 
 	frappe = types.ModuleType("frappe")
@@ -126,7 +144,7 @@ class _Row:
 		self.credit_in_account_currency = fields.get("credit_in_account_currency", 0.0)
 
 	def precision(self, _fieldname):
-		return 2
+		return DOC_PRECISION
 
 
 class _Journal:
@@ -150,7 +168,7 @@ class _Journal:
 		getattr(self, fieldname).append(_Row(**row))
 
 	def precision(self, _fieldname):
-		return 2
+		return DOC_PRECISION
 
 	def set_total_debit_credit(self):
 		"""Copied from erpnext journal_entry.py:942-953, artefact and all.
@@ -235,13 +253,18 @@ class JournalResidualTest(unittest.TestCase):
 			"these legs do not close at all — the fixture is simply wrong",
 		)
 
-	def test_a_real_sub_unit_residual_is_still_booked(self):
+	def test_a_real_residual_is_still_booked(self):
 		"""The behaviour the module exists for, unchanged.
 
-		A difference that survives rounding to the base currency's minor unit is
-		a realized exchange gain or loss (IAS 21 §28), not noise, and ERPNext
-		would otherwise refuse the submit outright. Fixing the artefact must not
-		cost this.
+		A difference the document's own precision can still see is a realized
+		exchange gain or loss (IAS 21 §28), not noise, and ERPNext would refuse
+		the submit outright over it. Fixing the artefact must not cost this.
+
+		Deliberately NOT described as "one minor unit": on a UZS company the
+		minor unit is a whole som, and 0,01 is a hundredth of one. It is booked
+		anyway, because the difference is measured at the DOCUMENT's precision
+		(2) while the tolerance is sized at the CURRENCY's (0). That gap is the
+		subject of ToleranceBoundaryTest below.
 		"""
 		doc = _Journal(
 			[
@@ -258,7 +281,7 @@ class JournalResidualTest(unittest.TestCase):
 		self.assertAlmostEqual(0.01, booked[0].credit, places=2)
 
 	def test_a_real_imbalance_is_left_for_erpnext_to_refuse(self):
-		"""Above the tolerance it is an allocation error, and must stay loud."""
+		"""Far above the tolerance it is an allocation error, and must stay loud."""
 		doc = _Journal(
 			[
 				_Row(account="Origin Cash - M", debit=1000.00),
@@ -290,6 +313,59 @@ class JournalResidualTest(unittest.TestCase):
 		self.assertEqual(1, len(_auto_rows(doc, self.fx)))
 
 
+class ToleranceBoundaryTest(unittest.TestCase):
+	"""Exactly where "rounding residual" ends and "allocation error" begins.
+
+	Booking a residual writes to the P&L without anyone being asked, so the line
+	has to sit somewhere defensible and it has to be pinned. Before this, the two
+	tests that touched it sat 400x inside the boundary and 25x outside it:
+	`residual_tolerance` could have been wrong by two orders of magnitude in
+	either direction and both stayed green.
+
+	Both currency classes are exercised, because the tolerance is sized from
+	`base_precision_for`, which splits them — 0,01-based for USD, whole-unit for
+	UZS. Two rows means `residual_tolerance(2, ...)`: 0,04 for USD, 4 for UZS.
+	"""
+
+	@classmethod
+	def tearDownClass(cls):
+		_load(BASE)  # hand the module back booking in the currency it ships with
+
+	def _booked(self, currency: str, debit: float, credit: float) -> list:
+		fx = _load(currency)
+		doc = _Journal(
+			[
+				_Row(account="Origin Cash - M", debit=debit),
+				_Row(account="Receiver Obligation - M", credit=credit),
+			]
+		)
+		fx.auto_balance_fx_residual(doc)
+		return _auto_rows(doc, fx)
+
+	def test_a_two_decimal_currency_books_up_to_four_cents(self):
+		self.assertEqual(1, len(self._booked("USD", 100.00, 99.96)), "0,04 is the boundary")
+
+	def test_a_two_decimal_currency_refuses_five_cents(self):
+		self.assertEqual([], self._booked("USD", 100.00, 99.95), "0,05 is an allocation error")
+
+	def test_a_whole_unit_currency_books_up_to_four_units(self):
+		self.assertEqual(1, len(self._booked(BASE, 100.00, 96.00)), "4 is the boundary")
+
+	def test_a_whole_unit_currency_refuses_five_units(self):
+		self.assertEqual([], self._booked(BASE, 100.00, 95.00), "5 is an allocation error")
+
+	def test_the_two_currency_classes_really_are_scaled_apart(self):
+		"""Guards the four above: they mean something only while the split holds.
+
+		4,00 is booked in UZS and refused in USD; 0,04 is booked in USD and — on
+		the same two rows — booked in UZS too, because UZS tolerates a thousand
+		times more. If `base_precision_for` ever stopped splitting the two, half
+		of the assertions above would keep passing for the wrong reason.
+		"""
+		self.assertEqual([], self._booked("USD", 100.00, 96.00), "USD tolerated 4,00")
+		self.assertEqual(1, len(self._booked(BASE, 100.00, 99.96)), "UZS refused 0,04")
+
+
 class HookWiringTest(unittest.TestCase):
 	"""A hook nobody registered is not a hook.
 
@@ -301,23 +377,37 @@ class HookWiringTest(unittest.TestCase):
 
 	@classmethod
 	def setUpClass(cls):
-		with open(os.path.join(_APP, "hooks.py"), encoding="utf-8") as handle:
-			cls.hooks = handle.read()
+		# The real mapping, not a text slice of the file. `stabler/hooks.py` is
+		# literals and imports with no frappe present, so reading `doc_events`
+		# costs nothing and cannot wander into a neighbouring doctype's block —
+		# which is exactly what the first version of this test did. It sliced a
+		# fixed 900-character window from `"Payment Entry": {`, and Journal
+		# Entry's own `before_validate` list begins 875 characters later, inside
+		# it. Deleting the Payment Entry hook outright left this test green,
+		# because it then matched Journal Entry's copy of the same string.
+		cls.doc_events = importlib.import_module("stabler.hooks").doc_events
 
 	def test_it_runs_before_validate_on_both_doctypes(self):
-		self.assertIn("stabler.api.fx_balance.auto_balance_fx_residual", self.hooks)
 		for doctype in ("Journal Entry", "Payment Entry"):
 			with self.subTest(doctype=doctype):
-				start = self.hooks.index(f'"{doctype}": {{')
-				block = self.hooks[start : start + 900]
-				before_validate = block[
-					block.index("before_validate") : block.index("]", block.index("before_validate"))
-				]
 				self.assertIn(
 					"stabler.api.fx_balance.auto_balance_fx_residual",
-					before_validate,
+					self.doc_events[doctype]["before_validate"],
 					f"{doctype} no longer auto-balances its FX residual on save",
 				)
+
+	def test_the_two_doctypes_are_registered_separately(self):
+		"""The property the slicing version could not see.
+
+		One registration standing in for both is the whole failure it shipped
+		with: drop the Payment Entry hook and Journal Entry's list still contains
+		the string being searched for.
+		"""
+		self.assertIsNot(
+			self.doc_events["Journal Entry"]["before_validate"],
+			self.doc_events["Payment Entry"]["before_validate"],
+			"both doctypes share one list object, so one registration covers both",
+		)
 
 	def test_the_module_is_in_the_frappe_free_list(self):
 		"""Or `make check` would not gate it and this file would run nowhere."""

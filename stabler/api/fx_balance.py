@@ -121,11 +121,23 @@ def _balance_journal_entry(doc) -> None:
 	# Credit values cannot be zero" on a balanced document. A difference ERPNext
 	# cannot see is not a residual; it is float noise, and booking it is worse than
 	# ignoring it.
-	places = doc.precision("total_debit") if hasattr(doc, "precision") else 2
+	places = doc.precision("total_debit")
 	diff = flt(getattr(doc, "total_debit", 0), places) - flt(getattr(doc, "total_credit", 0), places)
 	if not diff:
 		return
 
+	# TWO NOTIONS OF PRECISION MEET HERE, and they disagree. The difference above
+	# is measured at the DOCUMENT's precision — measured 2 on a UZS company, because
+	# `currency_precision` is unset and `get_field_precision` falls through to the
+	# global "#,###.##" (frappe/model/meta.py:910-913). The tolerance below is sized
+	# at `base_precision_for`, which calls UZS a 0-decimal currency and therefore
+	# hands back whole units: a 3-leg UZS entry tolerates up to 4,99 — 499 units at
+	# the precision the difference is actually measured at. Immaterial in money at
+	# UZS rates, and NOT changed here: narrowing it would tighten what gets booked on
+	# every Journal Entry and Payment Entry across all seven tenants, which is a
+	# decision of its own and not part of fixing the artefact. It is pinned by
+	# boundary tests in test_fx_balance.py so the mismatch is deliberate rather than
+	# incidental, and recorded in docs/backlog.md.
 	company_currency = frappe.get_cached_value("Company", doc.company, "default_currency") or "UZS"
 	tol = residual_tolerance(len(doc.get("accounts") or []), base_precision_for(company_currency))
 	if not within_tolerance(diff, tol):

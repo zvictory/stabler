@@ -647,11 +647,30 @@ class RemittanceAccountingBenchTest(FrappeTestCase):
 		entry = registered["register_journal_entry"]
 		self.assertTrue(entry, "the register posted no journal entry")
 		rows = self._entry_rows(entry)
-		self.assertEqual(3, len(rows), "the entry carries a row this app did not write")
+
+		# The guard on the fixture, asserted before the behaviour because the
+		# fixture is not guaranteed. `setUpClass` derives send and receive from
+		# the site's base currency, and on a USD-base site BOTH come out EUR —
+		# `_rates` then publishes the fractional rate and immediately overwrites
+		# the same Currency Exchange row with RECEIVE_RATE, leaving a flat 13000
+		# and whole-unit base figures throughout. This test would pass on a
+		# completely broken implementation there. genesis-test.local is UZS-base,
+		# so the pair is USD/EUR and the rate survives; this says so instead of
+		# assuming it.
+		self.assertTrue(
+			any(round(row["debit"] + row["credit"], 2) % 1 for row in rows.values()),
+			"every base figure landed on a whole unit — the currency pair collapsed "
+			"and this test proves nothing on this site",
+		)
+		# The three legs this app writes, named rather than counted: the defect
+		# added a FOURTH row and a count would not say which one was wrong.
+		# Nothing ERPNext already enforces is asserted here — the entry is
+		# submitted, so `validate_total_debit_and_credit` has refused anything
+		# that does not close, and re-asserting the balance would be a tautology.
 		self.assertEqual(
-			round(sum(row["debit"] for row in rows.values()), 2),
-			round(sum(row["credit"] for row in rows.values()), 2),
-			"the posted entry does not close in base currency",
+			{self.origin_cash, self.deferred, self.obligation},
+			set(rows),
+			"the posted entry names an account this app did not write",
 		)
 
 	def test_the_preview_balances_when_the_base_figures_carry_cents(self) -> None:
