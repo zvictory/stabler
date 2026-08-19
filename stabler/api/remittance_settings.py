@@ -157,14 +157,30 @@ def _validated_engine(value) -> str:
 	return engine
 
 
+#: The Journal Entry fields `remittance_cancel_guard` reads to recognise one of its
+#: own vouchers. Created by `v33_remittance_stage_fields`, and by nothing else.
+_GUARD_FIELDS = ("stabler_remittance_id", "stabler_remittance_stage")
+
+
 def _assert_ready_for_v1(doc) -> None:
-	"""Refuse to switch a company to V1 while V1 cannot register a transfer.
+	"""Refuse to switch a company to V1 while V1 cannot register a transfer, or
+	while nothing can protect the vouchers it posts.
 
 	The three accounts are `reqd` on the doctype, so Frappe already refuses those.
 	The desk table is not: without a row, `get_desk_account` throws at register time
 	— which is to say, at the counter, with the cash already counted. A rollout that
 	cannot take a transfer is not a rollout, so it is refused at the moment it is
 	requested instead.
+
+	The stage fields are the same rule one layer down, and their absence is SILENT
+	on both sides. `_build_entry` sets `stabler_remittance_id` on every voucher it
+	inserts and Frappe drops an unknown key without complaint; the cancel guard opens
+	with `doc.get("stabler_remittance_id")` and returns when it is empty, which is the
+	cheap exit an ordinary Journal Entry takes. Missing field, therefore, means every
+	remittance voucher is cancellable from the Desk and nothing anywhere says so.
+	Measured on zuma 2026-08-19: nine submitted vouchers, guard registered and inert,
+	because a fresh site stamps every patch as applied and Custom Fields are created
+	by patch code alone.
 	"""
 	if not (doc.cash_desk_accounts or []):
 		frappe.throw(
@@ -173,4 +189,16 @@ def _assert_ready_for_v1(doc) -> None:
 				"V1 reads every cash account from this table and cannot register a "
 				"transfer without one."
 			).format(doc.company)
+		)
+
+	meta = frappe.get_meta("Journal Entry")
+	missing = [f for f in _GUARD_FIELDS if not meta.get_field(f)]
+	if missing:
+		frappe.throw(
+			_(
+				"Journal Entry is missing {1} on this site, so a remittance voucher "
+				"cannot be told apart from any other and the cancel guard would let it "
+				"be cancelled. Run `bench --site <site> migrate` to create the fields "
+				"before switching {0} to the V1 engine."
+			).format(doc.company, ", ".join(missing))
 		)
