@@ -5,12 +5,13 @@ import { storeToRefs } from "pinia";
 import { useSession } from "../../stores/session.js";
 import { call } from "../../api/client.js";
 import { formatMoney } from "../../composables/money.js";
-import { formatDate, todayIso, startOfYearIso, presetRange } from "../../composables/date.js";
+import { formatDate } from "../../composables/date.js";
 import DateInput from "../../components/DateInput.vue";
 import PeriodSelect from "../../components/PeriodSelect.vue";
 import VoucherDrawer from "../../components/VoucherDrawer.vue";
 import EmptyState from "../../components/EmptyState.vue";
 import { t } from "../../composables/i18n.js";
+import { accountLabel } from "../../composables/accounts.js";
 import { useVoucherDrill } from "../../composables/useVoucherDrill.js";
 
 const route = useRoute();
@@ -55,7 +56,7 @@ const usdApplicable = ref(false);
 const usdMode = ref(null);
 
 const accountCurrency = computed(() => summary.value?.account_currency || currency.value);
-const accountTitle = computed(() => summary.value?.account_name || accountName.value);
+const accountTitle = computed(() => accountLabel(summary.value?.account_name) || accountName.value);
 const isMultiCurrency = computed(
 	() => accountCurrency.value && accountCurrency.value !== currency.value
 );

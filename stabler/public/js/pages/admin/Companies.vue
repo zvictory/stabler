@@ -47,6 +47,7 @@ const moduleOptions = computed(() => [
 	{ key: "sales_box_uom", label: t("Sales Box/Case UOM Preference") },
 	{ key: "modern_sales_order", label: t("Modern Sales Order Form") },
 	{ key: "supplier_payment_currency_guard", label: t("Supplier Payment Currency Guard") },
+	{ key: "payment_calendar", label: t("Payment Calendar") },
 ]);
 
 async function load() {

@@ -976,6 +976,19 @@ def journal_entry_detail(name: str):
 	}
 
 
+def _opening_flag(voucher_type: str | None) -> str:
+	"""What actually makes a Journal Entry an opening entry.
+
+	`voucher_type = "Opening Entry"` is a label; ERPNext keys its opening-balance
+	and period-closing reporting off `is_opening`. The SPA offers the voucher
+	type in its dropdown but never sent the flag, so an entry a user booked as
+	their opening balance counted as an ordinary one — while the Chart of
+	Accounts path (`create_account`) had been setting it all along. Two routes,
+	one document, two meanings.
+	"""
+	return "Yes" if (voucher_type or "").strip() == "Opening Entry" else "No"
+
+
 def _clean_je_rows(accounts, company: str) -> tuple[list[dict], bool]:
 	"""Validate + normalize JE account lines for create/update.
 
@@ -1102,6 +1115,9 @@ def update_journal_entry(
 	doc.user_remark = user_remark or None
 	doc.cheque_no = cheque_no or None
 	doc.cheque_date = getdate(cheque_date) if cheque_date else None
+	# This endpoint cannot change the voucher type, but it can be the first save
+	# of a draft created before the flag existed — keep the two in step.
+	doc.is_opening = _opening_flag(doc.voucher_type)
 	doc.multi_currency = 1 if any_non_base else 0
 	doc.set("accounts", [])
 	for row in cleaned:
@@ -1180,6 +1196,7 @@ def create_journal_entry(
 	doc.company = company
 	doc.posting_date = getdate(posting_date)
 	doc.voucher_type = voucher_type
+	doc.is_opening = _opening_flag(voucher_type)
 	doc.multi_currency = 1 if any_non_base else 0
 	if user_remark:
 		doc.user_remark = user_remark

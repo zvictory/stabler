@@ -13,6 +13,8 @@
  */
 import { computed, ref, watch, onMounted } from "vue";
 
+import { LOCALE_MAP, moneySeparators, parseMoneyInput } from "../composables/money.js";
+
 const props = defineProps({
 	modelValue: { type: [Number, String, null], default: null },
 	currency: { type: String, default: "" },
@@ -41,8 +43,14 @@ const emit = defineEmits(["update:modelValue", "blur", "focus"]);
 const focused = ref(false);
 const display = ref("");
 
-const groupSep = computed(() => (props.language === "en" ? "," : " "));
-const decimalSep = computed(() => (props.language === "en" ? "." : ","));
+// Separators come from the same LOCALE_MAP that formatMoney() uses. They used
+// to be hardcoded as `en ? "," : NBSP` here, which left tr out entirely: a
+// Turkish user read "20 820,00" inside the input and "20.820,00" in the table
+// beside it, on the same screen.
+const separators = computed(() => moneySeparators(props.language));
+const groupSep = computed(() => separators.value.group);
+const decimalSep = computed(() => separators.value.decimal);
+const localeCode = computed(() => LOCALE_MAP[props.language] || "en-US");
 // UZS uses integer-only formatting and the native "сўм" suffix
 // (tiyin/coins out of circulation since 1994).
 const isUZS = computed(() => (props.currency || "").toUpperCase() === "UZS");
@@ -55,32 +63,13 @@ const maxFractionDigits = computed(() => {
 	return 2;
 });
 
-function parse(text) {
-	if (text === null || text === undefined) return null;
-	const raw = String(text).trim();
-	if (raw === "") return null;
-	// Strip grouping separators (space, NBSP, comma when not the decimal sep, apostrophe).
-	// The two invisible characters in the class below are U+00A0 and U+202F -- exactly
-	// what Intl.NumberFormat emits as the thousands separator for ru/uz/uzc, so they
-	// are load-bearing, not a stray paste. Delete them and "20 820,00" parses as null.
-	// eslint-disable-next-line no-irregular-whitespace
-	let cleaned = raw.replace(/[\s  ']/g, "");
-	if (decimalSep.value === ",") {
-		// ru/uz/uzc: comma is decimal, drop stray dots used as thousand grouping
-		cleaned = cleaned.replace(/\./g, "").replace(",", ".");
-	} else {
-		cleaned = cleaned.replace(/,/g, "");
-	}
-	const n = Number(cleaned);
-	return Number.isFinite(n) ? n : null;
-}
+const parse = (text) => parseMoneyInput(text, props.language);
 
 function format(n) {
 	if (n === null || n === undefined || n === "") return "";
 	const num = Number(n);
 	if (!Number.isFinite(num)) return "";
-	const localeCode = props.language === "en" ? "en-US" : "ru-RU";
-	return new Intl.NumberFormat(localeCode, {
+	return new Intl.NumberFormat(localeCode.value, {
 		minimumFractionDigits: minFractionDigits.value,
 		maximumFractionDigits: maxFractionDigits.value,
 		useGrouping: true,
@@ -154,6 +143,15 @@ function onFocus(event) {
 
 function onBlur(event) {
 	focused.value = false;
+	// A zero-fraction currency (UZS) formats 1500000.5 as "1 500 001", but the
+	// model kept 1500000.5 and that is what reached the ledger — the field
+	// showed one number and posted another. Snap the value to what is on
+	// screen. Only for 0 digits: rate fields pass no `currency`, keep the
+	// 2-digit default, and must not lose a 4-decimal rate to this.
+	if (maxFractionDigits.value === 0 && Number.isFinite(Number(props.modelValue)) && props.modelValue !== null && props.modelValue !== "") {
+		const snapped = Math.round(Number(props.modelValue));
+		if (snapped !== Number(props.modelValue)) emit("update:modelValue", snapped);
+	}
 	display.value = format(props.modelValue);
 	emit("blur", event);
 }

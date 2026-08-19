@@ -3,6 +3,7 @@ import { computed, onMounted, ref } from "vue";
 import { call } from "../../api/client.js";
 import { useSession } from "../../stores/session.js";
 import { t } from "../../composables/i18n.js";
+import { accountLabel } from "../../composables/accounts.js";
 import { formatMoney } from "../../composables/money.js";
 import { formatDate } from "../../composables/date.js";
 import DateInput from "../../components/DateInput.vue";
@@ -177,7 +178,7 @@ onMounted(load);
 						</thead>
 						<tbody>
 							<tr v-for="acc in detail.accounts" :key="acc.account">
-								<td class="small">{{ acc.account_name || acc.account }}</td>
+								<td class="small">{{ accountLabel(acc) || acc.account }}</td>
 								<td class="text-end font-monospace small">
 									<template v-if="acc.debit_in_account_currency > 0">
 										{{ formatMoney(acc.debit_in_account_currency, acc.account_currency) }}

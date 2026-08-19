@@ -34,6 +34,7 @@ import unittest
 #   _user_allowed_companies — manual scoping against the allowed-companies list
 #   _company_filter         — SFA's per-company filter helper
 #   _require_crm_company    — CRM wrapper that calls _require_company and checks entitlement
+#   _require_plan_company   — payment-calendar wrapper; same shape as _require_crm_company
 #   _require_admin          — admin-only endpoint; company boundary is moot
 _SCOPE_TOKENS = (
 	"_assert_company_scope",
@@ -46,6 +47,7 @@ _SCOPE_TOKENS = (
 	"_user_allowed_companies",
 	"_company_filter",
 	"_require_crm_company",
+	"_require_plan_company",
 	"_require_crm_manager",
 	"_require_admin",
 	"_get_deal_and_master",

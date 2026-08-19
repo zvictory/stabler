@@ -99,6 +99,9 @@ _MODULE_FIELDS = {
 	# The Vehicle Finance Center roles grant the installment module; Agreement V1
 	# behaviour is separately gated by Vehicle Finance Settings.installment_engine.
 	"installment": "enable_installment",
+	# Each user keeps their own plan; a Payment Plan Manager reads across all of
+	# them. Both roles grant the module below.
+	"payment_calendar": "enable_payment_calendar",
 	# Backend-only policy: no SPA page ships for it, it gates validate hooks.
 	"valuation_guard": "enable_valuation_guard",
 	# Backend-only policy: no SPA page, it gates the payment-creation endpoints.
@@ -153,6 +156,9 @@ _MODULE_ROLES: dict[str, list[str]] = {
 		"Vehicle Finance Cashier",
 		"Vehicle Finance Manager",
 	],
+	# Both plan roles reach the page; the difference between them is whose rows
+	# they see, and that is decided in stabler.api.payment_plan.visibility_filter.
+	"payment_calendar": ["Payment Plan User", "Payment Plan Manager"],
 }
 
 _ADMIN_ROLES = ("System Manager", "Stabler Admin")
@@ -446,6 +452,7 @@ def update_company_modules(
 	modern_sales_order=None,
 	valuation_guard=None,
 	supplier_payment_currency_guard=None,
+	payment_calendar=None,
 ):
 	"""Admin-only: toggle per-module flags for a company. Pass 0/1 to update; omit to leave."""
 	_require_admin()
@@ -488,6 +495,7 @@ def update_company_modules(
 		"enable_modern_sales_order": modern_sales_order,
 		"enable_valuation_guard": valuation_guard,
 		"enable_supplier_payment_currency_guard": supplier_payment_currency_guard,
+		"enable_payment_calendar": payment_calendar,
 	}
 	for field, val in updates.items():
 		if val is None or val == "":

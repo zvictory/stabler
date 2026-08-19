@@ -5,8 +5,10 @@ import { call } from "../../api/client.js";
 import { t } from "../../composables/i18n.js";
 import { formatDate } from "../../composables/date.js";
 import ModuleHeader from "../../components/ModuleHeader.vue";
+import { useSession } from "../../stores/session.js";
 
 const route = useRoute();
+const session = useSession();
 
 // Effective ERPNext back-dating freeze for this user — shown as a thin banner so
 // people know up-front why old-dated postings are blocked, and where to change it.
@@ -25,7 +27,9 @@ const freezeDate = computed(() => {
 	return dates.length ? dates.sort().reverse()[0] : null;
 });
 
-const tabs = [
+// The payment calendar is a separate module: it appears only where the tenant
+// switched it on, so the tab list is computed rather than constant.
+const tabs = computed(() => [
 	{ name: "money-accounts", path: "/money/accounts", label: t("Chart of Accounts"), icon: "ti-list-tree" },
 	{ name: "money-journals", path: "/money/journals", label: t("Journal Entries"), icon: "ti-book" },
 	{ name: "money-payments", path: "/money/payments", label: t("Payments"), icon: "ti-cash" },
@@ -34,7 +38,10 @@ const tabs = [
 	{ name: "money-reports", path: "/money/reports", label: t("Reports"), icon: "ti-report-money" },
 	{ name: "money-approvals", path: "/money/approvals", label: t("Approvals"), icon: "ti-checklist" },
 	{ name: "money-reconcile", path: "/money/reconcile", label: t("Reconcile"), icon: "ti-arrows-left-right" },
-];
+	...(session.canAccessModule("payment_calendar")
+		? [{ name: "money-payment-calendar", path: "/money/calendar", label: t("Payment Calendar"), icon: "ti-calendar-dollar" }]
+		: []),
+]);
 
 const activeTab = computed(() => route.name);
 </script>

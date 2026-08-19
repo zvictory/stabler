@@ -4,9 +4,11 @@ import { storeToRefs } from "pinia";
 import { useRoute, useRouter } from "vue-router";
 import { useSession } from "../../stores/session.js";
 import { call } from "../../api/client.js";
-import { formatMoney } from "../../composables/money.js";
+import { formatMoney, moneyEpsilon, moneyFractionDigits } from "../../composables/money.js";
+import { computeBalancePlug } from "../../composables/journal.js";
 import { formatDate, formatDateTime, todayIso, daysAgoIso} from "../../composables/date.js";
 import { t } from "../../composables/i18n.js";
+import { accountLabel } from "../../composables/accounts.js";
 import MoneyInput from "../../components/MoneyInput.vue";
 import DateInput from "../../components/DateInput.vue";
 import EmptyState from "../../components/EmptyState.vue";
@@ -78,7 +80,9 @@ const submitError = ref("");
 const accountsLoading = ref(false);
 const accountOptions = ref([]);
 
-const emptyRow = () => ({ account: "", account_currency: "", party_type: "", party: "", party_name: "", exchange_rate: 1, debit: null, credit: null });
+// `_auto` marks an amount this form derived rather than one the user typed.
+// It is a UI concern only — submitForm rebuilds the payload field by field.
+const emptyRow = () => ({ account: "", account_currency: "", party_type: "", party: "", party_name: "", exchange_rate: 1, debit: null, credit: null, _auto: false });
 const form = ref(blankForm());
 const editName = ref(null);
 const isEdit = computed(() => !!editName.value);
@@ -116,7 +120,9 @@ const balanced = computed(() => {
 		const ratesOk = form.value.accounts.every((r) => !isForeign(r) || rateOf(r) > 0);
 		return ratesOk && Math.abs(diff.value) < 1;
 	}
-	return Math.abs(diff.value) < 0.01;
+	// Not a hardcoded 0.01: UZS has no fractional unit, so its epsilon is half
+	// a so'm. Mirrors money_epsilon() in stabler/api/_money.py.
+	return Math.abs(diff.value) < moneyEpsilon(currencyCode.value) * 2;
 });
 
 // Readable "1 strong = N weak" quote for a line (always the ≥1 direction).
@@ -216,6 +222,11 @@ const postingFrozen = computed(() => !!freezeDate.value && !!form.value.posting_
 // The cancelled JE this draft amends (set by amendJE), passed through on save.
 const amendedFrom = ref(null);
 
+function onAccountPicked(row, idx) {
+	onAccountChange(row);
+	runAutoBalance(idx);
+}
+
 async function loadAccountOptions() {
 	if (!activeCompany.value || accountOptions.value.length) return;
 	accountsLoading.value = true;
@@ -291,6 +302,7 @@ async function openEdit(d) {
 				exchange_rate: Number(a.exchange_rate) > 0 ? Number(a.exchange_rate) : 1,
 				debit: a.debit_in_account_currency || null,
 				credit: a.credit_in_account_currency || null,
+				_auto: false, // an amount already posted is the user's, never ours to replace
 			})),
 	};
 	while (form.value.accounts.length < 2) form.value.accounts.push(emptyRow());
@@ -306,8 +318,31 @@ function cancelEdit() {
 
 function addRow() { form.value.accounts.push(emptyRow()); }
 function removeRow(idx) { if (form.value.accounts.length > 2) form.value.accounts.splice(idx, 1); }
-function onDebitInput(row) { if (Number(row.debit)) row.credit = null; }
-function onCreditInput(row) { if (Number(row.credit)) row.debit = null; }
+// Both of these used to fire on @blur, so a row could hold a debit AND a
+// credit while it had focus — the balance badge read "Balanced" on data the
+// server rejects outright (api/money.py:_clean_je_rows). They run on the model
+// update now, so the row is never inconsistent even for a keystroke.
+function onAmountInput(row, idx, side) {
+	const other = side === "debit" ? "credit" : "debit";
+	if (Number(row[side])) row[other] = null;
+	row._auto = false; // the user typed here; this amount is data now, not a derivation
+	runAutoBalance(idx);
+}
+
+// Fills the counter-line so an opening balance does not have to be added up by
+// hand. Never touches an amount the user typed — see composables/journal.js.
+function runAutoBalance(editedIdx) {
+	const plug = computeBalancePlug(form.value.accounts, {
+		editedIdx,
+		rateOf,
+		fractionDigitsOf: (r) => moneyFractionDigits(r.account_currency || currencyCode.value),
+	});
+	if (!plug) return;
+	const target = form.value.accounts[plug.index];
+	target[plug.field] = plug.value;
+	target[plug.field === "debit" ? "credit" : "debit"] = null;
+	target._auto = true;
+}
 
 async function submitForm() {
 	submitError.value = "";
@@ -518,7 +553,7 @@ watch(statusFilter, load);
 							</tr></thead>
 							<tbody>
 								<tr v-for="(a, i) in detail.accounts" :key="i">
-									<td>{{ a.account_name || a.account }}</td>
+									<td>{{ accountLabel(a) || a.account }}</td>
 									<td>{{ a.party_name || a.party || "—" }}</td>
 									<td class="text-end font-monospace">
 										{{ a.debit_in_account_currency ? formatMoney(a.debit_in_account_currency, a.account_currency || detail.base_currency || currency, user.language) : "—" }}
@@ -570,19 +605,22 @@ watch(statusFilter, load);
 						<thead><tr>
 							<th style="min-width: 170px">{{ t("Account") }}</th>
 							<th style="min-width: 200px">{{ t("Party") }}</th>
-							<th v-if="isMultiCurrency" class="text-end" style="width: 110px">{{ t("Rate") }}</th>
-							<th class="text-end" style="width: 130px">{{ t("Debit") }}</th>
-							<th class="text-end" style="width: 130px">{{ t("Credit") }}</th>
+							<th v-if="isMultiCurrency" class="text-end" style="width: 152px">{{ t("Rate") }}</th>
+							<th class="text-end" style="width: 148px">{{ t("Debit") }}</th>
+							<th class="text-end" style="width: 148px">{{ t("Credit") }}</th>
 							<th class="w-1"></th>
 						</tr></thead>
 						<tbody>
 							<tr v-for="(row, idx) in form.accounts" :key="idx">
 								<td>
-									<Select v-model="row.account" size="sm" :options="accountOptions" value-key="name" :placeholder="t('— Choose account —')" @change="onAccountChange(row)">
-										<template #option="{ option }">{{ option.account_number ? `${option.account_number} · ` : "" }}{{ option.account_name }}</template>
-										<template #selected="{ option }">{{ option.account_number ? `${option.account_number} · ` : "" }}{{ option.account_name }}</template>
+									<Select v-model="row.account" size="sm" :options="accountOptions" value-key="name" :placeholder="t('— Choose account —')" @change="onAccountPicked(row, idx)">
+										<template #option="{ option }">{{ option.account_number ? `${option.account_number} · ` : "" }}{{ accountLabel(option) }}</template>
+										<template #selected="{ option }">{{ option.account_number ? `${option.account_number} · ` : "" }}{{ accountLabel(option) }}</template>
 									</Select>
-									<div v-if="row.account && acctBalanceText(row.account)" class="text-secondary" style="font-size:.7rem">{{ acctBalanceText(row.account) }}</div>
+									<div v-if="row.account" class="d-flex align-items-center gap-1 mt-1">
+										<span class="badge bg-secondary-lt text-uppercase je-ccy">{{ row.account_currency || currencyCode }}</span>
+										<span v-if="acctBalanceText(row.account)" class="text-secondary je-hint">{{ acctBalanceText(row.account) }}</span>
+									</div>
 								</td>
 								<td>
 									<div class="d-flex gap-1">
@@ -595,13 +633,13 @@ watch(statusFilter, load);
 								<td v-if="isMultiCurrency" class="text-end">
 									<template v-if="isForeign(row) && rateQuote(row)">
 										<MoneyInput :model-value="rateQuote(row).value" :language="user.language" :min="0" size="sm" @update:model-value="(v) => setRateQuote(row, v)" />
-										<div class="text-secondary" style="font-size: .7rem">1 {{ rateQuote(row).strong }} = {{ fmtRate(rateQuote(row).value) }} {{ rateQuote(row).weak }}</div>
-										<div v-if="baseLine(row)" class="text-secondary" style="font-size: .7rem">= {{ formatMoney(baseLine(row), currencyCode, user.language) }}</div>
+										<div class="text-secondary je-hint text-nowrap">1 {{ rateQuote(row).strong }} = {{ fmtRate(rateQuote(row).value) }} {{ rateQuote(row).weak }}</div>
+										<div v-if="baseLine(row)" class="text-secondary je-hint text-nowrap">= {{ formatMoney(baseLine(row), currencyCode, user.language) }}</div>
 									</template>
 									<span v-else class="text-secondary small">1</span>
 								</td>
-								<td><MoneyInput v-model="row.debit" :currency="row.account_currency || currencyCode" :language="user.language" size="sm" @blur="onDebitInput(row)" /></td>
-								<td><MoneyInput v-model="row.credit" :currency="row.account_currency || currencyCode" :language="user.language" size="sm" @blur="onCreditInput(row)" /></td>
+								<td><MoneyInput v-model="row.debit" :currency="row.account_currency || currencyCode" hide-currency :language="user.language" size="sm" @update:model-value="onAmountInput(row, idx, 'debit')" /></td>
+								<td><MoneyInput v-model="row.credit" :currency="row.account_currency || currencyCode" hide-currency :language="user.language" size="sm" @update:model-value="onAmountInput(row, idx, 'credit')" /></td>
 								<td><button type="button" class="btn btn-sm btn-ghost-danger" :disabled="form.accounts.length <= 2" @click="removeRow(idx)"><i class="ti ti-trash"></i></button></td>
 							</tr>
 						</tbody>
@@ -612,7 +650,7 @@ watch(statusFilter, load);
 								<td class="text-end font-monospace">{{ formatMoney(isMultiCurrency ? baseCredit : totalCredit, currencyCode, user.language) }}</td>
 								<td><span class="badge" :class="balanced ? 'bg-green-lt' : 'bg-red-lt'">{{ balanced ? t("Balanced") : "Δ " + formatMoney(diff, currencyCode, user.language) }}</span></td>
 							</tr>
-							<tr v-if="isMultiCurrency"><td colspan="5" class="text-secondary small fw-normal pt-0">{{ t("Totals shown in base currency ({0}).").replace("{0}", currencyCode) }}</td></tr>
+							<tr v-if="isMultiCurrency"><td colspan="6" class="text-secondary small fw-normal pt-0">{{ t("Totals shown in base currency ({0}).").replace("{0}", currencyCode) }}</td></tr>
 						</tfoot>
 					</table>
 
@@ -628,3 +666,18 @@ watch(statusFilter, load);
 		</div>
 	</div>
 </template>
+
+<style scoped>
+/* The line hints (rate quote, base equivalent, account balance) sit under a
+   form control in a table cell. At the default size they wrapped a rate quote
+   into four lines — "1 USD =" / "12 000 UZS" / "=" / "12 000 000 сўм" — which
+   is how a multi-currency journal row came apart on screen. */
+.je-hint {
+	font-size: 0.7rem;
+	line-height: 1.15;
+}
+.je-ccy {
+	font-size: 0.65rem;
+	padding: 0.1rem 0.3rem;
+}
+</style>

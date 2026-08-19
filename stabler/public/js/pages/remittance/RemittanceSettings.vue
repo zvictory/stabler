@@ -72,6 +72,7 @@ import { useSession } from "../../stores/session.js";
 import { call } from "../../api/client.js";
 import { remittanceApi, REMITTANCE_QUEUES } from "../../api/remittance.js";
 import { t } from "../../composables/i18n.js";
+import { accountLabel } from "../../composables/accounts.js";
 import { useToast } from "../../composables/useToast.js";
 import { CORRIDOR_CURRENCIES } from "../../composables/remittanceCurrencies.js";
 import Select from "../../components/Select.vue";
@@ -383,7 +384,7 @@ function accountDisplay(name) {
 	const meta = accountByName.value.get(name);
 	if (!meta) return name;
 	const cur = currencyOf(name);
-	return cur ? `${meta.account_name || meta.name} (${cur})` : meta.account_name || meta.name;
+	return cur ? `${accountLabel(meta)} (${cur})` : accountLabel(meta);
 }
 
 function norm(s) {
@@ -962,7 +963,7 @@ async function save() {
 									>
 								</template>
 								<template v-else>
-									<span>{{ item.account_name || item.name }}</span>
+									<span>{{ accountLabel(item) }}</span>
 									<span v-if="item.account_number" class="text-secondary ms-1 small">{{
 										item.account_number
 									}}</span>
@@ -1005,7 +1006,7 @@ async function save() {
 									>
 								</template>
 								<template v-else>
-									<span>{{ item.account_name || item.name }}</span>
+									<span>{{ accountLabel(item) }}</span>
 									<span v-if="item.account_number" class="text-secondary ms-1 small">{{
 										item.account_number
 									}}</span>
@@ -1048,7 +1049,7 @@ async function save() {
 									>
 								</template>
 								<template v-else>
-									<span>{{ item.account_name || item.name }}</span>
+									<span>{{ accountLabel(item) }}</span>
 									<span v-if="item.account_number" class="text-secondary ms-1 small">{{
 										item.account_number
 									}}</span>
@@ -1144,7 +1145,7 @@ async function save() {
 												>
 											</template>
 											<template v-else>
-												<span>{{ item.account_name || item.name }}</span>
+												<span>{{ accountLabel(item) }}</span>
 												<span class="ms-auto text-secondary small font-monospace">{{
 													item.account_currency || baseCurrency
 												}}</span>

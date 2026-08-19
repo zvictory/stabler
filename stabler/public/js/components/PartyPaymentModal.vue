@@ -20,6 +20,7 @@ import { call } from "../api/client.js";
 import { formatMoney, moneyEpsilon } from "../composables/money.js";
 import { formatDate, todayIso } from "../composables/date.js";
 import { t } from "../composables/i18n.js";
+import { accountLabel } from "../composables/accounts.js";
 import { useToast } from "../composables/useToast.js";
 import { useTelemetry } from "../composables/useTelemetry.js";
 import MoneyInput from "./MoneyInput.vue";
@@ -444,10 +445,10 @@ async function submit() {
 									:disabled="submitting"
 								>
 									<template #option="{ option }">
-										{{ option.account_name }} ({{ option.account_type }})
+										{{ accountLabel(option) }} ({{ option.account_type }})
 									</template>
 									<template #selected="{ option }">
-										{{ option.account_name }} ({{ option.account_type }})
+										{{ accountLabel(option) }} ({{ option.account_type }})
 									</template>
 								</Select>
 							</div>

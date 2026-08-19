@@ -8,6 +8,7 @@ import { formatMoney } from "../../composables/money.js";
 import { formatDate, todayIso } from "../../composables/date.js";
 import { readableRate, formatRate } from "../../composables/fx.js";
 import { t } from "../../composables/i18n.js";
+import { accountLabel } from "../../composables/accounts.js";
 import MoneyInput from "../../components/MoneyInput.vue";
 import DateInput from "../../components/DateInput.vue";
 import Typeahead from "../../components/Typeahead.vue";
@@ -457,10 +458,10 @@ const typeBadge = (t) => {
 					:placeholder="t('— select account —')"
 				>
 					<template #option="{ option }">
-						{{ option.account_name }}<template v-if="option.account_currency"> ({{ option.account_currency }})</template>
+						{{ accountLabel(option) }}<template v-if="option.account_currency"> ({{ option.account_currency }})</template>
 					</template>
 					<template #selected="{ option }">
-						{{ option.account_name }}<template v-if="option.account_currency"> ({{ option.account_currency }})</template>
+						{{ accountLabel(option) }}<template v-if="option.account_currency"> ({{ option.account_currency }})</template>
 					</template>
 				</Select>
 				<div v-else class="form-control-plaintext font-monospace py-1">{{ form.bank_account || "—" }}</div>

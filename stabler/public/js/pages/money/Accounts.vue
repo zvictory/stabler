@@ -6,6 +6,7 @@ import { useSession } from "../../stores/session.js";
 import { call } from "../../api/client.js";
 import { formatMoney } from "../../composables/money.js";
 import { t } from "../../composables/i18n.js";
+import { accountLabel, accountTypeLabel } from "../../composables/accounts.js";
 import { useConfirm } from "../../composables/useConfirm.js";
 import { useToast } from "../../composables/useToast.js";
 import { useEscapeBack } from "../../composables/useEscapeBack.js";
@@ -37,7 +38,7 @@ const balancesLoading = ref(false);
 const search = ref("");
 const includeDisabled = ref(false);
 
-const ACCOUNT_TYPE_OPTIONS = [
+const ACCOUNT_TYPES = [
 	"Accumulated Depreciation",
 	"Asset Received But Not Billed",
 	"Bank",
@@ -70,6 +71,10 @@ const ACCOUNT_TYPE_OPTIONS = [
 	"Tax",
 	"Temporary",
 ];
+
+// Fixed English enum from ERPNext, so it belongs in the catalogues like any
+// other label. Select accepts {value,label} as readily as a bare string.
+const ACCOUNT_TYPE_OPTIONS = computed(() => ACCOUNT_TYPES.map((value) => ({ value, label: accountTypeLabel(value) })));
 
 const createOpen = ref(false);
 const editMode = ref(false);
@@ -159,13 +164,8 @@ const currency = computed(
 const parentAccountOptions = computed(() =>
 	flat.value
 		.filter((r) => r.is_group && r.name !== editingName.value)
-		.map((r) => ({ value: r.name, label: r.account_name || r.name }))
+		.map((r) => ({ value: r.name, label: accountLabel(r) }))
 );
-
-const selectedParentRootType = computed(() => {
-	const parent = flat.value.find((r) => r.name === form.value.parent_account);
-	return parent ? parent.root_type : "";
-});
 
 async function load() {
 	if (!activeCompany.value) return;
@@ -474,8 +474,8 @@ watch(includeDisabled, async () => {
 			icon="ti-list-tree"
 			accentIcon="ti-coin"
 			tone="primary"
-			title="No accounts yet"
-			:subtitle="`Set up the chart of accounts for ${activeCompany} to see it here.`"
+			:title="t('No accounts yet')"
+			:subtitle="t('Set up the chart of accounts for {company} to see it here.', { company: activeCompany })"
 		/>
 		<div v-else class="table-responsive">
 			<table class="table table-vcenter card-table">
@@ -516,7 +516,7 @@ watch(includeDisabled, async () => {
 								<span v-else class="d-inline-block" style="width: 1.75rem"></span>
 								<i class="ti me-1" :class="[rootIcon(n.root_type), rootColor(n.root_type)]"></i>
 								<span v-if="n.is_group" class="fw-semibold" :class="{ 'text-muted': n.disabled }">
-									{{ n.account_name || n.name }}
+									{{ accountLabel(n) }}
 								</span>
 								<a
 									v-else
@@ -526,13 +526,13 @@ watch(includeDisabled, async () => {
 									:title="t('View ledger')"
 									@click.stop.prevent="openLedger(n)"
 								>
-									{{ n.account_name || n.name }}
+									{{ accountLabel(n) }}
 								</a>
 								<span v-if="n.disabled" class="badge bg-secondary-lt ms-2">{{ t("Disabled") }}</span>
 							</div>
 						</td>
 						<td class="text-nowrap">
-							<span v-if="n.account_type" class="badge bg-secondary-lt">{{ n.account_type }}</span>
+							<span v-if="n.account_type" class="badge bg-secondary-lt">{{ accountTypeLabel(n.account_type) }}</span>
 						</td>
 						<td
 							class="text-end font-monospace text-nowrap coa-amount"

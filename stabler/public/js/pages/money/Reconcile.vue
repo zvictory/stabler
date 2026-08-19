@@ -9,6 +9,7 @@ import { call } from "../../api/client.js";
 import { formatMoney } from "../../composables/money.js";
 import { formatDate, formatDateTime } from "../../composables/date.js";
 import { t } from "../../composables/i18n.js";
+import { accountLabel } from "../../composables/accounts.js";
 import { getStatusBadgeClass } from "../../composables/status.js";
 import { useToast } from "../../composables/useToast.js";
 import Select from "../../components/Select.vue";
@@ -40,7 +41,7 @@ const accountOptions = computed(() => [
 	{ value: "", label: t("Select bank account…") },
 	...accounts.value.map((a) => ({
 		value: a.name,
-		label: `${a.account_name || a.name}${a.bank_account_no ? " · " + a.bank_account_no : ""}${a.currency ? " (" + a.currency + ")" : ""}`,
+		label: `${accountLabel(a)}${a.bank_account_no ? " · " + a.bank_account_no : ""}${a.currency ? " (" + a.currency + ")" : ""}`,
 	})),
 ]);
 const selectedCurrency = computed(

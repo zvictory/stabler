@@ -6133,3 +6133,158 @@ account not set,счёт не указан
 as of {date},на {date}
 "tax or charges inside a receipt total — only the net goes into this account, so anything the tax table added was never there to clear; or","налоги или сборы внутри итога приёмки: на этот счёт попадает только сумма без налогов, поэтому всё, что добавила таблица налогов, там никогда не лежало и закрывать нечего; или"
 {count} receipts,{count} приёмок
+Application of Funds (Assets),Размещение средств (активы)
+Source of Funds (Liabilities),Источники средств (обязательства)
+Current Assets,Оборотные активы
+Current Liabilities,Краткосрочные обязательства
+Non-Current Liabilities,Долгосрочные обязательства
+Fixed Assets,Основные средства
+Investments,Инвестиции
+Bank Accounts,Банковские счета
+Cash In Hand,Денежные средства в кассе
+Accounts Receivable,Дебиторская задолженность
+Accounts Payable,Кредиторская задолженность
+Duties and Taxes,Пошлины и налоги
+Tax Assets,Налоговые активы
+Loans (Liabilities),Займы (обязательства)
+Loans and Advances (Assets),Займы и авансы выданные
+Securities and Deposits,Ценные бумаги и депозиты
+Stock Assets,Товарно-материальные запасы
+Stock Expenses,Расходы по запасам
+Stock Liabilities,Обязательства по запасам
+Temporary Accounts,Временные счета
+Income,Доходы
+Direct Income,Прямые доходы
+Indirect Income,Косвенные доходы
+Direct Expenses,Прямые расходы
+Indirect Expenses,Косвенные расходы
+RUB BANK,Банк RUB
+USD BANK,Банк USD
+UZS BANK,Банк UZS
+YUAN BANK,Банк CNY
+Accrued Expenses,Начисленные расходы
+Accumulated Depreciation,Накопленная амортизация
+Administrative Expenses,Административные расходы
+Asset Received But Not Billed,"Актив получен, но счёт не выставлен"
+Bank Charges,Банковские комиссии
+Bank Overdraft Account,Банковский овердрафт
+Buildings,Здания
+CWIP Account,Незавершённое строительство
+Capital Equipment,Капитальное оборудование
+Capital Stock,Уставный капитал
+Commission on Sales,Комиссия с продаж
+Cost of Goods Sold,Себестоимость продаж
+Creditors,Кредиторы
+Customer Advances,Авансы покупателей
+Debtors,Дебиторы
+Depreciation,Амортизация
+Dividends Paid,Выплаченные дивиденды
+Earnest Money,Задаток
+Electronic Equipment,Электронное оборудование
+Employee Advances,Авансы сотрудникам
+Employee Benefits Obligation,Обязательства по вознаграждениям работникам
+Entertainment Expenses,Представительские расходы
+Exchange Gain/Loss,Курсовые разницы
+Expenses Included In Asset Valuation,"Расходы, включённые в стоимость актива"
+Expenses Included In Valuation,"Расходы, включённые в стоимость запасов"
+Freight and Forwarding Charges,Транспортно-экспедиторские расходы
+Furniture and Fixtures,Мебель и оснащение
+Gain/Loss on Asset Disposal,Прибыль/убыток от выбытия активов
+Impairment,Обесценение
+Interest Expense,Процентные расходы
+Interest Income,Процентные доходы
+Interest on Fixed Deposits,Проценты по срочным депозитам
+Kassa Som,Касса (сум)
+USD Kassa,Касса (USD)
+Legal Expenses,Юридические расходы
+Long-term Provisions,Долгосрочные резервы
+Marketing Expenses,Маркетинговые расходы
+Miscellaneous Expenses,Прочие расходы
+Office Equipment,Офисное оборудование
+Office Maintenance Expenses,Расходы на содержание офиса
+Office Rent,Аренда офиса
+Opening Balance Equity,Капитал: входящее сальдо
+Payroll Payable,Задолженность по заработной плате
+Plants and Machineries,Машины и оборудование
+Postal Expenses,Почтовые расходы
+Prepaid Expenses,Расходы будущих периодов
+Print and Stationery,Печать и канцелярия
+Retained Earnings,Нераспределённая прибыль
+Revaluation Surplus,Прирост от переоценки
+Round Off,Округление
+Sales Expenses,Коммерческие расходы
+Secured Loans,Обеспеченные займы
+Short-term Investments,Краткосрочные инвестиции
+Short-term Provisions,Краткосрочные резервы
+Software,Программное обеспечение
+Stock Adjustment,Корректировка запасов
+Stock In Hand,Запасы на складе
+Stock Received But Not Billed,"Запасы получены, но счёт не выставлен"
+Tax Expense,Расход по налогу
+Telephone Expenses,Расходы на связь
+Temporary Opening,Временный счёт открытия
+Travel Expenses,Командировочные расходы
+Unsecured Loans,Необеспеченные займы
+Utility Expenses,Коммунальные расходы
+Write Off,Списание
+Capital Work in Progress,Незавершённое строительство
+Chargeable,Возмещаемые
+Current Asset,Оборотный актив
+Current Liability,Краткосрочное обязательство
+Direct Expense,Прямой расход
+Fixed Asset,Основное средство
+Income Account,Счёт доходов
+Indirect Expense,Косвенный расход
+Liability,Обязательство
+Receivable,Дебиторская задолженность
+Round Off for Opening,Округление для открытия
+Service Received But Not Billed,"Услуги получены, но счёт не выставлен"
+Tax,Налог
+Temporary,Временный
+No accounts yet,Счетов пока нет
+Set up the chart of accounts for {company} to see it here.,"Настройте план счетов для {company}, чтобы увидеть его здесь."
+Payment Calendar,Платёжный календарь
+Everyone enters their own plan. The calendar shows the days it lands on.,"Каждый вносит свой план. Календарь показывает, на какие дни он приходится."
+My plan,Мой план
+Whole company,Вся компания
+Click a day to plan on it,"Нажмите на день, чтобы внести план"
+Nothing planned this month yet.,В этом месяце пока ничего не запланировано.
+Customer receipt,Поступление от клиента
+Vendor payment,Оплата поставщику
+Item purchase,Закупка товара
+Other receipt,Прочее поступление
+Other payment,Прочая оплата
+Customer Receipt,Поступление от клиента
+Vendor Payment,Оплата поставщику
+Item Purchase,Закупка товара
+Other Receipt,Прочее поступление
+Other Payment,Прочая оплата
+Confidence,Уверенность
+"Committed — agreed, date is set","Точно — согласовано, дата известна"
+Expected — most likely,Ожидается — скорее всего
+Tentative — not discussed yet,Предварительно — ещё не обсуждалось
+A tentative receipt does not pay a committed salary — the three are summed apart.,Предварительное поступление не оплатит точную зарплату — три уровня суммируются отдельно.
+Repeat,Повтор
+One time,Один раз
+Every week ×4,Каждую неделю ×4
+Every month ×3,Каждый месяц ×3
+Every month ×6,Каждый месяц ×6
+Every month ×12,Каждый месяц ×12
+Incoming,Поступления
+Outgoing,Выплаты
+Heaviest day,Самый тяжёлый день
+What for,За что
+New planned payment,Новый плановый платёж
+Edit planned payment,Изменить плановый платёж
+Add to plan,Добавить в план
+The amount and date are read from the document.,Сумма и дата берутся из документа.
+"This screen does not pay anything. Money leaves through Payments, Kassa or Journal; a row is closed here by hand.","Этот экран не проводит платежи. Деньги уходят через «Платежи», «Кассу» или «Журнал»; строка закрывается здесь вручную."
+Realized,Исполнено
+Realized on,Дата исполнения
+Totals by planner,Итоги по сотрудникам
+Visible to authorised roles only,Видно только уполномоченным ролям
+Planned by,Кто внёс план
+Rows,Строк
+Failed to load the payment calendar.,Не удалось загрузить платёжный календарь.
+Failed to save the plan.,Не удалось сохранить план.
+Failed to delete the plan.,Не удалось удалить план.

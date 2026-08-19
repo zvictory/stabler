@@ -7,6 +7,7 @@ import { call } from "../../api/client.js";
 import { formatMoney } from "../../composables/money.js";
 import { formatDate, todayIso } from "../../composables/date.js";
 import { t } from "../../composables/i18n.js";
+import { accountLabel } from "../../composables/accounts.js";
 import { getStatusBadgeClass } from "../../composables/status.js";
 import { blockerText, cascadeRows, recordRoute } from "../../composables/deleteImpact.js";
 import { useToast } from "../../composables/useToast.js";
@@ -1567,7 +1568,7 @@ const subCuts = computed(() => {
 												<select v-model="advSelectedBank" class="form-select form-select-sm font-monospace" :disabled="advSaving">
 													<option value="">{{ t("Default Bank Account") }}</option>
 													<option v-for="acc in companyBankAccounts" :key="acc.name" :value="acc.name">
-														{{ acc.account_name || acc.name }} ({{ acc.account_currency }})
+														{{ accountLabel(acc) }} ({{ acc.account_currency }})
 													</option>
 												</select>
 											</div>
@@ -1598,7 +1599,7 @@ const subCuts = computed(() => {
 												<select v-model="advSelectedCash" class="form-select form-select-sm font-monospace" :disabled="advSaving">
 													<option value="">{{ t("Default Cash Account") }}</option>
 													<option v-for="acc in companyCashAccounts" :key="acc.name" :value="acc.name">
-														{{ acc.account_name || acc.name }} ({{ acc.account_currency }})
+														{{ accountLabel(acc) }} ({{ acc.account_currency }})
 													</option>
 												</select>
 											</div>
