@@ -1,5 +1,5 @@
 <script setup>
-import { computed, onMounted, ref, watch } from "vue";
+import { computed, nextTick, onMounted, ref, watch } from "vue";
 import { useRouter } from "vue-router";
 import { storeToRefs } from "pinia";
 import { useSession } from "../../stores/session.js";
@@ -102,6 +102,7 @@ const submitError = ref("");
 const parentAccountError = ref("");
 const currencyOptions = ref([]);
 const optionsLoaded = ref(false);
+const nameInputEl = ref(null);
 // Whether the user has manually picked a currency in THIS modal session. Gates
 // the parent_account watcher below: once true, a later parent change must not
 // silently overwrite what the user just chose.
@@ -439,7 +440,7 @@ async function openEdit(node) {
 	}
 }
 
-async function submitForm() {
+async function submitForm({ andNew = false } = {}) {
 	// create_account throws server-side when parent_account is empty, and the
 	// only signal was an English server message dropped at the top of the
 	// form. Catching it client-side, next to the field, is cheap and lets the
@@ -476,7 +477,22 @@ async function submitForm() {
 			});
 			toast.success(t("Account created."));
 		}
-		closeCreate();
+		if (andNew && !editMode.value) {
+			// Keep the context that made this a batch in the first place — same
+			// group, same currency, same type — and clear only what has to be
+			// unique per account: name, number, opening balance/date.
+			form.value = {
+				...blankAccount(),
+				parent_account: form.value.parent_account,
+				account_currency: form.value.account_currency,
+				account_type: form.value.account_type,
+			};
+			currencyTouched.value = true; // the just-used currency is a deliberate choice, not a default to re-derive
+			await nextTick();
+			nameInputEl.value?.focus();
+		} else {
+			closeCreate();
+		}
 		await load();
 		await loadBalances();
 	} catch (err) {
@@ -740,12 +756,20 @@ watch(expanded, (next) => {
 					</h5>
 					<button type="button" class="btn-close" aria-label="Close" @click="closeCreate" :disabled="submitting"></button>
 				</div>
+				<form @submit.prevent="() => submitForm()">
 				<div class="modal-body">
 					<div v-if="submitError" class="alert alert-danger">{{ submitError }}</div>
 					<div class="row g-3">
 						<div class="col-md-8">
 							<label class="form-label required">{{ t("Account name") }}</label>
-							<input v-model="form.account_name" type="text" class="form-control" autofocus required />
+							<input
+								ref="nameInputEl"
+								v-model="form.account_name"
+								type="text"
+								class="form-control"
+								autofocus
+								required
+							/>
 						</div>
 						<div class="col-md-4">
 							<label class="form-label">{{ t("Account number") }}</label>
@@ -807,11 +831,21 @@ watch(expanded, (next) => {
 				</div>
 				<div class="modal-footer">
 					<button type="button" class="btn btn-link link-secondary" :disabled="submitting" @click="closeCreate">{{ t("Cancel") }}</button>
-					<button type="button" class="btn btn-primary ms-auto" :disabled="submitting" @click="submitForm">
+					<button
+						v-if="!editMode"
+						type="button"
+						class="btn btn-outline-secondary ms-auto"
+						:disabled="submitting"
+						@click="submitForm({ andNew: true })"
+					>
+						{{ t("Save & add another") }}
+					</button>
+					<button type="submit" class="btn btn-primary" :class="{ 'ms-auto': editMode }" :disabled="submitting">
 						<span v-if="submitting" class="spinner-border spinner-border-sm me-1"></span>
 						{{ t("Save") }}
 					</button>
 				</div>
+				</form>
 			</div>
 		</div>
 	</div>
