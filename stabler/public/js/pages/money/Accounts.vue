@@ -221,7 +221,7 @@ async function load() {
 		expanded.value = restoreExpanded(activeCompany.value) || defaultExpandedGroups(rows || []);
 		balances.value = new Map();
 	} catch (err) {
-		error.value = err?.message || "Failed to load chart of accounts.";
+		error.value = err?.message || t("Failed to load chart of accounts.");
 	} finally {
 		loading.value = false;
 	}
@@ -398,7 +398,7 @@ async function openEdit(node) {
 			opening_date: "",
 		};
 	} catch (err) {
-		submitError.value = err?.message || "Failed to load account.";
+		submitError.value = err?.message || t("Failed to load account.");
 	}
 }
 
@@ -434,7 +434,7 @@ async function submitForm() {
 		await load();
 		await loadBalances();
 	} catch (err) {
-		submitError.value = err?.message || "Failed to save account.";
+		submitError.value = err?.message || t("Failed to save account.");
 	} finally {
 		submitting.value = false;
 	}
@@ -459,7 +459,7 @@ async function toggleDisabled(node) {
 		await load();
 		await loadBalances();
 	} catch (err) {
-		toast.error(err?.message || "Failed to update account.");
+		toast.error(err?.message || t("Failed to update account."));
 	}
 }
 
