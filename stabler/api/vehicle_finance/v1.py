@@ -54,14 +54,27 @@ def _set_status(doc, target: str, *, persist: bool = False) -> None:
 	seeder assigns the field directly and patch v85 rewrites the column in SQL.
 	Both are deliberate — a fixture and a migration are not endpoints.
 
-	Three of the eight declared states had no writer at all, which is what let a
+	Five of the eight declared states had no writer at all, which is what let a
 	fully paid agreement sit in `Active` for ever. Routing every write through one
 	gate is the condition the backlog entry put on the fix: two endpoints each
 	deciding for themselves what a legal change is, is how the enum grew three
 	unreachable states to begin with.
 	"""
-	current = doc.agreement_status
+	# Judge from the row, not from the snapshot. `doc` is loaded at the top of the
+	# request and `_collect_or_pay` writes hundreds of lines later; in between,
+	# another endpoint can have moved the agreement. `terminate_agreement` is the
+	# one that matters: a blind write here would carry Terminated -> Completed —
+	# the transition `FINAL` exists to forbid — silently reverting a write-off
+	# whose comment stays on the timeline still claiming it happened. `for_update`
+	# holds the row for the rest of this transaction, so the opposite ordering
+	# blocks instead of racing.
+	current = (
+		frappe.db.get_value("Vehicle Agreement", doc.name, "agreement_status", for_update=True)
+		if persist
+		else doc.agreement_status
+	)
 	if current == target:
+		doc.agreement_status = target
 		return
 	if not agreement_status_machine.can_move(current, target):
 		frappe.throw(
@@ -707,9 +720,15 @@ def _collect_or_pay(
 		raise
 
 	outstanding = flt(frappe.db.get_value(invoice_doctype, invoice_name, "outstanding_amount"))
+	# Every field in this response has to describe the same instant. `states` was
+	# captured before the payment, so a settling collection used to return
+	# {"agreement_status": "Completed", "open_total": 1000.0} — a closed agreement
+	# with its whole balance still open. The preview endpoint keeps the pre-payment
+	# reading, which is what a preview is for.
+	settled_states = _row_states(version)
 
 	return {
-		**_allocation_payload(doc, version, states, paid, allocations),
+		**_allocation_payload(doc, version, settled_states, paid, allocations),
 		"payment_entry": pe.name,
 		"invoice_outstanding": outstanding,
 		"agreement_status": doc.agreement_status,

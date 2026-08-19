@@ -7,8 +7,9 @@ testable without a bench, a site or a database.
 WHY THIS EXISTS. `stabler-cibo` shipped the eight-state enum and correctly split
 `Rescheduled` (collectible) from `Restructured` (terminal). Only some states got
 writers. `v1.py` assigned `agreement_status` in exactly two places — `Active` on
-activation and `Rescheduled` on reschedule approval — so three declared states
-were unreachable, and the consequences were not cosmetic:
+activation and `Rescheduled` on reschedule approval — so five of the eight
+declared states had no writer at all (`Review`, `Approved`, `Restructured`,
+`Completed`, `Terminated`), and the consequences were not cosmetic:
 
   - A fully paid agreement could never leave `Active`. Its invoice outstanding
     fell to zero and it stayed in the collection queue for ever.
@@ -24,8 +25,14 @@ The schema and the read path already existed — badge colours, chain maths, the
 WHY A TABLE AND NOT AN `if`. The backlog entry that filed this defect
 (`stabler-2671`) is explicit that the transition table must land FIRST, so that
 both halves of the fix write through the same machine. Two endpoints each
-deciding for themselves what a legal status change is, is how the enum grew three
-unreachable states in the first place.
+deciding for themselves what a legal status change is, is how the enum grew five
+writer-less states in the first place.
+
+WHAT STILL HAS NO WRITER. This change gives `Completed` and `Terminated` one.
+`Restructured` is deferred to `stabler-2671`; `Review` and `Approved` belong to
+an agreement-approval flow that does not exist yet, so nothing writes them
+either. `test_every_state_has_a_writer_or_is_a_declared_gap` names all three, so
+the gap is asserted rather than remembered.
 
 `Restructured` is a target here but has no writer yet, and that is deliberate
 rather than an oversight: the ADR
@@ -69,9 +76,11 @@ ALLOWED: dict[str, frozenset[str]] = {
 	# A live agreement may be renegotiated (Rescheduled keeps the same record,
 	# Restructured opens a successor), paid off, or written off.
 	"Active": frozenset({"Rescheduled", "Restructured", "Completed", "Terminated"}),
-	# Rescheduled -> Rescheduled is legal on purpose: an agreement can be
-	# rescheduled more than once, and each approval supersedes the last version.
-	"Rescheduled": frozenset({"Rescheduled", "Restructured", "Completed", "Terminated"}),
+	# No Rescheduled -> Rescheduled entry. Repeat reschedules are legal — each
+	# approval supersedes the last version — but they never reach this table:
+	# `_set_status` returns on `current == target` before consulting it. An entry
+	# that cannot be read is a comment pretending to be code.
+	"Rescheduled": frozenset({"Restructured", "Completed", "Terminated"}),
 	"Restructured": frozenset(),
 	# Reopened only by `cancel_payment` undoing the payment that closed it, back
 	# to whichever collectible state it held before.
