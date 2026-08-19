@@ -92,6 +92,11 @@ const accountOptions = ref([]);
 const emptyRow = () => ({ account: "", account_currency: "", party_type: "", party: "", party_name: "", exchange_rate: 1, debit: null, credit: null, _auto: false, _rateTouched: false });
 const form = ref(blankForm());
 const editName = ref(null);
+// The `modified` of the draft as it was loaded — the concurrency token that
+// says "these are the rows I was editing". update_journal_entry replaces the
+// whole account table rather than merging it, so without this a second save
+// overwrites the first person's lines and leaves no partial conflict to notice.
+const editModified = ref(null);
 // The draft as it was opened — what "dirty" is measured against.
 const pristine = ref(null);
 // The posting date this draft was opened with; see the watcher at the bottom.
@@ -313,6 +318,7 @@ async function openCreate() {
 	form.value = blankForm();
 	formDate = form.value.posting_date;
 	editName.value = null;
+	editModified.value = null;
 	amendedFrom.value = null;
 	submitError.value = "";
 	pane.value = "edit";
@@ -324,6 +330,7 @@ async function openEdit(d) {
 	submitError.value = "";
 	await loadAccountOptions();
 	editName.value = d.name;
+	editModified.value = d.modified || null;
 	form.value = {
 		posting_date: d.posting_date,
 		voucher_type: d.voucher_type || "Journal Entry",
@@ -446,6 +453,11 @@ async function submitForm() {
 				name: editName.value, posting_date: form.value.posting_date,
 				user_remark: form.value.user_remark || undefined, cheque_no: form.value.cheque_no || undefined,
 				cheque_date: form.value.cheque_date || undefined, accounts,
+				// Omitted rather than sent empty: check_concurrency refuses a
+				// MISSING token on an existing document, so a draft whose detail
+				// arrived without one must keep the old unchecked behaviour
+				// instead of failing every save.
+				modified: editModified.value || undefined,
 			});
 		} else {
 			res = await call("stabler.api.money.create_journal_entry", {
@@ -519,6 +531,7 @@ async function amendJE() {
 	const src = detail.value.name;
 	await openEdit(detail.value);
 	editName.value = null; // new doc, not an in-place edit
+	editModified.value = null; // …so the cancelled original's token must not ride along
 	amendedFrom.value = src; // …but linked to the cancelled original
 }
 
