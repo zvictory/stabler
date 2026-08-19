@@ -143,10 +143,17 @@ class TestThePatchDerivesFromDataNotNames(unittest.TestCase):
 				self.assertNotIn(token, PATCH)
 		self.assertRegex(PATCH, r"custom_dimension_mode IN \('Linear', 'Area', 'Volume'\)")
 
-	def test_patch_closes_nulls_before_opening_anyone(self):
-		zero = PATCH.index("SET enable_dimensional_lines = 0")
-		one = PATCH.index("SET enable_dimensional_lines = 1")
-		self.assertLess(zero, one, "önce sıfırlama, sonra açma sırası bozulmuş")
+	def test_patch_only_ever_writes_a_row_that_has_no_answer_yet(self):
+		"""Bu patch eskiden iki ifadeydi — önce NULL'ları 0'a kapatan, sonra
+		KOŞULSUZ herkesi 1'e açan. Güvenliği bir WHERE'den değil ifade
+		sırasından geliyordu, ve ikinci koşuda katalog hâlâ ölçülü ürün
+		taşıdığı için operatörün bilerek kapattığı şirketi sessizce geri
+		açıyordu. Artık tek geçiş, ve tek yazdığı satır cevabı olmayan satır.
+		Davranışın kendisi `test_module_flag_patch_replay.py`'de sabitli."""
+		for statement in PATCH.split("frappe.db.sql")[1:]:
+			if "SET enable_dimensional_lines" not in statement:
+				continue
+			self.assertIn("WHERE enable_dimensional_lines IS NULL", statement)
 
 	def test_the_default_is_off(self):
 		"""Kiracıların çoğu (horeca, smartbox, msa) hiç ölçülü ürün satmıyor."""

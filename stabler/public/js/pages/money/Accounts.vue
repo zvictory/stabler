@@ -1,16 +1,28 @@
 <script setup>
-import { computed, onMounted, ref, watch } from "vue";
+import { computed, nextTick, onMounted, ref, watch } from "vue";
 import { useRouter } from "vue-router";
 import { storeToRefs } from "pinia";
 import { useSession } from "../../stores/session.js";
 import { call } from "../../api/client.js";
 import { formatMoney } from "../../composables/money.js";
+import { formatDate } from "../../composables/date.js";
 import { t } from "../../composables/i18n.js";
-import { accountLabel, accountTypeLabel, newAccountCurrency } from "../../composables/accounts.js";
+import {
+	accountAncestorPath,
+	accountLabel,
+	accountOptionPath,
+	accountTypeLabel,
+	applyRootTypeSign,
+	defaultExpandedGroups,
+	isAbnormalBalance,
+	matchesAccountSearch,
+	newAccountCurrency,
+} from "../../composables/accounts.js";
 import { useConfirm } from "../../composables/useConfirm.js";
 import { useToast } from "../../composables/useToast.js";
 import { useEscapeBack } from "../../composables/useEscapeBack.js";
 import EmptyState from "../../components/EmptyState.vue";
+import SkeletonRows from "../../components/SkeletonRows.vue";
 import Select from "../../components/Select.vue";
 import MoneyInput from "../../components/MoneyInput.vue";
 import DateInput from "../../components/DateInput.vue";
@@ -35,6 +47,12 @@ const flat = ref([]);
 const expanded = ref(new Set());
 const balances = ref(new Map());
 const balancesLoading = ref(false);
+// The date chart_balances actually priced its numbers as of. The endpoint
+// already supports an `as_of` request param, but there is no UI here to pick
+// one (that's a separate feature) — so rather than have the frontend guess
+// its own "today" and risk a client/server clock/timezone mismatch, the
+// header shows the date the SERVER used, echoed straight back in the response.
+const asOfDate = ref("");
 const search = ref("");
 const includeDisabled = ref(false);
 
@@ -81,8 +99,14 @@ const editMode = ref(false);
 const editingName = ref("");
 const submitting = ref(false);
 const submitError = ref("");
+const parentAccountError = ref("");
 const currencyOptions = ref([]);
 const optionsLoaded = ref(false);
+const nameInputEl = ref(null);
+// Whether the user has manually picked a currency in THIS modal session. Gates
+// the parent_account watcher below: once true, a later parent change must not
+// silently overwrite what the user just chose.
+const currencyTouched = ref(false);
 
 function blankAccount() {
 	return {
@@ -132,16 +156,16 @@ const tree = computed(() => {
 	return build("__ROOT__", 0);
 });
 
+// Flat account list keyed by name, for accountAncestorPath's parent-chain
+// walk — the tree computed above already threw the parent chain away.
+const accountsByName = computed(() => Object.fromEntries(flat.value.map((a) => [a.name, a])));
+
+const searchActive = computed(() => search.value.trim().length > 0);
+
 const flattened = computed(() => {
 	const out = [];
 	const term = search.value.trim().toLowerCase();
-	// Match the code explicitly — it only worked by accident before, via the
-	// docname ("1410 - Cash - MIK"), which breaks on unnumbered charts.
-	const matchesTerm = (n) =>
-		!term ||
-		(n.account_name || "").toLowerCase().includes(term) ||
-		String(n.account_number || "").toLowerCase().includes(term) ||
-		(n.name || "").toLowerCase().includes(term);
+	const matchesTerm = (n) => matchesAccountSearch(n, term);
 	function walk(node) {
 		const expandedNow = term ? true : expanded.value.has(node.name);
 		const matched = matchesTerm(node);
@@ -164,8 +188,36 @@ const currency = computed(
 const parentAccountOptions = computed(() =>
 	flat.value
 		.filter((r) => r.is_group && r.name !== editingName.value)
-		.map((r) => ({ value: r.name, label: accountLabel(r) }))
+		.map((r) => ({ value: r.name, label: accountOptionPath(r, accountsByName.value) }))
 );
+
+// Contextualizes the modal — "New account in Assets › Bank Accounts" — rather
+// than a generic title that never says which group a click on the tree's "+"
+// (or a parent picked inside the modal) is about to add into.
+const createModalTitle = computed(() => {
+	if (editMode.value) return t("Edit account");
+	const parent = form.value.parent_account
+		? flat.value.find((r) => r.name === form.value.parent_account)
+		: null;
+	if (parent) return t("New account in {parent}", { parent: accountLabel(parent) });
+	return t("New account");
+});
+
+// Session-scoped, per-company: the user's expand/collapse choices survive a
+// reload within the same tab session without leaking between companies or
+// outliving the browser session (unlike localStorage).
+function expandedStorageKey(company) {
+	return `stabler:coa:expanded:${company}`;
+}
+
+function restoreExpanded(company) {
+	try {
+		const raw = sessionStorage.getItem(expandedStorageKey(company));
+		return raw ? new Set(JSON.parse(raw)) : null;
+	} catch {
+		return null;
+	}
+}
 
 async function load() {
 	if (!activeCompany.value) return;
@@ -177,14 +229,13 @@ async function load() {
 			include_disabled: includeDisabled.value ? 1 : 0,
 		});
 		flat.value = rows || [];
-		// Expand every group by default — users want the full tree visible
-		// without clicking. Search/collapse still works per-node.
-		expanded.value = new Set(
-			(rows || []).filter((r) => r.is_group).map((r) => r.name)
-		);
+		// First load: roots only, so the tree opens navigable instead of as a
+		// wall of every account at once. A returning user's own expand/collapse
+		// choices for this company (if any were saved) win over that default.
+		expanded.value = restoreExpanded(activeCompany.value) || defaultExpandedGroups(rows || []);
 		balances.value = new Map();
 	} catch (err) {
-		error.value = err?.message || "Failed to load chart of accounts.";
+		error.value = err?.message || t("Failed to load chart of accounts.");
 	} finally {
 		loading.value = false;
 	}
@@ -203,6 +254,7 @@ async function loadBalances() {
 			next.set(name, { base: b.base, acc: b.acc, account_currency: b.account_currency, company_currency: cc });
 		}
 		balances.value = next;
+		asOfDate.value = res.as_of || "";
 	} catch {
 		balances.value = new Map();
 	} finally {
@@ -237,8 +289,18 @@ function primaryValue(n) {
 	return b.base;
 }
 
+/**
+ * account_summary/chart_balances return raw SUM(debit - credit), which reads
+ * negative for a perfectly normal Liability/Equity/Income balance. Sign is
+ * interpreted here, at the point of display — never in the raw value the rest
+ * of this file computes with (isNegative/abnormal checks below un-flip it).
+ */
+function displayValue(n) {
+	return applyRootTypeSign(primaryValue(n), n.root_type);
+}
+
 function primaryBalance(n) {
-	const v = primaryValue(n);
+	const v = displayValue(n);
 	if (v === null || v === undefined) return "—";
 	const ccy = !n.is_group && balances.value.get(n.name).acc !== null ? accCurrencyOf(n) : baseCurrencyOf(n);
 	return formatMoney(v, ccy, user.value.language);
@@ -251,9 +313,23 @@ function showBaseHint(n) {
 	return accCurrencyOf(n) !== baseCurrencyOf(n);
 }
 
+/** The base-currency hint line, same root-type sign flip as the main line. */
+function baseHintValue(n) {
+	const b = balances.value.get(n.name);
+	return b ? applyRootTypeSign(b.base, n.root_type) : null;
+}
+
+/**
+ * Red is reserved for a balance that is still negative AFTER the root-type
+ * sign flip — genuinely abnormal for its own root type (an overdrawn asset, a
+ * debit-balance payable, a loss-making income account). Group rows are never
+ * colored: a roll-up mixing normal and abnormal children isn't itself
+ * abnormal, and painting every Liability/Equity/Income branch red regardless
+ * of root type was the whole complaint this replaces.
+ */
 function isNegative(n) {
-	const v = primaryValue(n);
-	return typeof v === "number" && v < 0;
+	if (n.is_group) return false;
+	return isAbnormalBalance(primaryValue(n), n.root_type);
 }
 
 function toggle(name) {
@@ -299,6 +375,8 @@ function openCreate(parentNode) {
 	editMode.value = false;
 	editingName.value = "";
 	submitError.value = "";
+	parentAccountError.value = "";
+	currencyTouched.value = false;
 	form.value = blankAccount();
 	if (parentNode?.is_group) form.value.parent_account = parentNode.name;
 	// Name the currency now rather than letting the amount field substitute one.
@@ -309,9 +387,28 @@ function openCreate(parentNode) {
 	createOpen.value = true;
 }
 
+// The header's "New account" button opens this same modal with no parent, so
+// the currency starts as the company default — correct for that entry path,
+// but there was no watcher covering what happens when the user THEN picks a
+// USD parent group from inside the modal: the field stayed on the company
+// currency, and a child of "Банк USD" got created in the wrong currency,
+// which is exactly the case newAccountCurrency exists to get right. Re-derive
+// on every parent change UNLESS the user has manually touched the currency
+// select — the same helper as openCreate, so both entry paths agree.
+watch(
+	() => form.value.parent_account,
+	(parentName) => {
+		if (!createOpen.value || editMode.value || currencyTouched.value) return;
+		const parentNode = parentName ? flat.value.find((r) => r.name === parentName) : null;
+		form.value.account_currency = newAccountCurrency(parentNode, currency.value);
+	}
+);
+
 function closeCreate() {
 	createOpen.value = false;
 	submitError.value = "";
+	parentAccountError.value = "";
+	currencyTouched.value = false;
 	form.value = blankAccount();
 	editMode.value = false;
 	editingName.value = "";
@@ -322,6 +419,8 @@ async function openEdit(node) {
 	editMode.value = true;
 	editingName.value = node.name;
 	submitError.value = "";
+	parentAccountError.value = "";
+	currencyTouched.value = false;
 	loadCreateOptions();
 	createOpen.value = true;
 	try {
@@ -337,11 +436,20 @@ async function openEdit(node) {
 			opening_date: "",
 		};
 	} catch (err) {
-		submitError.value = err?.message || "Failed to load account.";
+		submitError.value = err?.message || t("Failed to load account.");
 	}
 }
 
-async function submitForm() {
+async function submitForm({ andNew = false } = {}) {
+	// create_account throws server-side when parent_account is empty, and the
+	// only signal was an English server message dropped at the top of the
+	// form. Catching it client-side, next to the field, is cheap and lets the
+	// user fix it without a round trip.
+	parentAccountError.value = "";
+	if (!editMode.value && !form.value.parent_account) {
+		parentAccountError.value = t("Parent account is required.");
+		return;
+	}
 	submitting.value = true;
 	submitError.value = "";
 	try {
@@ -369,11 +477,26 @@ async function submitForm() {
 			});
 			toast.success(t("Account created."));
 		}
-		closeCreate();
+		if (andNew && !editMode.value) {
+			// Keep the context that made this a batch in the first place — same
+			// group, same currency, same type — and clear only what has to be
+			// unique per account: name, number, opening balance/date.
+			form.value = {
+				...blankAccount(),
+				parent_account: form.value.parent_account,
+				account_currency: form.value.account_currency,
+				account_type: form.value.account_type,
+			};
+			currencyTouched.value = true; // the just-used currency is a deliberate choice, not a default to re-derive
+			await nextTick();
+			nameInputEl.value?.focus();
+		} else {
+			closeCreate();
+		}
 		await load();
 		await loadBalances();
 	} catch (err) {
-		submitError.value = err?.message || "Failed to save account.";
+		submitError.value = err?.message || t("Failed to save account.");
 	} finally {
 		submitting.value = false;
 	}
@@ -398,7 +521,7 @@ async function toggleDisabled(node) {
 		await load();
 		await loadBalances();
 	} catch (err) {
-		toast.error(err?.message || "Failed to update account.");
+		toast.error(err?.message || t("Failed to update account."));
 	}
 }
 
@@ -412,6 +535,15 @@ watch(activeCompany, async () => {
 });
 watch(includeDisabled, async () => {
 	await load();
+});
+watch(expanded, (next) => {
+	if (!activeCompany.value) return;
+	try {
+		sessionStorage.setItem(expandedStorageKey(activeCompany.value), JSON.stringify([...next]));
+	} catch {
+		// sessionStorage can throw (private browsing, quota) — expansion just
+		// won't be remembered next reload, which is the pre-existing behavior.
+	}
 });
 </script>
 <template>
@@ -467,14 +599,11 @@ watch(includeDisabled, async () => {
 				</button>
 			</div>
 		</div>
-		<div v-if="loading" class="card-body text-center py-5">
-			<div class="spinner-border text-primary" role="status"></div>
-		</div>
-		<div v-else-if="error" class="card-body">
+		<div v-if="error" class="card-body">
 			<div class="alert alert-danger m-0">{{ error }}</div>
 		</div>
 		<EmptyState
-			v-else-if="!flat.length"
+			v-else-if="!loading && !flat.length"
 			icon="ti-list-tree"
 			accentIcon="ti-coin"
 			tone="primary"
@@ -487,12 +616,17 @@ watch(includeDisabled, async () => {
 					<tr>
 						<th class="w-1 text-nowrap">{{ t("Code") }}</th>
 						<th>{{ t("Account") }}</th>
-						<th class="w-1">{{ t("Type") }}</th>
-						<th class="w-1 text-end text-nowrap">{{ t("Balance") }}</th>
+						<th class="w-1 text-end text-nowrap">
+							<div>{{ t("Balance") }}</div>
+							<div v-if="asOfDate" class="small text-secondary fw-normal">
+								{{ t("as of {date}", { date: formatDate(asOfDate) }) }}
+							</div>
+						</th>
 						<th class="w-1 text-end">{{ t("Actions") }}</th>
 					</tr>
 				</thead>
-				<tbody>
+				<SkeletonRows v-if="loading" :rows="10" :cols="4" />
+				<tbody v-else>
 					<tr
 						v-for="n in flattened"
 						:key="n.name"
@@ -506,7 +640,7 @@ watch(includeDisabled, async () => {
 						<td>
 							<div
 								class="d-flex align-items-center gap-1"
-								:style="{ paddingLeft: `${n.depth * 1.25}rem` }"
+								:style="{ paddingLeft: searchActive ? '0' : `${n.depth * 1.25}rem` }"
 							>
 								<button
 									v-if="n.is_group"
@@ -534,18 +668,43 @@ watch(includeDisabled, async () => {
 								</a>
 								<span v-if="n.disabled" class="badge bg-secondary-lt ms-2">{{ t("Disabled") }}</span>
 							</div>
-						</td>
-						<td class="text-nowrap">
-							<span v-if="n.account_type" class="badge bg-secondary-lt">{{ accountTypeLabel(n.account_type) }}</span>
+							<!-- Search flattens the tree and drops non-matching ancestors, so the
+							     row's indentation stops meaning anything (zeroed above). This is
+							     what tells three same-named "Kassa" results apart. -->
+							<div
+								v-if="searchActive && accountAncestorPath(n, accountsByName)"
+								class="small text-secondary"
+							>
+								{{ accountAncestorPath(n, accountsByName) }}
+							</div>
+							<!-- account_type used to be its own column, but a long translated
+							     type (e.g. "Stock Received But Not Billed" in Russian) squeezed
+							     the tree instead of the columns with room to spare. -->
+							<div
+								v-if="n.account_type"
+								class="small text-secondary"
+								:style="{ paddingLeft: searchActive ? '0' : `${n.depth * 1.25}rem` }"
+							>
+								{{ accountTypeLabel(n.account_type) }}
+							</div>
 						</td>
 						<td
 							class="text-end font-monospace text-nowrap coa-amount"
 							:class="{ 'fw-bold': n.is_group, 'text-danger': isNegative(n) }"
 						>
 							<template v-if="balances.has(n.name)">
-								<div>{{ primaryBalance(n) }}</div>
+								<div class="d-flex align-items-center justify-content-end gap-1">
+									<span>{{ primaryBalance(n) }}</span>
+									<span
+										v-if="n.is_group"
+										class="badge bg-secondary-lt fw-normal"
+										:title="t('Roll-up of sub-accounts, converted to the company currency.')"
+									>
+										{{ baseCurrencyOf(n) }}
+									</span>
+								</div>
 								<div v-if="showBaseHint(n)" class="small text-secondary fw-normal">
-									≈ {{ formatMoney(balances.get(n.name).base, balances.get(n.name).company_currency || currency, user.language) }}
+									≈ {{ formatMoney(baseHintValue(n), balances.get(n.name).company_currency || currency, user.language) }}
 								</div>
 							</template>
 							<span v-else-if="n.is_group" class="text-secondary">—</span>
@@ -593,29 +752,38 @@ watch(includeDisabled, async () => {
 			<div class="modal-content">
 				<div class="modal-header">
 					<h5 class="modal-title">
-						{{ editMode ? t("Edit account") : t("New account") }}
+						{{ createModalTitle }}
 					</h5>
 					<button type="button" class="btn-close" aria-label="Close" @click="closeCreate" :disabled="submitting"></button>
 				</div>
+				<form @submit.prevent="() => submitForm()">
 				<div class="modal-body">
 					<div v-if="submitError" class="alert alert-danger">{{ submitError }}</div>
 					<div class="row g-3">
 						<div class="col-md-8">
 							<label class="form-label required">{{ t("Account name") }}</label>
-							<input v-model="form.account_name" type="text" class="form-control" autofocus required />
+							<input
+								ref="nameInputEl"
+								v-model="form.account_name"
+								type="text"
+								class="form-control"
+								autofocus
+								required
+							/>
 						</div>
 						<div class="col-md-4">
 							<label class="form-label">{{ t("Account number") }}</label>
 							<input v-model="form.account_number" type="text" class="form-control" />
 						</div>
 						<div class="col-12">
-							<label class="form-label">{{ t("Parent account") }}</label>
+							<label class="form-label" :class="{ required: !editMode }">{{ t("Parent account") }}</label>
 							<Select
 								v-model="form.parent_account"
 								:options="parentAccountOptions"
 								placeholder="—"
 								:clearable="true"
 							/>
+							<div v-if="parentAccountError" class="invalid-feedback d-block">{{ parentAccountError }}</div>
 						</div>
 						<div class="col-md-6">
 							<label class="form-label">{{ t("Account type") }}</label>
@@ -633,6 +801,7 @@ watch(includeDisabled, async () => {
 								:options="currencyOptions"
 								placeholder="—"
 								:clearable="true"
+								@change="currencyTouched = true"
 							/>
 						</div>
 						<div class="col-12" v-if="!editMode">
@@ -662,11 +831,21 @@ watch(includeDisabled, async () => {
 				</div>
 				<div class="modal-footer">
 					<button type="button" class="btn btn-link link-secondary" :disabled="submitting" @click="closeCreate">{{ t("Cancel") }}</button>
-					<button type="button" class="btn btn-primary ms-auto" :disabled="submitting" @click="submitForm">
+					<button
+						v-if="!editMode"
+						type="button"
+						class="btn btn-outline-secondary ms-auto"
+						:disabled="submitting"
+						@click="submitForm({ andNew: true })"
+					>
+						{{ t("Save & add another") }}
+					</button>
+					<button type="submit" class="btn btn-primary" :class="{ 'ms-auto': editMode }" :disabled="submitting">
 						<span v-if="submitting" class="spinner-border spinner-border-sm me-1"></span>
 						{{ t("Save") }}
 					</button>
 				</div>
+				</form>
 			</div>
 		</div>
 	</div>

@@ -63,6 +63,16 @@ sessions. Original: `docs/archive/CLAUDE.md.2026-08-15.bak`.
   total, and renders nothing when no live rate is available (see the FX guard note above). Do
   not copy this pattern to other screens without the same justification — see
   `equivalentAmount` in `SalesOrderForm.vue` for the implementation.
+- **Documented exception:** the Journal Entry form shows one base-currency residual line
+  beside the balance badge, and only when the entry is out of tolerance *and* the auto-filled
+  counter-amount landed on a foreign line. It exists because that is the state in which Save
+  is disabled and the transaction-currency figures alone cannot explain why: the residual is
+  measured in the company base, so a line reading `100.09 USD` and one reading `1 234 567 сўм`
+  look reconcilable and are not. Same conditions as the Sales Order exception — a single line,
+  a live rate, never a replacement for the transaction-currency totals — plus one more: it
+  renders only while the form refuses to save, and disappears the moment it balances. It is an
+  error explanation, not a display convenience. The per-row `→ base` hints it replaced are not
+  covered by either exception and must not come back.
 
 ### Centralized status codes
 - All status badges and labels must be resolved centrally using `getStatusBadgeClass` from `composables/status.js`. No per-page status mappings.

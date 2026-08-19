@@ -44,3 +44,111 @@ export function accountTypeLabel(type) {
 export function newAccountCurrency(parentNode, companyCurrency) {
 	return (parentNode && parentNode.account_currency) || companyCurrency || "";
 }
+
+/**
+ * Whether `node` matches a Chart of Accounts search term.
+ *
+ * Measured on the COA page: the search box matched only `account_name` /
+ * `account_number` / `name` — all raw English docfield values — while the row
+ * on screen renders `accountLabel(node)`, the translated string. A Russian
+ * user typing what they can read ("наличные") got "No matches found" for an
+ * account labeled "Наличные" on screen. Adding the translated label to the
+ * match set is what makes "search what you see" actually true.
+ */
+export function matchesAccountSearch(node, term) {
+	if (!term) return true;
+	const needle = String(term).toLowerCase();
+	return (
+		(node.account_name || "").toLowerCase().includes(needle) ||
+		String(node.account_number || "").toLowerCase().includes(needle) ||
+		(node.name || "").toLowerCase().includes(needle) ||
+		accountLabel(node).toLowerCase().includes(needle)
+	);
+}
+
+/**
+ * The chain of ancestor labels above `node`, root first, translated, joined
+ * with " › ". Does not include `node` itself.
+ *
+ * Needed because a search that flattens the tree drops every non-matching
+ * ancestor, but the row's indentation used to stay put — three "Kassa"
+ * results could land at the same visual depth with nothing above them saying
+ * which is Assets › Current Assets › Cash and which is a Liability contra
+ * account. `accountsByName` is the flat account list keyed by `name`.
+ */
+export function accountAncestorPath(node, accountsByName) {
+	const path = [];
+	let parentName = node && node.parent_account;
+	const seen = new Set();
+	while (parentName && accountsByName[parentName] && !seen.has(parentName)) {
+		seen.add(parentName);
+		const parent = accountsByName[parentName];
+		path.unshift(accountLabel(parent));
+		parentName = parent.parent_account;
+	}
+	return path.join(" › ");
+}
+
+/**
+ * A Select option label for `node` that carries its whole position in the
+ * tree — "Asset › Current Assets › Bank Accounts" — rather than a bare name.
+ *
+ * Select.vue searches an option's `label` text (see the searchKeys fallback
+ * in Select.vue), so building the path into the label is what makes the
+ * parent picker searchable by branch, not just by the leaf name — two groups
+ * named "Прочие расходы" and "Прочие" stop being indistinguishable.
+ */
+export function accountOptionPath(node, accountsByName) {
+	const parts = [];
+	if (node.root_type) parts.push(t(node.root_type));
+	const ancestors = accountAncestorPath(node, accountsByName);
+	if (ancestors) parts.push(ancestors);
+	parts.push(accountLabel(node));
+	return parts.join(" › ");
+}
+
+// Root types whose normal balance is a CREDIT. GL Entry / account_summary
+// always return SUM(debit - credit), so these three read negative under a
+// perfectly normal balance — see applyRootTypeSign.
+const CREDIT_NORMAL_ROOT_TYPES = new Set(["Liability", "Equity", "Income"]);
+
+/**
+ * Flip a raw `debit - credit` balance into the sign a human expects to read
+ * for `rootType`.
+ *
+ * `account_summary`'s own docstring says "caller renders sign as appropriate"
+ * — the Chart of Accounts page never did. A perfectly normal 45,000,000 UZS
+ * payable came back as -45,000,000 and was painted red, and every Liability /
+ * Equity / Income balance and roll-up did the same: roughly 40% of the page
+ * was a permanent wall of red carrying zero information.
+ */
+export function applyRootTypeSign(value, rootType) {
+	if (typeof value !== "number") return value;
+	return CREDIT_NORMAL_ROOT_TYPES.has(rootType) ? -value : value;
+}
+
+/**
+ * Whether a balance is genuinely abnormal for its root type — i.e. still
+ * negative AFTER `applyRootTypeSign`. This, not a raw `< 0` check, is the
+ * only thing red should ever mean on the Chart of Accounts: an overdrawn
+ * asset, a debit-balance payable, a loss-making income account. Group rows
+ * are never colored by this — callers must gate on `!node.is_group` — a
+ * roll-up mixing normal and abnormal children is not itself "abnormal".
+ */
+export function isAbnormalBalance(value, rootType) {
+	if (typeof value !== "number") return false;
+	return applyRootTypeSign(value, rootType) < 0;
+}
+
+/**
+ * First-load expansion: the root accounts only, so their immediate children
+ * are visible without a click and nothing deeper springs open uninvited.
+ * Every previous load expanded the ENTIRE tree unconditionally — a chart
+ * with a couple hundred accounts opened as a wall, roll-ups for Income and
+ * Expense sitting 100+ rows from their own root. The user's own later
+ * choices are persisted separately (sessionStorage, company-scoped) by the
+ * component; this function only decides what a brand new session sees.
+ */
+export function defaultExpandedGroups(flatAccounts) {
+	return new Set((flatAccounts || []).filter((a) => a.is_group && !a.parent_account).map((a) => a.name));
+}

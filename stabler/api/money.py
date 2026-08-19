@@ -12,7 +12,7 @@ import logging
 import frappe
 from frappe import _
 from frappe.rate_limiter import rate_limit
-from frappe.utils import cint, flt, getdate, today
+from frappe.utils import cint, flt, formatdate, getdate, today
 
 from stabler.api._money import money_epsilon
 from stabler.api.approvals import _assert_company_scope
@@ -150,6 +150,21 @@ def _resolve_temporary_opening_account(company: str) -> str:
 	return rows[0]["name"]
 
 
+def _opening_leg_rate(currency: str, base_currency: str, posting_date) -> float:
+	"""Company-currency value of one unit of `currency` on `posting_date`.
+
+	1.0 for a leg already in company currency — the common case must not acquire
+	a rate lookup it never needed. Otherwise `get_exchange_rate_for_currencies`,
+	which throws a translated message naming the pair and the date. That message
+	is the point: ERPNext's own refusal for an unpriced opening balance is
+	English-only and complains about multi-currency, not about the missing rate,
+	so it tells the user nothing they can act on.
+	"""
+	if not currency or not base_currency or currency == base_currency:
+		return 1.0
+	return flt(get_exchange_rate_for_currencies(currency, base_currency, posting_date))
+
+
 @frappe.whitelist()
 def create_account(
 	company: str,
@@ -185,6 +200,20 @@ def create_account(
 	if account_number and frappe.db.exists("Account", {"company": company, "account_number": account_number}):
 		frappe.throw(_("Account number {0} is already used in {1}.").format(account_number, company))
 
+	opening_balance = flt(opening_balance)
+	# Refuse before anything is created: the opening entry is flagged
+	# `is_opening = "Yes"` and submitted on the spot, so defaulting the date to
+	# today files a prior-period balance inside the OPEN period — and on an income
+	# or expense account it walks straight into this period's profit and loss.
+	# Discovered months later, when the reports disagree, and undoable only by a
+	# cancellation that stays in the books.
+	if opening_balance and not is_group and not opening_date:
+		frappe.throw(
+			_(
+				"An opening balance needs an opening date. Left blank it would post today, inside the open period, where an opening balance lands in this period's profit and loss."
+			)
+		)
+
 	doc = frappe.new_doc("Account")
 	doc.company = company
 	doc.account_name = account_name
@@ -198,29 +227,48 @@ def create_account(
 		doc.account_currency = account_currency
 	doc.insert(ignore_permissions=False)
 
-	opening_balance = flt(opening_balance)
 	if opening_balance and not is_group:
 		temp_account = _resolve_temporary_opening_account(company)
+		posting_date = getdate(opening_date)
+		base_currency = frappe.db.get_value("Company", company, "default_currency") or ""
+		account_currency = doc.account_currency or base_currency
+		temp_currency = frappe.db.get_value("Account", temp_account, "account_currency") or base_currency
+		# Each leg carries the rate that converts ITS currency into the company's,
+		# on the opening date — not today's. An opening balance is dated in the
+		# past on purpose; valuing it at today's rate misstates the ledger by
+		# however far the currency has moved since.
+		account_rate = _opening_leg_rate(account_currency, base_currency, posting_date)
+		temp_rate = _opening_leg_rate(temp_currency, base_currency, posting_date)
+		# The user's number stays the user's number; the counter-leg carries the
+		# equivalent in ITS OWN currency. Copying the raw amount across (what this
+		# did before) left a USD opening balance short by the whole exchange rate.
+		temp_amount = flt(opening_balance * account_rate / temp_rate)
 		debit_side = doc.root_type in ("Asset", "Expense")
 		je = frappe.new_doc("Journal Entry")
 		je.company = company
-		je.posting_date = getdate(opening_date) if opening_date else getdate(today())
+		je.posting_date = posting_date
 		je.voucher_type = "Opening Entry"
 		je.is_opening = "Yes"
+		# ERPNext refuses a document with a non-company currency on any leg unless
+		# this is set — and the refusal rolls back the account too, since both are
+		# created in one transaction.
+		je.multi_currency = 1 if (account_currency != base_currency or temp_currency != base_currency) else 0
 		je.append(
 			"accounts",
 			{
 				"account": doc.name,
 				"debit_in_account_currency": opening_balance if debit_side else 0,
 				"credit_in_account_currency": 0 if debit_side else opening_balance,
+				"exchange_rate": account_rate,
 			},
 		)
 		je.append(
 			"accounts",
 			{
 				"account": temp_account,
-				"debit_in_account_currency": 0 if debit_side else opening_balance,
-				"credit_in_account_currency": opening_balance if debit_side else 0,
+				"debit_in_account_currency": 0 if debit_side else temp_amount,
+				"credit_in_account_currency": temp_amount if debit_side else 0,
+				"exchange_rate": temp_rate,
 			},
 		)
 		je.insert(ignore_permissions=False)
@@ -772,19 +820,21 @@ def _date_filters(from_date: str | None, to_date: str | None):
 	return clauses, params
 
 
-@frappe.whitelist()
-def list_journal_entries(
+def _je_list_conditions(
 	company: str,
-	from_date: str | None = None,
-	to_date: str | None = None,
-	status: str | None = None,
-	limit: int = 50,
-):
-	_require_company(company)
-	_assert_company_scope(company)  # tenant isolation: reject a foreign company arg
+	from_date: str | None,
+	to_date: str | None,
+	status: str | None,
+	search: str | None,
+) -> tuple[str, dict]:
+	"""The one WHERE clause the journal list and its count both run.
+
+	Shared on purpose: a total counted over a different filter than the rows on
+	screen is worse than no total — it claims there is more when there is not, or
+	hides the truncation it exists to reveal.
+	"""
 	clauses, params = _date_filters(from_date, to_date)
 	params["company"] = company
-	params["limit"] = int(limit)
 	qualified_clauses = [c.replace("posting_date", "je.posting_date") for c in clauses]
 	# Status filter: Draft (0), Submitted (1), Cancelled (2); default hides cancelled.
 	status_clause = {
@@ -792,13 +842,45 @@ def list_journal_entries(
 		"Submitted": "je.docstatus = 1",
 		"Cancelled": "je.docstatus = 2",
 	}.get(status or "", "je.docstatus < 2")
-	where = " AND ".join(
-		[
-			"je.company = %(company)s",
-			status_clause,
-			*qualified_clauses,
-		]
-	)
+	conditions = [
+		"je.company = %(company)s",
+		status_clause,
+		*qualified_clauses,
+	]
+	# The three things somebody actually remembers about an entry: the document
+	# number they were given, the note they typed, or the cheque number on the
+	# paper in their hand. Bound, never spliced — this filter comes from a text box.
+	term = (search or "").strip()
+	if term:
+		params["search"] = f"%{term}%"
+		conditions.append(
+			"(je.name LIKE %(search)s OR je.user_remark LIKE %(search)s OR je.cheque_no LIKE %(search)s)"
+		)
+	return " AND ".join(conditions), params
+
+
+@frappe.whitelist()
+def list_journal_entries(
+	company: str,
+	from_date: str | None = None,
+	to_date: str | None = None,
+	status: str | None = None,
+	limit: int = 50,
+	start: int = 0,
+	search: str | None = None,
+):
+	"""One page of journal entries, newest first — still a plain list.
+
+	The shape is deliberately unchanged: the SPA reads the returned rows
+	directly, so wrapping them in an envelope would break the page. The total
+	behind the truncation lives in `journal_entry_count`, which runs the same
+	filter.
+	"""
+	_require_company(company)
+	_assert_company_scope(company)  # tenant isolation: reject a foreign company arg
+	where, params = _je_list_conditions(company, from_date, to_date, status, search)
+	params["limit"] = int(limit)
+	params["start"] = int(start)
 	# JE.total_debit/total_credit are base-currency totals. Surface them as
 	# *_base + base_currency so the UI can never confuse them with a row's
 	# native account-currency amount.
@@ -814,12 +896,38 @@ def list_journal_entries(
 		JOIN `tabCompany` c ON c.name = je.company
 		WHERE {where}
 		ORDER BY je.posting_date DESC, je.name DESC
-		LIMIT %(limit)s
+		LIMIT %(limit)s OFFSET %(start)s
 		""",
 		params,
 		as_dict=True,
 	)
 	return rows
+
+
+@frappe.whitelist()
+def journal_entry_count(
+	company: str,
+	from_date: str | None = None,
+	to_date: str | None = None,
+	status: str | None = None,
+	search: str | None = None,
+) -> dict:
+	"""How many journal entries the current filter actually holds.
+
+	`list_journal_entries` stops at `limit` and says nothing about what it left
+	behind, so a list showing the last two days of a busy month looked exactly
+	like a month with two days of work in it. Compare `total_count` with
+	`start + len(rows)` for "there is more"; the filter is the shared one, so the
+	two numbers always describe the same set.
+	"""
+	_require_company(company)
+	_assert_company_scope(company)  # tenant isolation: reject a foreign company arg
+	where, params = _je_list_conditions(company, from_date, to_date, status, search)
+	total = frappe.db.sql(
+		f"SELECT COUNT(*) FROM `tabJournal Entry` je WHERE {where}",
+		params,
+	)
+	return {"total_count": int(total[0][0] or 0) if total else 0}
 
 
 @frappe.whitelist()
@@ -989,6 +1097,63 @@ def _opening_flag(voucher_type: str | None) -> str:
 	return "Yes" if (voucher_type or "").strip() == "Opening Entry" else "No"
 
 
+def _accounting_freeze(company: str) -> tuple[str | None, str | None]:
+	"""The company's frozen-until date and the role exempt from it.
+
+	**This is per COMPANY, not a site-wide setting.** ERPNext 16 moved the
+	accounting freeze off the `Accounts Settings` single and onto each Company
+	(`erpnext/patches/v16_0/migrate_account_freezing_settings_to_company.py`);
+	the ledger reads it from there (`erpnext/accounts/general_ledger.py:802`).
+	Reading the old single is not merely outdated — it is silent. The removed
+	field returns None, the guard returns early, and the check does nothing at
+	precisely the moment someone closes a period and starts relying on it.
+	Verified on production 2026-08-20: `tabSingles` holds no freeze rows and
+	`tabCompany.accounts_frozen_till_date` is where the value lives.
+	"""
+	row = frappe.db.get_value(
+		"Company", company, ["accounts_frozen_till_date", "role_allowed_for_frozen_entries"], as_dict=True
+	)
+	if not row:
+		return None, None
+	return (row.get("accounts_frozen_till_date") or None), (
+		row.get("role_allowed_for_frozen_entries") or None
+	)
+
+
+def _assert_posting_period_open(company: str, posting_date) -> None:
+	"""Refuse a posting date inside the frozen accounting period, in the user's language.
+
+	ERPNext enforces the freeze when the GL is written — that is, at submit. A
+	draft dated inside a closed period therefore saved, was listed, and only
+	failed later with ERPNext's untranslated message, leaving a document that
+	exists in the entry list and nowhere in the trial balance. The refusal
+	belongs where the date is accepted.
+
+	Stock freezes are deliberately NOT consulted: a Journal Entry writes no stock
+	ledger, so blocking on `stock_frozen_upto` would refuse entries the ledger
+	itself accepts. (The SPA's warning banner takes the later of the two dates;
+	that is a banner, not the rule.)
+
+	The date is inclusive, and `role_allowed_for_frozen_entries` is ERPNext's own
+	exemption — the person whose job is correcting a closed period keeps the only
+	tool they have.
+	"""
+	if not posting_date:
+		return
+	frozen_upto, modifier = _accounting_freeze(company)
+	if not frozen_upto:
+		return
+	roles = set(frappe.get_roles())
+	if "System Manager" in roles or (modifier and modifier in roles):
+		return
+	if getdate(posting_date) <= getdate(frozen_upto):
+		frappe.throw(
+			_(
+				"Accounting is frozen up to {0}. Choose a later posting date, or ask someone who may post to a closed period."
+			).format(formatdate(frozen_upto))
+		)
+
+
 def _clean_je_rows(accounts, company: str) -> tuple[list[dict], bool]:
 	"""Validate + normalize JE account lines for create/update.
 
@@ -1089,16 +1254,27 @@ def update_journal_entry(
 	user_remark: str | None = None,
 	cheque_no: str | None = None,
 	cheque_date: str | None = None,
+	modified: str | None = None,
 ) -> dict:
 	"""Edit a DRAFT Journal Entry in place (docstatus must be 0).
 
 	Replaces the account lines from the editor, auto-dropping any empty rows so a
 	blank line can't block the save. Submitted entries are read-only here — they
 	must be cancelled and amended (audit trail), never edited in place.
+
+	`modified` is the concurrency token, as on submit / cancel / delete. It stays
+	OPTIONAL here because `check_concurrency` rejects a *missing* token on an
+	existing document, and this endpoint's caller does not send one yet — making
+	the call unconditional would refuse every draft save instead of only the
+	conflicting ones. When the token is sent, a stale one is refused before the
+	rows are replaced: this endpoint substitutes the whole account table rather
+	than merging it, so a lost update leaves nothing behind to notice.
 	"""
 	if not name:
 		frappe.throw("Journal Entry name is required.")
 	_assert_can_write("Journal Entry", name)
+	if modified:
+		check_concurrency("Journal Entry", name, modified)
 	doc = frappe.get_doc("Journal Entry", name)
 	if doc.docstatus != 0:
 		frappe.throw(
@@ -1108,6 +1284,7 @@ def update_journal_entry(
 		)
 	_require_company(doc.company)
 	_assert_company_scope(doc.company)  # tenant isolation: reject a foreign company arg
+	_assert_posting_period_open(doc.company, posting_date)
 
 	cleaned, any_non_base = _clean_je_rows(accounts, doc.company)
 
@@ -1181,15 +1358,24 @@ def create_journal_entry(
 	cheque_no: str | None = None,
 	cheque_date: str | None = None,
 	amended_from: str | None = None,
+	submit: int = 0,
 ) -> dict:
-	"""Create a Journal Entry as Draft (docstatus=0).
+	"""Create a Journal Entry as Draft (docstatus=0), or post it in the same call.
 
 	`accounts` is a list of dicts with keys:
 	  account (required), party_type, party, debit, credit, reference_type, reference_name.
 	Exactly one of debit/credit per line must be non-zero. Totals must balance.
+
+	`submit` makes "save and post" one round trip instead of two. It is read with
+	`cint`, not truthiness: every argument arrives over HTTP as a string, and the
+	`"0"` an unticked box sends is truthy in Python — posting a journal nobody
+	asked to post can only be undone by a cancellation that stays in the ledger.
+	Posting goes through the same validation as the draft path and asks for
+	`submit` permission on the document itself; insert permission is not it.
 	"""
 	_require_company(company)
 	_assert_company_scope(company)  # tenant isolation: reject a foreign company arg
+	_assert_posting_period_open(company, posting_date)
 	cleaned, any_non_base = _clean_je_rows(accounts, company)
 
 	doc = frappe.new_doc("Journal Entry")
@@ -1213,6 +1399,9 @@ def create_journal_entry(
 	for row in cleaned:
 		doc.append("accounts", row)
 	doc.insert(ignore_permissions=False)
+	if cint(submit):
+		_assert_can_write("Journal Entry", doc.name, "submit")
+		doc.submit()
 	return {"name": doc.name, "docstatus": doc.docstatus}
 
 
@@ -1837,23 +2026,31 @@ def list_cash_bank_accounts(company: str, limit: int = 100):
 
 
 @frappe.whitelist()
-def get_backdating_status() -> dict:
+def get_backdating_status(company: str) -> dict:
 	"""Effective ERPNext back-dating freeze for the CURRENT user — informational,
-	for the money-page banner. Any authenticated user may read.
+	for the money-page banner. Any authenticated user of the company may read.
 
 	Returns the earliest date the user can still post to (stock + accounting),
 	whether they're exempt (hold the override role / System Manager), and whether
 	a freeze is actively constraining them.
+
+	Takes a company because the accounting half of the answer is per-company on
+	ERPNext 16 — the stock half is still a site-wide single. Before that split
+	this endpoint read `Accounts Settings.acc_frozen_upto`, a field ERPNext had
+	already removed, so the accounting half of the banner had quietly been None
+	on every tenant: the warning that exists to answer "why can't I enter this
+	date" could not fire on the freeze that most often causes the question.
 	"""
 	if frappe.session.user == "Guest":
 		frappe.throw(_("Login required."), frappe.PermissionError)
+	_require_company(company)
+	_assert_company_scope(company)  # tenant isolation: reject a foreign company arg
 	from frappe.utils import add_days, getdate, nowdate
 
 	stk = frappe.get_single("Stock Settings")
-	acc = frappe.get_single("Accounts Settings")
 	days = cint(stk.get("stock_frozen_upto_days") or 0)
 	stock_fixed = stk.get("stock_frozen_upto") or None
-	acc_frozen = acc.get("acc_frozen_upto") or None
+	acc_frozen, acc_modifier = _accounting_freeze(company)
 
 	roles = set(frappe.get_roles())
 	exempt = (
@@ -1863,7 +2060,7 @@ def get_backdating_status() -> dict:
 			if stk.get("role_allowed_to_create_edit_back_dated_transactions")
 			else False
 		)
-		or (acc.get("frozen_accounts_modifier") in roles if acc.get("frozen_accounts_modifier") else False)
+		or (acc_modifier in roles if acc_modifier else False)
 	)
 
 	stock_candidates = []

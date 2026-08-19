@@ -6678,3 +6678,20 @@ Rows,Rows
 Failed to load the payment calendar.,Failed to load the payment calendar.
 Failed to save the plan.,Failed to save the plan.
 Failed to delete the plan.,Failed to delete the plan.
+Discard this draft?,Discard this draft?
+The lines you entered have not been saved yet.,The lines you entered have not been saved yet.
+Keep editing,Keep editing
+"Accounting is frozen up to {0}. Choose a later posting date, or ask someone who may post to a closed period.","Accounting is frozen up to {0}. Choose a later posting date, or ask someone who may post to a closed period."
+"An opening balance needs an opening date. Left blank it would post today, inside the open period, where an opening balance lands in this period's profit and loss.","An opening balance needs an opening date. Left blank it would post today, inside the open period, where an opening balance lands in this period's profit and loss."
+New account in {parent},New account in {parent}
+Failed to load chart of accounts.,Failed to load chart of accounts.
+Failed to load account.,Failed to load account.
+Failed to save account.,Failed to save account.
+Failed to update account.,Failed to update account.
+"Roll-up of sub-accounts, converted to the company currency.","Roll-up of sub-accounts, converted to the company currency."
+Save & add another,Save & add another
+No account — this line is not counted.,No account — this line is not counted.
+Filled in to balance the entry,Filled in to balance the entry
+{0} converts to {1}; the other lines come to {2}.,{0} converts to {1}; the other lines come to {2}.
+Move the date forward or open the posting window to save.,Move the date forward or open the posting window to save.
+Accounting is frozen before {0}.,Accounting is frozen before {0}.
