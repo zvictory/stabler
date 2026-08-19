@@ -46,6 +46,12 @@ ROOT = Path(__file__).resolve().parents[1]
 DOCTYPE = ROOT / "stabler/doctype/vehicle_agreement/vehicle_agreement.json"
 V1 = ROOT / "api/vehicle_finance/v1.py"
 SETTER = "_set_status"
+FIELD = "agreement_status"
+
+#: Bilerek yazıcısız bırakılan durumlar. `Restructured` stabler-2671'e ertelendi;
+#: `Review` ve `Approved` henüz var olmayan bir sözleşme onay akışına ait. Liste
+#: `test_the_declared_gaps_really_have_no_writer` tarafından budanır.
+DEFERRED_WRITERS = frozenset({"Restructured", "Review", "Approved"})
 
 
 def _declared_states() -> list[str]:
@@ -75,21 +81,68 @@ def _code_only(src: str) -> str:
 	return body
 
 
+#: Alana yazabilen çağrı biçimleri. `get_value` kasten yok — okumak yazmak değil.
+_WRITE_CALLS = ("set_value", "db_set", "set", "update")
+
+#: Paketteki her modül. Tarama önce yalnızca v1.py'yi geziyordu; aynı sütuna
+#: read.py, work.py veya activation.py da yazabilir ve tarama bunu görmezdi.
+_PACKAGE = V1.parent
+
+
+def _vf_trees() -> list[tuple[str, ast.Module]]:
+	return [
+		(path.name, ast.parse(path.read_text(encoding="utf-8")))
+		for path in sorted(_PACKAGE.glob("*.py"))
+		if path.name != "__init__.py"
+	]
+
+
 def _v1_tree() -> ast.Module:
 	return ast.parse(V1.read_text(encoding="utf-8"))
 
 
-def _status_assignments() -> list[tuple[str, int]]:
-	"""(kapsayan fonksiyon, satır) — `<bir şey>.agreement_status = ...` her atama."""
+def _mentions_the_field(node: ast.AST) -> bool:
+	return any(isinstance(child, ast.Constant) and child.value == FIELD for child in ast.walk(node))
+
+
+def _status_writes() -> list[tuple[str, str, int]]:
+	"""(modül, kapsayan fonksiyon, satır) — `agreement_status` alanına yazan her yer.
+
+	Atama VE çağrı biçimleri. İlk hâli yalnızca `<bir şey>.agreement_status = ...`
+	görüyordu, ama `_set_status`'ın kendisi `frappe.db.set_value(...)` ile
+	kalıcılaştırıyor — yani tarama tam olarak kendi kapısının kullandığı biçime
+	kördü. O kör noktada `v1.py` içine eklenecek doğrudan bir `db.set_value`,
+	`test_no_endpoint_assigns_the_status_directly`'yi hiç kızartmadan geçerdi.
+	"""
 	found = []
-	for fn in [n for n in ast.walk(_v1_tree()) if isinstance(n, ast.FunctionDef)]:
-		for node in ast.walk(fn):
-			if not isinstance(node, ast.Assign):
-				continue
-			for target in node.targets:
-				if isinstance(target, ast.Attribute) and target.attr == "agreement_status":
-					found.append((fn.name, node.lineno))
+	for module, tree in _vf_trees():
+		for fn in [n for n in ast.walk(tree) if isinstance(n, ast.FunctionDef)]:
+			for node in ast.walk(fn):
+				if isinstance(node, ast.Assign):
+					for target in node.targets:
+						if isinstance(target, ast.Attribute) and target.attr == FIELD:
+							found.append((module, fn.name, node.lineno))
+				elif isinstance(node, ast.Call):
+					name = node.func.attr if isinstance(node.func, ast.Attribute) else ""
+					if name in _WRITE_CALLS and _mentions_the_field(node):
+						found.append((module, fn.name, node.lineno))
 	return found
+
+
+def _set_status_targets() -> set[str]:
+	"""`_set_status(..., "<durum>")` çağrılarındaki sabit hedefler — yani kim yazılıyor."""
+	targets = set()
+	for _module, tree in _vf_trees():
+		for node in ast.walk(tree):
+			if not isinstance(node, ast.Call):
+				continue
+			name = node.func.attr if isinstance(node.func, ast.Attribute) else getattr(node.func, "id", "")
+			if name != SETTER:
+				continue
+			for arg in node.args[1:]:
+				if isinstance(arg, ast.Constant) and isinstance(arg.value, str):
+					targets.add(arg.value)
+	return targets
 
 
 class TestTheTableAndTheDoctypeAgree(unittest.TestCase):
@@ -121,12 +174,48 @@ class TestEveryStateIsReachable(unittest.TestCase):
 			f"ilan edilmiş ama hiçbir geçişin hedefi olmayan durum(lar): {unreachable}",
 		)
 
-	def test_the_three_that_had_no_writer_are_reachable_by_name(self):
+	def test_the_five_that_had_no_writer_are_reachable_by_name(self):
 		# Adlarıyla: bulgunun kendisi bunlardı, bir sonraki yeniden düzenlemede
-		# genel bir iddianın arkasına saklanmasınlar.
+		# genel bir iddianın arkasına saklanmasınlar. Beş, üç değil — ilk sayım
+		# `Review` ve `Approved`'ı atlıyordu.
 		reachable = {t for targets in S.ALLOWED.values() for t in targets}
-		for state in ("Completed", "Terminated", "Restructured"):
+		for state in ("Completed", "Terminated", "Restructured", "Review", "Approved"):
 			self.assertIn(state, reachable, f"{state} hâlâ ulaşılamaz")
+
+	def test_the_table_has_no_self_transition(self):
+		# `_set_status` `current == target` üzerinde erken dönüyor, yani kendine
+		# giden hiçbir girdi hiç okunmaz. Okunamayan girdi, koda benzeyen yorumdur:
+		# tabloyu bakan biri ona güvenir, oysa davranışı üreten kısa devredir.
+		selfies = sorted(state for state, targets in S.ALLOWED.items() if state in targets)
+		self.assertEqual(selfies, [], f"tabloda hiç okunmayan kendine-geçiş: {selfies}")
+
+	def test_the_gate_really_short_circuits_on_no_change(self):
+		# Yukarıdaki test ancak bu doğruysa haklı. Kısa devre kalkarsa tablo yeniden
+		# karar verir ve kendine-geçişlerin yokluğu bir hataya dönüşür.
+		setter = next(n for n in ast.walk(_v1_tree()) if isinstance(n, ast.FunctionDef) and n.name == SETTER)
+		self.assertTrue(
+			any(
+				isinstance(node, ast.If)
+				and isinstance(node.test, ast.Compare)
+				and isinstance(node.test.ops[0], ast.Eq)
+				and any(isinstance(b, ast.Return) for b in node.body)
+				for node in ast.walk(setter)
+			),
+			f"{SETTER} artık değişimsiz çağrıda erken dönmüyor — kendine-geçişler tabloya geri gerekli",
+		)
+
+	def test_every_state_has_a_writer_or_is_a_declared_gap(self):
+		# Ulaşılabilirlik tabloda ispatlanır; YAZILABİLİRLİK ancak kodda. İlk hâli
+		# yalnızca tabloya bakıyordu — yani aynı commit'in yazdığı tablonun kendi
+		# kendini onaylamasıydı ve bir durum yazıcısını kaybettiğinde kızarmazdı.
+		missing = sorted(set(S.ALLOWED) - _set_status_targets() - {S.INITIAL} - DEFERRED_WRITERS)
+		self.assertEqual(missing, [], f"hiçbir yerde yazılmayan, bildirilmemiş durum(lar): {missing}")
+
+	def test_the_declared_gaps_really_have_no_writer(self):
+		# Cırcır: kapanan bir boşluk listede kalırsa liste bir mazerete dönüşür ve
+		# yukarıdaki test o durumu sonsuza dek muaf tutar.
+		closed = sorted(DEFERRED_WRITERS & _set_status_targets())
+		self.assertEqual(closed, [], f"artık yazıcısı var, listeden silin: {closed}")
 
 
 class TestClosedIsNotTheSameAsFinal(unittest.TestCase):
@@ -193,12 +282,12 @@ class TestEveryWriteGoesThroughTheMachine(unittest.TestCase):
 		names = {n.name for n in ast.walk(_v1_tree()) if isinstance(n, ast.FunctionDef)}
 		self.assertIn(SETTER, names, f"{SETTER} yok — makinenin tek kapısı olmalı")
 
-	def test_no_endpoint_assigns_the_status_directly(self):
-		strays = [(fn, line) for fn, line in _status_assignments() if fn != SETTER]
+	def test_no_endpoint_writes_the_status_directly(self):
+		strays = [(mod, fn, line) for mod, fn, line in _status_writes() if fn != SETTER]
 		self.assertEqual(
 			strays,
 			[],
-			f"makineyi atlayan doğrudan atama(lar): {strays}",
+			f"makineyi atlayan doğrudan yazma(lar): {strays}",
 		)
 
 	def test_the_setter_actually_consults_the_machine(self):
@@ -215,7 +304,38 @@ class TestEveryWriteGoesThroughTheMachine(unittest.TestCase):
 		)
 
 	def test_the_sweep_is_not_vacuous(self):
-		self.assertGreaterEqual(len(_status_assignments()), 1, "hiç durum ataması bulunamadı")
+		self.assertGreaterEqual(len(_status_writes()), 1, "hiç durum yazması bulunamadı")
+
+	def test_the_sweep_sees_the_call_form_its_own_gate_uses(self):
+		# Tarama önce yalnızca `x.agreement_status = ...` görüyordu, oysa kapının
+		# kendisi `frappe.db.set_value(...)` ile yazıyor. Kör noktanın kapandığını
+		# adıyla iddia et: aksi hâlde yukarıdaki testler, kaçırdıkları tek biçimi
+		# kaçırmaya devam ederken yeşil kalır.
+		setter_src = ast.get_source_segment(
+			V1.read_text(encoding="utf-8"),
+			next(n for n in ast.walk(_v1_tree()) if isinstance(n, ast.FunctionDef) and n.name == SETTER),
+		)
+		self.assertIn(
+			"set_value", setter_src, "kapı artık çağrı biçimini kullanmıyor — bu test amacını yitirdi"
+		)
+		# O ÇAĞRININ satırı taramada görünmeli. "SETTER bir yerde geçiyor" yetmez:
+		# `_set_status` alana ayrıca atamayla da yazıyor, yani çağrı dalı tümden
+		# silinse bile atama dalı SETTER'ı bulmaya devam ederdi.
+		setter = next(n for n in ast.walk(_v1_tree()) if isinstance(n, ast.FunctionDef) and n.name == SETTER)
+		call_lines = {
+			node.lineno
+			for node in ast.walk(setter)
+			if isinstance(node, ast.Call)
+			and isinstance(node.func, ast.Attribute)
+			and node.func.attr in _WRITE_CALLS
+			and _mentions_the_field(node)
+		}
+		self.assertTrue(call_lines, "kapıda alana yazan çağrı yok — bu test amacını yitirdi")
+		seen = {line for _mod, fn, line in _status_writes() if fn == SETTER}
+		self.assertTrue(
+			call_lines <= seen,
+			f"tarama çağrı biçimine kör: {sorted(call_lines - seen)}",
+		)
 
 
 class TestTheTwoMissingWritersNowExist(unittest.TestCase):

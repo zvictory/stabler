@@ -136,6 +136,47 @@ DoD: make check AND make test-bench.
 
 RELATED, NOT INCLUDED: the direction-slot question (a terminal agreement still occupies its VIN slot) is filed separately and is untestable until this lands, since it turns on how terminal agreements are counted.
 
+**Not (2026-08-19, 94d1746 + takip):** İki yazıcı kapandı — `Completed`
+(`_collect_or_pay` içinde, planı ödendiğinde) ve `Terminated`
+(`terminate_agreement`, `settlement_writeoff` + zorunlu gerekçe). Geçişler
+`api/vehicle_finance/status.py` içinde tek bir frappe'siz tabloda; `_set_status`
+tek kapı ve satırı `for_update` ile okuyup karar veriyor. `Restructured` BİLEREK
+yazılmadı, ADR gereği ayrı iş — bu maddenin kalanı odur. `Review` ve `Approved`
+da yazıcısız; ilk sayım onları atlamıştı, gerçek beş.
+`test_the_declared_gaps_really_have_no_writer` üçünü de cırcırlıyor: birine
+yazıcı gelirse test kırmızıya döner. `make check` + `make test-bench` yeşil.
+
+### Peşinatlı sözleşme kapanırken faturası açık kalıyor — kapanmışa geri dönüş yok
+`stabler-vf-adv` · hata · P2
+
+2026-08-19 incelemesinde bulundu, `stabler/tests/test_vehicle_finance_accounting.py`
+`test_completion_is_measured_on_the_schedule_not_the_invoice` ile üretiliyor.
+
+`_reconcile_advances` (v1.py:420) peşinatı — `VFA-ADV-<sözleşme>` etiketli Payment
+Entry — 0. satıra bir Payment Application yazarak kapatır. Faturaya hiç
+dokunmaz: `_invoice_payload` ne `advances` doldurur ne
+`allocate_advances_automatically` kurar. Sonuç: plan sıfırlanınca sözleşme
+`Completed` damgalanır, fatura ise peşinat kadar açık kalır.
+
+Kapanmış sözleşme `_COLLECTIBLE_STATUSES` dışındadır, yani `work_queue`
+göremez (work.py:205), `_collect_or_pay` reddeder, `approve_reschedule`
+reddeder, `terminate_agreement` reddeder. Alacak AR'da sonsuza dek açık kalır ve
+modüldeki hiçbir uç nokta o sözleşmeye ulaşamaz. Düzeltmeden önce sözleşme hiç
+değilse kuyrukta, yani görünür kalıyordu.
+
+Bugün **gizli**: uygulamada `VFA-ADV-` Payment Entry üreten hiçbir uç nokta yok
+— testin kendisi elle kuruyor. Ama `_reconcile_advances` ve `cancel_payment`'ın
+`_ADVANCE_PREFIX` dalı tam olarak o akış için yazılmış.
+
+KARAR GEREKEN, ikisi de savunulabilir ve seçim muhasebeye ait:
+(a) `_reconcile_advances` avans PE'sini faturaya da tahsis etsin — iki ölçü
+    yakınsar, kapanış her iki tanımda da aynı anda olur; ya da
+(b) fatura açıkken kapanma reddedilsin ve kalıntı açık bir mutabakat işi olarak
+    yüzeye çıksın.
+Canlı bir alacağın üstünü sessizce kapatmak varsayılan olmamalı. Kapanış
+ölçüsünü faturaya çevirmek ise ÇÖZÜM DEĞİL: peşinat taşıyan hiçbir sözleşme
+kapanmaz, yani stabler-2671'in ta kendisi geri gelir.
+
 ### Remittance has no engine flag — Settings shipped without JE Legacy or Transfer V1
 `stabler-3lak` · iş
 

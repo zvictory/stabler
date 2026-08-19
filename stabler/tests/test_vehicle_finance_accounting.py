@@ -72,6 +72,7 @@ class VehicleFinanceAccountingTest(FrappeTestCase):
 		self.deferred_cost = account("VF Deferred Cost USD", "Current Assets", currency="USD")
 		self.expense = account("VF Realised Cost", "Direct Expenses", currency="USD")
 		self.bank = account("VF Bank", "Current Assets", account_type="Bank")
+		self.bank_usd = account("VF Bank USD", "Current Assets", account_type="Bank", currency="USD")
 
 	def _setup_items(self):
 		if not frappe.db.exists("Item", "VF-CAR"):
@@ -540,8 +541,94 @@ class VehicleFinanceAccountingTest(FrappeTestCase):
 		name = self._make_agreement(direction="Disposition")
 		v1.activate_agreement(name)
 		v1.collect_customer_payment(name, 1000, mode_of_payment="Cash", bank_account=self.bank)
-		with self.assertRaises(frappe.ValidationError):
+		# Mesaja bak, sınıfa değil. İki ayrı kural aynı `frappe.ValidationError`'ı
+		# atıyor: kapanmış sözleşme reddi ve "tutar açık bakiyeden büyük" reddi.
+		# Tam ödeme sonrası açık bakiye zaten sıfır olduğu için, yalnızca sınıfa
+		# bakan bir iddia düzeltme tümden geri alınsa bile yeşil kalırdı.
+		with self.assertRaisesRegex(frappe.ValidationError, "not open for payment"):
 			v1.collect_customer_payment(name, 50, mode_of_payment="Cash", bank_account=self.bank)
+
+	def _make_down_payment_advance(self, agreement, amount):
+		"""Fatura ÖNCESİ peşinat: `VFA-ADV-<sözleşme>` etiketli, hiçbir faturaya
+		bağlanmamış bir Payment Entry. Uygulamada bunu üreten bir uç nokta henüz
+		yok; `_reconcile_advances` ve `cancel_payment`'ın `_ADVANCE_PREFIX` dalı
+		tam olarak bu akış için var ve ölçülmeden duruyordu."""
+		pe = frappe.new_doc("Payment Entry")
+		pe.company = COMPANY
+		pe.posting_date = today()
+		pe.payment_type = "Receive"
+		pe.party_type = "Customer"
+		pe.party = self.customer
+		pe.paid_from = self.receivable
+		pe.paid_to = self.bank_usd
+		pe.paid_amount = amount
+		pe.received_amount = amount
+		pe.reference_no = "VFA-ADV-" + agreement
+		pe.reference_date = today()
+		pe.setup_party_account_field()
+		pe.set_missing_values()
+		pe.insert(ignore_permissions=True)
+		pe.flags.ignore_approval_gate = True
+		pe.submit()
+		return pe.name
+
+	def test_completion_is_measured_on_the_schedule_not_the_invoice(self):
+		"""Peşinatlı bir sözleşmede iki ölçü ayrışır ve yalnızca biri doğru.
+
+		`_reconcile_advances` peşinatı 0. satıra bir Payment Application ile
+		bağlar; faturaya hiç dokunmaz, çünkü avans Payment Entry'si hiçbir zaman
+		faturaya tahsis edilmez. Fatura bu yüzden tam peşinat kadar açık kalır.
+		Kapanışı fatura bakiyesinden ölçmek, peşinat taşıyan HİÇBİR sözleşmede
+		tetiklenmez — düzeltmenin kapatmak için var olduğu kusurun aynısı, yalnızca
+		daha dar bir kapıda. Bu ayrımı tutan başka test yoktu: beş bench testinin
+		hiçbiri avans yaratmıyordu, yani ölçüyü faturaya çevirmek hepsini yeşil
+		bırakıyordu.
+		"""
+		name = self._make_agreement(direction="Disposition")
+		self._make_down_payment_advance(name, 100)
+		v1.activate_agreement(name)
+
+		invoice = frappe.db.get_value("Vehicle Agreement", name, "sales_invoice")
+		# 0. satır (100) avansla kapandı; kalan üç taksit 900.
+		v1.collect_customer_payment(name, 900, mode_of_payment="Cash", bank_account=self.bank)
+
+		self.assertEqual(
+			frappe.db.get_value("Vehicle Agreement", name, "agreement_status"),
+			"Completed",
+			"plan kapandı ama sözleşme kapanmadı",
+		)
+		self.assertGreater(
+			flt(frappe.db.get_value("Sales Invoice", invoice, "outstanding_amount")),
+			0,
+			"fatura da kapandıysa kurgu iki ölçüyü ayıramıyor — avans 0. satıra bağlanmamış",
+		)
+
+	def test_the_status_gate_judges_the_row_not_the_copy_it_was_handed(self):
+		"""Eşzamanlı iki yazar arasında kaybolan, kapatma kararının kendisi.
+
+		`_collect_or_pay` sözleşmeyi isteğin başında yükleyip yüzlerce satır sonra
+		yazıyor. Arada bir müdür `terminate_agreement` çalıştırırsa, kapı eski
+		kopyadaki `Active`'e bakıp Active -> Completed'ı yasal sayar ve koşulsuz
+		`db.set_value` ile satırı Completed yapar: `FINAL`'in tam da yasakladığı
+		Terminated -> Completed gerçekleşir, borç silme sessizce geri alınır ve
+		zaman çizelgesindeki "Terminated by ..." yorumu olmamış bir şeyi anlatır.
+		Burada eşzamanlılık, satırı belgenin arkasından değiştirerek kurgulanıyor —
+		yarışın kendisi değil, kapının neye bakarak karar verdiği ölçülüyor.
+		"""
+		name = self._make_agreement(direction="Disposition")
+		v1.activate_agreement(name)
+		stale = frappe.get_doc("Vehicle Agreement", name)
+		self.assertEqual(stale.agreement_status, "Active")
+
+		frappe.db.set_value("Vehicle Agreement", name, "agreement_status", "Terminated")
+
+		with self.assertRaisesRegex(frappe.ValidationError, "cannot move from"):
+			v1._set_status(stale, "Completed", persist=True)
+		self.assertEqual(
+			frappe.db.get_value("Vehicle Agreement", name, "agreement_status"),
+			"Terminated",
+			"borç silme sessizce geri alındı",
+		)
 
 	def test_terminating_closes_an_open_agreement_and_refuses_a_closed_one(self):
 		name = self._make_agreement(direction="Disposition")
