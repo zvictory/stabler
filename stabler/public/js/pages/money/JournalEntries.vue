@@ -4,8 +4,16 @@ import { storeToRefs } from "pinia";
 import { useRoute } from "vue-router";
 import { useSession } from "../../stores/session.js";
 import { call } from "../../api/client.js";
-import { formatMoney, moneyEpsilon, moneyFractionDigits } from "../../composables/money.js";
-import { computeBalancePlug, isDraftDirty, isRowOrphaned, postableRows, snapshotDraft } from "../../composables/journal.js";
+import { formatMoney, moneyFractionDigits } from "../../composables/money.js";
+import {
+	balanceTolerance,
+	computeBalancePlug,
+	describePlugResidual,
+	isDraftDirty,
+	isRowOrphaned,
+	postableRows,
+	snapshotDraft,
+} from "../../composables/journal.js";
 import { formatDate, formatDateTime, todayIso, daysAgoIso} from "../../composables/date.js";
 import { t } from "../../composables/i18n.js";
 import { accountLabel } from "../../composables/accounts.js";
@@ -113,15 +121,32 @@ const baseLine = (r) => (Number(r.debit) || Number(r.credit) || 0) * rateOf(r);
 const totalDebit = computed(() => postable.value.reduce((s, r) => s + (Number(r.debit) || 0), 0));
 const totalCredit = computed(() => postable.value.reduce((s, r) => s + (Number(r.credit) || 0), 0));
 const diff = computed(() => (isMultiCurrency.value ? baseDebit.value - baseCredit.value : totalDebit.value - totalCredit.value));
-const balanced = computed(() => {
-	if (isMultiCurrency.value) {
-		const ratesOk = postable.value.every((r) => !isForeign(r) || rateOf(r) > 0);
-		return ratesOk && Math.abs(diff.value) < 1;
-	}
-	// Not a hardcoded 0.01: UZS has no fractional unit, so its epsilon is half
-	// a so'm. Mirrors money_epsilon() in stabler/api/_money.py.
-	return Math.abs(diff.value) < moneyEpsilon(currencyCode.value) * 2;
+
+// THE CONTRACT, stated once. balanceTolerance() mirrors residual_tolerance()
+// in stabler/api/_fx_residual.py — the FX hook's threshold, and the last word
+// on whether a document actually saves.
+//
+// The Math.min is the part that should not have to exist. api/money.py's
+// _clean_je_rows rejects the payload BEFORE the hook can run, at a flat
+// `1.0 if saw_foreign else 0.01` — two constants that know nothing about the
+// base currency or the number of lines. Until they are derived from
+// residual_tolerance(len(cleaned), base_precision_for(base_currency)) too, the
+// form has to obey whichever gate is tighter, or it goes green on a payload
+// the server throws straight out. Delete the Math.min when that lands.
+const balanceTol = computed(() => {
+	const ledger = balanceTolerance(postable.value.length, moneyFractionDigits(currencyCode.value));
+	return Math.min(ledger, isMultiCurrency.value ? 1 : 0.01);
 });
+const balanced = computed(() => {
+	if (isMultiCurrency.value && !postable.value.every((r) => !isForeign(r) || rateOf(r) > 0)) return false;
+	// +1e-9 as in within_tolerance(): two exactly equal sums can still land an
+	// ulp apart, and a form that calls that an imbalance cannot be satisfied.
+	return Math.abs(diff.value) <= balanceTol.value + 1e-9;
+});
+
+// One line under the badge when the plug had to land on a foreign account and
+// its own rounding is what is holding Save shut. See describePlugResidual().
+const plugResidual = computed(() => describePlugResidual(form.value.accounts, { rateOf, tolerance: balanceTol.value }));
 
 // Readable "1 strong = N weak" quote for a line (always the ≥1 direction).
 const rateQuote = (row) => readableRate(row.exchange_rate, row.account_currency, currencyCode.value);
@@ -691,6 +716,12 @@ watch(statusFilter, load);
 								<td class="text-end font-monospace">{{ formatMoney(isMultiCurrency ? baseCredit : totalCredit, currencyCode, user.language) }}</td>
 								<td><span class="badge" :class="balanced ? 'bg-green-lt' : 'bg-red-lt'">{{ balanced ? t("Balanced") : "Δ " + formatMoney(diff, currencyCode, user.language) }}</span></td>
 							</tr>
+							<tr v-if="plugResidual"><td colspan="6" class="text-warning small fw-normal pt-0">
+								{{ t("{0} converts to {1}; the other lines come to {2}.")
+									.replace("{0}", formatMoney(plugResidual.amount, plugResidual.currency || currencyCode, user.language))
+									.replace("{1}", formatMoney(plugResidual.base, currencyCode, user.language))
+									.replace("{2}", formatMoney(plugResidual.counterBase, currencyCode, user.language)) }}
+							</td></tr>
 							<tr v-if="isMultiCurrency"><td colspan="6" class="text-secondary small fw-normal pt-0">{{ t("Totals shown in base currency ({0}).").replace("{0}", currencyCode) }}</td></tr>
 						</tfoot>
 					</table>

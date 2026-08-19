@@ -1,6 +1,14 @@
 import { describe, expect, it } from "vitest";
 
-import { computeBalancePlug, isDraftDirty, isRowOrphaned, postableRows, snapshotDraft } from "../composables/journal.js";
+import {
+	balanceTolerance,
+	computeBalancePlug,
+	describePlugResidual,
+	isDraftDirty,
+	isRowOrphaned,
+	postableRows,
+	snapshotDraft,
+} from "../composables/journal.js";
 
 // Every line is in the company's base currency unless a test says otherwise.
 const rateOf = (r) => Number(r.exchange_rate) || 1;
@@ -72,6 +80,21 @@ describe("computeBalancePlug — the counter-line a journal entry can work out f
 		expect(computeBalancePlug(rows, { editedIdx: 0, rateOf })?.index).toBe(1);
 	});
 
+	// The residual is measured in base currency, so only a base-currency line
+	// can hold it exactly. Put 1 234 567 so'm on a USD line at 12 335 and the
+	// closest USD can come is 100.09 — the entry is then out by ~43 so'm and
+	// Save is off permanently, because one US cent moves 123 so'm and no
+	// amount of typing lands on the figure. Given an open so'm line, the plug
+	// belongs there and the residual is zero.
+	it("prefers an open base-currency line — a foreign one cannot hold the residual exactly", () => {
+		const rows = [
+			row({ debit: 1234567 }),
+			row({ account: "1210 - Bank USD - MIK", account_currency: "USD", exchange_rate: 12335 }),
+			row({ account: "1110 - Kassa - MIK" }),
+		];
+		expect(computeBalancePlug(rows, { editedIdx: 0, rateOf })).toEqual({ index: 2, field: "credit", value: 1234567 });
+	});
+
 	// UZS has no fractional unit, so a plug of 3333333.3333 is not a rounding
 	// nicety — it is a number the ledger cannot hold.
 	it("rounds the plug to the TARGET line's precision, not the company's", () => {
@@ -121,6 +144,76 @@ describe("computeBalancePlug — the counter-line a journal entry can work out f
 	it("measures the residual only over lines that will be posted", () => {
 		const rows = [row({ debit: 500 }), row(), row({ account: "", debit: 200 })];
 		expect(computeBalancePlug(rows, { editedIdx: 0, rateOf })).toEqual({ index: 1, field: "credit", value: 500 });
+	});
+});
+
+describe("balanceTolerance — one threshold, not three", () => {
+	// Three gates decided "balanced" and none of them agreed. The form said
+	// `Math.abs(diff) < 1` base unit; api/money.py said 1.0 for a
+	// multi-currency entry and 0.01 otherwise; the gate that actually decides
+	// whether the document saves is fx_balance's residual_tolerance(). On a
+	// 2-decimal base currency the form was the LOOSEST of the three, so
+	// anything between 0.04 and 0.99 went green here and then fell over inside
+	// ERPNext with an untranslated "Total Debit must be equal to Total Credit".
+	// This function is the JS mirror of stabler/api/_fx_residual.py.
+	it("allows one smallest unit per line, plus a cushion", () => {
+		expect(balanceTolerance(2, 2)).toBe(0.04);
+		expect(balanceTolerance(5, 2)).toBe(0.07);
+	});
+
+	// The direction that locks people out rather than letting them through: on
+	// a UZS-base company the smallest unit is a whole so'm, so a tolerance of
+	// 0.01 is a hundred times tighter than the ledger's and rejects entries
+	// the ledger would have taken.
+	it("scales to a whole-unit base currency instead of assuming cents", () => {
+		expect(balanceTolerance(2, 0)).toBe(4);
+		expect(balanceTolerance(5, 0)).toBe(7);
+	});
+
+	it("survives a line count it cannot use", () => {
+		expect(balanceTolerance(0, 2)).toBe(0.02);
+		expect(balanceTolerance(-1, 2)).toBe(0.02);
+	});
+});
+
+describe("describePlugResidual — why a form that filled the line in will not let you save", () => {
+	// "The form writes a number for you, then locks you out because of that
+	// number." Without this line the screen shows a red Δ and no reason for
+	// it, and the entry genuinely cannot be balanced by typing.
+	it("names the rounding a foreign plug line cannot avoid", () => {
+		const rows = [
+			row({ account: "5010 - Ijara - MIK", debit: 1234567 }),
+			row({ account: "1210 - Bank USD - MIK", account_currency: "USD", exchange_rate: 12335, credit: 100.09, _auto: true }),
+		];
+		const note = describePlugResidual(rows, { rateOf, tolerance: 4 });
+		expect(note).toMatchObject({ index: 1, amount: 100.09, currency: "USD" });
+		expect(Math.round(note.base)).toBe(1234610);
+		expect(note.counterBase).toBe(1234567);
+	});
+
+	// A base-currency plug is exact by construction, so there is nothing to
+	// explain and a standing explanation would be noise.
+	it("says nothing when the plug sits on a base-currency line", () => {
+		const rows = [row({ debit: 5000000 }), row({ credit: 5000000, _auto: true })];
+		expect(describePlugResidual(rows, { rateOf, tolerance: 4 })).toBeNull();
+	});
+
+	it("says nothing while the entry is inside the ledger's tolerance", () => {
+		const rows = [
+			row({ debit: 1234567 }),
+			row({ account: "1210 - Bank USD - MIK", account_currency: "USD", exchange_rate: 12335, credit: 100.09, _auto: true }),
+		];
+		expect(describePlugResidual(rows, { rateOf, tolerance: 100 })).toBeNull();
+	});
+
+	// An imbalance the user typed is not a rounding story; saying "rounding"
+	// about a plain typo sends them looking in the wrong place.
+	it("says nothing about an imbalance the user typed", () => {
+		const rows = [
+			row({ debit: 1234567 }),
+			row({ account: "1210 - Bank USD - MIK", account_currency: "USD", exchange_rate: 12335, credit: 50 }),
+		];
+		expect(describePlugResidual(rows, { rateOf, tolerance: 4 })).toBeNull();
 	});
 });
 
