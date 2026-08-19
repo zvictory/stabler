@@ -5,10 +5,12 @@ Adds:
   Import Truck.departure_override             — manager release despite blockers
   Import Truck.departure_override_reason      — why, recorded
 
-Idempotent: every field is guarded with db.exists, so re-running is safe. The
-patch runs BEFORE the doctype DDL sync (patches.txt has no [post_model_sync]
-marker), so it must not read or write the new columns — it only creates the
-Custom Field definitions.
+Idempotent: every field is guarded with db.exists, so re-running is safe. This
+patch is registered under [post_model_sync] in patches.txt (line 60), so it
+runs AFTER the doctype DDL sync — the columns already exist by the time it
+executes. The guard is kept anyway (house style: it costs one `if` and
+survives someone moving this entry later), not because the columns might be
+missing.
 
 Default for required_for_departure is 1: a declaration that exists is assumed
 to matter. Marking one as optional is a deliberate act; forgetting to mark one

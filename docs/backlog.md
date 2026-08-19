@@ -1161,8 +1161,10 @@ tenant flips the switch and every activation then fails at the last step.
   or Payment Entry.
 - The only new patch is the `Vehicle Finance Settings` row creation, which is **lazy**
   (created on first read with `installment_engine = "Legacy"`), not a backfill —
-  `patches.txt` has no `[post_model_sync]` marker, so a patch runs before the DDL sync
-  and a backfill would silently skip.
+  `patches.txt` carries both `[pre_model_sync]` and `[post_model_sync]` markers, and
+  where a patch is registered decides whether the DDL has synced yet — a backfill
+  placed in the wrong half would either silently skip or crash on a missing column,
+  so lazy creation sidesteps that risk entirely.
 - Any patch added here is idempotent and guards with `frappe.db.has_column` /
   `frappe.db.exists`.
 - The legacy custom fields `stabler_installment_plan` and `stabler_installment_alloc`

@@ -6,9 +6,11 @@ driven by a Stabler Company Modules flag. This patch creates the flag and
 backfills it so the switchover changes no behaviour on any tenant: whoever the
 old rule let through is exactly who the flag lets through.
 
-Patches run PRE-sync, so the column may not exist yet — guard with has_column,
-exactly as v14_add_enable_bpm does. Without the guard the first migrate after
-this lands fails on a missing column.
+This patch is registered under [post_model_sync] in patches.txt (line 67), so
+it runs AFTER the doctype DDL sync — the column already exists by the time it
+executes. The has_column guard is kept anyway (house style: it costs one
+`if` and survives someone moving this entry later), not because skipping it
+would break the current migrate.
 
 Re-runnable: one pass, `WHERE ... IS NULL`. It used to be two statements — zero
 everyone, then one for the MSA companies — and only the second was unconditional,

@@ -10,9 +10,11 @@ This copies the header value down to the rows that are still empty. Rows that
 already name a proforma are never touched: on a multi-PI invoice the row is the
 authoritative link and the header is only the first/primary one.
 
-``patches.txt`` has no ``[post_model_sync]`` marker, so this runs BEFORE the
-doctype DDL sync — hence the ``has_column`` guards on both tables rather than a
-bare UPDATE.
+This patch is registered under ``[post_model_sync]`` in ``patches.txt`` (line
+63), so it runs AFTER the doctype DDL sync — both columns already exist by
+the time it executes. The ``has_column`` guards are kept anyway (house style:
+they cost one ``if`` each and survive this entry moving later), not because a
+bare UPDATE would fail here.
 
 Idempotent: the WHERE clause is self-clearing, so a second run matches 0 rows.
 Reversible: the stamped rows are exactly those whose ``custom_proforma_invoice``
