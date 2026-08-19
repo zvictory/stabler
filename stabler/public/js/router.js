@@ -147,6 +147,7 @@ import NewContract from "./pages/installment/NewContract.vue";
 import Contracts from "./pages/installment/Contracts.vue";
 import InstallmentOverdue from "./pages/installment/Overdue.vue";
 import InstallmentCalendar from "./pages/installment/InstallmentCalendar.vue";
+import PaymentCalendar from "./pages/money/PaymentCalendar.vue";
 import CrmHome from "./pages/crm/CrmHome.vue";
 import CrmLeads from "./pages/crm/Leads.vue";
 import CrmDeals from "./pages/crm/Deals.vue";
@@ -320,6 +321,7 @@ const routes = [
 			{ path: "approvals", name: "money-approvals", component: Approvals, meta: { title: t("Approvals") } },
 			{ path: "reconcile", name: "money-reconcile", component: Reconcile, meta: { title: t("Reconcile") } },
 			{ path: "fx-revaluation", name: "money-fx-revaluation", component: FxRevaluation, meta: { title: t("FX Revaluation"), module: "fx_revaluation" } },
+			{ path: "calendar", name: "money-payment-calendar", component: PaymentCalendar, meta: { title: t("Payment Calendar"), module: "payment_calendar" } },
 			{ path: "budgets", name: "money-budgets", component: Budgets, meta: { title: t("Budgets"), module: "budget" } },
 			{ path: "budgets/vs-actual", name: "budget-vs-actual", component: BudgetVsActual, meta: { title: t("Budget vs Actual"), module: "budget" } },
 		],

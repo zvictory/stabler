@@ -6243,3 +6243,48 @@ Tax,Налог
 Temporary,Временный
 No accounts yet,Счетов пока нет
 Set up the chart of accounts for {company} to see it here.,"Настройте план счетов для {company}, чтобы увидеть его здесь."
+Payment Calendar,Платёжный календарь
+Everyone enters their own plan. The calendar shows the days it lands on.,"Каждый вносит свой план. Календарь показывает, на какие дни он приходится."
+My plan,Мой план
+Whole company,Вся компания
+Click a day to plan on it,"Нажмите на день, чтобы внести план"
+Nothing planned this month yet.,В этом месяце пока ничего не запланировано.
+Customer receipt,Поступление от клиента
+Vendor payment,Оплата поставщику
+Item purchase,Закупка товара
+Other receipt,Прочее поступление
+Other payment,Прочая оплата
+Customer Receipt,Поступление от клиента
+Vendor Payment,Оплата поставщику
+Item Purchase,Закупка товара
+Other Receipt,Прочее поступление
+Other Payment,Прочая оплата
+Confidence,Уверенность
+"Committed — agreed, date is set","Точно — согласовано, дата известна"
+Expected — most likely,Ожидается — скорее всего
+Tentative — not discussed yet,Предварительно — ещё не обсуждалось
+A tentative receipt does not pay a committed salary — the three are summed apart.,Предварительное поступление не оплатит точную зарплату — три уровня суммируются отдельно.
+Repeat,Повтор
+One time,Один раз
+Every week ×4,Каждую неделю ×4
+Every month ×3,Каждый месяц ×3
+Every month ×6,Каждый месяц ×6
+Every month ×12,Каждый месяц ×12
+Incoming,Поступления
+Outgoing,Выплаты
+Heaviest day,Самый тяжёлый день
+What for,За что
+New planned payment,Новый плановый платёж
+Edit planned payment,Изменить плановый платёж
+Add to plan,Добавить в план
+The amount and date are read from the document.,Сумма и дата берутся из документа.
+"This screen does not pay anything. Money leaves through Payments, Kassa or Journal; a row is closed here by hand.","Этот экран не проводит платежи. Деньги уходят через «Платежи», «Кассу» или «Журнал»; строка закрывается здесь вручную."
+Realized,Исполнено
+Realized on,Дата исполнения
+Totals by planner,Итоги по сотрудникам
+Visible to authorised roles only,Видно только уполномоченным ролям
+Planned by,Кто внёс план
+Rows,Строк
+Failed to load the payment calendar.,Не удалось загрузить платёжный календарь.
+Failed to save the plan.,Не удалось сохранить план.
+Failed to delete the plan.,Не удалось удалить план.

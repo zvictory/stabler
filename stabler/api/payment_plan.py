@@ -443,6 +443,50 @@ def payment_plan_document_options(company: str, reference_doctype: str, search=N
 
 
 @frappe.whitelist()
+def payment_plan_account_options(company: str, search=None, limit=50):
+	"""Leaf expense accounts, for the Expense kind.
+
+	Its own endpoint rather than a reuse of `money.chart_of_accounts`: the
+	calendar is a separate module, a tenant may run it with Money switched off,
+	and the form wants leaves only — a plan posted against a group account is a
+	plan against a heading.
+	"""
+	_require_payment_calendar()
+	company = _require_plan_company(company)
+	filters = {"company": company, "is_group": 0, "root_type": "Expense"}
+	if search:
+		filters["account_name"] = ["like", f"%{search}%"]
+	return frappe.get_all(
+		"Account",
+		filters=filters,
+		fields=["name", "account_name", "account_number", "account_currency"],
+		order_by="account_number asc, account_name asc",
+		limit_page_length=min(cint(limit) or 50, 200),
+	)
+
+
+@frappe.whitelist()
+def payment_plan_item_options(company: str, search=None, limit=25):
+	"""Items, for the Item Purchase kind.
+
+	Not routed through the Inventory module's own list endpoint, which is gated
+	on a module this one does not require.
+	"""
+	_require_payment_calendar()
+	_require_plan_company(company)
+	filters = {"disabled": 0}
+	if search:
+		filters["item_name"] = ["like", f"%{search}%"]
+	return frappe.get_all(
+		"Item",
+		filters=filters,
+		fields=["name", "item_name", "stock_uom"],
+		order_by="modified desc",
+		limit_page_length=min(cint(limit) or 25, 100),
+	)
+
+
+@frappe.whitelist()
 def payment_plan_reference_doctypes(company: str):
 	"""The closed set the form's document-type picker offers."""
 	_require_payment_calendar()

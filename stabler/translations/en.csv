@@ -6633,3 +6633,48 @@ Tax,Tax
 Temporary,Temporary
 No accounts yet,No accounts yet
 Set up the chart of accounts for {company} to see it here.,Set up the chart of accounts for {company} to see it here.
+Payment Calendar,Payment Calendar
+Everyone enters their own plan. The calendar shows the days it lands on.,Everyone enters their own plan. The calendar shows the days it lands on.
+My plan,My plan
+Whole company,Whole company
+Click a day to plan on it,Click a day to plan on it
+Nothing planned this month yet.,Nothing planned this month yet.
+Customer receipt,Customer receipt
+Vendor payment,Vendor payment
+Item purchase,Item purchase
+Other receipt,Other receipt
+Other payment,Other payment
+Customer Receipt,Customer Receipt
+Vendor Payment,Vendor Payment
+Item Purchase,Item Purchase
+Other Receipt,Other Receipt
+Other Payment,Other Payment
+Confidence,Confidence
+"Committed — agreed, date is set","Committed — agreed, date is set"
+Expected — most likely,Expected — most likely
+Tentative — not discussed yet,Tentative — not discussed yet
+A tentative receipt does not pay a committed salary — the three are summed apart.,A tentative receipt does not pay a committed salary — the three are summed apart.
+Repeat,Repeat
+One time,One time
+Every week ×4,Every week ×4
+Every month ×3,Every month ×3
+Every month ×6,Every month ×6
+Every month ×12,Every month ×12
+Incoming,Incoming
+Outgoing,Outgoing
+Heaviest day,Heaviest day
+What for,What for
+New planned payment,New planned payment
+Edit planned payment,Edit planned payment
+Add to plan,Add to plan
+The amount and date are read from the document.,The amount and date are read from the document.
+"This screen does not pay anything. Money leaves through Payments, Kassa or Journal; a row is closed here by hand.","This screen does not pay anything. Money leaves through Payments, Kassa or Journal; a row is closed here by hand."
+Realized,Realized
+Realized on,Realized on
+Totals by planner,Totals by planner
+Visible to authorised roles only,Visible to authorised roles only
+Planned by,Planned by
+Rows,Rows
+Failed to load the payment calendar.,Failed to load the payment calendar.
+Failed to save the plan.,Failed to save the plan.
+Failed to delete the plan.,Failed to delete the plan.

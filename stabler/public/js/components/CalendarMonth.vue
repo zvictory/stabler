@@ -6,10 +6,12 @@ Props:
   events    [{date:"yyyy-mm-dd", label, amount, contractId, currency}]
   currency  string     — for formatMoney display
   language  string     — for formatMoney locale
+  emptyText string     — what an empty month says (the grid is not installment-only)
 
 Emits:
   update:month   "yyyy-mm"       — prev/next navigation
   select         {event}         — chip click
+  select-day     "yyyy-mm-dd"    — click on the day itself, not on a chip
 
 TZ-safe: all Date construction uses numeric args.
 Monday-first 7-col grid.
@@ -25,9 +27,10 @@ const props = defineProps({
 	events: { type: Array, default: () => [] },
 	currency: { type: String, default: "USD" },
 	language: { type: String, default: "en" },
+	emptyText: { type: String, default: "" },
 });
 
-const emit = defineEmits(["update:month", "select"]);
+const emit = defineEmits(["update:month", "select", "select-day"]);
 
 const WEEKDAYS = [t("Mon"), t("Tue"), t("Wed"), t("Thu"), t("Fri"), t("Sat"), t("Sun")];
 const MAX_CHIPS = 3;
@@ -120,6 +123,9 @@ function chipClass(ev) {
 		"calendar-chip--paid": ev.state === "paid",
 		"calendar-chip--partial": ev.state === "partial",
 		"calendar-chip--overdue": ev.state === "overdue",
+		// Money in and money out, for calendars whose rows are not all one way.
+		"calendar-chip--inflow": ev.state === "inflow",
+		"calendar-chip--outflow": ev.state === "outflow",
 		"calendar-chip--upcoming": !ev.state || ev.state === "upcoming",
 	};
 }
@@ -152,6 +158,7 @@ function chipClass(ev) {
 				:key="ci"
 				class="calendar-cell"
 				:class="{ 'calendar-cell--today': !cell.blank && cell.isToday, 'calendar-cell--blank': cell.blank, 'calendar-cell--weekend': !cell.blank && ci >= 5, 'calendar-cell--past': !cell.blank && cell.isPast }"
+				@click="!cell.blank && emit('select-day', cell.key)"
 			>
 				<template v-if="!cell.blank">
 					<div class="calendar-day-num small" :class="{ 'fw-bold text-primary': cell.isToday }">
@@ -177,7 +184,7 @@ function chipClass(ev) {
 		</div>
 
 		<div v-if="!hasEvents" class="text-center text-secondary py-3 small">
-			{{ t("No installments due this month.") }}
+			{{ emptyText || t("No installments due this month.") }}
 		</div>
 	</div>
 </template>
@@ -266,6 +273,14 @@ function chipClass(ev) {
 
 .calendar-chip--upcoming {
 	background: var(--tblr-primary, #206bc4);
+}
+
+.calendar-chip--inflow {
+	background: var(--tblr-teal, #0ca678);
+}
+
+.calendar-chip--outflow {
+	background: var(--tblr-orange, #f76707);
 }
 
 .calendar-chip:hover {
