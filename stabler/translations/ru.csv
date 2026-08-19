@@ -6304,3 +6304,4 @@ No account — this line is not counted.,Нет счёта — эта строк
 Filled in to balance the entry,Заполнено автоматически для баланса проводки
 {0} converts to {1}; the other lines come to {2}.,{0} — это {1}; остальные строки дают {2}.
 Move the date forward or open the posting window to save.,"Чтобы сохранить, перенесите дату вперёд или откройте период проводок."
+Accounting is frozen before {0}.,Учёт закрыт до {0}.
