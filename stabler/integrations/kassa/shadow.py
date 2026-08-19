@@ -76,6 +76,9 @@ def view(company, date) -> dict:
 		"company": company,
 		"balances": shadow_store.balances(p, company, date),
 		"openings": shadow_store.get_openings(p, company, date),
+		# What the ledger's running column starts at. Not the same as `openings`,
+		# which holds only what was declared for this date and is usually empty.
+		"opening_balances": shadow_store.opening_balances(p, company, date),
 		"entries": shadow_store.list_entries(p, company, date),
 	}
 

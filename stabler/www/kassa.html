@@ -516,7 +516,7 @@
 				
 				function runTxt(v) { return (Number(v) < 0 ? "−" : "") + smart(v); }
 				
-				var opening = Number((LAST.openings || {})[k.id]) || 0;
+				var opening = Number((LAST.opening_balances || {})[k.id]) || 0;
 				var affecting = (LAST.entries || []).filter(function (e) {
 					return (e.legs || []).some(function (l) { return l.kassa === k.id; });
 				});

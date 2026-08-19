@@ -12,11 +12,16 @@ Data model
   legs already signed by the writer). Balance = Σ deltas (+ opening).
 - shadow_opening : manually-entered opening balance per (company, date, kassa).
 
-Balance(kassa, date) = opening(kassa, date) + Σ shadow_delta(kassa, date).
+Balance(kassa, date) = the last opening declared at or before `date`, plus every
+delta from that day through `date` — the drawer carries forward. Openings are typed
+in by hand from a Telegram button and are usually absent; reading only the requested
+day's own opening made every undeclared morning open at zero while the cash was still
+there (measured on mikas 2026-08-19: one opening in seven active days).
 """
 
 from __future__ import annotations
 
+import datetime
 import json
 import sqlite3
 import time
@@ -139,25 +144,57 @@ def get_openings(path, company, date) -> dict:
 
 
 def balances(path, company, date) -> dict:
-	"""{'nakit':..,'pk':..,'usd':..} = opening + Σ deltas for the day."""
+	"""{'nakit':..,'pk':..,'usd':..} carried forward to the end of `date`.
+
+	A declared opening is a restatement — the cashier counted the drawer — so it
+	supersedes every delta before it and the days after it accumulate on top. Each
+	kassa carries its own cut-off: counting the cash says nothing about the card
+	terminal, and resetting `pk` off `nakit`'s declaration would discard it.
+	"""
 	con = connect(path)
 	try:
-		op = dict(
-			con.execute(
-				"SELECT kassa, amount FROM shadow_opening WHERE company=? AND date=?", (company, date)
-			).fetchall()
-		)
+		openings = con.execute(
+			"SELECT date, kassa, amount FROM shadow_opening WHERE company=? AND date<=? ORDER BY date",
+			(company, date),
+		).fetchall()
 		deltas = con.execute(
-			"SELECT kassa, COALESCE(SUM(delta),0) FROM shadow_delta "
-			"WHERE company=? AND date=? GROUP BY kassa",
+			"SELECT kassa, date, COALESCE(SUM(delta),0) FROM shadow_delta "
+			"WHERE company=? AND date<=? GROUP BY kassa, date",
 			(company, date),
 		).fetchall()
 	finally:
 		con.close()
-	b = {k: float(op.get(k, 0.0)) for k in KASSAS}
-	for k, s in deltas:
-		b[k] = b.get(k, 0.0) + float(s)
+
+	# Oldest first, so the last write per kassa is its most recent declaration.
+	since: dict[str, str] = {}
+	b = {k: 0.0 for k in KASSAS}
+	for d, k, amount in openings:
+		since[k] = d
+		b[k] = float(amount)
+	for k, d, s in deltas:
+		# "" sorts below every ISO date: no declaration means carry from the start.
+		if d >= since.get(k, ""):
+			b[k] = b.get(k, 0.0) + float(s)
 	return b
+
+
+def opening_balances(path, company, date) -> dict:
+	"""The drawer at the START of `date` — what the ledger's running column begins at.
+
+	A declaration for the day wins, including a declared zero: counting the till and
+	finding it empty is an answer, and reading 0 as "nothing was declared" would
+	carry the previous day's cash into an emptied drawer. Otherwise the day starts
+	where the one before it closed.
+
+	`opening_balances(d) + the day's own deltas == balances(d)` holds for every day.
+	The mini app renders both halves at once, so a gap between them shows the cashier
+	two different balances with no way to tell which is the drawer.
+	"""
+	declared = get_openings(path, company, date)
+	prev = (datetime.date.fromisoformat(date) - datetime.timedelta(days=1)).isoformat()
+	carried = balances(path, company, prev)
+	keys = set(KASSAS) | set(declared) | set(carried)
+	return {k: float(declared[k]) if k in declared else float(carried.get(k, 0.0)) for k in keys}
 
 
 def list_entries(path, company, date) -> list:
