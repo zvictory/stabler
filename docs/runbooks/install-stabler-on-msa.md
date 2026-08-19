@@ -250,6 +250,33 @@ ssh ice-production "cd /home/frappe/frappe-bench && sudo -u frappe bench --site 
 
 ## 4. Kurulum sonrası yapılandırma
 
+### 4.0 Patch Log'a değil, ortaya çıkan şeye bak
+
+```bash
+bench --site <site> execute stabler.install_check.run
+```
+
+Frappe bir yamayı site başına bir kez çalıştırır, çünkü Patch Log satırı öyle der.
+O satır yamanın **bir şey yapıp yapmadığına** bakmadan yazılır ve taze bir sitede
+hepsi birden yazılabilir: `16328bf` ölçülmüş vakadır — zuma'nın Patch Log'u 94
+yamanın tamamını "uygulandı" gösterirken **206 Custom Field** ortada yoktu.
+
+`install_check` Patch Log'a hiç bakmaz; **ürünü** arar — iki servis Item'ı, roller,
+GL indeksleri, mali yıllar, NDS şablonları — ve eksik olanı, onu yaratması gereken
+yamanın adıyla birlikte listeler. Hiçbir şey yaratmaz, hiçbir yama çalıştırmaz.
+
+> **Rapordaki eksikleri toplu yama koşturarak kapatma.** "Kurulumdan sonra her
+> yamanın `execute()`'unu çalıştır" bu alandaki en tehlikeli talimattır: canlı
+> doküman yazan bir yama bunu ikinci kez yapar. `v80` tam olarak böyle canlı
+> tedarikçi avanslarını yeniden yazdı, `v62`/`v63`/`v64`/`v65` de operatörün elle
+> verdiği kararları geri aldı. Raporda adı geçen yamayı **oku**, sonra yalnızca
+> onu çalıştır.
+
+`Stabler Declarant` özel bir vakadır: bu ad hiçbir doctype JSON'unda geçmez, yani
+doctype senkronu onu **asla** yaratmaz. Taze bir sitede v38 çalışmadıysa onu
+var edecek başka hiçbir şey yoktur.
+
+
 ### 4.1 MSA şirketi için Stabler Company Modules — tüm modüller KAPALI başlat
 
 Migration planı K1(d): "enable_imports dışındaki stabler modülleri msa'da kapalı başlar." Ama

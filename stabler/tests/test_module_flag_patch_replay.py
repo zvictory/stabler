@@ -26,6 +26,7 @@ may be written. Everything else is somebody's answer.
 from __future__ import annotations
 
 import importlib
+import re
 import types
 import unittest
 
@@ -34,11 +35,13 @@ from stabler.tests.module_sandbox import ModuleSandbox
 _SANDBOX = ModuleSandbox()
 
 PATCHES = {
+	"v62": "stabler.patches.v62_enable_direct_invoicing",
 	"v63": "stabler.patches.v63_enable_dimensional_lines",
 	"v64": "stabler.patches.v64_enable_sales_box_uom",
 	"v65": "stabler.patches.v65_enable_modern_sales_order",
 }
 FLAGS = {
+	"v62": "enable_direct_invoicing",
 	"v63": "enable_dimensional_lines",
 	"v64": "enable_sales_box_uom",
 	"v65": "enable_modern_sales_order",
@@ -54,35 +57,70 @@ class FakeModulesTable:
 	catch, so it is modelled faithfully rather than guarded against.
 	"""
 
-	def __init__(self, rows):
+	def __init__(self, rows, companies=None):
 		self.rows = list(rows)
+		# Only v62 decides per company; the others write one value for everybody.
+		self.companies = list(companies) if companies else [f"Co {i}" for i in range(len(self.rows))]
+
+	def _value_for(self, sql: str, index: int, flag: str, params=None):
+		"""What this UPDATE writes into row `index`.
+
+		Three shapes appear across the four patches, and the double has to read
+		the value out of the statement rather than assume one — a double that
+		only recognised the inlined literal scored a parameterised UPDATE as
+		"sets 0" and passed the replay tests for the wrong reason.
+		"""
+		case = re.search(
+			rf"SET {flag} = CASE WHEN UPPER\(company\) LIKE %\((\w+)\)s THEN (\d) ELSE (\d) END", sql
+		)
+		if case:
+			key, hit, miss = case.group(1), int(case.group(2)), int(case.group(3))
+			pattern = str(params.get(key, "")).strip("%").upper() if isinstance(params, dict) else ""
+			return hit if pattern in self.companies[index].upper() else miss
+		if f"SET {flag} = %s" in sql:
+			return int((params or (0,))[0])
+		return 1 if f"SET {flag} = 1" in sql else 0
 
 	def apply(self, sql: str, flag: str, params=None) -> None:
 		if f"SET {flag} = " not in sql:
 			return
-		# The value may be bound rather than inlined; a double that only reads
-		# the literal would score a parameterised UPDATE as "sets 0" and pass
-		# the replay tests for the wrong reason.
-		if f"SET {flag} = %s" in sql:
-			value = int((params or (0,))[0])
-		else:
-			value = 1 if f"SET {flag} = 1" in sql else 0
 		where = sql.split("WHERE", 1)[1] if "WHERE" in sql else ""
 		for i, current in enumerate(self.rows):
-			if not where:
-				self.rows[i] = value  # no WHERE: every tenant, decided or not
-			elif "IS NULL" in where and current is None:
-				self.rows[i] = value
-			elif "!= 0" in where and current not in (None, 0):
-				self.rows[i] = value
-			elif "IS NULL" in where and "!= 0" in where and current is None:
-				self.rows[i] = value
+			if self._where_matches(where, i, current, params):
+				self.rows[i] = self._value_for(sql, i, flag, params)
+
+	def _where_matches(self, where: str, index: int, current, params=None) -> bool:
+		"""Evaluate the WHERE the way SQL would, not one branch of it.
+
+		This started as a chain of `elif`s, one per predicate, which is an OR —
+		and `UPPER(company) LIKE … AND flag IS NULL` is not an OR. The double then
+		reported the naive repair of v62 as unsafe for a reason SQL would never
+		have produced. A double that answers the right way for the wrong reason is
+		worse than no double: it retires the question.
+		"""
+		if not where.strip():
+			return True  # no WHERE: every tenant, decided or not
+		# v63 binds positionally, v62 by name — only the latter carries a pattern.
+		pattern = str(params.get("pattern", "")).strip("%").upper() if isinstance(params, dict) else ""
+
+		def atom(term: str) -> bool:
+			if "IS NULL" in term:
+				return current is None
+			if "!= 0" in term:
+				return current not in (None, 0)
+			if "LIKE" in term:
+				return pattern in self.companies[index].upper()
+			raise AssertionError(f"the double does not model this predicate: {term.strip()!r}")
+
+		return any(all(atom(t) for t in disjunct.split(" AND ")) for disjunct in where.split(" OR "))
 
 
-def _run_patch(key: str, *, rows, has_flag_column=True, has_item_column=True, dimensional_items=True):
+def _run_patch(
+	key: str, *, rows, companies=None, has_flag_column=True, has_item_column=True, dimensional_items=True
+):
 	"""Execute one patch against a hand-built `frappe`. Returns the rows after."""
 	flag = FLAGS[key]
-	table = FakeModulesTable(rows)
+	table = FakeModulesTable(rows, companies)
 
 	frappe = types.ModuleType("frappe")
 
@@ -122,6 +160,24 @@ class ReplayKeepsTheOperatorsDecision(unittest.TestCase):
 		after = _run_patch("v63", rows=[0, 1, 0], dimensional_items=True)
 		self.assertEqual(after, [0, 1, 0])
 
+	def test_v62_does_not_reopen_the_msa_tenant_the_operator_closed(self):
+		"""v62's hole was the shape, not the clause: it seeded in TWO statements.
+
+		Zero everyone whose flag is NULL, then set 1 wherever the company name
+		matches `%MSA%` — and only the first statement looked at the flag. Each
+		statement reads as safe on its own; the hole is in the order. On a replay
+		the second one alone runs over a decided row and switches Direct Sales
+		Invoicing back on for a tenant somebody had switched off, which is why
+		`03ff23f` fixing its three siblings did not fix this one.
+
+		Note that the naive repair — bolting `AND enable_direct_invoicing IS NULL`
+		onto the second statement — makes the patch a no-op on its FIRST run too,
+		because the first statement has already replaced every NULL with 0. That
+		is what `FirstRunStillDecides` below exists to catch.
+		"""
+		after = _run_patch("v62", rows=[0, 1, 0], companies=["MSA Group", "Anjan", "Mikas"])
+		self.assertEqual(after, [0, 1, 0])
+
 	def test_v64_does_not_close_the_tenant_the_owner_opened_by_hand(self):
 		"""v64's docstring says anjan is opened by hand from Companies after
 		deploy. `WHERE flag IS NULL OR flag != 0` matches exactly that row and
@@ -155,6 +211,25 @@ class FirstRunStillDecides(unittest.TestCase):
 		absent. No catalogue means no evidence, and no evidence means closed —
 		never left NULL, which is the state the patch was written to remove."""
 		self.assertEqual(_run_patch("v63", rows=[None, None], has_item_column=False), [0, 0])
+
+	def test_v62_opens_the_msa_tenants_and_only_those_on_a_fresh_site(self):
+		"""The rule this patch translates: `"MSA" in company.upper()`, nothing else.
+
+		Both halves have to survive one pass. A repair that only stops the replay
+		would leave every fresh tenant at 0 and quietly remove the capability from
+		the one company that had it under the old name rule.
+		"""
+		after = _run_patch(
+			"v62",
+			rows=[None, None, None],
+			companies=["MSA Group", "Anjan", "msa trading"],
+		)
+		self.assertEqual(after, [1, 0, 1])
+
+	def test_v62_leaves_a_decided_row_alone_while_deciding_the_new_one(self):
+		"""The realistic shape on a repaired site: one row added, the rest answered."""
+		after = _run_patch("v62", rows=[0, None], companies=["MSA Group", "MSA Logistics"])
+		self.assertEqual(after, [0, 1])
 
 	def test_v64_closes_a_fresh_tenant(self):
 		self.assertEqual(_run_patch("v64", rows=[None, None]), [0, 0])

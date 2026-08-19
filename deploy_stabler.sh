@@ -311,4 +311,11 @@ cat <<'SMOKE'
       deploy (it used to carry the 2026-07 service-map/dimensional-pricing list).
     - Then:  make prod-drift    # files running on prod that are not in git
     Rollback if needed: restore the step-2 tar, chown, bench build, bench restart.
+      That is a CODE rollback and nothing else -- step 2 archives the prod apps/stabler dir,
+      never the database. If step 5 (migrate) ran, the schema and the data it
+      touched stay migrated while the code goes back, which is not "the previous
+      state": read the patches that landed since the sha prod was stamped with and
+      check whether any of them mutate data one way. v86_remittance_pickup_code_hash
+      is the worked example -- one-way by design, and undoing it needs a refund or
+      an admin override, not a tar.
 SMOKE
