@@ -87,10 +87,19 @@ onMounted(load);
 watch([company, month, scope], load);
 
 // ── The form ─────────────────────────────────────────────────────────────────
+// Today when the current month is on screen, otherwise that month's first day.
+// Pasting today's day-of-month onto another month produces the 31st of a 30-day
+// month, which the date input then silently rolls into the next one.
+function defaultDueDate() {
+	const today = new Date();
+	const iso = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
+	return iso.startsWith(month.value) ? iso : monthBounds(month.value).from;
+}
+
 const blank = () => ({
 	name: null,
 	kind: "Vendor Payment",
-	due_date: `${monthBounds(month.value).from.slice(0, 8)}${String(new Date().getDate()).padStart(2, "0")}`,
+	due_date: defaultDueDate(),
 	party_type: "",
 	party: "",
 	reference_doctype: "",
@@ -106,11 +115,14 @@ const blank = () => ({
 	status: "Planned",
 	realized_on: "",
 	note: "",
-	repeat: "Once",
-	repeat_count: 1,
 });
 
 const form = ref(blank());
+// Two options share the value "Monthly" and differ only in count, so the model
+// is the index. It lives outside `form` because it resets with the form rather
+// than being sent with it.
+const repeatIndex = ref(0);
+const repeat = computed(() => REPEAT_OPTIONS[repeatIndex.value] || REPEAT_OPTIONS[0]);
 const saving = ref(false);
 const formError = ref("");
 const extraField = computed(() => KIND_EXTRA[form.value.kind] || "");
@@ -174,29 +186,33 @@ const baseEquivalent = computed(() => {
 });
 const needsRate = computed(() => form.value.currency && form.value.currency !== baseCurrency.value);
 
-function edit(row) {
-	form.value = { ...blank(), ...row, due_date: String(row.due_date || "").slice(0, 10) };
+function reset(overrides = {}) {
+	form.value = { ...blank(), ...overrides };
+	repeatIndex.value = 0;
 	formError.value = "";
 }
 
+function edit(row) {
+	reset({ ...row, due_date: String(row.due_date || "").slice(0, 10) });
+}
+
 function openDay(date) {
-	form.value = { ...blank(), due_date: date };
-	formError.value = "";
+	reset({ due_date: date });
 }
 
 async function save() {
 	saving.value = true;
 	formError.value = "";
-	const { name, repeat, repeat_count, ...payload } = form.value;
+	const { name, ...payload } = form.value;
 	try {
 		await call("stabler.api.payment_plan.save_payment_plan_entry", {
 			company: company.value,
 			name,
 			payload,
-			repeat,
-			repeat_count,
+			repeat: repeat.value.value,
+			repeat_count: repeat.value.count,
 		});
-		form.value = blank();
+		reset();
 		await load();
 	} catch (err) {
 		formError.value = err?.message || t("Failed to save the plan.");
@@ -214,7 +230,7 @@ async function remove() {
 			company: company.value,
 			name: form.value.name,
 		});
-		form.value = blank();
+		reset();
 		await load();
 	} catch (err) {
 		formError.value = err?.message || t("Failed to delete the plan.");
@@ -445,15 +461,8 @@ function kindLabel(value) {
 						</div>
 						<div class="col-6">
 							<label class="form-label">{{ t("Repeat") }}</label>
-							<select
-								class="form-select"
-								:disabled="isEdit"
-								@change="
-									form.repeat = REPEAT_OPTIONS[$event.target.selectedIndex].value;
-									form.repeat_count = REPEAT_OPTIONS[$event.target.selectedIndex].count;
-								"
-							>
-								<option v-for="(opt, i) in REPEAT_OPTIONS" :key="i">{{ opt.label() }}</option>
+							<select v-model="repeatIndex" class="form-select" :disabled="isEdit">
+								<option v-for="(opt, i) in REPEAT_OPTIONS" :key="i" :value="i">{{ opt.label() }}</option>
 							</select>
 						</div>
 					</div>
@@ -503,7 +512,7 @@ function kindLabel(value) {
 						>
 							{{ t("Delete") }}
 						</button>
-						<button type="button" class="btn btn-ghost-secondary ms-auto" @click="form = blank()">
+						<button type="button" class="btn btn-ghost-secondary ms-auto" @click="reset()">
 							{{ t("Cancel") }}
 						</button>
 						<button type="button" class="btn btn-primary" :disabled="saving" @click="save">
