@@ -3694,7 +3694,7 @@ Paid {0} employees — {1},{0} xodimga to'landi — {1}
 paid {pct}% · {outstanding} to pay,{pct}% to'langan · {outstanding} to'lanishi kerak
 Parent,Bosh
 Parent account,Bosh hisob
-Parent account is required.,
+Parent account is required.,Ustki hisob majburiy.
 Parent account {0} does not belong to {1}.,
 Parent account {0} is not a group account.,
 Parent account {0} not found.,
@@ -6286,3 +6286,16 @@ Failed to delete the plan.,Rejani o'chirib bo'lmadi.
 Discard this draft?,Qoralama o'chirilsinmi?
 The lines you entered have not been saved yet.,Kiritilgan satrlar hali saqlanmagan.
 Keep editing,Tahrirni davom ettirish
+"Accounting is frozen up to {0}. Choose a later posting date, or ask someone who may post to a closed period.",Hisob {0} sanasigacha yopilgan. Kechroq buxgalteriya sanasini tanlang yoki yopiq davrga kiritishga huquqi bor xodimga murojaat qiling.
+"An opening balance needs an opening date. Left blank it would post today, inside the open period, where an opening balance lands in this period's profit and loss.","Boshlang'ich qoldiq uchun sana kerak. Bo'sh qoldirilsa, provodka bugungi kunga, ochiq davrga tushadi va boshlang'ich qoldiq joriy davr foyda va zarariga kiradi."
+New account in {parent},Yangi hisob {parent} ichida
+Failed to load chart of accounts.,Hisoblar rejasini yuklab bo'lmadi.
+Failed to load account.,Hisobni yuklab bo'lmadi.
+Failed to save account.,Hisobni saqlab bo'lmadi.
+Failed to update account.,Hisobni yangilab bo'lmadi.
+"Roll-up of sub-accounts, converted to the company currency.","Quyi hisoblar summasi, kompaniya valyutasiga o'girilgan."
+Save & add another,Saqlash va yana qo'shish
+No account — this line is not counted.,Hisob tanlanmagan — bu satr hisobga olinmaydi.
+Filled in to balance the entry,Provodkani tenglashtirish uchun avtomatik to'ldirildi
+{0} converts to {1}; the other lines come to {2}.,{0} — bu {1}; qolgan satrlar {2} ni tashkil etadi.
+Move the date forward or open the posting window to save.,Saqlash uchun sanani oldinga suring yoki provodka oynasini oching.

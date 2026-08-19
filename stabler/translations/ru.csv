@@ -3699,7 +3699,7 @@ Paid {0} employees — {1},Оплачено {0} сотрудникам — {1}
 paid {pct}% · {outstanding} to pay,оплачено {pct}% · {outstanding} к оплате
 Parent,Родитель
 Parent account,Родительский счёт
-Parent account is required.,
+Parent account is required.,Родительский счёт обязателен.
 Parent account {0} does not belong to {1}.,
 Parent account {0} is not a group account.,
 Parent account {0} not found.,
@@ -6291,3 +6291,16 @@ Failed to delete the plan.,Не удалось удалить план.
 Discard this draft?,Удалить черновик?
 The lines you entered have not been saved yet.,Введённые строки ещё не сохранены.
 Keep editing,Продолжить ввод
+"Accounting is frozen up to {0}. Choose a later posting date, or ask someone who may post to a closed period.","Учёт закрыт по {0} включительно. Выберите более позднюю дату проводки или обратитесь к тому, кто может проводить в закрытый период."
+"An opening balance needs an opening date. Left blank it would post today, inside the open period, where an opening balance lands in this period's profit and loss.","Для входящего остатка нужна дата. Без неё проводка попадёт на сегодня, в открытый период, где входящий остаток войдёт в прибыль и убыток текущего периода."
+New account in {parent},Новый счёт в {parent}
+Failed to load chart of accounts.,Не удалось загрузить план счетов.
+Failed to load account.,Не удалось загрузить счёт.
+Failed to save account.,Не удалось сохранить счёт.
+Failed to update account.,Не удалось обновить счёт.
+"Roll-up of sub-accounts, converted to the company currency.","Сумма дочерних счетов, пересчитанная в валюту компании."
+Save & add another,Сохранить и добавить ещё
+No account — this line is not counted.,Нет счёта — эта строка не учитывается.
+Filled in to balance the entry,Заполнено автоматически для баланса проводки
+{0} converts to {1}; the other lines come to {2}.,{0} — это {1}; остальные строки дают {2}.
+Move the date forward or open the posting window to save.,"Чтобы сохранить, перенесите дату вперёд или откройте период проводок."

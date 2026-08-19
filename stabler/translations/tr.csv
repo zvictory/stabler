@@ -3691,7 +3691,7 @@ Paid {0} employees — {1},{0} çalışana ödendi — {1}
 paid {pct}% · {outstanding} to pay,%{pct} ödendi · {outstanding} ödenecek
 Parent,Ana
 Parent account,Ana Hesap
-Parent account is required.,
+Parent account is required.,Üst hesap zorunludur.
 Parent account {0} does not belong to {1}.,
 Parent account {0} is not a group account.,
 Parent account {0} not found.,
@@ -6281,3 +6281,16 @@ Failed to delete the plan.,Plan silinemedi.
 Discard this draft?,Taslak silinsin mi?
 The lines you entered have not been saved yet.,Girdiğiniz satırlar henüz kaydedilmedi.
 Keep editing,Düzenlemeye dön
+"Accounting is frozen up to {0}. Choose a later posting date, or ask someone who may post to a closed period.",Muhasebe {0} tarihine kadar donduruldu. Daha ileri bir kayıt tarihi seçin ya da kapalı döneme kayıt atabilecek birine başvurun.
+"An opening balance needs an opening date. Left blank it would post today, inside the open period, where an opening balance lands in this period's profit and loss.","Açılış bakiyesi için bir tarih gerekir. Boş bırakılırsa kayıt bugüne, açık döneme düşer ve açılış bakiyesi bu dönemin kâr-zararına girer."
+New account in {parent},{parent} içinde yeni hesap
+Failed to load chart of accounts.,Hesap planı yüklenemedi.
+Failed to load account.,Hesap yüklenemedi.
+Failed to save account.,Hesap kaydedilemedi.
+Failed to update account.,Hesap güncellenemedi.
+"Roll-up of sub-accounts, converted to the company currency.","Alt hesapların toplamı, şirket para birimine çevrilmiştir."
+Save & add another,Kaydet ve bir tane daha ekle
+No account — this line is not counted.,Hesap seçilmedi — bu satır sayılmıyor.
+Filled in to balance the entry,Fişi denkleştirmek için otomatik dolduruldu
+{0} converts to {1}; the other lines come to {2}.,{0} karşılığı {1}; diğer satırlar {2} ediyor.
+Move the date forward or open the posting window to save.,Kaydetmek için tarihi ileri alın ya da kayıt penceresini açın.

@@ -3694,7 +3694,7 @@ Paid {0} employees — {1},{0} ходимга тўланди — {1}
 paid {pct}% · {outstanding} to pay,{pct}% тўланган · {outstanding} тўланиши керак
 Parent,Бош
 Parent account,Бош ҳисоб
-Parent account is required.,
+Parent account is required.,Устки ҳисоб мажбурий.
 Parent account {0} does not belong to {1}.,
 Parent account {0} is not a group account.,
 Parent account {0} not found.,
@@ -6286,3 +6286,16 @@ Failed to delete the plan.,Режани ўчириб бўлмади.
 Discard this draft?,Қоралама ўчирилсинми?
 The lines you entered have not been saved yet.,Киритилган сатрлар ҳали сақланмаган.
 Keep editing,Таҳрирни давом эттириш
+"Accounting is frozen up to {0}. Choose a later posting date, or ask someone who may post to a closed period.",Ҳисоб {0} санасигача ёпилган. Кечроқ бухгалтерия санасини танланг ёки ёпиқ даврга киритишга ҳуқуқи бор ходимга мурожаат қилинг.
+"An opening balance needs an opening date. Left blank it would post today, inside the open period, where an opening balance lands in this period's profit and loss.","Бошланғич қолдиқ учун сана керак. Бўш қолдирилса, проводка бугунги кунга, очиқ даврга тушади ва бошланғич қолдиқ жорий давр фойда ва зарарига киради."
+New account in {parent},Янги ҳисоб {parent} ичида
+Failed to load chart of accounts.,Ҳисоблар режасини юклаб бўлмади.
+Failed to load account.,Ҳисобни юклаб бўлмади.
+Failed to save account.,Ҳисобни сақлаб бўлмади.
+Failed to update account.,Ҳисобни янгилаб бўлмади.
+"Roll-up of sub-accounts, converted to the company currency.","Қуйи ҳисоблар суммаси, компания валютасига ўгирилган."
+Save & add another,Сақлаш ва яна қўшиш
+No account — this line is not counted.,Ҳисоб танланмаган — бу сатр ҳисобга олинмайди.
+Filled in to balance the entry,Проводкани тенглаштириш учун автоматик тўлдирилди
+{0} converts to {1}; the other lines come to {2}.,{0} — бу {1}; қолган сатрлар {2} ни ташкил этади.
+Move the date forward or open the posting window to save.,Сақлаш учун санани олдинга суринг ёки проводка ойнасини очинг.
