@@ -1097,31 +1097,52 @@ def _opening_flag(voucher_type: str | None) -> str:
 	return "Yes" if (voucher_type or "").strip() == "Opening Entry" else "No"
 
 
-def _assert_posting_period_open(posting_date) -> None:
+def _accounting_freeze(company: str) -> tuple[str | None, str | None]:
+	"""The company's frozen-until date and the role exempt from it.
+
+	**This is per COMPANY, not a site-wide setting.** ERPNext 16 moved the
+	accounting freeze off the `Accounts Settings` single and onto each Company
+	(`erpnext/patches/v16_0/migrate_account_freezing_settings_to_company.py`);
+	the ledger reads it from there (`erpnext/accounts/general_ledger.py:802`).
+	Reading the old single is not merely outdated — it is silent. The removed
+	field returns None, the guard returns early, and the check does nothing at
+	precisely the moment someone closes a period and starts relying on it.
+	Verified on production 2026-08-20: `tabSingles` holds no freeze rows and
+	`tabCompany.accounts_frozen_till_date` is where the value lives.
+	"""
+	row = frappe.db.get_value(
+		"Company", company, ["accounts_frozen_till_date", "role_allowed_for_frozen_entries"], as_dict=True
+	)
+	if not row:
+		return None, None
+	return (row.get("accounts_frozen_till_date") or None), (
+		row.get("role_allowed_for_frozen_entries") or None
+	)
+
+
+def _assert_posting_period_open(company: str, posting_date) -> None:
 	"""Refuse a posting date inside the frozen accounting period, in the user's language.
 
-	ERPNext enforces `Accounts Settings.acc_frozen_upto` when the GL is written —
-	that is, at submit. A draft dated inside a closed period therefore saved, was
-	listed, and only failed later with ERPNext's untranslated message, leaving a
-	document that exists in the entry list and nowhere in the trial balance. The
-	refusal belongs where the date is accepted.
+	ERPNext enforces the freeze when the GL is written — that is, at submit. A
+	draft dated inside a closed period therefore saved, was listed, and only
+	failed later with ERPNext's untranslated message, leaving a document that
+	exists in the entry list and nowhere in the trial balance. The refusal
+	belongs where the date is accepted.
 
 	Stock freezes are deliberately NOT consulted: a Journal Entry writes no stock
 	ledger, so blocking on `stock_frozen_upto` would refuse entries the ledger
 	itself accepts. (The SPA's warning banner takes the later of the two dates;
 	that is a banner, not the rule.)
 
-	`acc_frozen_upto` is inclusive, and the `frozen_accounts_modifier` role is
-	ERPNext's own exemption — the person whose job is correcting a closed period
-	keeps the only tool they have.
+	The date is inclusive, and `role_allowed_for_frozen_entries` is ERPNext's own
+	exemption — the person whose job is correcting a closed period keeps the only
+	tool they have.
 	"""
 	if not posting_date:
 		return
-	settings = frappe.get_single("Accounts Settings")
-	frozen_upto = settings.get("acc_frozen_upto") or None
+	frozen_upto, modifier = _accounting_freeze(company)
 	if not frozen_upto:
 		return
-	modifier = settings.get("frozen_accounts_modifier")
 	roles = set(frappe.get_roles())
 	if "System Manager" in roles or (modifier and modifier in roles):
 		return
@@ -1263,7 +1284,7 @@ def update_journal_entry(
 		)
 	_require_company(doc.company)
 	_assert_company_scope(doc.company)  # tenant isolation: reject a foreign company arg
-	_assert_posting_period_open(posting_date)
+	_assert_posting_period_open(doc.company, posting_date)
 
 	cleaned, any_non_base = _clean_je_rows(accounts, doc.company)
 
@@ -1354,7 +1375,7 @@ def create_journal_entry(
 	"""
 	_require_company(company)
 	_assert_company_scope(company)  # tenant isolation: reject a foreign company arg
-	_assert_posting_period_open(posting_date)
+	_assert_posting_period_open(company, posting_date)
 	cleaned, any_non_base = _clean_je_rows(accounts, company)
 
 	doc = frappe.new_doc("Journal Entry")
@@ -2005,23 +2026,31 @@ def list_cash_bank_accounts(company: str, limit: int = 100):
 
 
 @frappe.whitelist()
-def get_backdating_status() -> dict:
+def get_backdating_status(company: str) -> dict:
 	"""Effective ERPNext back-dating freeze for the CURRENT user — informational,
-	for the money-page banner. Any authenticated user may read.
+	for the money-page banner. Any authenticated user of the company may read.
 
 	Returns the earliest date the user can still post to (stock + accounting),
 	whether they're exempt (hold the override role / System Manager), and whether
 	a freeze is actively constraining them.
+
+	Takes a company because the accounting half of the answer is per-company on
+	ERPNext 16 — the stock half is still a site-wide single. Before that split
+	this endpoint read `Accounts Settings.acc_frozen_upto`, a field ERPNext had
+	already removed, so the accounting half of the banner had quietly been None
+	on every tenant: the warning that exists to answer "why can't I enter this
+	date" could not fire on the freeze that most often causes the question.
 	"""
 	if frappe.session.user == "Guest":
 		frappe.throw(_("Login required."), frappe.PermissionError)
+	_require_company(company)
+	_assert_company_scope(company)  # tenant isolation: reject a foreign company arg
 	from frappe.utils import add_days, getdate, nowdate
 
 	stk = frappe.get_single("Stock Settings")
-	acc = frappe.get_single("Accounts Settings")
 	days = cint(stk.get("stock_frozen_upto_days") or 0)
 	stock_fixed = stk.get("stock_frozen_upto") or None
-	acc_frozen = acc.get("acc_frozen_upto") or None
+	acc_frozen, acc_modifier = _accounting_freeze(company)
 
 	roles = set(frappe.get_roles())
 	exempt = (
@@ -2031,7 +2060,7 @@ def get_backdating_status() -> dict:
 			if stk.get("role_allowed_to_create_edit_back_dated_transactions")
 			else False
 		)
-		or (acc.get("frozen_accounts_modifier") in roles if acc.get("frozen_accounts_modifier") else False)
+		or (acc_modifier in roles if acc_modifier else False)
 	)
 
 	stock_candidates = []

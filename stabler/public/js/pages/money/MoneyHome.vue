@@ -15,7 +15,8 @@ const session = useSession();
 const backdating = ref(null);
 onMounted(async () => {
 	try {
-		backdating.value = await call("stabler.api.money.get_backdating_status");
+		if (!session.activeCompany) return;
+		backdating.value = await call("stabler.api.money.get_backdating_status", { company: session.activeCompany });
 	} catch {
 		backdating.value = null;
 	}

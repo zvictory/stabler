@@ -537,7 +537,7 @@ async function amendJE() {
 
 onMounted(async () => {
 	try {
-		backdating.value = await call("stabler.api.money.get_backdating_status");
+		backdating.value = await call("stabler.api.money.get_backdating_status", { company: activeCompany.value });
 	} catch {
 		backdating.value = null;
 	}
