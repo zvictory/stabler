@@ -6696,3 +6696,5 @@ Filled in to balance the entry,Filled in to balance the entry
 Move the date forward or open the posting window to save.,Move the date forward or open the posting window to save.
 Accounting is frozen before {0}.,Accounting is frozen before {0}.
 "A payment for this invoice has already been created and not submitted yet ({0}). Approve, submit or delete it before recording another.","A payment for this invoice has already been created and not submitted yet ({0}). Approve, submit or delete it before recording another."
+The expense may already have been recorded. Open the expense list and check before submitting again — a repeat posts a second journal entry.,The expense may already have been recorded. Open the expense list and check before submitting again — a repeat posts a second journal entry.
+The transfer may already have been recorded. Open the transfer list and check before submitting again — a repeat posts a second journal entry.,The transfer may already have been recorded. Open the transfer list and check before submitting again — a repeat posts a second journal entry.

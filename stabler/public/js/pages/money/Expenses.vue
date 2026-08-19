@@ -58,6 +58,13 @@ useEscapeBack(() => {
 }, "/money");
 const submitting = ref(false);
 const submitError = ref("");
+// A failed submit is not proof that nothing was written: the request can have
+// reached the server and posted the entry, and only the response gone missing
+// (gunicorn/nginx timeout on a shared bench). The form stays filled in, so the
+// obvious next move is to click Submit again — and nothing on the server stops
+// it. Two identical bank entries are indistinguishable apart from their serial.
+// Until the entry carries a payload-derived key, this warning is the guard.
+const resubmitWarning = ref(false);
 const editingName = ref("");
 
 const payAccounts = ref([]);
@@ -623,6 +630,7 @@ function removeLine(idx) {
 
 async function submitCreate(afterAction) {
 	submitError.value = "";
+	resubmitWarning.value = false;
 	persistSaveMode(afterAction);
 
 	if (afterAction === "clear") {
@@ -709,6 +717,7 @@ async function submitCreate(afterAction) {
 		}
 	} catch (err) {
 		submitError.value = err?.message || t("Failed to submit expense.");
+		resubmitWarning.value = true;
 	} finally {
 		submitting.value = false;
 	}
@@ -1034,7 +1043,10 @@ watch(activeCompany, () => {
 			</div>
 		</div>
 		<div class="card-body p-3 d-flex flex-column gap-3">
-					<div v-if="submitError" class="alert alert-danger mb-0">{{ submitError }}</div>
+					<div v-if="submitError" class="alert alert-danger mb-0">
+						{{ submitError }}
+						<div v-if="resubmitWarning" class="mt-2 small fw-bold">{{ t("The expense may already have been recorded. Open the expense list and check before submitting again — a repeat posts a second journal entry.") }}</div>
+					</div>
 
 					<!-- Panel A: Details (blue) -->
 					<div class="card card-sm mb-0" style="border: 1.5px solid var(--tblr-blue, #206bc4); border-radius: 6px">

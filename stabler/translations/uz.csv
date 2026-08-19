@@ -6301,3 +6301,5 @@ Filled in to balance the entry,Provodkani tenglashtirish uchun avtomatik to'ldir
 Move the date forward or open the posting window to save.,Saqlash uchun sanani oldinga suring yoki provodka oynasini oching.
 Accounting is frozen before {0}.,Buxgalteriya {0} sanasigacha yopilgan.
 "A payment for this invoice has already been created and not submitted yet ({0}). Approve, submit or delete it before recording another.","Bu hisob-faktura bo'yicha to'lov allaqachon yaratilgan va hali yuborilmagan ({0}). Boshqasini yozishdan oldin uni tasdiqlang, yuboring yoki o'chiring."
+The expense may already have been recorded. Open the expense list and check before submitting again — a repeat posts a second journal entry.,Xarajat allaqachon yozilgan bo'lishi mumkin. Qayta yuborishdan oldin xarajatlar ro'yxatini oching va tekshiring — takror ikkinchi provodkani yaratadi.
+The transfer may already have been recorded. Open the transfer list and check before submitting again — a repeat posts a second journal entry.,O'tkazma allaqachon yozilgan bo'lishi mumkin. Qayta yuborishdan oldin o'tkazmalar ro'yxatini oching va tekshiring — takror ikkinchi provodkani yaratadi.
