@@ -57,9 +57,6 @@ const usdMode = ref(null);
 
 const accountCurrency = computed(() => summary.value?.account_currency || currency.value);
 const accountTitle = computed(() => accountLabel(summary.value?.account_name) || accountName.value);
-const isMultiCurrency = computed(
-	() => accountCurrency.value && accountCurrency.value !== currency.value
-);
 // USD closing balance: the newest row's running_balance_usd.
 // In desc order (default) that's entries[0]; in asc order it's the last entry.
 const closingUsd = computed(() => {
@@ -293,13 +290,15 @@ watch(() => route.params.account, fetchLedger);
 							{{ formatMoney(summary?.closing_balance ?? 0, accountCurrency, user.language) }}
 						</div>
 					</div>
-					<div v-if="isMultiCurrency && !usdApplicable" class="col-12">
-						<div class="text-secondary small">{{ t("Closing in") }} {{ currency }}</div>
-						<div class="font-monospace">
-							{{ formatMoney(summary?.closing_balance ?? 0, currency, user.language) }}
-						</div>
-					</div>
-					<!-- USD closing (mutually exclusive with isMultiCurrency block above) -->
+					<!-- No base-currency "Closing in <currency>" row here: account_summary's
+					     closing_balance (money.py) is computed entirely in the account's own
+					     currency — every term is `..._in_account_currency`, no rate applied
+					     anywhere — so a converted figure isn't available to render correctly.
+					     The USD block below is the only base-equivalent this screen can show,
+					     and only covers a USD-base company (usdApplicable == case_b, where
+					     running_balance_base already IS the USD figure). It does not cover a
+					     non-USD-base company; rendering nothing is correct until a base-currency
+					     figure is actually computed server-side. -->
 					<div v-if="usdApplicable && closingUsd != null" class="col-12">
 						<div class="text-secondary small">{{ t("Closing in") }} USD</div>
 						<div
