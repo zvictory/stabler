@@ -1,4 +1,19 @@
-"""Add a durable Proforma Invoice link to supplier advance Payment Entries."""
+"""Add a durable Proforma Invoice link to supplier advance Payment Entries.
+
+Re-runnable. The backfill selects only payments whose link is still empty, so a
+second run converts nothing it has already converted — the property that matters
+because the second run is not hypothetical: `16328bf` records a site whose Patch
+Log claimed all 94 patches while 206 Custom Fields were missing, and the repair
+was to run modules by hand.
+
+Without that bound the scan re-selected every payment it had ever converted, plus
+every supplier advance created since — `imports_module/hooks.py:50-62` still
+keeps `Proforma Invoice` a valid reference doctype for a supplier, so a
+hand-built advance can be sitting in exactly the legacy shape today. For a draft
+the patch then stripped its reference rows and saved it: an advance in progress
+lost its Proforma relationship, `unallocated_amount` was recomputed, and if it
+was submitted afterwards the money sat in the ledger with nothing pointing back.
+"""
 
 from __future__ import annotations
 
@@ -22,14 +37,21 @@ def execute() -> None:
 			},
 		)
 	frappe.clear_cache(doctype="Payment Entry")
-	legacy_rows = frappe.get_all(
-		"Payment Entry Reference",
-		filters={"reference_doctype": "Proforma Invoice"},
-		fields=["parent", "reference_name"],
+	# Only payments that have not been converted yet are work. A child-table
+	# `get_all` cannot filter on a parent field, hence the join.
+	legacy_rows = frappe.db.sql(
+		"""
+		SELECT per.parent AS parent, per.reference_name AS reference_name
+		FROM `tabPayment Entry Reference` per
+		JOIN `tabPayment Entry` pe ON pe.name = per.parent
+		WHERE per.reference_doctype = 'Proforma Invoice'
+		  AND COALESCE(pe.custom_proforma_invoice, '') = ''
+		""",
+		as_dict=True,
 	)
 	proformas_by_payment: dict[str, set[str]] = {}
 	for row in legacy_rows:
-		proformas_by_payment.setdefault(row.parent, set()).add(row.reference_name)
+		proformas_by_payment.setdefault(row["parent"], set()).add(row["reference_name"])
 	for payment_entry, proformas in proformas_by_payment.items():
 		# The Stabler UI creates one PE per PI/stream. Do not guess when an old
 		# manually-created entry references several PIs.
