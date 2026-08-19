@@ -126,6 +126,20 @@ export function ratesToRefresh(rows, isForeign) {
 }
 
 /**
+ * Is this posting date inside the closed period?
+ *
+ * The warning band was computed and then ignored — Save never consulted it — so
+ * the draft saved and the refusal turned up at Submit instead, in ERPNext's own
+ * untranslated words, leaving a record that is in the list but not in the
+ * ledger. Both ISO dates, and the band reads "frozen BEFORE {date}", so the
+ * freeze date itself is an open day.
+ */
+export function isPostingFrozen(postingDate, freezeDate) {
+	if (!postingDate || !freezeDate) return false;
+	return postingDate < freezeDate;
+}
+
+/**
  * Cache key for the "Bal:" hint.
  *
  * The balance is asked for `as_of` the posting date but was cached under the

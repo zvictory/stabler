@@ -6,6 +6,7 @@ import {
 	computeBalancePlug,
 	describePlugResidual,
 	isDraftDirty,
+	isPostingFrozen,
 	isRowOrphaned,
 	postableRows,
 	ratesToRefresh,
@@ -248,6 +249,29 @@ describe("what the posting date owns", () => {
 	it("keys a balance to its date, not just its account", () => {
 		expect(balanceCacheKey("1110 - Kassa - MIK", "2026-07-31")).not.toBe(balanceCacheKey("1110 - Kassa - MIK", "2026-08-19"));
 		expect(balanceCacheKey("1110 - Kassa - MIK", "2026-07-31")).toBe(balanceCacheKey("1110 - Kassa - MIK", "2026-07-31"));
+	});
+});
+
+describe("isPostingFrozen — the date the ledger will not take", () => {
+	// The warning band was computed and then ignored: Save did not consult it,
+	// and neither did create/update_journal_entry. So the draft really saved,
+	// and the refusal arrived at Submit instead, in ERPNext's untranslated
+	// words — leaving a record that is in the list but not in the ledger, which
+	// is where "I entered it, why is it not in the trial balance" comes from.
+	it("refuses a date inside the frozen period", () => {
+		expect(isPostingFrozen("2026-07-15", "2026-08-01")).toBe(true);
+	});
+
+	// The band says "frozen BEFORE {date}", so the boundary day itself is open.
+	// Getting this off by one closes a period a day early, every period.
+	it("allows the freeze date itself, and everything after it", () => {
+		expect(isPostingFrozen("2026-08-01", "2026-08-01")).toBe(false);
+		expect(isPostingFrozen("2026-08-19", "2026-08-01")).toBe(false);
+	});
+
+	it("is not frozen when no window is set, or no date is chosen", () => {
+		expect(isPostingFrozen("2026-07-15", null)).toBe(false);
+		expect(isPostingFrozen("", "2026-08-01")).toBe(false);
 	});
 });
 

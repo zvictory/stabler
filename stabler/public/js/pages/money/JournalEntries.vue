@@ -11,6 +11,7 @@ import {
 	computeBalancePlug,
 	describePlugResidual,
 	isDraftDirty,
+	isPostingFrozen,
 	isRowOrphaned,
 	postableRows,
 	ratesToRefresh,
@@ -260,7 +261,7 @@ const freezeDate = computed(() => {
 	const dates = [b.stock_earliest_date, b.acc_earliest_date].filter(Boolean);
 	return dates.length ? dates.sort().reverse()[0] : null;
 });
-const postingFrozen = computed(() => !!freezeDate.value && !!form.value.posting_date && form.value.posting_date < freezeDate.value);
+const postingFrozen = computed(() => isPostingFrozen(form.value.posting_date, freezeDate.value));
 
 // The cancelled JE this draft amends (set by amendJE), passed through on save.
 const amendedFrom = ref(null);
@@ -426,6 +427,11 @@ function runAutoBalance(editedIdx) {
 async function submitForm() {
 	submitError.value = "";
 	if (!activeCompany.value) return (submitError.value = t("Select a company first."));
+	// The band alone was the whole enforcement: the draft used to save and the
+	// refusal arrived at Submit, from ERPNext, untranslated.
+	if (postingFrozen.value) {
+		return (submitError.value = t("Backdated postings are frozen before {0}.").replace("{0}", formatDate(freezeDate.value)));
+	}
 	if (!balanced.value) {
 		submitError.value = `${t("Debit")} ${totalDebit.value.toFixed(2)} ≠ ${t("Credit")} ${totalCredit.value.toFixed(2)}`;
 		return;
@@ -687,7 +693,10 @@ watch(() => form.value.posting_date, (d) => {
 					<div v-if="submitError" class="alert alert-danger">{{ submitError }}</div>
 					<div v-if="postingFrozen" class="alert alert-warning py-2 px-3 d-flex align-items-center">
 						<i class="ti ti-calendar-lock me-2"></i>
-						<span class="flex-fill small">{{ t("Backdated postings are frozen before {0}.").replace("{0}", formatDate(freezeDate)) }}</span>
+						<span class="flex-fill small">
+							{{ t("Backdated postings are frozen before {0}.").replace("{0}", formatDate(freezeDate)) }}
+							{{ t("Move the date forward or open the posting window to save.") }}
+						</span>
 						<RouterLink to="/admin/posting-window" class="small text-reset text-decoration-underline ms-2">{{ t("Change") }}</RouterLink>
 					</div>
 
@@ -764,7 +773,7 @@ watch(() => form.value.posting_date, (d) => {
 
 					<div class="d-flex justify-content-end gap-2 mt-3">
 						<button type="button" class="btn btn-link link-secondary" :disabled="submitting" @click="requestCancelEdit">{{ t("Cancel") }}</button>
-						<button type="button" class="btn btn-primary" :disabled="submitting || !balanced || accountsLoading" @click="submitForm">
+						<button type="button" class="btn btn-primary" :disabled="submitting || !balanced || accountsLoading || postingFrozen" @click="submitForm">
 							<span v-if="submitting" class="spinner-border spinner-border-sm me-1"></span>
 							{{ isEdit ? t("Save changes") : t("Save as Draft") }}
 						</button>
