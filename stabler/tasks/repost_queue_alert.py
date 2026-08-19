@@ -80,7 +80,17 @@ def _any_company_guarded() -> bool:
 
 
 def _announce(subject: str, msg: str) -> None:
-	"""Same notification path as tasks/eta_payment_alert.py — no new plumbing."""
+	"""Same notification path as tasks/eta_payment_alert.py — no new plumbing.
+
+	Deduped per calendar day, not on the message body: `queued`/`failed`/
+	`oldest_queued` drift on every call, so keying on the rendered text would
+	barely dedupe at all. The day is the stable "same underlying situation" —
+	a re-run today must not re-announce, but this is a *daily* alarm, so an
+	unhealthy queue must still raise a fresh one tomorrow.
+	"""
+	subject = f"{subject} ({today()})"
+	if frappe.db.exists("Notification Log", {"for_user": "Administrator", "subject": subject}):
+		return
 	try:
 		notification = frappe.new_doc("Notification Log")
 		notification.for_user = "Administrator"
