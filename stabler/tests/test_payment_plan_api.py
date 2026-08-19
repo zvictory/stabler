@@ -224,6 +224,49 @@ class PaymentPlanPayloadTest(unittest.TestCase):
 		self.assertNotIn("docstatus", module.clean_payload({"kind": "Expense", "docstatus": 1}))
 
 
+class PaymentPlanRepeatTest(unittest.TestCase):
+	"""Rent, salary and instalments are the whole reason anyone keeps a plan, and
+	they are the rows nobody wants to type twelve times. The series is generated
+	server-side, in one transaction, from a pure function."""
+
+	def test_no_repeat_is_a_single_date(self):
+		module, _ = _load_api(roles=(USER_ROLE,))
+		self.assertEqual(module.repeat_dates("2026-09-10", None, 0), ["2026-09-10"])
+
+	def test_weekly_steps_by_seven_days(self):
+		module, _ = _load_api(roles=(USER_ROLE,))
+		self.assertEqual(
+			module.repeat_dates("2026-09-10", "Weekly", 3),
+			["2026-09-10", "2026-09-17", "2026-09-24"],
+		)
+
+	def test_monthly_keeps_the_day_of_month(self):
+		module, _ = _load_api(roles=(USER_ROLE,))
+		self.assertEqual(
+			module.repeat_dates("2026-09-10", "Monthly", 3),
+			["2026-09-10", "2026-10-10", "2026-11-10"],
+		)
+
+	def test_a_month_end_date_clamps_instead_of_overflowing(self):
+		"""The 31st plus one month is not the 1st of the month after. Naive day
+		arithmetic silently moves a January salary plan into March."""
+		module, _ = _load_api(roles=(USER_ROLE,))
+		self.assertEqual(
+			module.repeat_dates("2026-01-31", "Monthly", 4),
+			["2026-01-31", "2026-02-28", "2026-03-31", "2026-04-30"],
+		)
+
+	def test_the_series_crosses_a_year(self):
+		module, _ = _load_api(roles=(USER_ROLE,))
+		self.assertEqual(module.repeat_dates("2026-11-05", "Monthly", 3)[-1], "2027-01-05")
+
+	def test_the_series_is_capped(self):
+		"""An unbounded count is a way to write a million rows from one form
+		submit; the form offers at most twelve."""
+		module, _ = _load_api(roles=(USER_ROLE,))
+		self.assertEqual(len(module.repeat_dates("2026-09-10", "Monthly", 9999)), module.MAX_REPEAT)
+
+
 class PaymentPlanEndpointGuardTest(unittest.TestCase):
 	"""Source-level guards. ``@frappe.whitelist()`` gates method access only —
 	any logged-in user on any tenant can call the method, so the gate has to be

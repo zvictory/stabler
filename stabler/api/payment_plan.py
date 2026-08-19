@@ -12,6 +12,9 @@ Entry anywhere in this file and a test asserts that absence.
 
 from __future__ import annotations
 
+import calendar
+from datetime import date, timedelta
+
 import frappe
 from frappe import _
 from frappe.utils import cint, flt
@@ -111,6 +114,34 @@ _REFERENCE_MAP = {
 		"date": "expected_payment_date",
 	},
 }
+
+
+# One form submit may write at most a year of rows. Without a cap, a count is a
+# way to turn a single click into a million documents.
+MAX_REPEAT = 12
+
+
+def repeat_dates(due_date, repeat, count) -> list[str]:
+	"""The due dates a repeating plan occupies, starting at `due_date`.
+
+	Month steps clamp to the end of the target month: the 31st plus one month is
+	the 28th/29th/30th, not the 1st of the month after. Naive day arithmetic
+	moves a January salary plan into March and nobody notices until the forecast
+	is short a month.
+	"""
+	start = due_date if isinstance(due_date, date) else date.fromisoformat(str(due_date)[:10])
+	count = max(1, min(cint(count) or 1, MAX_REPEAT))
+	if repeat == "Weekly":
+		return [(start + timedelta(days=7 * i)).isoformat() for i in range(count)]
+	if repeat == "Monthly":
+		out = []
+		for i in range(count):
+			month_index = start.month - 1 + i
+			year = start.year + month_index // 12
+			month = month_index % 12 + 1
+			out.append(date(year, month, min(start.day, calendar.monthrange(year, month)[1])).isoformat())
+		return out
+	return [start.isoformat()]
 
 
 def _require_payment_calendar() -> None:
@@ -289,7 +320,7 @@ def payment_plan_totals(company: str, from_date: str, to_date: str):
 
 
 @frappe.whitelist()
-def save_payment_plan_entry(company: str, payload, name=None):
+def save_payment_plan_entry(company: str, payload, name=None, repeat=None, repeat_count=1):
 	"""Create or update one plan row.
 
 	`owner_user` is never read off the payload: on create it is the session, and
@@ -319,7 +350,27 @@ def save_payment_plan_entry(company: str, payload, name=None):
 		setattr(doc, field, value)
 	doc.party_name = _party_name(doc.party_type, doc.party)
 	doc.save()
-	return doc.name
+
+	if name or repeat in (None, "", "Once"):
+		return [doc.name]
+	# The first row is already saved; the rest of the series repeats it. Written
+	# in one request so a half-entered year cannot survive a lost connection.
+	names = [doc.name]
+	for due in repeat_dates(doc.due_date, repeat, repeat_count)[1:]:
+		clone = frappe.new_doc(DOCTYPE)
+		clone.company = company
+		clone.owner_user = frappe.session.user
+		for field, value in values.items():
+			setattr(clone, field, value)
+		clone.due_date = due
+		# A repeat is a forecast, never a settled row: a series marked Realized
+		# would claim eleven future payments already happened.
+		clone.status = "Planned"
+		clone.realized_on = None
+		clone.party_name = doc.party_name
+		clone.save()
+		names.append(clone.name)
+	return names
 
 
 def _party_name(party_type, party) -> str:
