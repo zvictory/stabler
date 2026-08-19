@@ -4,11 +4,23 @@ import { storeToRefs } from "pinia";
 import { useRoute } from "vue-router";
 import { useSession } from "../../stores/session.js";
 import { call } from "../../api/client.js";
-import { formatMoney, moneyEpsilon, moneyFractionDigits } from "../../composables/money.js";
-import { computeBalancePlug, isDraftDirty, snapshotDraft } from "../../composables/journal.js";
+import { formatMoney, moneyFractionDigits } from "../../composables/money.js";
+import {
+	balanceCacheKey,
+	balanceTolerance,
+	computeBalancePlug,
+	describePlugResidual,
+	isDraftDirty,
+	isPostingFrozen,
+	isRowOrphaned,
+	postableRows,
+	ratesToRefresh,
+	snapshotDraft,
+} from "../../composables/journal.js";
 import { formatDate, formatDateTime, todayIso, daysAgoIso} from "../../composables/date.js";
 import { t } from "../../composables/i18n.js";
 import { accountLabel } from "../../composables/accounts.js";
+import { getDocstatusLabel, getStatusBadgeClass } from "../../composables/status.js";
 import MoneyInput from "../../components/MoneyInput.vue";
 import DateInput from "../../components/DateInput.vue";
 import EmptyState from "../../components/EmptyState.vue";
@@ -74,11 +86,15 @@ const accountOptions = ref([]);
 
 // `_auto` marks an amount this form derived rather than one the user typed.
 // It is a UI concern only — submitForm rebuilds the payload field by field.
-const emptyRow = () => ({ account: "", account_currency: "", party_type: "", party: "", party_name: "", exchange_rate: 1, debit: null, credit: null, _auto: false });
+// `_rateTouched` marks a rate the user typed over — the bank's, the
+// contract's — so moving the posting date does not quietly undo it.
+const emptyRow = () => ({ account: "", account_currency: "", party_type: "", party: "", party_name: "", exchange_rate: 1, debit: null, credit: null, _auto: false, _rateTouched: false });
 const form = ref(blankForm());
 const editName = ref(null);
 // The draft as it was opened — what "dirty" is measured against.
 const pristine = ref(null);
+// The posting date this draft was opened with; see the watcher at the bottom.
+let formDate = null;
 const isEdit = computed(() => !!editName.value);
 
 const PARTY_TYPES = computed(() => [
@@ -98,26 +114,47 @@ const currency = currencyCode;
 // A line is "foreign" when its account currency differs from the company base.
 const isForeign = (r) => !!r.account_currency && r.account_currency !== currencyCode.value;
 const rateOf = (r) => (isForeign(r) ? Number(r.exchange_rate) || 0 : 1);
-const isMultiCurrency = computed(() => form.value.accounts.some(isForeign));
-const baseDebit = computed(() => form.value.accounts.reduce((s, r) => s + (Number(r.debit) || 0) * rateOf(r), 0));
-const baseCredit = computed(() => form.value.accounts.reduce((s, r) => s + (Number(r.credit) || 0) * rateOf(r), 0));
+// The entry as the server will see it. An amount on a line whose account is
+// still blank is dropped by submitForm and again by _clean_je_rows, so it must
+// not reach the totals either — see postableRows() for what that cost.
+const postable = computed(() => postableRows(form.value.accounts));
+const isMultiCurrency = computed(() => postable.value.some(isForeign));
+const baseDebit = computed(() => postable.value.reduce((s, r) => s + (Number(r.debit) || 0) * rateOf(r), 0));
+const baseCredit = computed(() => postable.value.reduce((s, r) => s + (Number(r.credit) || 0) * rateOf(r), 0));
 const baseLine = (r) => (Number(r.debit) || Number(r.credit) || 0) * rateOf(r);
 
 // Single-currency: balance in that currency. Multi-currency: balance in the
 // company base (each leg × its rate); sub-unit residuals are sealed by the JE
 // FX hook, so allow a tiny tolerance. Foreign legs must carry a positive rate.
-const totalDebit = computed(() => form.value.accounts.reduce((s, r) => s + (Number(r.debit) || 0), 0));
-const totalCredit = computed(() => form.value.accounts.reduce((s, r) => s + (Number(r.credit) || 0), 0));
+const totalDebit = computed(() => postable.value.reduce((s, r) => s + (Number(r.debit) || 0), 0));
+const totalCredit = computed(() => postable.value.reduce((s, r) => s + (Number(r.credit) || 0), 0));
 const diff = computed(() => (isMultiCurrency.value ? baseDebit.value - baseCredit.value : totalDebit.value - totalCredit.value));
-const balanced = computed(() => {
-	if (isMultiCurrency.value) {
-		const ratesOk = form.value.accounts.every((r) => !isForeign(r) || rateOf(r) > 0);
-		return ratesOk && Math.abs(diff.value) < 1;
-	}
-	// Not a hardcoded 0.01: UZS has no fractional unit, so its epsilon is half
-	// a so'm. Mirrors money_epsilon() in stabler/api/_money.py.
-	return Math.abs(diff.value) < moneyEpsilon(currencyCode.value) * 2;
+
+// THE CONTRACT, stated once. balanceTolerance() mirrors residual_tolerance()
+// in stabler/api/_fx_residual.py — the FX hook's threshold, and the last word
+// on whether a document actually saves.
+//
+// The Math.min is the part that should not have to exist. api/money.py's
+// _clean_je_rows rejects the payload BEFORE the hook can run, at a flat
+// `1.0 if saw_foreign else 0.01` — two constants that know nothing about the
+// base currency or the number of lines. Until they are derived from
+// residual_tolerance(len(cleaned), base_precision_for(base_currency)) too, the
+// form has to obey whichever gate is tighter, or it goes green on a payload
+// the server throws straight out. Delete the Math.min when that lands.
+const balanceTol = computed(() => {
+	const ledger = balanceTolerance(postable.value.length, moneyFractionDigits(currencyCode.value));
+	return Math.min(ledger, isMultiCurrency.value ? 1 : 0.01);
 });
+const balanced = computed(() => {
+	if (isMultiCurrency.value && !postable.value.every((r) => !isForeign(r) || rateOf(r) > 0)) return false;
+	// +1e-9 as in within_tolerance(): two exactly equal sums can still land an
+	// ulp apart, and a form that calls that an imbalance cannot be satisfied.
+	return Math.abs(diff.value) <= balanceTol.value + 1e-9;
+});
+
+// One line under the badge when the plug had to land on a foreign account and
+// its own rounding is what is holding Save shut. See describePlugResidual().
+const plugResidual = computed(() => describePlugResidual(form.value.accounts, { rateOf, tolerance: balanceTol.value }));
 
 // Readable "1 strong = N weak" quote for a line (always the ≥1 direction).
 const rateQuote = (row) => readableRate(row.exchange_rate, row.account_currency, currencyCode.value);
@@ -128,10 +165,16 @@ function viewQuote(a) {
 	return q ? `1 ${q.strong} = ${fmtRate(q.value)} ${q.weak}` : "";
 }
 // User edits the readable N; store it back as the ERPNext per-line rate.
+// Correcting a rate to the bank's or the contract's is the rule in a
+// multi-currency entry, not the exception, and it moves every base figure the
+// balance is measured in — so the plug has to be re-derived with it. -1: no
+// line is off-limits; a rate is not an amount the user typed into a side.
 function setRateQuote(row, val) {
 	const q = rateQuote(row);
 	if (!q) return;
 	row.exchange_rate = toLineRate(val, q.strong, row.account_currency);
+	row._rateTouched = true;
+	runAutoBalance(-1);
 }
 
 async function fetchRate(row) {
@@ -147,13 +190,6 @@ async function fetchRate(row) {
 		/* leave the rate for the user to enter */
 	}
 }
-
-const statusBadge = (d) => {
-	if (d === 0) return { cls: "bg-yellow-lt", label: t("Draft") };
-	if (d === 1) return { cls: "bg-green-lt", label: t("Submitted") };
-	if (d === 2) return { cls: "bg-red-lt", label: t("Cancelled") };
-	return { cls: "bg-secondary-lt", label: String(d) };
-};
 
 // ── Party + account pickers ──────────────────────────────────────────────────
 function searchParty(row) {
@@ -176,6 +212,7 @@ function onPartyTypeChange(row) { row.party = ""; row.party_name = ""; }
 function onAccountChange(row) {
 	const a = accountOptions.value.find((o) => o.name === row.account);
 	row.account_currency = (a && a.account_currency) || currencyCode.value;
+	row._rateTouched = false; // a different account is a different rate question
 	if (isForeign(row)) {
 		if (!(Number(row.exchange_rate) > 0) || row.exchange_rate === 1) fetchRate(row);
 	} else {
@@ -184,23 +221,30 @@ function onAccountChange(row) {
 	loadAcctBalance(row.account);
 }
 
-// ── Current account balance hint (cached per account) ────────────────────────
+// ── Current account balance hint (cached per account AND date) ───────────────
+// The figure is asked for `as_of` the posting date, so the date belongs in the
+// key; caching it under the account alone left July's balance on screen next to
+// an August entry, and "what is in the till" is exactly the decision it is for.
 const acctBalances = ref({});
 async function loadAcctBalance(account) {
-	if (!account || !activeCompany.value || acctBalances.value[account]) return;
+	const key = balanceCacheKey(account, form.value.posting_date);
+	if (!account || !activeCompany.value || acctBalances.value[key]) return;
 	try {
 		const b = await call("stabler.api.money.account_balance", {
 			company: activeCompany.value, account, as_of: form.value.posting_date,
 		});
-		acctBalances.value = { ...acctBalances.value, [account]: b };
+		acctBalances.value = { ...acctBalances.value, [key]: b };
 	} catch {
 		/* hint is best-effort */
 	}
 }
 function acctBalanceText(account) {
-	const b = acctBalances.value[account];
+	const b = acctBalances.value[balanceCacheKey(account, form.value.posting_date)];
 	if (!b) return "";
-	return `${t("Bal")}: ${formatMoney(b.balance_acc ?? b.balance_base, b.account_currency || currencyCode.value, user.value.language)}`;
+	const amount = formatMoney(b.balance_acc ?? b.balance_base, b.account_currency || currencyCode.value, user.value.language);
+	// The date is not decoration: the hint answers a different question on
+	// every posting date, and it used to answer all of them the same way.
+	return `${t("Bal")}: ${amount} · ${formatDate(form.value.posting_date)}`;
 }
 
 // ── Contextual back-dating freeze (same source as the money-page banner) ──────
@@ -211,7 +255,7 @@ const freezeDate = computed(() => {
 	const dates = [b.stock_earliest_date, b.acc_earliest_date].filter(Boolean);
 	return dates.length ? dates.sort().reverse()[0] : null;
 });
-const postingFrozen = computed(() => !!freezeDate.value && !!form.value.posting_date && form.value.posting_date < freezeDate.value);
+const postingFrozen = computed(() => isPostingFrozen(form.value.posting_date, freezeDate.value));
 
 // The cancelled JE this draft amends (set by amendJE), passed through on save.
 const amendedFrom = ref(null);
@@ -268,6 +312,7 @@ async function select(name) {
 // ── Create / edit ────────────────────────────────────────────────────────────
 async function openCreate() {
 	form.value = blankForm();
+	formDate = form.value.posting_date;
 	editName.value = null;
 	amendedFrom.value = null;
 	submitError.value = "";
@@ -298,8 +343,10 @@ async function openEdit(d) {
 				debit: a.debit_in_account_currency || null,
 				credit: a.credit_in_account_currency || null,
 				_auto: false, // an amount already posted is the user's, never ours to replace
+				_rateTouched: false, // …but its rate follows the date until the user says otherwise
 			})),
 	};
+	formDate = form.value.posting_date;
 	while (form.value.accounts.length < 2) form.value.accounts.push(emptyRow());
 	form.value.accounts.forEach((r) => r.account && loadAcctBalance(r.account));
 	pristine.value = snapshotDraft(form.value);
@@ -332,7 +379,14 @@ function cancelEdit() {
 }
 
 function addRow() { form.value.accounts.push(emptyRow()); }
-function removeRow(idx) { if (form.value.accounts.length > 2) form.value.accounts.splice(idx, 1); }
+// The button used to be disabled at two lines, so on a two-line entry the wrong
+// line could not be deleted at all. Delete it and get a fresh blank one back.
+// -1: no line is off-limits, because nothing here is an amount the user typed.
+function removeRow(idx) {
+	form.value.accounts.splice(idx, 1);
+	while (form.value.accounts.length < 2) form.value.accounts.push(emptyRow());
+	runAutoBalance(-1);
+}
 // Both of these used to fire on @blur, so a row could hold a debit AND a
 // credit while it had focus — the balance badge read "Balanced" on data the
 // server rejects outright (api/money.py:_clean_je_rows). They run on the model
@@ -343,6 +397,11 @@ function onAmountInput(row, idx, side) {
 	row._auto = false; // the user typed here; this amount is data now, not a derivation
 	runAutoBalance(idx);
 }
+
+// A number this form derived and one the user typed used to look identical on
+// screen. They are not the same kind of thing: the derived one is live and will
+// change under you.
+const isAutoAmount = (row, side) => !!row._auto && !!Number(row[side]);
 
 // Fills the counter-line so an opening balance does not have to be added up by
 // hand. Never touches an amount the user typed — see composables/journal.js.
@@ -362,8 +421,18 @@ function runAutoBalance(editedIdx) {
 async function submitForm() {
 	submitError.value = "";
 	if (!activeCompany.value) return (submitError.value = t("Select a company first."));
+	// The band alone was the whole enforcement: the draft used to save and the
+	// refusal arrived at Submit, from ERPNext, untranslated.
+	if (postingFrozen.value) {
+		return (submitError.value = t("Backdated postings are frozen before {0}.").replace("{0}", formatDate(freezeDate.value)));
+	}
 	if (!balanced.value) {
-		submitError.value = `${t("Debit")} ${totalDebit.value.toFixed(2)} ≠ ${t("Credit")} ${totalCredit.value.toFixed(2)}`;
+		// The two figures the badge is already showing, formatted the way the rest
+		// of the screen formats money: .toFixed(2) printed "12000000.00" under a
+		// footer that said "12 000 000 сўм" for the same amount.
+		const shownDebit = isMultiCurrency.value ? baseDebit.value : totalDebit.value;
+		const shownCredit = isMultiCurrency.value ? baseCredit.value : totalCredit.value;
+		submitError.value = `${t("Debit")} ${formatMoney(shownDebit, currencyCode.value, user.value.language)} ≠ ${t("Credit")} ${formatMoney(shownCredit, currencyCode.value, user.value.language)}`;
 		return;
 	}
 	const accounts = form.value.accounts
@@ -388,6 +457,8 @@ async function submitForm() {
 			});
 			amendedFrom.value = null;
 		}
+		// The entry that just moved these balances is one of them now.
+		acctBalances.value = {};
 		await load();
 		if (res?.name) await select(res.name);
 		else pane.value = "empty";
@@ -410,6 +481,7 @@ async function submitJE() {
 	acting.value = true;
 	try {
 		await call("stabler.api.money.submit_journal_entry", { name: detail.value.name, modified: detail.value.modified });
+		acctBalances.value = {}; // this entry is in the ledger now
 		toast.success(t("Journal entry submitted."));
 		await load();
 		await select(detail.value.name);
@@ -431,6 +503,7 @@ async function cancelJE() {
 	acting.value = true;
 	try {
 		await call("stabler.api.money.cancel_journal_entry", { name: detail.value.name, modified: detail.value.modified });
+		acctBalances.value = {}; // its postings are reversed out of these balances
 		toast.success(t("Journal entry cancelled."));
 		await load();
 		await select(detail.value.name);
@@ -462,11 +535,25 @@ onMounted(async () => {
 });
 watch(activeCompany, () => {
 	accountOptions.value = [];
+	acctBalances.value = {}; // another company's ledger, not this one's
 	pane.value = "empty";
 	detail.value = null;
 	load();
 });
 watch(statusFilter, load);
+
+// The posting date decides two things nothing was watching: the exchange rate
+// the entry is booked at, and which day the "Bal:" hint is answering for. One
+// watcher closes both. `formDate` is what the draft was opened with, so
+// installing a different draft is not mistaken for the user moving the date —
+// that would rewrite the rates a saved draft was created with.
+watch(() => form.value.posting_date, (d) => {
+	if (d === formDate) return;
+	formDate = d;
+	acctBalances.value = {};
+	ratesToRefresh(form.value.accounts, isForeign).forEach(fetchRate);
+	form.value.accounts.forEach((r) => r.account && loadAcctBalance(r.account));
+});
 </script>
 
 <template>
@@ -489,9 +576,17 @@ watch(statusFilter, load);
 			<div class="col-12 col-md-5 col-lg-4 border-end">
 				<div style="max-height: calc(100vh - 12rem); overflow-y: auto">
 					<table class="table table-sm table-hover mb-0">
+						<thead><tr>
+							<th>{{ t("Entry") }}</th>
+							<!-- The figure is total_debit_base — the COMPANY's currency, not the
+							     entry's. Unlabelled, a multi-currency entry's so'm total read as
+							     the USD figure the user had just typed. The detail table has
+							     said "Total (UZS)" over the same number all along. -->
+							<th class="text-end">{{ t("Total") }} ({{ currency }})</th>
+						</tr></thead>
 						<SkeletonRows v-if="loading" :rows="12" :cols="2" />
 						<tbody v-else>
-							<tr v-if="!rows.length"><td class="text-secondary text-center py-4">{{ t("No journal entries in this range") }}</td></tr>
+							<tr v-if="!rows.length"><td colspan="2" class="text-secondary text-center py-4">{{ t("No journal entries in this range") }}</td></tr>
 							<tr
 								v-for="r in rows"
 								:key="r.name"
@@ -506,7 +601,7 @@ watch(statusFilter, load);
 									</div>
 									<div v-if="r.user_remark" class="small text-truncate" style="max-width: 220px">{{ r.user_remark }}</div>
 									<div class="small text-secondary">{{ formatDate(r.posting_date) }} ·
-										<span class="badge" :class="statusBadge(r.docstatus).cls">{{ statusBadge(r.docstatus).label }}</span>
+										<span class="badge" :class="getStatusBadgeClass('Journal Entry', r.docstatus)">{{ getDocstatusLabel(r.docstatus) }}</span>
 									</div>
 								</td>
 								<td class="text-end font-monospace align-middle">{{ formatMoney(r.total_debit_base, r.base_currency || currency, user.language) }}</td>
@@ -538,7 +633,7 @@ watch(statusFilter, load);
 							<div>
 								<h3 class="m-0 font-monospace">{{ detail.name }}</h3>
 								<div class="small text-secondary">{{ formatDateTime(detail.posting_date) }} · {{ detail.voucher_type }}
-									· <span class="badge" :class="statusBadge(detail.docstatus).cls">{{ statusBadge(detail.docstatus).label }}</span>
+									· <span class="badge" :class="getStatusBadgeClass('Journal Entry', detail.docstatus)">{{ getDocstatusLabel(detail.docstatus) }}</span>
 								</div>
 							</div>
 							<div class="d-flex gap-2">
@@ -605,7 +700,10 @@ watch(statusFilter, load);
 					<div v-if="submitError" class="alert alert-danger">{{ submitError }}</div>
 					<div v-if="postingFrozen" class="alert alert-warning py-2 px-3 d-flex align-items-center">
 						<i class="ti ti-calendar-lock me-2"></i>
-						<span class="flex-fill small">{{ t("Backdated postings are frozen before {0}.").replace("{0}", formatDate(freezeDate)) }}</span>
+						<span class="flex-fill small">
+							{{ t("Backdated postings are frozen before {0}.").replace("{0}", formatDate(freezeDate)) }}
+							{{ t("Move the date forward or open the posting window to save.") }}
+						</span>
 						<RouterLink to="/admin/posting-window" class="small text-reset text-decoration-underline ms-2">{{ t("Change") }}</RouterLink>
 					</div>
 
@@ -628,10 +726,11 @@ watch(statusFilter, load);
 						<tbody>
 							<tr v-for="(row, idx) in form.accounts" :key="idx">
 								<td>
-									<Select v-model="row.account" size="sm" :options="accountOptions" value-key="name" :placeholder="t('— Choose account —')" @change="onAccountPicked(row, idx)">
+									<Select v-model="row.account" size="sm" :class="{ 'is-invalid': isRowOrphaned(row) }" :options="accountOptions" value-key="name" :placeholder="t('— Choose account —')" @change="onAccountPicked(row, idx)">
 										<template #option="{ option }">{{ option.account_number ? `${option.account_number} · ` : "" }}{{ accountLabel(option) }}</template>
 										<template #selected="{ option }">{{ option.account_number ? `${option.account_number} · ` : "" }}{{ accountLabel(option) }}</template>
 									</Select>
+									<div v-if="isRowOrphaned(row)" class="text-danger je-hint mt-1">{{ t("No account — this line is not counted.") }}</div>
 									<div v-if="row.account" class="d-flex align-items-center gap-1 mt-1">
 										<span class="badge bg-secondary-lt text-uppercase je-ccy">{{ row.account_currency || currencyCode }}</span>
 										<span v-if="acctBalanceText(row.account)" class="text-secondary je-hint">{{ acctBalanceText(row.account) }}</span>
@@ -653,9 +752,13 @@ watch(statusFilter, load);
 									</template>
 									<span v-else class="text-secondary small">1</span>
 								</td>
-								<td><MoneyInput v-model="row.debit" :currency="row.account_currency || currencyCode" hide-currency :language="user.language" size="sm" @update:model-value="onAmountInput(row, idx, 'debit')" /></td>
-								<td><MoneyInput v-model="row.credit" :currency="row.account_currency || currencyCode" hide-currency :language="user.language" size="sm" @update:model-value="onAmountInput(row, idx, 'credit')" /></td>
-								<td><button type="button" class="btn btn-sm btn-ghost-danger" :disabled="form.accounts.length <= 2" @click="removeRow(idx)"><i class="ti ti-trash"></i></button></td>
+								<td :class="{ 'je-auto': isAutoAmount(row, 'debit') }" :title="isAutoAmount(row, 'debit') ? t('Filled in to balance the entry') : null">
+									<MoneyInput v-model="row.debit" :currency="row.account_currency || currencyCode" hide-currency :language="user.language" size="sm" @update:model-value="onAmountInput(row, idx, 'debit')" />
+								</td>
+								<td :class="{ 'je-auto': isAutoAmount(row, 'credit') }" :title="isAutoAmount(row, 'credit') ? t('Filled in to balance the entry') : null">
+									<MoneyInput v-model="row.credit" :currency="row.account_currency || currencyCode" hide-currency :language="user.language" size="sm" @update:model-value="onAmountInput(row, idx, 'credit')" />
+								</td>
+								<td><button type="button" class="btn btn-sm btn-ghost-danger" @click="removeRow(idx)"><i class="ti ti-trash"></i></button></td>
 							</tr>
 						</tbody>
 						<tfoot>
@@ -665,13 +768,19 @@ watch(statusFilter, load);
 								<td class="text-end font-monospace">{{ formatMoney(isMultiCurrency ? baseCredit : totalCredit, currencyCode, user.language) }}</td>
 								<td><span class="badge" :class="balanced ? 'bg-green-lt' : 'bg-red-lt'">{{ balanced ? t("Balanced") : "Δ " + formatMoney(diff, currencyCode, user.language) }}</span></td>
 							</tr>
+							<tr v-if="plugResidual"><td colspan="6" class="text-warning small fw-normal pt-0">
+								{{ t("{0} converts to {1}; the other lines come to {2}.")
+									.replace("{0}", formatMoney(plugResidual.amount, plugResidual.currency || currencyCode, user.language))
+									.replace("{1}", formatMoney(plugResidual.base, currencyCode, user.language))
+									.replace("{2}", formatMoney(plugResidual.counterBase, currencyCode, user.language)) }}
+							</td></tr>
 							<tr v-if="isMultiCurrency"><td colspan="6" class="text-secondary small fw-normal pt-0">{{ t("Totals shown in base currency ({0}).").replace("{0}", currencyCode) }}</td></tr>
 						</tfoot>
 					</table>
 
 					<div class="d-flex justify-content-end gap-2 mt-3">
 						<button type="button" class="btn btn-link link-secondary" :disabled="submitting" @click="requestCancelEdit">{{ t("Cancel") }}</button>
-						<button type="button" class="btn btn-primary" :disabled="submitting || !balanced || accountsLoading" @click="submitForm">
+						<button type="button" class="btn btn-primary" :disabled="submitting || !balanced || accountsLoading || postingFrozen" @click="submitForm">
 							<span v-if="submitting" class="spinner-border spinner-border-sm me-1"></span>
 							{{ isEdit ? t("Save changes") : t("Save as Draft") }}
 						</button>
@@ -694,5 +803,11 @@ watch(statusFilter, load);
 .je-ccy {
 	font-size: 0.65rem;
 	padding: 0.1rem 0.3rem;
+}
+/* An amount the form worked out for itself. It is live — it changes as the
+   other lines change — and it looked exactly like a figure the user had typed,
+   which is the whole reason a stale plug went unnoticed. */
+.je-auto {
+	background-color: var(--tblr-primary-lt, rgba(32, 107, 196, 0.06));
 }
 </style>
