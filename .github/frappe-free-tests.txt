@@ -77,6 +77,7 @@ stabler.tests.test_master_read_permission
 stabler.tests.test_no_inline_dropdowns
 stabler.tests.test_operations_desk_source
 stabler.tests.test_packing_math
+stabler.tests.test_patch_custom_field_defaults
 stabler.tests.test_payroll_adapter
 stabler.tests.test_payroll_calc
 stabler.tests.test_payroll_components

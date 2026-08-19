@@ -38,7 +38,7 @@ def execute():
 					"fieldname": "custom_attempts",
 					"label": "Execution Attempts",
 					"fieldtype": "Int",
-					"default": 1,
+					"default": "1",
 					"insert_after": "custom_execution_status",
 				},
 				{
