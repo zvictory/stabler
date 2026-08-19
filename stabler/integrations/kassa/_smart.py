@@ -9,14 +9,20 @@ Design principles (mirrors _flow.py):
   numeric/word-number core.
 - Context-Aware Extraction: In Kirim/Chiqim mode, if the user types an amount
   along with a remaining name/reason (e.g. "650d ismoil"), automatically infers
-  the counterparty/purpose without requiring "-dan"/"-uchun" suffixes.
+  the counterparty/purpose without requiring "-dan"/"-uchun" suffixes. The amount
+  is the divider: what stands to its left is who/what, to its right is the note,
+  and BOTH keep every word they were typed with — a note is a sentence, and the
+  ledger renders this field rather than raw_text.
 - NEVER guesses on ambiguity. When a required slot is missing or unclear, it
   returns exactly ONE targeted Uzbek question (`question`) — the bot asks that
   instead of the old kasa/miktar step chain.
 - Always preserves the raw text (caller stores raw_text alongside parsed_json).
 
 Currency shorthand: s/som/so'm -> UZS, d/dollar/$ -> USD, e/euro/€ -> EUR.
-Multipliers: k/ming -> 1e3, m/mln -> 1e6, mlrd -> 1e9 (+ Cyrillic).
+Multipliers: k/ming -> 1e3, m/mln -> 1e6, mlrd -> 1e9.
+Uzbek ships in two scripts and the kassirs mix them, so every vocabulary here —
+currency, kassa, operation keywords, the dan/uchun/ga/kurs suffixes and the
+single-letter shorthands (179100с, 100д) — is listed in Latin AND Cyrillic.
 "Dollar aldim" (buying foreign) -> konversiya; source kassa asked if ambiguous.
 """
 
@@ -30,12 +36,13 @@ from ._flow import _normalize_apostrophes, parse_amount
 # Currency
 # --------------------------------------------------------------------------- #
 _CCY_WORDS = [
-	("USD", ("dollar", "dollor", "usd")),
-	("EUR", ("euro", "yevro", "eur")),
-	("UZS", ("so'm", "som", "sum", "uzs")),
+	("USD", ("dollar", "dollor", "usd", "доллар", "долл")),
+	("EUR", ("euro", "yevro", "eur", "евро", "еуро")),
+	("UZS", ("so'm", "som", "sum", "uzs", "сўм", "сум", "сом")),
 ]
 _CCY_SYMBOL = {"$": "USD", "€": "EUR"}
-_CCY_LETTER = {"d": "USD", "e": "EUR", "s": "UZS"}
+_CCY_LETTER = {"d": "USD", "e": "EUR", "s": "UZS", "д": "USD", "е": "EUR", "с": "UZS"}
+_CCY_LETTER_RE = "".join(_CCY_LETTER)
 
 _MULT = {
 	"k": 1_000,
@@ -55,7 +62,23 @@ _MULT_RE = "|".join(sorted((re.escape(k) for k in _MULT), key=len, reverse=True)
 # --------------------------------------------------------------------------- #
 # Intent keywords
 # --------------------------------------------------------------------------- #
-_KONV = ("konvert", "konversiya", "almashtir", "ayirboshla", "valyuta", "aylantir", "aylashtir", "ayr")
+_KONV = (
+	"konvert",
+	"konversiya",
+	"almashtir",
+	"ayirboshla",
+	"valyuta",
+	"aylantir",
+	"aylashtir",
+	"ayr",
+	"конверт",
+	"конверсия",
+	"алмаштир",
+	"айирбошла",
+	"валюта",
+	"айлантир",
+	"айлаштир",
+)
 _CHIQIM = (
 	"chiqdi",
 	"chiqim",
@@ -70,10 +93,53 @@ _CHIQIM = (
 	"sarfladim",
 	"sarf",
 	"chiqdi",
+	"чиқди",
+	"чикди",
+	"чиқим",
+	"чиким",
+	"бердим",
+	"бердик",
+	"тўладим",
+	"туладим",
+	"тўлов",
+	"тулов",
+	"масраф",
+	"харажат",
+	"сарфладим",
+	"сарф",
 )
-_K2K = ("o'tkaz", "otkaz", "ko'chir", "kochir", "kassaga", "kassadan")
-_KIRIM = ("kirdi", "kirim", "keldi", "tushdi", "qabul", "olindi", "kirdik")
-_BUY = ("oldim", "aldim", "sotib", "sotvoldim", "sotib oldim")
+_K2K = (
+	"o'tkaz",
+	"otkaz",
+	"ko'chir",
+	"kochir",
+	"kassaga",
+	"kassadan",
+	"ўтказ",
+	"утказ",
+	"кўчир",
+	"кучир",
+	"кассага",
+	"кассадан",
+)
+_KIRIM = (
+	"kirdi",
+	"kirim",
+	"keldi",
+	"tushdi",
+	"qabul",
+	"olindi",
+	"kirdik",
+	"кирди",
+	"кирим",
+	"кирдик",
+	"келди",
+	"тушди",
+	"қабул",
+	"кабул",
+	"олинди",
+)
+_BUY = ("oldim", "aldim", "sotib", "sotvoldim", "sotib oldim", "олдим", "алдим", "сотиб", "сотволдим")
 
 _OPS = ("kirim", "chiqim", "konversiya", "kassalararo")
 
@@ -94,7 +160,7 @@ def detect_currency(text: str) -> str | None:
 				return ccy
 	# single-letter suffix: attached to the number (100d, 500e) or standalone
 	# after a multiplier (100ming s)
-	m = re.search(r"\d\s*([dse])\b", t) or re.search(r"\b([dse])\b", t)
+	m = re.search(rf"\d\s*([{_CCY_LETTER_RE}])\b", t) or re.search(rf"\b([{_CCY_LETTER_RE}])\b", t)
 	if m:
 		return _CCY_LETTER[m.group(1)]
 	return None
@@ -105,12 +171,22 @@ def _strip_currency(t: str) -> str:
 		t = t.replace(sym, " ")
 	for _ccy, words in _CCY_WORDS:
 		for w in words:
-			t = re.sub(rf"\b{re.escape(w)}\b", " ", t)
-	t = re.sub(r"\b[dse]\b", " ", t)
+			t = re.sub(rf"\b{re.escape(w)}\b", " ", t, flags=re.IGNORECASE)
+	t = re.sub(rf"\b[{_CCY_LETTER_RE}]\b", " ", t, flags=re.IGNORECASE)
 	return t
 
 
-_DIGIT_AMT_RE = re.compile(rf"(\d[\d\s.,]*?)\s*({_MULT_RE})?(?=\s|$|[a-zʼ'])", re.IGNORECASE)
+# Letters that may carry a name, a note word or a currency/kassa suffix — Latin
+# and Cyrillic alike, because the kassirs write Uzbek in both scripts.
+_WORD_CHARS = "a-zA-Zʼ'Ѐ-ӿ"
+
+# Uzbek case suffixes the parser keys on, in both scripts.
+_DAN = "(?:dan|дан)"
+_GA = "(?:ga|га)"
+_UCHUN = "(?:uchun|учун)"
+_KURS = "(?:kurs|курс)"
+
+_DIGIT_AMT_RE = re.compile(rf"(\d[\d\s.,]*?)\s*({_MULT_RE})?(?=\s|$|[{_WORD_CHARS}])", re.IGNORECASE)
 
 
 def extract_amount(text: str) -> float | None:
@@ -159,7 +235,7 @@ def detect_op(text: str, currency: str | None = None) -> str | None:
 def extract_rate(text: str) -> float | None:
 	"""'12900 kurs' / 'kurs 12900' -> 12900.0."""
 	t = _norm(text)
-	m = re.search(r"(\d[\d\s.,]*)\s*kurs\b", t) or re.search(r"\bkurs\s*(\d[\d\s.,]*)", t)
+	m = re.search(rf"(\d[\d\s.,]*)\s*{_KURS}\b", t) or re.search(rf"\b{_KURS}\s*(\d[\d\s.,]*)", t)
 	if not m:
 		return None
 	raw = re.sub(r"\s+", "", m.group(1)).replace(",", ".")
@@ -211,72 +287,132 @@ _CP_STOP = {
 	"va",
 	"и",
 	"yana",
+	"учун",
+	"га",
+	"дан",
+	"курс",
+	"сўм",
+	"сум",
+	"доллар",
+	"евро",
+	"пул",
+	"бердим",
+	"олдим",
+	"алдим",
+	"кирим",
+	"чиқим",
+	"ва",
+	"яна",
 }
 
 
-def extract_counterparty(text: str, op: str | None) -> str | None:
-	"""Kimdan — explicit token before 'dan' ('ismoildan'), OR in Kirim context,
-	the remaining name token if typed alongside amount (e.g. '650d ismoil')."""
-	t = _norm(text)
-	m = re.search(r"\b([a-zA-Zʼ'Ѐ-ӿ]{3,})\s*dan\b", t)
+def _is_noise(core: str) -> bool:
+	"""A token that can be neither a name nor part of a note: too short, a stop
+	word, an operation keyword, or the name of a kassa."""
+	low = core.lower()
+	return (
+		len(core) < 3
+		or low in _CP_STOP
+		or low in _KONV
+		or low in _CHIQIM
+		or low in _KIRIM
+		or detect_kassa(low) is not None
+	)
+
+
+def _phrase(segment: str) -> str | None:
+	"""Trim noise off BOTH ENDS of a segment and hand back what the kassir wrote
+	in between, verbatim.
+
+	Edge-only on purpose: filtering token by token would silently delete short
+	words from the middle of a sentence, turning "чой ва нон" into "чой нон".
+	"""
+	toks = [(tok, re.sub(rf"[^{_WORD_CHARS}]", "", tok)) for tok in segment.split()]
+	while toks and _is_noise(toks[0][1]):
+		toks.pop(0)
+	while toks and _is_noise(toks[-1][1]):
+		toks.pop()
+	return " ".join(tok for tok, _ in toks).strip(" -–—:,") or None
+
+
+def _as_name(phrase: str | None) -> str | None:
+	"""Capitalise a name typed all-lowercase ("ismoil" -> "Ismoil"); leave the
+	kassir's own capitalisation alone ("Бек Офис")."""
+	if not phrase:
+		return None
+	return phrase[0].upper() + phrase[1:] if phrase.islower() else phrase
+
+
+def _fields(text: str, op: str | None) -> tuple[str | None, str | None]:
+	"""(counterparty, purpose) from one free-text message.
+
+	Explicit suffixes win: "<name>dan" names the payer, "<what> uchun" / "<what>ga"
+	names the reason. Otherwise the amount splits the message — what the kassir
+	typed to the LEFT of it is who/what, what they typed to the RIGHT is the note.
+
+	Both keep every word. A note is a sentence ("Чой ичгани нарса олиб келинди"),
+	and the shadow ledger renders THIS field, not raw_text — so cutting it at the
+	first space destroys the only structured record of what the money was for.
+	"""
+	s = _normalize_apostrophes(text or "")  # 1:1 char swap — spans stay valid
+	t = _norm(s)
+
+	cp = None
+	m = re.search(rf"\b([{_WORD_CHARS}]{{3,}})\s*{_DAN}\b", t)
 	if m:
 		cand = m.group(1)
 		if cand not in _CP_STOP and cand not in _KONV and cand not in _CHIQIM and detect_kassa(cand) is None:
-			return cand.capitalize()
+			cp = cand.capitalize()
 
-	# Advanced Contextual Fallback for Kirim:
-	# If op is Kirim and no explicit "-dan" suffix was used, check for a remaining
-	# word token that looks like a name (e.g. "650d ismoil")
+	# The suffix rules run on the amount-free text: in "100mln ijara uchun" the
+	# capture would otherwise start inside the number and yield "mln ijara". The
+	# amount becomes a NEWLINE, not a space — the multi-word 'uchun' class matches
+	# spaces, so a blank would let it reach back across the amount and swallow the
+	# payee too ("Hojaga 350 ming s ijara haqi uchun" -> "Hojaga ijara haqi").
+	bare = _DIGIT_AMT_RE.sub("\n", _strip_currency(s))
+	purpose = None
+	m = re.search(rf"\b([{_WORD_CHARS} ]{{3,}}?)\s*{_UCHUN}\b", bare, re.IGNORECASE)
+	if m:
+		purpose = _phrase(m.group(1))
+	if purpose is None:
+		m = re.search(rf"\b([{_WORD_CHARS}]{{4,}}){_GA}\b", bare, re.IGNORECASE)
+		stem = m.group(1) if m else None
+		# "картага"/"kartaga" is a destination kassa, not a reason — the same
+		# guard the 'dan' rule already carries.
+		if stem and stem.lower() not in _CP_STOP and stem.lower() not in _KONV and detect_kassa(stem) is None:
+			purpose = stem
+
+	spans = [
+		m.span()
+		for m in _DIGIT_AMT_RE.finditer(s)
+		if re.search(r"\d", m.group(1) or "")
+		and not re.match(rf"[{_WORD_CHARS}]", s[m.start() - 1] if m.start() else " ")
+	]
+	head = _phrase(s[: spans[0][0]]) if spans else None
+	tail = _phrase(s[spans[-1][1] :]) if spans else _phrase(s)
+
 	if op == "kirim":
-		clean = _strip_currency(t)
-		clean = _DIGIT_AMT_RE.sub(" ", clean)
-		for tok in clean.split():
-			tok_clean = re.sub(r"[^a-zA-Zʼ'Ѐ-ӿ]", "", tok)
-			if (
-				len(tok_clean) >= 3
-				and tok_clean not in _CP_STOP
-				and tok_clean not in _KONV
-				and tok_clean not in _CHIQIM
-				and tok_clean not in _KIRIM
-				and detect_kassa(tok_clean) is None
-			):
-				return tok_clean.capitalize()
+		if cp is None:
+			cp = _as_name(head or tail)
+	elif op == "chiqim":
+		if purpose is None:
+			purpose = tail or head
+		if cp is None and head and tail:
+			cp = _as_name(head)
 
-	return None
+	return cp, purpose
+
+
+def extract_counterparty(text: str, op: str | None) -> str | None:
+	"""Kimdan — the name before 'dan'/'дан', else (Kirim/Chiqim) the words the
+	kassir typed on the amount's left."""
+	return _fields(text, op)[0]
 
 
 def extract_purpose(text: str, op: str | None = None) -> str | None:
-	"""Izoh — word(s) before 'uchun', stem before 'ga', OR in Chiqim context,
-	the remaining word token if typed alongside amount (e.g. '50ming s stoyanka')."""
-	t = _norm(text)
-	m = re.search(r"\b([a-zA-Zʼ'Ѐ-ӿ ]{3,}?)\s*uchun\b", t)
-	if m:
-		cand = m.group(1).strip().split()[-1]
-		if cand not in _CP_STOP:
-			return cand
-	m2 = re.search(r"\b([a-zA-Zʼ'Ѐ-ӿ]{4,})ga\b", t)
-	if m2:
-		stem = m2.group(1)
-		if stem not in _CP_STOP and stem not in _KONV:
-			return stem
-
-	# Advanced Contextual Fallback for Chiqim:
-	if op == "chiqim":
-		clean = _strip_currency(t)
-		clean = _DIGIT_AMT_RE.sub(" ", clean)
-		for tok in clean.split():
-			tok_clean = re.sub(r"[^a-zA-Zʼ'Ѐ-ӿ]", "", tok)
-			if (
-				len(tok_clean) >= 3
-				and tok_clean not in _CP_STOP
-				and tok_clean not in _KONV
-				and tok_clean not in _CHIQIM
-				and tok_clean not in _KIRIM
-				and detect_kassa(tok_clean) is None
-			):
-				return tok_clean
-
-	return None
+	"""Izoh — the words before 'uchun'/'учун', the stem before 'ga'/'га', else
+	(Chiqim/Kirim) the words the kassir typed on the amount's right."""
+	return _fields(text, op)[1]
 
 
 # --------------------------------------------------------------------------- #
@@ -340,12 +476,29 @@ def parse_entry(text: str, ctx: dict | None = None) -> dict:
 
 KASSA_CCY = {"nakit": "UZS", "pk": "UZS", "usd": "USD"}
 _KASSA_WORDS = {
-	"nakit": ("naqd", "naxt", "nakit", "som", "so'm", "sum", "kesh", "cash"),
-	"pk": ("karta", "kartaga", "plastik", "plastic", "pk"),
-	"usd": ("dollar", "dollor", "usd", "valyuta"),
+	"nakit": (
+		"naqd",
+		"naxt",
+		"nakit",
+		"som",
+		"so'm",
+		"sum",
+		"kesh",
+		"cash",
+		"нақд",
+		"нақт",
+		"накит",
+		"сўм",
+		"сум",
+		"сом",
+		"кеш",
+	),
+	"pk": ("karta", "kartaga", "plastik", "plastic", "pk", "карта", "картага", "пластик", "пк"),
+	"usd": ("dollar", "dollor", "usd", "valyuta", "доллар", "валюта"),
 }
-_KASSA_LETTER = {"s": "nakit", "p": "pk", "d": "usd"}
-_SEG_SPLIT = re.compile(r"\s*,\s*|\s+va\s+|\s+и\s+|[\n;]+", re.IGNORECASE)
+_KASSA_LETTER = {"s": "nakit", "p": "pk", "d": "usd", "с": "nakit", "п": "pk", "д": "usd"}
+_KASSA_LETTER_RE = "".join(_KASSA_LETTER)
+_SEG_SPLIT = re.compile(r"\s*,\s*|\s+va\s+|\s+ва\s+|\s+и\s+|[\n;]+", re.IGNORECASE)
 
 
 def detect_kassa(text: str) -> str | None:
@@ -355,7 +508,7 @@ def detect_kassa(text: str) -> str | None:
 		for w in words:
 			if re.search(rf"\b{re.escape(w)}\b", t):
 				return kid
-	m = re.search(r"\d\s*([spd])\b", t) or re.search(r"\b([spd])\b", t)
+	m = re.search(rf"\d\s*([{_KASSA_LETTER_RE}])\b", t) or re.search(rf"\b([{_KASSA_LETTER_RE}])\b", t)
 	if m:
 		return _KASSA_LETTER[m.group(1)]
 	return None
@@ -371,9 +524,9 @@ def detect_transfer_dirs(text: str):
 	t = _norm(text)
 	frm = to = None
 	for w, k in _KASSA_DIR_WORDS:
-		if frm is None and re.search(rf"\b{re.escape(w)}dan\b", t):
+		if frm is None and re.search(rf"\b{re.escape(w)}{_DAN}\b", t):
 			frm = k
-		if to is None and re.search(rf"\b{re.escape(w)}\s*ga\b", t):
+		if to is None and re.search(rf"\b{re.escape(w)}\s*{_GA}\b", t):
 			to = k
 	return frm, to
 

@@ -254,5 +254,132 @@ class TestMultiLeg(unittest.TestCase):
 		self.assertEqual([l["kassa"] for l in legs], ["nakit", "pk", "usd"])
 
 
+class TestMultiWordNote(unittest.TestCase):
+	"""A kassir's note is a sentence, not a keyword.
+
+	The shadow ledger's Izoh column renders `counterparty` + `purpose`
+	(www/kassa.html:574-575); the raw text is only echoed underneath it. Cutting
+	the note at its first space therefore destroys the only structured record of
+	what the money was for. Measured on mikas 2026-08-19:
+	"Бек Офис - 179100s  Чой ичгани нарса олиб келинди" was stored as purpose="бек" —
+	the first token of the payee label, and not even part of the note.
+	"""
+
+	MSG = "Бек Офис - 179100s Чой ичгани нарса олиб келинди"
+
+	def test_purpose_keeps_every_word_after_the_amount(self):
+		self.assertEqual(extract_purpose(self.MSG, "chiqim"), "Чой ичгани нарса олиб келинди")
+
+	def test_counterparty_keeps_every_word_before_the_amount(self):
+		self.assertEqual(extract_counterparty(self.MSG, "chiqim"), "Бек Офис")
+
+	def test_kirim_reads_the_whole_head_as_the_payer(self):
+		# "Касса колдик - 4965000s" (mikas, 2026-08-19) — a two-word label that
+		# was stored as "Касса", losing which balance it referred to.
+		self.assertEqual(extract_counterparty("Касса колдик - 4965000s", "kirim"), "Касса колдик")
+
+	def test_short_words_survive_inside_the_phrase(self):
+		# Trimming is edge-only on purpose: a two-letter word in the middle is part
+		# of the sentence, not noise. Filtering per token would give "чой нон".
+		self.assertEqual(extract_purpose("50ming s чой ва нон", "chiqim"), "чой ва нон")
+
+	def test_multi_word_purpose_before_uchun(self):
+		self.assertEqual(extract_purpose("100s Чой ичгани нарса uchun", "chiqim"), "Чой ичгани нарса")
+
+	def test_a_digit_glued_to_a_word_is_not_the_amount(self):
+		# "Tender4 500ming" (mikas): the 4 belongs to the label. Splitting there
+		# would truncate it to "Tender" — the same cut this whole change removes.
+		self.assertEqual(extract_purpose("Tender4 500ming", "chiqim"), "Tender4")
+
+	def test_kirim_does_not_turn_the_payer_into_the_note(self):
+		# The payer's name is already the counterparty; repeating it as the note
+		# is noise. Measured over mikas' 52 stored messages: filling Kirim's note
+		# from the leftover tail produced "zafardan"/"berdi" six times and helped
+		# in none. Kirim takes a note only from an explicit "uchun"/"ga".
+		self.assertEqual(extract_counterparty("400d, 34mln zafardan oldim", "kirim"), "Zafar")
+		self.assertIsNone(extract_purpose("400d, 34mln zafardan oldim", "kirim"))
+
+	def test_uchun_does_not_reach_back_across_the_amount(self):
+		# The multi-word 'uchun' class matches spaces, so it must be stopped at
+		# the amount — otherwise the note swallows the payee written before it.
+		self.assertEqual(extract_purpose("Hojaga 350 ming s ijara haqi uchun berdim"), "ijara haqi")
+		self.assertEqual(extract_purpose("Хожага 350 минг с ижара ҳақи учун бердим"), "ижара ҳақи")
+
+	def test_a_destination_kassa_is_not_a_reason(self):
+		# "картага" is where the money went, not what it was for. The Latin form
+		# "pk ga" is spaced and never reached this rule; the Cyrillic form is glued.
+		self.assertIsNone(extract_purpose("2 млн нақддан картага", "kassalararo"))
+
+	def test_lone_lowercase_name_is_still_capitalised(self):
+		# Unchanged: the single-token case that already worked must keep working.
+		self.assertEqual(extract_counterparty("650d ismoil", "kirim"), "Ismoil")
+
+	def test_typed_capitals_are_preserved(self):
+		# The kassir's own capitalisation is data — "Бек Офис", not "Бек офис".
+		self.assertEqual(extract_counterparty("Бек Офис - 179100s izoh", "chiqim"), "Бек Офис")
+
+
+class TestCyrillicInput(unittest.TestCase):
+	"""Uzbek ships in two scripts and the kassirs mix them freely.
+
+	Cyrillic was previously honoured for multipliers only (минг/млн/млрд). Measured
+	on the live parser 2026-08-19: "179100с" with a Cyrillic с returned amount=None,
+	so a message the kassir believed was sent recorded no money at all — the
+	ledger silently loses the entry rather than asking a question.
+	"""
+
+	def test_cyrillic_som_suffix_is_an_amount(self):
+		self.assertEqual(extract_amount("179100с"), 179_100.0)
+
+	def test_cyrillic_som_suffix_names_the_currency_and_kassa(self):
+		self.assertEqual(detect_currency("179100с"), "UZS")
+		self.assertEqual(detect_kassa("179100с"), "nakit")
+
+	def test_cyrillic_dollar_suffix(self):
+		self.assertEqual(extract_amount("100д"), 100.0)
+		self.assertEqual(detect_currency("100д"), "USD")
+		self.assertEqual(detect_kassa("100д"), "usd")
+
+	def test_cyrillic_currency_words(self):
+		self.assertEqual(detect_currency("500 сўм"), "UZS")
+		self.assertEqual(detect_currency("100 доллар"), "USD")
+		self.assertEqual(detect_currency("500 евро"), "EUR")
+
+	def test_cyrillic_kassa_words(self):
+		self.assertEqual(detect_kassa("нақд"), "nakit")
+		self.assertEqual(detect_kassa("карта"), "pk")
+		self.assertEqual(detect_kassa("пластик"), "pk")
+
+	def test_cyrillic_op_words(self):
+		self.assertEqual(detect_op("бердим", None), "chiqim")
+		self.assertEqual(detect_op("олдим", None), "kirim")
+		self.assertEqual(detect_op("чиқим", None), "chiqim")
+		self.assertEqual(detect_op("кирим", None), "kirim")
+		self.assertEqual(detect_op("келди", None), "kirim")
+
+	def test_cyrillic_dan_suffix(self):
+		self.assertEqual(extract_counterparty("Исмоилдан 100д олдим", "kirim"), "Исмоил")
+
+	def test_cyrillic_uchun_suffix(self):
+		# op=None disables the positional fallback, exactly as the Latin
+		# test_purpose_uchun does — so only the 'учун' rule itself can answer,
+		# and a mutation that drops it turns this red.
+		self.assertEqual(extract_purpose("100с ижара ҳақи учун", None), "ижара ҳақи")
+
+	def test_cyrillic_kurs(self):
+		self.assertEqual(extract_rate("500д сўмга айлантирдим 12900 курс"), 12900)
+
+	def test_cyrillic_transfer_dirs(self):
+		self.assertEqual(detect_transfer_dirs("2 млн нақддан картага"), ("nakit", "pk"))
+
+	def test_cyrillic_message_end_to_end(self):
+		# The whole reported message, in the script the kassir actually types.
+		r = parse_message("Бек Офис - 179100с Чой ичгани нарса", op="chiqim")
+		self.assertTrue(r["ready"])
+		self.assertEqual(r["legs"], [{"amount": 179_100.0, "kassa": "nakit", "currency": "UZS"}])
+		self.assertEqual(r["counterparty"], "Бек Офис")
+		self.assertEqual(r["purpose"], "Чой ичгани нарса")
+
+
 if __name__ == "__main__":
 	unittest.main()
