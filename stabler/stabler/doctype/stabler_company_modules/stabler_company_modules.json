@@ -24,6 +24,7 @@
   "enable_installment",
   "enable_imports",
   "enable_agreements",
+  "enable_payment_calendar",
   "enable_direct_invoicing",
   "enable_dimensional_lines",
   "enable_sales_box_uom",
@@ -169,6 +170,12 @@
    "fieldtype": "Check",
    "in_list_view": 1,
    "label": "Agreements"
+  },
+  {
+   "fieldname": "enable_payment_calendar",
+   "fieldtype": "Check",
+   "label": "Payment Calendar",
+   "default": "0"
   },
   {
    "default": "0",
