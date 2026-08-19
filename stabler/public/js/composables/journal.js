@@ -126,6 +126,28 @@ export function ratesToRefresh(rows, isForeign) {
 }
 
 /**
+ * The first posting date a journal entry may still use — or null for open.
+ *
+ * `get_backdating_status` reports two earliest-open dates, stock and
+ * accounting, and the money-page banner takes the later of the two because it
+ * speaks for every document type. A Journal Entry writes no stock ledger, and
+ * the server's own `_assert_posting_date_open` checks `acc_frozen_upto` alone
+ * for that reason.
+ *
+ * Taking the later date was merely imprecise while it only painted a banner.
+ * It now shuts Save, and a tenant whose stock period is closed further forward
+ * than their accounting period would be refused dates the ledger accepts
+ * without complaint — the form saying no to what the server would have taken.
+ *
+ * `active` already folds in the exemption roles the server checks, so the
+ * person whose job is correcting a closed period keeps their only tool.
+ */
+export function journalFreezeDate(backdating) {
+	if (!backdating || !backdating.active) return null;
+	return backdating.acc_earliest_date || null;
+}
+
+/**
  * Is this posting date inside the closed period?
  *
  * The warning band was computed and then ignored — Save never consulted it — so

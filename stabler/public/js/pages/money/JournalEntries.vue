@@ -13,6 +13,7 @@ import {
 	isDraftDirty,
 	isPostingFrozen,
 	isRowOrphaned,
+	journalFreezeDate,
 	postableRows,
 	ratesToRefresh,
 	snapshotDraft,
@@ -247,14 +248,12 @@ function acctBalanceText(account) {
 	return `${t("Bal")}: ${amount} · ${formatDate(form.value.posting_date)}`;
 }
 
-// ── Contextual back-dating freeze (same source as the money-page banner) ──────
+// ── Contextual back-dating freeze ────────────────────────────────────────────
+// Same source as the money-page banner, but NOT the same date: that banner
+// speaks for every document type and takes the later of stock and accounting.
+// A journal entry writes no stock ledger. See journalFreezeDate().
 const backdating = ref(null);
-const freezeDate = computed(() => {
-	const b = backdating.value;
-	if (!b || !b.active) return null;
-	const dates = [b.stock_earliest_date, b.acc_earliest_date].filter(Boolean);
-	return dates.length ? dates.sort().reverse()[0] : null;
-});
+const freezeDate = computed(() => journalFreezeDate(backdating.value));
 const postingFrozen = computed(() => isPostingFrozen(form.value.posting_date, freezeDate.value));
 
 // The cancelled JE this draft amends (set by amendJE), passed through on save.
@@ -424,7 +423,7 @@ async function submitForm() {
 	// The band alone was the whole enforcement: the draft used to save and the
 	// refusal arrived at Submit, from ERPNext, untranslated.
 	if (postingFrozen.value) {
-		return (submitError.value = t("Backdated postings are frozen before {0}.").replace("{0}", formatDate(freezeDate.value)));
+		return (submitError.value = t("Accounting is frozen before {0}.").replace("{0}", formatDate(freezeDate.value)));
 	}
 	if (!balanced.value) {
 		// The two figures the badge is already showing, formatted the way the rest
@@ -701,7 +700,7 @@ watch(() => form.value.posting_date, (d) => {
 					<div v-if="postingFrozen" class="alert alert-warning py-2 px-3 d-flex align-items-center">
 						<i class="ti ti-calendar-lock me-2"></i>
 						<span class="flex-fill small">
-							{{ t("Backdated postings are frozen before {0}.").replace("{0}", formatDate(freezeDate)) }}
+							{{ t("Accounting is frozen before {0}.").replace("{0}", formatDate(freezeDate)) }}
 							{{ t("Move the date forward or open the posting window to save.") }}
 						</span>
 						<RouterLink to="/admin/posting-window" class="small text-reset text-decoration-underline ms-2">{{ t("Change") }}</RouterLink>
