@@ -6,7 +6,7 @@ import { useSession } from "../../stores/session.js";
 import { call } from "../../api/client.js";
 import { formatMoney } from "../../composables/money.js";
 import { t } from "../../composables/i18n.js";
-import { accountLabel, accountTypeLabel } from "../../composables/accounts.js";
+import { accountLabel, accountTypeLabel, newAccountCurrency } from "../../composables/accounts.js";
 import { useConfirm } from "../../composables/useConfirm.js";
 import { useToast } from "../../composables/useToast.js";
 import { useEscapeBack } from "../../composables/useEscapeBack.js";
@@ -301,6 +301,10 @@ function openCreate(parentNode) {
 	submitError.value = "";
 	form.value = blankAccount();
 	if (parentNode?.is_group) form.value.parent_account = parentNode.name;
+	// Name the currency now rather than letting the amount field substitute one.
+	// The select used to read "—" while the field below it behaved as UZS, and a
+	// USD amount typed before the currency was picked lost its decimals on blur.
+	form.value.account_currency = newAccountCurrency(parentNode, currency.value);
 	loadCreateOptions();
 	createOpen.value = true;
 }
@@ -645,7 +649,7 @@ watch(includeDisabled, async () => {
 								<label class="form-label">{{ t("Opening balance") }}</label>
 								<MoneyInput
 									v-model="form.opening_balance"
-									:currency="form.account_currency || currency"
+									:currency="form.account_currency"
 									:language="user.language"
 								/>
 							</div>

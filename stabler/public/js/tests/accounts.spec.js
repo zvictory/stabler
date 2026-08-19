@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { accountLabel, accountTypeLabel } from "../composables/accounts.js";
+import { accountLabel, accountTypeLabel, newAccountCurrency } from "../composables/accounts.js";
 
 // The fixture these read lives in tests/setup.js. `MIKAS USD` is not in it, on
 // purpose — see below.
@@ -54,5 +54,37 @@ describe("accountTypeLabel — a fixed enum is still a label", () => {
 	it("renders nothing when an account has no type, rather than an empty badge", () => {
 		expect(accountTypeLabel("")).toBe("");
 		expect(accountTypeLabel(null)).toBe("");
+	});
+});
+
+describe("newAccountCurrency", () => {
+	// Measured live on mikas.erpstable.com, 2026-08-19: the create-account modal
+	// showed "Account currency: —" while handing the opening-balance field the
+	// COMPANY currency as a fallback. Mikas is UZS, UZS carries zero decimals, so
+	// the field snapped the model to a whole number on blur. Typing 1500000.50
+	// before choosing USD produced 1500001 — in the model, not just on screen —
+	// and picking USD afterwards did not bring the decimals back. The form never
+	// said it was treating the account as UZS.
+	//
+	// So the currency is named up front instead of substituted invisibly, and it
+	// is the parent's where the parent has one: a child of "Банк USD" is a USD
+	// account, which is exactly the case that was losing money.
+	it("inherits the parent group's currency", () => {
+		expect(newAccountCurrency({ name: "Банк USD", account_currency: "USD" }, "UZS")).toBe("USD");
+	});
+
+	it("falls back to the company currency when the parent has none", () => {
+		expect(newAccountCurrency({ name: "Assets", account_currency: null }, "UZS")).toBe("UZS");
+	});
+
+	it("uses the company currency at the root", () => {
+		expect(newAccountCurrency(null, "UZS")).toBe("UZS");
+	});
+
+	it("never invents a currency out of nothing", () => {
+		// An empty string leaves MoneyInput on its two-decimal default, which
+		// keeps the typed value intact. Guessing here is what caused the bug.
+		expect(newAccountCurrency(null, "")).toBe("");
+		expect(newAccountCurrency(undefined, undefined)).toBe("");
 	});
 });

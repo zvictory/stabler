@@ -28,3 +28,19 @@ export function accountLabel(row) {
 export function accountTypeLabel(type) {
 	return type ? t(type) : "";
 }
+
+/**
+ * Which currency a not-yet-created account starts in.
+ *
+ * The opening-balance field takes its decimal precision from this value, so an
+ * unnamed currency must never be substituted behind the user's back. Measured on
+ * mikas.erpstable.com 2026-08-19: the modal read "Account currency: —" while the
+ * field was handed the company currency (UZS, zero decimals), and 1500000.50
+ * typed before USD was chosen became 1500001 in the model — not just on screen.
+ *
+ * The parent's currency wins because a child of "Банк USD" is a USD account, and
+ * that is the case the fallback was destroying.
+ */
+export function newAccountCurrency(parentNode, companyCurrency) {
+	return (parentNode && parentNode.account_currency) || companyCurrency || "";
+}
