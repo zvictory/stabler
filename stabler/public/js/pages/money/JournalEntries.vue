@@ -605,9 +605,9 @@ watch(statusFilter, load);
 						<thead><tr>
 							<th style="min-width: 170px">{{ t("Account") }}</th>
 							<th style="min-width: 200px">{{ t("Party") }}</th>
-							<th v-if="isMultiCurrency" class="text-end" style="width: 110px">{{ t("Rate") }}</th>
-							<th class="text-end" style="width: 130px">{{ t("Debit") }}</th>
-							<th class="text-end" style="width: 130px">{{ t("Credit") }}</th>
+							<th v-if="isMultiCurrency" class="text-end" style="width: 152px">{{ t("Rate") }}</th>
+							<th class="text-end" style="width: 148px">{{ t("Debit") }}</th>
+							<th class="text-end" style="width: 148px">{{ t("Credit") }}</th>
 							<th class="w-1"></th>
 						</tr></thead>
 						<tbody>
@@ -617,7 +617,10 @@ watch(statusFilter, load);
 										<template #option="{ option }">{{ option.account_number ? `${option.account_number} · ` : "" }}{{ accountLabel(option) }}</template>
 										<template #selected="{ option }">{{ option.account_number ? `${option.account_number} · ` : "" }}{{ accountLabel(option) }}</template>
 									</Select>
-									<div v-if="row.account && acctBalanceText(row.account)" class="text-secondary" style="font-size:.7rem">{{ acctBalanceText(row.account) }}</div>
+									<div v-if="row.account" class="d-flex align-items-center gap-1 mt-1">
+										<span class="badge bg-secondary-lt text-uppercase je-ccy">{{ row.account_currency || currencyCode }}</span>
+										<span v-if="acctBalanceText(row.account)" class="text-secondary je-hint">{{ acctBalanceText(row.account) }}</span>
+									</div>
 								</td>
 								<td>
 									<div class="d-flex gap-1">
@@ -630,13 +633,13 @@ watch(statusFilter, load);
 								<td v-if="isMultiCurrency" class="text-end">
 									<template v-if="isForeign(row) && rateQuote(row)">
 										<MoneyInput :model-value="rateQuote(row).value" :language="user.language" :min="0" size="sm" @update:model-value="(v) => setRateQuote(row, v)" />
-										<div class="text-secondary" style="font-size: .7rem">1 {{ rateQuote(row).strong }} = {{ fmtRate(rateQuote(row).value) }} {{ rateQuote(row).weak }}</div>
-										<div v-if="baseLine(row)" class="text-secondary" style="font-size: .7rem">= {{ formatMoney(baseLine(row), currencyCode, user.language) }}</div>
+										<div class="text-secondary je-hint text-nowrap">1 {{ rateQuote(row).strong }} = {{ fmtRate(rateQuote(row).value) }} {{ rateQuote(row).weak }}</div>
+										<div v-if="baseLine(row)" class="text-secondary je-hint text-nowrap">= {{ formatMoney(baseLine(row), currencyCode, user.language) }}</div>
 									</template>
 									<span v-else class="text-secondary small">1</span>
 								</td>
-								<td><MoneyInput v-model="row.debit" :currency="row.account_currency || currencyCode" :language="user.language" size="sm" @update:model-value="onAmountInput(row, idx, 'debit')" /></td>
-								<td><MoneyInput v-model="row.credit" :currency="row.account_currency || currencyCode" :language="user.language" size="sm" @update:model-value="onAmountInput(row, idx, 'credit')" /></td>
+								<td><MoneyInput v-model="row.debit" :currency="row.account_currency || currencyCode" hide-currency :language="user.language" size="sm" @update:model-value="onAmountInput(row, idx, 'debit')" /></td>
+								<td><MoneyInput v-model="row.credit" :currency="row.account_currency || currencyCode" hide-currency :language="user.language" size="sm" @update:model-value="onAmountInput(row, idx, 'credit')" /></td>
 								<td><button type="button" class="btn btn-sm btn-ghost-danger" :disabled="form.accounts.length <= 2" @click="removeRow(idx)"><i class="ti ti-trash"></i></button></td>
 							</tr>
 						</tbody>
@@ -647,7 +650,7 @@ watch(statusFilter, load);
 								<td class="text-end font-monospace">{{ formatMoney(isMultiCurrency ? baseCredit : totalCredit, currencyCode, user.language) }}</td>
 								<td><span class="badge" :class="balanced ? 'bg-green-lt' : 'bg-red-lt'">{{ balanced ? t("Balanced") : "Δ " + formatMoney(diff, currencyCode, user.language) }}</span></td>
 							</tr>
-							<tr v-if="isMultiCurrency"><td colspan="5" class="text-secondary small fw-normal pt-0">{{ t("Totals shown in base currency ({0}).").replace("{0}", currencyCode) }}</td></tr>
+							<tr v-if="isMultiCurrency"><td colspan="6" class="text-secondary small fw-normal pt-0">{{ t("Totals shown in base currency ({0}).").replace("{0}", currencyCode) }}</td></tr>
 						</tfoot>
 					</table>
 
@@ -663,3 +666,18 @@ watch(statusFilter, load);
 		</div>
 	</div>
 </template>
+
+<style scoped>
+/* The line hints (rate quote, base equivalent, account balance) sit under a
+   form control in a table cell. At the default size they wrapped a rate quote
+   into four lines — "1 USD =" / "12 000 UZS" / "=" / "12 000 000 сўм" — which
+   is how a multi-currency journal row came apart on screen. */
+.je-hint {
+	font-size: 0.7rem;
+	line-height: 1.15;
+}
+.je-ccy {
+	font-size: 0.65rem;
+	padding: 0.1rem 0.3rem;
+}
+</style>
