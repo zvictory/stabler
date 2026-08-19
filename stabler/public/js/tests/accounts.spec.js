@@ -1,6 +1,12 @@
 import { describe, expect, it } from "vitest";
 
-import { accountLabel, accountTypeLabel, newAccountCurrency } from "../composables/accounts.js";
+import {
+	accountLabel,
+	accountTypeLabel,
+	applyRootTypeSign,
+	isAbnormalBalance,
+	newAccountCurrency,
+} from "../composables/accounts.js";
 
 // The fixture these read lives in tests/setup.js. `MIKAS USD` is not in it, on
 // purpose — see below.
@@ -86,5 +92,44 @@ describe("newAccountCurrency", () => {
 		// keeps the typed value intact. Guessing here is what caused the bug.
 		expect(newAccountCurrency(null, "")).toBe("");
 		expect(newAccountCurrency(undefined, undefined)).toBe("");
+	});
+});
+
+describe("applyRootTypeSign / isAbnormalBalance — red means something again", () => {
+	// account_summary's docstring: "Caller renders sign as appropriate". A
+	// normal 45,000,000 UZS Payable balance is SUM(debit - credit) = -45,000,000
+	// on the wire; that is not the sign a human reads a payable in.
+	it("flips a Liability/Equity/Income balance, so a normal credit balance reads positive", () => {
+		expect(applyRootTypeSign(-45000000, "Liability")).toBe(45000000);
+		expect(applyRootTypeSign(-100, "Equity")).toBe(100);
+		expect(applyRootTypeSign(-100, "Income")).toBe(100);
+	});
+
+	it("leaves Asset/Expense balances alone — their normal balance is already a debit", () => {
+		expect(applyRootTypeSign(500, "Asset")).toBe(500);
+		expect(applyRootTypeSign(500, "Expense")).toBe(500);
+	});
+
+	it("passes through non-numbers (null balance = not loaded yet) unchanged", () => {
+		expect(applyRootTypeSign(null, "Liability")).toBe(null);
+		expect(applyRootTypeSign(undefined, "Asset")).toBe(undefined);
+	});
+
+	it("a normal payable is not abnormal, even though its raw wire value is negative", () => {
+		expect(isAbnormalBalance(-45000000, "Liability")).toBe(false);
+	});
+
+	it("a payable that is genuinely in debit (overpaid) IS abnormal", () => {
+		// raw -(-100) after the flip is negative: a Liability account with a
+		// debit balance, which is the one case red should still mean something.
+		expect(isAbnormalBalance(100, "Liability")).toBe(true);
+	});
+
+	it("an overdrawn asset account is abnormal", () => {
+		expect(isAbnormalBalance(-500, "Asset")).toBe(true);
+	});
+
+	it("null/undefined balances are never flagged abnormal", () => {
+		expect(isAbnormalBalance(null, "Asset")).toBe(false);
 	});
 });

@@ -6,7 +6,13 @@ import { useSession } from "../../stores/session.js";
 import { call } from "../../api/client.js";
 import { formatMoney } from "../../composables/money.js";
 import { t } from "../../composables/i18n.js";
-import { accountLabel, accountTypeLabel, newAccountCurrency } from "../../composables/accounts.js";
+import {
+	accountLabel,
+	accountTypeLabel,
+	applyRootTypeSign,
+	isAbnormalBalance,
+	newAccountCurrency,
+} from "../../composables/accounts.js";
 import { useConfirm } from "../../composables/useConfirm.js";
 import { useToast } from "../../composables/useToast.js";
 import { useEscapeBack } from "../../composables/useEscapeBack.js";
@@ -237,8 +243,18 @@ function primaryValue(n) {
 	return b.base;
 }
 
+/**
+ * account_summary/chart_balances return raw SUM(debit - credit), which reads
+ * negative for a perfectly normal Liability/Equity/Income balance. Sign is
+ * interpreted here, at the point of display — never in the raw value the rest
+ * of this file computes with (isNegative/abnormal checks below un-flip it).
+ */
+function displayValue(n) {
+	return applyRootTypeSign(primaryValue(n), n.root_type);
+}
+
 function primaryBalance(n) {
-	const v = primaryValue(n);
+	const v = displayValue(n);
 	if (v === null || v === undefined) return "—";
 	const ccy = !n.is_group && balances.value.get(n.name).acc !== null ? accCurrencyOf(n) : baseCurrencyOf(n);
 	return formatMoney(v, ccy, user.value.language);
@@ -251,9 +267,23 @@ function showBaseHint(n) {
 	return accCurrencyOf(n) !== baseCurrencyOf(n);
 }
 
+/** The base-currency hint line, same root-type sign flip as the main line. */
+function baseHintValue(n) {
+	const b = balances.value.get(n.name);
+	return b ? applyRootTypeSign(b.base, n.root_type) : null;
+}
+
+/**
+ * Red is reserved for a balance that is still negative AFTER the root-type
+ * sign flip — genuinely abnormal for its own root type (an overdrawn asset, a
+ * debit-balance payable, a loss-making income account). Group rows are never
+ * colored: a roll-up mixing normal and abnormal children isn't itself
+ * abnormal, and painting every Liability/Equity/Income branch red regardless
+ * of root type was the whole complaint this replaces.
+ */
 function isNegative(n) {
-	const v = primaryValue(n);
-	return typeof v === "number" && v < 0;
+	if (n.is_group) return false;
+	return isAbnormalBalance(primaryValue(n), n.root_type);
 }
 
 function toggle(name) {
@@ -545,7 +575,7 @@ watch(includeDisabled, async () => {
 							<template v-if="balances.has(n.name)">
 								<div>{{ primaryBalance(n) }}</div>
 								<div v-if="showBaseHint(n)" class="small text-secondary fw-normal">
-									≈ {{ formatMoney(balances.get(n.name).base, balances.get(n.name).company_currency || currency, user.language) }}
+									≈ {{ formatMoney(baseHintValue(n), balances.get(n.name).company_currency || currency, user.language) }}
 								</div>
 							</template>
 							<span v-else-if="n.is_group" class="text-secondary">—</span>

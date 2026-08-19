@@ -44,3 +44,36 @@ export function accountTypeLabel(type) {
 export function newAccountCurrency(parentNode, companyCurrency) {
 	return (parentNode && parentNode.account_currency) || companyCurrency || "";
 }
+
+// Root types whose normal balance is a CREDIT. GL Entry / account_summary
+// always return SUM(debit - credit), so these three read negative under a
+// perfectly normal balance — see applyRootTypeSign.
+const CREDIT_NORMAL_ROOT_TYPES = new Set(["Liability", "Equity", "Income"]);
+
+/**
+ * Flip a raw `debit - credit` balance into the sign a human expects to read
+ * for `rootType`.
+ *
+ * `account_summary`'s own docstring says "caller renders sign as appropriate"
+ * — the Chart of Accounts page never did. A perfectly normal 45,000,000 UZS
+ * payable came back as -45,000,000 and was painted red, and every Liability /
+ * Equity / Income balance and roll-up did the same: roughly 40% of the page
+ * was a permanent wall of red carrying zero information.
+ */
+export function applyRootTypeSign(value, rootType) {
+	if (typeof value !== "number") return value;
+	return CREDIT_NORMAL_ROOT_TYPES.has(rootType) ? -value : value;
+}
+
+/**
+ * Whether a balance is genuinely abnormal for its root type — i.e. still
+ * negative AFTER `applyRootTypeSign`. This, not a raw `< 0` check, is the
+ * only thing red should ever mean on the Chart of Accounts: an overdrawn
+ * asset, a debit-balance payable, a loss-making income account. Group rows
+ * are never colored by this — callers must gate on `!node.is_group` — a
+ * roll-up mixing normal and abnormal children is not itself "abnormal".
+ */
+export function isAbnormalBalance(value, rootType) {
+	if (typeof value !== "number") return false;
+	return applyRootTypeSign(value, rootType) < 0;
+}
