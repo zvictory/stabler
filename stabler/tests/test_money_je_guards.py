@@ -164,10 +164,14 @@ def _load_money(
 			return db_modified
 		return None
 
+	def _sql(query, params=None, **kwargs):
+		ctx.queries.append((query, params))
+		return [[7]] if "COUNT(" in query else []
+
 	frappe.db = types.SimpleNamespace(
 		get_value=_get_value,
 		exists=lambda *a, **k: True,
-		sql=lambda query, params=None, **kw: ctx.queries.append((query, params)) or [],
+		sql=_sql,
 	)
 
 	def _get_all(doctype, filters=None, fields=None, **kwargs):
@@ -488,6 +492,94 @@ class CreateAndPostTest(unittest.TestCase):
 		with self.assertRaises(Exception):
 			money.create_journal_entry("Test Co", "2026-08-19", unbalanced, submit=True)
 		self.assertNotIn("insert", ctx.trace)
+
+
+def _where_of(query: str) -> str:
+	"""The WHERE body of a captured statement, normalised for comparison."""
+	body = query.split("WHERE", 1)[1]
+	for tail in ("ORDER BY", "LIMIT"):
+		body = body.split(tail, 1)[0]
+	return " ".join(body.split())
+
+
+class JournalEntryListSearchTest(unittest.TestCase):
+	"""B1 — the list truncated at 50 rows and offered no way to look past it.
+
+	An accountant cutting 10-20 entries a day sees the last two or three days
+	inside the default window, and the only way into anything older was an
+	`?open=` deep link somebody else had to give them. "Open JV-2026-00412" and
+	"find last month's rent accrual" were not slow, they were unsupported.
+	"""
+
+	def test_the_endpoint_still_returns_a_plain_list(self):
+		"""The shape is a contract with a caller this lane does not own. Wrapping
+		the rows in an envelope would break the JE page the moment it merged,
+		which is a worse outcome than a missing count."""
+		money, _ctx = _load_money()
+
+		self.assertIsInstance(money.list_journal_entries("Test Co"), list)
+
+	def test_the_search_term_is_bound_not_spliced_into_the_sql(self):
+		"""This is the one endpoint whose filter comes straight from a text box."""
+		money, ctx = _load_money()
+
+		money.list_journal_entries("Test Co", search="rent' OR 1=1 --")
+
+		query, params = ctx.queries[-1]
+		self.assertNotIn("1=1", query)
+		self.assertEqual(params["search"], "%rent' OR 1=1 --%")
+
+	def test_search_matches_the_three_things_a_person_remembers(self):
+		"""The document number they were told, the note they typed, or the cheque
+		number on the paper in their hand."""
+		money, ctx = _load_money()
+
+		money.list_journal_entries("Test Co", search="rent")
+
+		query, _params = ctx.queries[-1]
+		for column in ("je.name LIKE", "je.user_remark LIKE", "je.cheque_no LIKE"):
+			self.assertIn(column, query)
+
+	def test_an_empty_search_adds_no_condition(self):
+		money, ctx = _load_money()
+
+		money.list_journal_entries("Test Co", search="   ")
+
+		query, params = ctx.queries[-1]
+		self.assertNotIn("LIKE", query)
+		self.assertNotIn("search", params)
+
+	def test_the_count_is_taken_over_exactly_the_filter_the_list_used(self):
+		"""A total counted over a different filter than the rows on screen is
+		worse than no total: it reads as "there are more" when there are not, or
+		hides the truncation it exists to reveal."""
+		money, ctx = _load_money()
+
+		money.list_journal_entries("Test Co", from_date="2026-07-01", status="Draft", search="rent")
+		money.journal_entry_count("Test Co", from_date="2026-07-01", status="Draft", search="rent")
+
+		list_query, list_params = ctx.queries[-2]
+		count_query, count_params = ctx.queries[-1]
+		self.assertEqual(_where_of(list_query), _where_of(count_query))
+		self.assertEqual(
+			{k: v for k, v in list_params.items() if k not in ("limit", "start")},
+			count_params,
+		)
+
+	def test_the_count_reports_the_total_behind_the_truncation(self):
+		money, _ctx = _load_money()
+
+		self.assertEqual(money.journal_entry_count("Test Co"), {"total_count": 7})
+
+	def test_paging_past_the_first_page_is_possible(self):
+		"""A count that says 312 is a taunt if there is no way to reach row 51."""
+		money, ctx = _load_money()
+
+		money.list_journal_entries("Test Co", limit=50, start=50)
+
+		query, params = ctx.queries[-1]
+		self.assertIn("OFFSET", query)
+		self.assertEqual(params["start"], 50)
 
 
 if __name__ == "__main__":

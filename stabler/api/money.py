@@ -772,19 +772,21 @@ def _date_filters(from_date: str | None, to_date: str | None):
 	return clauses, params
 
 
-@frappe.whitelist()
-def list_journal_entries(
+def _je_list_conditions(
 	company: str,
-	from_date: str | None = None,
-	to_date: str | None = None,
-	status: str | None = None,
-	limit: int = 50,
-):
-	_require_company(company)
-	_assert_company_scope(company)  # tenant isolation: reject a foreign company arg
+	from_date: str | None,
+	to_date: str | None,
+	status: str | None,
+	search: str | None,
+) -> tuple[str, dict]:
+	"""The one WHERE clause the journal list and its count both run.
+
+	Shared on purpose: a total counted over a different filter than the rows on
+	screen is worse than no total — it claims there is more when there is not, or
+	hides the truncation it exists to reveal.
+	"""
 	clauses, params = _date_filters(from_date, to_date)
 	params["company"] = company
-	params["limit"] = int(limit)
 	qualified_clauses = [c.replace("posting_date", "je.posting_date") for c in clauses]
 	# Status filter: Draft (0), Submitted (1), Cancelled (2); default hides cancelled.
 	status_clause = {
@@ -792,13 +794,45 @@ def list_journal_entries(
 		"Submitted": "je.docstatus = 1",
 		"Cancelled": "je.docstatus = 2",
 	}.get(status or "", "je.docstatus < 2")
-	where = " AND ".join(
-		[
-			"je.company = %(company)s",
-			status_clause,
-			*qualified_clauses,
-		]
-	)
+	conditions = [
+		"je.company = %(company)s",
+		status_clause,
+		*qualified_clauses,
+	]
+	# The three things somebody actually remembers about an entry: the document
+	# number they were given, the note they typed, or the cheque number on the
+	# paper in their hand. Bound, never spliced — this filter comes from a text box.
+	term = (search or "").strip()
+	if term:
+		params["search"] = f"%{term}%"
+		conditions.append(
+			"(je.name LIKE %(search)s OR je.user_remark LIKE %(search)s OR je.cheque_no LIKE %(search)s)"
+		)
+	return " AND ".join(conditions), params
+
+
+@frappe.whitelist()
+def list_journal_entries(
+	company: str,
+	from_date: str | None = None,
+	to_date: str | None = None,
+	status: str | None = None,
+	limit: int = 50,
+	start: int = 0,
+	search: str | None = None,
+):
+	"""One page of journal entries, newest first — still a plain list.
+
+	The shape is deliberately unchanged: the SPA reads the returned rows
+	directly, so wrapping them in an envelope would break the page. The total
+	behind the truncation lives in `journal_entry_count`, which runs the same
+	filter.
+	"""
+	_require_company(company)
+	_assert_company_scope(company)  # tenant isolation: reject a foreign company arg
+	where, params = _je_list_conditions(company, from_date, to_date, status, search)
+	params["limit"] = int(limit)
+	params["start"] = int(start)
 	# JE.total_debit/total_credit are base-currency totals. Surface them as
 	# *_base + base_currency so the UI can never confuse them with a row's
 	# native account-currency amount.
@@ -814,12 +848,38 @@ def list_journal_entries(
 		JOIN `tabCompany` c ON c.name = je.company
 		WHERE {where}
 		ORDER BY je.posting_date DESC, je.name DESC
-		LIMIT %(limit)s
+		LIMIT %(limit)s OFFSET %(start)s
 		""",
 		params,
 		as_dict=True,
 	)
 	return rows
+
+
+@frappe.whitelist()
+def journal_entry_count(
+	company: str,
+	from_date: str | None = None,
+	to_date: str | None = None,
+	status: str | None = None,
+	search: str | None = None,
+) -> dict:
+	"""How many journal entries the current filter actually holds.
+
+	`list_journal_entries` stops at `limit` and says nothing about what it left
+	behind, so a list showing the last two days of a busy month looked exactly
+	like a month with two days of work in it. Compare `total_count` with
+	`start + len(rows)` for "there is more"; the filter is the shared one, so the
+	two numbers always describe the same set.
+	"""
+	_require_company(company)
+	_assert_company_scope(company)  # tenant isolation: reject a foreign company arg
+	where, params = _je_list_conditions(company, from_date, to_date, status, search)
+	total = frappe.db.sql(
+		f"SELECT COUNT(*) FROM `tabJournal Entry` je WHERE {where}",
+		params,
+	)
+	return {"total_count": int(total[0][0] or 0) if total else 0}
 
 
 @frappe.whitelist()
