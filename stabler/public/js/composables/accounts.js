@@ -89,6 +89,24 @@ export function accountAncestorPath(node, accountsByName) {
 	return path.join(" › ");
 }
 
+/**
+ * A Select option label for `node` that carries its whole position in the
+ * tree — "Asset › Current Assets › Bank Accounts" — rather than a bare name.
+ *
+ * Select.vue searches an option's `label` text (see the searchKeys fallback
+ * in Select.vue), so building the path into the label is what makes the
+ * parent picker searchable by branch, not just by the leaf name — two groups
+ * named "Прочие расходы" and "Прочие" stop being indistinguishable.
+ */
+export function accountOptionPath(node, accountsByName) {
+	const parts = [];
+	if (node.root_type) parts.push(t(node.root_type));
+	const ancestors = accountAncestorPath(node, accountsByName);
+	if (ancestors) parts.push(ancestors);
+	parts.push(accountLabel(node));
+	return parts.join(" › ");
+}
+
 // Root types whose normal balance is a CREDIT. GL Entry / account_summary
 // always return SUM(debit - credit), so these three read negative under a
 // perfectly normal balance — see applyRootTypeSign.

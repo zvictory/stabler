@@ -9,6 +9,7 @@ import { t } from "../../composables/i18n.js";
 import {
 	accountAncestorPath,
 	accountLabel,
+	accountOptionPath,
 	accountTypeLabel,
 	applyRootTypeSign,
 	isAbnormalBalance,
@@ -172,8 +173,20 @@ const currency = computed(
 const parentAccountOptions = computed(() =>
 	flat.value
 		.filter((r) => r.is_group && r.name !== editingName.value)
-		.map((r) => ({ value: r.name, label: accountLabel(r) }))
+		.map((r) => ({ value: r.name, label: accountOptionPath(r, accountsByName.value) }))
 );
+
+// Contextualizes the modal — "New account in Assets › Bank Accounts" — rather
+// than a generic title that never says which group a click on the tree's "+"
+// (or a parent picked inside the modal) is about to add into.
+const createModalTitle = computed(() => {
+	if (editMode.value) return t("Edit account");
+	const parent = form.value.parent_account
+		? flat.value.find((r) => r.name === form.value.parent_account)
+		: null;
+	if (parent) return t("New account in {parent}", { parent: accountLabel(parent) });
+	return t("New account");
+});
 
 async function load() {
 	if (!activeCompany.value) return;
@@ -634,7 +647,7 @@ watch(includeDisabled, async () => {
 			<div class="modal-content">
 				<div class="modal-header">
 					<h5 class="modal-title">
-						{{ editMode ? t("Edit account") : t("New account") }}
+						{{ createModalTitle }}
 					</h5>
 					<button type="button" class="btn-close" aria-label="Close" @click="closeCreate" :disabled="submitting"></button>
 				</div>

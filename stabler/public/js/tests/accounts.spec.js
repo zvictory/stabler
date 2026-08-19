@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
 	accountAncestorPath,
 	accountLabel,
+	accountOptionPath,
 	accountTypeLabel,
 	applyRootTypeSign,
 	isAbnormalBalance,
@@ -159,6 +160,28 @@ describe("accountAncestorPath — the tree position a flattened search result lo
 		// Terminates instead of hanging — the exact path printed for a corrupt
 		// chain matters less than the guarantee that this returns at all.
 		expect(accountAncestorPath(cyclic.A, cyclic)).toBe("A › B");
+	});
+});
+
+describe("accountOptionPath — the parent picker's searchable label", () => {
+	const accountsByName = {
+		Assets: { name: "Assets", account_name: "Assets", parent_account: null, root_type: "Asset" },
+		"Bank Accounts": {
+			name: "Bank Accounts",
+			account_name: "Bank Accounts",
+			parent_account: "Assets",
+			root_type: "Asset",
+		},
+	};
+
+	it("builds root_type › ancestors › own label, so the branch is part of the searchable text", () => {
+		expect(accountOptionPath(accountsByName["Bank Accounts"], accountsByName)).toBe(
+			"Asset › Assets › Банковские счета"
+		);
+	});
+
+	it("skips the ancestor segment at the root but still leads with root_type", () => {
+		expect(accountOptionPath(accountsByName["Assets"], accountsByName)).toBe("Asset › Assets");
 	});
 });
 
