@@ -127,20 +127,20 @@ Access Review,Erişim İncelemesi
 Access token,
 Access token (JWT),
 Account,Hesap
-Account created.,
-Account currency,
+Account created.,Hesap oluşturuldu.
+Account currency,Hesap Para Birimi
 Account currency must match the payment account.,Hesap para birimi ödeme hesabıyla eşleşmelidir.
-Account disabled.,
-Account enabled.,
+Account disabled.,Hesap devre dışı bırakıldı.
+Account enabled.,Hesap etkinleştirildi.
 Account Ledger,Hesap Defteri
 Account matches,Hesap eşleşiyor
-Account name,
+Account name,Hesap Adı
 Account name is required.,
-Account number,
+Account number,Hesap Numarası
 Account number {0} is already used in {1}.,
 Account or cost centre…,
-Account type,
-Account updated.,
+Account type,Hesap Türü
+Account updated.,Hesap güncellendi.
 Account {0} is not a {1} account for party {2}.,
 Account {0} not found.,
 Accounting entries,
@@ -201,7 +201,7 @@ Add at least one item with a positive quantity.,En az bir kalem pozitif miktarla
 Add at least one raw material line.,En az bir hammadde satırı ekleyin.
 Add certificate,Sertifika ekle
 Add charge line,Gider satırı ekle
-Add child account,
+Add child account,Alt Hesap Ekle
 Add child warehouse,Alt depo ekle
 Add column,Sütun ekle
 Add cost item,Masraf kalemi ekle
@@ -560,7 +560,7 @@ Back to PI selection,PI seçimine dön
 Back to summary,
 Back up now,Şimdi yedekle
 Back up with files,Dosyalarla yedekle
-Backdated postings are frozen before {0}.,
+Backdated postings are frozen before {0}.,{0} tarihinden önceki geçmişe dönük kayıtlar dondurulmuştur.
 Backup & DR,Yedekleme ve OK
 Backup created.,Yedek oluşturuldu.
 Backup file not found: {0},
@@ -845,7 +845,7 @@ Certificate required,Sertifika gerekli
 "Certificate, CI or authority… ⌘K","Sertifika, fatura veya kurum… ⌘K"
 Certificates appear here as they are registered against imports.,Sertifikalar ithalatlara kaydedildikçe burada görünür.
 Certification,Sertifika
-Change,
+Change,Değiştir
 Change status,Durumu değiştir
 Changed,Değişti
 Channel,Kanal
@@ -1553,12 +1553,12 @@ Direct stock updates via Sales Invoice are disabled by company policy. ,
 Direction,Yön
 Directions,Yol tarifi
 Director board,Direktör paneli
-Disable,
-Disable account?,
+Disable,Devre Dışı Bırak
+Disable account?,Hesap devre dışı bırakılsın mı?
 Disabled,Pasif
 Disc,İndirim
 Disc %,İndirim %
-Discard,
+Discard,Kaydetme
 Discard unsaved changes?,
 DISCHARGED,Boşaltıldı
 Discipline,Disiplin
@@ -1701,7 +1701,7 @@ Early leave (min),Erken çıkış (dk)
 Early leave deduction,
 Earnings,Kazançlar
 Edit,Düzenle
-Edit account,
+Edit account,Hesabı Düzenle
 Edit category,Kategoriyi düzenle
 Edit customer,Müşteriyi düzenle
 Edit Deal,Anlaşmayı Düzenle
@@ -1771,8 +1771,8 @@ Employment,
 empty,boş
 Empty,Boş
 Empty allowed list = user can access every company.,Boş izin listesi = kullanıcı tüm şirketlere erişebilir.
-Enable,
-Enable account?,
+Enable,Etkinleştir
+Enable account?,Hesap etkinleştirilsin mi?
 Enable TimePay sync,
 Enabled,Etkin
 Enabled (bot access),Etkin (bot erişimi)
@@ -1780,7 +1780,7 @@ End,Bitiş
 End Date,Bitiş Tarihi
 End date cannot be before start date.,
 End Date must be on or after Start Date.,"Bitiş Tarihi, Başlangıç Tarihinden önce olamaz."
-End of ledger,
+End of ledger,Listenin sonu
 Enforcement,Zorlama
 Enter a bank and/or cash amount.,Banka ve/veya nakit tutar girin.
 Enter a quantity for at least one row.,En az bir satır için miktar girin.
@@ -1797,7 +1797,7 @@ Enter protocol / authorization reason…,Protokol no veya yetki nedenini girin�
 Enter the quantity to return for each line. Leave 0 to exclude a line.,Her satır için iade miktarını girin. Satırı dışarıda bırakmak için 0 bırakın.
 Enter your Employee ID and secure PIN,
 Entered rate deviates by {pct}% from CBU rate.,"Girilen kur, CBU kurundan %{pct} sapıyor."
-entries,
+entries,kayıt
 Entries on/before this date are frozen.,
 entries. Narrow the date range to see older ones.,kayıt. Daha eskileri görmek için tarih aralığını daraltın.
 Entry,Kayıt
@@ -2314,7 +2314,7 @@ Gross Weight,Brüt Ağırlık
 Gross weight,Brüt ağırlık
 Gross Weight (kg),Brüt Ağırlık (kg)
 Group,Grup
-"Group account (can contain children, holds no transactions itself)",
+"Group account (can contain children, holds no transactions itself)","Grup hesap (alt hesap içerebilir, kendisi işlem tutmaz)"
 Group Code / Title,Grup kodu / adı
 "Group warehouse (can contain children, holds no stock itself)","Grup depo (alt depo içerebilir, kendi stoğu yoktur)"
 Grouped by Contract. Unlinked invoices are shown separately; transaction and base currency are never mixed.,Sözleşmeye göre gruplanır. Bağlantısız faturalar ayrı gösterilir; para birimleri karıştırılmaz.
@@ -2416,7 +2416,7 @@ In transit,Yolda
 IN_TRANSIT,Yolda
 Inactive,Pasif
 Include child transactions,Alt kayıtların hareketlerini dahil et
-Include disabled,
+Include disabled,Devre dışıları da göster
 Include drafts,Taslakları dahil et
 Include in Landed Cost,Landed Cost'a Dahil Et
 Include subcategories,Alt kategorileri dahil et
@@ -2724,7 +2724,7 @@ Loading FX account balances…,
 Loading imports flow…,İthalat akışı yükleniyor…
 Loading invoices,
 Loading logistics readiness…,Lojistik hazırlık yükleniyor…
-Loading more…,
+Loading more…,Daha fazla yükleniyor…
 Loading RFQs…,RFQ'lar yükleniyor…
 Loading tender funnel…,Huni yükleniyor…
 Loading warehouses…,Depolar yükleniyor…
@@ -2895,7 +2895,7 @@ Moved to {0},{0} aşamasına taşındı
 Movement,Hareket
 Movements,Hareketler
 moves stock,
-Multi-currency,
+Multi-currency,Çoklu Para Birimi
 Multi-Currency Parties,
 Multi-level approval incomplete,
 Multiplier,Çarpan
@@ -2942,7 +2942,7 @@ Never,Hiçbir zaman
 Never tested,Hiç test edilmedi
 New,Yeni
 new,yeni
-New account,
+New account,Yeni Hesap
 New asset purchase,
 New bill,Yeni fatura
 New BOM,Yeni BOM
@@ -3566,7 +3566,7 @@ Opening Balance,Açılış Bakiyesi
 Opening balance,Açılış bakiyesi
 "Opening balance, period movement, and running balance by account.",
 Opening balances,Açılış bakiyeleri
-Opening date,
+Opening date,Açılış Tarihi
 Opening qty,Açılış adedi
 "Opening, in, out and closing quantity per item over a date range.","Tarih aralığında her kalem için açılış, giriş, çıkış ve kapanış miktarı."
 Operational,Operasyonel
@@ -3690,7 +3690,7 @@ Paid to,Alıcı
 Paid {0} employees — {1},{0} çalışana ödendi — {1}
 paid {pct}% · {outstanding} to pay,%{pct} ödendi · {outstanding} ödenecek
 Parent,Ana
-Parent account,
+Parent account,Ana Hesap
 Parent account is required.,
 Parent account {0} does not belong to {1}.,
 Parent account {0} is not a group account.,
@@ -5211,8 +5211,8 @@ These are ERPNext's back-dating guards — the reason it blocks creating or edit
 These device users have no employee link. Confirm a match to re-queue their punches.,Bu cihaz kullanıcılarının çalışan bağlantısı yok. Kayıtlarını yeniden işlemek için eşleşmeyi onaylayın.
 These lines allocate more than the Proforma Invoice has left: {0},Bu satırlar proforma faturada kalandan fazlasını tahsis ediyor: {0}
 These linked records go with it:,Şu bağlı kayıtlar da onunla birlikte gider:
-This account will be hidden from the active chart of accounts.,
-This account will be shown in the active chart of accounts again.,
+This account will be hidden from the active chart of accounts.,Bu hesap etkin hesap planından gizlenecek.
+This account will be shown in the active chart of accounts again.,Bu hesap etkin hesap planında yeniden gösterilecek.
 This adjusts stock for {0} item(s) and posts the difference to the ledger. The action is recorded against your name.,Bu {0} kalem için stoğu düzeltir ve farkı deftere işler. İşlem sizin adınıza kaydedilir.
 This bank transaction is already fully reconciled.,
 This bill is already vouchered ({0}) and can no longer be unlinked.,Bu fatura zaten fişe alınmış ({0}) ve artık bağlantısı kaldırılamaz.
@@ -6231,14 +6231,14 @@ Round Off for Opening,
 Service Received But Not Billed,
 Tax,
 Temporary,
-No accounts yet,
-Set up the chart of accounts for {company} to see it here.,
-Payment Calendar,
-Everyone enters their own plan. The calendar shows the days it lands on.,
-My plan,
-Whole company,
-Click a day to plan on it,
-Nothing planned this month yet.,
+No accounts yet,Henüz hesap yok
+Set up the chart of accounts for {company} to see it here.,Burada görmek için {company} için hesap planını ayarlayın.
+Payment Calendar,Ödeme Takvimi
+Everyone enters their own plan. The calendar shows the days it lands on.,Herkes kendi planını girer. Takvim bu planların düştüğü günleri gösterir.
+My plan,Planım
+Whole company,Tüm Şirket
+Click a day to plan on it,Plan eklemek için bir güne tıklayın
+Nothing planned this month yet.,Bu ay için henüz bir şey planlanmadı.
 Customer receipt,
 Vendor payment,
 Item purchase,
@@ -6249,35 +6249,35 @@ Vendor Payment,
 Item Purchase,
 Other Receipt,
 Other Payment,
-Confidence,
+Confidence,Güven Düzeyi
 "Committed — agreed, date is set",
 Expected — most likely,
 Tentative — not discussed yet,
-A tentative receipt does not pay a committed salary — the three are summed apart.,
-Repeat,
+A tentative receipt does not pay a committed salary — the three are summed apart.,Tahmini bir tahsilat kesinleşmiş bir maaşı ödemez — üç güven düzeyi ayrı toplanır.
+Repeat,Tekrar
 One time,
 Every week ×4,
 Every month ×3,
 Every month ×6,
 Every month ×12,
-Incoming,
-Outgoing,
-Heaviest day,
-What for,
-New planned payment,
-Edit planned payment,
-Add to plan,
-The amount and date are read from the document.,
-"This screen does not pay anything. Money leaves through Payments, Kassa or Journal; a row is closed here by hand.",
-Realized,
-Realized on,
-Totals by planner,
-Visible to authorised roles only,
-Planned by,
-Rows,
-Failed to load the payment calendar.,
-Failed to save the plan.,
-Failed to delete the plan.,
+Incoming,Gelen
+Outgoing,Giden
+Heaviest day,En Yoğun Gün
+What for,Ne için
+New planned payment,Yeni Planlanan Ödeme
+Edit planned payment,Planlanan Ödemeyi Düzenle
+Add to plan,Plana Ekle
+The amount and date are read from the document.,Tutar ve tarih belgeden alınır.
+"This screen does not pay anything. Money leaves through Payments, Kassa or Journal; a row is closed here by hand.","Bu ekran herhangi bir ödeme yapmaz. Para Ödemeler, Kasa veya Yevmiye üzerinden çıkar; satır burada elle kapatılır."
+Realized,Gerçekleşti
+Realized on,Gerçekleşme Tarihi
+Totals by planner,Planlayana Göre Toplamlar
+Visible to authorised roles only,Yalnızca yetkili roller görebilir
+Planned by,Planlayan
+Rows,Satır
+Failed to load the payment calendar.,Ödeme takvimi yüklenemedi.
+Failed to save the plan.,Plan kaydedilemedi.
+Failed to delete the plan.,Plan silinemedi.
 Discard this draft?,Taslak silinsin mi?
 The lines you entered have not been saved yet.,Girdiğiniz satırlar henüz kaydedilmedi.
 Keep editing,Düzenlemeye dön

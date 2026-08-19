@@ -128,20 +128,20 @@ Access Review,Проверка доступа
 Access token,
 Access token (JWT),
 Account,Счёт
-Account created.,
-Account currency,
+Account created.,Счёт создан.
+Account currency,Валюта счёта
 Account currency must match the payment account.,Валюта счета должна соответствовать валюте платёжного счета.
-Account disabled.,
-Account enabled.,
+Account disabled.,Счёт отключён.
+Account enabled.,Счёт включён.
 Account Ledger,Журнал счета
 Account matches,Счёт совпадает
-Account name,
+Account name,Название счёта
 Account name is required.,
-Account number,
+Account number,Номер счёта
 Account number {0} is already used in {1}.,
 Account or cost centre…,
-Account type,
-Account updated.,
+Account type,Тип счёта
+Account updated.,Счёт обновлён.
 Account {0} is not a {1} account for party {2}.,
 Account {0} not found.,
 Accounting entries,
@@ -202,7 +202,7 @@ Add at least one item with a positive quantity.,Добавьте хотя бы �
 Add at least one raw material line.,Добавьте хотя бы одну строку сырья.
 Add certificate,Добавить сертификат
 Add charge line,Добавить строку расходов
-Add child account,
+Add child account,Добавить дочерний счёт
 Add child warehouse,Добавить подсклад
 Add column,Добавить колонку
 Add cost item,Добавить статью расходов
@@ -566,7 +566,7 @@ Back to PI selection,Назад к выбору PI
 Back to summary,
 Back up now,Создать копию сейчас
 Back up with files,Копия с файлами
-Backdated postings are frozen before {0}.,
+Backdated postings are frozen before {0}.,Проводки задним числом заблокированы до {0}.
 Backup & DR,Резервные копии и аварийное восстановление
 Backup created.,Резервная копия создана.
 Backup file not found: {0},
@@ -852,7 +852,7 @@ Certificate required,Требуется сертификат
 "Certificate, CI or authority… ⌘K","Сертификат, инвойс или орган… ⌘K"
 Certificates appear here as they are registered against imports.,Сертификаты появляются здесь по мере регистрации по импортам.
 Certification,Сертификация
-Change,
+Change,Изменить
 Change status,Изменить статус
 Changed,Изменено
 Channel,Канал
@@ -1560,12 +1560,12 @@ Direct stock updates via Sales Invoice are disabled by company policy. ,
 Direction,Направление
 Directions,Маршрут
 Director board,Панель директора
-Disable,
-Disable account?,
+Disable,Отключить
+Disable account?,Отключить счёт?
 Disabled,Отключен
 Disc,Скидка
 Disc %,Скидка %
-Discard,
+Discard,Не сохранять
 Discard unsaved changes?,
 DISCHARGED,Выгружен
 Discipline,Дисциплина
@@ -1708,7 +1708,7 @@ Early leave (min),Ранний уход (мин)
 Early leave deduction,
 Earnings,Начисления
 Edit,Редактировать
-Edit account,
+Edit account,Редактировать счёт
 Edit category,Редактировать категорию
 Edit customer,Редактировать покупателя
 Edit Deal,Редактировать сделку
@@ -1779,8 +1779,8 @@ Employment,
 empty,пусто
 Empty,Пусто
 Empty allowed list = user can access every company.,Пустой список разрешений = пользователь может получить доступ к любой компании.
-Enable,
-Enable account?,
+Enable,Включить
+Enable account?,Включить счёт?
 Enable TimePay sync,
 Enabled,Включено
 Enabled (bot access),Включён (доступ бота)
@@ -1788,7 +1788,7 @@ End,Конец
 End Date,Дата окончания
 End date cannot be before start date.,
 End Date must be on or after Start Date.,Дата окончания должна быть на или после даты начала.
-End of ledger,
+End of ledger,Конец списка
 Enforcement,Принуждение
 Enter a bank and/or cash amount.,Укажите сумму банк и/или наличные.
 Enter a quantity for at least one row.,Укажите количество хотя бы для одной строки.
@@ -1805,7 +1805,7 @@ Enter protocol / authorization reason…,Введите номер проток�
 Enter the quantity to return for each line. Leave 0 to exclude a line.,"Введите количество возврата для каждой строки. Укажите 0, чтобы исключить строку."
 Enter your Employee ID and secure PIN,
 Entered rate deviates by {pct}% from CBU rate.,Введённый курс отклоняется от курса ЦБ на {pct}%.
-entries,
+entries,записей
 Entries on/before this date are frozen.,
 entries. Narrow the date range to see older ones.,"записи. Сузьте диапазон дат, чтобы увидеть старые."
 Entry,Запись
@@ -2321,7 +2321,7 @@ Gross Weight,Вес брутто
 Gross weight,Брутто-вес
 Gross Weight (kg),Вес брутто (кг)
 Group,Группа
-"Group account (can contain children, holds no transactions itself)",
+"Group account (can contain children, holds no transactions itself)","Групповой счёт (может содержать дочерние счета, сам не участвует в проводках)"
 Group Code / Title,Код / название группы
 "Group warehouse (can contain children, holds no stock itself)","Складская группа (может содержать подгруппы, сама не содержит запасы)"
 Grouped by Contract. Unlinked invoices are shown separately; transaction and base currency are never mixed.,Группировка по договору. Непривязанные счета показаны отдельно; валюты не смешиваются.
@@ -2423,7 +2423,7 @@ In transit,В пути
 IN_TRANSIT,В пути
 Inactive,Неактивные
 Include child transactions,Включая операции дочерних
-Include disabled,
+Include disabled,Показывать отключённые
 Include drafts,Включая черновики
 Include in Landed Cost,Включать в себестоимость (landed cost)
 Include subcategories,Включать подкатегории
@@ -2731,7 +2731,7 @@ Loading FX account balances…,
 Loading imports flow…,Загрузка процесса импорта…
 Loading invoices,
 Loading logistics readiness…,Загрузка логистической готовности…
-Loading more…,
+Loading more…,Загрузка ещё…
 Loading RFQs…,Загрузка запросов цен…
 Loading tender funnel…,Загрузка воронки…
 Loading warehouses…,Загрузка складов…
@@ -2902,7 +2902,7 @@ Moved to {0},Перемещено в {0}
 Movement,Движение
 Movements,Движения
 moves stock,
-Multi-currency,
+Multi-currency,Мультивалютная
 Multi-Currency Parties,
 Multi-level approval incomplete,
 Multiplier,Множитель
@@ -2949,7 +2949,7 @@ Never,Никогда
 Never tested,Никогда не тестировалось
 New,Новое
 new,новое
-New account,
+New account,Новый счёт
 New asset purchase,
 New bill,Новый счёт
 New BOM,Новая спецификация
@@ -3573,7 +3573,7 @@ Opening Balance,Начальный остаток
 Opening balance,Начальный остаток
 "Opening balance, period movement, and running balance by account.",
 Opening balances,Начальные остатки
-Opening date,
+Opening date,Дата открытия
 Opening qty,Начальный остаток
 "Opening, in, out and closing quantity per item over a date range.","Начальный остаток, приход, расход и конечный остаток по каждой позиции за период."
 Operational,Операционно
@@ -3698,7 +3698,7 @@ Paid to,Выплачено
 Paid {0} employees — {1},Оплачено {0} сотрудникам — {1}
 paid {pct}% · {outstanding} to pay,оплачено {pct}% · {outstanding} к оплате
 Parent,Родитель
-Parent account,
+Parent account,Родительский счёт
 Parent account is required.,
 Parent account {0} does not belong to {1}.,
 Parent account {0} is not a group account.,
@@ -5220,8 +5220,8 @@ These are ERPNext's back-dating guards — the reason it blocks creating or edit
 These device users have no employee link. Confirm a match to re-queue their punches.,"У этих пользователей устройства нет связи с сотрудником. Подтвердите совпадение, чтобы переобработать их отметки."
 These lines allocate more than the Proforma Invoice has left: {0},"Эти строки распределяют больше, чем осталось по проформе-инвойсу: {0}"
 These linked records go with it:,Вместе с ним пойдут эти связанные записи:
-This account will be hidden from the active chart of accounts.,
-This account will be shown in the active chart of accounts again.,
+This account will be hidden from the active chart of accounts.,Счёт будет скрыт из активного плана счетов.
+This account will be shown in the active chart of accounts again.,Счёт снова будет показан в активном плане счетов.
 This adjusts stock for {0} item(s) and posts the difference to the ledger. The action is recorded against your name.,Это скорректирует остатки по {0} позиции(ям) и проведёт разницу в учёте. Действие записывается на ваше имя.
 This bank transaction is already fully reconciled.,
 This bill is already vouchered ({0}) and can no longer be unlinked.,Этот счёт уже оформлен в ваучер ({0}) и больше не отвязывается.
