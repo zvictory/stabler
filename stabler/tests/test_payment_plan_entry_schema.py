@@ -157,14 +157,38 @@ class PaymentPlanEntryRolesTest(unittest.TestCase):
 	def test_the_patch_creates_exactly_the_planned_roles(self):
 		self.assertEqual(set(_patch_roles()), PLANNED_ROLES)
 
-	def test_the_roles_are_spa_only(self):
-		"""``desk_access = 0`` — these roles are a capability layer, not Desk access.
+	def test_a_role_the_model_sync_already_created_is_still_made_desk_less(self):
+		"""Insert-if-missing never reaches its own ``desk_access = 0``.
 
-		Every Stabler role patch since v84 sets it; a role created without it
-		hands the holder the Frappe Desk, which the SPA exists to replace.
+		Measured on genesis-test.local, 2026-08-19: ``Payment Plan Manager`` was
+		created at 20:26:23.753 and this patch's Patch Log row is stamped
+		20:26:24.033. Frappe's model sync creates any Role a doctype's
+		``permissions`` rows name, and every patch from v81 on runs under
+		``[post_model_sync]`` — so the sync wins the race every time and the
+		patch takes the skip branch. Every role v84 and v87 "created" reads
+		``desk_access = 1`` on a migrated site for exactly this reason.
+
+		The role here is the one the sync made: it exists, and it has Desk
+		access. The patch must correct it rather than skip it.
 		"""
-		source = PATCH.read_text(encoding="utf-8")
-		self.assertIn("desk_access = 0", source)
+		module, state = _load_patch(existing={"Payment Plan User": 1, "Payment Plan Manager": 1})
+		module.execute()
+		self.assertEqual(state["saved"], {"Payment Plan User": 0, "Payment Plan Manager": 0})
+		self.assertEqual(state["inserted"], [], "the roles already existed; nothing should be inserted")
+
+	def test_a_role_that_is_already_desk_less_is_left_alone(self):
+		"""A replayed migrate is normal. Re-saving an unchanged Role would
+		re-evaluate the user type of everyone holding it for no reason."""
+		module, state = _load_patch(existing={"Payment Plan User": 0, "Payment Plan Manager": 0})
+		module.execute()
+		self.assertEqual(state["saved"], {})
+		self.assertEqual(state["inserted"], [])
+
+	def test_a_missing_role_is_created_without_desk_access(self):
+		module, state = _load_patch(existing={})
+		module.execute()
+		self.assertEqual(sorted(state["inserted"]), sorted(PLANNED_ROLES))
+		self.assertEqual(state["insert_desk_access"], {r: 0 for r in PLANNED_ROLES})
 
 	def test_the_patch_is_registered(self):
 		registered = [
@@ -178,6 +202,38 @@ class PaymentPlanEntryRolesTest(unittest.TestCase):
 		would abort the migrate for every tenant."""
 		source = PATCH.read_text(encoding="utf-8")
 		self.assertIn('frappe.db.exists("Role"', source)
+
+
+def _load_patch(existing: dict):
+	"""Import the patch against a fake ``frappe`` whose Role table is ``existing``."""
+	_SANDBOX.evict(PATCH_MODULE, "frappe")
+	state = {"inserted": [], "insert_desk_access": {}, "saved": {}}
+
+	class _Role:
+		def __init__(self, name=None):
+			self.name = name
+			self.role_name = name
+			self.desk_access = 1
+
+		def insert(self, **kwargs):
+			state["inserted"].append(self.role_name)
+			state["insert_desk_access"][self.role_name] = self.desk_access
+
+		def save(self, **kwargs):
+			state["saved"][self.name] = self.desk_access
+
+	frappe = types.ModuleType("frappe")
+	frappe.new_doc = lambda _doctype: _Role()
+	frappe.get_doc = lambda _doctype, name: _Role(name)
+	frappe.db = types.SimpleNamespace(
+		exists=lambda _doctype, name: name in existing,
+		get_value=lambda _doctype, name, field: existing.get(name),
+	)
+	_SANDBOX.install({"frappe": frappe})
+
+	import importlib
+
+	return importlib.import_module(PATCH_MODULE), state
 
 
 def _patch_roles() -> tuple[str, ...]:
