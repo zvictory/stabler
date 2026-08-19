@@ -20,6 +20,7 @@ import {
 import { formatDate, formatDateTime, todayIso, daysAgoIso} from "../../composables/date.js";
 import { t } from "../../composables/i18n.js";
 import { accountLabel } from "../../composables/accounts.js";
+import { getDocstatusLabel, getStatusBadgeClass } from "../../composables/status.js";
 import MoneyInput from "../../components/MoneyInput.vue";
 import DateInput from "../../components/DateInput.vue";
 import EmptyState from "../../components/EmptyState.vue";
@@ -189,13 +190,6 @@ async function fetchRate(row) {
 		/* leave the rate for the user to enter */
 	}
 }
-
-const statusBadge = (d) => {
-	if (d === 0) return { cls: "bg-yellow-lt", label: t("Draft") };
-	if (d === 1) return { cls: "bg-green-lt", label: t("Submitted") };
-	if (d === 2) return { cls: "bg-red-lt", label: t("Cancelled") };
-	return { cls: "bg-secondary-lt", label: String(d) };
-};
 
 // ── Party + account pickers ──────────────────────────────────────────────────
 function searchParty(row) {
@@ -594,7 +588,7 @@ watch(() => form.value.posting_date, (d) => {
 									</div>
 									<div v-if="r.user_remark" class="small text-truncate" style="max-width: 220px">{{ r.user_remark }}</div>
 									<div class="small text-secondary">{{ formatDate(r.posting_date) }} ·
-										<span class="badge" :class="statusBadge(r.docstatus).cls">{{ statusBadge(r.docstatus).label }}</span>
+										<span class="badge" :class="getStatusBadgeClass('Journal Entry', r.docstatus)">{{ getDocstatusLabel(r.docstatus) }}</span>
 									</div>
 								</td>
 								<td class="text-end font-monospace align-middle">{{ formatMoney(r.total_debit_base, r.base_currency || currency, user.language) }}</td>
@@ -626,7 +620,7 @@ watch(() => form.value.posting_date, (d) => {
 							<div>
 								<h3 class="m-0 font-monospace">{{ detail.name }}</h3>
 								<div class="small text-secondary">{{ formatDateTime(detail.posting_date) }} · {{ detail.voucher_type }}
-									· <span class="badge" :class="statusBadge(detail.docstatus).cls">{{ statusBadge(detail.docstatus).label }}</span>
+									· <span class="badge" :class="getStatusBadgeClass('Journal Entry', detail.docstatus)">{{ getDocstatusLabel(detail.docstatus) }}</span>
 								</div>
 							</div>
 							<div class="d-flex gap-2">
