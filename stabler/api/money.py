@@ -26,6 +26,49 @@ _FX_LO = 0.2  # 5× too low
 _FX_HI = 5.0  # 5× too high
 
 
+def _pending_payment_for_invoice(invoice_type: str, invoice_name: str) -> str | None:
+	"""Name of an UNSUBMITTED Payment Entry already allocated to this invoice.
+
+	Deliberately narrow. A *submitted* payment against the same invoice is the
+	ordinary instalment case: it has already reduced `outstanding_amount`, so the
+	next payment is being decided against a real remaining figure. It is the draft
+	that is dangerous, because it moves no number anywhere — the invoice reads as
+	fully unpaid while a payment for it is already waiting in the approvals queue.
+
+	Child rows carry the parent's `docstatus`, so the reference table answers this
+	in one read without joining `tabPayment Entry`.
+	"""
+	rows = frappe.get_all(
+		"Payment Entry Reference",
+		filters={
+			"reference_doctype": invoice_type,
+			"reference_name": invoice_name,
+			"docstatus": 0,
+		},
+		fields=["parent"],
+		limit=1,
+	)
+	return rows[0]["parent"] if rows else None
+
+
+def _assert_no_pending_payment(invoice_type: str, invoice_name: str) -> None:
+	"""Refuse a second payment while the first has not been submitted yet.
+
+	This closes the operator's repeat — click Pay, lose the response or see the
+	invoice still unpaid, click Pay again — not a true race. Two genuinely
+	simultaneous requests can both read no draft before either insert lands; the
+	durable fix for that is a payload-derived unique key on the Payment Entry
+	itself, which costs a doctype change and a migrate on seven sites.
+	"""
+	pending = _pending_payment_for_invoice(invoice_type, invoice_name)
+	if pending:
+		frappe.throw(
+			_(
+				"A payment for this invoice has already been created and not submitted yet ({0}). Approve, submit or delete it before recording another."
+			).format(pending)
+		)
+
+
 def _invoice_payment_can_allocate(docstatus) -> bool:
 	"""Payment Entries can only allocate against submitted invoices."""
 	return cint(docstatus) == 1
@@ -2251,6 +2294,14 @@ def create_payment_for_invoice(
 	_assert_company_scope(company)  # tenant isolation: reject a foreign company arg
 	_assert_can_read(invoice_type, invoice_name)  # no allocating against an invoice you can't see
 	check_concurrency(invoice_type, invoice_name, modified)
+	# `check_concurrency` above is the whole double-payment defence on the ordinary
+	# path — `doc.submit()` runs `update_outstanding_amt`, the invoice's `modified`
+	# moves, and a repeat arrives stale. Over the approval threshold that stops
+	# being true: the maker-checker branch below inserts the payment and leaves it
+	# a Draft, so nothing writes the invoice and the caller's token stays valid for
+	# as long as the request sits in the queue — while the invoice still reads as
+	# unpaid, which is what invites the second click in the first place.
+	_assert_no_pending_payment(invoice_type, invoice_name)
 	defaults = payment_defaults_for_invoice(company, invoice_type, invoice_name)
 	posting_date = posting_date or today()
 

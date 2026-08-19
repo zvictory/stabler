@@ -6295,3 +6295,4 @@ Filled in to balance the entry,Fişi denkleştirmek için otomatik dolduruldu
 {0} converts to {1}; the other lines come to {2}.,{0} karşılığı {1}; diğer satırlar {2} ediyor.
 Move the date forward or open the posting window to save.,Kaydetmek için tarihi ileri alın ya da kayıt penceresini açın.
 Accounting is frozen before {0}.,Muhasebe {0} tarihinden öncesine kapalı.
+"A payment for this invoice has already been created and not submitted yet ({0}). Approve, submit or delete it before recording another.","Bu fatura için zaten oluşturulmuş ve henüz gönderilmemiş bir ödeme var ({0}). Bir başkasını kaydetmeden önce onu onaylayın, gönderin veya silin."
