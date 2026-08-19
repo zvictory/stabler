@@ -225,3 +225,4 @@ stabler.tests.test_remittance_actions
 stabler.tests.test_remittance_queries
 stabler.tests.test_payment_plan_entry_schema
 stabler.tests.test_payment_plan_api
+stabler.tests.test_money_je_guards

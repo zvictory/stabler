@@ -1089,16 +1089,27 @@ def update_journal_entry(
 	user_remark: str | None = None,
 	cheque_no: str | None = None,
 	cheque_date: str | None = None,
+	modified: str | None = None,
 ) -> dict:
 	"""Edit a DRAFT Journal Entry in place (docstatus must be 0).
 
 	Replaces the account lines from the editor, auto-dropping any empty rows so a
 	blank line can't block the save. Submitted entries are read-only here — they
 	must be cancelled and amended (audit trail), never edited in place.
+
+	`modified` is the concurrency token, as on submit / cancel / delete. It stays
+	OPTIONAL here because `check_concurrency` rejects a *missing* token on an
+	existing document, and this endpoint's caller does not send one yet — making
+	the call unconditional would refuse every draft save instead of only the
+	conflicting ones. When the token is sent, a stale one is refused before the
+	rows are replaced: this endpoint substitutes the whole account table rather
+	than merging it, so a lost update leaves nothing behind to notice.
 	"""
 	if not name:
 		frappe.throw("Journal Entry name is required.")
 	_assert_can_write("Journal Entry", name)
+	if modified:
+		check_concurrency("Journal Entry", name, modified)
 	doc = frappe.get_doc("Journal Entry", name)
 	if doc.docstatus != 0:
 		frappe.throw(
