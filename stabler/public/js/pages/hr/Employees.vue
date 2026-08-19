@@ -23,7 +23,6 @@ const { activeCompany, user } = storeToRefs(session);
 const toast = useToast();
 
 const currency = computed(() => session.currency);
-const moneyOrig = (v) => formatMoney(v, advanceCurrency.value || currency.value, user.value.language);
 const finMoney = (v) => formatMoney(v, (fin.value && fin.value.display_currency) || advanceCurrency.value || currency.value, user.value.language);
 
 // ── List + balances ──────────────────────────────────────────────────────────
@@ -209,13 +208,26 @@ async function openVoucher(m) {
 		jeLoading.value = false;
 	}
 }
+// The row buttons act straight from the ledger, which is a GL/draft projection
+// and carries no `modified`. So the token is read from the document itself —
+// the same source `JournalEntries.vue:494` uses. Reading it at click time rather
+// than at list load keeps a legitimate action from being refused just because
+// the ledger was opened minutes ago; the double-click a fresh token cannot stop
+// is stopped by the docstatus assertion behind each endpoint (`money.py:1315`,
+// `:1331`, `:1346`). Sending nothing is the one option that never works:
+// `check_concurrency` refuses a MISSING token on an existing document, which is
+// how these three buttons stayed dead from the day they were written.
+async function voucherToken(m) {
+	const doc = await call("stabler.api.money.journal_entry_detail", { name: m.voucher_no });
+	return doc?.modified;
+}
 async function reloadAfterTx() {
 	await Promise.all([loadBalances(), selected.value ? select(selected.value) : Promise.resolve()]);
 }
 async function submitTx(m) {
 	txBusy.value = true;
 	try {
-		await call("stabler.api.money.submit_journal_entry", { name: m.voucher_no });
+		await call("stabler.api.money.submit_journal_entry", { name: m.voucher_no, modified: await voucherToken(m) });
 		toast.success(t("Entry submitted."));
 		await reloadAfterTx();
 	} catch (err) { toast.error(err?.message || t("Submit failed.")); }
@@ -226,7 +238,7 @@ async function deleteTx(m) {
 	if (!ok) return;
 	txBusy.value = true;
 	try {
-		await call("stabler.api.money.delete_journal_entry", { name: m.voucher_no });
+		await call("stabler.api.money.delete_journal_entry", { name: m.voucher_no, modified: await voucherToken(m) });
 		toast.success(t("Draft deleted."));
 		await reloadAfterTx();
 	} catch (err) { toast.error(err?.message || t("Delete failed.")); }
@@ -237,7 +249,7 @@ async function cancelTx(m) {
 	if (!ok) return;
 	txBusy.value = true;
 	try {
-		await call("stabler.api.money.cancel_journal_entry", { name: m.voucher_no });
+		await call("stabler.api.money.cancel_journal_entry", { name: m.voucher_no, modified: await voucherToken(m) });
 		toast.success(t("Entry cancelled."));
 		await reloadAfterTx();
 	} catch (err) { toast.error(err?.message || t("Cancel failed.")); }

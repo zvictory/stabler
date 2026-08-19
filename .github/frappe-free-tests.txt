@@ -28,6 +28,7 @@ stabler.tests.test_ci_logistics_workspace_source
 stabler.tests.test_ci_to_pinv
 stabler.tests.test_commercial_invoice_transitions
 stabler.tests.test_company_scope_guard
+stabler.tests.test_concurrency_token_call_sites
 stabler.tests.test_container_arrival_hook
 stabler.tests.test_crm_deal_company_scope_patch
 stabler.tests.test_crm_activity_controller
