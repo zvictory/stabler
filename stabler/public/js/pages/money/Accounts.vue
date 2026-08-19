@@ -555,12 +555,11 @@ watch(expanded, (next) => {
 					<tr>
 						<th class="w-1 text-nowrap">{{ t("Code") }}</th>
 						<th>{{ t("Account") }}</th>
-						<th class="w-1">{{ t("Type") }}</th>
 						<th class="w-1 text-end text-nowrap">{{ t("Balance") }}</th>
 						<th class="w-1 text-end">{{ t("Actions") }}</th>
 					</tr>
 				</thead>
-				<SkeletonRows v-if="loading" :rows="10" :cols="5" />
+				<SkeletonRows v-if="loading" :rows="10" :cols="4" />
 				<tbody v-else>
 					<tr
 						v-for="n in flattened"
@@ -612,9 +611,16 @@ watch(expanded, (next) => {
 							>
 								{{ accountAncestorPath(n, accountsByName) }}
 							</div>
-						</td>
-						<td class="text-nowrap">
-							<span v-if="n.account_type" class="badge bg-secondary-lt">{{ accountTypeLabel(n.account_type) }}</span>
+							<!-- account_type used to be its own column, but a long translated
+							     type (e.g. "Stock Received But Not Billed" in Russian) squeezed
+							     the tree instead of the columns with room to spare. -->
+							<div
+								v-if="n.account_type"
+								class="small text-secondary"
+								:style="{ paddingLeft: searchActive ? '0' : `${n.depth * 1.25}rem` }"
+							>
+								{{ accountTypeLabel(n.account_type) }}
+							</div>
 						</td>
 						<td
 							class="text-end font-monospace text-nowrap coa-amount"
