@@ -21,28 +21,14 @@ to protect against, so the test reads the module's own source and refuses it.
 from __future__ import annotations
 
 import ast
-import importlib
 import os
-import types
 import unittest
 
-from stabler.tests.module_sandbox import ModuleSandbox
+from stabler import install_check
 
 _MODULE = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "install_check.py")
-_SOURCE = open(_MODULE, encoding="utf-8").read()
-
-# The module imports `frappe` at top level for its `observe()` half. Only the pure
-# half is under test, and this list gates `make check`, which must not depend on
-# frappe being installed at all — so it is imported against a stub, the same way
-# the patch replay tests do it.
-_SANDBOX = ModuleSandbox()
-_SANDBOX.evict("stabler.install_check", "frappe")
-_SANDBOX.install({"frappe": types.ModuleType("frappe")})
-install_check = importlib.import_module("stabler.install_check")
-
-
-def tearDownModule():
-	_SANDBOX.restore()
+with open(_MODULE, encoding="utf-8") as _fh:
+	_SOURCE = _fh.read()
 
 
 class TheListSaysWhatIsMissingAndWhy(unittest.TestCase):
@@ -95,6 +81,23 @@ class ItMustNeverBecomeTheRepair(unittest.TestCase):
 					self.assertNotIn("patches", alias.name)
 			if isinstance(node, ast.ImportFrom):
 				self.assertNotIn("patches", node.module or "")
+
+	def test_it_does_not_need_frappe_to_be_imported(self):
+		"""The pure half must load on a machine with no bench.
+
+		This gates `make check`, which runs without one — and the fix that made
+		that true is the reason: pushing a stub `frappe` into `sys.modules` at
+		import time turned six unrelated bench modules red, because discovery
+		imports a test module without running it and so nothing ever undid the
+		stub. Keeping the import inside the two functions that need it removes
+		the need for a sandbox entirely.
+		"""
+		tree = ast.parse(_SOURCE)
+		for node in tree.body:
+			if isinstance(node, ast.Import):
+				self.assertNotIn("frappe", [a.name for a in node.names])
+			if isinstance(node, ast.ImportFrom):
+				self.assertNotIn("frappe", (node.module or ""))
 
 	def test_it_writes_nothing(self):
 		"""Read-only in the literal sense: no insert, no save, no set_value, no DDL."""

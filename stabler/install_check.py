@@ -24,7 +24,13 @@ run the individual patches you have read, one at a time.
 
 from __future__ import annotations
 
-import frappe
+# `frappe` is imported inside `observe()` and `run()`, not here. Everything above
+# them — the list of expectations and the verdict — is ordinary Python, and the
+# test that guards this module must be able to import it on a machine with no
+# frappe at all, because `make check` runs without a bench. The alternative, a
+# stub pushed into `sys.modules`, poisoned six unrelated bench modules the one
+# time it was tried: an import-time sandbox is unpaired by construction, since
+# nothing restores it when a module is imported by discovery but never run.
 
 # (kind, key, patch, why it matters). `why` is the whole value of the report:
 # "Role Stabler Declarant is missing" is not actionable; "no one will ever create
@@ -179,6 +185,8 @@ def _keys(exp: dict, present: dict):
 
 def observe() -> dict:
 	"""Ask the site the questions `missing()` needs answered. Read-only."""
+	import frappe
+
 	present: dict = {}
 	for exp in _EXPECTATIONS:
 		if exp["kind"] == "doc":
@@ -202,6 +210,8 @@ def observe() -> dict:
 
 def run() -> dict:
 	"""Print the report and return it. Creates nothing, runs no patch."""
+	import frappe
+
 	gaps = missing(_EXPECTATIONS, observe())
 	site = frappe.local.site
 	if not gaps:
