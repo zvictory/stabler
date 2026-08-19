@@ -7,10 +7,12 @@ import { call } from "../../api/client.js";
 import { formatMoney } from "../../composables/money.js";
 import { t } from "../../composables/i18n.js";
 import {
+	accountAncestorPath,
 	accountLabel,
 	accountTypeLabel,
 	applyRootTypeSign,
 	isAbnormalBalance,
+	matchesAccountSearch,
 	newAccountCurrency,
 } from "../../composables/accounts.js";
 import { useConfirm } from "../../composables/useConfirm.js";
@@ -138,16 +140,16 @@ const tree = computed(() => {
 	return build("__ROOT__", 0);
 });
 
+// Flat account list keyed by name, for accountAncestorPath's parent-chain
+// walk — the tree computed above already threw the parent chain away.
+const accountsByName = computed(() => Object.fromEntries(flat.value.map((a) => [a.name, a])));
+
+const searchActive = computed(() => search.value.trim().length > 0);
+
 const flattened = computed(() => {
 	const out = [];
 	const term = search.value.trim().toLowerCase();
-	// Match the code explicitly — it only worked by accident before, via the
-	// docname ("1410 - Cash - MIK"), which breaks on unnumbered charts.
-	const matchesTerm = (n) =>
-		!term ||
-		(n.account_name || "").toLowerCase().includes(term) ||
-		String(n.account_number || "").toLowerCase().includes(term) ||
-		(n.name || "").toLowerCase().includes(term);
+	const matchesTerm = (n) => matchesAccountSearch(n, term);
 	function walk(node) {
 		const expandedNow = term ? true : expanded.value.has(node.name);
 		const matched = matchesTerm(node);
@@ -536,7 +538,7 @@ watch(includeDisabled, async () => {
 						<td>
 							<div
 								class="d-flex align-items-center gap-1"
-								:style="{ paddingLeft: `${n.depth * 1.25}rem` }"
+								:style="{ paddingLeft: searchActive ? '0' : `${n.depth * 1.25}rem` }"
 							>
 								<button
 									v-if="n.is_group"
@@ -563,6 +565,15 @@ watch(includeDisabled, async () => {
 									{{ accountLabel(n) }}
 								</a>
 								<span v-if="n.disabled" class="badge bg-secondary-lt ms-2">{{ t("Disabled") }}</span>
+							</div>
+							<!-- Search flattens the tree and drops non-matching ancestors, so the
+							     row's indentation stops meaning anything (zeroed above). This is
+							     what tells three same-named "Kassa" results apart. -->
+							<div
+								v-if="searchActive && accountAncestorPath(n, accountsByName)"
+								class="small text-secondary"
+							>
+								{{ accountAncestorPath(n, accountsByName) }}
 							</div>
 						</td>
 						<td class="text-nowrap">

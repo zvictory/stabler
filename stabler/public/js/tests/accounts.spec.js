@@ -1,10 +1,12 @@
 import { describe, expect, it } from "vitest";
 
 import {
+	accountAncestorPath,
 	accountLabel,
 	accountTypeLabel,
 	applyRootTypeSign,
 	isAbnormalBalance,
+	matchesAccountSearch,
 	newAccountCurrency,
 } from "../composables/accounts.js";
 
@@ -92,6 +94,71 @@ describe("newAccountCurrency", () => {
 		// keeps the typed value intact. Guessing here is what caused the bug.
 		expect(newAccountCurrency(null, "")).toBe("");
 		expect(newAccountCurrency(undefined, undefined)).toBe("");
+	});
+});
+
+describe("matchesAccountSearch — search has to find what the row shows", () => {
+	// The COA search box matched only account_name/account_number/name — raw
+	// English docfield values — while the row renders accountLabel(node), the
+	// translated string. A Russian user typing "наличные" for an account
+	// labeled "Наличные" on screen got "No matches found".
+	it("matches the translated label even when the term shares nothing with the English source", () => {
+		const node = { account_name: "Bank Accounts", name: "Bank Accounts" };
+		expect(matchesAccountSearch(node, "банков")).toBe(true);
+	});
+
+	it("still matches the raw docfield values, for counterparty/bank names the catalogue doesn't carry", () => {
+		expect(matchesAccountSearch({ account_name: "MIKAS USD", name: "MIKAS USD" }, "mikas")).toBe(true);
+	});
+
+	it("matches account_number", () => {
+		expect(matchesAccountSearch({ account_name: "Cash", account_number: "1110" }, "1110")).toBe(true);
+	});
+
+	it("is case-insensitive", () => {
+		expect(matchesAccountSearch({ account_name: "Bank Accounts" }, "BANK")).toBe(true);
+	});
+
+	it("has nothing to match against and returns false", () => {
+		expect(matchesAccountSearch({ account_name: "Bank Accounts" }, "receivable")).toBe(false);
+	});
+
+	it("treats an empty term as matching everything", () => {
+		expect(matchesAccountSearch({ account_name: "Bank Accounts" }, "")).toBe(true);
+	});
+});
+
+describe("accountAncestorPath — the tree position a flattened search result lost", () => {
+	// Assets is not in the translation fixture (falls through untranslated);
+	// Bank Accounts is. A real chart mixes both kinds of ancestor.
+	const accountsByName = {
+		Assets: { name: "Assets", account_name: "Assets", parent_account: null },
+		"Bank Accounts": { name: "Bank Accounts", account_name: "Bank Accounts", parent_account: "Assets" },
+		"1110 - Kassa - M": {
+			name: "1110 - Kassa - M",
+			account_name: "Kassa",
+			parent_account: "Bank Accounts",
+		},
+	};
+
+	it("walks root-first, translating each ancestor, excluding the node itself", () => {
+		expect(accountAncestorPath(accountsByName["1110 - Kassa - M"], accountsByName)).toBe(
+			"Assets › Банковские счета"
+		);
+	});
+
+	it("is empty at the root", () => {
+		expect(accountAncestorPath(accountsByName["Assets"], accountsByName)).toBe("");
+	});
+
+	it("does not loop forever on a corrupt/self-referencing parent chain", () => {
+		const cyclic = {
+			A: { name: "A", account_name: "A", parent_account: "B" },
+			B: { name: "B", account_name: "B", parent_account: "A" },
+		};
+		// Terminates instead of hanging — the exact path printed for a corrupt
+		// chain matters less than the guarantee that this returns at all.
+		expect(accountAncestorPath(cyclic.A, cyclic)).toBe("A › B");
 	});
 });
 

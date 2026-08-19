@@ -45,6 +45,50 @@ export function newAccountCurrency(parentNode, companyCurrency) {
 	return (parentNode && parentNode.account_currency) || companyCurrency || "";
 }
 
+/**
+ * Whether `node` matches a Chart of Accounts search term.
+ *
+ * Measured on the COA page: the search box matched only `account_name` /
+ * `account_number` / `name` — all raw English docfield values — while the row
+ * on screen renders `accountLabel(node)`, the translated string. A Russian
+ * user typing what they can read ("наличные") got "No matches found" for an
+ * account labeled "Наличные" on screen. Adding the translated label to the
+ * match set is what makes "search what you see" actually true.
+ */
+export function matchesAccountSearch(node, term) {
+	if (!term) return true;
+	const needle = String(term).toLowerCase();
+	return (
+		(node.account_name || "").toLowerCase().includes(needle) ||
+		String(node.account_number || "").toLowerCase().includes(needle) ||
+		(node.name || "").toLowerCase().includes(needle) ||
+		accountLabel(node).toLowerCase().includes(needle)
+	);
+}
+
+/**
+ * The chain of ancestor labels above `node`, root first, translated, joined
+ * with " › ". Does not include `node` itself.
+ *
+ * Needed because a search that flattens the tree drops every non-matching
+ * ancestor, but the row's indentation used to stay put — three "Kassa"
+ * results could land at the same visual depth with nothing above them saying
+ * which is Assets › Current Assets › Cash and which is a Liability contra
+ * account. `accountsByName` is the flat account list keyed by `name`.
+ */
+export function accountAncestorPath(node, accountsByName) {
+	const path = [];
+	let parentName = node && node.parent_account;
+	const seen = new Set();
+	while (parentName && accountsByName[parentName] && !seen.has(parentName)) {
+		seen.add(parentName);
+		const parent = accountsByName[parentName];
+		path.unshift(accountLabel(parent));
+		parentName = parent.parent_account;
+	}
+	return path.join(" › ");
+}
+
 // Root types whose normal balance is a CREDIT. GL Entry / account_summary
 // always return SUM(debit - credit), so these three read negative under a
 // perfectly normal balance — see applyRootTypeSign.
