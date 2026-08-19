@@ -31,13 +31,18 @@ def check_upcoming_deadlines():
 	for ci in invoices:
 		deadline = get_7day_payment_deadline(ci.eta_transit_port)
 		if deadline and deadline <= today_str:
-			# Dedupe on (CI, deadline) — same shape as uzex_poll._notify. The
-			# deadline is the fact that changes: a re-run against the same CI
-			# with the same eta_transit_port must produce the same subject
-			# (already exists -> skip), but a corrected ETA is a genuinely new
-			# deadline and must still alert.
+			# Dedupe on (CI, deadline, today) — uzex_poll._notify's shape plus a
+			# day scope. The deadline is the fact that changes, so a re-run with
+			# the same eta_transit_port produces the same subject and is skipped,
+			# while a corrected ETA still alerts. The day scope is what keeps this
+			# a DAILY alarm: an overdue CI's (name, deadline) pair never changes
+			# again, so keying on it alone would nag once on the day the deadline
+			# passed and then stay silent for the rest of the invoice's life.
 			subject = f"Upcoming Payment Deadline for CI {ci.name}: {deadline}"
-			if frappe.db.exists("Notification Log", {"document_name": ci.name, "subject": subject}):
+			if frappe.db.exists(
+				"Notification Log",
+				{"document_name": ci.name, "subject": subject, "creation": [">=", today_str]},
+			):
 				continue
 
 			msg = (

@@ -6,12 +6,16 @@ with `bench execute` — before this fix it inserted a fresh Notification Log
 re-run on the same day sent the same "pay this CI" alert twice.
 
 The fix follows `stabler/tasks/uzex_poll.py::_notify` — dedupe on
-`(document_name, subject)` before inserting. The dedupe key here is the
-Commercial Invoice name PLUS the computed deadline, because the deadline is
-the fact that actually changes: a re-run against the same CI with the same
-`eta_transit_port` must produce the same subject (already exists → skipped),
-but a CI whose ETA got corrected — a genuinely new deadline — must still
-alert, and a second overdue CI must never be swallowed by the first one's key.
+`(document_name, subject)` before inserting — with one addition uzex does not
+need. The key here is the Commercial Invoice name PLUS the computed deadline
+PLUS the calendar day. Deadline, because that is the fact that actually
+changes: a re-run against the same CI with the same `eta_transit_port` must
+produce the same subject (already exists → skipped), but a CI whose ETA got
+corrected is a genuinely new deadline and must still alert, and a second
+overdue CI must never be swallowed by the first one's key. Calendar day,
+because this is a daily alarm and an overdue CI's (name, deadline) pair never
+changes again — see `ANewDayStillAlerts` below for why keying on those two
+alone would trade the duplicate for a permanent silence.
 """
 
 from __future__ import annotations
@@ -39,32 +43,50 @@ class _Row(dict):
 class _NotificationDoc:
 	"""Stands in for `frappe.new_doc("Notification Log")`."""
 
-	def __init__(self, sink):
+	def __init__(self, sink, clock):
 		self.__dict__["_sink"] = sink
+		self.__dict__["_clock"] = clock
 
 	def insert(self, ignore_permissions=False):
-		self._sink.append({k: v for k, v in self.__dict__.items() if not k.startswith("_")})
+		row = {k: v for k, v in self.__dict__.items() if not k.startswith("_")}
+		# `creation` is stamped by the database, never by the task — but the
+		# dedupe guard reads it, so the double has to behave like the DB here or
+		# it would answer the day-scoping question without ever asking it.
+		row["creation"] = f"{self._clock[0]} 03:00:00"
+		self._sink.append(row)
 
 
-def _load(invoices_by_call, today_str="2026-08-20"):
+def _load(invoices_by_call, today_holder=None):
 	"""Import eta_payment_alert against a hand-built frappe.
 
 	``invoices_by_call`` is a list of invoice-row lists, one per call to
 	``check_upcoming_deadlines()`` the test makes (so a test can change what
-	the CI's ETA looks like between calls). ``inserted`` accumulates every
-	Notification Log actually inserted, across every call, so the dedupe
-	guard is exercised against real prior state rather than a canned answer.
+	the CI's ETA looks like between calls). ``today_holder`` is a one-item list
+	the test mutates between calls, so the same loaded module can be asked
+	"what day is it" differently on each call — two nightly ticks, not two
+	hand-runs. ``inserted`` accumulates every Notification Log actually
+	inserted, across every call, so the dedupe guard is exercised against real
+	prior state rather than a canned answer.
 	"""
+	today_holder = today_holder if today_holder is not None else ["2026-08-20"]
 	calls = iter(invoices_by_call)
 	inserted: list[dict] = []
 
 	frappe = types.ModuleType("frappe")
 
+	def _match(row, key, want):
+		if isinstance(want, list):
+			op, value = want
+			if op != ">=":
+				raise AssertionError(f"the double does not model this operator: {op!r}")
+			return str(row.get(key, "")) >= str(value)
+		return row.get(key) == want
+
 	def _exists(doctype, filters):
 		# Faithful to the real guard: apply the given filters, don't just say yes.
 		if doctype != "Notification Log":
 			return False
-		return any(all(row.get(k) == v for k, v in filters.items()) for row in inserted)
+		return any(all(_match(row, k, v) for k, v in filters.items()) for row in inserted)
 
 	def _get_all(doctype, filters=None, fields=None, pluck=None):
 		if doctype == "Company":
@@ -74,7 +96,7 @@ def _load(invoices_by_call, today_str="2026-08-20"):
 		raise AssertionError(f"unexpected get_all({doctype!r})")
 
 	def _new_doc(doctype):
-		doc = _NotificationDoc(inserted)
+		doc = _NotificationDoc(inserted, today_holder)
 		doc.doctype = doctype
 		return doc
 
@@ -86,7 +108,7 @@ def _load(invoices_by_call, today_str="2026-08-20"):
 	frappe_utils = types.ModuleType("frappe.utils")
 	frappe_utils.add_days = lambda *a, **k: None
 	frappe_utils.getdate = lambda s: s
-	frappe_utils.today = lambda: today_str
+	frappe_utils.today = lambda: today_holder[0]
 	frappe.utils = frappe_utils
 
 	settings_mod = types.ModuleType("stabler.stabler.doctype.stabler_settings.stabler_settings")
@@ -167,6 +189,33 @@ class GenuinelyNewSituationsStillAlert(unittest.TestCase):
 
 		module.check_upcoming_deadlines()
 		self.assertEqual(len(inserted), 2, "a genuinely new deadline for the same CI must not be swallowed")
+
+
+class ANewDayStillAlerts(unittest.TestCase):
+	"""A payment deadline that is already past does not stop being past.
+
+	`check_upcoming_deadlines` sits on the `daily` scheduler (`hooks.py:103`)
+	and the CI stays in its query until the invoice is cancelled or delivered,
+	so an unpaid overdue payment is meant to be raised every night until
+	somebody acts on it. Keying the dedupe on (CI, deadline) alone keys it on
+	two facts that never change again: the nag would fire once, on the day the
+	deadline passed, and stay silent for the rest of the invoice's life. That
+	is a worse failure than the duplicate the dedupe exists to remove — and it
+	is the reasoning this commit's sibling, `repost_queue_alert`, already
+	applies to itself.
+	"""
+
+	def test_the_same_overdue_ci_on_a_later_day_still_alerts(self):
+		ci = _ci("CI-0001", "2026-08-19")
+		today_holder = ["2026-08-20"]
+		module, inserted = _load([[ci], [ci]], today_holder)
+
+		module.check_upcoming_deadlines()
+		self.assertEqual(len(inserted), 1)
+
+		today_holder[0] = "2026-08-21"
+		module.check_upcoming_deadlines()
+		self.assertEqual(len(inserted), 2, "an overdue payment must still be raised on the next nightly tick")
 
 
 if __name__ == "__main__":
