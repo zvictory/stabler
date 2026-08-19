@@ -110,6 +110,33 @@ function round(n, digits) {
 }
 
 /**
+ * Lines whose exchange rate should follow the posting date.
+ *
+ * The rate is asked for `as of` the posting date, but it was only ever asked
+ * for when an account was picked — nothing watched the date. "New entry, pick
+ * the USD account, then set the date to last month" booked last month's entry
+ * at today's rate, and ERPNext keeps whatever rate the form sends, so the
+ * mistake went to the ledger without a word.
+ *
+ * A rate the user corrected by hand is excluded: the bank's rate or the
+ * contract's rate is a decision, and moving the date must not quietly undo it.
+ */
+export function ratesToRefresh(rows, isForeign) {
+	return (Array.isArray(rows) ? rows : []).filter((r) => r && isForeign(r) && !r._rateTouched);
+}
+
+/**
+ * Cache key for the "Bal:" hint.
+ *
+ * The balance is asked for `as_of` the posting date but was cached under the
+ * account name alone, so backdating an entry left the first date's figure on
+ * screen labelled as the new one. A dated figure needs a dated key.
+ */
+export function balanceCacheKey(account, postingDate) {
+	return `${account || ""}|${postingDate || ""}`;
+}
+
+/**
  * The largest base-currency imbalance that is still rounding rather than error.
  *
  * THE ONE SOURCE. Three gates used to decide "balanced" and none of them

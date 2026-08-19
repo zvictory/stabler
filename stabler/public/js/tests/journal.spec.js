@@ -1,12 +1,14 @@
 import { describe, expect, it } from "vitest";
 
 import {
+	balanceCacheKey,
 	balanceTolerance,
 	computeBalancePlug,
 	describePlugResidual,
 	isDraftDirty,
 	isRowOrphaned,
 	postableRows,
+	ratesToRefresh,
 	snapshotDraft,
 } from "../composables/journal.js";
 
@@ -214,6 +216,38 @@ describe("describePlugResidual — why a form that filled the line in will not l
 			row({ account: "1210 - Bank USD - MIK", account_currency: "USD", exchange_rate: 12335, credit: 50 }),
 		];
 		expect(describePlugResidual(rows, { rateOf, tolerance: 4 })).toBeNull();
+	});
+});
+
+describe("what the posting date owns", () => {
+	const isForeign = (r) => !!r.account_currency && r.account_currency !== "UZS";
+
+	// The rate was fetched for form.posting_date but only ever from
+	// onAccountChange, and nothing watched the date. "New entry → pick the USD
+	// account → set the date to last month" therefore booked last month's
+	// entry at today's rate, and ERPNext keeps a rate the form sends
+	// (journal_entry.py only fills in its own when the line has none), so the
+	// wrong rate went to the ledger silently. A percent or two of FX straight
+	// into the trial balance, with nothing on screen to notice.
+	it("refetches the rate for a foreign line when the date moves", () => {
+		const rows = [row({ account_currency: "UZS" }), row({ account_currency: "USD", exchange_rate: 12335 })];
+		expect(ratesToRefresh(rows, isForeign)).toEqual([rows[1]]);
+	});
+
+	// …but a rate the user typed is a decision — the bank's rate, the
+	// contract's rate — and moving the date must not quietly undo it.
+	it("leaves a rate the user corrected by hand alone", () => {
+		const rows = [row({ account_currency: "USD", exchange_rate: 12500, _rateTouched: true })];
+		expect(ratesToRefresh(rows, isForeign)).toEqual([]);
+	});
+
+	// The hint asks the server for the balance `as_of` the posting date, but
+	// cached it under the account name alone. Backdate the entry and the first
+	// date's figure stayed on screen, labelled as if it were the new one —
+	// and "what is in the till" is exactly the decision that hint is for.
+	it("keys a balance to its date, not just its account", () => {
+		expect(balanceCacheKey("1110 - Kassa - MIK", "2026-07-31")).not.toBe(balanceCacheKey("1110 - Kassa - MIK", "2026-08-19"));
+		expect(balanceCacheKey("1110 - Kassa - MIK", "2026-07-31")).toBe(balanceCacheKey("1110 - Kassa - MIK", "2026-07-31"));
 	});
 });
 

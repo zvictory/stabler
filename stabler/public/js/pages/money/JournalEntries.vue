@@ -6,12 +6,14 @@ import { useSession } from "../../stores/session.js";
 import { call } from "../../api/client.js";
 import { formatMoney, moneyFractionDigits } from "../../composables/money.js";
 import {
+	balanceCacheKey,
 	balanceTolerance,
 	computeBalancePlug,
 	describePlugResidual,
 	isDraftDirty,
 	isRowOrphaned,
 	postableRows,
+	ratesToRefresh,
 	snapshotDraft,
 } from "../../composables/journal.js";
 import { formatDate, formatDateTime, todayIso, daysAgoIso} from "../../composables/date.js";
@@ -82,11 +84,15 @@ const accountOptions = ref([]);
 
 // `_auto` marks an amount this form derived rather than one the user typed.
 // It is a UI concern only — submitForm rebuilds the payload field by field.
-const emptyRow = () => ({ account: "", account_currency: "", party_type: "", party: "", party_name: "", exchange_rate: 1, debit: null, credit: null, _auto: false });
+// `_rateTouched` marks a rate the user typed over — the bank's, the
+// contract's — so moving the posting date does not quietly undo it.
+const emptyRow = () => ({ account: "", account_currency: "", party_type: "", party: "", party_name: "", exchange_rate: 1, debit: null, credit: null, _auto: false, _rateTouched: false });
 const form = ref(blankForm());
 const editName = ref(null);
 // The draft as it was opened — what "dirty" is measured against.
 const pristine = ref(null);
+// The posting date this draft was opened with; see the watcher at the bottom.
+let formDate = null;
 const isEdit = computed(() => !!editName.value);
 
 const PARTY_TYPES = computed(() => [
@@ -165,6 +171,7 @@ function setRateQuote(row, val) {
 	const q = rateQuote(row);
 	if (!q) return;
 	row.exchange_rate = toLineRate(val, q.strong, row.account_currency);
+	row._rateTouched = true;
 	runAutoBalance(-1);
 }
 
@@ -210,6 +217,7 @@ function onPartyTypeChange(row) { row.party = ""; row.party_name = ""; }
 function onAccountChange(row) {
 	const a = accountOptions.value.find((o) => o.name === row.account);
 	row.account_currency = (a && a.account_currency) || currencyCode.value;
+	row._rateTouched = false; // a different account is a different rate question
 	if (isForeign(row)) {
 		if (!(Number(row.exchange_rate) > 0) || row.exchange_rate === 1) fetchRate(row);
 	} else {
@@ -218,23 +226,30 @@ function onAccountChange(row) {
 	loadAcctBalance(row.account);
 }
 
-// ── Current account balance hint (cached per account) ────────────────────────
+// ── Current account balance hint (cached per account AND date) ───────────────
+// The figure is asked for `as_of` the posting date, so the date belongs in the
+// key; caching it under the account alone left July's balance on screen next to
+// an August entry, and "what is in the till" is exactly the decision it is for.
 const acctBalances = ref({});
 async function loadAcctBalance(account) {
-	if (!account || !activeCompany.value || acctBalances.value[account]) return;
+	const key = balanceCacheKey(account, form.value.posting_date);
+	if (!account || !activeCompany.value || acctBalances.value[key]) return;
 	try {
 		const b = await call("stabler.api.money.account_balance", {
 			company: activeCompany.value, account, as_of: form.value.posting_date,
 		});
-		acctBalances.value = { ...acctBalances.value, [account]: b };
+		acctBalances.value = { ...acctBalances.value, [key]: b };
 	} catch {
 		/* hint is best-effort */
 	}
 }
 function acctBalanceText(account) {
-	const b = acctBalances.value[account];
+	const b = acctBalances.value[balanceCacheKey(account, form.value.posting_date)];
 	if (!b) return "";
-	return `${t("Bal")}: ${formatMoney(b.balance_acc ?? b.balance_base, b.account_currency || currencyCode.value, user.value.language)}`;
+	const amount = formatMoney(b.balance_acc ?? b.balance_base, b.account_currency || currencyCode.value, user.value.language);
+	// The date is not decoration: the hint answers a different question on
+	// every posting date, and it used to answer all of them the same way.
+	return `${t("Bal")}: ${amount} · ${formatDate(form.value.posting_date)}`;
 }
 
 // ── Contextual back-dating freeze (same source as the money-page banner) ──────
@@ -302,6 +317,7 @@ async function select(name) {
 // ── Create / edit ────────────────────────────────────────────────────────────
 async function openCreate() {
 	form.value = blankForm();
+	formDate = form.value.posting_date;
 	editName.value = null;
 	amendedFrom.value = null;
 	submitError.value = "";
@@ -332,8 +348,10 @@ async function openEdit(d) {
 				debit: a.debit_in_account_currency || null,
 				credit: a.credit_in_account_currency || null,
 				_auto: false, // an amount already posted is the user's, never ours to replace
+				_rateTouched: false, // …but its rate follows the date until the user says otherwise
 			})),
 	};
+	formDate = form.value.posting_date;
 	while (form.value.accounts.length < 2) form.value.accounts.push(emptyRow());
 	form.value.accounts.forEach((r) => r.account && loadAcctBalance(r.account));
 	pristine.value = snapshotDraft(form.value);
@@ -434,6 +452,8 @@ async function submitForm() {
 			});
 			amendedFrom.value = null;
 		}
+		// The entry that just moved these balances is one of them now.
+		acctBalances.value = {};
 		await load();
 		if (res?.name) await select(res.name);
 		else pane.value = "empty";
@@ -456,6 +476,7 @@ async function submitJE() {
 	acting.value = true;
 	try {
 		await call("stabler.api.money.submit_journal_entry", { name: detail.value.name, modified: detail.value.modified });
+		acctBalances.value = {}; // this entry is in the ledger now
 		toast.success(t("Journal entry submitted."));
 		await load();
 		await select(detail.value.name);
@@ -477,6 +498,7 @@ async function cancelJE() {
 	acting.value = true;
 	try {
 		await call("stabler.api.money.cancel_journal_entry", { name: detail.value.name, modified: detail.value.modified });
+		acctBalances.value = {}; // its postings are reversed out of these balances
 		toast.success(t("Journal entry cancelled."));
 		await load();
 		await select(detail.value.name);
@@ -508,11 +530,25 @@ onMounted(async () => {
 });
 watch(activeCompany, () => {
 	accountOptions.value = [];
+	acctBalances.value = {}; // another company's ledger, not this one's
 	pane.value = "empty";
 	detail.value = null;
 	load();
 });
 watch(statusFilter, load);
+
+// The posting date decides two things nothing was watching: the exchange rate
+// the entry is booked at, and which day the "Bal:" hint is answering for. One
+// watcher closes both. `formDate` is what the draft was opened with, so
+// installing a different draft is not mistaken for the user moving the date —
+// that would rewrite the rates a saved draft was created with.
+watch(() => form.value.posting_date, (d) => {
+	if (d === formDate) return;
+	formDate = d;
+	acctBalances.value = {};
+	ratesToRefresh(form.value.accounts, isForeign).forEach(fetchRate);
+	form.value.accounts.forEach((r) => r.account && loadAcctBalance(r.account));
+});
 </script>
 
 <template>
