@@ -5,6 +5,8 @@ import {
 	formatCompactMoney,
 	formatMoney,
 	moneyEpsilon,
+	moneySeparators,
+	parseMoneyInput,
 } from "../composables/money.js";
 
 // Grouping separators come from ICU, and ICU changes them between Node releases
@@ -140,5 +142,100 @@ describe("moneyEpsilon — how close counts as equal", () => {
 	it("defaults to half a cent when the currency is unknown or missing", () => {
 		expect(moneyEpsilon()).toBe(0.005);
 		expect(moneyEpsilon("")).toBe(0.005);
+	});
+});
+
+describe("parseMoneyInput — reading back what a human typed", () => {
+	// The bug this suite exists for: MoneyInput treated "." as a thousands
+	// separator for EVERY language except en, unconditionally. A Mikas user on
+	// the Russian UI typing an opening balance of 1500000.50 got 150000050
+	// posted to the ledger — a hundredfold error, silent until blur. The numeric
+	// keypad's decimal key emits ".", so on ru/tr/uz/uzc it was not an edge
+	// case: it was the only way most people tried to type a decimal.
+	it.each(["ru", "uz", "uzc", "tr"])("reads a dot as the decimal point in %s when no locale says otherwise", (lang) => {
+		expect(parseMoneyInput("1500000.50", lang)).toBe(1500000.5);
+		expect(parseMoneyInput("12.5", lang)).toBe(12.5);
+		expect(parseMoneyInput("0.75", lang)).toBe(0.75);
+	});
+
+	// The mirror image: a Russian-speaking user on the English UI types a comma.
+	it("reads a comma as the decimal point in en when no locale says otherwise", () => {
+		expect(parseMoneyInput("1500000,50", "en")).toBe(1500000.5);
+		expect(parseMoneyInput("12,5", "en")).toBe(12.5);
+	});
+
+	// Both separators present: the LAST one is the decimal, whatever the locale.
+	// This is how every human writes it and how every spreadsheet reads it.
+	it("treats the last of two different separators as the decimal point", () => {
+		expect(parseMoneyInput("1.500.000,50", "ru")).toBe(1500000.5);
+		expect(parseMoneyInput("1,500,000.50", "en")).toBe(1500000.5);
+		expect(parseMoneyInput("1,500,000.50", "ru")).toBe(1500000.5);
+		expect(parseMoneyInput("1.500.000,50", "en")).toBe(1500000.5);
+	});
+
+	// Repeated separator can only be grouping — 1.500.000 is never 1.5.
+	it("treats a repeated separator as grouping", () => {
+		expect(parseMoneyInput("1.500.000", "ru")).toBe(1500000);
+		expect(parseMoneyInput("1,500,000", "en")).toBe(1500000);
+	});
+
+	// The one genuinely ambiguous shape: a single separator followed by exactly
+	// three digits. "1.500" is 1500 to a Russian and 1.5 to an American, and no
+	// amount of cleverness resolves that — the locale has to decide. Documented
+	// here so nobody "fixes" it later into a coin flip.
+	it("lets the locale decide the one ambiguous shape: separator + exactly three digits", () => {
+		expect(parseMoneyInput("1.500", "ru")).toBe(1500);
+		expect(parseMoneyInput("1.500", "en")).toBe(1.5);
+		expect(parseMoneyInput("1,500", "ru")).toBe(1.5);
+		expect(parseMoneyInput("1,500", "en")).toBe(1500);
+	});
+
+	// The grouping characters Intl actually emits. Deleting these from the
+	// cleanup class makes a value the component itself just rendered unreadable.
+	it("strips the grouping whitespace Intl emits, including NBSP and NNBSP", () => {
+		expect(parseMoneyInput("20 820,00", "ru")).toBe(20820);
+		expect(parseMoneyInput("20 820,00", "ru")).toBe(20820);
+		expect(parseMoneyInput("20 820,00", "ru")).toBe(20820);
+		expect(parseMoneyInput("20'820.00", "en")).toBe(20820);
+	});
+
+	it("returns null for blank and unparseable input, so the field can stay empty", () => {
+		expect(parseMoneyInput("", "ru")).toBeNull();
+		expect(parseMoneyInput("   ", "ru")).toBeNull();
+		expect(parseMoneyInput(null, "ru")).toBeNull();
+		expect(parseMoneyInput("abc", "ru")).toBeNull();
+		expect(parseMoneyInput(",", "ru")).toBeNull();
+	});
+
+	it("keeps a half-typed decimal readable so the caret is not trapped", () => {
+		expect(parseMoneyInput("12,", "ru")).toBe(12);
+		expect(parseMoneyInput("12.", "en")).toBe(12);
+	});
+
+	it("carries the sign", () => {
+		expect(parseMoneyInput("-1500000.50", "ru")).toBe(-1500000.5);
+	});
+});
+
+describe("moneySeparators — one locale table, not two", () => {
+	// money.js maps tr to tr-TR (20.820,00) while MoneyInput hardcoded
+	// `en ? en-US : ru-RU`, so a Turkish user read "20 820,00" inside the input
+	// and "20.820,00" in the table beside it. Same page, two groupings.
+	it("gives tr the dot grouping its tables already use", () => {
+		expect(moneySeparators("tr")).toEqual({ group: ".", decimal: "," });
+	});
+
+	it("gives en the comma grouping", () => {
+		expect(moneySeparators("en")).toEqual({ group: ",", decimal: "." });
+	});
+
+	it.each(["ru", "uz", "uzc"])("gives %s a space group and a comma decimal", (lang) => {
+		const { group, decimal } = moneySeparators(lang);
+		expect(norm(group)).toBe(" ");
+		expect(decimal).toBe(",");
+	});
+
+	it("falls back to en for a language the SPA does not ship", () => {
+		expect(moneySeparators("de")).toEqual(moneySeparators("en"));
 	});
 });
