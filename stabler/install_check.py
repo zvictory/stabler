@@ -143,6 +143,20 @@ _EXPECTATIONS: tuple[dict, ...] = (
 		"soft": True,
 		"why": "no exempt template to select on a sales document",
 	},
+	{
+		"kind": "custom_field",
+		"doctype": "Journal Entry",
+		"fieldname": "custom_idempotency_key",
+		"patch": "v96_money_idempotency_key",
+		"why": "every writer guards with has_field, so without the column the retry guard silently stops guarding and a double-clicked expense posts twice",
+	},
+	{
+		"kind": "custom_field",
+		"doctype": "Payment Entry",
+		"fieldname": "custom_idempotency_key",
+		"patch": "v96_money_idempotency_key",
+		"why": "same silent degradation on the payment side; the field is read-only and invisible, so nobody notices it is gone",
+	},
 )
 
 
@@ -152,6 +166,8 @@ def describe(expectation: dict, company: str | None = None) -> str:
 		return f"index {expectation['name']} on {expectation['table']}"
 	if expectation["kind"] == "per_company":
 		return f'{expectation["doctype"]} "{expectation["title"]}" for {company}'
+	if expectation["kind"] == "custom_field":
+		return f"Custom Field {expectation['doctype']}.{expectation['fieldname']}"
 	return f'{expectation["doctype"]} "{expectation["name"]}"'
 
 
@@ -180,6 +196,9 @@ def _keys(exp: dict, present: dict):
 	if exp["kind"] == "index":
 		yield None, ("index", exp["name"])
 		return
+	if exp["kind"] == "custom_field":
+		yield None, ("custom_field", exp["doctype"], exp["fieldname"])
+		return
 	yield None, ("doc", exp["doctype"], exp["name"])
 
 
@@ -196,6 +215,10 @@ def observe() -> dict:
 		elif exp["kind"] == "index":
 			rows = frappe.db.sql(f"SHOW INDEX FROM `{exp['table']}` WHERE Key_name = %s", (exp["name"],))
 			present[("index", exp["name"])] = bool(rows)
+		elif exp["kind"] == "custom_field":
+			present[("custom_field", exp["doctype"], exp["fieldname"])] = bool(
+				frappe.db.exists("Custom Field", {"dt": exp["doctype"], "fieldname": exp["fieldname"]})
+			)
 	companies = frappe.get_all("Company", fields=["name", "abbr"])
 	for exp in _EXPECTATIONS:
 		if exp["kind"] != "per_company":

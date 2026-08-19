@@ -122,6 +122,8 @@ def _all_keys():
 			keys.append(("doc", exp["doctype"], exp["name"]))
 		elif exp["kind"] == "index":
 			keys.append(("index", exp["name"]))
+		elif exp["kind"] == "custom_field":
+			keys.append(("custom_field", exp["doctype"], exp["fieldname"]))
 		else:
 			for company in ("Mikas", "Anjan"):
 				keys.append(("per_company", exp["title"], company))
