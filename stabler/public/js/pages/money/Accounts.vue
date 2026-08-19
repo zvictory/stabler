@@ -5,6 +5,7 @@ import { storeToRefs } from "pinia";
 import { useSession } from "../../stores/session.js";
 import { call } from "../../api/client.js";
 import { formatMoney } from "../../composables/money.js";
+import { formatDate } from "../../composables/date.js";
 import { t } from "../../composables/i18n.js";
 import {
 	accountAncestorPath,
@@ -46,6 +47,12 @@ const flat = ref([]);
 const expanded = ref(new Set());
 const balances = ref(new Map());
 const balancesLoading = ref(false);
+// The date chart_balances actually priced its numbers as of. The endpoint
+// already supports an `as_of` request param, but there is no UI here to pick
+// one (that's a separate feature) — so rather than have the frontend guess
+// its own "today" and risk a client/server clock/timezone mismatch, the
+// header shows the date the SERVER used, echoed straight back in the response.
+const asOfDate = ref("");
 const search = ref("");
 const includeDisabled = ref(false);
 
@@ -241,6 +248,7 @@ async function loadBalances() {
 			next.set(name, { base: b.base, acc: b.acc, account_currency: b.account_currency, company_currency: cc });
 		}
 		balances.value = next;
+		asOfDate.value = res.as_of || "";
 	} catch {
 		balances.value = new Map();
 	} finally {
@@ -555,7 +563,12 @@ watch(expanded, (next) => {
 					<tr>
 						<th class="w-1 text-nowrap">{{ t("Code") }}</th>
 						<th>{{ t("Account") }}</th>
-						<th class="w-1 text-end text-nowrap">{{ t("Balance") }}</th>
+						<th class="w-1 text-end text-nowrap">
+							<div>{{ t("Balance") }}</div>
+							<div v-if="asOfDate" class="small text-secondary fw-normal">
+								{{ t("as of {date}", { date: formatDate(asOfDate) }) }}
+							</div>
+						</th>
 						<th class="w-1 text-end">{{ t("Actions") }}</th>
 					</tr>
 				</thead>
@@ -627,7 +640,16 @@ watch(expanded, (next) => {
 							:class="{ 'fw-bold': n.is_group, 'text-danger': isNegative(n) }"
 						>
 							<template v-if="balances.has(n.name)">
-								<div>{{ primaryBalance(n) }}</div>
+								<div class="d-flex align-items-center justify-content-end gap-1">
+									<span>{{ primaryBalance(n) }}</span>
+									<span
+										v-if="n.is_group"
+										class="badge bg-secondary-lt fw-normal"
+										:title="t('Roll-up of sub-accounts, converted to the company currency.')"
+									>
+										{{ baseCurrencyOf(n) }}
+									</span>
+								</div>
 								<div v-if="showBaseHint(n)" class="small text-secondary fw-normal">
 									≈ {{ formatMoney(baseHintValue(n), balances.get(n.name).company_currency || currency, user.language) }}
 								</div>
