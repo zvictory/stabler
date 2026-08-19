@@ -78,7 +78,9 @@ class FakeDoc:
 
 	def insert(self, **kwargs):
 		self._trace.append("insert")
-		self.name = self.name or "JV-NEW-0001"
+		if not self.name:
+			named = getattr(self, "account_name", None)
+			self.name = f"{named} - X" if named else "JV-NEW-0001"
 
 	def submit(self):
 		self._trace.append("submit")
@@ -102,6 +104,8 @@ def _load_money(
 	exchange_rates=None,
 	accounts=None,
 	temporary_accounts=None,
+	new_account_root_type="Asset",
+	new_account_currency=None,
 ):
 	"""Import ``stabler.api.money`` against a hand-built ``frappe``.
 
@@ -193,6 +197,12 @@ def _load_money(
 
 	def _new_doc(doctype):
 		doc = FakeDoc(trace, doctype=doctype)
+		if doctype == "Account":
+			# What ERPNext resolves on insert from the parent: the branch of the
+			# tree the account lands in, and the currency it inherits when the
+			# caller named none.
+			doc.root_type = new_account_root_type
+			doc.account_currency = new_account_currency or "UZS"
 		ctx.docs.append(doc)
 		return doc
 

@@ -185,6 +185,20 @@ def create_account(
 	if account_number and frappe.db.exists("Account", {"company": company, "account_number": account_number}):
 		frappe.throw(_("Account number {0} is already used in {1}.").format(account_number, company))
 
+	opening_balance = flt(opening_balance)
+	# Refuse before anything is created: the opening entry is flagged
+	# `is_opening = "Yes"` and submitted on the spot, so defaulting the date to
+	# today files a prior-period balance inside the OPEN period — and on an income
+	# or expense account it walks straight into this period's profit and loss.
+	# Discovered months later, when the reports disagree, and undoable only by a
+	# cancellation that stays in the books.
+	if opening_balance and not is_group and not opening_date:
+		frappe.throw(
+			_(
+				"An opening balance needs an opening date. Left blank it would post today, inside the open period, where an opening balance lands in this period's profit and loss."
+			)
+		)
+
 	doc = frappe.new_doc("Account")
 	doc.company = company
 	doc.account_name = account_name
@@ -198,13 +212,12 @@ def create_account(
 		doc.account_currency = account_currency
 	doc.insert(ignore_permissions=False)
 
-	opening_balance = flt(opening_balance)
 	if opening_balance and not is_group:
 		temp_account = _resolve_temporary_opening_account(company)
 		debit_side = doc.root_type in ("Asset", "Expense")
 		je = frappe.new_doc("Journal Entry")
 		je.company = company
-		je.posting_date = getdate(opening_date) if opening_date else getdate(today())
+		je.posting_date = getdate(opening_date)
 		je.voucher_type = "Opening Entry"
 		je.is_opening = "Yes"
 		je.append(
