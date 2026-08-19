@@ -60,6 +60,20 @@
 			justify-content: space-between;
 		}
 
+		.day-nav {
+			border: 1px solid #e2e8f0;
+			background: #fff;
+			color: #334155;
+			border-radius: 8px;
+			width: 28px;
+			height: 28px;
+			font-size: 16px;
+			line-height: 1;
+			cursor: pointer;
+			padding: 0;
+		}
+		.day-nav:disabled { opacity: 0.35; cursor: default; }
+
 		.date-badge {
 			font-size: 12.5px;
 			font-weight: 700;
@@ -383,7 +397,9 @@
 	<div id="app">
 		<div class="header-container">
 			<div class="header-badges">
+				<button class="day-nav" id="btnPrevDay" type="button" aria-label="Oldingi kun">‹</button>
 				<div class="date-badge" id="dateBadge">📅 --.--.----</div>
+				<button class="day-nav" id="btnNextDay" type="button" aria-label="Keyingi kun">›</button>
 				<div class="tx-count-badge" id="txCount">0 operatsiya</div>
 			</div>
 		</div>
@@ -431,10 +447,18 @@
 			var cardsEl = document.getElementById("cards");
 			var rowsEl = document.getElementById("rows");
 			var txCountEl = document.getElementById("txCount");
+			var btnPrevDayEl = document.getElementById("btnPrevDay");
+			var btnNextDayEl = document.getElementById("btnNextDay");
 			var tableWrapEl = document.getElementById("tableWrap");
 			var LAST = null;
 			var SELECTED = "nakit";
 			var SORT_DIR = "desc"; /* "desc" = Z-A (Newest first), "asc" = A-Z (Oldest first) */
+
+			/* How far back the cashier can step. The store keeps everything — nothing is
+			   ever deleted — so this bounds the browsing, not the retention. */
+			var WINDOW_DAYS = 7;
+			var TODAY = "";
+			var VIEW_DATE = "";
 
 			function toIso(date) {
 				var y = date.getFullYear();
@@ -448,6 +472,28 @@
 				var parts = String(iso).split("-");
 				if (parts.length !== 3) return iso;
 				return parts[2] + "." + parts[1] + "." + parts[0];
+			}
+
+			/* Build the Date from parts, never from `new Date(iso)`: the string form is
+			   parsed as UTC, so east of Greenwich stepping back a day can land on the
+			   same date again and the cashier's arrow does nothing. */
+			function shiftIso(iso, days) {
+				var p = String(iso).split("-");
+				var d = new Date(Number(p[0]), Number(p[1]) - 1, Number(p[2]));
+				d.setDate(d.getDate() + days);
+				return toIso(d);
+			}
+
+			function earliestIso(today) {
+				return shiftIso(today, -(WINDOW_DAYS - 1));
+			}
+
+			/* Today is the last day that can hold entries, and the window is inclusive:
+			   WINDOW_DAYS of 7 means today plus the six before it. */
+			function clampIso(iso, today) {
+				if (iso > today) return today;
+				var floor = earliestIso(today);
+				return iso < floor ? floor : iso;
 			}
 
 			var KAS = [
@@ -538,7 +584,9 @@
 					var emptyRow =
 						'<div class="empty-state">' +
 						'<div class="empty-icon">📂</div>' +
-						'<div>Bugun ushbu kassa bo\'yicha operatsiyalar yo\'q</div>' +
+						"<div>" +
+						(VIEW_DATE === TODAY ? "Bugun" : isoToDisplay(VIEW_DATE)) +
+						" ushbu kassa bo'yicha operatsiyalar yo'q</div>" +
 						'</div>' +
 						'<table><tbody>' +
 						'<tr class="l-open"><td class="col-sana-cell">—</td><td>Ochilish balansi</td>' +
@@ -645,7 +693,7 @@
 
 				var body = new URLSearchParams({
 					init_data: initData,
-					date: toIso(new Date()),
+					date: VIEW_DATE,
 				});
 
 				fetch(ENDPOINT, {
@@ -685,10 +733,29 @@
 			function render(summary) {
 				LAST = summary;
 				dateBadgeEl.textContent = "📅 " + isoToDisplay(summary.date || "");
+				btnPrevDayEl.disabled = VIEW_DATE <= earliestIso(TODAY);
+				btnNextDayEl.disabled = VIEW_DATE >= TODAY;
 				renderCards(summary.balances || {});
 				renderLedger();
 			}
 
+			function goToDay(days) {
+				var next = clampIso(shiftIso(VIEW_DATE, days), TODAY);
+				if (next === VIEW_DATE) return;
+				VIEW_DATE = next;
+				triggerHaptic();
+				fetchSummary();
+			}
+
+			btnPrevDayEl.addEventListener("click", function () {
+				goToDay(-1);
+			});
+			btnNextDayEl.addEventListener("click", function () {
+				goToDay(1);
+			});
+
+			TODAY = toIso(new Date());
+			VIEW_DATE = TODAY;
 			fetchSummary();
 		})();
 	</script>
