@@ -5,7 +5,7 @@ import { useRoute } from "vue-router";
 import { useSession } from "../../stores/session.js";
 import { call } from "../../api/client.js";
 import { formatMoney, moneyEpsilon, moneyFractionDigits } from "../../composables/money.js";
-import { computeBalancePlug, isDraftDirty, snapshotDraft } from "../../composables/journal.js";
+import { computeBalancePlug, isDraftDirty, isRowOrphaned, postableRows, snapshotDraft } from "../../composables/journal.js";
 import { formatDate, formatDateTime, todayIso, daysAgoIso} from "../../composables/date.js";
 import { t } from "../../composables/i18n.js";
 import { accountLabel } from "../../composables/accounts.js";
@@ -98,20 +98,24 @@ const currency = currencyCode;
 // A line is "foreign" when its account currency differs from the company base.
 const isForeign = (r) => !!r.account_currency && r.account_currency !== currencyCode.value;
 const rateOf = (r) => (isForeign(r) ? Number(r.exchange_rate) || 0 : 1);
-const isMultiCurrency = computed(() => form.value.accounts.some(isForeign));
-const baseDebit = computed(() => form.value.accounts.reduce((s, r) => s + (Number(r.debit) || 0) * rateOf(r), 0));
-const baseCredit = computed(() => form.value.accounts.reduce((s, r) => s + (Number(r.credit) || 0) * rateOf(r), 0));
+// The entry as the server will see it. An amount on a line whose account is
+// still blank is dropped by submitForm and again by _clean_je_rows, so it must
+// not reach the totals either — see postableRows() for what that cost.
+const postable = computed(() => postableRows(form.value.accounts));
+const isMultiCurrency = computed(() => postable.value.some(isForeign));
+const baseDebit = computed(() => postable.value.reduce((s, r) => s + (Number(r.debit) || 0) * rateOf(r), 0));
+const baseCredit = computed(() => postable.value.reduce((s, r) => s + (Number(r.credit) || 0) * rateOf(r), 0));
 const baseLine = (r) => (Number(r.debit) || Number(r.credit) || 0) * rateOf(r);
 
 // Single-currency: balance in that currency. Multi-currency: balance in the
 // company base (each leg × its rate); sub-unit residuals are sealed by the JE
 // FX hook, so allow a tiny tolerance. Foreign legs must carry a positive rate.
-const totalDebit = computed(() => form.value.accounts.reduce((s, r) => s + (Number(r.debit) || 0), 0));
-const totalCredit = computed(() => form.value.accounts.reduce((s, r) => s + (Number(r.credit) || 0), 0));
+const totalDebit = computed(() => postable.value.reduce((s, r) => s + (Number(r.debit) || 0), 0));
+const totalCredit = computed(() => postable.value.reduce((s, r) => s + (Number(r.credit) || 0), 0));
 const diff = computed(() => (isMultiCurrency.value ? baseDebit.value - baseCredit.value : totalDebit.value - totalCredit.value));
 const balanced = computed(() => {
 	if (isMultiCurrency.value) {
-		const ratesOk = form.value.accounts.every((r) => !isForeign(r) || rateOf(r) > 0);
+		const ratesOk = postable.value.every((r) => !isForeign(r) || rateOf(r) > 0);
 		return ratesOk && Math.abs(diff.value) < 1;
 	}
 	// Not a hardcoded 0.01: UZS has no fractional unit, so its epsilon is half
@@ -628,10 +632,11 @@ watch(statusFilter, load);
 						<tbody>
 							<tr v-for="(row, idx) in form.accounts" :key="idx">
 								<td>
-									<Select v-model="row.account" size="sm" :options="accountOptions" value-key="name" :placeholder="t('— Choose account —')" @change="onAccountPicked(row, idx)">
+									<Select v-model="row.account" size="sm" :class="{ 'is-invalid': isRowOrphaned(row) }" :options="accountOptions" value-key="name" :placeholder="t('— Choose account —')" @change="onAccountPicked(row, idx)">
 										<template #option="{ option }">{{ option.account_number ? `${option.account_number} · ` : "" }}{{ accountLabel(option) }}</template>
 										<template #selected="{ option }">{{ option.account_number ? `${option.account_number} · ` : "" }}{{ accountLabel(option) }}</template>
 									</Select>
+									<div v-if="isRowOrphaned(row)" class="text-danger je-hint mt-1">{{ t("No account — this line is not counted.") }}</div>
 									<div v-if="row.account" class="d-flex align-items-center gap-1 mt-1">
 										<span class="badge bg-secondary-lt text-uppercase je-ccy">{{ row.account_currency || currencyCode }}</span>
 										<span v-if="acctBalanceText(row.account)" class="text-secondary je-hint">{{ acctBalanceText(row.account) }}</span>

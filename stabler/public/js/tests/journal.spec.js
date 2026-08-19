@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { computeBalancePlug, isDraftDirty, snapshotDraft } from "../composables/journal.js";
+import { computeBalancePlug, isDraftDirty, isRowOrphaned, postableRows, snapshotDraft } from "../composables/journal.js";
 
 // Every line is in the company's base currency unless a test says otherwise.
 const rateOf = (r) => Number(r.exchange_rate) || 1;
@@ -82,6 +82,47 @@ describe("computeBalancePlug — the counter-line a journal entry can work out f
 
 	it("returns null for a single-row entry — there is no counter-line", () => {
 		expect(computeBalancePlug([row({ debit: 5000000 })], { editedIdx: 0, rateOf })).toBeNull();
+	});
+
+	// The worst version of the phantom-row bug: the residual was measured
+	// against an amount the server never receives, and the answer was written
+	// into a REAL line. Give the orphan an account an hour later and that
+	// derived 700 goes to the ledger without anyone ever having agreed to it.
+	it("measures the residual only over lines that will be posted", () => {
+		const rows = [row({ debit: 500 }), row(), row({ account: "", debit: 200 })];
+		expect(computeBalancePlug(rows, { editedIdx: 0, rateOf })).toEqual({ index: 1, field: "credit", value: 500 });
+	});
+});
+
+describe("postableRows / isRowOrphaned — the lines the server will actually see", () => {
+	// Both the submit filter and the backend (_clean_je_rows) drop a line whose
+	// account is blank. The balance badge did not: it summed every row. A 200
+	// typed on a line whose account was still empty made the form say
+	// "Balanced" on a payload the server then rejected as 500 against 700 —
+	// two figures that appear nowhere on the screen the user was looking at.
+	it("leaves out a line whose account is still blank", () => {
+		const rows = [row({ debit: 500 }), row({ account: "", debit: 200 })];
+		expect(postableRows(rows)).toEqual([rows[0]]);
+	});
+
+	it("keeps a line that has an account but no amount yet — it is still part of the entry", () => {
+		const rows = [row({ debit: 500 }), row()];
+		expect(postableRows(rows)).toHaveLength(2);
+	});
+
+	// The badge going honest is only half of it. Without a mark on the row, the
+	// user is told the entry does not balance and has no way to see which line
+	// stopped counting.
+	it("marks a line that carries an amount but no account", () => {
+		expect(isRowOrphaned(row({ account: "", debit: 200 }))).toBe(true);
+		expect(isRowOrphaned(row({ account: "", credit: 200 }))).toBe(true);
+	});
+
+	// A blank line is how every entry starts. Painting it red on open is how
+	// people learn to read past the colour.
+	it("does not mark a line the user has not started", () => {
+		expect(isRowOrphaned(row({ account: "" }))).toBe(false);
+		expect(isRowOrphaned(row({ account: "", debit: 0 }))).toBe(false);
 	});
 });
 

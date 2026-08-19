@@ -7,6 +7,26 @@
  */
 
 /**
+ * The lines that will actually reach the ledger.
+ *
+ * A line with no account is dropped twice on the way to the server — by the
+ * form's own submit filter and again by `_clean_je_rows` in `api/money.py` —
+ * so an amount sitting on one is not part of the entry, however loudly it is
+ * displayed. Totals, the balance badge and the auto-balance residual all read
+ * the entry through here, because a figure the user can see and the server
+ * never receives is exactly the figure that made the badge lie.
+ */
+export function postableRows(rows) {
+	return (Array.isArray(rows) ? rows : []).filter((r) => r && r.account);
+}
+
+/** An amount stranded on a line with no account — money the entry is ignoring. */
+export function isRowOrphaned(row) {
+	if (!row || row.account) return false;
+	return !!(Number(row.debit) || Number(row.credit));
+}
+
+/**
  * The line a journal entry can fill in for itself.
  *
  * Entering an opening balance used to mean typing the same figure twice, once
@@ -31,10 +51,12 @@ export function computeBalancePlug(rows, { editedIdx, rateOf, fractionDigitsOf =
 	if (index === null) return null;
 
 	// Deliberately excludes the target: including its own current value is what
-	// would turn "recompute in place" into a feedback loop.
+	// would turn "recompute in place" into a feedback loop. Lines with no
+	// account are excluded too — see postableRows(); plugging against a figure
+	// the server never receives writes a wrong number into a real account.
 	let residual = 0;
 	rows.forEach((r, i) => {
-		if (i === index) return;
+		if (i === index || !r.account) return;
 		residual += ((Number(r.debit) || 0) - (Number(r.credit) || 0)) * (rateOf(r) || 1);
 	});
 	if (!residual) return null;
