@@ -165,8 +165,13 @@ export function formatCompactMoney(value, currency = "USD", language = "en") {
  * circulation, so its epsilon is half a so'm (0.5), not half a cent —
  * a hardcoded 0.01 would reject a legitimate whole-so'm payment.
  */
+/** Fraction digits `currency` actually holds — 0 for UZS, 2 for the rest. */
+export function moneyFractionDigits(currency = "USD") {
+	return CURRENCY_OVERRIDES[currency]?.fractionDigits ?? 2;
+}
+
 export function moneyEpsilon(currency = "USD") {
-	const digits = CURRENCY_OVERRIDES[currency]?.fractionDigits ?? 2;
+	const digits = moneyFractionDigits(currency);
 	if (digits <= 0) return 0.5;
 	return 0.5 * 10 ** -digits;
 }

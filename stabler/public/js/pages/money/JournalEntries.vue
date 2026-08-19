@@ -4,7 +4,8 @@ import { storeToRefs } from "pinia";
 import { useRoute, useRouter } from "vue-router";
 import { useSession } from "../../stores/session.js";
 import { call } from "../../api/client.js";
-import { formatMoney } from "../../composables/money.js";
+import { formatMoney, moneyEpsilon, moneyFractionDigits } from "../../composables/money.js";
+import { computeBalancePlug } from "../../composables/journal.js";
 import { formatDate, formatDateTime, todayIso, daysAgoIso} from "../../composables/date.js";
 import { t } from "../../composables/i18n.js";
 import MoneyInput from "../../components/MoneyInput.vue";
@@ -78,7 +79,9 @@ const submitError = ref("");
 const accountsLoading = ref(false);
 const accountOptions = ref([]);
 
-const emptyRow = () => ({ account: "", account_currency: "", party_type: "", party: "", party_name: "", exchange_rate: 1, debit: null, credit: null });
+// `_auto` marks an amount this form derived rather than one the user typed.
+// It is a UI concern only — submitForm rebuilds the payload field by field.
+const emptyRow = () => ({ account: "", account_currency: "", party_type: "", party: "", party_name: "", exchange_rate: 1, debit: null, credit: null, _auto: false });
 const form = ref(blankForm());
 const editName = ref(null);
 const isEdit = computed(() => !!editName.value);
@@ -116,7 +119,9 @@ const balanced = computed(() => {
 		const ratesOk = form.value.accounts.every((r) => !isForeign(r) || rateOf(r) > 0);
 		return ratesOk && Math.abs(diff.value) < 1;
 	}
-	return Math.abs(diff.value) < 0.01;
+	// Not a hardcoded 0.01: UZS has no fractional unit, so its epsilon is half
+	// a so'm. Mirrors money_epsilon() in stabler/api/_money.py.
+	return Math.abs(diff.value) < moneyEpsilon(currencyCode.value) * 2;
 });
 
 // Readable "1 strong = N weak" quote for a line (always the ≥1 direction).
@@ -216,6 +221,11 @@ const postingFrozen = computed(() => !!freezeDate.value && !!form.value.posting_
 // The cancelled JE this draft amends (set by amendJE), passed through on save.
 const amendedFrom = ref(null);
 
+function onAccountPicked(row, idx) {
+	onAccountChange(row);
+	runAutoBalance(idx);
+}
+
 async function loadAccountOptions() {
 	if (!activeCompany.value || accountOptions.value.length) return;
 	accountsLoading.value = true;
@@ -291,6 +301,7 @@ async function openEdit(d) {
 				exchange_rate: Number(a.exchange_rate) > 0 ? Number(a.exchange_rate) : 1,
 				debit: a.debit_in_account_currency || null,
 				credit: a.credit_in_account_currency || null,
+				_auto: false, // an amount already posted is the user's, never ours to replace
 			})),
 	};
 	while (form.value.accounts.length < 2) form.value.accounts.push(emptyRow());
@@ -306,8 +317,31 @@ function cancelEdit() {
 
 function addRow() { form.value.accounts.push(emptyRow()); }
 function removeRow(idx) { if (form.value.accounts.length > 2) form.value.accounts.splice(idx, 1); }
-function onDebitInput(row) { if (Number(row.debit)) row.credit = null; }
-function onCreditInput(row) { if (Number(row.credit)) row.debit = null; }
+// Both of these used to fire on @blur, so a row could hold a debit AND a
+// credit while it had focus — the balance badge read "Balanced" on data the
+// server rejects outright (api/money.py:_clean_je_rows). They run on the model
+// update now, so the row is never inconsistent even for a keystroke.
+function onAmountInput(row, idx, side) {
+	const other = side === "debit" ? "credit" : "debit";
+	if (Number(row[side])) row[other] = null;
+	row._auto = false; // the user typed here; this amount is data now, not a derivation
+	runAutoBalance(idx);
+}
+
+// Fills the counter-line so an opening balance does not have to be added up by
+// hand. Never touches an amount the user typed — see composables/journal.js.
+function runAutoBalance(editedIdx) {
+	const plug = computeBalancePlug(form.value.accounts, {
+		editedIdx,
+		rateOf,
+		fractionDigitsOf: (r) => moneyFractionDigits(r.account_currency || currencyCode.value),
+	});
+	if (!plug) return;
+	const target = form.value.accounts[plug.index];
+	target[plug.field] = plug.value;
+	target[plug.field === "debit" ? "credit" : "debit"] = null;
+	target._auto = true;
+}
 
 async function submitForm() {
 	submitError.value = "";
@@ -578,7 +612,7 @@ watch(statusFilter, load);
 						<tbody>
 							<tr v-for="(row, idx) in form.accounts" :key="idx">
 								<td>
-									<Select v-model="row.account" size="sm" :options="accountOptions" value-key="name" :placeholder="t('— Choose account —')" @change="onAccountChange(row)">
+									<Select v-model="row.account" size="sm" :options="accountOptions" value-key="name" :placeholder="t('— Choose account —')" @change="onAccountPicked(row, idx)">
 										<template #option="{ option }">{{ option.account_number ? `${option.account_number} · ` : "" }}{{ option.account_name }}</template>
 										<template #selected="{ option }">{{ option.account_number ? `${option.account_number} · ` : "" }}{{ option.account_name }}</template>
 									</Select>
@@ -600,8 +634,8 @@ watch(statusFilter, load);
 									</template>
 									<span v-else class="text-secondary small">1</span>
 								</td>
-								<td><MoneyInput v-model="row.debit" :currency="row.account_currency || currencyCode" :language="user.language" size="sm" @blur="onDebitInput(row)" /></td>
-								<td><MoneyInput v-model="row.credit" :currency="row.account_currency || currencyCode" :language="user.language" size="sm" @blur="onCreditInput(row)" /></td>
+								<td><MoneyInput v-model="row.debit" :currency="row.account_currency || currencyCode" :language="user.language" size="sm" @update:model-value="onAmountInput(row, idx, 'debit')" /></td>
+								<td><MoneyInput v-model="row.credit" :currency="row.account_currency || currencyCode" :language="user.language" size="sm" @update:model-value="onAmountInput(row, idx, 'credit')" /></td>
 								<td><button type="button" class="btn btn-sm btn-ghost-danger" :disabled="form.accounts.length <= 2" @click="removeRow(idx)"><i class="ti ti-trash"></i></button></td>
 							</tr>
 						</tbody>
