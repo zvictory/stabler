@@ -427,7 +427,12 @@ async function submitForm() {
 		return (submitError.value = t("Backdated postings are frozen before {0}.").replace("{0}", formatDate(freezeDate.value)));
 	}
 	if (!balanced.value) {
-		submitError.value = `${t("Debit")} ${totalDebit.value.toFixed(2)} ≠ ${t("Credit")} ${totalCredit.value.toFixed(2)}`;
+		// The two figures the badge is already showing, formatted the way the rest
+		// of the screen formats money: .toFixed(2) printed "12000000.00" under a
+		// footer that said "12 000 000 сўм" for the same amount.
+		const shownDebit = isMultiCurrency.value ? baseDebit.value : totalDebit.value;
+		const shownCredit = isMultiCurrency.value ? baseCredit.value : totalCredit.value;
+		submitError.value = `${t("Debit")} ${formatMoney(shownDebit, currencyCode.value, user.value.language)} ≠ ${t("Credit")} ${formatMoney(shownCredit, currencyCode.value, user.value.language)}`;
 		return;
 	}
 	const accounts = form.value.accounts
