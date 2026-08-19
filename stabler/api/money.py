@@ -1229,12 +1229,20 @@ def create_journal_entry(
 	cheque_no: str | None = None,
 	cheque_date: str | None = None,
 	amended_from: str | None = None,
+	submit: int = 0,
 ) -> dict:
-	"""Create a Journal Entry as Draft (docstatus=0).
+	"""Create a Journal Entry as Draft (docstatus=0), or post it in the same call.
 
 	`accounts` is a list of dicts with keys:
 	  account (required), party_type, party, debit, credit, reference_type, reference_name.
 	Exactly one of debit/credit per line must be non-zero. Totals must balance.
+
+	`submit` makes "save and post" one round trip instead of two. It is read with
+	`cint`, not truthiness: every argument arrives over HTTP as a string, and the
+	`"0"` an unticked box sends is truthy in Python — posting a journal nobody
+	asked to post can only be undone by a cancellation that stays in the ledger.
+	Posting goes through the same validation as the draft path and asks for
+	`submit` permission on the document itself; insert permission is not it.
 	"""
 	_require_company(company)
 	_assert_company_scope(company)  # tenant isolation: reject a foreign company arg
@@ -1262,6 +1270,9 @@ def create_journal_entry(
 	for row in cleaned:
 		doc.append("accounts", row)
 	doc.insert(ignore_permissions=False)
+	if cint(submit):
+		_assert_can_write("Journal Entry", doc.name, "submit")
+		doc.submit()
 	return {"name": doc.name, "docstatus": doc.docstatus}
 
 

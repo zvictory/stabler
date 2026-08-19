@@ -218,7 +218,16 @@ def _load_money(
 
 	utils = types.ModuleType("frappe.utils")
 	utils.flt = lambda value, precision=None: 0.0 if value in (None, "") else float(value)
-	utils.cint = lambda value: int(value or 0)
+
+	def _cint(value):
+		# frappe.utils.cint's contract, which matters here: everything arriving
+		# over HTTP is a string, and a non-numeric one is 0, not a truthy object.
+		try:
+			return int(float(value))
+		except (TypeError, ValueError):
+			return 0
+
+	utils.cint = _cint
 	utils.getdate = _getdate
 	utils.today = lambda: "2026-08-19"
 	utils.formatdate = lambda value, fmt=None: str(value)
@@ -421,6 +430,64 @@ class FrozenPeriodTest(unittest.TestCase):
 		money.create_journal_entry("Test Co", "2020-01-01", BALANCED_ROWS)
 
 		self.assertIn("insert", ctx.trace)
+
+
+class CreateAndPostTest(unittest.TestCase):
+	"""B4 — "save and post" as one call, without becoming a way around anything."""
+
+	def test_the_default_is_still_a_draft(self):
+		"""Every existing caller omits the flag and must keep getting a draft."""
+		money, ctx = _load_money(accounts=BASE_ACCOUNTS)
+
+		result = money.create_journal_entry("Test Co", "2026-08-19", BALANCED_ROWS)
+
+		self.assertNotIn("submit", ctx.trace)
+		self.assertEqual(result["docstatus"], 0)
+
+	def test_submitting_posts_the_entry_in_the_same_call(self):
+		money, ctx = _load_money(accounts=BASE_ACCOUNTS)
+
+		result = money.create_journal_entry("Test Co", "2026-08-19", BALANCED_ROWS, submit=True)
+
+		self.assertLess(ctx.trace.index("insert"), ctx.trace.index("submit"))
+		self.assertEqual(result["docstatus"], 1)
+
+	def test_submit_permission_is_checked_on_the_document_before_it_posts(self):
+		"""Insert permission is not submit permission. A user allowed to prepare
+		entries but not to post them must not gain the ledger through a flag."""
+		money, ctx = _load_money(accounts=BASE_ACCOUNTS)
+
+		money.create_journal_entry("Test Co", "2026-08-19", BALANCED_ROWS, submit=True)
+
+		self.assertLess(ctx.trace.index("can_write:submit"), ctx.trace.index("submit"))
+
+	def test_a_string_zero_does_not_post(self):
+		"""Whitelisted endpoints are reached over HTTP, where every argument is a
+		string: `submit="0"` is exactly what a form sends for an unticked box, and
+		a bare `if submit:` would post a journal the user asked to keep as a draft.
+		Posting is not reversible — it takes a cancellation, in the ledger, forever."""
+		money, ctx = _load_money(accounts=BASE_ACCOUNTS)
+
+		money.create_journal_entry("Test Co", "2026-08-19", BALANCED_ROWS, submit="0")
+
+		self.assertNotIn("submit", ctx.trace)
+
+	def test_posting_does_not_skip_the_validation_the_draft_path_runs(self):
+		"""The flag is a shortcut through the UI, never through the rules."""
+		money, ctx = _load_money(accounts=BASE_ACCOUNTS, acc_frozen_upto="2026-07-31")
+
+		with self.assertRaises(Exception):
+			money.create_journal_entry("Test Co", "2026-07-15", BALANCED_ROWS, submit=True)
+		self.assertNotIn("insert", ctx.trace)
+
+		money, ctx = _load_money(accounts=BASE_ACCOUNTS)
+		unbalanced = [
+			{"account": CASH, "debit": 1000, "credit": 0},
+			{"account": SALES, "debit": 0, "credit": 900},
+		]
+		with self.assertRaises(Exception):
+			money.create_journal_entry("Test Co", "2026-08-19", unbalanced, submit=True)
+		self.assertNotIn("insert", ctx.trace)
 
 
 if __name__ == "__main__":
