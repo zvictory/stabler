@@ -127,20 +127,20 @@ Access Review,Киришни текшириш
 Access token,
 Access token (JWT),
 Account,Ҳисоб
-Account created.,
-Account currency,
+Account created.,Ҳисоб яратилди.
+Account currency,Ҳисоб валютаси
 Account currency must match the payment account.,Ҳисоб валютаси тўлов ҳисобининг валютасига мос келиши керак.
-Account disabled.,
-Account enabled.,
+Account disabled.,Ҳисоб ўчириб қўйилди.
+Account enabled.,Ҳисоб ёқилди.
 Account Ledger,Ҳисоб Журнали
 Account matches,Ҳисоб мос келади
-Account name,
+Account name,Ҳисоб номи
 Account name is required.,
-Account number,
+Account number,Ҳисоб рақами
 Account number {0} is already used in {1}.,
 Account or cost centre…,
-Account type,
-Account updated.,
+Account type,Ҳисоб тури
+Account updated.,Ҳисоб янгиланди.
 Account {0} is not a {1} account for party {2}.,
 Account {0} not found.,
 Accounting entries,
@@ -201,7 +201,7 @@ Add at least one item with a positive quantity.,Камида битта ижоб
 Add at least one raw material line.,Камида битта хом ашё қаторини қўшинг.
 Add certificate,Сертификат қўшиш
 Add charge line,Харажат қаторини қўшиш
-Add child account,
+Add child account,Бола ҳисоб қўшиш
 Add child warehouse,Қўш омбор қўшиш
 Add column,Устун қўшиш
 Add cost item,Харажат моддасини қўшиш
@@ -562,7 +562,7 @@ Back to PI selection,ПИ танлашга қайтиш
 Back to summary,
 Back up now,Ҳозир захиралаш
 Back up with files,Файллар билан захиралаш
-Backdated postings are frozen before {0}.,
+Backdated postings are frozen before {0}.,Орқага саналган ёзувлар {0} санасигача блокланган.
 Backup & DR,Захира ва тиклаш
 Backup created.,Захира нусха яратилди.
 Backup file not found: {0},
@@ -847,7 +847,7 @@ Certificate required,Сертификат талаб қилинади
 "Certificate, CI or authority… ⌘K","Сертификат, инвойс ёки орган… ⌘K"
 Certificates appear here as they are registered against imports.,Сертификатлар импорт бўйича рўйхатдан ўтгани сари шу ерда пайдо бўлади.
 Certification,Сертификатлаш
-Change,
+Change,Ўзгартириш
 Change status,Ҳолатни ўзгартириш
 Changed,Ўзгартирилди
 Channel,Канал
@@ -1555,12 +1555,12 @@ Direct stock updates via Sales Invoice are disabled by company policy. ,
 Direction,Йўналиш
 Directions,Йўналиш
 Director board,Директор панели
-Disable,
-Disable account?,
+Disable,Фаолсизлантириш
+Disable account?,Ҳисобни фаолсизлантирасизми?
 Disabled,Нофаол
 Disc,Чегирма
 Disc %,Чегирма %
-Discard,
+Discard,Сақламаслик
 Discard unsaved changes?,
 DISCHARGED,Туширилган
 Discipline,Интизом
@@ -1703,7 +1703,7 @@ Early leave (min),Эрта кетиш (дақ.)
 Early leave deduction,
 Earnings,Ҳисобланганлар
 Edit,Таҳриф
-Edit account,
+Edit account,Ҳисобни таҳрирлаш
 Edit category,Турғунни таҳрирлаш
 Edit customer,Мижозни таҳриф
 Edit Deal,Битимни таҳрирлаш
@@ -1773,8 +1773,8 @@ Employment,
 empty,бўш
 Empty,Бўш
 Empty allowed list = user can access every company.,Бўш рухсатлар рўйхати = фойдаланувчи ҳар бир компанияни кира оласи.
-Enable,
-Enable account?,
+Enable,Фаоллаштириш
+Enable account?,Ҳисобни фаоллаштирасизми?
 Enable TimePay sync,
 Enabled,Ёқилган
 Enabled (bot access),Ёқилган (бот кириши)
@@ -1782,7 +1782,7 @@ End,Охири
 End Date,Охирги сана
 End date cannot be before start date.,
 End Date must be on or after Start Date.,Охирги сана дастлабки сана орасида ё кейин бўлиши керак.
-End of ledger,
+End of ledger,Рўйхат охири
 Enforcement,Мажбурлаш
 Enter a bank and/or cash amount.,Банк ва/ёки нақд суммани киритинг.
 Enter a quantity for at least one row.,Камида битта қатор учун миқдор киритинг.
@@ -1799,7 +1799,7 @@ Enter protocol / authorization reason…,Баённома рақами ёки с
 Enter the quantity to return for each line. Leave 0 to exclude a line.,Ҳар бир сатр учун қайтарилиши керак бўлган миқдорни киритинг. Сатрни чиқариб юбориш учун 0 қўйинг.
 Enter your Employee ID and secure PIN,
 Entered rate deviates by {pct}% from CBU rate.,Киритилган курс CBU курсидан {pct}% га фарқ қилади.
-entries,
+entries,ёзув
 Entries on/before this date are frozen.,
 entries. Narrow the date range to see older ones.,ёзувлар. Қўски саналарни кўриш учун саналар оралиғини торайтиринг.
 Entry,Ёзув
@@ -2316,7 +2316,7 @@ Gross Weight,Брутто вазни
 Gross weight,Брутто вазн
 Gross Weight (kg),Брутто вазн (кг)
 Group,Гуруҳ
-"Group account (can contain children, holds no transactions itself)",
+"Group account (can contain children, holds no transactions itself)","Гуруҳ ҳисоби (бола ҳисобларни ўз ичига олиши мумкин, ўзи транзакцияларда иштирок этмайди)"
 Group Code / Title,Гуруҳ коди / номи
 "Group warehouse (can contain children, holds no stock itself)","Гуруҳ омбори (болаларни сақлаши мумкин, ўзи қўй сақламайди)"
 Grouped by Contract. Unlinked invoices are shown separately; transaction and base currency are never mixed.,Шартнома бўйича гуруҳланган. Боғланмаган ҳисоб-фактуралар алоҳида кўрсатилади; валюталар аралаштирилмайди.
@@ -2418,7 +2418,7 @@ In transit,Йўлда
 IN_TRANSIT,Йўлда
 Inactive,Фаол эмас
 Include child transactions,Тобе контрагентлар операцияларини қўшиш
-Include disabled,
+Include disabled,Фаолсизларни ҳам кўрсатиш
 Include drafts,Қораламалар билан
 Include in Landed Cost,Landed cost таркибига киритилсин
 Include subcategories,Қуйи турғунларни ҳам қўшиш
@@ -2726,7 +2726,7 @@ Loading FX account balances…,
 Loading imports flow…,Импорт жараёни юкланмоқда…
 Loading invoices,
 Loading logistics readiness…,Логистика тайёрлиги юкланмоқда…
-Loading more…,
+Loading more…,Яна юкланмоқда…
 Loading RFQs…,Нарх сўровлари юкланмоқда…
 Loading tender funnel…,Воронка юкланмоқда…
 Loading warehouses…,Омборлар юклаяпти…
@@ -2897,7 +2897,7 @@ Moved to {0},{0} босқичига кўчирилди
 Movement,Ҳаракат
 Movements,Ҳаракатлар
 moves stock,
-Multi-currency,
+Multi-currency,Кўп валютали
 Multi-Currency Parties,
 Multi-level approval incomplete,
 Multiplier,Кўпайтирувчи
@@ -2944,7 +2944,7 @@ Never,Ҳеч қачон
 Never tested,Ҳеч қачон synалмаган
 New,Янги
 new,янги
-New account,
+New account,Янги ҳисоб
 New asset purchase,
 New bill,Янги қарз
 New BOM,Янги спецификация
@@ -3568,7 +3568,7 @@ Opening Balance,Бошланғич қолдиқ
 Opening balance,Очилиш балансы
 "Opening balance, period movement, and running balance by account.",
 Opening balances,Очилиш балансларн
-Opening date,
+Opening date,Очилиш санаси
 Opening qty,Бошланғич миқдор
 "Opening, in, out and closing quantity per item over a date range.","Сана оралиғида ҳар бир маҳсулот бўйича бошланғич, кирим, чиқим ва якуний миқдор."
 Operational,Операцион
@@ -3693,7 +3693,7 @@ Paid to,Гача тўланди
 Paid {0} employees — {1},{0} ходимга тўланди — {1}
 paid {pct}% · {outstanding} to pay,{pct}% тўланган · {outstanding} тўланиши керак
 Parent,Бош
-Parent account,
+Parent account,Бош ҳисоб
 Parent account is required.,
 Parent account {0} does not belong to {1}.,
 Parent account {0} is not a group account.,
@@ -5215,8 +5215,8 @@ These are ERPNext's back-dating guards — the reason it blocks creating or edit
 These device users have no employee link. Confirm a match to re-queue their punches.,Бу қурилма фойдаланувчилари ходимга боғланмаган. Белгилашларни қайта ишлаш учун мосликни тасдиқланг.
 These lines allocate more than the Proforma Invoice has left: {0},Бу қаторлар проформа-инвойсда қолганидан кўпроқ ажратмоқда: {0}
 These linked records go with it:,У билан бирга қуйидаги боғланган ёзувлар кетади:
-This account will be hidden from the active chart of accounts.,
-This account will be shown in the active chart of accounts again.,
+This account will be hidden from the active chart of accounts.,Ҳисоб фаол ҳисоблар режасидан яширилади.
+This account will be shown in the active chart of accounts again.,Ҳисоб фаол ҳисоблар режасида қайта кўрсатилади.
 This adjusts stock for {0} item(s) and posts the difference to the ledger. The action is recorded against your name.,Бу {0} та товар бўйича захирани тузатади ва фарқни ҳисобга киритади. Амал сизнинг номингизга ёзилади.
 This bank transaction is already fully reconciled.,
 This bill is already vouchered ({0}) and can no longer be unlinked.,Ушбу ҳисоб-фактура аллақачон ваучерга ўтказилган ({0}) ва энди узиб бўлмайди.
@@ -6236,14 +6236,14 @@ Round Off for Opening,
 Service Received But Not Billed,
 Tax,
 Temporary,
-No accounts yet,
-Set up the chart of accounts for {company} to see it here.,
-Payment Calendar,
-Everyone enters their own plan. The calendar shows the days it lands on.,
-My plan,
-Whole company,
-Click a day to plan on it,
-Nothing planned this month yet.,
+No accounts yet,Ҳисоблар ҳали йўқ
+Set up the chart of accounts for {company} to see it here.,Уни бу ерда кўриш учун {company} учун ҳисоблар режасини созланг.
+Payment Calendar,Тўлов календари
+Everyone enters their own plan. The calendar shows the days it lands on.,Ҳар ким ўз режасини киритади. Календарь у тушадиган кунларни кўрсатади.
+My plan,Менинг режам
+Whole company,Бутун компания
+Click a day to plan on it,Режа киритиш учун кунни босинг
+Nothing planned this month yet.,Бу ойда ҳали ҳеч нарса режалаштирилмаган.
 Customer receipt,
 Vendor payment,
 Item purchase,
@@ -6254,35 +6254,35 @@ Vendor Payment,
 Item Purchase,
 Other Receipt,
 Other Payment,
-Confidence,
+Confidence,Ишонч даражаси
 "Committed — agreed, date is set",
 Expected — most likely,
 Tentative — not discussed yet,
-A tentative receipt does not pay a committed salary — the three are summed apart.,
-Repeat,
+A tentative receipt does not pay a committed salary — the three are summed apart.,Тахминий тушум аниқ маошни тўламайди — уч даража алоҳида жамланади.
+Repeat,Такрорлаш
 One time,
 Every week ×4,
 Every month ×3,
 Every month ×6,
 Every month ×12,
-Incoming,
-Outgoing,
-Heaviest day,
-What for,
-New planned payment,
-Edit planned payment,
-Add to plan,
-The amount and date are read from the document.,
-"This screen does not pay anything. Money leaves through Payments, Kassa or Journal; a row is closed here by hand.",
-Realized,
-Realized on,
-Totals by planner,
-Visible to authorised roles only,
-Planned by,
-Rows,
-Failed to load the payment calendar.,
-Failed to save the plan.,
-Failed to delete the plan.,
+Incoming,Кирим
+Outgoing,Чиқим
+Heaviest day,Энг оғир кун
+What for,Нима учун
+New planned payment,Янги режалаштирилган тўлов
+Edit planned payment,Режалаштирилган тўловни таҳрирлаш
+Add to plan,Режага қўшиш
+The amount and date are read from the document.,Сумма ва сана ҳужжатдан олинади.
+"This screen does not pay anything. Money leaves through Payments, Kassa or Journal; a row is closed here by hand.","Бу экран ҳеч қандай тўловни амалга оширмайди. Пул «Тўловлар», «Касса» ёки «Журнал» орқали чиқади; қатор бу ерда қўлда ёпилади."
+Realized,Бажарилди
+Realized on,Бажарилган сана
+Totals by planner,Режалаштирувчилар бўйича жами
+Visible to authorised roles only,Фақат ваколатли ролларга кўринади
+Planned by,Ким режалаштирди
+Rows,Қаторлар
+Failed to load the payment calendar.,Тўлов календарини юклаб бўлмади.
+Failed to save the plan.,Режани сақлаб бўлмади.
+Failed to delete the plan.,Режани ўчириб бўлмади.
 Discard this draft?,Қоралама ўчирилсинми?
 The lines you entered have not been saved yet.,Киритилган сатрлар ҳали сақланмаган.
 Keep editing,Таҳрирни давом эттириш

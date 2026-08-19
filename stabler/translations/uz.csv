@@ -127,20 +127,20 @@ Access Review,Kirishni tekshirish
 Access token,
 Access token (JWT),
 Account,Hisob
-Account created.,
-Account currency,
+Account created.,Hisob yaratildi.
+Account currency,Hisob valyutasi
 Account currency must match the payment account.,Hisob valyutasi to'lov hisobiga mos kelishi kerak.
-Account disabled.,
-Account enabled.,
+Account disabled.,Hisob o'chirib qo'yildi.
+Account enabled.,Hisob yoqildi.
 Account Ledger,Hisob Balansi
 Account matches,Hisob mos keladi
-Account name,
+Account name,Hisob nomi
 Account name is required.,
-Account number,
+Account number,Hisob raqami
 Account number {0} is already used in {1}.,
 Account or cost centre…,
-Account type,
-Account updated.,
+Account type,Hisob turi
+Account updated.,Hisob yangilandi.
 Account {0} is not a {1} account for party {2}.,
 Account {0} not found.,
 Accounting entries,
@@ -201,7 +201,7 @@ Add at least one item with a positive quantity.,Kamida bitta ijobiy miqdordagi m
 Add at least one raw material line.,Kamida bitta xom ashyo qatorini qo'shing.
 Add certificate,Sertifikat qoʻshish
 Add charge line,Xarajat qatorini qoʻshish
-Add child account,
+Add child account,Bola hisob qo'shish
 Add child warehouse,Bol omborxona qo'shish
 Add column,Ustun qo'shish
 Add cost item,Xarajat moddasini qo‘shish
@@ -562,7 +562,7 @@ Back to PI selection,PI tanlashga qaytish
 Back to summary,
 Back up now,Hozir zaxiralash
 Back up with files,Fayllar bilan zaxiralash
-Backdated postings are frozen before {0}.,
+Backdated postings are frozen before {0}.,Orqaga sanalgan provodkalar {0} sanasigacha bloklangan.
 Backup & DR,Zaxira va tiklash
 Backup created.,Zaxira nusxa yaratildi.
 Backup file not found: {0},
@@ -847,7 +847,7 @@ Certificate required,Sertifikat talab qilinadi
 "Certificate, CI or authority… ⌘K","Sertifikat, invoys yoki organ… ⌘K"
 Certificates appear here as they are registered against imports.,Sertifikatlar import bo‘yicha ro‘yxatdan o‘tgani sari shu yerda paydo bo‘ladi.
 Certification,Sertifikatlash
-Change,
+Change,O'zgartirish
 Change status,Holatni o‘zgartirish
 Changed,O'zgartirildi
 Channel,Kanal
@@ -1555,12 +1555,12 @@ Direct stock updates via Sales Invoice are disabled by company policy. ,
 Direction,Yo'nalish
 Directions,Yo'nalish
 Director board,Direktor paneli
-Disable,
-Disable account?,
+Disable,Faolsizlantirish
+Disable account?,Hisobni faolsizlantirasizmi?
 Disabled,Nofaol
 Disc,Chegirma
 Disc %,Chegirma %
-Discard,
+Discard,Saqlamaslik
 Discard unsaved changes?,
 DISCHARGED,Tushirilgan
 Discipline,Intizom
@@ -1703,7 +1703,7 @@ Early leave (min),Erta ketish (daq.)
 Early leave deduction,
 Earnings,Hisoblanganlar
 Edit,Tahrirlash
-Edit account,
+Edit account,Hisobni tahrirlash
 Edit category,Toifani tahrirlash
 Edit customer,Xaridorni tahrirlash
 Edit Deal,Bitimni tahrirlash
@@ -1773,8 +1773,8 @@ Employment,
 empty,bo'sh
 Empty,Bo'sh
 Empty allowed list = user can access every company.,Bo'sh ruxsat ro'yxati = foydalanuvchi barcha kompaniyalarga kirishi mumkin.
-Enable,
-Enable account?,
+Enable,Faollashtirish
+Enable account?,Hisobni faollashtirasizmi?
 Enable TimePay sync,
 Enabled,Faollashtirish
 Enabled (bot access),Yoqilgan (bot kirishi)
@@ -1782,7 +1782,7 @@ End,Oxiri
 End Date,Yakuniy sana
 End date cannot be before start date.,
 End Date must be on or after Start Date.,Yakuniy sana Bosh sananingdan keyin yoki shu kunida bo'lishi kerak.
-End of ledger,
+End of ledger,Ro'yxat oxiri
 Enforcement,Majburlash
 Enter a bank and/or cash amount.,Bank va/yoki naqd summani kiriting.
 Enter a quantity for at least one row.,Kamida bitta qator uchun miqdor kiriting.
@@ -1799,7 +1799,7 @@ Enter protocol / authorization reason…,Bayonnoma raqami yoki sababni kiriting�
 Enter the quantity to return for each line. Leave 0 to exclude a line.,Har bir qator uchun qaytarish miqdorini kiriting. Qatorni istisno qilish uchun 0 ni qoldiring.
 Enter your Employee ID and secure PIN,
 Entered rate deviates by {pct}% from CBU rate.,Kiritilgan kurs CBU kursidan {pct}% ga farq qiladi.
-entries,
+entries,yozuv
 Entries on/before this date are frozen.,
 entries. Narrow the date range to see older ones.,yozuvlar. Eskiroq yozuvlarni ko'rish uchun sana oralig'ini toraytiring.
 Entry,Yozuv
@@ -2316,7 +2316,7 @@ Gross Weight,Brutto vazni
 Gross weight,Brutto vazn
 Gross Weight (kg),Brutto vazn (kg)
 Group,Guruhi
-"Group account (can contain children, holds no transactions itself)",
+"Group account (can contain children, holds no transactions itself)","Guruh hisobi (bola hisoblarni o'z ichiga olishi mumkin, o'zi tranzaksiyalarda ishtirok etmaydi)"
 Group Code / Title,Guruh kodi / nomi
 "Group warehouse (can contain children, holds no stock itself)","Guruhi sklad (bolalarni saqlashi mumkin, o'zi zaxira saqlash olmaydi)"
 Grouped by Contract. Unlinked invoices are shown separately; transaction and base currency are never mixed.,Shartnoma bo‘yicha guruhlangan. Bog‘lanmagan hisob-fakturalar alohida ko‘rsatiladi; valyutalar aralashtirilmaydi.
@@ -2418,7 +2418,7 @@ In transit,Yo‘lda
 IN_TRANSIT,Yo‘lda
 Inactive,Faol emas
 Include child transactions,Tobe kontragentlar operatsiyalarini qo'shish
-Include disabled,
+Include disabled,Faolsizlarni ham ko'rsatish
 Include drafts,Qoralamalar bilan
 Include in Landed Cost,Landed cost tarkibiga kiritilsin
 Include subcategories,Quyi toifalarni ham qo'shish
@@ -2726,7 +2726,7 @@ Loading FX account balances…,
 Loading imports flow…,Import jarayoni yuklanmoqda…
 Loading invoices,
 Loading logistics readiness…,Logistika tayyorligi yuklanmoqda…
-Loading more…,
+Loading more…,Yana yuklanmoqda…
 Loading RFQs…,Narx so'rovlari yuklanmoqda…
 Loading tender funnel…,Voronka yuklanmoqda…
 Loading warehouses…,Omborlar yuklanmoqda…
@@ -2897,7 +2897,7 @@ Moved to {0},{0} bosqichiga koʻchirildi
 Movement,Harakat
 Movements,Harakatlar
 moves stock,
-Multi-currency,
+Multi-currency,Ko'p valyutali
 Multi-Currency Parties,
 Multi-level approval incomplete,
 Multiplier,Ko‘paytiruvchi
@@ -2944,7 +2944,7 @@ Never,Hech qachon
 Never tested,Hech qachon sinalmagan
 New,Yangi
 new,yangi
-New account,
+New account,Yangi hisob
 New asset purchase,
 New bill,Yangi hisob
 New BOM,Yangi spetsifikatsiya
@@ -3568,7 +3568,7 @@ Opening Balance,Boshlang'ich qoldiq
 Opening balance,Ochilish balansi
 "Opening balance, period movement, and running balance by account.",
 Opening balances,Ochilish balans
-Opening date,
+Opening date,Ochilish sanasi
 Opening qty,Boshlang'ich miqdor
 "Opening, in, out and closing quantity per item over a date range.","Sana oralig'ida har bir mahsulot bo'yicha boshlang'ich, kirim, chiqim va yakuniy miqdor."
 Operational,Operatsion
@@ -3693,7 +3693,7 @@ Paid to,Qayga to'landi
 Paid {0} employees — {1},{0} xodimga to'landi — {1}
 paid {pct}% · {outstanding} to pay,{pct}% to'langan · {outstanding} to'lanishi kerak
 Parent,Bosh
-Parent account,
+Parent account,Bosh hisob
 Parent account is required.,
 Parent account {0} does not belong to {1}.,
 Parent account {0} is not a group account.,
@@ -5215,8 +5215,8 @@ These are ERPNext's back-dating guards — the reason it blocks creating or edit
 These device users have no employee link. Confirm a match to re-queue their punches.,Bu qurilma foydalanuvchilari xodimga bog'lanmagan. Belgilashlarni qayta ishlash uchun moslikni tasdiqlang.
 These lines allocate more than the Proforma Invoice has left: {0},Bu qatorlar proforma-invoysda qolganidan koʻproq ajratmoqda: {0}
 These linked records go with it:,U bilan birga quyidagi bog‘langan yozuvlar ketadi:
-This account will be hidden from the active chart of accounts.,
-This account will be shown in the active chart of accounts again.,
+This account will be hidden from the active chart of accounts.,Hisob faol hisoblar rejasidan yashiriladi.
+This account will be shown in the active chart of accounts again.,Hisob faol hisoblar rejasida qayta ko'rsatiladi.
 This adjusts stock for {0} item(s) and posts the difference to the ledger. The action is recorded against your name.,Bu {0} ta tovar bo'yicha zaxirani tuzatadi va farqni hisobga kiritadi. Amal sizning nomingizga yoziladi.
 This bank transaction is already fully reconciled.,
 This bill is already vouchered ({0}) and can no longer be unlinked.,Ushbu hisob-faktura allaqachon vaucherga o‘tkazilgan ({0}) va endi uzib bo‘lmaydi.
@@ -6236,14 +6236,14 @@ Round Off for Opening,
 Service Received But Not Billed,
 Tax,
 Temporary,
-No accounts yet,
-Set up the chart of accounts for {company} to see it here.,
-Payment Calendar,
-Everyone enters their own plan. The calendar shows the days it lands on.,
-My plan,
-Whole company,
-Click a day to plan on it,
-Nothing planned this month yet.,
+No accounts yet,Hisoblar hali yo'q
+Set up the chart of accounts for {company} to see it here.,Uni bu yerda ko'rish uchun {company} uchun hisoblar rejasini sozlang.
+Payment Calendar,To'lov kalendari
+Everyone enters their own plan. The calendar shows the days it lands on.,Har kim o'z rejasini kiritadi. Kalendar u tushadigan kunlarni ko'rsatadi.
+My plan,Mening rejam
+Whole company,Butun kompaniya
+Click a day to plan on it,Reja kiritish uchun kunni bosing
+Nothing planned this month yet.,Bu oyda hali hech narsa rejalashtirilmagan.
 Customer receipt,
 Vendor payment,
 Item purchase,
@@ -6254,35 +6254,35 @@ Vendor Payment,
 Item Purchase,
 Other Receipt,
 Other Payment,
-Confidence,
+Confidence,Ishonch darajasi
 "Committed — agreed, date is set",
 Expected — most likely,
 Tentative — not discussed yet,
-A tentative receipt does not pay a committed salary — the three are summed apart.,
-Repeat,
+A tentative receipt does not pay a committed salary — the three are summed apart.,Taxminiy tushum aniq maoshni to'lamaydi — uch daraja alohida jamlanadi.
+Repeat,Takrorlash
 One time,
 Every week ×4,
 Every month ×3,
 Every month ×6,
 Every month ×12,
-Incoming,
-Outgoing,
-Heaviest day,
-What for,
-New planned payment,
-Edit planned payment,
-Add to plan,
-The amount and date are read from the document.,
-"This screen does not pay anything. Money leaves through Payments, Kassa or Journal; a row is closed here by hand.",
-Realized,
-Realized on,
-Totals by planner,
-Visible to authorised roles only,
-Planned by,
-Rows,
-Failed to load the payment calendar.,
-Failed to save the plan.,
-Failed to delete the plan.,
+Incoming,Kirim
+Outgoing,Chiqim
+Heaviest day,Eng og'ir kun
+What for,Nima uchun
+New planned payment,Yangi rejalashtirilgan to'lov
+Edit planned payment,Rejalashtirilgan to'lovni tahrirlash
+Add to plan,Rejaga qo'shish
+The amount and date are read from the document.,Summa va sana hujjatdan olinadi.
+"This screen does not pay anything. Money leaves through Payments, Kassa or Journal; a row is closed here by hand.","Bu ekran hech qanday to'lovni amalga oshirmaydi. Pul «To'lovlar», «Kassa» yoki «Jurnal» orqali chiqadi; qator bu yerda qo'lda yopiladi."
+Realized,Bajarildi
+Realized on,Bajarilgan sana
+Totals by planner,Rejalashtiruvchilar bo'yicha jami
+Visible to authorised roles only,Faqat vakolatli rollarga ko'rinadi
+Planned by,Kim rejalashtirdi
+Rows,Qatorlar
+Failed to load the payment calendar.,To'lov kalendarini yuklab bo'lmadi.
+Failed to save the plan.,Rejani saqlab bo'lmadi.
+Failed to delete the plan.,Rejani o'chirib bo'lmadi.
 Discard this draft?,Qoralama o'chirilsinmi?
 The lines you entered have not been saved yet.,Kiritilgan satrlar hali saqlanmagan.
 Keep editing,Tahrirni davom ettirish
