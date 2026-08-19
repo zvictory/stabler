@@ -124,6 +124,13 @@ the merge protocol and the branch gate in `deploy_stabler.sh` are written out in
 - **`bench restart` restarts the whole bench → brief blip for ALL tenants**, not
   just anjan. Schedule for low traffic, or accept the blip explicitly.
 - Rollback = restore the step-2 tar, `chown`, `bench build`, `bench restart`.
+  **This is a code rollback only.** Step 2 archives `apps/stabler`, never the
+  database. If step 5 (`migrate`) ran, the schema and the data it touched stay
+  migrated while the code goes back — that is not "the previous state". Read the
+  patches that landed since the sha prod was stamped with and check whether any of
+  them mutate data one way; `v86_remittance_pickup_code_hash` is the worked
+  example (one-way by design, `:11`), and undoing it needs a refund or an admin
+  override (`:83`), not a tar.
 
 ## Post-deploy smoke checks (run every release)
 - **Direct-URL / refresh load of a record form.** Open an existing record by
