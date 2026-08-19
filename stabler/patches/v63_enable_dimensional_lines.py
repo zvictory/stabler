@@ -9,9 +9,11 @@ That is deliberately the same shape as v62 — a patch should translate a fact
 that already exists, not invent a new policy. The difference is where the fact
 lives: v62 read it off the company NAME, this one reads it off the catalogue.
 
-Patches run PRE-sync, so neither column is guaranteed to exist yet. Both are
-guarded; a site that has not synced yet simply gets the default (0) later, and
-re-running the patch is harmless because it recomputes from the same data.
+This patch is registered under [post_model_sync] in patches.txt (line 68), so
+both columns already exist by the time it runs. Both are guarded anyway
+(house style: it costs one `if` each and survives someone moving this entry
+later); re-running the patch is harmless because it recomputes from the same
+data.
 """
 
 import frappe

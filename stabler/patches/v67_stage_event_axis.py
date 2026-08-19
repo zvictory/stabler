@@ -8,8 +8,10 @@ NULL bırakmak, "ekseni bilinmeyen" bir yığın kayıt demek olurdu ve süreç 
 ekranı ekseni filtrelediğinde geçmişin tamamı sessizce kaybolurdu — hata değil,
 boş bir zaman çizelgesi. Boş bir çizelge "hiç hareket olmamış" diye okunur.
 
-Yamalar senkrondan ÖNCE çalışıyor, o yüzden sütun kontrolü şart: sütun henüz
-yoksa yapacak bir şey de yok, bir sonraki migrate'te varsayılan devreye girer.
+Bu yama patches.txt'te [post_model_sync] altında kayıtlı (72. satır), yani
+doctype DDL senkronundan SONRA çalışıyor — sütun bu noktada zaten var. Kontrol
+yine de tutuluyor (ev stili: bir `if`e mal olur, bu satır ileride taşınırsa da
+güvenli kalır), sütun eksik olabileceği için değil.
 """
 
 import frappe
