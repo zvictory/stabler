@@ -1,11 +1,11 @@
 <script setup>
-import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue";
+import { computed, onMounted, ref, watch } from "vue";
 import { storeToRefs } from "pinia";
-import { useRoute, useRouter } from "vue-router";
+import { useRoute } from "vue-router";
 import { useSession } from "../../stores/session.js";
 import { call } from "../../api/client.js";
 import { formatMoney, moneyEpsilon, moneyFractionDigits } from "../../composables/money.js";
-import { computeBalancePlug } from "../../composables/journal.js";
+import { computeBalancePlug, isDraftDirty, snapshotDraft } from "../../composables/journal.js";
 import { formatDate, formatDateTime, todayIso, daysAgoIso} from "../../composables/date.js";
 import { t } from "../../composables/i18n.js";
 import { accountLabel } from "../../composables/accounts.js";
@@ -22,28 +22,10 @@ import { useEscapeBack } from "../../composables/useEscapeBack.js";
 
 const session = useSession();
 const route = useRoute();
-const router = useRouter();
-useEscapeBack(null, "/money"); // ESC → back (general app rule)
 const { activeCompany, user } = storeToRefs(session);
 const toast = useToast();
 const { confirm } = useConfirm();
 
-// ESC → orqaga (faqat view panelida, masalan mijoz ledger'idan kelganda).
-function onEscKey(e) {
-	if (pane.value !== "view") return;
-	if (e.key !== "Escape" || e.defaultPrevented) return;
-	const tag = document.activeElement?.tagName;
-	if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return;
-	if (document.activeElement?.isContentEditable) return;
-	if (document.querySelector(".modal.show, .offcanvas.show")) return;
-	if (window.history.state?.back != null) {
-		router.back();
-	} else {
-		router.push("/money/journals");
-	}
-}
-onMounted(() => window.addEventListener("keydown", onEscKey));
-onBeforeUnmount(() => window.removeEventListener("keydown", onEscKey));
 
 const statusFilter = ref("");
 const statusOptions = computed(() => [
@@ -70,6 +52,16 @@ const pane = ref("empty");
 const detail = ref(null);
 const detailLoading = ref(false);
 
+// ESC → back (general app rule). There were two listeners here, and neither
+// knew about the other: the generic one navigated away and the page-local one
+// navigated again, so a draft in the edit pane was discarded — twice over —
+// without a word. One listener, and the edit pane gets first refusal.
+useEscapeBack(() => {
+	if (pane.value !== "edit") return false;
+	requestCancelEdit();
+	return true;
+}, "/money");
+
 const VOUCHER_TYPES = [
 	"Journal Entry", "Bank Entry", "Cash Entry", "Credit Card Entry",
 	"Contra Entry", "Excise Entry", "Write Off Entry", "Opening Entry", "Depreciation Entry",
@@ -85,6 +77,8 @@ const accountOptions = ref([]);
 const emptyRow = () => ({ account: "", account_currency: "", party_type: "", party: "", party_name: "", exchange_rate: 1, debit: null, credit: null, _auto: false });
 const form = ref(blankForm());
 const editName = ref(null);
+// The draft as it was opened — what "dirty" is measured against.
+const pristine = ref(null);
 const isEdit = computed(() => !!editName.value);
 
 const PARTY_TYPES = computed(() => [
@@ -279,6 +273,7 @@ async function openCreate() {
 	submitError.value = "";
 	pane.value = "edit";
 	await loadAccountOptions();
+	pristine.value = snapshotDraft(form.value);
 }
 
 async function openEdit(d) {
@@ -307,11 +302,31 @@ async function openEdit(d) {
 	};
 	while (form.value.accounts.length < 2) form.value.accounts.push(emptyRow());
 	form.value.accounts.forEach((r) => r.account && loadAcctBalance(r.account));
+	pristine.value = snapshotDraft(form.value);
 	pane.value = "edit";
+}
+
+// Leaving the edit pane — by Escape or by the Cancel button — throws the draft
+// away, and there is no undo behind it. Ask, but only when there is something
+// to lose: a prompt in front of an untouched form teaches people to dismiss it.
+async function requestCancelEdit() {
+	if (submitting.value) return;
+	if (isDraftDirty(form.value, pristine.value)) {
+		const ok = await confirm({
+			title: t("Discard this draft?"),
+			body: t("The lines you entered have not been saved yet."),
+			danger: true,
+			confirmLabel: t("Discard"),
+			cancelLabel: t("Keep editing"),
+		});
+		if (!ok) return;
+	}
+	cancelEdit();
 }
 
 function cancelEdit() {
 	if (submitting.value) return;
+	pristine.value = null;
 	if (detail.value?.name) pane.value = "view";
 	else pane.value = "empty";
 }
@@ -655,7 +670,7 @@ watch(statusFilter, load);
 					</table>
 
 					<div class="d-flex justify-content-end gap-2 mt-3">
-						<button type="button" class="btn btn-link link-secondary" :disabled="submitting" @click="cancelEdit">{{ t("Cancel") }}</button>
+						<button type="button" class="btn btn-link link-secondary" :disabled="submitting" @click="requestCancelEdit">{{ t("Cancel") }}</button>
 						<button type="button" class="btn btn-primary" :disabled="submitting || !balanced || accountsLoading" @click="submitForm">
 							<span v-if="submitting" class="spinner-border spinner-border-sm me-1"></span>
 							{{ isEdit ? t("Save changes") : t("Save as Draft") }}

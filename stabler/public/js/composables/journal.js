@@ -65,3 +65,39 @@ function round(n, digits) {
 	const f = 10 ** digits;
 	return Math.round(n * f) / f;
 }
+
+// Fields the user owns. Everything else on a row — `party_name`, which the
+// server sent for display, `account_currency`, which follows the account, and
+// `_auto`, which marks a value this form derived — is not their work and must
+// never be what stands between them and the Escape key.
+const DRAFT_HEAD = ["posting_date", "voucher_type", "user_remark", "cheque_no", "cheque_date"];
+const DRAFT_ROW = ["account", "party_type", "party"];
+
+/**
+ * The draft as a comparable string, taken the moment the edit pane opens.
+ *
+ * Amounts are normalised through Number(): MoneyInput empties a field to null
+ * and the server sends 0, and a form that called those two different would
+ * prompt a user who typed nothing.
+ */
+export function snapshotDraft(form) {
+	const head = DRAFT_HEAD.map((k) => String(form?.[k] ?? ""));
+	const rows = (form?.accounts || []).map((r) => [
+		...DRAFT_ROW.map((k) => String(r?.[k] ?? "")),
+		Number(r?.exchange_rate) || 0,
+		Number(r?.debit) || 0,
+		Number(r?.credit) || 0,
+	]);
+	return JSON.stringify([head, rows]);
+}
+
+/**
+ * Has the user put work into this draft?
+ *
+ * No snapshot means no edit pane was ever opened, so there is nothing to lose
+ * and Escape stays plain "go back".
+ */
+export function isDraftDirty(form, pristine) {
+	if (typeof pristine !== "string") return false;
+	return snapshotDraft(form) !== pristine;
+}

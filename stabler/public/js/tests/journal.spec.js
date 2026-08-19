@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { computeBalancePlug } from "../composables/journal.js";
+import { computeBalancePlug, isDraftDirty, snapshotDraft } from "../composables/journal.js";
 
 // Every line is in the company's base currency unless a test says otherwise.
 const rateOf = (r) => Number(r.exchange_rate) || 1;
@@ -82,5 +82,81 @@ describe("computeBalancePlug — the counter-line a journal entry can work out f
 
 	it("returns null for a single-row entry — there is no counter-line", () => {
 		expect(computeBalancePlug([row({ debit: 5000000 })], { editedIdx: 0, rateOf })).toBeNull();
+	});
+});
+
+describe("snapshotDraft / isDraftDirty — the difference between a stray keypress and lost work", () => {
+	// Escape used to close the edit pane outright. Half an opening balance —
+	// a dozen lines typed by hand — went with it, silently, and there was no
+	// undo. Dirtiness is the whole question the confirm prompt asks, so it is
+	// the thing that has to be right.
+	const draft = (over = {}) => ({
+		posting_date: "2026-08-19", voucher_type: "Journal Entry", user_remark: "", cheque_no: "", cheque_date: "",
+		accounts: [row({ account: "" }), row({ account: "" })],
+		...over,
+	});
+
+	it("a form nobody has touched since it opened is not dirty", () => {
+		const form = draft();
+		expect(isDraftDirty(form, snapshotDraft(form))).toBe(false);
+	});
+
+	it("an amount the user typed makes it dirty — this is the work worth a prompt", () => {
+		const form = draft();
+		const pristine = snapshotDraft(form);
+		form.accounts[0].debit = 5000000;
+		expect(isDraftDirty(form, pristine)).toBe(true);
+	});
+
+	it("picking an account makes it dirty even before any amount is typed", () => {
+		const form = draft();
+		const pristine = snapshotDraft(form);
+		form.accounts[0].account = "1110 - Kassa - MIK";
+		expect(isDraftDirty(form, pristine)).toBe(true);
+	});
+
+	it("a changed header field is dirty too — the date is data, not chrome", () => {
+		const form = draft();
+		const pristine = snapshotDraft(form);
+		form.posting_date = "2026-07-01";
+		expect(isDraftDirty(form, pristine)).toBe(true);
+	});
+
+	// MoneyInput hands back null for an emptied field and the server hands back
+	// 0. Treating those as different would put a "discard?" prompt in front of
+	// a user who typed nothing at all, and a prompt that cries wolf gets
+	// dismissed reflexively — which is how the real one gets dismissed too.
+	it("null and 0 are the same emptiness", () => {
+		const form = draft();
+		const pristine = snapshotDraft(form);
+		form.accounts[0].debit = 0;
+		form.accounts[1].credit = null;
+		expect(isDraftDirty(form, pristine)).toBe(false);
+	});
+
+	// party_name is a label the server sent for display; account_currency is
+	// derived from the account. Neither is something the user typed, so
+	// neither may raise a prompt on its own.
+	it("labels the form filled in for itself are not the user's work", () => {
+		const form = draft();
+		const pristine = snapshotDraft(form);
+		form.accounts[0].party_name = "Mikas Trading LLC";
+		form.accounts[0].account_currency = "UZS";
+		form.accounts[0]._auto = true;
+		expect(isDraftDirty(form, pristine)).toBe(false);
+	});
+
+	it("an added row is dirty even while it is still empty — the user asked for it", () => {
+		const form = draft();
+		const pristine = snapshotDraft(form);
+		form.accounts.push(row({ account: "" }));
+		expect(isDraftDirty(form, pristine)).toBe(true);
+	});
+
+	// No snapshot means no edit pane was ever opened. Escape must stay plain
+	// "go back" there; a prompt with nothing behind it is worse than none.
+	it("without a snapshot nothing is dirty", () => {
+		expect(isDraftDirty(draft(), null)).toBe(false);
+		expect(isDraftDirty(draft(), undefined)).toBe(false);
 	});
 });
