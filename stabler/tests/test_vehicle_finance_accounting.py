@@ -446,6 +446,112 @@ class VehicleFinanceAccountingTest(FrappeTestCase):
 		self.assertEqual(flt(net), 0)
 		self.assertEqual(frappe.db.get_value("Payment Entry", pe_name, "docstatus"), 2)
 
+	# --- completion ---------------------------------------------------------------------
+
+	CASHIER_EMAIL = "vf-cashier-completion@example.com"
+
+	def _make_cashier_user(self):
+		if not frappe.db.exists("User", self.CASHIER_EMAIL):
+			user = frappe.get_doc(
+				{
+					"doctype": "User",
+					"email": self.CASHIER_EMAIL,
+					"first_name": "VF Cashier Completion Test",
+					"send_welcome_email": 0,
+				}
+			)
+			user.insert(ignore_permissions=True)
+		else:
+			user = frappe.get_doc("User", self.CASHIER_EMAIL)
+		# A real cashier also reads the invoice they are collecting against; the
+		# `collect` endpoint asserts that read and always has. The point of this
+		# user is the Vehicle Agreement permission, which stays read-only for both
+		# roles — that is what the test is measuring.
+		user.add_roles("Vehicle Finance Cashier", "Accounts User")
+		return self.CASHIER_EMAIL
+
+	def test_a_settled_agreement_is_completed_and_leaves_the_work_queue(self):
+		"""Sekiz durumun üçünün yazanı yoktu; en görünür sonucu buydu.
+
+		Fatura kapansa bile sözleşme `Active` kalıyor ve tahsil edilecek hiçbir şey
+		yokken sonsuza dek tahsilat kuyruğunda duruyordu. Kuyruktan çıkışı da ölçmek
+		şart: yalnız durum alanına bakmak, kuyruğun başka bir ölçüye baktığı bir
+		gelecekte yeşil kalırdı.
+		"""
+		from stabler.api.vehicle_finance import work, work_policy
+
+		def queued():
+			names = set()
+			for view in work_policy.VIEWS:
+				names |= {r["agreement"] for r in work.work_queue(company=COMPANY, view=view)["rows"]}
+			return names
+
+		name = self._make_agreement(direction="Disposition")
+		v1.activate_agreement(name)
+		self.assertIn(name, queued(), "aktif sözleşme hiçbir kuyrukta değil — test hiçbir şey ölçmüyor")
+
+		v1.collect_customer_payment(name, 1000, mode_of_payment="Cash", bank_account=self.bank)
+
+		self.assertEqual(frappe.db.get_value("Vehicle Agreement", name, "agreement_status"), "Completed")
+		self.assertNotIn(name, queued(), "kapanmış sözleşme hâlâ tahsilat kuyruğunda")
+
+	def test_the_cashier_who_takes_the_final_payment_can_complete_it(self):
+		"""Kapanışı yazan kod, parayı gerçekten alan rolün izinleriyle koşar.
+
+		Cashier, Collector ve Payables Clerk'in Vehicle Agreement üzerinde `write=0
+		submit=0` izni var. Durum yazımı `doc.save()` ile yapılsaydı submit edilmiş
+		belgede write+submit istenir ve tam da son ödemeyi alan kullanıcılar için
+		`PermissionError` atardı — üstelik ödeme çoktan commit edilmiş olarak. Bu
+		test Administrator olarak koşarsa hiçbir şey kanıtlamaz, çünkü o her izne
+		sahiptir.
+		"""
+		name = self._make_agreement(direction="Disposition")
+		v1.activate_agreement(name)
+		cashier = self._make_cashier_user()
+		frappe.set_user(cashier)
+		try:
+			v1.collect_customer_payment(name, 1000, mode_of_payment="Cash", bank_account=self.bank)
+		finally:
+			frappe.set_user("Administrator")
+		self.assertEqual(frappe.db.get_value("Vehicle Agreement", name, "agreement_status"), "Completed")
+
+	def test_cancelling_the_final_payment_reopens_the_agreement(self):
+		"""Son ödemenin aynı gün iptali sözleşmeyi geri açmalı.
+
+		İptal, faturadaki alacağı geri getiriyor. Sözleşme `Completed` kalırsa —
+		ve `Completed` nihai sayılırsa — alacak canlıyken sözleşme tahsilata,
+		yeniden planlamaya ve kapatmaya kapanır: uygulamada ona ulaşmanın yolu
+		kalmaz. Aynı gün iptali varsayılan olarak açık bir akış.
+		"""
+		name = self._make_agreement(direction="Disposition")
+		v1.activate_agreement(name)
+		result = v1.collect_customer_payment(name, 1000, mode_of_payment="Cash", bank_account=self.bank)
+		self.assertEqual(frappe.db.get_value("Vehicle Agreement", name, "agreement_status"), "Completed")
+
+		v1.cancel_payment(result["payment_entry"], reason="mistake")
+
+		self.assertEqual(frappe.db.get_value("Vehicle Agreement", name, "agreement_status"), "Active")
+		# Ve gerçekten tahsil edilebilir olmalı — durum alanı doğru ama uç hâlâ
+		# reddediyorsa hiçbir şey kazanılmamıştır.
+		again = v1.collect_customer_payment(name, 100, mode_of_payment="Cash", bank_account=self.bank)
+		self.assertTrue(again["payment_entry"])
+
+	def test_a_completed_agreement_refuses_further_collection(self):
+		name = self._make_agreement(direction="Disposition")
+		v1.activate_agreement(name)
+		v1.collect_customer_payment(name, 1000, mode_of_payment="Cash", bank_account=self.bank)
+		with self.assertRaises(frappe.ValidationError):
+			v1.collect_customer_payment(name, 50, mode_of_payment="Cash", bank_account=self.bank)
+
+	def test_terminating_closes_an_open_agreement_and_refuses_a_closed_one(self):
+		name = self._make_agreement(direction="Disposition")
+		v1.activate_agreement(name)
+		out = v1.terminate_agreement(name, reason="repossessed")
+		self.assertEqual(out["status"], "Terminated")
+		self.assertGreater(out["invoice_outstanding"], 0, "kapatma alacağı silmemeli")
+		with self.assertRaises(frappe.ValidationError):
+			v1.terminate_agreement(name, reason="again")
+
 	# --- rescheduling ------------------------------------------------------------------------
 
 	def test_reschedule_keeps_legal_total_and_applications(self):

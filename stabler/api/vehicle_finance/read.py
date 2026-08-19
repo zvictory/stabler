@@ -35,7 +35,17 @@ from stabler.api.vehicle_finance.v1 import (
 	_row_states,
 )
 
-_DETAIL_CAPABILITIES = ("collect", "pay_supplier", "cancel_same_day", "reschedule", "view_cost_margin")
+# Reported to the agreement screen so it can show or hide each action.
+# `settlement_writeoff` joined the list when `terminate_agreement` became its first
+# consumer: a capability the screen cannot see is an action the screen cannot offer.
+_DETAIL_CAPABILITIES = (
+	"collect",
+	"pay_supplier",
+	"cancel_same_day",
+	"reschedule",
+	"view_cost_margin",
+	"settlement_writeoff",
+)
 
 _DRAFT_FIELDS = (
 	"naming_series",
