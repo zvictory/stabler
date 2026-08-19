@@ -489,7 +489,12 @@ async function submitCreate(mode) {
 		const method = editingName.value
 			? "stabler.api.money.amend_transfer_entry"
 			: "stabler.api.money.submit_transfer_entry";
-		const res = await call(method, editingName.value ? { source_name: editingName.value, ...payload } : payload);
+		const res = await call(
+			method,
+			editingName.value
+				? { source_name: editingName.value, modified: detail.value?.modified, ...payload }
+				: payload,
+		);
 
 		load(); // refresh list in background
 		// When maker-checker is on, the transfer stays a Draft and is routed to

@@ -19,11 +19,21 @@ endpoints from the API source itself rather than a hand-kept list — add an
 unconditional `check_concurrency` to a whitelisted function and every literal
 call site in the SPA is held to it from that moment on.
 
-Not covered here, by construction rather than by omission: pages that route
-submit/cancel/delete through `useDocumentForm`, which passes the token from the
-loaded document (`useDocumentForm.js:178`, `:225`, `:277`). Those call sites
-name the endpoint through a variable, so there is no literal for this scan to
-find — and no way for a page to forget the token either.
+Two shapes are outside this scan, and it is worth being exact about which.
+
+The first is covered by construction: pages that route submit/cancel/delete
+through `useDocumentForm`, which passes the token from the loaded document
+(`useDocumentForm.js:178`, `:225`, `:277`). The endpoint arrives as a variable,
+so there is no literal to find — and no way for a page to forget the token.
+
+The second is genuinely uncovered: a page that picks the endpoint itself, e.g.
+`const method = editing ? "…amend_expense_entry" : "…submit_expense_entry"` in
+`Expenses.vue` and `Transfers.vue`. The literal is there but the `call(` is not
+around it, and locating the enclosing function without a JS parser would mean
+guessing. A check that guesses reports the wrong file and teaches people to skip
+it, so this scan stays precise and under-claims instead. Both of those call sites
+were fixed by hand when `amend_expense_entry` gained its token; a third one will
+have to be too.
 """
 
 from __future__ import annotations
@@ -124,6 +134,20 @@ class EveryGuardedCallSendsItsToken(unittest.TestCase):
 			"every single time — the button cannot work. Send `modified` from the loaded\n"
 			"document, as `JournalEntries.vue:494` does:\n  " + "\n  ".join(offenders),
 		)
+
+	def test_the_two_amend_endpoints_demand_a_token(self):
+		"""`amend_*_entry` cancels one document and writes another in one call.
+
+		The sequential repeat was already refused — the second call finds the
+		source cancelled — so the token is not closing a race anyone has seen. It
+		is here because a guard present on eight writers in this module and absent
+		on two is a guard nobody can reason about: the next reader cannot tell
+		whether the omission is a decision or an oversight. It was an oversight.
+		"""
+		guarded = guarded_endpoints()
+		for endpoint in ("amend_expense_entry", "amend_transfer_entry"):
+			with self.subTest(endpoint=endpoint):
+				self.assertIn(f"stabler.api.money.{endpoint}", guarded)
 
 	def test_the_scan_still_finds_something_to_check(self):
 		"""Guards the guard: a regex that matches nothing passes vacuously.
