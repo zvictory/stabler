@@ -101,6 +101,10 @@ const submitting = ref(false);
 const submitError = ref("");
 const currencyOptions = ref([]);
 const optionsLoaded = ref(false);
+// Whether the user has manually picked a currency in THIS modal session. Gates
+// the parent_account watcher below: once true, a later parent change must not
+// silently overwrite what the user just chose.
+const currencyTouched = ref(false);
 
 function blankAccount() {
 	return {
@@ -369,6 +373,7 @@ function openCreate(parentNode) {
 	editMode.value = false;
 	editingName.value = "";
 	submitError.value = "";
+	currencyTouched.value = false;
 	form.value = blankAccount();
 	if (parentNode?.is_group) form.value.parent_account = parentNode.name;
 	// Name the currency now rather than letting the amount field substitute one.
@@ -379,9 +384,27 @@ function openCreate(parentNode) {
 	createOpen.value = true;
 }
 
+// The header's "New account" button opens this same modal with no parent, so
+// the currency starts as the company default — correct for that entry path,
+// but there was no watcher covering what happens when the user THEN picks a
+// USD parent group from inside the modal: the field stayed on the company
+// currency, and a child of "Банк USD" got created in the wrong currency,
+// which is exactly the case newAccountCurrency exists to get right. Re-derive
+// on every parent change UNLESS the user has manually touched the currency
+// select — the same helper as openCreate, so both entry paths agree.
+watch(
+	() => form.value.parent_account,
+	(parentName) => {
+		if (!createOpen.value || editMode.value || currencyTouched.value) return;
+		const parentNode = parentName ? flat.value.find((r) => r.name === parentName) : null;
+		form.value.account_currency = newAccountCurrency(parentNode, currency.value);
+	}
+);
+
 function closeCreate() {
 	createOpen.value = false;
 	submitError.value = "";
+	currencyTouched.value = false;
 	form.value = blankAccount();
 	editMode.value = false;
 	editingName.value = "";
@@ -392,6 +415,7 @@ async function openEdit(node) {
 	editMode.value = true;
 	editingName.value = node.name;
 	submitError.value = "";
+	currencyTouched.value = false;
 	loadCreateOptions();
 	createOpen.value = true;
 	try {
@@ -739,6 +763,7 @@ watch(expanded, (next) => {
 								:options="currencyOptions"
 								placeholder="—"
 								:clearable="true"
+								@change="currencyTouched = true"
 							/>
 						</div>
 						<div class="col-12" v-if="!editMode">
