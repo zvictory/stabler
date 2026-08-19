@@ -21,6 +21,7 @@ import { useConfirm } from "../../composables/useConfirm.js";
 import { useToast } from "../../composables/useToast.js";
 import { useEscapeBack } from "../../composables/useEscapeBack.js";
 import EmptyState from "../../components/EmptyState.vue";
+import SkeletonRows from "../../components/SkeletonRows.vue";
 import Select from "../../components/Select.vue";
 import MoneyInput from "../../components/MoneyInput.vue";
 import DateInput from "../../components/DateInput.vue";
@@ -537,14 +538,11 @@ watch(expanded, (next) => {
 				</button>
 			</div>
 		</div>
-		<div v-if="loading" class="card-body text-center py-5">
-			<div class="spinner-border text-primary" role="status"></div>
-		</div>
-		<div v-else-if="error" class="card-body">
+		<div v-if="error" class="card-body">
 			<div class="alert alert-danger m-0">{{ error }}</div>
 		</div>
 		<EmptyState
-			v-else-if="!flat.length"
+			v-else-if="!loading && !flat.length"
 			icon="ti-list-tree"
 			accentIcon="ti-coin"
 			tone="primary"
@@ -562,7 +560,8 @@ watch(expanded, (next) => {
 						<th class="w-1 text-end">{{ t("Actions") }}</th>
 					</tr>
 				</thead>
-				<tbody>
+				<SkeletonRows v-if="loading" :rows="10" :cols="5" />
+				<tbody v-else>
 					<tr
 						v-for="n in flattened"
 						:key="n.name"
