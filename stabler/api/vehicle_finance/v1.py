@@ -47,8 +47,12 @@ _ADVANCE_PREFIX = "VFA-ADV-"
 _COLLECTIBLE_STATUSES = agreement_status_machine.COLLECTIBLE
 
 
-def _set_status(doc, target: str) -> None:
-	"""The only place a Vehicle Agreement's status changes.
+def _set_status(doc, target: str, *, persist: bool = False) -> None:
+	"""The only place an ENDPOINT in this module changes a Vehicle Agreement's status.
+
+	Not repo-wide, and the test that guards it scans this file only: the demo
+	seeder assigns the field directly and patch v85 rewrites the column in SQL.
+	Both are deliberate — a fixture and a migration are not endpoints.
 
 	Three of the eight declared states had no writer at all, which is what let a
 	fully paid agreement sit in `Active` for ever. Routing every write through one
@@ -65,6 +69,14 @@ def _set_status(doc, target: str) -> None:
 			frappe.ValidationError,
 		)
 	doc.agreement_status = target
+	if persist:
+		# `db.set_value`, never `doc.save()`. The roles that move money hold
+		# read-only on Vehicle Agreement (Cashier, Collector, Payables Clerk), and
+		# `save()` on a submitted document asks for write AND submit — so the
+		# status write would raise PermissionError for exactly the users who take
+		# the final payment. The field is `allow_on_submit`; the column write is
+		# what is wanted, not a document lifecycle event.
+		frappe.db.set_value("Vehicle Agreement", doc.name, "agreement_status", target, update_modified=True)
 
 
 # --- shared loaders -----------------------------------------------------------
@@ -676,24 +688,25 @@ def _collect_or_pay(
 				is_fifo_override=1 if is_override else 0,
 				override_reason=override_reason if is_override else None,
 			)
+		# A settled agreement leaves the collection queue. Inside the transaction
+		# that moved the money, not after it: placed later it could raise on a
+		# payment already committed, leaving a durable Payment Entry and an
+		# agreement that never closed.
+		#
+		# Measured on the SCHEDULE, not on the invoice outstanding. The two diverge
+		# by exactly the down payment: the invoice carries the full contract price
+		# including row 0, but `_reconcile_advances` settles that row with a Payment
+		# Application and never references the advance on the invoice. Completing on
+		# the invoice would therefore never fire for any agreement with an advance —
+		# reproducing the very defect this is meant to fix.
+		if round(_open_total(_row_states(version)), precision) <= 0:
+			_set_status(doc, "Completed", persist=True)
 		frappe.db.commit()
 	except Exception:
 		frappe.db.rollback()
 		raise
 
 	outstanding = flt(frappe.db.get_value(invoice_doctype, invoice_name, "outstanding_amount"))
-	# A fully paid agreement leaves the collection queue. Until this existed the
-	# invoice outstanding fell to zero and the status stayed Active for ever, so a
-	# settled agreement kept appearing in the work queue with nothing left to
-	# collect and no way to close it. Rounded at the currency's own precision: a
-	# residue ERPNext itself cannot represent is not an outstanding balance.
-	if round(outstanding, _currency_precision(doc.currency)) <= 0 and agreement_status_machine.is_collectible(
-		doc.agreement_status
-	):
-		doc.flags.vf_internal = True
-		_set_status(doc, "Completed")
-		doc.save(ignore_permissions=False)
-		frappe.db.commit()
 
 	return {
 		**_allocation_payload(doc, version, states, paid, allocations),
@@ -794,6 +807,7 @@ def cancel_payment(payment_entry: str, reason: str | None = None) -> dict:
 	if already_reversed:
 		frappe.throw(_("This payment's allocations are already reversed."))
 
+	agreement_doc = None
 	try:
 		if originals and agreement_name:
 			agreement_doc = frappe.get_doc("Vehicle Agreement", agreement_name)
@@ -814,6 +828,19 @@ def cancel_payment(payment_entry: str, reason: str | None = None) -> dict:
 		pe.flags.ignore_approval_gate = True
 		pe.flags.ignore_links = True
 		pe.cancel()
+		# Cancelling the payment that closed the agreement reopens it. Without this
+		# the reversal restored the balance on the invoice while the agreement stayed
+		# Completed — closed to collection, invisible to the work queue, and refused
+		# by collect, reschedule and terminate alike. The receivable was live and
+		# nothing in the app could reach it.
+		if agreement_doc is not None and agreement_doc.agreement_status == "Completed":
+			reopened = frappe.get_doc("Vehicle Agreement", agreement_doc.name)
+			reopen_version = _active_version(reopened)
+			if round(_open_total(_row_states(reopen_version)), _currency_precision(reopened.currency)) > 0:
+				# Back to the state it held before, which the schedule remembers:
+				# version 1 was never rescheduled.
+				prior = "Active" if int(reopen_version.version_number) <= 1 else "Rescheduled"
+				_set_status(reopened, prior, persist=True)
 		frappe.db.commit()
 	except Exception:
 		frappe.db.rollback()
@@ -942,8 +969,15 @@ def terminate_agreement(agreement: str, reason: str | None = None) -> dict:
 	reason = (reason or "").strip()
 	if not reason:
 		frappe.throw(_("A termination reason is mandatory."), frappe.ValidationError)
-	if doc.docstatus != 1:
-		frappe.throw(_("Only a submitted agreement can be terminated."), frappe.ValidationError)
+	# The real precondition is that the agreement is still open, not merely
+	# submitted. A submitted-but-never-activated agreement is Draft, which the
+	# table refuses anyway — but it did so with a message naming an internal state
+	# machine instead of the rule.
+	if not agreement_status_machine.is_collectible(doc.agreement_status):
+		frappe.throw(
+			_("Only an open agreement can be terminated. {0} is {1}.").format(doc.name, doc.agreement_status),
+			frappe.ValidationError,
+		)
 
 	outstanding = 0.0
 	invoice_doctype = "Sales Invoice" if doc.direction == "Disposition" else "Purchase Invoice"
@@ -978,7 +1012,7 @@ def approve_reschedule(agreement: str, payload: dict | None = None) -> dict:
 	# A closed agreement has no future instalments to move. Without this the
 	# endpoint happily superseded the schedule of a paid-off or written-off
 	# agreement and stamped it Rescheduled, reopening it for collection.
-	if agreement_status_machine.is_terminal(doc.agreement_status):
+	if agreement_status_machine.is_closed(doc.agreement_status):
 		frappe.throw(
 			_("Agreement {0} is closed ({1}) and cannot be rescheduled.").format(
 				doc.name, doc.agreement_status

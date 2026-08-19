@@ -93,7 +93,7 @@ I have written it down,Yazdım
 "Legacy posts journal entries from the New Transfer form it always has. V1 registers a Remittance Transfer and is the only engine where the payout, refund, operations and reconciliation screens exist.","Legacy, her zamanki Yeni Transfer formundan yevmiye kaydı atar. V1 ise bir Remittance Transfer kaydı oluşturur ve ödeme, iade, operasyon ve mutabakat ekranlarının bulunduğu tek motordur."
 Legacy — journal entry screens,Legacy — yevmiye kaydı ekranları
 Not ready — this desk cannot take or hand over a transfer.,Hazır değil — bu kasa transferi ne alabilir ne verebilir.
-Only a submitted agreement can be terminated.,Yalnızca gönderilmiş bir sözleşme kapatılabilir.
+Only an open agreement can be terminated. {0} is {1}.,Yalnızca açık bir sözleşme kapatılabilir. {0} şu durumda: {1}.
 Only the remittance desk can verify a pickup code.,Teslim kodunu yalnızca havale gişesi doğrulayabilir.
 Open draft {name},{name} taslağını aç
 Pay refund cash,İade nakdini öde

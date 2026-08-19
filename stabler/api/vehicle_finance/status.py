@@ -45,10 +45,20 @@ INITIAL = "Draft"
 #: `v1.py`; it is defined here so the queue and the machine cannot disagree.
 COLLECTIBLE = ("Active", "Rescheduled")
 
-#: Closed for good. A terminal agreement is not collectible, cannot be
-#: rescheduled, and has no way back — reopening one would silently rewrite
-#: history that the chain (`chain.py`) exists to keep readable.
-TERMINAL = frozenset({"Restructured", "Completed", "Terminated"})
+#: Closed to collection. None of these appear in the work queue and none can be
+#: rescheduled.
+CLOSED = frozenset({"Completed", "Restructured", "Terminated"})
+
+#: Closed with no way back. `Completed` is deliberately NOT here, and the
+#: distinction is not academic: a same-day cancellation of the final payment
+#: restores the invoice outstanding, and an agreement whose last payment was
+#: cancelled was never completed — the status was an erratum, not a business
+#: event. Treating `Completed` as final made that agreement permanently
+#: uncollectible: the receivable was open, the work queue could not see it, and
+#: collection, reschedule and termination all refused it. `Restructured` and
+#: `Terminated` are different — reopening either would rewrite history the chain
+#: (`chain.py`) exists to keep readable.
+FINAL = frozenset({"Restructured", "Terminated"})
 
 #: The whole machine. Keys are every state `vehicle_agreement.json` declares, in
 #: the order it declares them; values are the states each may move to.
@@ -63,7 +73,9 @@ ALLOWED: dict[str, frozenset[str]] = {
 	# rescheduled more than once, and each approval supersedes the last version.
 	"Rescheduled": frozenset({"Rescheduled", "Restructured", "Completed", "Terminated"}),
 	"Restructured": frozenset(),
-	"Completed": frozenset(),
+	# Reopened only by `cancel_payment` undoing the payment that closed it, back
+	# to whichever collectible state it held before.
+	"Completed": frozenset({"Active", "Rescheduled"}),
 	"Terminated": frozenset(),
 }
 
@@ -78,8 +90,14 @@ class IllegalTransition(ValueError):
 		super().__init__(f"Cannot move a Vehicle Agreement from {current} to {target}.")
 
 
-def is_terminal(status: str) -> bool:
-	return status in TERMINAL
+def is_closed(status: str) -> bool:
+	"""Closed to collection. Says nothing about whether it can be reopened."""
+	return status in CLOSED
+
+
+def is_final(status: str) -> bool:
+	"""Closed with no way back."""
+	return status in FINAL
 
 
 def is_collectible(status: str) -> bool:

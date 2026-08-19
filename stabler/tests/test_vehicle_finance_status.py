@@ -129,20 +129,40 @@ class TestEveryStateIsReachable(unittest.TestCase):
 			self.assertIn(state, reachable, f"{state} hâlâ ulaşılamaz")
 
 
-class TestTerminalMeansTerminal(unittest.TestCase):
-	def test_the_terminal_states_have_no_way_out(self):
-		for state in S.TERMINAL:
-			self.assertEqual(S.ALLOWED[state], frozenset(), f"{state} terminal değil")
+class TestClosedIsNotTheSameAsFinal(unittest.TestCase):
+	"""`Completed` kapalıdır ama nihai DEĞİLDİR — ve bu ayrım akademik değil.
 
-	def test_a_terminal_agreement_is_not_collectible(self):
-		for state in S.TERMINAL:
+	Son ödemenin aynı gün iptali faturadaki alacağı geri açar. Son ödemesi iptal
+	edilmiş bir sözleşme hiç tamamlanmamıştır: durum bir olgu değil, bir yanlış
+	kayıttı. `Completed`ı nihai saymak o sözleşmeyi kalıcı olarak tahsil edilemez
+	yapıyordu — alacak açık, iş kuyruğu göremiyor, tahsilat/yeniden planlama/kapatma
+	üçü birden reddediyor. `Restructured` ve `Terminated` farklıdır: onları geri
+	açmak `chain.py`nin okunur tuttuğu geçmişi yeniden yazmak olurdu.
+	"""
+
+	def test_the_final_states_have_no_way_out(self):
+		for state in S.FINAL:
+			self.assertEqual(S.ALLOWED[state], frozenset(), f"{state} nihai değil")
+
+	def test_completed_is_closed_but_not_final(self):
+		self.assertTrue(S.is_closed("Completed"))
+		self.assertFalse(S.is_final("Completed"))
+
+	def test_completed_can_only_reopen_into_a_collectible_state(self):
+		self.assertEqual(S.ALLOWED["Completed"], frozenset(S.COLLECTIBLE))
+
+	def test_no_closed_agreement_is_collectible(self):
+		for state in S.CLOSED:
 			self.assertFalse(S.is_collectible(state), f"{state} hâlâ tahsil edilebilir sayılıyor")
 
 	def test_collectible_is_exactly_the_two_live_states(self):
 		self.assertEqual(tuple(S.COLLECTIBLE), ("Active", "Rescheduled"))
 
-	def test_terminal_and_collectible_never_overlap(self):
-		self.assertEqual(set(S.COLLECTIBLE) & set(S.TERMINAL), set())
+	def test_closed_and_collectible_never_overlap(self):
+		self.assertEqual(set(S.COLLECTIBLE) & set(S.CLOSED), set())
+
+	def test_final_is_a_subset_of_closed(self):
+		self.assertTrue(S.FINAL <= S.CLOSED)
 
 
 class TestTheMachineRefusesClearly(unittest.TestCase):
@@ -150,7 +170,7 @@ class TestTheMachineRefusesClearly(unittest.TestCase):
 		self.assertTrue(S.can_move("Active", "Completed"))
 
 	def test_an_illegal_move_is_refused(self):
-		self.assertFalse(S.can_move("Completed", "Active"))
+		self.assertFalse(S.can_move("Terminated", "Active"))
 
 	def test_an_unknown_state_is_refused_rather_than_assumed_legal(self):
 		# Yazım hatası taşıyan bir durum sessizce geçerli sayılırsa makine hiçbir
@@ -160,9 +180,9 @@ class TestTheMachineRefusesClearly(unittest.TestCase):
 
 	def test_the_refusal_names_both_ends(self):
 		with self.assertRaises(S.IllegalTransition) as caught:
-			S.assert_can_move("Completed", "Active")
+			S.assert_can_move("Terminated", "Active")
 		message = str(caught.exception)
-		self.assertIn("Completed", message)
+		self.assertIn("Terminated", message)
 		self.assertIn("Active", message)
 
 
@@ -242,7 +262,7 @@ class TestTheTwoMissingWritersNowExist(unittest.TestCase):
 		)
 		segment = _code_only(ast.get_source_segment(self.src, fn) or "")
 		self.assertTrue(
-			re.search(r"is_terminal|assert_can_move|_COLLECTIBLE_STATUSES|COLLECTIBLE", segment),
+			re.search(r"is_closed\(doc\.agreement_status\)", segment),
 			"approve_reschedule kapanmış bir sözleşmeyi hâlâ yeniden planlar",
 		)
 

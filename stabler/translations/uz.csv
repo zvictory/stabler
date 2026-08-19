@@ -93,7 +93,7 @@ I have written it down,Yozib oldim
 "Legacy posts journal entries from the New Transfer form it always has. V1 registers a Remittance Transfer and is the only engine where the payout, refund, operations and reconciliation screens exist.","Legacy o'zining doimiy ""Yangi o'tkazma"" formasidan jurnal yozuvlarini kiritadi. V1 esa Remittance Transfer yozuvini ro'yxatga oladi va to'lov, qaytarish, operatsiyalar va solishtirish ekranlari faqat shu mexanizmda mavjud."
 Legacy — journal entry screens,Legacy — jurnal yozuvi ekranlari
 Not ready — this desk cannot take or hand over a transfer.,"Tayyor emas — bu kassa o'tkazmani na qabul qila oladi, na bera oladi."
-Only a submitted agreement can be terminated.,Faqat yuborilgan shartnomani yopish mumkin.
+Only an open agreement can be terminated. {0} is {1}.,Faqat ochiq shartnomani yopish mumkin. {0} holati: {1}.
 Only the remittance desk can verify a pickup code.,Olib ketish kodini faqat pul o‘tkazmalari kassasi tekshira oladi.
 Open draft {name},{name} qoralamasini ochish
 Pay refund cash,Qaytarish naqdini berish
