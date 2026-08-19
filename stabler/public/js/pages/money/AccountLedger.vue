@@ -10,6 +10,7 @@ import DateInput from "../../components/DateInput.vue";
 import PeriodSelect from "../../components/PeriodSelect.vue";
 import VoucherDrawer from "../../components/VoucherDrawer.vue";
 import EmptyState from "../../components/EmptyState.vue";
+import SkeletonRows from "../../components/SkeletonRows.vue";
 import { t } from "../../composables/i18n.js";
 import { accountLabel } from "../../composables/accounts.js";
 import { useVoucherDrill } from "../../composables/useVoucherDrill.js";
@@ -256,15 +257,12 @@ watch(() => route.params.account, fetchLedger);
 			</div>
 		</div>
 
-		<div v-if="loading" class="card-body text-center py-5">
-			<div class="spinner-border text-primary" role="status"></div>
-		</div>
-		<div v-else-if="error" class="card-body">
+		<div v-if="error" class="card-body">
 			<div class="alert alert-danger m-0">{{ error }}</div>
 		</div>
 		<template v-else>
 			<!-- Opening / Period / Closing summary -->
-			<div class="card-body border-bottom">
+			<div v-if="!loading" class="card-body border-bottom">
 				<div class="row g-3">
 					<div class="col-6 col-md-3">
 						<div class="text-secondary small">{{ t("Opening") }}</div>
@@ -310,12 +308,12 @@ watch(() => route.params.account, fetchLedger);
 			</div>
 
 			<EmptyState
-				v-if="!entries.length"
+				v-if="!loading && !entries.length"
 				icon="ti-list-details"
 				:title="t('No transactions')"
 				:description="t('No ledger entries found for the selected period.')"
 			/>
-			<div v-else class="table-responsive">
+			<div v-if="loading || entries.length" class="table-responsive">
 				<table class="table table-sm table-vcenter card-table">
 					<thead>
 						<tr>
@@ -337,7 +335,8 @@ watch(() => route.params.account, fetchLedger);
 							<th class="text-end">{{ t("Balance") }}</th>
 						</tr>
 					</thead>
-					<tbody>
+					<SkeletonRows v-if="loading" :rows="10" :cols="7" />
+					<tbody v-else>
 						<tr v-for="e in entries" :key="e.name">
 							<td class="text-nowrap">
 							{{ formatDate(e.posting_date) }}
@@ -425,7 +424,7 @@ watch(() => route.params.account, fetchLedger);
 				</table>
 
 				<!-- Infinite-scroll sentinel + load-more affordance -->
-				<div ref="sentinel" class="py-1">
+				<div v-if="!loading" ref="sentinel" class="py-1">
 					<div v-if="loadingMore" class="text-center py-3">
 						<div class="spinner-border spinner-border-sm text-secondary" role="status"></div>
 						<span class="ms-2 small text-secondary">{{ t("Loading more…") }}</span>
