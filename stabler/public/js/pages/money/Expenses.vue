@@ -690,7 +690,9 @@ async function submitCreate(afterAction) {
 			: "stabler.api.money.submit_expense_entry";
 		const res = await call(
 			method,
-			editingName.value ? { source_name: editingName.value, ...payload } : payload,
+			editingName.value
+				? { source_name: editingName.value, modified: detail.value?.modified, ...payload }
+				: payload,
 		);
 
 		load();

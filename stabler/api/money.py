@@ -1391,6 +1391,49 @@ def delete_journal_entry(name: str, modified: str | None = None) -> dict:
 	return {"deleted": name}
 
 
+def _assert_not_already_amended(source: str) -> None:
+	"""One correction per cancelled entry, until that correction is itself cancelled.
+
+	Nothing in this module used to ask. Whether a second amend was caught at all
+	was decided outside the repo, by a Frappe Single: `Document Naming Settings`
+	`default_amend_naming`. Under "Amend Counter" the second correction collides
+	on the name; under "Default Naming" it takes a fresh serial and the correction
+	lands in the ledger twice. That setting is per site — seven tenants, seven
+	separate decisions — and nothing here sets it, reads it, or notices when it
+	changes. A borrowed guarantee is not one.
+
+	`docstatus < 2` is the whole policy: a cancelled correction is not a
+	correction, so amending again after cancelling one is the ordinary path and
+	stays open.
+	"""
+	existing = frappe.db.exists("Journal Entry", {"amended_from": source, "docstatus": ["<", 2]})
+	if existing:
+		frappe.throw(
+			_(
+				"This entry has already been amended ({0}). Open that correction instead of creating a second one."
+			).format(existing)
+		)
+
+
+def _resolve_amended_from(amended_from: str | None, company: str) -> str | None:
+	"""The amendment link to write, or None if this one may not be written.
+
+	One policy, three writers: the JE editor, expenses and transfers all reach
+	this. A silent None rather than a throw for a source that is not a cancelled
+	entry of this company keeps the long-standing behaviour of the JE path — the
+	link is a record, not a permission — but a source that has ALREADY been
+	corrected is refused loudly, because that is a second correction of the same
+	original and the ledger would carry both.
+	"""
+	if not amended_from:
+		return None
+	src = frappe.db.get_value("Journal Entry", amended_from, ["company", "docstatus"], as_dict=True)
+	if not (src and src.company == company and src.docstatus == 2):
+		return None
+	_assert_not_already_amended(amended_from)
+	return amended_from
+
+
 @frappe.whitelist()
 def create_journal_entry(
 	company: str,
@@ -1435,10 +1478,9 @@ def create_journal_entry(
 		doc.cheque_date = getdate(cheque_date)
 	# Amendment chain: link this draft to a cancelled original so the ledger keeps
 	# a traceable correction trail (amended_from must point to a cancelled JE).
-	if amended_from:
-		src = frappe.db.get_value("Journal Entry", amended_from, ["company", "docstatus"], as_dict=True)
-		if src and src.company == company and src.docstatus == 2:
-			doc.amended_from = amended_from
+	resolved_amend = _resolve_amended_from(amended_from, company)
+	if resolved_amend:
+		doc.amended_from = resolved_amend
 	for row in cleaned:
 		doc.append("accounts", row)
 	doc.insert(ignore_permissions=False)
@@ -2895,6 +2937,7 @@ def submit_expense_entry(
 	exchange_rate: float | None = None,
 	submit: int = 1,
 	entry_kind: str = "Expense",
+	amended_from: str | None = None,
 	deal: str | None = None,
 	commercial_invoice: str | None = None,
 	import_truck: str | None = None,
@@ -3015,6 +3058,12 @@ def submit_expense_entry(
 	doc.voucher_type = "Bank Entry"
 	doc.cheque_no = f"Exp-{posting_date}"
 	doc.cheque_date = getdate(posting_date)
+	# The correction trail has to live in the data. It used to exist only in this
+	# endpoint's JSON reply, which nothing stores — so from the ledger's side a
+	# replacement expense and an unrelated one were the same document.
+	_amend_link = _resolve_amended_from(amended_from, company)
+	if _amend_link:
+		doc.amended_from = _amend_link
 	# Multi-currency when the paying leg OR any debit line isn't in base currency
 	# (asset-purchase debits may sit in a different currency from the payment).
 	_any_foreign = pay_acc.account_currency != base_currency or any(
@@ -3162,31 +3211,48 @@ def delete_bank_entry(name: str) -> dict:
 
 
 @frappe.whitelist()
-def amend_expense_entry(source_name: str, **kwargs) -> dict:
+def amend_expense_entry(source_name: str, modified: str | None = None, **kwargs) -> dict:
+	"""Cancel an expense and write its replacement, linked to it.
+
+	`modified` is the concurrency token. The sequential repeat was already closed
+	by the `docstatus` branch below — a second call finds the source cancelled and
+	is refused — so this is not here for a race anyone has seen. It is here so
+	that "who else has touched this document" is answered the same way on every
+	writer in this module; a guard that is present on eight endpoints and absent
+	on two is a guard nobody can reason about.
+	"""
 	_assert_can_write("Journal Entry", source_name, "cancel")
+	check_concurrency("Journal Entry", source_name, modified)
 	source = _load_bank_entry(source_name)
 	if source.docstatus == 1:
 		source.cancel()
 	elif source.docstatus == 0:
+		# A draft leaves nothing behind to point at, so there is no amendment to
+		# record — the reply used to claim one anyway.
 		source.delete()
+		return submit_expense_entry(**kwargs)
 	else:
 		frappe.throw("Cancelled Bank Entries cannot be amended.")
-	result = submit_expense_entry(**kwargs)
+	result = submit_expense_entry(amended_from=source_name, **kwargs)
 	result["amended_from"] = source_name
 	return result
 
 
 @frappe.whitelist()
-def amend_transfer_entry(source_name: str, **kwargs) -> dict:
+def amend_transfer_entry(source_name: str, modified: str | None = None, **kwargs) -> dict:
+	"""Cancel a transfer and write its replacement, linked to it. See
+	`amend_expense_entry` for why the token is here."""
 	_assert_can_write("Journal Entry", source_name, "cancel")
+	check_concurrency("Journal Entry", source_name, modified)
 	source = _load_bank_entry(source_name)
 	if source.docstatus == 1:
 		source.cancel()
 	elif source.docstatus == 0:
 		source.delete()
+		return submit_transfer_entry(**kwargs)
 	else:
 		frappe.throw("Cancelled Bank Entries cannot be amended.")
-	result = submit_transfer_entry(**kwargs)
+	result = submit_transfer_entry(amended_from=source_name, **kwargs)
 	result["amended_from"] = source_name
 	return result
 
@@ -3202,6 +3268,7 @@ def submit_transfer_entry(
 	exchange_rate: float | None = None,
 	memo: str | None = None,
 	submit: int = 1,
+	amended_from: str | None = None,
 ) -> dict:
 	"""Create (and optionally submit) a fund-transfer Journal Entry.
 
@@ -3278,6 +3345,10 @@ def submit_transfer_entry(
 	doc.voucher_type = "Bank Entry"
 	doc.cheque_no = f"Trf-{posting_date}"
 	doc.cheque_date = getdate(posting_date)
+	# Same as the expense path: the link belongs on the document, not in the reply.
+	_amend_link = _resolve_amended_from(amended_from, company)
+	if _amend_link:
+		doc.amended_from = _amend_link
 	doc.multi_currency = (
 		1 if (from_acc.account_currency != base_currency or to_acc.account_currency != base_currency) else 0
 	)

@@ -48,6 +48,18 @@ def tearDownModule():
 	_SANDBOX.restore()
 
 
+class FrappeDict(dict):
+	"""frappe's `_dict`: a mapping whose keys are also attributes.
+
+	Worth modelling rather than approximating, because both access styles appear
+	in the same module — `Company` is read with `.get`, an amend source with
+	`.company` — and a double that picks one of them turns a correct call into a
+	fake failure, which costs more to diagnose than the test is worth.
+	"""
+
+	__getattr__ = dict.get
+
+
 class FakeDoc:
 	"""Minimal stand-in for a Frappe document.
 
@@ -107,6 +119,8 @@ def _load_money(
 	new_account_root_type="Asset",
 	new_account_currency=None,
 	pending_payment_refs=(),
+	amend_source=None,
+	existing_amends=(),
 ):
 	"""Import ``stabler.api.money`` against a hand-built ``frappe``.
 
@@ -164,10 +178,10 @@ def _load_money(
 				"accounts_frozen_till_date": accounts_frozen_till_date,
 				"role_allowed_for_frozen_entries": role_allowed_for_frozen_entries,
 			}
-			# frappe returns a `_dict` here — a dict subclass — so `.get` is the
-			# access the caller is entitled to use.
+			# frappe returns a `_dict` here — a dict subclass — so `.get` and
+			# attribute access are both the caller's to use.
 			if as_dict:
-				return dict(row)
+				return FrappeDict(row)
 			if isinstance(fieldname, list):
 				return [row.get(f) for f in fieldname]
 			return row.get(fieldname)
@@ -182,15 +196,32 @@ def _load_money(
 			return row.get(fieldname)
 		if doctype == "Journal Entry" and fieldname == "modified":
 			return db_modified
+		if doctype == "Journal Entry" and as_dict:
+			return FrappeDict(amend_source) if amend_source else None
 		return None
 
 	def _sql(query, params=None, **kwargs):
 		ctx.queries.append((query, params))
 		return [[7]] if "COUNT(" in query else []
 
+	def _exists(doctype, filters=None, *args, **kwargs):
+		if doctype == "Journal Entry" and isinstance(filters, dict) and "amended_from" in filters:
+			# Model the filter, not just the answer: the `docstatus < 2` bound is
+			# the policy under test, so a double that ignored it would let a
+			# guard blocking cancelled corrections too pass unnoticed.
+			operator, bound = filters.get("docstatus", ("<", 2))
+			hits = [
+				name
+				for name, docstatus, source in existing_amends
+				if source == filters["amended_from"]
+				and (docstatus < bound if operator == "<" else docstatus == bound)
+			]
+			return hits[0] if hits else None
+		return True
+
 	frappe.db = types.SimpleNamespace(
 		get_value=_get_value,
-		exists=lambda *a, **k: True,
+		exists=_exists,
 		sql=_sql,
 	)
 
@@ -706,6 +737,122 @@ class InvoicePaidTwiceThroughTheApprovalQueueTest(unittest.TestCase):
 			],
 		)
 		self.assertIsNone(money._pending_payment_for_invoice("Sales Invoice", self.INVOICE))
+
+
+class OneCorrectionPerCancelledEntryTest(unittest.TestCase):
+	"""A cancelled Journal Entry could be amended twice, and the ledger kept both.
+
+	`create_journal_entry` checked that the source was cancelled and belonged to
+	the same company, and stopped there. Whether a second amend was refused was
+	decided by `Document Naming Settings.default_amend_naming` — a Frappe Single,
+	per site, which nothing in this repo sets, reads or watches. Under "Amend
+	Counter" the second correction collides on the name and the user sees an
+	error; under "Default Naming" it gets a fresh serial and the correction is in
+	the books twice, each one reversing the same original.
+
+	Seven tenants means seven independent copies of that setting, so the answer
+	to "can this happen here?" was not knowable from the code. It is now.
+	"""
+
+	SOURCE = "JE-2026-00031"
+
+	def _create(self, money, **over):
+		args = {
+			"company": "Test Co",
+			"posting_date": "2026-08-20",
+			"accounts": BALANCED_ROWS,
+			"amended_from": self.SOURCE,
+		}
+		args.update(over)
+		return money.create_journal_entry(**args)
+
+	def test_a_second_correction_is_refused_and_names_the_first(self):
+		money, ctx = _load_money(
+			accounts=BASE_ACCOUNTS,
+			amend_source={"company": "Test Co", "docstatus": 2},
+			existing_amends=[("JE-2026-00044", 0, "JE-2026-00031")],
+		)
+		with self.assertRaises(Exception) as caught:
+			self._create(money)
+		# "already amended" is not actionable on its own — the operator has to be
+		# able to go and look at the correction that already exists.
+		self.assertIn("JE-2026-00044", str(caught.exception))
+		self.assertNotIn("insert", ctx.trace)
+
+	def test_a_posted_correction_blocks_a_second_one_too(self):
+		"""The realistic shape: the correction was submitted, then someone amends
+		the original again. A guard that only saw drafts would let exactly the
+		case that reaches the ledger through."""
+		money, ctx = _load_money(
+			accounts=BASE_ACCOUNTS,
+			amend_source={"company": "Test Co", "docstatus": 2},
+			existing_amends=[("JE-2026-00044", 1, "JE-2026-00031")],
+		)
+		with self.assertRaises(Exception) as caught:
+			self._create(money)
+		self.assertIn("JE-2026-00044", str(caught.exception))
+		self.assertNotIn("insert", ctx.trace)
+
+	def test_the_first_correction_still_links_to_its_source(self):
+		"""The guard must not cost the amendment trail it exists to protect."""
+		money, ctx = _load_money(
+			accounts=BASE_ACCOUNTS,
+			amend_source={"company": "Test Co", "docstatus": 2},
+		)
+		self._create(money)
+		self.assertEqual(ctx.docs[-1].amended_from, self.SOURCE)
+
+	def test_a_cancelled_correction_does_not_block_a_new_one(self):
+		"""Cancelling a bad correction and writing another is the ordinary path."""
+		money, ctx = _load_money(
+			accounts=BASE_ACCOUNTS,
+			amend_source={"company": "Test Co", "docstatus": 2},
+			existing_amends=[("JE-2026-00044", 2, "JE-2026-00031")],
+		)
+		self._create(money)
+		self.assertEqual(ctx.docs[-1].amended_from, self.SOURCE)
+
+	def test_a_source_that_was_never_cancelled_writes_no_link(self):
+		"""A live entry is not something to be corrected — it is something to edit.
+
+		The link is silently dropped rather than refused, which is the behaviour
+		this path has always had: `amended_from` is a record, not a permission.
+		Only a source that has ALREADY been corrected throws, because that is the
+		case where the ledger would end up carrying two reversals of one original.
+		"""
+		money, _ctx = _load_money(
+			accounts=BASE_ACCOUNTS,
+			amend_source={"company": "Test Co", "docstatus": 1},
+		)
+		self.assertIsNone(money._resolve_amended_from(self.SOURCE, "Test Co"))
+
+	def test_a_cancelled_entry_of_another_company_writes_no_link(self):
+		"""Tenant isolation reaches the audit trail too, not only the ledger."""
+		money, _ctx = _load_money(
+			accounts=BASE_ACCOUNTS,
+			amend_source={"company": "Other Co", "docstatus": 2},
+		)
+		self.assertIsNone(money._resolve_amended_from(self.SOURCE, "Test Co"))
+
+	def test_the_expense_and_transfer_writers_share_this_one_policy(self):
+		"""Three writers reach the amendment link; one of them used to record it
+		only in a JSON reply that nothing stores, so from the ledger's side a
+		replacement expense and an unrelated one were the same document."""
+		import inspect
+
+		money, _ctx = _load_money(accounts=BASE_ACCOUNTS)
+		for fn in (money.submit_expense_entry, money.submit_transfer_entry):
+			with self.subTest(fn=fn.__name__):
+				self.assertIn("_resolve_amended_from(amended_from, company)", inspect.getsource(fn))
+
+	def test_a_correction_of_a_different_entry_is_not_this_entry(self):
+		money, ctx = _load_money(
+			accounts=BASE_ACCOUNTS,
+			amend_source={"company": "Test Co", "docstatus": 2},
+			existing_amends=[("JE-2026-00044", 0, "JE-2026-00099")],
+		)
+		self._create(money)
+		self.assertEqual(ctx.docs[-1].amended_from, self.SOURCE)
 
 
 if __name__ == "__main__":
