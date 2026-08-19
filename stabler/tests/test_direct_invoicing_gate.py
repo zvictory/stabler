@@ -126,12 +126,23 @@ class TestThePatchIsSafeAndFaithful(unittest.TestCase):
 		self.assertIn("%MSA%", PATCH)
 		self.assertRegex(PATCH, r"UPPER\(company\)\s+LIKE")
 
-	def test_patch_closes_nulls_before_opening_anyone(self):
-		"""NULL bir bayrak izin veriyormuş gibi okunmamalı; önce herkes
-		kapatılıp sonra eşleşenler açılıyor."""
-		zero = PATCH.index("SET enable_direct_invoicing = 0")
-		one = PATCH.index("SET enable_direct_invoicing = 1")
-		self.assertLess(zero, one, "önce sıfırlama, sonra açma sırası bozulmuş")
+	def test_patch_decides_only_rows_that_hold_no_decision(self):
+		"""NULL bir bayrak izin veriyormuş gibi okunmamalı — ama bunu ifadelerin
+		SIRASINA dayandırmak deliği görünmez kılıyordu.
+
+		Bu test eskiden "önce herkesi sıfırla, sonra eşleşenleri aç" sırasını
+		sabitliyordu. Güvenliğin sıradan gelmesi tam olarak sorunun kendisiydi:
+		ikinci ifade bayrağın mevcut değerine hiç bakmadığı için bir replay,
+		Direct Sales Invoicing'i bilerek kapatmış bir MSA kiracısında sessizce
+		geri açıyordu — `03ff23f` üç kardeşini düzeltirken bunu atlamıştı.
+		(İdempotentlik kurulu, 2026-08-20.)
+
+		Artık tek geçiş var, dolayısıyla sabitlenecek bir sıra da yok. Korunan
+		asıl iddia buydu ve olduğu gibi duruyor: karar yalnızca NULL satırlara
+		yazılır, eşleşmeyen bir NULL 0 olur ve asla NULL kalmaz. Davranışın
+		kendisi `test_module_flag_patch_replay.py`'de üç vakayla sabitli."""
+		self.assertIn("WHERE enable_direct_invoicing IS NULL", PATCH)
+		self.assertRegex(PATCH, r"CASE WHEN UPPER\(company\) LIKE .+ THEN 1 ELSE 0 END")
 
 
 class TestTheErrorStillExplainsTheRule(unittest.TestCase):
