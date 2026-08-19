@@ -6522,3 +6522,114 @@ as of {date},as of {date}
 "tax or charges inside a receipt total — only the net goes into this account, so anything the tax table added was never there to clear; or","tax or charges inside a receipt total — only the net goes into this account, so anything the tax table added was never there to clear; or"
 {count} receipts,{count} receipts
 "{kg} kg received, not on a purchase receipt","{kg} kg received, not on a purchase receipt"
+Application of Funds (Assets),Application of Funds (Assets)
+Source of Funds (Liabilities),Source of Funds (Liabilities)
+Current Assets,Current Assets
+Current Liabilities,Current Liabilities
+Non-Current Liabilities,Non-Current Liabilities
+Fixed Assets,Fixed Assets
+Investments,Investments
+Bank Accounts,Bank Accounts
+Cash In Hand,Cash In Hand
+Accounts Receivable,Accounts Receivable
+Accounts Payable,Accounts Payable
+Duties and Taxes,Duties and Taxes
+Tax Assets,Tax Assets
+Loans (Liabilities),Loans (Liabilities)
+Loans and Advances (Assets),Loans and Advances (Assets)
+Securities and Deposits,Securities and Deposits
+Stock Assets,Stock Assets
+Stock Expenses,Stock Expenses
+Stock Liabilities,Stock Liabilities
+Temporary Accounts,Temporary Accounts
+Income,Income
+Direct Income,Direct Income
+Indirect Income,Indirect Income
+Direct Expenses,Direct Expenses
+Indirect Expenses,Indirect Expenses
+RUB BANK,RUB BANK
+USD BANK,USD BANK
+UZS BANK,UZS BANK
+YUAN BANK,YUAN BANK
+Accrued Expenses,Accrued Expenses
+Accumulated Depreciation,Accumulated Depreciation
+Administrative Expenses,Administrative Expenses
+Asset Received But Not Billed,Asset Received But Not Billed
+Bank Charges,Bank Charges
+Bank Overdraft Account,Bank Overdraft Account
+Buildings,Buildings
+CWIP Account,CWIP Account
+Capital Equipment,Capital Equipment
+Capital Stock,Capital Stock
+Commission on Sales,Commission on Sales
+Cost of Goods Sold,Cost of Goods Sold
+Creditors,Creditors
+Customer Advances,Customer Advances
+Debtors,Debtors
+Depreciation,Depreciation
+Dividends Paid,Dividends Paid
+Earnest Money,Earnest Money
+Electronic Equipment,Electronic Equipment
+Employee Advances,Employee Advances
+Employee Benefits Obligation,Employee Benefits Obligation
+Entertainment Expenses,Entertainment Expenses
+Exchange Gain/Loss,Exchange Gain/Loss
+Expenses Included In Asset Valuation,Expenses Included In Asset Valuation
+Expenses Included In Valuation,Expenses Included In Valuation
+Freight and Forwarding Charges,Freight and Forwarding Charges
+Furniture and Fixtures,Furniture and Fixtures
+Gain/Loss on Asset Disposal,Gain/Loss on Asset Disposal
+Impairment,Impairment
+Interest Expense,Interest Expense
+Interest Income,Interest Income
+Interest on Fixed Deposits,Interest on Fixed Deposits
+Kassa Som,Kassa Som
+USD Kassa,USD Kassa
+Legal Expenses,Legal Expenses
+Long-term Provisions,Long-term Provisions
+Marketing Expenses,Marketing Expenses
+Miscellaneous Expenses,Miscellaneous Expenses
+Office Equipment,Office Equipment
+Office Maintenance Expenses,Office Maintenance Expenses
+Office Rent,Office Rent
+Opening Balance Equity,Opening Balance Equity
+Payroll Payable,Payroll Payable
+Plants and Machineries,Plants and Machineries
+Postal Expenses,Postal Expenses
+Prepaid Expenses,Prepaid Expenses
+Print and Stationery,Print and Stationery
+Retained Earnings,Retained Earnings
+Revaluation Surplus,Revaluation Surplus
+Round Off,Round Off
+Sales Expenses,Sales Expenses
+Secured Loans,Secured Loans
+Short-term Investments,Short-term Investments
+Short-term Provisions,Short-term Provisions
+Software,Software
+Stock Adjustment,Stock Adjustment
+Stock In Hand,Stock In Hand
+Stock Received But Not Billed,Stock Received But Not Billed
+Tax Expense,Tax Expense
+Telephone Expenses,Telephone Expenses
+Temporary Opening,Temporary Opening
+Travel Expenses,Travel Expenses
+Unsecured Loans,Unsecured Loans
+Utility Expenses,Utility Expenses
+Write Off,Write Off
+Capital Work in Progress,Capital Work in Progress
+Chargeable,Chargeable
+Current Asset,Current Asset
+Current Liability,Current Liability
+Direct Expense,Direct Expense
+Expense Account,Expense Account
+Fixed Asset,Fixed Asset
+Income Account,Income Account
+Indirect Expense,Indirect Expense
+Liability,Liability
+Receivable,Receivable
+Round Off for Opening,Round Off for Opening
+Service Received But Not Billed,Service Received But Not Billed
+Tax,Tax
+Temporary,Temporary
+No accounts yet,No accounts yet
+Set up the chart of accounts for {company} to see it here.,Set up the chart of accounts for {company} to see it here.

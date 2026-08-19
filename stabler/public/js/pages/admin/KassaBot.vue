@@ -1,6 +1,7 @@
 <script setup>
 import { computed, onMounted, ref, watch } from "vue";
 import { t } from "../../composables/i18n.js";
+import { accountLabel } from "../../composables/accounts.js";
 import { call } from "../../api/client.js";
 import { kassaAdminApi } from "../../api/kassaAdmin.js";
 import { adminApi } from "../../api/admin.js";
@@ -387,7 +388,7 @@ watch(companyFilter, load);
 							@change="toggleAccount(a.name)"
 						/>
 						<span class="form-check-label">
-							{{ a.account_name || a.name }}
+							{{ accountLabel(a) }}
 							<span class="text-secondary small">— {{ a.account_currency }}</span>
 						</span>
 					</label>

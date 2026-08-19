@@ -22,6 +22,12 @@ globalThis.window = {
 			Cancelled: "Отменён",
 			"Hello {name}": "Привет, {name}",
 			"{n} of {n}": "{n} из {n}",
+			// Chart-of-Accounts vocabulary: a group name, a leaf name and an
+			// account_type. `MIKAS USD` is deliberately absent — a counterparty
+			// account must fall through to what the ledger actually says.
+			"Bank Accounts": "Банковские счета",
+			"Retained Earnings": "Нераспределённая прибыль",
+			Receivable: "Дебиторская задолженность",
 		},
 	},
 };

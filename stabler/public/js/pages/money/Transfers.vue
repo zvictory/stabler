@@ -7,6 +7,7 @@ import { call } from "../../api/client.js";
 import { formatMoney } from "../../composables/money.js";
 import { formatDateTime, todayIso, daysAgoIso} from "../../composables/date.js";
 import { t } from "../../composables/i18n.js";
+import { accountLabel } from "../../composables/accounts.js";
 import { useConfirm } from "../../composables/useConfirm.js";
 import { useToast } from "../../composables/useToast.js";
 import MoneyInput from "../../components/MoneyInput.vue";
@@ -124,14 +125,14 @@ const toAcc = computed(() => accounts.value.find((a) => a.name === form.value.to
 const fromAccountOptions = computed(() =>
 	accounts.value.map((a) => ({
 		...a,
-		label: `${a.account_name || a.name} (${a.account_currency})`,
+		label: `${accountLabel(a)} (${a.account_currency})`,
 		disabled: a.name === form.value.to_account,
 	})),
 );
 const toAccountOptions = computed(() =>
 	accounts.value.map((a) => ({
 		...a,
-		label: `${a.account_name || a.name} (${a.account_currency})`,
+		label: `${accountLabel(a)} (${a.account_currency})`,
 		disabled: a.name === form.value.from_account,
 	})),
 );
@@ -374,8 +375,8 @@ const transferView = computed(() => {
 	const fromCcy = credit.account_currency || baseCurrency.value;
 	const toCcy = debit.account_currency || baseCurrency.value;
 	return {
-		fromAccount: credit.account_name || credit.account,
-		toAccount: debit.account_name || debit.account,
+		fromAccount: accountLabel(credit) || credit.account,
+		toAccount: accountLabel(debit) || debit.account,
 		fromAmt, toAmt, fromCcy, toCcy,
 		cross: fromCcy !== toCcy,
 		rate: fromCcy !== toCcy && fromAmt ? toAmt / fromAmt : null,
@@ -797,7 +798,7 @@ watch(activeCompany, () => {
 						</thead>
 						<tbody>
 							<tr v-for="(a, i) in detail.accounts" :key="i">
-								<td>{{ a.account_name || a.account }}</td>
+								<td>{{ accountLabel(a) || a.account }}</td>
 								<td class="text-end font-monospace">
 									{{ a.debit_in_account_currency ? formatMoney(a.debit_in_account_currency, a.account_currency || baseCurrency, user.language) : "—" }}
 								</td>
@@ -880,12 +881,12 @@ watch(activeCompany, () => {
 										>
 											<template #option="{ option }">
 												<span class="d-flex align-items-center gap-2 w-100">
-													<span class="text-truncate">{{ option.account_name || option.name }} <span class="text-secondary">({{ option.account_currency }})</span></span>
+													<span class="text-truncate">{{ accountLabel(option) }} <span class="text-secondary">({{ option.account_currency }})</span></span>
 													<span v-if="option.account_balance != null" class="ms-auto text-secondary font-monospace small text-nowrap">{{ fmtAmt(option.account_balance, option.account_currency) }}</span>
 												</span>
 											</template>
 											<template #selected="{ option }">
-												{{ option.account_name || option.name }} ({{ option.account_currency }})
+												{{ accountLabel(option) }} ({{ option.account_currency }})
 											</template>
 										</Select>
 									</div>
@@ -964,12 +965,12 @@ watch(activeCompany, () => {
 										>
 											<template #option="{ option }">
 												<span class="d-flex align-items-center gap-2 w-100">
-													<span class="text-truncate">{{ option.account_name || option.name }} <span class="text-secondary">({{ option.account_currency }})</span></span>
+													<span class="text-truncate">{{ accountLabel(option) }} <span class="text-secondary">({{ option.account_currency }})</span></span>
 													<span v-if="option.account_balance != null" class="ms-auto text-secondary font-monospace small text-nowrap">{{ fmtAmt(option.account_balance, option.account_currency) }}</span>
 												</span>
 											</template>
 											<template #selected="{ option }">
-												{{ option.account_name || option.name }} ({{ option.account_currency }})
+												{{ accountLabel(option) }} ({{ option.account_currency }})
 											</template>
 										</Select>
 									</div>

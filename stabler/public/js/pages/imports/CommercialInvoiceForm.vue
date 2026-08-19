@@ -6,6 +6,7 @@ import { useSession } from "../../stores/session.js";
 import { importsApi } from "../../api/imports.js";
 import { call } from "../../api/client.js";
 import { t } from "../../composables/i18n.js";
+import { accountLabel } from "../../composables/accounts.js";
 import { formatDate } from "../../composables/date.js";
 import { formatMoney } from "../../composables/money.js";
 import { getStatusBadgeClass } from "../../composables/status.js";
@@ -3476,12 +3477,12 @@ watch(
 								>
 									<template #option="{ item }">
 										<div class="d-flex justify-content-between gap-3">
-											<span>{{ item.account_name }} <span class="text-secondary">({{ item.account_currency }})</span></span>
+											<span>{{ accountLabel(item) }} <span class="text-secondary">({{ item.account_currency }})</span></span>
 											<span class="font-monospace text-secondary">{{ fm(item.account_balance, item.account_currency) }}</span>
 										</div>
 									</template>
 									<template #selected="{ item }">
-										{{ item.account_name }} ({{ item.account_currency }})
+										{{ accountLabel(item) }} ({{ item.account_currency }})
 									</template>
 								</Select>
 							</div>
@@ -3497,10 +3498,10 @@ watch(
 									:search-keys="['account_name', 'account_number', 'name']"
 								>
 									<template #option="{ item }">
-										{{ item.account_name }} <span class="text-secondary">({{ item.account_currency }})</span>
+										{{ accountLabel(item) }} <span class="text-secondary">({{ item.account_currency }})</span>
 									</template>
 									<template #selected="{ item }">
-										{{ item.account_name }} ({{ item.account_currency }})
+										{{ accountLabel(item) }} ({{ item.account_currency }})
 									</template>
 								</Select>
 							</div>

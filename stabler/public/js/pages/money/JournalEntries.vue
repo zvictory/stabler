@@ -8,6 +8,7 @@ import { formatMoney, moneyEpsilon, moneyFractionDigits } from "../../composable
 import { computeBalancePlug } from "../../composables/journal.js";
 import { formatDate, formatDateTime, todayIso, daysAgoIso} from "../../composables/date.js";
 import { t } from "../../composables/i18n.js";
+import { accountLabel } from "../../composables/accounts.js";
 import MoneyInput from "../../components/MoneyInput.vue";
 import DateInput from "../../components/DateInput.vue";
 import EmptyState from "../../components/EmptyState.vue";
@@ -552,7 +553,7 @@ watch(statusFilter, load);
 							</tr></thead>
 							<tbody>
 								<tr v-for="(a, i) in detail.accounts" :key="i">
-									<td>{{ a.account_name || a.account }}</td>
+									<td>{{ accountLabel(a) || a.account }}</td>
 									<td>{{ a.party_name || a.party || "—" }}</td>
 									<td class="text-end font-monospace">
 										{{ a.debit_in_account_currency ? formatMoney(a.debit_in_account_currency, a.account_currency || detail.base_currency || currency, user.language) : "—" }}
@@ -613,8 +614,8 @@ watch(statusFilter, load);
 							<tr v-for="(row, idx) in form.accounts" :key="idx">
 								<td>
 									<Select v-model="row.account" size="sm" :options="accountOptions" value-key="name" :placeholder="t('— Choose account —')" @change="onAccountPicked(row, idx)">
-										<template #option="{ option }">{{ option.account_number ? `${option.account_number} · ` : "" }}{{ option.account_name }}</template>
-										<template #selected="{ option }">{{ option.account_number ? `${option.account_number} · ` : "" }}{{ option.account_name }}</template>
+										<template #option="{ option }">{{ option.account_number ? `${option.account_number} · ` : "" }}{{ accountLabel(option) }}</template>
+										<template #selected="{ option }">{{ option.account_number ? `${option.account_number} · ` : "" }}{{ accountLabel(option) }}</template>
 									</Select>
 									<div v-if="row.account && acctBalanceText(row.account)" class="text-secondary" style="font-size:.7rem">{{ acctBalanceText(row.account) }}</div>
 								</td>
