@@ -150,6 +150,21 @@ def _resolve_temporary_opening_account(company: str) -> str:
 	return rows[0]["name"]
 
 
+def _opening_leg_rate(currency: str, base_currency: str, posting_date) -> float:
+	"""Company-currency value of one unit of `currency` on `posting_date`.
+
+	1.0 for a leg already in company currency — the common case must not acquire
+	a rate lookup it never needed. Otherwise `get_exchange_rate_for_currencies`,
+	which throws a translated message naming the pair and the date. That message
+	is the point: ERPNext's own refusal for an unpriced opening balance is
+	English-only and complains about multi-currency, not about the missing rate,
+	so it tells the user nothing they can act on.
+	"""
+	if not currency or not base_currency or currency == base_currency:
+		return 1.0
+	return flt(get_exchange_rate_for_currencies(currency, base_currency, posting_date))
+
+
 @frappe.whitelist()
 def create_account(
 	company: str,
@@ -214,26 +229,46 @@ def create_account(
 
 	if opening_balance and not is_group:
 		temp_account = _resolve_temporary_opening_account(company)
+		posting_date = getdate(opening_date)
+		base_currency = frappe.db.get_value("Company", company, "default_currency") or ""
+		account_currency = doc.account_currency or base_currency
+		temp_currency = frappe.db.get_value("Account", temp_account, "account_currency") or base_currency
+		# Each leg carries the rate that converts ITS currency into the company's,
+		# on the opening date — not today's. An opening balance is dated in the
+		# past on purpose; valuing it at today's rate misstates the ledger by
+		# however far the currency has moved since.
+		account_rate = _opening_leg_rate(account_currency, base_currency, posting_date)
+		temp_rate = _opening_leg_rate(temp_currency, base_currency, posting_date)
+		# The user's number stays the user's number; the counter-leg carries the
+		# equivalent in ITS OWN currency. Copying the raw amount across (what this
+		# did before) left a USD opening balance short by the whole exchange rate.
+		temp_amount = flt(opening_balance * account_rate / temp_rate)
 		debit_side = doc.root_type in ("Asset", "Expense")
 		je = frappe.new_doc("Journal Entry")
 		je.company = company
-		je.posting_date = getdate(opening_date)
+		je.posting_date = posting_date
 		je.voucher_type = "Opening Entry"
 		je.is_opening = "Yes"
+		# ERPNext refuses a document with a non-company currency on any leg unless
+		# this is set — and the refusal rolls back the account too, since both are
+		# created in one transaction.
+		je.multi_currency = 1 if (account_currency != base_currency or temp_currency != base_currency) else 0
 		je.append(
 			"accounts",
 			{
 				"account": doc.name,
 				"debit_in_account_currency": opening_balance if debit_side else 0,
 				"credit_in_account_currency": 0 if debit_side else opening_balance,
+				"exchange_rate": account_rate,
 			},
 		)
 		je.append(
 			"accounts",
 			{
 				"account": temp_account,
-				"debit_in_account_currency": 0 if debit_side else opening_balance,
-				"credit_in_account_currency": opening_balance if debit_side else 0,
+				"debit_in_account_currency": 0 if debit_side else temp_amount,
+				"credit_in_account_currency": temp_amount if debit_side else 0,
+				"exchange_rate": temp_rate,
 			},
 		)
 		je.insert(ignore_permissions=False)
