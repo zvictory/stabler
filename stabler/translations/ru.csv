@@ -6305,3 +6305,6 @@ Filled in to balance the entry,Заполнено автоматически д�
 {0} converts to {1}; the other lines come to {2}.,{0} — это {1}; остальные строки дают {2}.
 Move the date forward or open the posting window to save.,"Чтобы сохранить, перенесите дату вперёд или откройте период проводок."
 Accounting is frozen before {0}.,Учёт закрыт до {0}.
+"A payment for this invoice has already been created and not submitted yet ({0}). Approve, submit or delete it before recording another.","Платёж по этому счёту уже создан и ещё не проведён ({0}). Утвердите, проведите или удалите его, прежде чем записывать другой."
+The expense may already have been recorded. Open the expense list and check before submitting again — a repeat posts a second journal entry.,"Расход мог уже быть записан. Откройте список расходов и проверьте, прежде чем отправлять повторно — повтор создаст вторую проводку."
+The transfer may already have been recorded. Open the transfer list and check before submitting again — a repeat posts a second journal entry.,"Перевод мог уже быть записан. Откройте список переводов и проверьте, прежде чем отправлять повторно — повтор создаст вторую проводку."

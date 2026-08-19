@@ -6300,3 +6300,6 @@ Filled in to balance the entry,Проводкани тенглаштириш у�
 {0} converts to {1}; the other lines come to {2}.,{0} — бу {1}; қолган сатрлар {2} ни ташкил этади.
 Move the date forward or open the posting window to save.,Сақлаш учун санани олдинга суринг ёки проводка ойнасини очинг.
 Accounting is frozen before {0}.,Бухгалтерия {0} санасигача ёпилган.
+"A payment for this invoice has already been created and not submitted yet ({0}). Approve, submit or delete it before recording another.","Бу ҳисоб-фактура бўйича тўлов аллақачон яратилган ва ҳали юборилмаган ({0}). Бошқасини ёзишдан олдин уни тасдиқланг, юборинг ёки ўчиринг."
+The expense may already have been recorded. Open the expense list and check before submitting again — a repeat posts a second journal entry.,Харажат аллақачон ёзилган бўлиши мумкин. Қайта юборишдан олдин харажатлар рўйхатини очинг ва текширинг — такрор иккинчи проводкани яратади.
+The transfer may already have been recorded. Open the transfer list and check before submitting again — a repeat posts a second journal entry.,Ўтказма аллақачон ёзилган бўлиши мумкин. Қайта юборишдан олдин ўтказмалар рўйхатини очинг ва текширинг — такрор иккинчи проводкани яратади.

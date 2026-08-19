@@ -106,6 +106,7 @@ def _load_money(
 	temporary_accounts=None,
 	new_account_root_type="Asset",
 	new_account_currency=None,
+	pending_payment_refs=(),
 ):
 	"""Import ``stabler.api.money`` against a hand-built ``frappe``.
 
@@ -198,6 +199,15 @@ def _load_money(
 			return list(
 				temporary_accounts if temporary_accounts is not None else [{"name": "Temporary Opening - X"}]
 			)
+		if doctype == "Payment Entry Reference":
+			f = filters or {}
+			return [
+				r
+				for r in pending_payment_refs
+				if r.get("reference_doctype") == f.get("reference_doctype")
+				and r.get("reference_name") == f.get("reference_name")
+				and r.get("docstatus") == f.get("docstatus")
+			]
 		return []
 
 	frappe.get_all = _get_all
@@ -604,6 +614,98 @@ class JournalEntryListSearchTest(unittest.TestCase):
 		query, params = ctx.queries[-1]
 		self.assertIn("OFFSET", query)
 		self.assertEqual(params["start"], 50)
+
+
+class InvoicePaidTwiceThroughTheApprovalQueueTest(unittest.TestCase):
+	"""A second payment must not be startable while the first is still a draft.
+
+	`create_payment_for_invoice` opens with `check_concurrency` on the INVOICE
+	(`money.py:2253`), and on the ordinary path that is a real guard: `doc.submit()`
+	runs `update_outstanding_amt`, which writes the invoice with
+	`update_modified=True`, so a repeat arrives with a stale token and is refused.
+
+	The maker-checker branch is where that reasoning stops holding. Over the
+	approval threshold the endpoint inserts the Payment Entry and **leaves it a
+	Draft** (`money.py:2388-2391`): no GL, no `update_outstanding_amt`, and so the
+	invoice's `modified` never moves. The token the client is holding stays valid
+	for as long as the request sits in the queue. Meanwhile the invoice still reads
+	as unpaid — because it *is* unpaid — so the payer's own screen invites the
+	second click, and `approvals.py:217-227` keys `_open_request_for` on
+	`reference_name`, which is the payment's name, not the invoice's. Two drafts
+	never merge into one request. The approver works the queue, approves both, and
+	the invoice is paid twice with `outstanding_amount` driven negative.
+
+	The guard is deliberately narrow: it refuses only when an **unsubmitted**
+	payment is already allocated to the invoice. A submitted one is the legitimate
+	instalment case — it has already reduced `outstanding_amount`, so the payer can
+	see what is left and is deciding with real numbers. It is the invisible draft,
+	and only the draft, that makes the second payment an accident.
+
+	This closes the operator's repeat, not a true race: two genuinely simultaneous
+	requests can still pass the read before either insert lands. The durable fix for
+	that is a payload-derived unique key on the document itself; this guard is what
+	is available without a doctype change.
+	"""
+
+	INVOICE = "SINV-2026-00042"
+
+	def _args(self):
+		return {
+			"company": "Test Co",
+			"invoice_type": "Sales Invoice",
+			"invoice_name": self.INVOICE,
+			"bank_account": "Cash - X",
+			"paid_amount": 100,
+			"modified": "2026-08-19 10:00:00",
+		}
+
+	def test_a_draft_payment_blocks_a_second_one_and_names_it(self):
+		money, ctx = _load_money(
+			accounts=BASE_ACCOUNTS,
+			pending_payment_refs=[
+				{
+					"parent": "PE-2026-00007",
+					"reference_doctype": "Sales Invoice",
+					"reference_name": self.INVOICE,
+					"docstatus": 0,
+				}
+			],
+		)
+		with self.assertRaises(Exception) as caught:
+			money.create_payment_for_invoice(**self._args())
+		# The operator cannot act on "already exists" — they need the name, so they
+		# can go and see whether the first attempt is waiting or was abandoned.
+		self.assertIn("PE-2026-00007", str(caught.exception))
+		self.assertNotIn("insert", ctx.trace, "the second payment must never reach the database")
+
+	def test_a_submitted_payment_leaves_the_instalment_path_open(self):
+		"""Refusing here would break part-payment, which is ordinary and correct."""
+		money, _ctx = _load_money(
+			accounts=BASE_ACCOUNTS,
+			pending_payment_refs=[
+				{
+					"parent": "PE-2026-00007",
+					"reference_doctype": "Sales Invoice",
+					"reference_name": self.INVOICE,
+					"docstatus": 1,
+				}
+			],
+		)
+		self.assertIsNone(money._pending_payment_for_invoice("Sales Invoice", self.INVOICE))
+
+	def test_a_draft_against_a_different_invoice_is_not_this_invoice(self):
+		money, _ctx = _load_money(
+			accounts=BASE_ACCOUNTS,
+			pending_payment_refs=[
+				{
+					"parent": "PE-2026-00007",
+					"reference_doctype": "Sales Invoice",
+					"reference_name": "SINV-2026-00099",
+					"docstatus": 0,
+				}
+			],
+		)
+		self.assertIsNone(money._pending_payment_for_invoice("Sales Invoice", self.INVOICE))
 
 
 if __name__ == "__main__":

@@ -57,6 +57,13 @@ useEscapeBack(() => {
 }, "/money");
 const submitting = ref(false);
 const submitError = ref("");
+// A failed submit is not proof that nothing was written: the request can have
+// reached the server and posted the entry, and only the response gone missing
+// (gunicorn/nginx timeout on a shared bench). The form stays filled in, so the
+// obvious next move is to click Submit again — and nothing on the server stops
+// it. Two identical bank entries are indistinguishable apart from their serial.
+// Until the entry carries a payload-derived key, this warning is the guard.
+const resubmitWarning = ref(false);
 const editingName = ref("");
 
 const accounts = ref([]);
@@ -438,6 +445,7 @@ let focusFromAccountFn = null;
 
 async function submitCreate(mode) {
 	submitError.value = "";
+	resubmitWarning.value = false;
 	persistSaveMode(mode);
 
 	// Record & clear: just reset the form, no network call
@@ -510,6 +518,7 @@ async function submitCreate(mode) {
 		}
 	} catch (err) {
 		submitError.value = err?.message || t("Failed to submit transfer.");
+		resubmitWarning.value = true;
 	} finally {
 		submitting.value = false;
 	}
@@ -836,7 +845,10 @@ watch(activeCompany, () => {
 		</div>
 
 		<div class="card-body">
-					<div v-if="submitError" class="alert alert-danger mb-3">{{ submitError }}</div>
+					<div v-if="submitError" class="alert alert-danger mb-3">
+						{{ submitError }}
+						<div v-if="resubmitWarning" class="mt-2 small fw-bold">{{ t("The transfer may already have been recorded. Open the transfer list and check before submitting again — a repeat posts a second journal entry.") }}</div>
+					</div>
 
 					<!-- Date + Memo compact row -->
 					<div class="row g-2 mb-2">
