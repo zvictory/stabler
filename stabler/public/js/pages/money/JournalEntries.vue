@@ -13,6 +13,7 @@ import {
 	isDraftDirty,
 	isPostingFrozen,
 	isRowOrphaned,
+	journalFreezeDate,
 	postableRows,
 	ratesToRefresh,
 	snapshotDraft,
@@ -91,6 +92,11 @@ const accountOptions = ref([]);
 const emptyRow = () => ({ account: "", account_currency: "", party_type: "", party: "", party_name: "", exchange_rate: 1, debit: null, credit: null, _auto: false, _rateTouched: false });
 const form = ref(blankForm());
 const editName = ref(null);
+// The `modified` of the draft as it was loaded — the concurrency token that
+// says "these are the rows I was editing". update_journal_entry replaces the
+// whole account table rather than merging it, so without this a second save
+// overwrites the first person's lines and leaves no partial conflict to notice.
+const editModified = ref(null);
 // The draft as it was opened — what "dirty" is measured against.
 const pristine = ref(null);
 // The posting date this draft was opened with; see the watcher at the bottom.
@@ -247,14 +253,12 @@ function acctBalanceText(account) {
 	return `${t("Bal")}: ${amount} · ${formatDate(form.value.posting_date)}`;
 }
 
-// ── Contextual back-dating freeze (same source as the money-page banner) ──────
+// ── Contextual back-dating freeze ────────────────────────────────────────────
+// Same source as the money-page banner, but NOT the same date: that banner
+// speaks for every document type and takes the later of stock and accounting.
+// A journal entry writes no stock ledger. See journalFreezeDate().
 const backdating = ref(null);
-const freezeDate = computed(() => {
-	const b = backdating.value;
-	if (!b || !b.active) return null;
-	const dates = [b.stock_earliest_date, b.acc_earliest_date].filter(Boolean);
-	return dates.length ? dates.sort().reverse()[0] : null;
-});
+const freezeDate = computed(() => journalFreezeDate(backdating.value));
 const postingFrozen = computed(() => isPostingFrozen(form.value.posting_date, freezeDate.value));
 
 // The cancelled JE this draft amends (set by amendJE), passed through on save.
@@ -314,6 +318,7 @@ async function openCreate() {
 	form.value = blankForm();
 	formDate = form.value.posting_date;
 	editName.value = null;
+	editModified.value = null;
 	amendedFrom.value = null;
 	submitError.value = "";
 	pane.value = "edit";
@@ -325,6 +330,7 @@ async function openEdit(d) {
 	submitError.value = "";
 	await loadAccountOptions();
 	editName.value = d.name;
+	editModified.value = d.modified || null;
 	form.value = {
 		posting_date: d.posting_date,
 		voucher_type: d.voucher_type || "Journal Entry",
@@ -424,7 +430,7 @@ async function submitForm() {
 	// The band alone was the whole enforcement: the draft used to save and the
 	// refusal arrived at Submit, from ERPNext, untranslated.
 	if (postingFrozen.value) {
-		return (submitError.value = t("Backdated postings are frozen before {0}.").replace("{0}", formatDate(freezeDate.value)));
+		return (submitError.value = t("Accounting is frozen before {0}.").replace("{0}", formatDate(freezeDate.value)));
 	}
 	if (!balanced.value) {
 		// The two figures the badge is already showing, formatted the way the rest
@@ -447,6 +453,11 @@ async function submitForm() {
 				name: editName.value, posting_date: form.value.posting_date,
 				user_remark: form.value.user_remark || undefined, cheque_no: form.value.cheque_no || undefined,
 				cheque_date: form.value.cheque_date || undefined, accounts,
+				// Omitted rather than sent empty: check_concurrency refuses a
+				// MISSING token on an existing document, so a draft whose detail
+				// arrived without one must keep the old unchecked behaviour
+				// instead of failing every save.
+				modified: editModified.value || undefined,
 			});
 		} else {
 			res = await call("stabler.api.money.create_journal_entry", {
@@ -520,6 +531,7 @@ async function amendJE() {
 	const src = detail.value.name;
 	await openEdit(detail.value);
 	editName.value = null; // new doc, not an in-place edit
+	editModified.value = null; // …so the cancelled original's token must not ride along
 	amendedFrom.value = src; // …but linked to the cancelled original
 }
 
@@ -701,7 +713,7 @@ watch(() => form.value.posting_date, (d) => {
 					<div v-if="postingFrozen" class="alert alert-warning py-2 px-3 d-flex align-items-center">
 						<i class="ti ti-calendar-lock me-2"></i>
 						<span class="flex-fill small">
-							{{ t("Backdated postings are frozen before {0}.").replace("{0}", formatDate(freezeDate)) }}
+							{{ t("Accounting is frozen before {0}.").replace("{0}", formatDate(freezeDate)) }}
 							{{ t("Move the date forward or open the posting window to save.") }}
 						</span>
 						<RouterLink to="/admin/posting-window" class="small text-reset text-decoration-underline ms-2">{{ t("Change") }}</RouterLink>
