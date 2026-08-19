@@ -115,8 +115,9 @@ class TestTheFlagIsWiredEndToEnd(unittest.TestCase):
 
 class TestThePatchIsSafeAndFaithful(unittest.TestCase):
 	def test_patch_guards_on_the_column_existing(self):
-		"""Yamalar doctype senkronundan ÖNCE çalışıyor. Guard olmadan bu
-		yamayı taşıyan ilk migrate eksik sütunda patlar."""
+		"""Yama patches.txt'te [post_model_sync] altında kayıtlı (satır 67),
+		yani sütun çalıştığı anda zaten var. Guard yine de duruyor: kayıt bir
+		gün pre-sync'e taşınırsa eksik sütunda patlamak yerine atlansın."""
 		self.assertIn('has_column("Stabler Company Modules", "enable_direct_invoicing")', PATCH)
 		self.assertRegex(PATCH, r"if not frappe\.db\.has_column\([^)]*\):\s*\n\s*return")
 
