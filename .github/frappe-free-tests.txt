@@ -227,3 +227,4 @@ stabler.tests.test_payment_plan_entry_schema
 stabler.tests.test_payment_plan_api
 stabler.tests.test_money_je_guards
 stabler.tests.test_opening_balance_entry
+stabler.tests.test_module_flag_patch_replay

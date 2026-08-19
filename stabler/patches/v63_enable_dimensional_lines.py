@@ -21,25 +21,28 @@ def execute():
 	if not frappe.db.has_column("Stabler Company Modules", "enable_dimensional_lines"):
 		return  # Column not created yet — DocType DDL sync hasn't run.
 
-	# NULL must never read as permissive: close everyone first, then open.
-	frappe.db.sql(
-		"UPDATE `tabStabler Company Modules` SET enable_dimensional_lines = 0 "
-		"WHERE enable_dimensional_lines IS NULL"
-	)
-
-	if not frappe.db.has_column("Item", "custom_dimension_mode"):
-		# No dimensional catalogue possible on this site yet — leaving every
-		# tenant at 0 is correct, and the admin toggle stays available.
-		frappe.db.commit()
-		return
-
-	sells_by_size = frappe.db.sql(
-		"SELECT 1 FROM `tabItem` WHERE custom_dimension_mode IN ('Linear', 'Area', 'Volume') LIMIT 1"
-	)
-	if sells_by_size:
+	sells_by_size = False
+	if frappe.db.has_column("Item", "custom_dimension_mode"):
 		# Item is site-scoped (one site per tenant), so a dimensional item
 		# anywhere in the catalogue means this tenant's sellers need the
-		# columns. Companies inside the site share the catalogue.
-		frappe.db.sql("UPDATE `tabStabler Company Modules` SET enable_dimensional_lines = 1")
+		# columns. Companies inside the site share the catalogue. No column
+		# means no catalogue evidence yet, which is not evidence of none —
+		# it is no decision, and no decision closes.
+		sells_by_size = bool(
+			frappe.db.sql(
+				"SELECT 1 FROM `tabItem` WHERE custom_dimension_mode IN ('Linear', 'Area', 'Volume') LIMIT 1"
+			)
+		)
+
+	# NULL is the only state this patch may write. A row already holding 0 or 1
+	# holds somebody's answer — and on the second run the catalogue still sells
+	# by size, so an unqualified `SET = 1` would reopen a tenant an operator
+	# closed on purpose and tell nobody. NULL must never read as permissive, so
+	# the rows with no answer get one here, in a single pass.
+	frappe.db.sql(
+		"UPDATE `tabStabler Company Modules` SET enable_dimensional_lines = %s "
+		"WHERE enable_dimensional_lines IS NULL",
+		(1 if sells_by_size else 0,),
+	)
 
 	frappe.db.commit()
