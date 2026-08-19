@@ -99,6 +99,7 @@ const editMode = ref(false);
 const editingName = ref("");
 const submitting = ref(false);
 const submitError = ref("");
+const parentAccountError = ref("");
 const currencyOptions = ref([]);
 const optionsLoaded = ref(false);
 // Whether the user has manually picked a currency in THIS modal session. Gates
@@ -373,6 +374,7 @@ function openCreate(parentNode) {
 	editMode.value = false;
 	editingName.value = "";
 	submitError.value = "";
+	parentAccountError.value = "";
 	currencyTouched.value = false;
 	form.value = blankAccount();
 	if (parentNode?.is_group) form.value.parent_account = parentNode.name;
@@ -404,6 +406,7 @@ watch(
 function closeCreate() {
 	createOpen.value = false;
 	submitError.value = "";
+	parentAccountError.value = "";
 	currencyTouched.value = false;
 	form.value = blankAccount();
 	editMode.value = false;
@@ -415,6 +418,7 @@ async function openEdit(node) {
 	editMode.value = true;
 	editingName.value = node.name;
 	submitError.value = "";
+	parentAccountError.value = "";
 	currencyTouched.value = false;
 	loadCreateOptions();
 	createOpen.value = true;
@@ -436,6 +440,15 @@ async function openEdit(node) {
 }
 
 async function submitForm() {
+	// create_account throws server-side when parent_account is empty, and the
+	// only signal was an English server message dropped at the top of the
+	// form. Catching it client-side, next to the field, is cheap and lets the
+	// user fix it without a round trip.
+	parentAccountError.value = "";
+	if (!editMode.value && !form.value.parent_account) {
+		parentAccountError.value = t("Parent account is required.");
+		return;
+	}
 	submitting.value = true;
 	submitError.value = "";
 	try {
@@ -739,13 +752,14 @@ watch(expanded, (next) => {
 							<input v-model="form.account_number" type="text" class="form-control" />
 						</div>
 						<div class="col-12">
-							<label class="form-label">{{ t("Parent account") }}</label>
+							<label class="form-label" :class="{ required: !editMode }">{{ t("Parent account") }}</label>
 							<Select
 								v-model="form.parent_account"
 								:options="parentAccountOptions"
 								placeholder="—"
 								:clearable="true"
 							/>
+							<div v-if="parentAccountError" class="invalid-feedback d-block">{{ parentAccountError }}</div>
 						</div>
 						<div class="col-md-6">
 							<label class="form-label">{{ t("Account type") }}</label>
