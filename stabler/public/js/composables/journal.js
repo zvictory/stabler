@@ -43,7 +43,8 @@ export function isRowOrphaned(row) {
  * by its own rate) and handed back in the target line's currency, rounded to
  * that line's own precision, because that is the field the user is looking at.
  *
- * Returns `{ index, field, value }`, or null when there is nothing to fill.
+ * Returns `{ index, field, value }`, or null when there is nothing to do. A
+ * `value` of null means the plug on that line is void and must be cleared.
  */
 export function computeBalancePlug(rows, { editedIdx, rateOf, fractionDigitsOf = () => 2 } = {}) {
 	if (!Array.isArray(rows) || rows.length < 2) return null;
@@ -59,7 +60,15 @@ export function computeBalancePlug(rows, { editedIdx, rateOf, fractionDigitsOf =
 		if (i === index || !r.account) return;
 		residual += ((Number(r.debit) || 0) - (Number(r.credit) || 0)) * (rateOf(r) || 1);
 	});
-	if (!residual) return null;
+	// Nothing left to balance. A plug this function wrote is a derivation, and a
+	// derivation of nothing is not a number — leaving it standing is how a
+	// deleted line used to leave its counter-amount on screen, indistinguishable
+	// from something the user typed. `value: null` means "clear this line".
+	if (!residual) {
+		const held = Number(rows[index].debit) ? "debit" : Number(rows[index].credit) ? "credit" : null;
+		if (!rows[index]._auto || !held) return null;
+		return { index, field: held, value: null };
+	}
 
 	// Precision is the TARGET line's, not the company's: a UZS-base entry can
 	// still plug a USD line, and rounding that one to whole dollars is wrong.

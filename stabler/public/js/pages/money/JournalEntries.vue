@@ -132,10 +132,15 @@ function viewQuote(a) {
 	return q ? `1 ${q.strong} = ${fmtRate(q.value)} ${q.weak}` : "";
 }
 // User edits the readable N; store it back as the ERPNext per-line rate.
+// Correcting a rate to the bank's or the contract's is the rule in a
+// multi-currency entry, not the exception, and it moves every base figure the
+// balance is measured in — so the plug has to be re-derived with it. -1: no
+// line is off-limits; a rate is not an amount the user typed into a side.
 function setRateQuote(row, val) {
 	const q = rateQuote(row);
 	if (!q) return;
 	row.exchange_rate = toLineRate(val, q.strong, row.account_currency);
+	runAutoBalance(-1);
 }
 
 async function fetchRate(row) {
@@ -336,7 +341,14 @@ function cancelEdit() {
 }
 
 function addRow() { form.value.accounts.push(emptyRow()); }
-function removeRow(idx) { if (form.value.accounts.length > 2) form.value.accounts.splice(idx, 1); }
+// The button used to be disabled at two lines, so on a two-line entry the wrong
+// line could not be deleted at all. Delete it and get a fresh blank one back.
+// -1: no line is off-limits, because nothing here is an amount the user typed.
+function removeRow(idx) {
+	form.value.accounts.splice(idx, 1);
+	while (form.value.accounts.length < 2) form.value.accounts.push(emptyRow());
+	runAutoBalance(-1);
+}
 // Both of these used to fire on @blur, so a row could hold a debit AND a
 // credit while it had focus — the balance badge read "Balanced" on data the
 // server rejects outright (api/money.py:_clean_je_rows). They run on the model
@@ -347,6 +359,11 @@ function onAmountInput(row, idx, side) {
 	row._auto = false; // the user typed here; this amount is data now, not a derivation
 	runAutoBalance(idx);
 }
+
+// A number this form derived and one the user typed used to look identical on
+// screen. They are not the same kind of thing: the derived one is live and will
+// change under you.
+const isAutoAmount = (row, side) => !!row._auto && !!Number(row[side]);
 
 // Fills the counter-line so an opening balance does not have to be added up by
 // hand. Never touches an amount the user typed — see composables/journal.js.
@@ -658,9 +675,13 @@ watch(statusFilter, load);
 									</template>
 									<span v-else class="text-secondary small">1</span>
 								</td>
-								<td><MoneyInput v-model="row.debit" :currency="row.account_currency || currencyCode" hide-currency :language="user.language" size="sm" @update:model-value="onAmountInput(row, idx, 'debit')" /></td>
-								<td><MoneyInput v-model="row.credit" :currency="row.account_currency || currencyCode" hide-currency :language="user.language" size="sm" @update:model-value="onAmountInput(row, idx, 'credit')" /></td>
-								<td><button type="button" class="btn btn-sm btn-ghost-danger" :disabled="form.accounts.length <= 2" @click="removeRow(idx)"><i class="ti ti-trash"></i></button></td>
+								<td :class="{ 'je-auto': isAutoAmount(row, 'debit') }" :title="isAutoAmount(row, 'debit') ? t('Filled in to balance the entry') : null">
+									<MoneyInput v-model="row.debit" :currency="row.account_currency || currencyCode" hide-currency :language="user.language" size="sm" @update:model-value="onAmountInput(row, idx, 'debit')" />
+								</td>
+								<td :class="{ 'je-auto': isAutoAmount(row, 'credit') }" :title="isAutoAmount(row, 'credit') ? t('Filled in to balance the entry') : null">
+									<MoneyInput v-model="row.credit" :currency="row.account_currency || currencyCode" hide-currency :language="user.language" size="sm" @update:model-value="onAmountInput(row, idx, 'credit')" />
+								</td>
+								<td><button type="button" class="btn btn-sm btn-ghost-danger" @click="removeRow(idx)"><i class="ti ti-trash"></i></button></td>
 							</tr>
 						</tbody>
 						<tfoot>
@@ -699,5 +720,11 @@ watch(statusFilter, load);
 .je-ccy {
 	font-size: 0.65rem;
 	padding: 0.1rem 0.3rem;
+}
+/* An amount the form worked out for itself. It is live — it changes as the
+   other lines change — and it looked exactly like a figure the user had typed,
+   which is the whole reason a stale plug went unnoticed. */
+.je-auto {
+	background-color: var(--tblr-primary-lt, rgba(32, 107, 196, 0.06));
 }
 </style>

@@ -84,6 +84,36 @@ describe("computeBalancePlug — the counter-line a journal entry can work out f
 		expect(computeBalancePlug([row({ debit: 5000000 })], { editedIdx: 0, rateOf })).toBeNull();
 	});
 
+	// `editedIdx: -1` means "no line is off-limits" — the change was not an
+	// amount somebody typed. Deleting a line and correcting an exchange rate
+	// both come through that way, and both used to skip this function
+	// entirely, leaving the plug frozen at a figure nothing derived any more.
+	it("re-derives the standing plug when the change was not a typed amount", () => {
+		const rows = [row({ debit: 6000000 }), row({ credit: 8000000, _auto: true })];
+		expect(computeBalancePlug(rows, { editedIdx: -1, rateOf })).toEqual({ index: 1, field: "credit", value: 6000000 });
+	});
+
+	// The line the plug was balancing is gone, so the plug is a derivation of
+	// nothing. Left standing it stops being a derivation and becomes a figure
+	// the user never typed and cannot account for — which is precisely how a
+	// deleted line used to leave 5 000 000 sitting on the screen.
+	it("clears the plug it wrote once the lines it balanced are gone", () => {
+		const rows = [row({ credit: 5000000, _auto: true }), row()];
+		expect(computeBalancePlug(rows, { editedIdx: -1, rateOf })).toEqual({ index: 0, field: "credit", value: null });
+	});
+
+	it("never clears an amount the user typed, however the entry now adds up", () => {
+		const rows = [row({ credit: 5000000, _auto: false }), row()];
+		expect(computeBalancePlug(rows, { editedIdx: 1, rateOf })).toBeNull();
+	});
+
+	// Idempotence again: the caller runs this on every keystroke, so an empty
+	// plug seat must report nothing to do or the loop never visibly settles.
+	it("has nothing to clear on an empty plug line", () => {
+		const rows = [row({ _auto: true }), row()];
+		expect(computeBalancePlug(rows, { editedIdx: -1, rateOf })).toBeNull();
+	});
+
 	// The worst version of the phantom-row bug: the residual was measured
 	// against an amount the server never receives, and the answer was written
 	// into a REAL line. Give the orphan an account an hour later and that
