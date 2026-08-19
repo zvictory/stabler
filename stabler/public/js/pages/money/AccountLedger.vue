@@ -4,7 +4,7 @@ import { useRoute, useRouter } from "vue-router";
 import { storeToRefs } from "pinia";
 import { useSession } from "../../stores/session.js";
 import { call } from "../../api/client.js";
-import { formatMoney } from "../../composables/money.js";
+import { formatMoney, LOCALE_MAP } from "../../composables/money.js";
 import { formatDate } from "../../composables/date.js";
 import DateInput from "../../components/DateInput.vue";
 import PeriodSelect from "../../components/PeriodSelect.vue";
@@ -432,7 +432,7 @@ watch(() => route.params.account, fetchLedger);
 					</div>
 					<div v-else-if="!hasMore && entries.length > 0" class="text-center py-2">
 						<span class="small text-secondary">
-							{{ t("End of ledger") }} · {{ entries.length.toLocaleString() }}
+							{{ t("End of ledger") }} · {{ entries.length.toLocaleString(LOCALE_MAP[user.language] || "en-US") }}
 							{{ t("entries") }}
 						</span>
 					</div>
