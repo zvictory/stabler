@@ -139,3 +139,16 @@ export function isAbnormalBalance(value, rootType) {
 	if (typeof value !== "number") return false;
 	return applyRootTypeSign(value, rootType) < 0;
 }
+
+/**
+ * First-load expansion: the root accounts only, so their immediate children
+ * are visible without a click and nothing deeper springs open uninvited.
+ * Every previous load expanded the ENTIRE tree unconditionally — a chart
+ * with a couple hundred accounts opened as a wall, roll-ups for Income and
+ * Expense sitting 100+ rows from their own root. The user's own later
+ * choices are persisted separately (sessionStorage, company-scoped) by the
+ * component; this function only decides what a brand new session sees.
+ */
+export function defaultExpandedGroups(flatAccounts) {
+	return new Set((flatAccounts || []).filter((a) => a.is_group && !a.parent_account).map((a) => a.name));
+}

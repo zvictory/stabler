@@ -12,6 +12,7 @@ import {
 	accountOptionPath,
 	accountTypeLabel,
 	applyRootTypeSign,
+	defaultExpandedGroups,
 	isAbnormalBalance,
 	matchesAccountSearch,
 	newAccountCurrency,
@@ -188,6 +189,22 @@ const createModalTitle = computed(() => {
 	return t("New account");
 });
 
+// Session-scoped, per-company: the user's expand/collapse choices survive a
+// reload within the same tab session without leaking between companies or
+// outliving the browser session (unlike localStorage).
+function expandedStorageKey(company) {
+	return `stabler:coa:expanded:${company}`;
+}
+
+function restoreExpanded(company) {
+	try {
+		const raw = sessionStorage.getItem(expandedStorageKey(company));
+		return raw ? new Set(JSON.parse(raw)) : null;
+	} catch {
+		return null;
+	}
+}
+
 async function load() {
 	if (!activeCompany.value) return;
 	loading.value = true;
@@ -198,11 +215,10 @@ async function load() {
 			include_disabled: includeDisabled.value ? 1 : 0,
 		});
 		flat.value = rows || [];
-		// Expand every group by default — users want the full tree visible
-		// without clicking. Search/collapse still works per-node.
-		expanded.value = new Set(
-			(rows || []).filter((r) => r.is_group).map((r) => r.name)
-		);
+		// First load: roots only, so the tree opens navigable instead of as a
+		// wall of every account at once. A returning user's own expand/collapse
+		// choices for this company (if any were saved) win over that default.
+		expanded.value = restoreExpanded(activeCompany.value) || defaultExpandedGroups(rows || []);
 		balances.value = new Map();
 	} catch (err) {
 		error.value = err?.message || "Failed to load chart of accounts.";
@@ -457,6 +473,15 @@ watch(activeCompany, async () => {
 });
 watch(includeDisabled, async () => {
 	await load();
+});
+watch(expanded, (next) => {
+	if (!activeCompany.value) return;
+	try {
+		sessionStorage.setItem(expandedStorageKey(activeCompany.value), JSON.stringify([...next]));
+	} catch {
+		// sessionStorage can throw (private browsing, quota) — expansion just
+		// won't be remembered next reload, which is the pre-existing behavior.
+	}
 });
 </script>
 <template>

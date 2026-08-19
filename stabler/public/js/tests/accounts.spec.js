@@ -6,6 +6,7 @@ import {
 	accountOptionPath,
 	accountTypeLabel,
 	applyRootTypeSign,
+	defaultExpandedGroups,
 	isAbnormalBalance,
 	matchesAccountSearch,
 	newAccountCurrency,
@@ -221,5 +222,26 @@ describe("applyRootTypeSign / isAbnormalBalance — red means something again", 
 
 	it("null/undefined balances are never flagged abnormal", () => {
 		expect(isAbnormalBalance(null, "Asset")).toBe(false);
+	});
+});
+
+describe("defaultExpandedGroups — first-load expansion", () => {
+	const accounts = [
+		{ name: "Assets", is_group: 1, parent_account: null },
+		{ name: "Bank Accounts", is_group: 1, parent_account: "Assets" },
+		{ name: "Kassa", is_group: 0, parent_account: "Bank Accounts" },
+		{ name: "Liabilities", is_group: 1, parent_account: null },
+	];
+
+	it("expands only the root groups, revealing their first level without opening the whole tree", () => {
+		const expanded = defaultExpandedGroups(accounts);
+		expect(expanded.has("Assets")).toBe(true);
+		expect(expanded.has("Liabilities")).toBe(true);
+		expect(expanded.has("Bank Accounts")).toBe(false);
+	});
+
+	it("returns an empty set for an empty chart", () => {
+		expect(defaultExpandedGroups([]).size).toBe(0);
+		expect(defaultExpandedGroups(undefined).size).toBe(0);
 	});
 });
