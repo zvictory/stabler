@@ -12,7 +12,7 @@ import logging
 import frappe
 from frappe import _
 from frappe.rate_limiter import rate_limit
-from frappe.utils import cint, flt, getdate, today
+from frappe.utils import cint, flt, formatdate, getdate, today
 
 from stabler.api._money import money_epsilon
 from stabler.api.approvals import _assert_company_scope
@@ -989,6 +989,42 @@ def _opening_flag(voucher_type: str | None) -> str:
 	return "Yes" if (voucher_type or "").strip() == "Opening Entry" else "No"
 
 
+def _assert_posting_period_open(posting_date) -> None:
+	"""Refuse a posting date inside the frozen accounting period, in the user's language.
+
+	ERPNext enforces `Accounts Settings.acc_frozen_upto` when the GL is written —
+	that is, at submit. A draft dated inside a closed period therefore saved, was
+	listed, and only failed later with ERPNext's untranslated message, leaving a
+	document that exists in the entry list and nowhere in the trial balance. The
+	refusal belongs where the date is accepted.
+
+	Stock freezes are deliberately NOT consulted: a Journal Entry writes no stock
+	ledger, so blocking on `stock_frozen_upto` would refuse entries the ledger
+	itself accepts. (The SPA's warning banner takes the later of the two dates;
+	that is a banner, not the rule.)
+
+	`acc_frozen_upto` is inclusive, and the `frozen_accounts_modifier` role is
+	ERPNext's own exemption — the person whose job is correcting a closed period
+	keeps the only tool they have.
+	"""
+	if not posting_date:
+		return
+	settings = frappe.get_single("Accounts Settings")
+	frozen_upto = settings.get("acc_frozen_upto") or None
+	if not frozen_upto:
+		return
+	modifier = settings.get("frozen_accounts_modifier")
+	roles = set(frappe.get_roles())
+	if "System Manager" in roles or (modifier and modifier in roles):
+		return
+	if getdate(posting_date) <= getdate(frozen_upto):
+		frappe.throw(
+			_(
+				"Accounting is frozen up to {0}. Choose a later posting date, or ask someone who may post to a closed period."
+			).format(formatdate(frozen_upto))
+		)
+
+
 def _clean_je_rows(accounts, company: str) -> tuple[list[dict], bool]:
 	"""Validate + normalize JE account lines for create/update.
 
@@ -1119,6 +1155,7 @@ def update_journal_entry(
 		)
 	_require_company(doc.company)
 	_assert_company_scope(doc.company)  # tenant isolation: reject a foreign company arg
+	_assert_posting_period_open(posting_date)
 
 	cleaned, any_non_base = _clean_je_rows(accounts, doc.company)
 
@@ -1201,6 +1238,7 @@ def create_journal_entry(
 	"""
 	_require_company(company)
 	_assert_company_scope(company)  # tenant isolation: reject a foreign company arg
+	_assert_posting_period_open(posting_date)
 	cleaned, any_non_base = _clean_je_rows(accounts, company)
 
 	doc = frappe.new_doc("Journal Entry")

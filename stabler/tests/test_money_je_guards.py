@@ -85,8 +85,11 @@ class FakeDoc:
 		self.docstatus = 1
 
 
-class FrozenPeriod(Exception):
-	pass
+#: The fake ``frappe._`` stamps this prefix on everything it is handed, so a test
+#: can tell a translated message from a raw f-string. Half the point of moving the
+#: frozen-period refusal into our own code is that ERPNext's version of it reaches
+#: a Russian- or Uzbek-speaking accountant in English.
+I18N = "[i18n]"
 
 
 def _load_money(
@@ -122,7 +125,7 @@ def _load_money(
 	ctx = types.SimpleNamespace(trace=trace, docs=[], queries=[], existing=existing_doc)
 
 	frappe = types.ModuleType("frappe")
-	frappe._ = lambda value: value
+	frappe._ = lambda value: I18N + value
 	frappe.message_log = []
 
 	class _ValidationError(Exception):
@@ -344,6 +347,80 @@ class UpdateJournalEntryConcurrencyTest(unittest.TestCase):
 		money.update_journal_entry("JV-00001", "2026-08-19", BALANCED_ROWS)
 
 		self.assertIn("save", ctx.trace)
+
+
+class FrozenPeriodTest(unittest.TestCase):
+	"""A7 — a frozen period must stop the entry where the date is typed.
+
+	ERPNext applies `acc_frozen_upto` when the GL is written, i.e. at submit. So a
+	draft dated inside a closed period saved, listed and looked real, then failed
+	at submit with an untranslated ERPNext message. What is left behind is the
+	worst artefact this module can produce: a document that exists in the entry
+	list and nowhere in the trial balance.
+	"""
+
+	FROZEN_UPTO = "2026-07-31"
+
+	def test_a_new_entry_inside_the_frozen_period_is_refused_before_it_is_created(self):
+		money, ctx = _load_money(accounts=BASE_ACCOUNTS, acc_frozen_upto=self.FROZEN_UPTO)
+
+		with self.assertRaises(Exception) as caught:
+			money.create_journal_entry("Test Co", "2026-07-15", BALANCED_ROWS)
+
+		self.assertIn("2026-07-31", str(caught.exception))
+		self.assertNotIn("insert", ctx.trace)
+
+	def test_the_refusal_is_translated(self):
+		"""The whole reason for owning this check is that ERPNext's is English-only.
+		A refusal the accountant cannot read is indistinguishable from a bug."""
+		money, _ctx = _load_money(accounts=BASE_ACCOUNTS, acc_frozen_upto=self.FROZEN_UPTO)
+
+		with self.assertRaises(Exception) as caught:
+			money.create_journal_entry("Test Co", "2026-07-15", BALANCED_ROWS)
+
+		self.assertIn(I18N, str(caught.exception))
+
+	def test_editing_a_draft_into_the_frozen_period_is_refused_before_the_save(self):
+		money, ctx = _load_money(accounts=BASE_ACCOUNTS, acc_frozen_upto=self.FROZEN_UPTO)
+
+		with self.assertRaises(Exception):
+			money.update_journal_entry("JV-00001", "2026-07-15", BALANCED_ROWS)
+
+		self.assertNotIn("save", ctx.trace)
+
+	def test_the_freeze_date_itself_is_closed_and_the_next_day_is_open(self):
+		"""`acc_frozen_upto` is inclusive in ERPNext. An off-by-one here either
+		blocks a legal posting or lets an illegal one through — and the second
+		only surfaces at submit, which is exactly the failure being fixed."""
+		money, _ctx = _load_money(accounts=BASE_ACCOUNTS, acc_frozen_upto=self.FROZEN_UPTO)
+		with self.assertRaises(Exception):
+			money.create_journal_entry("Test Co", self.FROZEN_UPTO, BALANCED_ROWS)
+
+		money, ctx = _load_money(accounts=BASE_ACCOUNTS, acc_frozen_upto=self.FROZEN_UPTO)
+		money.create_journal_entry("Test Co", "2026-08-01", BALANCED_ROWS)
+		self.assertIn("insert", ctx.trace)
+
+	def test_the_role_that_may_post_to_a_closed_period_still_may(self):
+		"""ERPNext grants `frozen_accounts_modifier` the right to post into the
+		frozen range; that is the person whose job is fixing a closed period. A
+		check stricter than the ledger's would take away the only tool they have."""
+		money, ctx = _load_money(
+			accounts=BASE_ACCOUNTS,
+			acc_frozen_upto=self.FROZEN_UPTO,
+			frozen_accounts_modifier="Accounts Manager",
+			roles=("Accounts Manager",),
+		)
+
+		money.create_journal_entry("Test Co", "2026-07-15", BALANCED_ROWS)
+
+		self.assertIn("insert", ctx.trace)
+
+	def test_no_freeze_configured_blocks_nothing(self):
+		money, ctx = _load_money(accounts=BASE_ACCOUNTS)
+
+		money.create_journal_entry("Test Co", "2020-01-01", BALANCED_ROWS)
+
+		self.assertIn("insert", ctx.trace)
 
 
 if __name__ == "__main__":
