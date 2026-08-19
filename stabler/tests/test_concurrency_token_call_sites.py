@@ -59,7 +59,8 @@ def guarded_endpoints() -> set[str]:
 	"""
 	found: set[str] = set()
 	for path in sorted(glob.glob(os.path.join(_APP_ROOT, "api", "*.py"))):
-		tree = ast.parse(open(path, encoding="utf-8").read())
+		with open(path, encoding="utf-8") as fh:
+			tree = ast.parse(fh.read())
 		module = f"stabler.api.{os.path.basename(path)[:-3]}"
 		for node in tree.body:
 			if not isinstance(node, ast.FunctionDef | ast.AsyncFunctionDef):
@@ -95,7 +96,8 @@ def call_sites() -> list[tuple[str, int, str, str]]:
 	files = glob.glob(os.path.join(_JS_ROOT, "**", "*.vue"), recursive=True)
 	files += glob.glob(os.path.join(_JS_ROOT, "**", "*.js"), recursive=True)
 	for path in sorted(files):
-		src = open(path, encoding="utf-8").read()
+		with open(path, encoding="utf-8") as fh:
+			src = fh.read()
 		for m in re.finditer(r'call\(\s*"([^"]+)"', src):
 			if m.group(1) not in guarded:
 				continue
