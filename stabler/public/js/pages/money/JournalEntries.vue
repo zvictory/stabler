@@ -571,9 +571,17 @@ watch(() => form.value.posting_date, (d) => {
 			<div class="col-12 col-md-5 col-lg-4 border-end">
 				<div style="max-height: calc(100vh - 12rem); overflow-y: auto">
 					<table class="table table-sm table-hover mb-0">
+						<thead><tr>
+							<th>{{ t("Entry") }}</th>
+							<!-- The figure is total_debit_base — the COMPANY's currency, not the
+							     entry's. Unlabelled, a multi-currency entry's so'm total read as
+							     the USD figure the user had just typed. The detail table has
+							     said "Total (UZS)" over the same number all along. -->
+							<th class="text-end">{{ t("Total") }} ({{ currency }})</th>
+						</tr></thead>
 						<SkeletonRows v-if="loading" :rows="12" :cols="2" />
 						<tbody v-else>
-							<tr v-if="!rows.length"><td class="text-secondary text-center py-4">{{ t("No journal entries in this range") }}</td></tr>
+							<tr v-if="!rows.length"><td colspan="2" class="text-secondary text-center py-4">{{ t("No journal entries in this range") }}</td></tr>
 							<tr
 								v-for="r in rows"
 								:key="r.name"
