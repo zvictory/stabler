@@ -125,6 +125,14 @@ const repeatIndex = ref(0);
 const repeat = computed(() => REPEAT_OPTIONS[repeatIndex.value] || REPEAT_OPTIONS[0]);
 const saving = ref(false);
 const formError = ref("");
+// A failed save is not proof that nothing was written: the request can have
+// reached the server and created the entry, with only the response lost. The
+// form keeps its contents on error, so the obvious next move is to click Save
+// again — and for a NEW entry that writes a second plan row, because the form
+// still carries no name to update. Editing an existing entry is safe to retry
+// (the same document is saved again), which is why the warning is raised only
+// for the create path: a warning that cries wolf is one people click past.
+const resubmitWarning = ref(false);
 const extraField = computed(() => KIND_EXTRA[form.value.kind] || "");
 const isEdit = computed(() => Boolean(form.value.name));
 
@@ -203,6 +211,7 @@ function openDay(date) {
 async function save() {
 	saving.value = true;
 	formError.value = "";
+	resubmitWarning.value = false;
 	const { name, ...payload } = form.value;
 	try {
 		await call("stabler.api.payment_plan.save_payment_plan_entry", {
@@ -216,6 +225,7 @@ async function save() {
 		await load();
 	} catch (err) {
 		formError.value = err?.message || t("Failed to save the plan.");
+		resubmitWarning.value = !name;
 	} finally {
 		saving.value = false;
 	}
@@ -379,7 +389,10 @@ function kindLabel(value) {
 					<span class="ms-auto text-secondary small">{{ formatDate(form.due_date) }}</span>
 				</div>
 				<div class="card-body">
-					<div v-if="formError" class="alert alert-danger py-2 px-3">{{ formError }}</div>
+					<div v-if="formError" class="alert alert-danger py-2 px-3">
+						{{ formError }}
+						<div v-if="resubmitWarning" class="mt-2 small fw-bold">{{ t("The entry may already have been saved. Check the calendar before saving again — a repeat adds a second plan row.") }}</div>
+					</div>
 
 					<label class="form-label">{{ t("What for") }}</label>
 					<div class="d-flex flex-wrap gap-1 mb-3">
