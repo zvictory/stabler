@@ -31,6 +31,15 @@ def check_upcoming_deadlines():
 	for ci in invoices:
 		deadline = get_7day_payment_deadline(ci.eta_transit_port)
 		if deadline and deadline <= today_str:
+			# Dedupe on (CI, deadline) — same shape as uzex_poll._notify. The
+			# deadline is the fact that changes: a re-run against the same CI
+			# with the same eta_transit_port must produce the same subject
+			# (already exists -> skip), but a corrected ETA is a genuinely new
+			# deadline and must still alert.
+			subject = f"Upcoming Payment Deadline for CI {ci.name}: {deadline}"
+			if frappe.db.exists("Notification Log", {"document_name": ci.name, "subject": subject}):
+				continue
+
 			msg = (
 				f"⚠️ <b>İthalat Ödeme Uyarısı</b>\n"
 				f"Ticari Fatura: <code>{ci.name}</code>\n"
@@ -44,7 +53,9 @@ def check_upcoming_deadlines():
 			try:
 				notification = frappe.new_doc("Notification Log")
 				notification.for_user = "Administrator"
-				notification.subject = f"Upcoming Payment Deadline for CI {ci.name}"
+				notification.subject = subject
+				notification.document_type = "Commercial Invoice"
+				notification.document_name = ci.name
 				notification.email_content = msg
 				notification.insert(ignore_permissions=True)
 			except Exception:
