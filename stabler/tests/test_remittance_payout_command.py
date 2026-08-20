@@ -53,7 +53,7 @@ _FAKED = (
 	"stabler.api._common",
 	"stabler.api.approvals",
 	"stabler.api.money",
-	"stabler.api.remittance",
+	"stabler.api._remittance_pickup_code",
 	"stabler.api.remittance_accounting",
 )
 
@@ -294,7 +294,7 @@ def _load(db: _FakeDB, *, roles=("Remittance Cashier",)):
 
 	# The REAL hashing helpers, imported against the stubs above. A faked compare
 	# would make every pickup-code assertion below a tautology.
-	remittance = importlib.import_module("stabler.api.remittance")
+	remittance = importlib.import_module("stabler.api._remittance_pickup_code")
 
 	accounting = types.ModuleType("stabler.api.remittance_accounting")
 
@@ -311,7 +311,9 @@ def _load(db: _FakeDB, *, roles=("Remittance Cashier",)):
 	# posted anything here would only make a payout test lie about a refund.
 	accounting.post_refund = lambda transfer, **_k: {"journal_entry": "JE-REM-0003"}
 
-	_SANDBOX.install({"stabler.api.remittance": remittance, "stabler.api.remittance_accounting": accounting})
+	_SANDBOX.install(
+		{"stabler.api._remittance_pickup_code": remittance, "stabler.api.remittance_accounting": accounting}
+	)
 	return importlib.import_module(_MODULE), remittance
 
 

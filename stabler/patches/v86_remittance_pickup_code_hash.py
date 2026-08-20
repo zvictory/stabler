@@ -3,7 +3,7 @@
 `create_remittance()` wrote the pickup code straight into the hidden
 `stabler_pickup_code` custom field, so anyone who could open the register Journal
 Entry could read the code that collects the cash. The field is now written as
-`scheme$salt$digest` (see `stabler.api.remittance.store_pickup_code`) and payout
+`scheme$salt$digest` (see `stabler.api._remittance_pickup_code.store_pickup_code`) and payout
 compares digests, so every pre-existing plaintext value has to be converted or the
 transfer becomes unpayable.
 
@@ -25,7 +25,7 @@ import secrets
 
 import frappe
 
-from stabler.api.remittance import hash_pickup_code, is_hashed_pickup_code
+from stabler.api._remittance_pickup_code import hash_pickup_code, is_hashed_pickup_code
 
 _SALT_BYTES = 16
 

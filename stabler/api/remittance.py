@@ -34,16 +34,19 @@ cross-company corridor can settle via a due-to/due-from without reshaping the st
 
 from __future__ import annotations
 
-import hashlib
-import hmac
-import secrets
-
 import frappe
 from frappe.model.naming import make_autoname
 from frappe.utils import flt, getdate
 
 from stabler.api import _remittance_actions as _actions
 from stabler.api._common import _assert_can_read, _require_company
+from stabler.api._remittance_pickup_code import (
+	_gen_pickup_code,
+	_pickup_code_matches,
+	hash_pickup_code,
+	is_hashed_pickup_code,
+	store_pickup_code,
+)
 from stabler.api.approvals import _assert_company_scope
 from stabler.api.money import (
 	_date_filters,
@@ -61,59 +64,10 @@ CORRIDORS = [
 
 REMITTANCE_CURRENCIES = ["USD", "EUR", "USDT"]
 
-# Pickup-code alphabet: uppercase + digits minus ambiguous glyphs (0/O, 1/I).
-_CODE_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"
-_CODE_LEN = 8
-
-# The stored code is readable by anyone who can open the Journal Entry, so it is
-# kept as a salted digest and never in plaintext: `scheme$salt$digest`. Per-record
-# salts rather than a site-wide pepper — a missing conf key on any of the seven
-# tenants would break every payout at once.
-_CODE_SCHEME = "s1"
-_CODE_SALT_BYTES = 16
-
 
 # --------------------------------------------------------------------------- #
 # Helpers
 # --------------------------------------------------------------------------- #
-def _gen_pickup_code() -> str:
-	return "".join(secrets.choice(_CODE_ALPHABET) for _ in range(_CODE_LEN))
-
-
-def hash_pickup_code(code: str, salt: str) -> str:
-	"""Storage form of a pickup code: `scheme$salt$digest`.
-
-	Shared with the migration patch that hashes pre-existing plaintext values,
-	so both sides derive the digest exactly the same way.
-	"""
-	digest = hashlib.sha256(f"{salt}{code.strip().upper()}".encode()).hexdigest()
-	return f"{_CODE_SCHEME}${salt}${digest}"
-
-
-def store_pickup_code(code: str) -> str:
-	"""Hash a freshly generated code under a new random salt."""
-	return hash_pickup_code(code, secrets.token_hex(_CODE_SALT_BYTES))
-
-
-def is_hashed_pickup_code(stored: str) -> bool:
-	parts = (stored or "").strip().split("$")
-	return len(parts) == 3 and parts[0] == _CODE_SCHEME and bool(parts[1]) and bool(parts[2])
-
-
-def _pickup_code_matches(stored: str, provided: str) -> bool:
-	"""Constant-time compare of the provided code against the stored digest.
-
-	A plaintext (unmigrated) stored value never matches — accepting one would
-	reinstate exactly the defect this replaces.
-	"""
-	stored = (stored or "").strip()
-	provided = (provided or "").strip().upper()
-	if not stored or not provided or not is_hashed_pickup_code(stored):
-		return False
-	salt = stored.split("$")[1]
-	return hmac.compare_digest(hash_pickup_code(provided, salt), stored)
-
-
 def _gen_remittance_id(company: str) -> str:
 	abbr = frappe.db.get_value("Company", company, "abbr") or "REM"
 	return make_autoname(f"REM-{abbr}-.YYYY.-.#####")

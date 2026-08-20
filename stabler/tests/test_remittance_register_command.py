@@ -154,7 +154,7 @@ def _load(db: _FakeDB):
 		"frappe.utils",
 		"stabler.api._common",
 		"stabler.api.approvals",
-		"stabler.api.remittance",
+		"stabler.api._remittance_pickup_code",
 		"stabler.api.remittance_accounting",
 	)
 
@@ -195,11 +195,11 @@ def _load(db: _FakeDB):
 	# Imported by the payout command, which shares this module with register.
 	approvals._APPROVER_ROLES = ("Accounts Manager", "System Manager", "Stabler Admin")
 
-	remittance = types.ModuleType("stabler.api.remittance")
-	remittance._gen_pickup_code = lambda: "ABC123"
-	remittance.store_pickup_code = lambda code: f"sha256$salt${code}"
-	remittance.is_hashed_pickup_code = lambda stored: bool(stored)
-	remittance._pickup_code_matches = lambda stored, provided: False
+	pickup_code = types.ModuleType("stabler.api._remittance_pickup_code")
+	pickup_code._gen_pickup_code = lambda: "ABC123"
+	pickup_code.store_pickup_code = lambda code: f"sha256$salt${code}"
+	pickup_code.is_hashed_pickup_code = lambda stored: bool(stored)
+	pickup_code._pickup_code_matches = lambda stored, provided: False
 
 	accounting = types.ModuleType("stabler.api.remittance_accounting")
 
@@ -223,7 +223,7 @@ def _load(db: _FakeDB):
 			"frappe.utils": utils,
 			"stabler.api._common": common,
 			"stabler.api.approvals": approvals,
-			"stabler.api.remittance": remittance,
+			"stabler.api._remittance_pickup_code": pickup_code,
 			"stabler.api.remittance_accounting": accounting,
 		}
 	)

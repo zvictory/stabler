@@ -45,7 +45,7 @@ from frappe.tests.utils import FrappeTestCase
 from frappe.utils import add_days, nowdate
 
 from stabler.api._common import check_concurrency
-from stabler.api.remittance import is_hashed_pickup_code
+from stabler.api._remittance_pickup_code import is_hashed_pickup_code
 from stabler.api.remittance_accounting import (
 	_base_precision,
 	post_payout,

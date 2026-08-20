@@ -43,6 +43,8 @@ _V33 = os.path.join(_PATCHES_DIR, "v33_remittance_stage_fields.py")
 
 _SANDBOX = ModuleSandbox()
 
+_CRYPTO = "stabler.api._remittance_pickup_code"
+
 _FAKED = (
 	"stabler.api.remittance",
 	"frappe",
@@ -115,11 +117,22 @@ def _load_api():
 	return importlib.import_module("stabler.api.remittance")
 
 
+def _load_crypto():
+	"""The pickup-code helpers, imported directly.
+
+	No stubs: since the move out of `stabler.api.remittance` this module imports
+	nothing but the standard library, so the whole fake-frappe apparatus above is
+	needed only by the two tests that read the legacy endpoints' signatures.
+	"""
+	_SANDBOX.evict(_CRYPTO)
+	return importlib.import_module(_CRYPTO)
+
+
 class PickupCodeStorage(unittest.TestCase):
 	"""What lands in the Journal Entry field must not let anyone collect the cash."""
 
 	def setUp(self):
-		self.api = _load_api()
+		self.api = _load_crypto()
 
 	def test_stored_value_does_not_contain_the_code(self):
 		# The original defect in one line: the field held the code itself.
@@ -176,12 +189,36 @@ class PickupCodeStorage(unittest.TestCase):
 			self.api._pickup_code_matches(self.api.hash_pickup_code("ABCD2345", salt), "ABCD2345")
 		)
 
+	def test_a_lowercase_legacy_code_still_opens_the_drawer_after_migration(self):
+		"""`hash_pickup_code` folds case, and v86 is the only caller that needs it to.
+
+		The other two callers hand it something already uppercase — a
+		server-generated code from `store_pickup_code`, or a receiver's input that
+		`_pickup_code_matches` has already folded — so the `.upper()` reads as dead
+		and the test above cannot see it either, because it passes an uppercase
+		literal on both sides.
+
+		The caller that needs it is the migration. v86 hashes whatever plaintext
+		the tenant already had in `stabler_pickup_code`, and nothing ever forced
+		that value to be uppercase. Drop the fold and every migrated lowercase code
+		is hashed one way and verified the other — the transfer stays payable in
+		the database and unpayable at the counter, with no error to trace it by.
+
+		Measured 2026-08-20: removing `.upper()` from `hash_pickup_code` left the
+		whole remittance suite green until this test existed.
+		"""
+		salt = "0123456789abcdef0123456789abcdef"
+		migrated = self.api.hash_pickup_code("abcd2345", salt)
+		self.assertTrue(self.api._pickup_code_matches(migrated, "ABCD2345"))
+		self.assertTrue(self.api._pickup_code_matches(migrated, "abcd2345"))
+
 
 class PickupCodeGeneration(unittest.TestCase):
 	"""The server chooses the code. Always."""
 
 	def setUp(self):
 		self.api = _load_api()
+		self.crypto = _load_crypto()
 
 	def test_register_does_not_accept_a_caller_supplied_code(self):
 		# A caller who can choose the code can agree it with a receiver in
@@ -194,11 +231,11 @@ class PickupCodeGeneration(unittest.TestCase):
 		self.assertIn("pickup_code", params)
 
 	def test_generated_codes_avoid_ambiguous_glyphs_and_repeat(self):
-		codes = {self.api._gen_pickup_code() for _ in range(50)}
+		codes = {self.crypto._gen_pickup_code() for _ in range(50)}
 		self.assertGreater(len(codes), 1)
 		for code in codes:
 			self.assertEqual(len(code), 8)
-			self.assertTrue(set(code) <= set(self.api._CODE_ALPHABET))
+			self.assertTrue(set(code) <= set(self.crypto._CODE_ALPHABET))
 			# 0/O and 1/I are the pairs a receiver reads back wrongly over the phone.
 			self.assertFalse(set(code) & set("01OI"))
 
