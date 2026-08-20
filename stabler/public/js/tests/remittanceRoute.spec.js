@@ -12,7 +12,7 @@ import { currencyLegs, routeDeskLabel, routeLabel } from "../composables/remitta
  */
 describe("how one desk is written", () => {
 	it("leads with the city, which is the opposite of the desk selector", () => {
-		// NewRemittanceV1's own `deskLabel` writes `TAS-C — Tashkent` for the
+		// NewRemittance's own `deskLabel` writes `TAS-C — Tashkent` for the
 		// SELECTOR, where the cashier is picking a branch code. A route is read as
 		// places before codes, so this order is deliberate and not a mistake to be
 		// tidied up into agreement with the other one.

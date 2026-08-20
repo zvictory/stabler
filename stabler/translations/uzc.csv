@@ -80,6 +80,7 @@ Absent,Йўқ
 Add at least one cash desk before switching {0} to the V1 engine: V1 reads every cash account from this table and cannot register a transfer without one.,{0} ни V1 механизмига ўтказишдан олдин камида битта касса қўшинг: V1 барча касса ҳисобларини шу жадвалдан ўқийди ва усиз ўтказмани рўйхатга ололмайди.
 Agreement {0} cannot move from {1} to {2}.,{0} шартномаси {1} ҳолатидан {2} ҳолатига ўта олмайди.
 Agreement {0} is closed ({1}) and cannot be rescheduled.,{0} шартномаси ёпиқ ({1}) ва қайта режалаштириб бўлмайди.
+"Add at least one cash desk for {0}: every cash account comes from this table, and without a row the register desk cannot take a transfer.","{0} учун камида битта касса қўшинг: ҳар бир нақд ҳисоб шу жадвалдан олинади ва сатрсиз рўйхатга олиш кассаси ўтказмани қабул қила олмайди."
 "Box counts cannot be saved on this site: {0} missing on {1}. An administrator must re-run patch {2}; bench migrate will not, it has already run once.","Бу сайтда қути сонини сақлаб бўлмайди: {1} да {0} йўқ. Администратор {2} патчини қайта ишга тушириши керак; bench migrate буни қилмайди, у аллақачон ишлаган."
 Apply to all lines,Барча қаторларга қўллаш
 Check the code,Кодни текшириш
@@ -92,7 +93,6 @@ Exchange rates,Валюта курслари
 I have checked {receiver}'s identity document.,{receiver} шахсини тасдиқловчи ҳужжатни текширдим.
 I have counted {amount} and am handing it back to {sender}.,{amount} миқдорини санадим ва {sender}га қайтариб беряпман.
 I have written it down,Ёзиб олдим
-"Legacy posts journal entries from the New Transfer form it always has. V1 registers a Remittance Transfer and is the only engine where the payout, refund, operations and reconciliation screens exist.","Legacy ўзининг доимий ""Янги ўтказма"" формасидан журнал ёзувларини киритади. V1 эса Remittance Transfer ёзувини рўйхатга олади ва тўлов, қайтариш, операциялар ва солиштириш экранлари фақат шу механизмда мавжуд."
 Journal entry,Журнал ёзуви
 Legacy — journal entry screens,Legacy — журнал ёзуви экранлари
 Lines disagree,Қаторлар мос келмайди
@@ -117,7 +117,6 @@ This company runs the {engine} remittance engine. The Transfer V1 screens stay u
 This entry does not balance. Do not hand over cash — report it.,Бу проводка тенглашмаяпти. Нақд пул берманг — хабар беринг.
 This will post,Қуйидагилар китобга ўтказилади
 Transfer registered,Пул ўтказмаси рўйхатга олинди
-"Transfers registered on V1 stay in their own records and are not shown by the legacy list, which reads journal entries.",V1 да рўйхатга олинган ўтказмалар ўз ёзувларида қолади ва журнал ёзувларини ўқийдиган эски рўйхатда кўринмайди.
 Transfers registered on the legacy engine stay on the legacy list and are not shown by the V1 screens: they have no Remittance Transfer record behind them.,Legacy механизмида рўйхатга олинган ўтказмалар эски рўйхатда қолади ва V1 экранларида кўринмайди: улар ортида Remittance Transfer ёзуви йўқ.
 V1 — operations centre,V1 — операциялар маркази
 What the customer pays,Мижоз нима тўлайди
@@ -1664,6 +1663,8 @@ Due Date,Мўлжалланган сана
 Due date,Мўлжалланган сана
 due date is today,муддати бугун
 due date passed — act today,муддат ўтди — бугун ҳаракат
+"Every cash account comes from the desk table. Add at least one desk before saving.","Ҳар бир нақд ҳисоб касса жадвалидан олинади. Сақлашдан олдин камида битта касса қўшинг."
+"Journal Entry is missing {1} on this site, so a remittance voucher cannot be told apart from any other and the cancel guard would let it be cancelled. Run `bench --site <site> migrate` to create the fields before configuring remittance for {0}.","Бу сайтда Journal Entry'да {1} йўқ, шунинг учун ўтказма ёзувини бошқасидан ажратиб бўлмайди ва бекор қилиш қўриқчиси уни бекор қилишга йўл қўяди. {0} учун ўтказмани созлашдан олдин майдонларни яратиш учун `bench --site <site> migrate` ни ишга туширинг."
 "due date passed, still open","муддат ўтди, ҳали очиқ"
 Due today,Бугун тугаши керак
 Duplicate,

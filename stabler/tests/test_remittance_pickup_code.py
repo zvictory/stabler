@@ -29,9 +29,7 @@ from __future__ import annotations
 
 import ast
 import importlib
-import inspect
 import os
-import types
 import unittest
 
 from stabler.tests.module_sandbox import ModuleSandbox
@@ -45,76 +43,21 @@ _SANDBOX = ModuleSandbox()
 
 _CRYPTO = "stabler.api._remittance_pickup_code"
 
-_FAKED = (
-	"stabler.api.remittance",
-	"frappe",
-	"frappe.model",
-	"frappe.model.naming",
-	"frappe.utils",
-	"stabler.api._common",
-	"stabler.api.approvals",
-	"stabler.api.money",
-)
+#: Read as source, not imported: the surviving register and payout endpoints live
+#: in `remittance_commands`, which pulls in frappe, the money module and the
+#: accounting module at import time. The question here is only what their
+#: signatures accept, and `ast` answers that without a bench.
+_COMMANDS_SRC = os.path.join(_PKG, "api", "remittance_commands.py")
 
 
-def tearDownModule():
-	"""The fakes below are process-wide — hand ``sys.modules`` back intact."""
-	_SANDBOX.restore()
-
-
-def _load_api():
-	"""Import the remittance API against stubs.
-
-	Only the pickup-code helpers are exercised and they touch nothing but the
-	standard library, so every stub below exists purely to satisfy the module's
-	import line.
-	"""
-	_SANDBOX.evict(*_FAKED)
-
-	frappe = types.ModuleType("frappe")
-	frappe.whitelist = lambda *_a, **_k: lambda fn: fn
-
-	model = types.ModuleType("frappe.model")
-	naming = types.ModuleType("frappe.model.naming")
-	naming.make_autoname = lambda *_a, **_k: ""
-	model.naming = naming
-	frappe.model = model
-
-	utils = types.ModuleType("frappe.utils")
-	utils.flt = float
-	utils.getdate = lambda value=None: value
-	frappe.utils = utils
-
-	common = types.ModuleType("stabler.api._common")
-	common._assert_can_read = lambda *_a, **_k: None
-	common._require_company = lambda *_a, **_k: None
-
-	approvals = types.ModuleType("stabler.api.approvals")
-	approvals._assert_company_scope = lambda *_a, **_k: None
-
-	money = types.ModuleType("stabler.api.money")
-	for name in (
-		"_date_filters",
-		"_round2",
-		"_validate_account",
-		"bank_cash_accounts",
-		"get_exchange_rate_for_currencies",
-		"journal_entry_detail",
-	):
-		setattr(money, name, lambda *_a, **_k: None)
-
-	_SANDBOX.install(
-		{
-			"frappe": frappe,
-			"frappe.model": model,
-			"frappe.model.naming": naming,
-			"frappe.utils": utils,
-			"stabler.api._common": common,
-			"stabler.api.approvals": approvals,
-			"stabler.api.money": money,
-		}
-	)
-	return importlib.import_module("stabler.api.remittance")
+def _params(path: str, func: str) -> list[str]:
+	with open(path, encoding="utf-8") as fh:
+		tree = ast.parse(fh.read())
+	for node in tree.body:
+		if isinstance(node, ast.FunctionDef) and node.name == func:
+			args = node.args
+			return [a.arg for a in (*args.posonlyargs, *args.args, *args.kwonlyargs)]
+	raise AssertionError(f"{func} is not defined in {path}")
 
 
 def _load_crypto():
@@ -217,17 +160,16 @@ class PickupCodeGeneration(unittest.TestCase):
 	"""The server chooses the code. Always."""
 
 	def setUp(self):
-		self.api = _load_api()
 		self.crypto = _load_crypto()
 
 	def test_register_does_not_accept_a_caller_supplied_code(self):
 		# A caller who can choose the code can agree it with a receiver in
 		# advance, which makes verification at payout meaningless.
-		params = inspect.signature(self.api.create_remittance).parameters
+		params = _params(_COMMANDS_SRC, "register_remittance")
 		self.assertNotIn("pickup_code", params)
 
 	def test_payout_still_takes_the_code_the_receiver_presents(self):
-		params = inspect.signature(self.api.payout_remittance).parameters
+		params = _params(_COMMANDS_SRC, "payout_transfer")
 		self.assertIn("pickup_code", params)
 
 	def test_generated_codes_avoid_ambiguous_glyphs_and_repeat(self):
@@ -261,8 +203,10 @@ class JournalEntryDigestIsNotReadable(unittest.TestCase):
 
 	`Remittance Transfer.pickup_code_hash` is at permlevel 1 and pinned by
 	`test_remittance_transfer_doctype`. This is the other field holding the same
-	digest — written by the LEGACY register path, which is the path every company
-	runs while `remittance_engine` defaults to Legacy.
+	digest, written onto the Journal Entry by the register leg. The JE-only engine
+	that first wrote it was retired on 2026-08-20; the field, the digests already
+	in it, and every role that can read a Journal Entry are all still here, so the
+	permlevel is still the only thing holding this door.
 	"""
 
 	def test_the_custom_field_is_defined_at_permlevel_1(self):

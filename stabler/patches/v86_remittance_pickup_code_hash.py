@@ -13,7 +13,8 @@ after this runs, the plaintext exists nowhere.
 
 Operational consequence, logged below rather than assumed away: for a transfer that
 is registered but not yet paid out, the plaintext in this field was the only copy the
-business still held (`NewRemittance.vue` discards the code the API returns). Those
+business still held (the legacy New Transfer form discarded the code the API
+returned; both it and the engine behind it were retired on 2026-08-20). Those
 receivers can no longer be verified by code and need a refund or a manager override.
 The patch prints that count so the number is on the record.
 

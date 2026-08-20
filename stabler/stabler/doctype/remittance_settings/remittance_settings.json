@@ -5,7 +5,6 @@
 	"engine": "InnoDB",
 	"field_order": [
 		"company",
-		"remittance_engine",
 		"section_company_accounts",
 		"receiver_obligation_account",
 		"deferred_commission_account",
@@ -20,7 +19,6 @@
 	],
 	"fields": [
 		{"fieldname": "company", "fieldtype": "Link", "options": "Company", "reqd": 1, "unique": 1, "in_standard_filter": 1},
-		{"description": "Legacy keeps the journal-entry screens this company already used. V1 switches it to the Transfer V1 operations centre, which is the only mode where the payout, refund and reconciliation screens exist. Leave it on Legacy until the three accounts above and every cash desk below are set: V1 refuses to register a transfer without them.", "fieldname": "remittance_engine", "fieldtype": "Select", "label": "Remittance Engine", "options": "Legacy\nV1", "default": "Legacy", "reqd": 1, "in_list_view": 1},
 
 		{"fieldname": "section_company_accounts", "fieldtype": "Section Break", "label": "Company Accounts"},
 		{"fieldname": "receiver_obligation_account", "fieldtype": "Link", "label": "Receiver Obligation", "options": "Account", "reqd": 1},

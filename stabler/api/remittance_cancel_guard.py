@@ -26,11 +26,14 @@ state with it — was rejected on two counts:
    has left the drawer and the receiver has it. No state transition makes them
    hand it back, so "cancel the payout entry" would silently assert a refund that
    never happened.
-2. *It cannot cover the legacy transfers.* The JE-only model in `api/remittance.py`
-   has no master row to move — a state-carrying reversal would guard the new
-   `Remittance Transfer` rows and leave the hole open for every transfer booked
-   before them. This refusal keys on `stabler_remittance_id`, which both models
-   write, so it closes both.
+2. *It cannot cover the legacy vouchers.* The JE-only engine had no master row to
+   move — a state-carrying reversal would guard the `Remittance Transfer` rows and
+   leave the hole open for every transfer booked before them. That engine was
+   retired on 2026-08-20, but retiring an engine does not retire its vouchers:
+   a Journal Entry stamped by it is still on disk, still submitted, and still
+   cancellable. This refusal keys on `stabler_remittance_id`, which both engines
+   wrote, so it closes both — and the older half is now the half with no code left
+   to explain it.
 
 **What the message may promise, measured rather than assumed — and it has been
 wrong in both directions.** The first draft sent the operator to "post a Refund
@@ -47,9 +50,10 @@ when one exists is not the safe direction; it is the same defect facing the othe
 way, and it sends an operator to a person when a button would have done.
 
 **So the branch is keyed on what can actually be reversed, not on the stage
-alone.** Both engines stamp all three stages (`api/remittance.py:399/520/637`;
-`remittance_accounting.py:220`), so the stage does not say which model a voucher
-belongs to. `_is_refundable_from_a_screen` asks the transfer row instead, using
+alone.** Both engines stamped all three stages — the retired one inline, the
+surviving one through `remittance_accounting.py:220` — so the stage does not say
+which model a voucher belongs to, and no amount of reading the field will make it.
+`_is_refundable_from_a_screen` asks the transfer row instead, using
 `_assert_refundable`'s own precondition (`remittance_commands.py:941`) — still
 `Registered`, still `Posted`. A paid-out transfer, an already-refunded one, and a
 legacy JE-only remittance with no master row all fail it, and all three get the
@@ -65,14 +69,12 @@ row lock and the approval separation live; its SPA action is slice 4. Writing it
 here would have collided with that slice and pre-empted a design decision that was
 not this bead's to make. So this module fixes the promise, not the product.
 
-**The exit named is escalation, and it exists.** Nothing an operator can click
-reverses a transfer, so the message says that plainly and sends them to someone
-who has a server-side route: `refund_remittance` for the legacy model,
-`post_refund` for the new one, and — where a cancel really is the right answer —
-the `BYPASS_FLAG` below. The message is **branched by stage** because the two
-cases differ in kind: for a Register-stage voucher a refund is the correct
-reversal and merely has no button yet, while for a Payout-stage voucher no
-reversal exists at any layer, so that branch must not hint at one.
+**Where escalation is still the only exit, it exists.** For everything
+`_is_refundable_from_a_screen` refuses, no screen can help, so the message sends
+the operator to someone with a server-side route: `post_refund` for a transfer
+that has one, and — where a cancel really is the right answer — the `BYPASS_FLAG`
+below. A cancel is never silently allowed; it is only ever taken deliberately, by
+someone who typed the flag.
 
 **The ops door is an explicit flag, not an exemption.** `desk_write_guard` exempts
 System Managers and headless contexts because it is a UX layer. Both exemptions
@@ -94,12 +96,13 @@ from frappe import _
 # The escape hatch, named once so `rg` finds every use of it.
 BYPASS_FLAG = "ignore_remittance_cancel_guard"
 
-# The value both writers put in `stabler_remittance_stage` for a payout leg, and
-# they do not write it the same way: the legacy model stamps the literal inline
-# (`api/remittance.py:519`), while the new one stamps `_build_entry`'s `stage`
-# argument (`api/remittance_accounting.py:220`), which `post_payout` (`:287`)
-# feeds from the module constant `PAYOUT` (`:57`). A test walks both paths — get
-# this string wrong and the payout branch silently degrades to the milder message.
+# The value written into `stabler_remittance_stage` for a payout leg. The surviving
+# writer stamps `_build_entry`'s `stage` argument (`api/remittance_accounting.py:220`),
+# which `post_payout` (`:287`) feeds from the module constant `PAYOUT` (`:57`); a test
+# walks that path, because reading the constant alone would still pass on the day
+# `post_payout` stopped handing it over. The retired JE-only engine wrote the same
+# literal, which is why its vouchers still land in this branch. Get the string wrong
+# and the payout branch silently degrades to the milder message.
 PAYOUT_STAGE = "Payout"
 
 

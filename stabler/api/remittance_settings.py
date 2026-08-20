@@ -10,14 +10,12 @@ primary button on the page, and got an honest sentence saying the endpoint had n
 shipped. Honest, and useless — the state the screen exists to repair could not be
 repaired from the screen.
 
-**Why the engine is written here and not "operationally".** `remittance_engine`
-ships as `Legacy` on every company and v90 writes `Legacy` onto every existing row.
-Every Transfer V1 screen is gated on it. Nothing in the SPA could set it, and
-`CLAUDE.md` forbids sending a user to the Frappe Desk, so the entire V1 surface —
-operations centre, payout desk, refund chain, reconciliation — was unreachable on
-all seven tenants and would have stayed unreachable until somebody ran an UPDATE by
-hand on a bench console. A rollout decision still has to be *taken* somewhere; this
-is where it is *recorded*.
+**The engine flag this module used to write is gone.** `remittance_engine` chose
+between the JE-only engine and Transfer V1, and every Transfer V1 screen was gated
+on it. The JE-only engine was retired on 2026-08-20 with no tenant running it, so
+the choice had one option left and the flag was removed with it. What survives is
+the readiness check below, which was the more useful half all along: it never
+answered "which engine", it answered "can this company take a transfer at all".
 
 **One gate, and it is the doctype's.** No role list is written here. The parent doc
 is saved with permissions ON, so `write` (and `create` on the first save) is what
@@ -46,16 +44,9 @@ from stabler.api.approvals import _assert_company_scope
 
 SETTINGS = "Remittance Settings"
 
-#: `remittance_engine` Select options, verbatim from the doctype JSON. A value
-#: outside this pair is refused rather than stored: the SPA gate and the whole V1
-#: route set branch on an exact string match against "V1", so a typo would not fail,
-#: it would silently mean Legacy forever.
-ENGINES = ("Legacy", "V1")
-
 #: The parent fields this endpoint accepts. An allow-list, not a filter over the
 #: request: an unlisted key is ignored, so a client cannot reach a field that is not
-#: on the form — `company` and `remittance_engine` included, both of which are
-#: handled explicitly below.
+#: on the form — `company` included, which is handled explicitly below.
 _PARENT_FIELDS = (
 	"receiver_obligation_account",
 	"deferred_commission_account",
@@ -88,9 +79,6 @@ def save_remittance_settings(company: str, payload: str | dict) -> dict:
 		if field in data:
 			doc.set(field, _blank_to_none(data[field]))
 
-	if "remittance_engine" in data:
-		doc.remittance_engine = _validated_engine(data["remittance_engine"])
-
 	if "cash_desk_accounts" in data:
 		doc.set("cash_desk_accounts", [])
 		for row in data["cash_desk_accounts"] or []:
@@ -98,15 +86,17 @@ def save_remittance_settings(company: str, payload: str | dict) -> dict:
 
 	# Checked before the save so the refusal names the missing piece, instead of the
 	# first transfer of the day failing at the counter with the customer present.
-	if doc.remittance_engine == "V1":
-		_assert_ready_for_v1(doc)
+	# Unconditional since the engine flag was retired: it used to run only when a
+	# company was being switched to V1, which was the only remaining engine, so on
+	# the fleet as it stands this changed nothing — but the check outlived its
+	# trigger and had to be given a new one or quietly stop running.
+	_assert_ready_for_remittance(doc)
 
 	# Permissions deliberately NOT ignored: this is the whole role gate.
 	doc.save()
 
 	return {
 		"company": doc.company,
-		"remittance_engine": doc.remittance_engine,
 		"name": doc.name,
 		"modified": doc.modified,
 	}
@@ -146,31 +136,24 @@ def _blank_to_none(value):
 	return value
 
 
-def _validated_engine(value) -> str:
-	engine = str(value or "").strip()
-	if engine not in ENGINES:
-		frappe.throw(
-			_("{0} is not a remittance engine. Choose one of: {1}.").format(
-				engine or _("(empty)"), ", ".join(ENGINES)
-			)
-		)
-	return engine
-
-
 #: The Journal Entry fields `remittance_cancel_guard` reads to recognise one of its
 #: own vouchers. Created by `v33_remittance_stage_fields`, and by nothing else.
 _GUARD_FIELDS = ("stabler_remittance_id", "stabler_remittance_stage")
 
 
-def _assert_ready_for_v1(doc) -> None:
-	"""Refuse to switch a company to V1 while V1 cannot register a transfer, or
-	while nothing can protect the vouchers it posts.
+def _assert_ready_for_remittance(doc) -> None:
+	"""Refuse to save a configuration that cannot register a transfer, or that
+	nothing can protect the vouchers of.
+
+	This ran only on the switch to V1 until the engine flag was retired
+	(2026-08-20). It was never really about the engine: both checks ask whether
+	this company and this site can take a transfer at all, and the answer does not
+	depend on which engine asked.
 
 	The three accounts are `reqd` on the doctype, so Frappe already refuses those.
 	The desk table is not: without a row, `get_desk_account` throws at register time
-	— which is to say, at the counter, with the cash already counted. A rollout that
-	cannot take a transfer is not a rollout, so it is refused at the moment it is
-	requested instead.
+	— which is to say, at the counter, with the cash already counted. A configuration
+	that cannot take a transfer is refused at the moment it is saved instead.
 
 	The stage fields are the same rule one layer down, and their absence is SILENT
 	on both sides. `_build_entry` sets `stabler_remittance_id` on every voucher it
@@ -185,9 +168,9 @@ def _assert_ready_for_v1(doc) -> None:
 	if not (doc.cash_desk_accounts or []):
 		frappe.throw(
 			_(
-				"Add at least one cash desk before switching {0} to the V1 engine: "
-				"V1 reads every cash account from this table and cannot register a "
-				"transfer without one."
+				"Add at least one cash desk for {0}: every cash account comes from "
+				"this table, and without a row the register desk cannot take a "
+				"transfer."
 			).format(doc.company)
 		)
 
@@ -199,6 +182,6 @@ def _assert_ready_for_v1(doc) -> None:
 				"Journal Entry is missing {1} on this site, so a remittance voucher "
 				"cannot be told apart from any other and the cancel guard would let it "
 				"be cancelled. Run `bench --site <site> migrate` to create the fields "
-				"before switching {0} to the V1 engine."
+				"before configuring remittance for {0}."
 			).format(doc.company, ", ".join(missing))
 		)

@@ -106,6 +106,7 @@ Aged open obligations,Aged open obligations
 Agreement {0} cannot move from {1} to {2}.,Agreement {0} cannot move from {1} to {2}.
 Agreement {0} is closed ({1}) and cannot be rescheduled.,Agreement {0} is closed ({1}) and cannot be rescheduled.
 All cash desks,All cash desks
+"Add at least one cash desk for {0}: every cash account comes from this table, and without a row the register desk cannot take a transfer.","Add at least one cash desk for {0}: every cash account comes from this table, and without a row the register desk cannot take a transfer."
 "All time · the same balance as the card above, split by desk","All time · the same balance as the card above, split by desk"
 Amount the sender hands over,Amount the sender hands over
 An exchange rate is required to register a transfer.,An exchange rate is required to register a transfer.
@@ -202,6 +203,7 @@ Exceptions only,Exceptions only
 Exceptions: any,Exceptions: any
 Exchange rates,Exchange rates
 Exclude exceptions,Exclude exceptions
+"Every cash account comes from the desk table. Add at least one desk before saving.","Every cash account comes from the desk table. Add at least one desk before saving."
 "Exclusive: you type the principal, and the commission is added on top.","Exclusive: you type the principal, and the commission is added on top."
 Expiration time,Expiration time
 Expired / refund required,Expired / refund required
@@ -240,13 +242,13 @@ Invalid username or password. Please check your credentials.,Invalid username or
 Journal entry,Journal entry
 Last modified,Last modified
 Leave blank for the default,Leave blank for the default
-"Legacy posts journal entries from the New Transfer form it always has. V1 registers a Remittance Transfer and is the only engine where the payout, refund, operations and reconciliation screens exist.","Legacy posts journal entries from the New Transfer form it always has. V1 registers a Remittance Transfer and is the only engine where the payout, refund, operations and reconciliation screens exist."
 Legacy — journal entry screens,Legacy — journal entry screens
 Liability accounts,Liability accounts
 Lines disagree,Lines disagree
 Locked pickup code,Locked pickup code
 Lockout (minutes),Lockout (minutes)
 Manager Cockpit,Manager Cockpit
+"Journal Entry is missing {1} on this site, so a remittance voucher cannot be told apart from any other and the cancel guard would let it be cancelled. Run `bench --site <site> migrate` to create the fields before configuring remittance for {0}.","Journal Entry is missing {1} on this site, so a remittance voucher cannot be told apart from any other and the cancel guard would let it be cancelled. Run `bench --site <site> migrate` to create the fields before configuring remittance for {0}."
 "Marked paid out, but the transfer names no payout journal entry.","Marked paid out, but the transfer names no payout journal entry."
 "Marked posted, but the transfer names no register journal entry.","Marked posted, but the transfer names no register journal entry."
 "Marked refunded, but the transfer names no refund journal entry.","Marked refunded, but the transfer names no refund journal entry."
@@ -450,7 +452,6 @@ The pickup code is locked after {attempts} of {max} failed attempts. A refund do
 "The pickup code itself is shown once, on the registration receipt, and is never retrievable again.","The pickup code itself is shown once, on the registration receipt, and is never retrievable again."
 "The refund decision, independent of the rest.","The refund decision, independent of the rest."
 The refund is posted and the cash has gone back.,The refund is posted and the cash has gone back.
-"The remittance engine field has not been deployed on this site yet, so which engine this company runs cannot be read here.","The remittance engine field has not been deployed on this site yet, so which engine this company runs cannot be read here."
 "The server decides this from the transfer state and your role. Operational status is {operational}, accounting status is {accounting}, refund status is {refund}.","The server decides this from the transfer state and your role. Operational status is {operational}, accounting status is {accounting}, refund status is {refund}."
 The server did not return a pickup code for this call. Do not hand over cash against this transfer until a Finance Manager has checked it.,The server did not return a pickup code for this call. Do not hand over cash against this transfer until a Finance Manager has checked it.
 The settings payload could not be read.,The settings payload could not be read.
@@ -498,7 +499,6 @@ Transfer {0} is {1}: there is no posted obligation to reverse.,Transfer {0} is {
 Transfer {0} is {1}; there is no pickup left to unlock.,Transfer {0} is {1}; there is no pickup left to unlock.
 Transfer {0} was not found.,Transfer {0} was not found.
 Transfer {reference} becomes payable again and the attempt counter goes back to zero. The unlock is recorded against your name.,Transfer {reference} becomes payable again and the attempt counter goes back to zero. The unlock is recorded against your name.
-"Transfers registered on V1 stay in their own records and are not shown by the legacy list, which reads journal entries.","Transfers registered on V1 stay in their own records and are not shown by the legacy list, which reads journal entries."
 Transfers registered on the legacy engine stay on the legacy list and are not shown by the V1 screens: they have no Remittance Transfer record behind them.,Transfers registered on the legacy engine stay on the legacy list and are not shown by the V1 screens: they have no Remittance Transfer record behind them.
 Type the sender name as registered,Type the sender name as registered
 USDT,USDT

@@ -295,7 +295,6 @@ def boot():
 		# Which remittance engine the boot company runs. Per COMPANY, not per user —
 		# so it is paired with `default_company` above and the SPA refuses to apply it
 		# to any other company. `switch_company` re-answers it on every switch.
-		"remittance_engine": remittance_engine_for(default_company),
 	}
 
 
@@ -307,36 +306,6 @@ def _cost_visible_for_boot(user: str) -> bool:
 		return bool(cost_visible_for(user))
 	except Exception:
 		return False
-
-
-#: `Remittance Settings.remittance_engine` values. Legacy is the shipped default and
-#: the answer for every unknown, so a company opts in to Transfer V1 and never out of
-#: it by accident. Declared here rather than imported from the doctype controller
-#: because this module must answer on sites mid-migrate, where the field may not exist
-#: yet — see `remittance_engine_for`.
-REMITTANCE_LEGACY = "Legacy"
-
-
-def remittance_engine_for(company: str | None) -> str:
-	"""Which remittance engine `company` runs. Legacy on anything unknown; never fatal.
-
-	Legacy is returned for no company, no settings row, no column (a site that has
-	not run the v90 patch), and any read error. That direction is deliberate: this
-	feeds the SPA gate deciding whether a user reaches the Transfer V1 screens —
-	the register desk, the payout desk and the refund chain — and a gate that fails
-	open would put a money surface in front of a tenant that never asked for it.
-	Failing closed only costs a company the new screens until the read works.
-
-	Never raises: it is called from `boot()`, and boot throwing takes the whole SPA
-	down for every module, not just remittance.
-	"""
-	if not company:
-		return REMITTANCE_LEGACY
-	try:
-		engine = frappe.db.get_value("Remittance Settings", {"company": company}, "remittance_engine")
-	except Exception:
-		return REMITTANCE_LEGACY
-	return engine or REMITTANCE_LEGACY
 
 
 @frappe.whitelist()
@@ -360,7 +329,6 @@ def switch_company(company: str):
 		"ok": True,
 		"company": company,
 		"modules": module_map_for(company),
-		"remittance_engine": remittance_engine_for(company),
 	}
 
 
@@ -374,30 +342,6 @@ def get_company_modules(company: str):
 	if allowed and company not in allowed and "System Manager" not in frappe.get_roles():
 		frappe.throw(_("Not permitted"), frappe.PermissionError)
 	return module_map_for(company)
-
-
-@frappe.whitelist()
-def remittance_engine(company: str):
-	"""Remittance engine for one company, answered on demand.
-
-	`boot()` and `switch_company()` already carry this value, but each answers it
-	for the company the SERVER considers current, and the SPA's active company is
-	seeded from localStorage and can legitimately differ on the first navigation
-	after a login. A gate keyed on the wrong company is wrong in both directions,
-	so the client asks explicitly whenever the value it holds was computed for
-	somebody else's company.
-
-	The company is echoed back so the caller can bind the answer to its subject
-	instead of storing a bare string that outlives the question.
-	"""
-	if not company:
-		return {"company": "", "remittance_engine": REMITTANCE_LEGACY}
-	# Same read-only scope check as get_company_modules: no write happens here, and
-	# the answer is a configuration flag, not data.
-	allowed = _user_allowed_companies(frappe.session.user)
-	if allowed and company not in allowed and "System Manager" not in frappe.get_roles():
-		frappe.throw(_("Not permitted"), frappe.PermissionError)
-	return {"company": company, "remittance_engine": remittance_engine_for(company)}
 
 
 def audit_company_modules():

@@ -10,7 +10,7 @@ on a row nobody locked. The source assertion alone would pass on code that locks
 different row; the behavioural one alone would pass on code that locks after
 deciding, if the fake were ever loosened.
 
-**The code.** The hashing helpers are the REAL ones from `stabler.api.remittance`,
+**The code.** The hashing helpers are the REAL ones from `_remittance_pickup_code`,
 imported against stubs the way `test_remittance_pickup_code` imports them, because
 faking a compare that is supposed to be constant-time and salted would test
 nothing. That is what lets the plaintext case be a real test: a stored value that

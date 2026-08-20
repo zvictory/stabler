@@ -1,14 +1,14 @@
 import { call } from "./client.js";
 
-// The Transfer V1 remittance engine, whole. Reads live in `remittance_queries`,
-// mutations in `remittance_commands`; both are re-exported from one object so a
-// screen imports one thing and never has to know which Python module answers.
+// The remittance engine, whole. Reads live in `remittance_queries`, mutations in
+// `remittance_commands`; both are re-exported from one object so a screen imports
+// one thing and never has to know which Python module answers.
 //
-// The legacy JE-only endpoints in `stabler.api.remittance` are deliberately NOT
-// here. They still ship and still work, and a company running
-// `remittance_engine = "Legacy"` still uses them — but nothing on the V1 screens
-// should reach for them by accident, and a client module is the cheapest place
-// to make that impossible.
+// This module existed first as a fence: it deliberately excluded the JE-only
+// endpoints in `stabler.api.remittance` so no V1 screen could reach one by
+// accident. That engine was retired on 2026-08-20 with no tenant running it, so
+// the fence has nothing left to keep out — but the shape it produced, one import
+// per screen, is why every screen still reads this way.
 //
 // Parameter names below are the Python signatures verbatim: Frappe binds POST
 // form keys to keyword arguments by name, so a renamed key is a TypeError at the

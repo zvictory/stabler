@@ -140,6 +140,39 @@ biri de türetilenin değil türetenin kendisi.
 2. **Bayrağa tarih koymak Zafar'ın kararı.** Bunu kurul veremez — hangi kiracının
    ne zaman V1'e geçeceği iş kararıdır. Karar verilene kadar modül küçülmez, ve
    asıl fazlalık (§3) burada duruyor, alanlarda değil.
+
+   > **Kapandı — 2026-08-20. Karar: Legacy motor silindi.**
+   >
+   > Kurul bu maddeyi bir göç maliyeti varsayarak açık bıraktı: belge yazıldığında
+   > "yedi kiracının hepsi Legacy'de" idi, yani sonlandırma tarihi koymak yedi
+   > tenantı taşımak demekti. **Ölçüm bunu çürüttü.** 2026-08-20'de filoda havale
+   > modülü yalnız zuma'da açıktı ve zuma **V1** koşuyordu; diğer yedi kiracıda
+   > modül kapalı, sıfır transfer, sıfır ayar kaydı. Legacy motorun tek bir
+   > kullanıcısı yoktu, yani sonlandırma maliyeti sıfırdı — kurulun elinde
+   > olmayan olgu buydu.
+   >
+   > Silinen: `stabler/api/remittance.py` (yedi whitelisted uç), iki Legacy Vue
+   > ekranı, iki anahtarlayıcı sarmalayıcı, ve `remittance_engine` bayrağının
+   > kendisi — doctype alanı, `organization.py` çözümleyicisi ve ucu, `session.js`
+   > durumu, `router.js` kapısı, ayar ekranının seçicisi.
+   >
+   > Bir şey bilerek silinmedi: `_assert_ready_for_v1`, artık
+   > `_assert_ready_for_remittance` adıyla ve koşulsuz. İçindeki iki kontrol
+   > (en az bir kasa masası, ve JE koruma alanlarının bu sitede var olması) motora
+   > değil şirkete ve siteye bakıyordu; bayrak gidince tetikleyicileri kalmayacaktı.
+   > Zuma zaten V1 olduğu için koşulsuz hale gelmesi filoda hiçbir davranışı
+   > değiştirmedi.
+   >
+   > Sütun düşüren yama **yazılmadı**: depoda sütun düşüren tek bir yama yok, ve
+   > sekiz kiracıda geri dönüşü olmayan DDL koşmanın işlevsel karşılığı sıfır.
+   > Alan doctype JSON'ından çıkarıldı; sütun MariaDB'de öksüz kalıyor ve bunu
+   > hiçbir kod okumuyor.
+   >
+   > **Motoru silmek verisini silmiyor.** Legacy'nin damgaladığı Journal Entry'ler
+   > diskte kalabilir, ve iptal koruması onları kapsamaya devam ediyor — o yüzden
+   > `remittance_cancel_guard`'ın "master satırı olmayan havale" dalı ve testleri
+   > duruyor, yalnız gerekçeleri "iki motor var" yerine "eskisinin kodu yok"
+   > olarak yeniden yazıldı.
 3. **Küçültme uygulandı ve kapandı**: beş maddeden ikisi landing yaptı, üçü
    ölçümle reddedildi (§4). Her ikisi de doctype'a dokunduğu ve patch getirdiği
    için `make check` yeterli sayılmadı; `make test-bench` her temiz sha'da koştu.

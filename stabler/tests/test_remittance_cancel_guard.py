@@ -49,9 +49,12 @@ _SRC = os.path.join(_APP, "api", "remittance_cancel_guard.py")
 _HOOKS = os.path.join(_APP, "hooks.py")
 _JS = os.path.join(_APP, "public", "js")
 _API = {
-	name: os.path.join(_APP, "api", f"{name}.py")
-	for name in ("remittance", "remittance_commands", "remittance_accounting")
+	name: os.path.join(_APP, "api", f"{name}.py") for name in ("remittance_commands", "remittance_accounting")
 }
+
+#: The JE-only engine, retired 2026-08-20. Named here so the test below can prove
+#: it is gone rather than merely stop mentioning it.
+_RETIRED_API = os.path.join(_APP, "api", "remittance.py")
 
 # Every `stabler.api.remittance*.<fn>` the SPA names, written out in full.
 _SPA_CALL = re.compile(r"stabler\.api\.(?:remittance[a-z_]*)\.[a-z_]+")
@@ -314,10 +317,21 @@ class RemittanceReversalReachabilityTest(unittest.TestCase):
 			],
 		)
 
-	def test_the_legacy_refund_is_whitelisted_but_unreachable_from_the_spa(self):
-		"""Whitelisted is not the same as reachable, and the operator only has the SPA."""
-		self.assertIn("refund_remittance", _whitelisted(_API["remittance"]))
-		self.assertNotIn("stabler.api.remittance.refund_remittance", _spa_remittance_endpoints())
+	def test_the_retired_engine_is_gone_and_nothing_still_calls_it(self):
+		"""This used to assert that the legacy refund was whitelisted and unreachable.
+
+		Its subject was deleted on 2026-08-20, and "the test that watched it went
+		away too" is how a resurrected module gets in without anyone noticing. So
+		it now measures the deletion instead: no file, and no screen naming an
+		endpoint in it. The second half is the one that earns its keep — a Vue file
+		left holding `stabler.api.remittance.list_remittances` compiles fine and
+		fails at the user.
+		"""
+		self.assertFalse(os.path.exists(_RETIRED_API), "the JE-only engine is back")
+		self.assertEqual(
+			sorted(e for e in _spa_remittance_endpoints() if e.startswith("stabler.api.remittance.")),
+			[],
+		)
 
 	def test_every_whitelisted_refund_command_is_one_the_screen_calls(self):
 		"""Exposed and reached must be the same set, or one of the two is lying.
@@ -359,19 +373,16 @@ class RemittanceReversalReachabilityTest(unittest.TestCase):
 		it is the one no refund can touch: both engines gate on the transfer still
 		being Registered before anything moves.
 
-		**Both are walked deliberately.** This test used to read the legacy
-		`refund_remittance` alone — but the refund the SPA actually reaches is V1's
-		`request_refund`, so the branch's claim rested on a function the test never
-		opened. Once `stabler.api.remittance` is retired, walking only the legacy gate
-		would leave the Payout branch asserting nothing at all.
+		This walked both engines' gates for four days. It first read only the
+		legacy `refund_remittance`, which meant the branch's claim rested on a
+		function the test never opened — the refund the SPA actually reaches is
+		V1's `request_refund`. The legacy half was added to the walk on 2026-08-20
+		and deleted with its engine hours later; had the V1 half not been added
+		first, retiring the engine would have left this branch asserting nothing.
 		"""
-		legacy = self._gate_source("remittance", "refund_remittance", "_assert_registered")
-		self.assertIn("Paid Out", legacy)
-		self.assertIn("frappe.throw", legacy)
-
-		v1 = self._gate_source("remittance_commands", "request_refund", "_assert_refundable")
-		self.assertIn("Registered", v1)
-		self.assertIn("frappe.throw", v1)
+		gate = self._gate_source("remittance_commands", "request_refund", "_assert_refundable")
+		self.assertIn("Registered", gate)
+		self.assertIn("frappe.throw", gate)
 
 
 class RemittanceCancelGuardSourceTest(unittest.TestCase):
@@ -562,17 +573,18 @@ class RemittanceCancelGuardTest(unittest.TestCase):
 	def test_the_payout_stage_string_matches_what_the_writers_write(self):
 		"""Get this constant wrong and the payout branch silently never fires.
 
-		Two writers stamp `stabler_remittance_stage` and they do not stamp it the
-		same way, so both are walked here. The legacy model writes the literal
-		inline (`api/remittance.py:519`). The new model writes `_build_entry`'s
-		`stage` argument (`api/remittance_accounting.py:220`), which `post_payout`
-		feeds from the module constant `PAYOUT` — so reading the constant alone
-		would still pass on the day `post_payout` stopped handing it over, which
-		is the day this guard's payout branch would stop firing for the new model.
-		"""
-		with open(_API["remittance"], encoding="utf-8") as fh:
-			self.assertIn(f'"stabler_remittance_stage": "{self.guard.PAYOUT_STAGE}"', fh.read())
+		One writer stamps `stabler_remittance_stage` now — `_build_entry`'s `stage`
+		argument (`api/remittance_accounting.py:220`), which `post_payout` feeds
+		from the module constant `PAYOUT`. The whole path is walked rather than the
+		constant alone, because reading `PAYOUT` would still pass on the day
+		`post_payout` stopped handing it over, which is the day this guard's payout
+		branch would stop firing.
 
+		The retired JE-only engine stamped the same literal inline, and its walk was
+		dropped with it. Its VOUCHERS are not gone — a Journal Entry it stamped is
+		still on disk and still lands in this branch — but no code writes that
+		literal any more, so there is nothing left to hold in step.
+		"""
 		with open(_API["remittance_accounting"], encoding="utf-8") as fh:
 			source = fh.read()
 		accounting = ast.parse(source)
