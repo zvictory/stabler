@@ -252,6 +252,27 @@ class TestBuildLcvPayload(unittest.TestCase):
 				payload = self._payload(distribute_based_on=method)
 				self.assertEqual(payload["distribute_charges_based_on"], method)
 
+	def test_the_receipt_type_reaches_the_voucher(self):
+		# ERPNext capitalizes a charge onto whatever stock document actually moved
+		# the goods, and accepts a Purchase Invoice there whenever update_stock is
+		# on (landed_cost_voucher.py validate_receipt_documents). This builder wrote
+		# "Purchase Receipt" as a constant, so on msa -- where the CI is converted
+		# straight into an update_stock invoice and no Purchase Receipt is ever
+		# created -- every voucher it built named a document that does not exist.
+		payload = self._payload(receipt_document_type="Purchase Invoice")
+		self.assertTrue(
+			all(r["receipt_document_type"] == "Purchase Invoice" for r in payload["purchase_receipts"]),
+			"the caller's receipt type did not reach the voucher",
+		)
+
+	def test_the_type_defaults_to_purchase_receipt(self):
+		# The truck-receipt route still books a Purchase Receipt and must keep
+		# building exactly what it built before this parameter existed.
+		payload = self._payload()
+		self.assertTrue(
+			all(r["receipt_document_type"] == "Purchase Receipt" for r in payload["purchase_receipts"])
+		)
+
 	def test_none_when_no_receipts_or_no_costs(self):
 		self.assertIsNone(
 			lcv_math.build_lcv_payload(

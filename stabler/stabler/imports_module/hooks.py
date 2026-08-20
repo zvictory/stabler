@@ -966,7 +966,7 @@ def capitalized_components(grn) -> dict[str, float]:
 	voucher per GRN so it cannot arise from this code path, and the failure
 	direction is to offer too little — visible, and never a double capitalization.
 	"""
-	prs = _submitted_prs_for_grn(grn.name)
+	receipt_type, prs = _stock_receipts_for_grn(grn)
 	if not prs:
 		return {}
 
@@ -974,7 +974,7 @@ def capitalized_components(grn) -> dict[str, float]:
 		"Landed Cost Purchase Receipt",
 		filters={
 			"parenttype": "Landed Cost Voucher",
-			"receipt_document_type": "Purchase Receipt",
+			"receipt_document_type": receipt_type,
 			"receipt_document": ["in", prs],
 		},
 		pluck="parent",
@@ -1083,10 +1083,11 @@ def _build_and_save_lcv(grn, note: str):
 			)
 		)
 
-	purchase_receipts = _submitted_prs_for_grn(grn.name)
+	receipt_type, purchase_receipts = _stock_receipts_for_grn(grn)
 	if not purchase_receipts:
 		frappe.logger("stabler.imports").warning(
-			f"GRN {grn.name}: no submitted Purchase Receipts — skipping LCV"
+			f"GRN {grn.name}: no submitted stock document — neither a Purchase Receipt "
+			f"nor an update_stock Purchase Invoice — skipping LCV"
 		)
 		return None
 
@@ -1118,10 +1119,17 @@ def _build_and_save_lcv(grn, note: str):
 		purchase_receipts=purchase_receipts,
 		components=components,
 		expense_account=expense_account,
+		receipt_document_type=receipt_type,
 		# Honour the persisted choice and the freeze rule on this build path too;
 		# passing the receipts we already resolved keeps this callable mid-submit.
+		# The type travels with them: a name alone cannot say which doctype the
+		# freeze rule should join against, and joining the wrong one finds no
+		# submitted voucher and so silently locks nothing.
 		distribute_based_on=effective_distribution_method(
-			"GRN Checklist", grn.name, receipt_names=purchase_receipts
+			"GRN Checklist",
+			grn.name,
+			receipt_names=purchase_receipts,
+			receipt_document_type=receipt_type,
 		),
 	)
 	if payload is None:
@@ -1154,18 +1162,49 @@ def _build_and_save_lcv(grn, note: str):
 	return lcv.name
 
 
-def _submitted_prs_for_grn(grn_name) -> list[str]:
-	"""Submitted Purchase Receipt names from this GRN's submitted Truck Receipts."""
-	receipts = frappe.get_all(
-		"Truck Receipt",
-		filters={"grn_checklist": grn_name, "docstatus": 1},
-		pluck="purchase_receipt",
+def _stock_receipts_for_grn(grn) -> tuple[str, list[str]]:
+	"""``(doctype, names)`` of the submitted documents that moved this GRN's stock.
+
+	Two routes reach a warehouse and only one of them makes a Purchase Receipt.
+	The truck route books one per Truck Receipt (``_create_purchase_receipt``) and
+	is looked at first, because that is what the other tenants run and its
+	behaviour must not change. Where the Commercial Invoice is converted straight
+	into an ``update_stock`` Purchase Invoice — msa's route, and the only one that
+	has ever put goods in a warehouse there — no receipt exists at all, and the
+	caller read that as "nothing to voucher" instead of "look at the invoice".
+	That is why msa has 675 submitted purchase invoices and zero landed cost
+	vouchers.
+
+	``update_stock`` is filtered here rather than left to ERPNext. An invoice with
+	no stock impact is refused by ``validate_receipt_documents``, so handing one
+	on would trade a silent no-op for a throw inside a background job.
+
+	Takes the GRN document rather than its name: the invoice is reached through
+	the Commercial Invoice, which only the document carries.
+	"""
+	prs = [
+		pr
+		for pr in frappe.get_all(
+			"Truck Receipt",
+			filters={"grn_checklist": grn.name, "docstatus": 1},
+			pluck="purchase_receipt",
+		)
+		if pr and frappe.db.get_value("Purchase Receipt", pr, "docstatus") == 1
+	]
+	if prs:
+		return "Purchase Receipt", prs
+
+	ci = grn.get("commercial_invoice")
+	if not ci or not frappe.db.has_column("Purchase Invoice", "custom_commercial_invoice"):
+		return "Purchase Receipt", []
+	invoices = frappe.get_all(
+		"Purchase Invoice",
+		filters={"custom_commercial_invoice": ci, "docstatus": 1, "update_stock": 1},
+		pluck="name",
 	)
-	out: list[str] = []
-	for pr in receipts:
-		if pr and frappe.db.get_value("Purchase Receipt", pr, "docstatus") == 1:
-			out.append(pr)
-	return out
+	# An empty result keeps the historical doctype so every caller's "nothing
+	# found" branch stays the shape it already handles.
+	return ("Purchase Invoice", invoices) if invoices else ("Purchase Receipt", [])
 
 
 def _collect_cost_lines(commercial_invoice, include_vouchered: bool = False):

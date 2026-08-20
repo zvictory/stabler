@@ -83,7 +83,15 @@ class TheWireContractTest(unittest.TestCase):
 		# down on msa. The sum is therefore done in Python, and one query serves
 		# every receipt rather than one per receipt.
 		self.assertNotRegex(self.review, r'"\s*sum\s*\(')
-		self.assertEqual(1, self.review.count('"Purchase Receipt Item"'))
+		# This counted the literal `"Purchase Receipt Item"` until the child table
+		# became `f"{receipt_type} Item"` — the LCV route now capitalizes onto a
+		# Purchase Invoice too. A literal that no longer appears counts zero, and a
+		# guard that counts zero occurrences of a vanished string forbids nothing:
+		# it would have passed a rewrite that put the read back inside the loop.
+		# So the count moved onto the expression that is actually there, and the
+		# `in` filter — the mechanism that makes it one query — is asserted with it.
+		self.assertEqual(1, self.review.count('f"{receipt_type} Item"'))
+		self.assertIn('"parent": ["in", pr_names]', self.review)
 
 
 class TheClientReadsWhatIsSentTest(unittest.TestCase):

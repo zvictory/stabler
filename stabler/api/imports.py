@@ -3695,8 +3695,12 @@ def get_landed_cost_review(grn_checklist: str, rate=None):
 	grn = frappe.get_doc("GRN Checklist", grn_checklist)
 	company_currency = frappe.get_cached_value("Company", grn.company, "default_currency") or "UZS"
 
-	# Purchase Receipts booked from this GRN's submitted Truck Receipts.
-	pr_names = imports_hooks._submitted_prs_for_grn(grn.name)
+	# Whatever document actually moved this GRN's stock: a Purchase Receipt booked
+	# from its Truck Receipts, or — where the Commercial Invoice was converted
+	# straight into an update_stock bill — that invoice. One resolver owns the
+	# mapping so the review and the voucher builder can never disagree about which
+	# documents a GRN's costs land on.
+	receipt_type, pr_names = imports_hooks._stock_receipts_for_grn(grn)
 
 	# The weight each receipt's money was actually booked against. Only Good-condition
 	# weight ever reaches a Purchase Receipt (receipt_math.good_qty returns 0 for any
@@ -3713,8 +3717,8 @@ def get_landed_cost_review(grn_checklist: str, rate=None):
 	costed_kg: dict = {}
 	if pr_names:
 		for row in frappe.get_all(
-			"Purchase Receipt Item",
-			filters={"parent": ["in", pr_names], "parenttype": "Purchase Receipt"},
+			f"{receipt_type} Item",
+			filters={"parent": ["in", pr_names], "parenttype": receipt_type},
 			fields=["parent", "stock_qty"],
 		):
 			costed_kg[row.parent] = costed_kg.get(row.parent, 0.0) + flt(row.stock_qty)
@@ -3722,7 +3726,7 @@ def get_landed_cost_review(grn_checklist: str, rate=None):
 	purchase_receipts = []
 	for pr in pr_names:
 		prd = frappe.db.get_value(
-			"Purchase Receipt",
+			receipt_type,
 			pr,
 			["supplier", "posting_date", "grand_total", "base_grand_total", "currency", "docstatus"],
 			as_dict=True,
@@ -3741,6 +3745,9 @@ def get_landed_cost_review(grn_checklist: str, rate=None):
 					"costed_qty_kg": flt(costed_kg.get(pr, 0.0)),
 					"currency": prd.currency,
 					"docstatus": cint(prd.docstatus),
+					# Which doctype this row is, so a client never has to guess and
+					# the freeze-rule join downstream keys on a fact, not a default.
+					"receipt_document_type": receipt_type,
 				}
 			)
 
