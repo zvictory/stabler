@@ -23,6 +23,7 @@ import { t } from "../composables/i18n.js";
 import { accountLabel } from "../composables/accounts.js";
 import { useToast } from "../composables/useToast.js";
 import { useTelemetry } from "../composables/useTelemetry.js";
+import { createIntentKey } from "../composables/idempotency.js";
 import MoneyInput from "./MoneyInput.vue";
 import DateInput from "./DateInput.vue";
 import Select from "./Select.vue";
@@ -40,6 +41,10 @@ const props = defineProps({
 const emit = defineEmits(["close", "paid"]);
 
 const toast = useToast();
+// One key per intent, not per request: a failed save leaves the form filled, and
+// the retry must reach the server as the same click rather than as a second
+// payment. Backed by the unique `custom_idempotency_key`.
+const intent = createIntentKey();
 const { user } = storeToRefs(useSession());
 const { trackOnce, FUNNEL } = useTelemetry();
 
@@ -356,7 +361,9 @@ async function submit() {
 			references: references.length ? references : undefined,
 			target_purchase_invoice: props.targetVoucher || undefined,
 			submit: 1,
+			idempotency_key: intent.begin(),
 		});
+		intent.settle();
 		if (created.pending_approval) {
 			toast.warning(t("Payment saved — pending approval before it posts."));
 		}

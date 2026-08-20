@@ -10,6 +10,7 @@ import { t } from "../../composables/i18n.js";
 import { accountLabel } from "../../composables/accounts.js";
 import { useConfirm } from "../../composables/useConfirm.js";
 import { useToast } from "../../composables/useToast.js";
+import { createIntentKey } from "../../composables/idempotency.js";
 import MoneyInput from "../../components/MoneyInput.vue";
 import DateInput from "../../components/DateInput.vue";
 import EmptyState from "../../components/EmptyState.vue";
@@ -22,6 +23,12 @@ const { activeCompany, user } = storeToRefs(session);
 
 const { confirm } = useConfirm();
 const toast = useToast();
+// One key per intent, not per request: a save that fails leaves the filled form
+// on screen, and the retry the operator then makes must reach the server as the
+// same click rather than as a second expense. Settled on success so the next
+// save is a new intent. Backed by the unique `custom_idempotency_key`.
+const intent = createIntentKey();
+
 
 const today = todayIso();
 const monthAgo = daysAgoIso(30);
@@ -493,8 +500,9 @@ async function submitCreate(mode) {
 			method,
 			editingName.value
 				? { source_name: editingName.value, modified: detail.value?.modified, ...payload }
-				: payload,
+				: { ...payload, idempotency_key: intent.begin() },
 		);
+		intent.settle();
 
 		load(); // refresh list in background
 		// When maker-checker is on, the transfer stays a Draft and is routed to
