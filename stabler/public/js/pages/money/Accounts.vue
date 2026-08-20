@@ -233,7 +233,6 @@ async function load() {
 		// wall of every account at once. A returning user's own expand/collapse
 		// choices for this company (if any were saved) win over that default.
 		expanded.value = restoreExpanded(activeCompany.value) || defaultExpandedGroups(rows || []);
-		balances.value = new Map();
 	} catch (err) {
 		error.value = err?.message || t("Failed to load chart of accounts.");
 	} finally {
@@ -260,6 +259,26 @@ async function loadBalances() {
 	} finally {
 		balancesLoading.value = false;
 	}
+}
+
+/**
+ * The tree and the balances, fetched at the same time.
+ *
+ * They used to be `await load(); await loadBalances();` — two round trips in a
+ * row for two queries that do not depend on each other. Measured on the local
+ * bench, where latency is ~0: boot ended at 537ms, the tree started at 563 and
+ * ended at 597, the balances started at 606. On prod every one of those gaps is
+ * a real round trip (~0.4s of TTFB measured against mikas), so the page spent
+ * one of them waiting for nothing.
+ *
+ * `load()` no longer clears `balances` on the way past, which is what made this
+ * safe to parallelise — and which was a bug of its own: the `includeDisabled`
+ * watcher calls `load()` alone, so ticking "include disabled" wiped every
+ * balance on screen and nothing fetched them back. Measured in a browser
+ * 2026-08-20: 19 rows showing a number before the click, 0 after.
+ */
+async function loadAll() {
+	await Promise.all([load(), loadBalances()]);
 }
 
 async function refreshAllBalances() {
@@ -493,8 +512,7 @@ async function submitForm({ andNew = false } = {}) {
 		} else {
 			closeCreate();
 		}
-		await load();
-		await loadBalances();
+		await loadAll();
 	} catch (err) {
 		submitError.value = err?.message || t("Failed to save account.");
 	} finally {
@@ -518,22 +536,22 @@ async function toggleDisabled(node) {
 			disabled: willDisable ? 1 : 0,
 		});
 		toast.success(willDisable ? t("Account disabled.") : t("Account enabled."));
-		await load();
-		await loadBalances();
+		await loadAll();
 	} catch (err) {
 		toast.error(err?.message || t("Failed to update account."));
 	}
 }
 
-onMounted(async () => {
-	await load();
-	await loadBalances();
-});
+onMounted(loadAll);
 watch(activeCompany, async () => {
-	await load();
-	await loadBalances();
+	// The outgoing company's numbers must not sit against the incoming
+	// company's tree for the length of a round trip.
+	balances.value = new Map();
+	await loadAll();
 });
 watch(includeDisabled, async () => {
+	// Tree only. `chart_balances` returns the full tree including disabled
+	// accounts, so this toggle cannot change a single balance.
 	await load();
 });
 watch(expanded, (next) => {
