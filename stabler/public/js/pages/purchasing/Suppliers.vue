@@ -229,11 +229,44 @@ const exposureKpiItems = computed(() => {
 const convertTarget = ref(null); // the CI commitment row being converted
 const convertPreview = ref(null); // dry-run result from the backend
 const convertBusy = ref(false);
+// Empty means "payable only" — the invoice opens the A/P and moves no stock,
+// which is what this dialog did before and what the truck route still wants.
+// Naming a warehouse makes this same invoice the document that receives the
+// goods, which is the only way stock reaches a warehouse on the CI route.
+const convertWarehouse = ref("");
+const convertWarehouses = ref([]);
+const convertWarehousesLoading = ref(false);
+
+const convertWarehouseOptions = computed(() => [
+	{
+		name: "",
+		warehouse_name: convertWarehousesLoading.value
+			? t("Loading warehouses…")
+			: t("Do not receive into stock"),
+	},
+	...convertWarehouses.value,
+]);
+
+async function loadConvertWarehouses() {
+	if (!activeCompany.value) return;
+	convertWarehousesLoading.value = true;
+	try {
+		convertWarehouses.value = await call("stabler.api.inventory.list_stock_warehouses", {
+			company: activeCompany.value,
+		});
+	} catch {
+		convertWarehouses.value = [];
+	} finally {
+		convertWarehousesLoading.value = false;
+	}
+}
 
 async function openConvert(ci) {
 	convertTarget.value = ci;
 	convertPreview.value = null;
+	convertWarehouse.value = "";
 	convertBusy.value = true;
+	loadConvertWarehouses();
 	try {
 		convertPreview.value = await call("stabler.api.imports.convert_ci_to_purchase_invoice", {
 			commercial_invoice: ci.name,
@@ -251,6 +284,7 @@ async function openConvert(ci) {
 function closeConvert() {
 	convertTarget.value = null;
 	convertPreview.value = null;
+	convertWarehouse.value = "";
 	convertBusy.value = false;
 }
 
@@ -262,11 +296,16 @@ async function confirmConvert() {
 			commercial_invoice: convertTarget.value.name,
 			company: activeCompany.value,
 			dry_run: 0,
+			warehouse: convertWarehouse.value || null,
 		});
 		toast.success(
 			res?.already_linked
 				? t("This Commercial Invoice already has a Purchase Invoice.")
-				: t("Draft Purchase Invoice created: {0}").replace("{0}", res.purchase_invoice),
+				: res?.update_stock
+					? t("Draft Purchase Invoice created: {0} — goods received into {1}")
+							.replace("{0}", res.purchase_invoice)
+							.replace("{1}", res.set_warehouse)
+					: t("Draft Purchase Invoice created: {0}").replace("{0}", res.purchase_invoice),
 		);
 		closeConvert();
 		if (selected.value) {
@@ -824,6 +863,19 @@ async function deleteSupplier() {
 									<div class="d-flex justify-content-between py-1 border-top mt-1">
 										<span class="text-secondary">{{ t("Remaining after advances") }}</span>
 										<span class="font-monospace">{{ formatMoney(convertPreview.advance_plan.outstanding_after || 0, convertPreview.currency, user.language) }}</span>
+									</div>
+								</div>
+								<div class="mb-2">
+									<label class="form-label small text-secondary text-uppercase fw-semibold mb-1">
+										{{ t("Receive into warehouse") }}
+									</label>
+									<select v-model="convertWarehouse" class="form-select" :disabled="convertBusy">
+										<option v-for="w in convertWarehouseOptions" :key="w.name" :value="w.name">
+											{{ w.warehouse_name || w.name }}
+										</option>
+									</select>
+									<div class="form-text">
+										{{ t("Leave empty to open the payable only. Choosing a warehouse also books the goods into stock, on the Commercial Invoice's own date.") }}
 									</div>
 								</div>
 								<p class="text-secondary small mb-0">
