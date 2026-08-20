@@ -34,24 +34,32 @@ def _persisted_distribution_method(document_type: str, document_name: str):
 	return frappe.db.get_value(document_type, document_name, DISTRIBUTION_FIELD)
 
 
-def _receipt_names_for(document_type: str, document_name: str, review=None) -> list:
-	"""Purchase Receipts the freeze rule looks at for this document.
+def _receipt_names_for(document_type: str, document_name: str, review=None) -> tuple:
+	"""``(doctype, names)`` the freeze rule looks at for this document.
 
 	A Purchase Receipt is its own receipt. A GRN Checklist's receipts are whatever
 	the review already reports, so the checklist → receipts mapping stays in the
 	one place that owns it; a second mapping invented here is how the lock would
 	quietly stop engaging the day that one changes.
+
+	The doctype rides along because a GRN's stock document is a Purchase Receipt
+	on the truck route and an ``update_stock`` Purchase Invoice on the CI route.
+	A bare name cannot say which, and the join below filters on it — so assuming
+	"Purchase Receipt" finds no submitted voucher on the invoice route and reports
+	an unlocked basis for stock a voucher has already capitalized.
 	"""
 	if document_type == "Purchase Receipt":
-		return [document_name]
+		return "Purchase Receipt", [document_name]
 	if review is None:
 		from stabler.api.imports import get_landed_cost_review as imports_review
 
 		review = imports_review(document_name)
-	return [pr.get("name") for pr in (review.get("purchase_receipts") or []) if pr.get("name")]
+	rows = [pr for pr in (review.get("purchase_receipts") or []) if pr.get("name")]
+	kind = (rows[0].get("receipt_document_type") if rows else None) or "Purchase Receipt"
+	return kind, [pr["name"] for pr in rows]
 
 
-def _vouchers_on_receipts(receipt_names, docstatus) -> list:
+def _vouchers_on_receipts(receipt_names, docstatus, receipt_document_type="Purchase Receipt") -> list:
 	"""``[{lcv, method}]`` of the vouchers in this docstatus against these receipts.
 
 	Through ``tabLanded Cost Purchase Receipt``: that child table is the only link
@@ -72,16 +80,16 @@ def _vouchers_on_receipts(receipt_names, docstatus) -> list:
 		FROM `tabLanded Cost Purchase Receipt` lcpr
 		INNER JOIN `tabLanded Cost Voucher` voucher ON voucher.name = lcpr.parent
 		WHERE lcpr.receipt_document IN ({placeholders})
-			AND lcpr.receipt_document_type = 'Purchase Receipt'
+			AND lcpr.receipt_document_type = %s
 			AND voucher.docstatus = %s
 		ORDER BY voucher.creation ASC, voucher.name ASC
 	""".format(placeholders=placeholders),
-		(*names, docstatus),
+		(*names, receipt_document_type, docstatus),
 		as_dict=True,
 	)
 
 
-def _locking_voucher(receipt_names) -> tuple:
+def _locking_voucher(receipt_names, receipt_document_type="Purchase Receipt") -> tuple:
 	"""``(voucher, basis)`` of the submitted LCV that froze the distribution basis.
 
 	Only ``docstatus == 1`` freezes anything: a draft has capitalized nothing yet,
@@ -90,13 +98,13 @@ def _locking_voucher(receipt_names) -> tuple:
 	whose basis every later netting in ``apply_gtd_customs_precedence`` is
 	measured against.
 	"""
-	rows = _vouchers_on_receipts(receipt_names, lcv_math.LOCKING_DOCSTATUS)
+	rows = _vouchers_on_receipts(receipt_names, lcv_math.LOCKING_DOCSTATUS, receipt_document_type)
 	if not rows:
 		return None, None
 	return rows[0].get("lcv"), rows[0].get("method")
 
 
-def _restamp_drafts(receipt_names, method: str) -> list:
+def _restamp_drafts(receipt_names, method: str, receipt_document_type="Purchase Receipt") -> list:
 	"""Put the chosen basis on every DRAFT voucher standing against these receipts.
 
 	The choice is persisted on the source document, but a draft carries the basis
@@ -118,7 +126,7 @@ def _restamp_drafts(receipt_names, method: str) -> list:
 	``set_distribution_method`` throws on a locked state before calling it.
 	"""
 	restamped = []
-	for row in _vouchers_on_receipts(receipt_names, 0):
+	for row in _vouchers_on_receipts(receipt_names, 0, receipt_document_type):
 		if lcv_math.normalize_distribution_method(row.get("method")) == method:
 			continue
 		voucher = frappe.get_doc("Landed Cost Voucher", row["lcv"])
@@ -128,7 +136,13 @@ def _restamp_drafts(receipt_names, method: str) -> list:
 	return restamped
 
 
-def distribution_state(document_type: str, document_name: str, receipt_names=None, review=None) -> dict:
+def distribution_state(
+	document_type: str,
+	document_name: str,
+	receipt_names=None,
+	review=None,
+	receipt_document_type=None,
+) -> dict:
 	"""Effective distribution basis for a document, and whether it is frozen.
 
 	``locked`` is a server-side fact, not a UI hint: ``set_distribution_method``
@@ -136,8 +150,9 @@ def distribution_state(document_type: str, document_name: str, receipt_names=Non
 	basis out from under a submitted voucher.
 	"""
 	if receipt_names is None:
-		receipt_names = _receipt_names_for(document_type, document_name, review)
-	locked_by, locked_method = _locking_voucher(receipt_names)
+		resolved_type, receipt_names = _receipt_names_for(document_type, document_name, review)
+		receipt_document_type = receipt_document_type or resolved_type
+	locked_by, locked_method = _locking_voucher(receipt_names, receipt_document_type or "Purchase Receipt")
 	persisted = _persisted_distribution_method(document_type, document_name)
 	return {
 		"method": lcv_math.resolve_distribution_method(persisted, locked_method),
@@ -147,7 +162,9 @@ def distribution_state(document_type: str, document_name: str, receipt_names=Non
 	}
 
 
-def effective_distribution_method(document_type: str, document_name: str, receipt_names=None) -> str:
+def effective_distribution_method(
+	document_type: str, document_name: str, receipt_names=None, receipt_document_type=None
+) -> str:
 	"""Basis a voucher for this document must be built on.
 
 	The single entry point for every build path — this one and
@@ -157,7 +174,12 @@ def effective_distribution_method(document_type: str, document_name: str, receip
 	them): it saves the lookup and keeps this callable mid-submit, before the
 	review of a GRN Checklist can be assembled.
 	"""
-	return distribution_state(document_type, document_name, receipt_names=receipt_names)["method"]
+	return distribution_state(
+		document_type,
+		document_name,
+		receipt_names=receipt_names,
+		receipt_document_type=receipt_document_type,
+	)["method"]
 
 
 @frappe.whitelist()
@@ -430,8 +452,10 @@ def set_distribution_method(document_type: str, document_name: str, method: str)
 			)
 		)
 
-	receipt_names = _receipt_names_for(document_type, document_name)
-	state = distribution_state(document_type, document_name, receipt_names=receipt_names)
+	receipt_type, receipt_names = _receipt_names_for(document_type, document_name)
+	state = distribution_state(
+		document_type, document_name, receipt_names=receipt_names, receipt_document_type=receipt_type
+	)
 	if state["locked"]:
 		frappe.throw(
 			_(
@@ -449,9 +473,11 @@ def set_distribution_method(document_type: str, document_name: str, method: str)
 	frappe.db.set_value(document_type, document_name, DISTRIBUTION_FIELD, method)
 	# Persisting the choice is not enough: a draft built before it was made still
 	# carries the basis it was built with, and Submit posts a draft as it stands.
-	restamped = _restamp_drafts(receipt_names, method)
+	restamped = _restamp_drafts(receipt_names, method, receipt_type)
 
-	state = distribution_state(document_type, document_name, receipt_names=receipt_names)
+	state = distribution_state(
+		document_type, document_name, receipt_names=receipt_names, receipt_document_type=receipt_type
+	)
 	state["restamped"] = restamped
 	return state
 
@@ -549,12 +575,19 @@ def submit_landed_cost_voucher(name: str):
 	if lcv.docstatus != 0:
 		frappe.throw(_("Only draft Landed Cost Vouchers can be submitted."))
 
-	receipt_names = [
-		row.receipt_document
-		for row in (lcv.get("purchase_receipts") or [])
-		if row.receipt_document_type == "Purchase Receipt" and row.receipt_document
-	]
-	locked_by, locked_method = _locking_voucher(receipt_names)
+	# Grouped by doctype rather than filtered down to the Purchase Receipt rows:
+	# an invoice-backed voucher was reduced to an empty list here, so the lock it
+	# should have been checked against could never fire and a second voucher on a
+	# different basis submitted freely over stock the first had capitalized.
+	rows_by_type: dict[str, list] = {}
+	for row in lcv.get("purchase_receipts") or []:
+		if row.receipt_document and row.receipt_document_type:
+			rows_by_type.setdefault(row.receipt_document_type, []).append(row.receipt_document)
+	locked_by = locked_method = None
+	for kind, names in rows_by_type.items():
+		locked_by, locked_method = _locking_voucher(names, kind)
+		if locked_by:
+			break
 	frozen = lcv_math.normalize_distribution_method(locked_method)
 	mine = lcv_math.normalize_distribution_method(lcv.distribute_charges_based_on)
 	if frozen and mine != frozen:

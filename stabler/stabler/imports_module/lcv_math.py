@@ -505,7 +505,15 @@ def resolve_distribution_method(persisted, locked_method=None, default=DEFAULT_D
 	return normalize_distribution_method(default) or DEFAULT_DISTRIBUTION_METHOD
 
 
-def build_lcv_payload(*, company, purchase_receipts, components, expense_account, distribute_based_on="Qty"):
+def build_lcv_payload(
+	*,
+	company,
+	purchase_receipts,
+	components,
+	expense_account,
+	distribute_based_on="Qty",
+	receipt_document_type="Purchase Receipt",
+):
 	"""Build the DRAFT Landed Cost Voucher dict.
 
 	``purchase_receipts`` is a list of submitted PR names; ``components`` is the
@@ -518,6 +526,15 @@ def build_lcv_payload(*, company, purchase_receipts, components, expense_account
 	historical behavior and is kept only so a caller not yet moved over builds
 	what it built before instead of silently changing basis; it is NOT the system
 	default, which is ``DEFAULT_DISTRIBUTION_METHOD``.
+
+	``receipt_document_type`` names the kind of document the charge capitalizes
+	onto. ERPNext takes a Purchase Receipt, a Stock Entry or a Purchase Invoice,
+	and accepts the invoice on the single condition that it updates stock
+	(``validate_receipt_documents``). This was a literal, which made the whole
+	builder unusable wherever the stock document is an ``update_stock`` invoice
+	rather than a receipt — the CI → invoice route, which is every import on msa.
+	It defaults to "Purchase Receipt" so the truck-receipt route keeps building
+	exactly what it built before.
 	"""
 	if not purchase_receipts or not components:
 		return None
@@ -526,7 +543,8 @@ def build_lcv_payload(*, company, purchase_receipts, components, expense_account
 		"company": company,
 		"distribute_charges_based_on": distribute_based_on,
 		"purchase_receipts": [
-			{"receipt_document_type": "Purchase Receipt", "receipt_document": pr} for pr in purchase_receipts
+			{"receipt_document_type": receipt_document_type, "receipt_document": pr}
+			for pr in purchase_receipts
 		],
 		"taxes": [
 			{"expense_account": expense_account, "description": comp, "amount": amt}
