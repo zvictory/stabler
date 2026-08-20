@@ -6847,6 +6847,38 @@ def _single_container_of(ci_name: str) -> str | None:
 	return names[0] if len(names) == 1 else None
 
 
+def _ci_conversion_rate(company: str, doc_currency: str, posting_date) -> float:
+	"""The rate a Commercial Invoice's bill must carry, for its own posting date.
+
+	The converter used to set `currency` and leave `conversion_rate` to ERPNext,
+	which does not fill it server-side — so `validate_purchase_invoice` refused
+	the None it was handed: "Conversion rate for USD to UZS cannot be less than
+	1000 (got None)". Measured on msa.erpstable.com 2026-08-20: every day from
+	the 10th to the 19th carried a CBU rate and the 20th did not, because the
+	feed lands during the day. Until it landed, no foreign-currency Commercial
+	Invoice could be turned into a bill at all — from the API or the screen.
+
+	Resolved through the validator's own lookup, so the document cannot be built
+	carrying a rate its own validation would then reject, and so it inherits the
+	same on-or-before fallback. That fallback is what closes the morning window;
+	a CI's date is normally weeks in the past, where the feed is complete anyway.
+
+	A missing rate throws rather than defaulting to 1.0, which would post
+	380 420 USD into the ledger as 380 420 UZS.
+	"""
+	company_currency = frappe.get_cached_value("Company", company, "default_currency") or ""
+	if not doc_currency or doc_currency == company_currency:
+		return 1.0
+	rate, _rate_date = _cbu_rate_on_or_before(doc_currency, company_currency, posting_date)
+	if not rate:
+		frappe.throw(
+			_("No exchange rate for {0} to {1} on or before {2}.").format(
+				doc_currency, company_currency, formatdate(posting_date)
+			)
+		)
+	return flt(rate)
+
+
 def _ci_pi_amounts(ci) -> dict[str, float]:
 	"""Agreed CI amount attributed to each source Proforma Invoice."""
 	amounts: dict[str, float] = {}
@@ -7269,10 +7301,17 @@ def convert_ci_to_purchase_invoice(commercial_invoice: str, company: str, dry_ru
 	doc = frappe.new_doc("Purchase Invoice")
 	doc.company = company
 	doc.supplier = ci.supplier
+	# The CI's own date, not the clock. `getdate(today())` dated a six-month-old
+	# import bill today, which is wrong twice over: the payable belongs to the
+	# month the supplier invoiced, and once the bill updates stock its posting
+	# date IS the day the goods enter the ledger — so today's date also valued
+	# them at today's rate. `set_posting_time` is what makes the date stick;
+	# without it ERPNext overwrites it with now (transaction_base.py).
+	doc.set_posting_time = 1
+	doc.posting_date = getdate(ci.ci_date or today())
 	if ci.currency:
 		doc.currency = ci.currency
-	doc.set_posting_time = 1
-	doc.posting_date = getdate(today())
+		doc.conversion_rate = _ci_conversion_rate(company, ci.currency, doc.posting_date)
 	if has_pi_ref:
 		doc.custom_commercial_invoice = commercial_invoice
 	container = _single_container_of(commercial_invoice)
