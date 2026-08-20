@@ -49,7 +49,10 @@ test_supplier_quotations_api         stabler-cd1  errors=1; fake stabler_setting
 test_tender_flow_contract            stabler-vcq  failures=1; ':deal="null"' no longer present in the Vue source the contract greps
 
 # --- asserted nothing
-test_deploy_migrate_gate             stabler-56v  ZERO COVERAGE, collected-none; unittest collects nothing from the module
+# stabler-56v (test_deploy_migrate_gate, collected-none) was paid off on 2026-08-20:
+# the module declared a pytest-style bare class, which `bench run-tests` does not
+# collect. It is now unittest.TestCase and asserts 7 guarantees about the deploy
+# migrate gate.
 test_related_documents_integration   stabler-97o  ZERO COVERAGE, skipped-3/3; site lacks the seeded fixture, prints OK (skipped=3)
 
 # --- tests pass, the runner still exits non-zero
