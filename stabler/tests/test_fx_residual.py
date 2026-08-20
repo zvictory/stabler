@@ -17,9 +17,26 @@ class BasePrecisionTest(unittest.TestCase):
 		self.assertEqual(base_precision_for("EUR"), 2)
 
 	def test_zero_dp_currencies(self):
-		self.assertEqual(base_precision_for("UZS"), 0)
 		self.assertEqual(base_precision_for("JPY"), 0)
 		self.assertEqual(base_precision_for("vnd"), 0)  # case-insensitive
+
+	def test_uzs_is_not_a_zero_dp_currency_here(self):
+		"""The set is about what ERPNext STORES, not what ISO 4217 says.
+
+		UZS sat in it until 2026-08-20 on the tiyin argument (out of circulation
+		since 1994). But precision is a site setting, not a currency property:
+		`currency_precision` is unset on every tenant and
+		`use_number_format_from_currency` is 0, so `get_field_precision` falls
+		through to the global "#,###.##" and reports 2 for UZS — measured on both
+		mikas (UZS base) and anjan, where 197 721 of 209 434 GL rows carry a
+		fractional amount.
+
+		Calling it 0 here made the tolerance a thousand times wider than the
+		precision the difference is measured at: a 3-leg UZS entry tolerated 4,99
+		of a quantity recorded to the kopeck. `test_currency_precision_agreement`
+		is what keeps this honest against the live site.
+		"""
+		self.assertEqual(base_precision_for("UZS"), 2)
 
 	def test_unknown_defaults_two(self):
 		self.assertEqual(base_precision_for(None), 2)

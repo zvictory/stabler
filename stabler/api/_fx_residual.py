@@ -18,9 +18,28 @@ from __future__ import annotations
 
 # Currencies ERPNext stores with zero decimal places (smallest unit = 1).
 # A "penny" residual in these currencies is a whole unit, not 0.01.
+#
+# THIS IS A CLAIM ABOUT THE SITE, NOT ABOUT ISO 4217, and it is only as true as
+# the site's settings. `get_field_precision` reads the field's own precision,
+# then System Settings `currency_precision`, then the number format
+# (frappe/model/meta.py:905-917) — the currency code never enters into it.
+#
+# UZS sat in this set until 2026-08-20 because the tiyin left circulation in
+# 1994. That is true of the cash and false of the database: every tenant runs
+# `currency_precision` unset with the global format "#,###.##", so UZS money
+# fields report precision 2 — measured on mikas (UZS base) and anjan, where
+# 197 721 of 209 434 GL rows carry a fractional amount. Calling it 0 sized every
+# UZS tolerance in whole so'm for a quantity recorded to the kopeck: a 3-leg
+# entry tolerated 4,99, i.e. 499 units at the precision the difference is
+# actually measured at. Removing it narrows that, and the narrowing was measured
+# before it was made — the three UZS-base tenants (horeca, mikas, msa) have
+# zero auto-booked FX rounding rows between them, so no existing document would
+# have been refused.
+#
+# `test_currency_precision_agreement` checks this set against the live site, so
+# the next currency that drifts is caught by a test rather than by a user.
 ZERO_DECIMAL_CURRENCIES = frozenset(
 	{
-		"UZS",
 		"JPY",
 		"KRW",
 		"VND",

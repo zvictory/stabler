@@ -126,18 +126,20 @@ def _balance_journal_entry(doc) -> None:
 	if not diff:
 		return
 
-	# TWO NOTIONS OF PRECISION MEET HERE, and they disagree. The difference above
-	# is measured at the DOCUMENT's precision — measured 2 on a UZS company, because
+	# TWO NOTIONS OF PRECISION MEET HERE, and they now agree. The difference above
+	# is measured at the DOCUMENT's precision — 2 on a UZS company, because
 	# `currency_precision` is unset and `get_field_precision` falls through to the
 	# global "#,###.##" (frappe/model/meta.py:910-913). The tolerance below is sized
-	# at `base_precision_for`, which calls UZS a 0-decimal currency and therefore
-	# hands back whole units: a 3-leg UZS entry tolerates up to 4,99 — 499 units at
-	# the precision the difference is actually measured at. Immaterial in money at
-	# UZS rates, and NOT changed here: narrowing it would tighten what gets booked on
-	# every Journal Entry and Payment Entry across all seven tenants, which is a
-	# decision of its own and not part of fixing the artefact. It is pinned by
-	# boundary tests in test_fx_balance.py so the mismatch is deliberate rather than
-	# incidental, and recorded in docs/backlog.md.
+	# at `base_precision_for`, which used to call UZS a 0-decimal currency and hand
+	# back whole units: a 3-leg UZS entry tolerated 4,99 — 499 units at the
+	# precision the difference is actually measured at.
+	#
+	# Closed 2026-08-20 by taking UZS out of ZERO_DECIMAL_CURRENCIES, which is the
+	# narrowing this comment used to defer. It was measured first: the three
+	# UZS-base tenants (horeca, mikas, msa) carry zero auto-booked rounding rows,
+	# so nothing that exists today would have been refused. The boundary tests in
+	# test_fx_balance.py moved with it, and test_currency_precision_agreement now
+	# checks the set against the live site rather than against prose.
 	company_currency = frappe.get_cached_value("Company", doc.company, "default_currency") or "UZS"
 	tol = residual_tolerance(len(doc.get("accounts") or []), base_precision_for(company_currency))
 	if not within_tolerance(diff, tol):

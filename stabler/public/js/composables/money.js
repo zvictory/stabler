@@ -7,10 +7,17 @@
  *   tr  -> "20.820,00"   (dot thousands, comma decimal — distinct from all above)
  *
  * Per-currency overrides:
- *   UZS -> integer (no decimals) + native suffix `сўм`,
- *          e.g. "38 000 000 сўм" — matches how Uzbek users actually
- *          write the currency. The tiyin (1/100 сўм) hasn't been in
- *          circulation since 1994, so fractional UZS is meaningless.
+ *   UZS -> native suffix `сўм`, e.g. "38 000 000,00 сўм". Two decimals,
+ *          because that is what the LEDGER holds. This said 0 until
+ *          2026-08-20, on the argument that the tiyin (1/100 сўм) left
+ *          circulation in 1994 — true of the cash, false of the database.
+ *          ERPNext takes precision from the site, not from ISO 4217
+ *          (frappe/model/meta.py:905-917), and every tenant runs with
+ *          `currency_precision` unset and the global format "#,###.##",
+ *          so UZS money fields report precision 2. Measured on mikas and
+ *          anjan; 197 721 of anjan's 209 434 GL rows carry a fraction.
+ *          Displaying a whole number over a stored 1 500 000,50 was not a
+ *          simplification, it was a second number.
  *
  * MoneyInput component (per rule) lives separately for editable fields.
  * This helper is for read-only display in tables and cards.
@@ -26,7 +33,7 @@ export const LOCALE_MAP = {
 // Per-currency display overrides. Anything not listed falls through to the
 // default `Intl.NumberFormat` `style: "currency"` path.
 const CURRENCY_OVERRIDES = {
-	UZS: { fractionDigits: 0, suffix: "сўм" },
+	UZS: { fractionDigits: 2, suffix: "сўм" },
 	// USDT is not an ISO 4217 currency so Intl.NumberFormat throws on it.
 	// Format manually: 2 decimal places + "USDT" suffix.
 	USDT: { fractionDigits: 2, suffix: "USDT" },
@@ -161,9 +168,10 @@ export function formatCompactMoney(value, currency = "USD", language = "en") {
  * which a difference is rounding noise, not a real gap.
  *
  * Mirrors `money_epsilon()` in `stabler/api/_money.py` so the client-side
- * guard and the server-side guard agree. UZS has no fractional unit in
- * circulation, so its epsilon is half a so'm (0.5), not half a cent —
- * a hardcoded 0.01 would reject a legitimate whole-so'm payment.
+ * guard and the server-side guard agree — which means this one number has to
+ * move whenever `ZERO_DECIMAL_CURRENCIES` does. UZS was half a so'm (0.5) until
+ * 2026-08-20 on the theory that it has no fractional unit; the ledger records
+ * kopecks, so 0.5 called forty kopecks of real difference "noise".
  */
 /** Fraction digits `currency` actually holds — 0 for UZS, 2 for the rest. */
 export function moneyFractionDigits(currency = "USD") {

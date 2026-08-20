@@ -41,15 +41,25 @@ describe("formatMoney — the display half of the money-input contract", () => {
 		expect(formatMoney(20820, "USD", "de")).toBe(formatMoney(20820, "USD", "en"));
 	});
 
-	// The tiyin left circulation in 1994. Showing "38 000 000,00 сўм" is not a
-	// rounding nicety, it is two digits of noise on every UZS figure in the app.
-	it("prints UZS as a whole number with the native сўм suffix", () => {
-		expect(norm(formatMoney(38000000, "UZS", "ru"))).toBe("38 000 000 сўм");
-		expect(formatMoney(38000000, "UZS", "en")).toBe("38,000,000 сўм");
+	// UZS carries two decimals because THE LEDGER DOES. The tiyin did leave
+	// circulation in 1994, and this app spent a long time treating that as the
+	// display rule — but ERPNext's precision is not an ISO fact, it is a site
+	// setting: `currency_precision` is unset on every tenant and
+	// `use_number_format_from_currency` is 0, so `get_field_precision` falls
+	// through to the global "#,###.##" (frappe/model/meta.py:910-913). Measured
+	// 2026-08-20: precision 2 for UZS on mikas AND anjan, and 197 721 of anjan's
+	// 209 434 GL rows carry a fractional amount.
+	//
+	// So a whole-number display was not tidiness, it was a second number: the
+	// form showed "1 500 001" and the ledger held 1 500 000,50. Showing what is
+	// stored is the only version that cannot lie.
+	it("prints UZS with two decimals and the native сўм suffix", () => {
+		expect(norm(formatMoney(38000000, "UZS", "ru"))).toBe("38 000 000,00 сўм");
+		expect(formatMoney(38000000, "UZS", "en")).toBe("38,000,000.00 сўм");
 	});
 
-	it("rounds UZS rather than truncating it", () => {
-		expect(formatMoney(1000.6, "UZS", "en")).toBe("1,001 сўм");
+	it("keeps the kopecks a UZS amount actually has", () => {
+		expect(formatMoney(1000.6, "UZS", "en")).toBe("1,000.60 сўм");
 	});
 
 	// USDT is not ISO 4217, so Intl throws on it. The override exists precisely so
@@ -134,9 +144,12 @@ describe("moneyEpsilon — how close counts as equal", () => {
 		expect(moneyEpsilon("EUR")).toBe(0.005);
 	});
 
-	it("is half a so'm for UZS, which has no fractional unit", () => {
-		// A hardcoded 0.01 here rejected legitimate whole-so'm payments.
-		expect(moneyEpsilon("UZS")).toBe(0.5);
+	it("is half a kopeck for UZS, because the ledger stores kopecks", () => {
+		// This was 0,5 — half a whole so'm — on the theory that UZS has no
+		// fractional unit. ERPNext stores UZS at precision 2 on every tenant
+		// (see the formatMoney block above), so 0,5 called forty kopecks of
+		// real, recorded difference "rounding noise" and swallowed it.
+		expect(moneyEpsilon("UZS")).toBe(0.005);
 	});
 
 	it("defaults to half a cent when the currency is unknown or missing", () => {
