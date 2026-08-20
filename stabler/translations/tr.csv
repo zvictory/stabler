@@ -6305,3 +6305,9 @@ Accounting is frozen before {0}.,Muhasebe {0} tarihinden öncesine kapalı.
 The expense may already have been recorded. Open the expense list and check before submitting again — a repeat posts a second journal entry.,Gider zaten kaydedilmiş olabilir. Yeniden göndermeden önce gider listesini açıp kontrol edin — tekrar ikinci bir yevmiye kaydı oluşturur.
 The transfer may already have been recorded. Open the transfer list and check before submitting again — a repeat posts a second journal entry.,Transfer zaten kaydedilmiş olabilir. Yeniden göndermeden önce transfer listesini açıp kontrol edin — tekrar ikinci bir yevmiye kaydı oluşturur.
 The entry may already have been saved. Check the calendar before saving again — a repeat adds a second plan row.,Kayıt zaten saklanmış olabilir. Yeniden kaydetmeden önce takvimi kontrol edin — tekrar ikinci bir plan satırı ekler.
+Do not receive into stock,Stoğa alma
+Receive into warehouse,Depoya al
+"Leave empty to open the payable only. Choosing a warehouse also books the goods into stock, on the Commercial Invoice's own date.",Yalnızca borcu açmak için boş bırakın. Depo seçilirse mal da stoğa alınır — ticari faturanın kendi tarihiyle.
+Draft Purchase Invoice created: {0} — goods received into {1},Alış faturası taslağı oluşturuldu: {0} — mal {1} deposuna alındı
+{0} is a warehouse group and cannot receive stock.,"{0} bir depo grubudur, stok kabul edemez."
+"Warehouse {0} belongs to {1}, not {2}.","{0} deposu {2} şirketine değil, {1} şirketine ait."

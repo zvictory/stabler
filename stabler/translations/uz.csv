@@ -6310,3 +6310,9 @@ Accounting is frozen before {0}.,Buxgalteriya {0} sanasigacha yopilgan.
 The expense may already have been recorded. Open the expense list and check before submitting again — a repeat posts a second journal entry.,Xarajat allaqachon yozilgan bo'lishi mumkin. Qayta yuborishdan oldin xarajatlar ro'yxatini oching va tekshiring — takror ikkinchi provodkani yaratadi.
 The transfer may already have been recorded. Open the transfer list and check before submitting again — a repeat posts a second journal entry.,O'tkazma allaqachon yozilgan bo'lishi mumkin. Qayta yuborishdan oldin o'tkazmalar ro'yxatini oching va tekshiring — takror ikkinchi provodkani yaratadi.
 The entry may already have been saved. Check the calendar before saving again — a repeat adds a second plan row.,Yozuv allaqachon saqlangan bo'lishi mumkin. Qayta saqlashdan oldin taqvimni tekshiring — takror ikkinchi reja qatorini qo'shadi.
+Do not receive into stock,Omborga kirim qilinmasin
+Receive into warehouse,Omborga qabul qilish
+"Leave empty to open the payable only. Choosing a warehouse also books the goods into stock, on the Commercial Invoice's own date.","Faqat kreditorlik qarzini ochish uchun bo'sh qoldiring. Ombor tanlansa, tovar ham omborga kirim qilinadi — tijorat invoysining o'z sanasi bilan."
+Draft Purchase Invoice created: {0} — goods received into {1},Hisob-faktura qoralamasi yaratildi: {0} — tovar {1} omboriga kirim qilindi
+{0} is a warehouse group and cannot receive stock.,"{0} — ombor guruhi, u tovar qabul qila olmaydi."
+"Warehouse {0} belongs to {1}, not {2}.","{0} ombori {2} ga emas, {1} ga tegishli."

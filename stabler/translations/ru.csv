@@ -6315,3 +6315,9 @@ Accounting is frozen before {0}.,Учёт закрыт до {0}.
 The expense may already have been recorded. Open the expense list and check before submitting again — a repeat posts a second journal entry.,"Расход мог уже быть записан. Откройте список расходов и проверьте, прежде чем отправлять повторно — повтор создаст вторую проводку."
 The transfer may already have been recorded. Open the transfer list and check before submitting again — a repeat posts a second journal entry.,"Перевод мог уже быть записан. Откройте список переводов и проверьте, прежде чем отправлять повторно — повтор создаст вторую проводку."
 The entry may already have been saved. Check the calendar before saving again — a repeat adds a second plan row.,"Запись могла уже сохраниться. Проверьте календарь, прежде чем сохранять снова — повтор добавит вторую строку плана."
+Do not receive into stock,Не приходовать на склад
+Receive into warehouse,Приход на склад
+"Leave empty to open the payable only. Choosing a warehouse also books the goods into stock, on the Commercial Invoice's own date.","Оставьте пустым, чтобы открыть только кредиторскую задолженность. Выбор склада также оприходует товар — датой самого коммерческого инвойса."
+Draft Purchase Invoice created: {0} — goods received into {1},Черновик счёта создан: {0} — товар оприходован на {1}
+{0} is a warehouse group and cannot receive stock.,"{0} — это группа складов, она не может принимать товар."
+"Warehouse {0} belongs to {1}, not {2}.","Склад {0} принадлежит {1}, а не {2}."

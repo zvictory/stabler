@@ -7209,7 +7209,9 @@ def _ci_advance_share(ci) -> dict:
 
 
 @frappe.whitelist()
-def convert_ci_to_purchase_invoice(commercial_invoice: str, company: str, dry_run: int = 1) -> dict:
+def convert_ci_to_purchase_invoice(
+	commercial_invoice: str, company: str, dry_run: int = 1, warehouse: str | None = None
+) -> dict:
 	"""Convert a Commercial Invoice into a DRAFT Purchase Invoice at agreed_total.
 
 	``dry_run`` (default 1): compute and return the plan — invoice lines, grand
@@ -7218,6 +7220,23 @@ def convert_ci_to_purchase_invoice(commercial_invoice: str, company: str, dry_ru
 	Purchase Invoice (NEVER submitted here: Accounts reviews and posts to GL, at
 	which point the CI leaves virtual exposure). ``docs_total`` (customs) is
 	reported for transparency but never enters the invoice.
+
+	``warehouse`` decides whether this invoice also RECEIVES the goods. Passing
+	one sets ``update_stock`` and books the stock movement on the same document
+	as the payable; passing nothing leaves the invoice payable-only, which is
+	what every caller did before and what the truck route still wants (there a
+	Purchase Receipt moves the stock and the bill only owes money).
+
+	It is a parameter and not a default because the date is not free: this
+	invoice posts on the CI's own date, which on the import route is months
+	before the container is discharged. Turning stock on unconditionally would
+	enter the goods — and value them — on a day they were still at sea. The
+	warehouse is therefore named at the moment the goods actually land.
+
+	The flag is also what the landed-cost chain keys on: ``_stock_receipts_for_grn``
+	finds an invoice-backed receipt by ``update_stock``, so an invoice raised
+	without one is invisible to the Landed Cost Voucher builder and the freight
+	never reaches item valuation.
 
 	Idempotent: if a non-cancelled Purchase Invoice already links this CI, it is
 	returned unchanged. Imports-gated + cost-visible (agreed/advance are K3).
@@ -7233,6 +7252,23 @@ def convert_ci_to_purchase_invoice(commercial_invoice: str, company: str, dry_ru
 		frappe.throw(_("The Commercial Invoice has no supplier."))
 	if (ci.status or "") == "Cancelled":
 		frappe.throw(_("A cancelled Commercial Invoice cannot be invoiced."))
+
+	# Refused here, before the preview is even computed: a warehouse that cannot
+	# hold stock must not reach `doc.insert`, where the failure arrives as an
+	# ERPNext validation error after the A/P has already been shaped. The first
+	# two questions are the house rule (`_validate_invoice_inputs` in
+	# purchasing.py); the third is this route's own — the converter is
+	# company-scoped end to end and already throws on a CI from another company,
+	# so a warehouse from another company would be the one hole left in it.
+	warehouse = (warehouse or "").strip() or None
+	if warehouse:
+		wh = frappe.db.get_value("Warehouse", warehouse, ["company", "is_group"], as_dict=True)
+		if not wh:
+			frappe.throw(_("Unknown warehouse: {0}").format(warehouse))
+		if cint(wh.is_group):
+			frappe.throw(_("{0} is a warehouse group and cannot receive stock.").format(warehouse))
+		if wh.company != company:
+			frappe.throw(_("Warehouse {0} belongs to {1}, not {2}.").format(warehouse, wh.company, company))
 
 	has_pi_ref = frappe.db.has_column("Purchase Invoice", "custom_commercial_invoice")
 	if has_pi_ref:
@@ -7289,6 +7325,11 @@ def convert_ci_to_purchase_invoice(commercial_invoice: str, company: str, dry_ru
 		"advances_found": advances,
 		"advance_plan": plan,
 		"docs_total_excluded": flt(ci.docs_total),
+		# An invoice that receives goods and one that only owes money are
+		# different documents with different consequences, so the preview the
+		# accountant confirms must not describe them identically.
+		"update_stock": 1 if warehouse else 0,
+		"set_warehouse": warehouse,
 	}
 	if not reconciled:
 		preview["warning"] = _(
@@ -7327,11 +7368,17 @@ def convert_ci_to_purchase_invoice(commercial_invoice: str, company: str, dry_ru
 	container = _single_container_of(commercial_invoice)
 	if container and frappe.db.has_column("Purchase Invoice", "custom_import_container"):
 		doc.custom_import_container = container
+	if warehouse:
+		doc.update_stock = 1
+		doc.set_warehouse = warehouse
 	for ln in lines:
-		doc.append(
-			"items",
-			{"item_code": ln["item_code"], "qty": ln["qty"] or 1, "rate": ln["rate"]},
-		)
+		row = {"item_code": ln["item_code"], "qty": ln["qty"] or 1, "rate": ln["rate"]}
+		if warehouse:
+			# On the row as well as the header: ERPNext values each line against
+			# the line's own warehouse, and a header-only `set_warehouse` throws
+			# at submit — after the accountant has pressed the button.
+			row["warehouse"] = warehouse
+		doc.append("items", row)
 	doc.insert(ignore_permissions=False)
 
 	# Guard: the A/P we open MUST equal the agreed payable. If ERPNext's
@@ -7351,6 +7398,8 @@ def convert_ci_to_purchase_invoice(commercial_invoice: str, company: str, dry_ru
 	return {
 		"purchase_invoice": doc.name,
 		"created": True,
+		"update_stock": cint(doc.update_stock),
+		"set_warehouse": doc.set_warehouse or None,
 		"grand_total": flt(doc.grand_total),
 		"agreed_total": agreed,
 		"reconciles_agreed": True,

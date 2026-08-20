@@ -6310,3 +6310,9 @@ Accounting is frozen before {0}.,Бухгалтерия {0} санасигача
 The expense may already have been recorded. Open the expense list and check before submitting again — a repeat posts a second journal entry.,Харажат аллақачон ёзилган бўлиши мумкин. Қайта юборишдан олдин харажатлар рўйхатини очинг ва текширинг — такрор иккинчи проводкани яратади.
 The transfer may already have been recorded. Open the transfer list and check before submitting again — a repeat posts a second journal entry.,Ўтказма аллақачон ёзилган бўлиши мумкин. Қайта юборишдан олдин ўтказмалар рўйхатини очинг ва текширинг — такрор иккинчи проводкани яратади.
 The entry may already have been saved. Check the calendar before saving again — a repeat adds a second plan row.,Ёзув аллақачон сақланган бўлиши мумкин. Қайта сақлашдан олдин тақвимни текширинг — такрор иккинчи режа қаторини қўшади.
+Do not receive into stock,Омборга кирим қилинмасин
+Receive into warehouse,Омборга қабул қилиш
+"Leave empty to open the payable only. Choosing a warehouse also books the goods into stock, on the Commercial Invoice's own date.","Фақат кредиторлик қарзини очиш учун бўш қолдиринг. Омбор танланса, товар ҳам омборга кирим қилинади — тижорат инвойсининг ўз санаси билан."
+Draft Purchase Invoice created: {0} — goods received into {1},Ҳисоб-фактура қораламаси яратилди: {0} — товар {1} омборига кирим қилинди
+{0} is a warehouse group and cannot receive stock.,"{0} — омбор гуруҳи, у товар қабул қила олмайди."
+"Warehouse {0} belongs to {1}, not {2}.","{0} омбори {2} га эмас, {1} га тегишли."

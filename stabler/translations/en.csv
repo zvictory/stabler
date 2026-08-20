@@ -6705,3 +6705,9 @@ Accounting is frozen before {0}.,Accounting is frozen before {0}.
 The expense may already have been recorded. Open the expense list and check before submitting again — a repeat posts a second journal entry.,The expense may already have been recorded. Open the expense list and check before submitting again — a repeat posts a second journal entry.
 The transfer may already have been recorded. Open the transfer list and check before submitting again — a repeat posts a second journal entry.,The transfer may already have been recorded. Open the transfer list and check before submitting again — a repeat posts a second journal entry.
 The entry may already have been saved. Check the calendar before saving again — a repeat adds a second plan row.,The entry may already have been saved. Check the calendar before saving again — a repeat adds a second plan row.
+Do not receive into stock,Do not receive into stock
+Receive into warehouse,Receive into warehouse
+"Leave empty to open the payable only. Choosing a warehouse also books the goods into stock, on the Commercial Invoice's own date.","Leave empty to open the payable only. Choosing a warehouse also books the goods into stock, on the Commercial Invoice's own date."
+Draft Purchase Invoice created: {0} — goods received into {1},Draft Purchase Invoice created: {0} — goods received into {1}
+{0} is a warehouse group and cannot receive stock.,{0} is a warehouse group and cannot receive stock.
+"Warehouse {0} belongs to {1}, not {2}.","Warehouse {0} belongs to {1}, not {2}."
