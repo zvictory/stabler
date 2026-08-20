@@ -233,11 +233,23 @@ describe("defaultExpandedGroups — first-load expansion", () => {
 		{ name: "Liabilities", is_group: 1, parent_account: null },
 	];
 
-	it("expands only the root groups, revealing their first level without opening the whole tree", () => {
+	// This opened the ROOT groups only until 2026-08-20, so that the tree
+	// "opens navigable instead of as a wall of every account at once". The wall
+	// was the wrong thing to be afraid of: a chart of accounts is read by
+	// following a number down to its leaf, and mikas's whole chart is 122 rows
+	// of which 31 are groups. Five rows and a click for every level is not a
+	// smaller view of the chart, it is the chart withheld.
+	it("expands every group, so the chart reads as a chart and not as five headings", () => {
 		const expanded = defaultExpandedGroups(accounts);
 		expect(expanded.has("Assets")).toBe(true);
 		expect(expanded.has("Liabilities")).toBe(true);
-		expect(expanded.has("Bank Accounts")).toBe(false);
+		expect(expanded.has("Bank Accounts")).toBe(true);
+	});
+
+	it("never expands a leaf, which has nothing to expand", () => {
+		// The set drives a chevron and a `children?.length` check, so a leaf in
+		// it is a rendering contradiction rather than a harmless extra.
+		expect(defaultExpandedGroups(accounts).has("Kassa")).toBe(false);
 	});
 
 	it("returns an empty set for an empty chart", () => {

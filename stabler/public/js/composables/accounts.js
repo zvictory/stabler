@@ -141,14 +141,29 @@ export function isAbnormalBalance(value, rootType) {
 }
 
 /**
- * First-load expansion: the root accounts only, so their immediate children
- * are visible without a click and nothing deeper springs open uninvited.
- * Every previous load expanded the ENTIRE tree unconditionally — a chart
- * with a couple hundred accounts opened as a wall, roll-ups for Income and
- * Expense sitting 100+ rows from their own root. The user's own later
+ * First-load expansion: every group.
+ *
+ * This is a deliberate reversal, asked for by Zafar on 2026-08-20 after using
+ * the roots-only version on mikas. Roots-only was itself a reversal, of a tree
+ * that had always opened whole, on the argument that "a chart with a couple
+ * hundred accounts opened as a wall, roll-ups for Income and Expense sitting
+ * 100+ rows from their own root". Both readings are recorded here rather than
+ * one overwriting the other, because the tradeoff is real and the next person
+ * to flip it should see what each side cost.
+ *
+ * What decided it: a chart of accounts is read by following a number down to
+ * its leaf, and mikas's entire chart is 122 accounts of which 31 are groups.
+ * Five headings and a click per level is not a smaller view of the chart, it
+ * is the chart withheld — and the wall the old note feared is, at this size, a
+ * table you scroll. If a tenant ever arrives whose chart is genuinely too big
+ * to open, that is the moment to make this depend on the chart's size, and not
+ * before: the collapse-all button is one click away and the user's own
  * choices are persisted separately (sessionStorage, company-scoped) by the
- * component; this function only decides what a brand new session sees.
+ * component. This function only decides what a brand new session sees.
+ *
+ * Leaves are excluded: the set drives a chevron and a `children?.length`
+ * check, so a leaf in it is a rendering contradiction, not a harmless extra.
  */
 export function defaultExpandedGroups(flatAccounts) {
-	return new Set((flatAccounts || []).filter((a) => a.is_group && !a.parent_account).map((a) => a.name));
+	return new Set((flatAccounts || []).filter((a) => a.is_group).map((a) => a.name));
 }
