@@ -8011,7 +8011,7 @@ def payment_calendar(company: str, days: int = 30) -> dict:
 		r["outstanding_amount"] = outstanding
 		r["due_date"] = str(r["due_date"]) if r.get("due_date") else None
 		r["supplier_name"] = r.get("supplier_name") or r.get("supplier")
-		r["overdue"] = bool(r.get("due_date") and getdate(r["due_date"]) < today_d)
+		r["overdue"] = bool(r.get("due_date") and getdate(r["due_date"]) < getdate(today_d))
 
 		ci = r.pop("commercial_invoice", None)
 		split = ci_split.get(ci) if ci else None

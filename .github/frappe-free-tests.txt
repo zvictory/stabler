@@ -61,6 +61,7 @@ stabler.tests.test_import_exposure
 stabler.tests.test_import_truck_transitions
 stabler.tests.test_imports_api_invariants
 stabler.tests.test_imports_rules
+stabler.tests.test_payment_calendar_source
 stabler.tests.test_item_crud_and_prices
 stabler.tests.test_item_picker_context
 stabler.tests.test_kassa_flow
