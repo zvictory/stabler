@@ -110,6 +110,73 @@ function round(n, digits) {
 }
 
 /**
+ * The exchange rates this entry uses — one per foreign currency, not per line.
+ *
+ * ERPNext stores `exchange_rate` on the row, and the form followed it there:
+ * `setRateQuote` wrote to the row the user was editing and to nothing else. So
+ * one entry, on one posting date, could book two USD lines at two different
+ * rates — and the screen showed each of them correctly, in its own 152px cell,
+ * with nothing anywhere saying they were supposed to be the same number.
+ *
+ * A rate is a fact about a (date, currency pair). This lifts it to where it
+ * belongs and lets the row table stop carrying a column for it.
+ *
+ * Returns `[{ currency, rate, mixed }]`, sorted by currency so the block does
+ * not reshuffle as lines are added. `rate` is the raw line rate — base per one
+ * unit of the account currency — and the caller flips it to the readable
+ * direction with `readableRate()`; the ≥1 rule lives in fx.js and stays there.
+ *
+ * `mixed` means the lines really do disagree. A line still waiting for
+ * `fetchRate` sits at 0 and is not a second opinion, or the warning would light
+ * on every newly picked account.
+ */
+export function ratesByCurrency(rows, baseCurrency) {
+	const found = new Map();
+	(Array.isArray(rows) ? rows : []).forEach((r) => {
+		// Same rule as postableRows(): a line with no account is not part of the
+		// entry, and quoting a rate for one would put a currency in the header
+		// that the server never sees.
+		if (!r || !r.account) return;
+		const currency = r.account_currency;
+		if (!currency || currency === baseCurrency) return;
+		const entry = found.get(currency) || { currency, rate: 0, mixed: false };
+		const rate = Number(r.exchange_rate) || 0;
+		if (rate > 0) {
+			if (entry.rate > 0 && entry.rate !== rate) entry.mixed = true;
+			else if (!entry.rate) entry.rate = rate;
+		}
+		found.set(currency, entry);
+	});
+	return [...found.values()].sort((a, b) => a.currency.localeCompare(b.currency));
+}
+
+/**
+ * Put one rate on every line of one currency. Returns how many it moved.
+ *
+ * `_rateTouched` is set for the same reason editing a row sets it: a rate the
+ * user chose is a decision, and `ratesToRefresh()` must not quietly replace it
+ * when the posting date moves. Typing it in the header is no less deliberate
+ * than typing it in a row.
+ *
+ * A non-positive rate is refused rather than written. Clearing the field while
+ * retyping emits null on the way, and a zero rate on a foreign line is what
+ * `balanced` reads as "this entry cannot be valued" — it would shut Save
+ * mid-keystroke on every line of that currency at once.
+ */
+export function applyRateToCurrency(rows, currency, rate) {
+	const value = Number(rate) || 0;
+	if (!currency || value <= 0) return 0;
+	let touched = 0;
+	(Array.isArray(rows) ? rows : []).forEach((r) => {
+		if (!r || r.account_currency !== currency) return;
+		r.exchange_rate = value;
+		r._rateTouched = true;
+		touched += 1;
+	});
+	return touched;
+}
+
+/**
  * Lines whose exchange rate should follow the posting date.
  *
  * The rate is asked for `as of` the posting date, but it was only ever asked

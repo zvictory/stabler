@@ -82,18 +82,21 @@ Add at least one cash desk before switching {0} to the V1 engine: V1 reads every
 Agreement {0} cannot move from {1} to {2}.,Договор {0} не может перейти из состояния {1} в {2}.
 Agreement {0} is closed ({1}) and cannot be rescheduled.,Договор {0} закрыт ({1}) и не может быть перепланирован.
 "Box counts cannot be saved on this site: {0} missing on {1}. An administrator must re-run patch {2}; bench migrate will not, it has already run once.",На этом сайте нельзя сохранить количество коробок: {0} отсутствует в {1}. Администратор должен повторно выполнить патч {2}; bench migrate этого не сделает — он уже выполнялся.
+Apply to all lines,Применить ко всем строкам
 Check the code,Проверить код
 Credit ({currency}),Кредит ({currency})
 Debit ({currency}),Дебет ({currency})
 Debits equal credits in {currency}.,Дебет равен кредиту в {currency}.
 Direct Sales Invoicing is not enabled for company {0}. Sales Invoices must be created from a submitted Sales Order.,Прямое выставление счетов не включено для компании {0}. Счета должны создаваться из проведённого заказа на продажу.
 Every user of {company} moves to the {engine} screens when this is saved.,При сохранении все пользователи {company} перейдут на экраны {engine}.
+Exchange rates,Курсы валют
 I have checked {receiver}'s identity document.,Я проверил удостоверение личности {receiver}.
 I have counted {amount} and am handing it back to {sender}.,Я пересчитал {amount} и возвращаю их {sender}.
 I have written it down,Код записан
 "Legacy posts journal entries from the New Transfer form it always has. V1 registers a Remittance Transfer and is the only engine where the payout, refund, operations and reconciliation screens exist.","Legacy проводит журнальные записи из той же формы «Новый перевод». V1 регистрирует Remittance Transfer и является единственным движком, где существуют экраны выплаты, возврата, операций и сверки."
 Journal entry,Запись в журнале
 Legacy — journal entry screens,Legacy — экраны журнальных проводок
+Lines disagree,Строки расходятся
 Not ready — this desk cannot take or hand over a transfer.,"Не готова — эта касса не может ни принять, ни выдать перевод."
 Only an open agreement can be terminated. {0} is {1}.,Закрыть можно только открытый договор. {0} находится в статусе {1}.
 Only the remittance desk can verify a pickup code.,Проверить код получения может только касса переводов.
@@ -102,6 +105,7 @@ Pay refund cash,Выдать наличные по возврату
 Pickup code,Код получения
 Purchase Receipt {0} already has a draft invoice: {1}. Submit or delete that draft instead of raising a second bill for the same goods.,У приёмки товара {0} уже есть черновик счёта: {1}. Проведите или удалите этот черновик вместо создания второго счёта за тот же товар.
 Quote updated — switching how the fee is charged recalculates the amounts.,Расчёт обновлён — смена способа удержания комиссии пересчитывает суммы.
+Refresh the rate for this date,Обновить курс на эту дату
 Remittance engine,Движок переводов
 Same as your last transfer,Как в прошлом переводе
 Terminated by {0}: {1},Закрыт пользователем {0}: {1}

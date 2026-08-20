@@ -81,18 +81,21 @@ Add at least one cash desk before switching {0} to the V1 engine: V1 reads every
 Agreement {0} cannot move from {1} to {2}.,{0} sözleşmesi {1} durumundan {2} durumuna geçemez.
 Agreement {0} is closed ({1}) and cannot be rescheduled.,{0} sözleşmesi kapalı ({1}) ve yeniden planlanamaz.
 "Box counts cannot be saved on this site: {0} missing on {1}. An administrator must re-run patch {2}; bench migrate will not, it has already run once.","Bu sitede koli sayıları kaydedilemez: {1} üzerinde {0} yok. Bir yönetici {2} patch'ini yeniden çalıştırmalı; bench migrate bunu yapmaz, o bir kez çalıştı."
+Apply to all lines,Tüm satırlara uygula
 Check the code,Kodu doğrula
 Credit ({currency}),Alacak ({currency})
 Debit ({currency}),Borç ({currency})
 Debits equal credits in {currency}.,{currency} cinsinden borç ile alacak eşit.
 Direct Sales Invoicing is not enabled for company {0}. Sales Invoices must be created from a submitted Sales Order.,Doğrudan Satış Faturalama {0} şirketi için etkin değil. Satış Faturaları gönderilmiş bir Satış Siparişinden oluşturulmalıdır.
 Every user of {company} moves to the {engine} screens when this is saved.,Kaydedildiğinde {company} şirketinin tüm kullanıcıları {engine} ekranlarına geçer.
+Exchange rates,Döviz kurları
 I have checked {receiver}'s identity document.,{receiver} kişisinin kimlik belgesini kontrol ettim.
 I have counted {amount} and am handing it back to {sender}.,{amount} tutarını saydım ve {sender} kişisine geri veriyorum.
 I have written it down,Yazdım
 "Legacy posts journal entries from the New Transfer form it always has. V1 registers a Remittance Transfer and is the only engine where the payout, refund, operations and reconciliation screens exist.","Legacy, her zamanki Yeni Transfer formundan yevmiye kaydı atar. V1 ise bir Remittance Transfer kaydı oluşturur ve ödeme, iade, operasyon ve mutabakat ekranlarının bulunduğu tek motordur."
 Journal entry,Yevmiye kaydı
 Legacy — journal entry screens,Legacy — yevmiye kaydı ekranları
+Lines disagree,Satırlar farklı
 Not ready — this desk cannot take or hand over a transfer.,Hazır değil — bu kasa transferi ne alabilir ne verebilir.
 Only an open agreement can be terminated. {0} is {1}.,Yalnızca açık bir sözleşme kapatılabilir. {0} şu durumda: {1}.
 Only the remittance desk can verify a pickup code.,Teslim kodunu yalnızca havale gişesi doğrulayabilir.
@@ -101,6 +104,7 @@ Pay refund cash,İade nakdini öde
 Pickup code,Teslim kodu
 Purchase Receipt {0} already has a draft invoice: {1}. Submit or delete that draft instead of raising a second bill for the same goods.,{0} mal kabul fişinin zaten bir taslak faturası var: {1}. Aynı mal için ikinci bir fatura kesmek yerine o taslağı onaylayın veya silin.
 Quote updated — switching how the fee is charged recalculates the amounts.,Fiyat güncellendi — komisyonun alınma şeklini değiştirmek tutarları yeniden hesaplar.
+Refresh the rate for this date,Bu tarih için kuru yenile
 Remittance engine,Transfer motoru
 Same as your last transfer,Son transferinizdeki gibi
 Terminated by {0}: {1},{0} tarafından kapatıldı: {1}

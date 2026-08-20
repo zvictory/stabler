@@ -12,9 +12,11 @@ import {
 	describePlugResidual,
 	isDraftDirty,
 	isPostingFrozen,
+	applyRateToCurrency,
 	isRowOrphaned,
 	journalFreezeDate,
 	postableRows,
+	ratesByCurrency,
 	ratesToRefresh,
 	snapshotDraft,
 } from "../../composables/journal.js";
@@ -145,7 +147,6 @@ const postable = computed(() => postableRows(form.value.accounts));
 const isMultiCurrency = computed(() => postable.value.some(isForeign));
 const baseDebit = computed(() => postable.value.reduce((s, r) => s + (Number(r.debit) || 0) * rateOf(r), 0));
 const baseCredit = computed(() => postable.value.reduce((s, r) => s + (Number(r.credit) || 0) * rateOf(r), 0));
-const baseLine = (r) => (Number(r.debit) || Number(r.credit) || 0) * rateOf(r);
 
 // Single-currency: balance in that currency. Multi-currency: balance in the
 // company base (each leg × its rate); sub-unit residuals are sealed by the JE
@@ -180,25 +181,57 @@ const balanced = computed(() => {
 // its own rounding is what is holding Save shut. See describePlugResidual().
 const plugResidual = computed(() => describePlugResidual(form.value.accounts, { rateOf, tolerance: balanceTol.value }));
 
-// Readable "1 strong = N weak" quote for a line (always the ≥1 direction).
-const rateQuote = (row) => readableRate(row.exchange_rate, row.account_currency, currencyCode.value);
 const fmtRate = (v) => formatRate(v, user.value.language);
 // Readable quote string for a view-pane line, e.g. "1 USD = 12 034 сўм".
 function viewQuote(a) {
 	const q = readableRate(a.exchange_rate, a.account_currency, detail.value?.base_currency || currency.value);
 	return q ? `1 ${q.strong} = ${fmtRate(q.value)} ${q.weak}` : "";
 }
-// User edits the readable N; store it back as the ERPNext per-line rate.
-// Correcting a rate to the bank's or the contract's is the rule in a
-// multi-currency entry, not the exception, and it moves every base figure the
-// balance is measured in — so the plug has to be re-derived with it. -1: no
-// line is off-limits; a rate is not an amount the user typed into a side.
-function setRateQuote(row, val) {
-	const q = rateQuote(row);
-	if (!q) return;
-	row.exchange_rate = toLineRate(val, q.strong, row.account_currency);
-	row._rateTouched = true;
+// The entry's rates, one row per foreign currency. See ratesByCurrency(): the
+// rate is a fact about (posting date, currency pair), and putting an input on
+// every LINE let one entry book two USD legs at two different rates.
+const entryRates = computed(() =>
+	ratesByCurrency(form.value.accounts, currencyCode.value).map((r) => ({
+		...r,
+		// The ≥1 direction, exactly as the row cell used to show it, so a
+		// UZS account in a USD-base company still reads "1 USD = 12 335 сўм"
+		// rather than "1 UZS = 0,000081 USD". The RAW rate decides which side is
+		// strong — substituting 1 for an unquoted line would answer "the foreign
+		// one" every time and flip the quote the moment the real rate arrived.
+		quote: readableRate(r.rate, r.currency, currencyCode.value),
+	})),
+);
+
+// The header's edit path. Same shape as setRateQuote below — read the user's
+// number in the readable direction, store the ERPNext per-line rate — except it
+// lands on every line of the currency instead of one, and re-derives the plug
+// because every base figure the balance is measured in has just moved.
+function setEntryRate(entry, val) {
+	// The direction comes from the quote the user is looking at, not from a
+	// fresh readableRate() call: which side is "strong" is decided by the
+	// current rate, so re-deriving it here would read the number the user typed
+	// against a direction they were never shown.
+	if (!entry?.quote) return;
+	const rate = toLineRate(val, entry.quote.strong, entry.currency);
+	if (!applyRateToCurrency(form.value.accounts, entry.currency, rate)) return;
 	runAutoBalance(-1);
+}
+
+// Ask the server what the rate was on the posting date, then apply it to the
+// whole currency. Deliberately goes through applyRateToCurrency rather than
+// fetchRate per row: a per-row refresh is how the lines drifted apart.
+async function refreshEntryRate(currency) {
+	if (!activeCompany.value) return;
+	try {
+		const rate = await call("stabler.api.money.get_exchange_rate_for_currencies", {
+			from_currency: currency,
+			to_currency: currencyCode.value,
+			posting_date: form.value.posting_date,
+		});
+		if (applyRateToCurrency(form.value.accounts, currency, rate)) runAutoBalance(-1);
+	} catch {
+		/* leave the rate for the user to enter */
+	}
 }
 
 async function fetchRate(row) {
@@ -764,11 +797,38 @@ watch(() => form.value.posting_date, (d) => {
 					<div class="col-12"><label class="form-label small">{{ t("Remark") }}</label><input v-model="form.user_remark" type="text" class="form-control form-control-sm" :placeholder="t('What is this entry for?')" /></div>
 				</div>
 
+				<!-- One rate per currency, not one per line. See ratesByCurrency(). -->
+				<div v-if="entryRates.length" class="card card-sm mb-2">
+					<div class="card-body py-2">
+						<div class="d-flex align-items-center gap-2 mb-2">
+							<i class="ti ti-arrows-exchange text-azure"></i>
+							<span class="fw-semibold small">{{ t("Exchange rates") }}</span>
+							<span class="text-secondary je-hint">{{ formatDate(form.posting_date) }}</span>
+						</div>
+						<div v-for="r in entryRates" :key="r.currency" class="d-flex align-items-center flex-wrap gap-2 mb-1">
+							<span class="text-secondary small text-nowrap" style="min-width: 5.5rem">1 {{ r.quote?.strong || r.currency }} =</span>
+							<div style="width: 170px">
+								<MoneyInput :model-value="r.quote?.value || null" :language="user.language" :min="0" hide-currency size="sm" @update:model-value="(v) => setEntryRate(r, v)" />
+							</div>
+							<span class="badge bg-secondary-lt text-uppercase je-ccy">{{ r.quote?.weak || currencyCode }}</span>
+							<button type="button" class="btn btn-sm btn-ghost-secondary" :title="t('Refresh the rate for this date')" @click="refreshEntryRate(r.currency)">
+								<i class="ti ti-refresh"></i>
+							</button>
+							<!-- An entry saved before the rate was lifted up here can carry two
+							     different rates for one currency. The header does not get to pick
+							     one silently — it says so, and overwriting stays the user's call. -->
+							<template v-if="r.mixed">
+								<span class="badge bg-orange-lt">{{ t("Lines disagree") }}</span>
+								<button type="button" class="btn btn-sm btn-ghost-primary" @click="setEntryRate(r, r.quote?.value)">{{ t("Apply to all lines") }}</button>
+							</template>
+						</div>
+					</div>
+				</div>
+
 				<table class="table table-sm table-vcenter mb-0">
 					<thead><tr>
 						<th style="min-width: 170px">{{ t("Account") }}</th>
 						<th style="min-width: 200px">{{ t("Party") }}</th>
-						<th v-if="isMultiCurrency" class="text-end" style="width: 152px">{{ t("Rate") }}</th>
 						<th class="text-end" style="width: 148px">{{ t("Debit") }}</th>
 						<th class="text-end" style="width: 148px">{{ t("Credit") }}</th>
 						<th class="w-1"></th>
@@ -794,37 +854,35 @@ watch(() => form.value.posting_date, (d) => {
 									</Typeahead>
 								</div>
 							</td>
-							<td v-if="isMultiCurrency" class="text-end">
-								<template v-if="isForeign(row) && rateQuote(row)">
-									<MoneyInput :model-value="rateQuote(row).value" :language="user.language" :min="0" size="sm" @update:model-value="(v) => setRateQuote(row, v)" />
-									<div class="text-secondary je-hint text-nowrap">1 {{ rateQuote(row).strong }} = {{ fmtRate(rateQuote(row).value) }} {{ rateQuote(row).weak }}</div>
-									<div v-if="baseLine(row)" class="text-secondary je-hint text-nowrap">= {{ formatMoney(baseLine(row), currencyCode, user.language) }}</div>
-								</template>
-								<span v-else class="text-secondary small">1</span>
-							</td>
 							<td :class="{ 'je-auto': isAutoAmount(row, 'debit') }" :title="isAutoAmount(row, 'debit') ? t('Filled in to balance the entry') : null">
 								<MoneyInput v-model="row.debit" :currency="row.account_currency || currencyCode" hide-currency :language="user.language" size="sm" @update:model-value="onAmountInput(row, idx, 'debit')" />
+								<div v-if="isForeign(row) && Number(row.debit)" class="text-secondary je-hint text-nowrap">
+									= {{ formatMoney(Number(row.debit) * rateOf(row), currencyCode, user.language) }}
+								</div>
 							</td>
 							<td :class="{ 'je-auto': isAutoAmount(row, 'credit') }" :title="isAutoAmount(row, 'credit') ? t('Filled in to balance the entry') : null">
 								<MoneyInput v-model="row.credit" :currency="row.account_currency || currencyCode" hide-currency :language="user.language" size="sm" @update:model-value="onAmountInput(row, idx, 'credit')" />
+								<div v-if="isForeign(row) && Number(row.credit)" class="text-secondary je-hint text-nowrap">
+									= {{ formatMoney(Number(row.credit) * rateOf(row), currencyCode, user.language) }}
+								</div>
 							</td>
 							<td><button type="button" class="btn btn-sm btn-ghost-danger" @click="removeRow(idx)"><i class="ti ti-trash"></i></button></td>
 						</tr>
 					</tbody>
 					<tfoot>
 						<tr class="fw-bold">
-							<td :colspan="isMultiCurrency ? 3 : 2"><button type="button" class="btn btn-sm btn-ghost-primary" @click="addRow"><i class="ti ti-plus me-1"></i>{{ t("Add row") }}</button></td>
+							<td colspan="2"><button type="button" class="btn btn-sm btn-ghost-primary" @click="addRow"><i class="ti ti-plus me-1"></i>{{ t("Add row") }}</button></td>
 							<td class="text-end font-monospace">{{ formatMoney(isMultiCurrency ? baseDebit : totalDebit, currencyCode, user.language) }}</td>
 							<td class="text-end font-monospace">{{ formatMoney(isMultiCurrency ? baseCredit : totalCredit, currencyCode, user.language) }}</td>
 							<td><span class="badge" :class="balanced ? 'bg-green-lt' : 'bg-red-lt'">{{ balanced ? t("Balanced") : "Δ " + formatMoney(diff, currencyCode, user.language) }}</span></td>
 						</tr>
-						<tr v-if="plugResidual"><td colspan="6" class="text-warning small fw-normal pt-0">
+						<tr v-if="plugResidual"><td colspan="5" class="text-warning small fw-normal pt-0">
 							{{ t("{0} converts to {1}; the other lines come to {2}.")
 								.replace("{0}", formatMoney(plugResidual.amount, plugResidual.currency || currencyCode, user.language))
 								.replace("{1}", formatMoney(plugResidual.base, currencyCode, user.language))
 								.replace("{2}", formatMoney(plugResidual.counterBase, currencyCode, user.language)) }}
 						</td></tr>
-						<tr v-if="isMultiCurrency"><td colspan="6" class="text-secondary small fw-normal pt-0">{{ t("Totals shown in base currency ({0}).").replace("{0}", currencyCode) }}</td></tr>
+						<tr v-if="isMultiCurrency"><td colspan="5" class="text-secondary small fw-normal pt-0">{{ t("Totals shown in base currency ({0}).").replace("{0}", currencyCode) }}</td></tr>
 					</tfoot>
 				</table>
 
