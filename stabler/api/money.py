@@ -26,6 +26,131 @@ _FX_LO = 0.2  # 5× too low
 _FX_HI = 5.0  # 5× too high
 
 
+# --- Retried writes -------------------------------------------------------
+#
+# An operator submits an expense, the shared bench times out, the form stays on
+# screen and the operator clicks again. Nothing in the payload separates that
+# second click from a genuine second expense — `cheque_no = f"Exp-{posting_date}"`
+# is shared by every expense that day — and a fingerprint of
+# (company, posting_date, payment_from, base_total, payee) would refuse the two
+# identical cash expenses a real day produces. So the caller carries an identity
+# for the INTENT: generated once when the form is opened, sent unchanged on every
+# retry, stored on the document by `v96_money_idempotency_key` under a unique
+# index. The pre-check answers the sequential retry; the index answers the
+# double-click, and `_idempotent_conflict` turns its 1062 back into the winner's
+# document instead of an error.
+
+_IDEMPOTENCY_FIELD = "custom_idempotency_key"
+_IDEMPOTENT_SAVEPOINT = "stabler_idempotent_insert"
+
+
+def _idempotency_available(doctype: str) -> bool:
+	"""False on a site where v96 has not run — see `stabler.install_check`.
+
+	A missing Custom Field must degrade to the old behaviour, not break the money
+	module: zuma carried a complete Patch Log and 206 missing fields at once.
+	"""
+	return bool(frappe.get_meta(doctype).has_field(_IDEMPOTENCY_FIELD))
+
+
+def _idempotent_prior(doctype: str, key: str | None) -> str | None:
+	"""The document an earlier attempt at this same intent already created."""
+	if not key or not _idempotency_available(doctype):
+		return None
+	return frappe.db.get_value(doctype, {_IDEMPOTENCY_FIELD: key}, "name")
+
+
+def _idempotent_reply(doctype: str, name: str) -> dict:
+	"""Answer a repeat with the first attempt's document, not a second one.
+
+	`repeat` is the whole point of the flag: a form that resets on a fresh
+	success and warns on a repeat is a different screen from one that cannot
+	tell the two apart.
+	"""
+	row = frappe.db.get_value(doctype, name, ["name", "docstatus", "modified"], as_dict=True)
+	return {
+		"name": row.name,
+		"docstatus": row.docstatus,
+		"modified": str(row.modified),
+		"repeat": True,
+	}
+
+
+def _stamp_idempotency(doc, key: str | None) -> None:
+	"""Put the caller's identity on the row, so the unique index can guard it."""
+	if key and _idempotency_available(doc.doctype):
+		setattr(doc, _IDEMPOTENCY_FIELD, key)
+
+
+def _is_duplicate_key_error(err: Exception) -> bool:
+	"""Mirrors `crm_automation._is_duplicate_err` — the same question, one table over."""
+	dup_classes = tuple(
+		cls
+		for cls in (
+			getattr(frappe, "UniqueValidationError", None),
+			getattr(frappe, "DuplicateEntryError", None),
+		)
+		if isinstance(cls, type)
+	)
+	if dup_classes and isinstance(err, dup_classes):
+		return True
+	text = str(err)
+	return "1062" in text or "Duplicate entry" in text
+
+
+def _idempotent_conflict(doc, key: str | None, err: Exception) -> dict | None:
+	"""The reply for the request that lost a race to an identical one.
+
+	Two clicks 200 ms apart both pass `_idempotent_prior` — neither can see the
+	other's uncommitted row — so the index decides and the loser gets a 1062.
+	Returns None for anything else, because swallowing an unrelated insert
+	failure would report a posting that did not happen as a success.
+
+	The rollback is scoped to a savepoint on purpose: a bare `frappe.db.rollback()`
+	would discard whatever the request wrote before the insert, and
+	`create_payment_for_invoice` writes before it inserts.
+
+	`prior != doc.name` is not paranoia. The two payment endpoints wrap insert
+	AND submit in one try, so a 1062 raised by something else during submit
+	arrives here with our own row already written. Answering with it would
+	report a document that failed to post as posted.
+	"""
+	if not key or not _is_duplicate_key_error(err):
+		return None
+	frappe.db.rollback(save_point=_IDEMPOTENT_SAVEPOINT)
+	prior = _idempotent_prior(doc.doctype, key)
+	if not prior or prior == doc.name:
+		return None
+	return _idempotent_reply(doc.doctype, prior)
+
+
+def _idempotent_savepoint(key: str | None) -> None:
+	"""Mark the point an idempotent insert can be undone to, when there is a key.
+
+	Callers whose insert sits inside their own try/except use this directly and
+	call `_idempotent_conflict` from the handler they already have.
+	"""
+	if key:
+		frappe.db.savepoint(_IDEMPOTENT_SAVEPOINT)
+
+
+def _idempotent_insert(doc, key: str | None) -> dict | None:
+	"""`doc.insert()`, or the winner's reply when an identical request beat it."""
+	if not key:
+		doc.insert(ignore_permissions=False)
+		return None
+	frappe.db.savepoint(_IDEMPOTENT_SAVEPOINT)
+	try:
+		doc.insert(ignore_permissions=False)
+	except Exception as err:
+		conflict = _idempotent_conflict(doc, key, err)
+		if conflict is not None:
+			return conflict
+		raise
+	frappe.db.release_savepoint(_IDEMPOTENT_SAVEPOINT)
+	return None
+
+
 def _pending_payment_for_invoice(invoice_type: str, invoice_name: str) -> str | None:
 	"""Name of an UNSUBMITTED Payment Entry already allocated to this invoice.
 
@@ -1445,6 +1570,7 @@ def create_journal_entry(
 	cheque_date: str | None = None,
 	amended_from: str | None = None,
 	submit: int = 0,
+	idempotency_key: str | None = None,
 ) -> dict:
 	"""Create a Journal Entry as Draft (docstatus=0), or post it in the same call.
 
@@ -1458,9 +1584,17 @@ def create_journal_entry(
 	asked to post can only be undone by a cancellation that stays in the ledger.
 	Posting goes through the same validation as the draft path and asks for
 	`submit` permission on the document itself; insert permission is not it.
+
+	`idempotency_key` identifies the operator's INTENT, not the payload: sent
+	once when the form is opened and repeated verbatim on retry, it lets a
+	re-submitted request return the entry the first attempt made instead of
+	posting a second one. Omitting it keeps the old behaviour exactly.
 	"""
 	_require_company(company)
 	_assert_company_scope(company)  # tenant isolation: reject a foreign company arg
+	prior = _idempotent_prior("Journal Entry", idempotency_key)
+	if prior:
+		return _idempotent_reply("Journal Entry", prior)
 	_assert_posting_period_open(company, posting_date)
 	cleaned, any_non_base = _clean_je_rows(accounts, company)
 
@@ -1483,7 +1617,10 @@ def create_journal_entry(
 		doc.amended_from = resolved_amend
 	for row in cleaned:
 		doc.append("accounts", row)
-	doc.insert(ignore_permissions=False)
+	_stamp_idempotency(doc, idempotency_key)
+	conflict = _idempotent_insert(doc, idempotency_key)
+	if conflict:
+		return conflict
 	if cint(submit):
 		_assert_can_write("Journal Entry", doc.name, "submit")
 		doc.submit()
@@ -1832,6 +1969,7 @@ def create_payment_entry(
 	target_purchase_invoice: str | None = None,
 	exchange_rate: float | str | None = None,
 	submit: int = 0,
+	idempotency_key: str | None = None,
 ) -> dict:
 	"""Create a Payment Entry as Draft (docstatus=0), optionally submitting it
 	atomically when `submit=1` (used by the one-click party-payment modal so
@@ -1840,9 +1978,17 @@ def create_payment_entry(
 	payment_type:
 	  - "Receive" — paid_from is the party's receivable account, paid_to is bank/cash.
 	  - "Pay"     — paid_from is bank/cash, paid_to is the party's payable account.
+
+	`idempotency_key` identifies the operator's INTENT, not the payload: sent
+	once when the form is opened and repeated verbatim on retry, it lets a
+	re-submitted request return the document the first attempt made instead of
+	writing a second one. Omitting it keeps the old behaviour exactly.
 	"""
 	_require_company(company)
 	_assert_company_scope(company)  # tenant isolation: reject a foreign company arg
+	prior = _idempotent_prior("Payment Entry", idempotency_key)
+	if prior:
+		return _idempotent_reply("Payment Entry", prior)
 	if payment_type not in {"Receive", "Pay"}:
 		frappe.throw("payment_type must be 'Receive' or 'Pay'.")
 	if party_type not in {"Customer", "Supplier", "Employee"}:
@@ -2029,6 +2175,8 @@ def create_payment_entry(
 	# 200; the gain/loss Journal Entries are still created (correct accounting).
 	_prev_mute = frappe.flags.mute_msgprint
 	frappe.flags.mute_msgprint = True
+	_stamp_idempotency(doc, idempotency_key)
+	_idempotent_savepoint(idempotency_key)
 	try:
 		doc.insert(ignore_permissions=False)
 		if int(submit or 0):
@@ -2056,6 +2204,9 @@ def create_payment_entry(
 				}
 			doc.submit()
 	except Exception as e:
+		conflict = _idempotent_conflict(doc, idempotency_key, e)
+		if conflict is not None:
+			return conflict
 		snap = _payment_gl_snapshot(doc)
 		snap.update({"fn": "create_payment_entry", "error": str(e)})
 		_log_payment("error", snap)
@@ -2328,12 +2479,22 @@ def create_payment_for_invoice(
 	modified: str | None = None,
 	received_amount: float | str | None = None,
 	exchange_rate: float | str | None = None,
+	idempotency_key: str | None = None,
 ):
-	"""Create a Payment Entry allocated to a single invoice, optionally submit it in the same call."""
+	"""Create a Payment Entry allocated to a single invoice, optionally submit it in the same call.
+
+	`idempotency_key` identifies the operator's INTENT, not the payload: sent
+	once when the form is opened and repeated verbatim on retry, it lets a
+	re-submitted request return the document the first attempt made instead of
+	writing a second one. Omitting it keeps the old behaviour exactly.
+	"""
 	if invoice_type not in ("Sales Invoice", "Purchase Invoice"):
 		frappe.throw("invoice_type must be Sales Invoice or Purchase Invoice.")
 	_require_company(company)
 	_assert_company_scope(company)  # tenant isolation: reject a foreign company arg
+	prior = _idempotent_prior("Payment Entry", idempotency_key)
+	if prior:
+		return _idempotent_reply("Payment Entry", prior)
 	_assert_can_read(invoice_type, invoice_name)  # no allocating against an invoice you can't see
 	check_concurrency(invoice_type, invoice_name, modified)
 	# `check_concurrency` above is the whole double-payment defence on the ordinary
@@ -2476,9 +2637,14 @@ def create_payment_for_invoice(
 	doc.set_missing_values()
 	# GL view computed — log the base amounts + difference before insert/submit.
 	_log_payment("computed", _payment_gl_snapshot(doc))
+	_stamp_idempotency(doc, idempotency_key)
+	_idempotent_savepoint(idempotency_key)
 	try:
 		doc.insert(ignore_permissions=False)
 	except Exception as e:
+		conflict = _idempotent_conflict(doc, idempotency_key, e)
+		if conflict is not None:
+			return conflict
 		snap = _payment_gl_snapshot(doc)
 		snap.update({"fn": "create_payment_for_invoice", "stage_detail": "insert", "error": str(e)})
 		_log_payment("error", snap)
@@ -2944,6 +3110,7 @@ def submit_expense_entry(
 	import_container: str | None = None,
 	import_category: str | None = None,
 	import_expense: str | None = None,
+	idempotency_key: str | None = None,
 ) -> dict:
 	"""Create (and optionally submit) an expense Journal Entry.
 
@@ -2962,6 +3129,9 @@ def submit_expense_entry(
 	"""
 	_require_company(company)
 	_assert_company_scope(company)  # tenant isolation: reject a foreign company arg
+	prior = _idempotent_prior("Journal Entry", idempotency_key)
+	if prior:
+		return _idempotent_reply("Journal Entry", prior)
 	if isinstance(lines, str):
 		try:
 			lines = json.loads(lines)
@@ -3171,7 +3341,10 @@ def submit_expense_entry(
 			entry["custom_asset"] = row["asset"]
 		doc.append("accounts", entry)
 
-	doc.insert(ignore_permissions=False)
+	_stamp_idempotency(doc, idempotency_key)
+	conflict = _idempotent_insert(doc, idempotency_key)
+	if conflict:
+		return conflict
 	if int(submit or 0):
 		from stabler.api.approvals import submit_or_route
 
@@ -3269,15 +3442,25 @@ def submit_transfer_entry(
 	memo: str | None = None,
 	submit: int = 1,
 	amended_from: str | None = None,
+	idempotency_key: str | None = None,
 ) -> dict:
 	"""Create (and optionally submit) a fund-transfer Journal Entry.
 
 	Same-currency: `to_amount` defaults to `from_amount`. Cross-currency:
 	caller must supply EITHER `to_amount` OR `exchange_rate` (from→to). We
 	anchor both legs to a single base-currency total so the JE balances by
-	construction regardless of rate-truncation drift."""
+	construction regardless of rate-truncation drift.
+
+	`idempotency_key` identifies the operator's INTENT, not the payload: sent
+	once when the form is opened and repeated verbatim on retry, it lets a
+	re-submitted request return the document the first attempt made instead of
+	writing a second one. Omitting it keeps the old behaviour exactly.
+	"""
 	_require_company(company)
 	_assert_company_scope(company)  # tenant isolation: reject a foreign company arg
+	prior = _idempotent_prior("Journal Entry", idempotency_key)
+	if prior:
+		return _idempotent_reply("Journal Entry", prior)
 	if from_account == to_account:
 		frappe.throw("From and To accounts must differ.")
 
@@ -3374,7 +3557,10 @@ def submit_transfer_entry(
 		},
 	)
 
-	doc.insert(ignore_permissions=False)
+	_stamp_idempotency(doc, idempotency_key)
+	conflict = _idempotent_insert(doc, idempotency_key)
+	if conflict:
+		return conflict
 	if int(submit or 0):
 		from stabler.api.approvals import submit_or_route
 
