@@ -84,7 +84,10 @@ useEscapeBack(() => {
 		return true;
 	}
 	return false;
-}, "/money");
+	// `ownsDrawer` is not optional here: the drawer below is hand-rolled, so the
+	// composable would otherwise treat it as an overlay that closes itself and
+	// never call this handler at all.
+}, "/money", { ownsDrawer: () => pane.value !== "empty" });
 
 const drawerTitle = computed(() => {
 	if (pane.value !== "edit") return t("Journal entry");
