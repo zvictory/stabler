@@ -26,7 +26,7 @@ Original: `docs/archive/CLAUDE.md.2026-08-15.bak`.
 
 ### Tenant & feature ownership (multi-tenant discipline)
 - Stabler is ONE shared app across **7 tenants with different businesses**. Code is
-  shared (one `bench restart` hits all 7); DBs are per-site. A feature built for one
+  shared (one `bench restart` hits every stabler site); DBs are per-site. A feature built for one
   tenant ships to all — so **every tenant-specific feature MUST be module-gated**
   (`enable_*` + role + route `meta.module`) and MUST NOT change shared-core behavior
   for tenants that don't use it.

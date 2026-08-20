@@ -3,7 +3,9 @@
 # SSH alias). Follows apps/stabler/CLAUDE.md exactly.
 #
 # Prod = the shared bench. anjan.erpstable.com is the PRIMARY site, not the only
-# one: stabler is installed on 7 sites. rsync + bench restart are bench-wide and
+# one: stabler is installed on every site `list-apps` reports it on (8 as of
+# 2026-08-20; it said 7 here until `zuma` had already been added). rsync + bench
+# restart are bench-wide and
 # hit all of them at once; `migrate` is per-site, so step 5 discovers every
 # stabler-bearing site and migrates each. (2026-07-18 near-miss: msa was skipped
 # and its new Import PI Group columns were missing until a follow-up migrate.)
@@ -53,7 +55,7 @@ confirm() { read -r -p "$1 [y/N] " a; [[ "$a" == "y" || "$a" == "Y" ]]; }
 # 0) Branch gate — BEFORE anything touches prod, including the step below's ssh
 #    and step 2's backup tarball. Step 3 ships `git archive HEAD`, and HEAD is
 #    whatever is checked out: run this from a feature branch and half-finished
-#    work lands on ALL 7 tenants at once. rsync has no --delete, so a file that
+#    work lands on EVERY stabler tenant at once. rsync has no --delete, so a file that
 #    reaches prod that way stays there forever. Until 2026-08-10 nothing in this
 #    script mentioned a branch at all.
 #
@@ -131,7 +133,7 @@ ssh -n "$PROD" "TS=\$(date +%F-%H%M) && tar czf /root/stabler-app-\$TS.tgz -C $P
 #    half-finished edits to live code (api/sales.py, router.js, MoneyInput.vue,
 #    all five translation CSVs mid-harvest) plus 36 files that exist in no commit
 #    at all (_to_delete/ git-lock debris, an entire uncommitted msa_migrate/
-#    script set, TransporterCenter.vue) onto all 7 tenants at once. None of it was
+#    script set, TransporterCenter.vue) onto every stabler tenant at once. None of it was
 #    visible in the dry run's file list as *uncommitted* -- rsync only reports
 #    paths, and a half-done file looks exactly like a finished one.
 #

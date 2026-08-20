@@ -30,4 +30,5 @@ Stage the five CSVs explicitly (`en/ru/uz/uzc/tr.csv`), never the whole
 
 ## After deploying a translation change
 `bench restart` does NOT clear the Redis translation cache. Run
-`bench --site <site> clear-cache` on all 7 sites — see the `stabler-deploy` skill, step 7.
+`bench --site <site> clear-cache` on every stabler site — see the `stabler-deploy`
+skill, step 7 (which also says how to enumerate them; do not trust a written count).
