@@ -148,14 +148,14 @@ from frappe.utils import cint, flt, get_datetime_str, now_datetime, nowdate
 
 from stabler.api import _remittance_actions as actions
 from stabler.api._common import _require_company
-from stabler.api._remittance_pricing import PricingError, price_transfer
-from stabler.api.approvals import _assert_company_scope
-from stabler.api.remittance import (
+from stabler.api._remittance_pickup_code import (
 	_gen_pickup_code,
 	_pickup_code_matches,
 	is_hashed_pickup_code,
 	store_pickup_code,
 )
+from stabler.api._remittance_pricing import PricingError, price_transfer
+from stabler.api.approvals import _assert_company_scope
 from stabler.api.remittance_accounting import post_payout, post_refund, post_register
 
 TRANSFER = "Remittance Transfer"
