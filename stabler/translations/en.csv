@@ -235,6 +235,7 @@ Income accounts,Income accounts
 Invalid pickup code. {0} attempt(s) left before this transfer is locked.,Invalid pickup code. {0} attempt(s) left before this transfer is locked.
 Invalid username or password. Please check your credentials.,Invalid username or password. Please check your credentials.
 "It may have been removed, or the reference in the address is wrong.","It may have been removed, or the reference in the address is wrong."
+Journal entry,Journal entry
 Last modified,Last modified
 Leave blank for the default,Leave blank for the default
 "Legacy posts journal entries from the New Transfer form it always has. V1 registers a Remittance Transfer and is the only engine where the payout, refund, operations and reconciliation screens exist.","Legacy posts journal entries from the New Transfer form it always has. V1 registers a Remittance Transfer and is the only engine where the payout, refund, operations and reconciliation screens exist."

@@ -92,6 +92,7 @@ I have checked {receiver}'s identity document.,Я проверил удосто�
 I have counted {amount} and am handing it back to {sender}.,Я пересчитал {amount} и возвращаю их {sender}.
 I have written it down,Код записан
 "Legacy posts journal entries from the New Transfer form it always has. V1 registers a Remittance Transfer and is the only engine where the payout, refund, operations and reconciliation screens exist.","Legacy проводит журнальные записи из той же формы «Новый перевод». V1 регистрирует Remittance Transfer и является единственным движком, где существуют экраны выплаты, возврата, операций и сверки."
+Journal entry,Запись в журнале
 Legacy — journal entry screens,Legacy — экраны журнальных проводок
 Not ready — this desk cannot take or hand over a transfer.,"Не готова — эта касса не может ни принять, ни выдать перевод."
 Only an open agreement can be terminated. {0} is {1}.,Закрыть можно только открытый договор. {0} находится в статусе {1}.

@@ -91,6 +91,7 @@ I have checked {receiver}'s identity document.,{receiver} kişisinin kimlik belg
 I have counted {amount} and am handing it back to {sender}.,{amount} tutarını saydım ve {sender} kişisine geri veriyorum.
 I have written it down,Yazdım
 "Legacy posts journal entries from the New Transfer form it always has. V1 registers a Remittance Transfer and is the only engine where the payout, refund, operations and reconciliation screens exist.","Legacy, her zamanki Yeni Transfer formundan yevmiye kaydı atar. V1 ise bir Remittance Transfer kaydı oluşturur ve ödeme, iade, operasyon ve mutabakat ekranlarının bulunduğu tek motordur."
+Journal entry,Yevmiye kaydı
 Legacy — journal entry screens,Legacy — yevmiye kaydı ekranları
 Not ready — this desk cannot take or hand over a transfer.,Hazır değil — bu kasa transferi ne alabilir ne verebilir.
 Only an open agreement can be terminated. {0} is {1}.,Yalnızca açık bir sözleşme kapatılabilir. {0} şu durumda: {1}.
