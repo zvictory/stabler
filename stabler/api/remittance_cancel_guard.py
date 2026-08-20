@@ -32,23 +32,31 @@ state with it — was rejected on two counts:
    before them. This refusal keys on `stabler_remittance_id`, which both models
    write, so it closes both.
 
-**What the message may promise, measured rather than assumed.** The first draft of
-this module sent the operator to "post a Refund from the Remittance screen". No
-such screen exists, and saying so was a worse regression than the bug: before the
-guard, the (unsafe) Cancel button was at least *a* recourse. Measured in the tree:
-the SPA calls exactly five remittance endpoints — `remittance_accounts`,
-`list_corridors`, `create_remittance`, `list_remittances`, `remittance_detail`
-(`public/js/pages/remittance/`). `refund_remittance` (`api/remittance.py:555`) is
-whitelisted but has no caller under `public/js`; the new `Remittance Transfer`
-model's two-step refund (`remittance_commands.request_refund` / `approve_refund` /
-`complete_refund`, stabler-yf1w) is whitelisted as of slice 3 and likewise has no
-caller under `public/js` — the SPA action is slice 4. So the message's claim is
-still about *screens*, and there are still none.
-And even with a button, `refund_remittance` calls `_assert_registered`
-(`api/remittance.py:211`), which throws for a Paid Out transfer — refund is
-impossible for precisely the Payout-stage voucher this guard fires on most.
-`RemittanceReversalReachabilityTest` asserts each of those four facts and goes red
-the day one of them changes, which is the day this message must be rewritten.
+**What the message may promise, measured rather than assumed — and it has been
+wrong in both directions.** The first draft sent the operator to "post a Refund
+from the Remittance screen" when no such screen existed, which was a worse
+regression than the bug: before the guard, the (unsafe) Cancel button was at
+least *a* recourse. The correction said no screen reverses a remittance at all —
+and then slice 4 of `stabler-yf1w` shipped `RemittanceRefund.vue`, which works
+the three-signature refund and reaches all four commands. The correction stayed
+in the tree anyway, because `RemittanceReversalReachabilityTest` scanned
+`public/js` for a contiguous `stabler.api.remittance_commands.request_refund`
+and `api/remittance.js:182` writes ``call(`${CMD}.request_refund`)`` — so the two
+tests written expressly to go red that day never saw the call. Naming no recourse
+when one exists is not the safe direction; it is the same defect facing the other
+way, and it sends an operator to a person when a button would have done.
+
+**So the branch is keyed on what can actually be reversed, not on the stage
+alone.** Both engines stamp all three stages (`api/remittance.py:399/520/637`;
+`remittance_accounting.py:220`), so the stage does not say which model a voucher
+belongs to. `_is_refundable_from_a_screen` asks the transfer row instead, using
+`_assert_refundable`'s own precondition (`remittance_commands.py:941`) — still
+`Registered`, still `Posted`. A paid-out transfer, an already-refunded one, and a
+legacy JE-only remittance with no master row all fail it, and all three get the
+escalation message, which is true for each of them.
+`RemittanceReversalReachabilityTest` asserts every fact these branches rest on
+and goes red the day one changes — including, now, a canary for the scanner
+itself, because a blind scanner made the whole class agree with the wrong answer.
 
 **Building that reversal here was rejected, deliberately.** A whitelisted refund
 command for `Remittance Transfer` is slice 3 of the parent epic (`stabler-yf1w`,
@@ -113,11 +121,46 @@ def assert_not_a_remittance_stage(doc, method=None) -> None:
 		message = _(
 			"Journal Entry {0} is the payout of remittance {1} and cannot be cancelled here — the cash has already left the drawer, and a paid-out transfer cannot be refunded either. Escalate it: only an administrator can reverse remittance {1}, on the server."
 		).format(doc.name, remittance_id)
+	elif _is_refundable_from_a_screen(remittance_id):
+		message = _(
+			"Journal Entry {0} is the {2} entry of remittance {1} and cannot be cancelled here — the ledger would move and the transfer's status would not. Open a refund on remittance {1} instead: a manager approves it, and the ledger and the status move together."
+		).format(doc.name, remittance_id, stage or _("Unknown"))
 	else:
 		message = _(
-			"Journal Entry {0} is the {2} entry of remittance {1} and cannot be cancelled here — the ledger would move and the transfer's status would not. No screen in Stabler reverses a remittance yet, so escalate it: only an administrator can reverse remittance {1}, on the server."
+			"Journal Entry {0} is the {2} entry of remittance {1} and cannot be cancelled here — the ledger would move and the transfer's status would not. No screen can reverse this remittance, so escalate it: only an administrator can reverse remittance {1}, on the server."
 		).format(doc.name, remittance_id, stage or _("Unknown"))
 	frappe.throw(message, frappe.ValidationError)
+
+
+def _is_refundable_from_a_screen(remittance_id: str) -> bool:
+	"""True only when `RemittanceRefund.vue` could actually reverse this remittance.
+
+	The two fields are `_assert_refundable`'s own preconditions
+	(`remittance_commands.py:941-951`), read off the same row — get them out of
+	step and the message promises a screen that throws. A refusal that names a
+	button which refuses the operator is the first draft's bug again.
+
+	Three cases return False and all three want the escalation branch: a
+	paid-out transfer, an already-refunded one, and a legacy JE-only remittance,
+	which has no master row for any screen to work from.
+
+	The table probe is not defensive padding. This runs inside `before_cancel`,
+	so an exception here does not fail the refusal politely — it replaces every
+	remittance voucher cancel on that site with a traceback. `frappe.db` raises
+	`TableMissingError` rather than returning falsy when a doctype's table is
+	absent (`.claude/rules/20-backend-migrations.md`), which is the state of any
+	site carrying legacy remittance JEs from before this doctype shipped. Same
+	reasoning, same shape as `api/crm.py:clear_deal_activities`.
+	"""
+	if not frappe.db.table_exists("Remittance Transfer"):
+		return False
+	row = frappe.db.get_value(
+		"Remittance Transfer",
+		remittance_id,
+		["operational_status", "accounting_status"],
+		as_dict=True,
+	)
+	return bool(row) and row.operational_status == "Registered" and row.accounting_status == "Posted"
 
 
 __all__ = ["BYPASS_FLAG", "PAYOUT_STAGE", "assert_not_a_remittance_stage"]
