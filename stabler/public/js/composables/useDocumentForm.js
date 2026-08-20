@@ -7,10 +7,20 @@ import { t } from "./i18n.js";
 import { call } from "../api/client.js";
 
 export function useDocumentForm({
-	doctype,
+	// Accepted and unused. Every caller passes it and reads as if the composable
+	// used it; it does not, and never has. Left in place rather than dropped so
+	// the call sites keep documenting which doctype they drive — underscored only
+	// because touching this file for the first time made the lint gate notice.
+	doctype: _doctype,
 	detailApi,
 	createApi,
 	updateApi,
+	// Optional. An intent key from `composables/idempotency.js`, used on the
+	// CREATE call only: a failed save leaves the form filled, so the retry has
+	// to reach the server as the same click. Update already carries `modified`,
+	// which answers a different question — who else changed this — and the
+	// endpoints behind `updateApi` do not accept a key.
+	intent,
 	submitApi,
 	cancelApi,
 	amendApi,
@@ -117,7 +127,11 @@ export function useDocumentForm({
 		try {
 			const payload = toPayload ? toPayload(model.value) : model.value;
 			if (isCreate.value) {
-				const res = await call(createApi, payload);
+				const res = await call(
+					createApi,
+					intent ? { ...payload, idempotency_key: intent.begin() } : payload,
+				);
+				if (intent) intent.settle();
 				// Maker-checker: when the create-and-submit routes to the approvals
 				// queue, the doc stays a Draft — say so instead of "submitted".
 				if (res?.pending_approval) {

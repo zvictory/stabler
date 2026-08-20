@@ -19,6 +19,7 @@ import { formatMoney } from "../composables/money.js";
 import { todayIso } from "../composables/date.js";
 import { t } from "../composables/i18n.js";
 import { accountLabel } from "../composables/accounts.js";
+import { createIntentKey } from "../composables/idempotency.js";
 import MoneyInput from "./MoneyInput.vue";
 import DateInput from "./DateInput.vue";
 import Select from "./Select.vue";
@@ -40,6 +41,10 @@ const today = todayIso();
 const loading = ref(false);
 const submitting = ref(false);
 const error = ref("");
+// One key per intent, not per request: a failed save leaves the form filled, and
+// the retry must reach the server as the same click rather than as a second
+// payment. Backed by the unique `custom_idempotency_key`.
+const intent = createIntentKey();
 const defaults = ref(null);
 const modes = ref([]);
 
@@ -265,7 +270,9 @@ async function submit() {
 			reference_date: form.value.reference_date || undefined,
 			submit: 1,
 			modified: props.modified || undefined,
+			idempotency_key: intent.begin(),
 		});
+		intent.settle();
 		emit("paid", created?.name || "");
 	} catch (err) {
 		error.value = err?.message || t("Failed to record payment.");

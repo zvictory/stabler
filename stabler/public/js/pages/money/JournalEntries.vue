@@ -20,6 +20,7 @@ import {
 } from "../../composables/journal.js";
 import { formatDate, formatDateTime, todayIso, daysAgoIso} from "../../composables/date.js";
 import { t } from "../../composables/i18n.js";
+import { createIntentKey } from "../../composables/idempotency.js";
 import { accountLabel } from "../../composables/accounts.js";
 import { getDocstatusLabel, getStatusBadgeClass } from "../../composables/status.js";
 import MoneyInput from "../../components/MoneyInput.vue";
@@ -82,6 +83,10 @@ const VOUCHER_TYPES = [
 
 const submitting = ref(false);
 const submitError = ref("");
+// One key per intent, not per request: a failed save leaves the form filled, and
+// the retry must reach the server as the same click rather than as a second
+// journal entry. Backed by the unique `custom_idempotency_key`.
+const intent = createIntentKey();
 const accountsLoading = ref(false);
 const accountOptions = ref([]);
 
@@ -465,7 +470,10 @@ async function submitForm() {
 				user_remark: form.value.user_remark || undefined, cheque_no: form.value.cheque_no || undefined,
 				cheque_date: form.value.cheque_date || undefined, accounts,
 				amended_from: amendedFrom.value || undefined,
+				// Same key while this save keeps failing, a new one once it lands.
+				idempotency_key: intent.begin(),
 			});
+			intent.settle();
 			amendedFrom.value = null;
 		}
 		// The entry that just moved these balances is one of them now.

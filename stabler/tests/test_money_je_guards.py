@@ -90,6 +90,9 @@ class FakeDoc:
 
 	def insert(self, **kwargs):
 		self._trace.append("insert")
+		error = self.__dict__.pop("_raise_on_insert", None)
+		if error is not None:
+			raise error
 		if not self.name:
 			named = getattr(self, "account_name", None)
 			self.name = f"{named} - X" if named else "JV-NEW-0001"
@@ -104,6 +107,10 @@ class FakeDoc:
 #: frozen-period refusal into our own code is that ERPNext's version of it reaches
 #: a Russian- or Uzbek-speaking accountant in English.
 I18N = "[i18n]"
+
+#: The Custom Field v96 installs. Named here rather than imported from the module
+#: under test, so a rename has to be made deliberately in both places.
+IDEMPOTENCY_FIELD = "custom_idempotency_key"
 
 
 def _load_money(
@@ -121,6 +128,9 @@ def _load_money(
 	pending_payment_refs=(),
 	amend_source=None,
 	existing_amends=(),
+	idempotency_field_exists=True,
+	concurrent_winner=None,
+	insert_error=None,
 ):
 	"""Import ``stabler.api.money`` against a hand-built ``frappe``.
 
@@ -194,6 +204,29 @@ def _load_money(
 			if isinstance(fieldname, list):
 				return [row.get(f) for f in fieldname]
 			return row.get(fieldname)
+		if isinstance(filters, dict) and IDEMPOTENCY_FIELD in filters:
+			# The table, as the module would read it: a row exists once a document
+			# carrying that key has been inserted. `concurrent_winner` is the row
+			# another request commits WHILE this one is inserting — invisible to
+			# the pre-check, fatal at the index — so it only appears once an
+			# insert has been attempted.
+			wanted = filters[IDEMPOTENCY_FIELD]
+			if concurrent_winner and "insert" in trace and concurrent_winner.get(IDEMPOTENCY_FIELD) == wanted:
+				return concurrent_winner["name"]
+			for doc in ctx.docs:
+				if doc.name and getattr(doc, IDEMPOTENCY_FIELD, None) == wanted:
+					return doc.name
+			return None
+		if isinstance(filters, str) and as_dict and fieldname == ["name", "docstatus", "modified"]:
+			if concurrent_winner and concurrent_winner["name"] == filters:
+				return FrappeDict(concurrent_winner)
+			for doc in ctx.docs:
+				if doc.name == filters:
+					return FrappeDict(
+						{f: getattr(doc, f, None) for f in fieldname},
+						modified=db_modified,
+					)
+			return None
 		if doctype == "Journal Entry" and fieldname == "modified":
 			return db_modified
 		if doctype == "Journal Entry" and as_dict:
@@ -223,6 +256,9 @@ def _load_money(
 		get_value=_get_value,
 		exists=_exists,
 		sql=_sql,
+		savepoint=lambda name: trace.append(f"savepoint:{name}"),
+		rollback=lambda save_point=None: trace.append(f"rollback:{save_point}"),
+		release_savepoint=lambda name: trace.append(f"release:{name}"),
 	)
 
 	def _get_all(doctype, filters=None, fields=None, **kwargs):
@@ -259,6 +295,8 @@ def _load_money(
 			# caller named none.
 			doc.root_type = new_account_root_type
 			doc.account_currency = new_account_currency or "UZS"
+		if insert_error is not None and doctype in ("Journal Entry", "Payment Entry"):
+			doc._raise_on_insert = insert_error
 		ctx.docs.append(doc)
 		return doc
 
@@ -274,6 +312,16 @@ def _load_money(
 		return types.SimpleNamespace(get=lambda key, default=None: default)
 
 	frappe.get_single = _get_single
+
+	def _get_meta(doctype):
+		def has_field(fieldname):
+			if fieldname == IDEMPOTENCY_FIELD:
+				return idempotency_field_exists
+			return True
+
+		return types.SimpleNamespace(has_field=has_field)
+
+	frappe.get_meta = _get_meta
 	frappe.log_error = lambda *a, **k: None
 
 	import datetime
@@ -853,6 +901,206 @@ class OneCorrectionPerCancelledEntryTest(unittest.TestCase):
 		)
 		self._create(money)
 		self.assertEqual(ctx.docs[-1].amended_from, self.SOURCE)
+
+
+class ARetriedSubmitMustNotPostTheEntryTwice(unittest.TestCase):
+	"""L1: the operator clicks Submit, the request times out, the form is still
+	on screen, and the operator clicks again.
+
+	`Expenses.vue:710-713` leaves the filled form up on failure, which is the
+	right thing to do — the alternative loses the operator's typing. What was
+	missing is any way for the server to tell the second click apart from a
+	genuine second expense. `cheque_no = f"Exp-{posting_date}"` is not it: every
+	expense that day carries the same string.
+
+	The board refused to guess from the payload — two identical cash expenses in
+	one day are legitimate, and refusing them teaches operators to nudge an
+	amount until the guard lets go. So the caller carries an identity for the
+	INTENT, once, and repeats it verbatim on retry.
+	"""
+
+	KEY = "e3f1-one-operator-one-click"
+
+	def _create(self, money, **over):
+		args = {
+			"company": "Test Co",
+			"posting_date": "2026-08-19",
+			"accounts": BALANCED_ROWS,
+		}
+		args.update(over)
+		return money.create_journal_entry(**args)
+
+	def test_the_repeat_returns_the_first_entry_and_creates_nothing(self):
+		money, ctx = _load_money(accounts=BASE_ACCOUNTS)
+		first = self._create(money, idempotency_key=self.KEY)
+		second = self._create(money, idempotency_key=self.KEY)
+		self.assertEqual(second["name"], first["name"])
+		self.assertEqual(len(ctx.docs), 1, "the retry posted a second Journal Entry")
+
+	def test_the_repeat_says_it_is_one(self):
+		"""The caller has to be able to tell "we just did this" from "we did this
+		already" — a form that resets on the first and warns on the second is a
+		different screen from one that cannot know."""
+		money, _ctx = _load_money(accounts=BASE_ACCOUNTS)
+		first = self._create(money, idempotency_key=self.KEY)
+		second = self._create(money, idempotency_key=self.KEY)
+		self.assertNotIn("repeat", first)
+		self.assertTrue(second["repeat"])
+
+	def test_the_key_is_written_onto_the_document(self):
+		"""Without it on the row there is no unique index to lose against, and
+		the guard is only the pre-check — which two simultaneous clicks both
+		pass."""
+		money, ctx = _load_money(accounts=BASE_ACCOUNTS)
+		self._create(money, idempotency_key=self.KEY)
+		self.assertEqual(getattr(ctx.docs[0], IDEMPOTENCY_FIELD, None), self.KEY)
+
+
+class ADifferentIntentMustStillPost(unittest.TestCase):
+	"""The direction that matters more: a guard that over-suppresses is the
+	worse bug, and it is the one the rejected payload fingerprint would have
+	shipped."""
+
+	def _create(self, money, **over):
+		args = {
+			"company": "Test Co",
+			"posting_date": "2026-08-19",
+			"accounts": BALANCED_ROWS,
+		}
+		args.update(over)
+		return money.create_journal_entry(**args)
+
+	def test_two_identical_entries_on_one_day_both_post_under_different_keys(self):
+		money, ctx = _load_money(accounts=BASE_ACCOUNTS)
+		self._create(money, idempotency_key="click-one")
+		self._create(money, idempotency_key="click-two")
+		self.assertEqual(len(ctx.docs), 2)
+
+	def test_a_caller_that_sends_no_key_behaves_exactly_as_before(self):
+		"""Every server-side writer — the kassa bot, the import hooks, the
+		remittance engine — posts without a key and must keep posting."""
+		money, ctx = _load_money(accounts=BASE_ACCOUNTS)
+		self._create(money)
+		self._create(money)
+		self.assertEqual(len(ctx.docs), 2)
+		self.assertIsNone(getattr(ctx.docs[0], IDEMPOTENCY_FIELD, None))
+
+
+class ASiteThatNeverRanTheMigrationStillWorks(unittest.TestCase):
+	"""zuma's state: Patch Log complete, Custom Fields missing.
+
+	Reading a column that is not there would turn a missing migration into a
+	broken money module. It degrades to the old behaviour instead — and says so
+	out loud through `stabler.install_check`, which is why that report exists.
+	"""
+
+	def test_the_entry_posts_and_carries_no_key(self):
+		money, ctx = _load_money(accounts=BASE_ACCOUNTS, idempotency_field_exists=False)
+		money.create_journal_entry("Test Co", "2026-08-19", BALANCED_ROWS, idempotency_key="k")
+		money.create_journal_entry("Test Co", "2026-08-19", BALANCED_ROWS, idempotency_key="k")
+		self.assertEqual(len(ctx.docs), 2)
+		self.assertIsNone(getattr(ctx.docs[0], IDEMPOTENCY_FIELD, None))
+
+
+class TheLoserOfADoubleClickGetsTheWinnersDocument(unittest.TestCase):
+	"""Two clicks 200 ms apart both read "no such key" and both proceed.
+
+	The pre-check cannot separate them — neither request can see the other's
+	uncommitted row — so the unique index decides, and one insert comes back
+	with a 1062. From the operator's side one click happened; surfacing the
+	loser as a server error would send them back to the form to try a third
+	time. It answers with the winner's document instead.
+	"""
+
+	KEY = "same-intent-twice"
+
+	def _load(self):
+		winner = {
+			"name": "JV-0009",
+			"docstatus": 1,
+			"modified": "2026-08-19 10:00:00",
+			IDEMPOTENCY_FIELD: self.KEY,
+		}
+		return _load_money(
+			accounts=BASE_ACCOUNTS,
+			concurrent_winner=winner,
+			insert_error=Exception("(1062, \"Duplicate entry 'same-intent-twice' for key ...\")"),
+		)
+
+	def test_the_conflict_answers_with_the_document_that_won(self):
+		money, _ctx = self._load()
+		result = money.create_journal_entry("Test Co", "2026-08-19", BALANCED_ROWS, idempotency_key=self.KEY)
+		self.assertEqual(result["name"], "JV-0009")
+		self.assertTrue(result["repeat"])
+
+	def test_the_rollback_is_scoped_to_a_savepoint(self):
+		"""A bare `frappe.db.rollback()` would discard everything the request
+		wrote before the insert. `create_payment_for_invoice` writes before it
+		inserts, so the blast radius of getting this wrong is a payment whose
+		side effects vanish while the reply says it succeeded."""
+		money, ctx = self._load()
+		money.create_journal_entry("Test Co", "2026-08-19", BALANCED_ROWS, idempotency_key=self.KEY)
+		rollbacks = [t for t in ctx.trace if t.startswith("rollback:")]
+		self.assertEqual(len(rollbacks), 1)
+		self.assertNotEqual(rollbacks[0], "rollback:None", "the whole transaction was rolled back")
+
+	def test_an_unrelated_insert_failure_is_raised_without_touching_the_savepoint(self):
+		"""Only a 1062 means "somebody else already did this".
+
+		The error propagating is the weaker half of this claim — the prior
+		lookup would fail to find anything and re-raise even if the duplicate
+		test were removed, so on its own that assertion proves nothing. The half
+		that needs the duplicate test is the rollback: reacting to every failed
+		insert by rolling back to the savepoint would undo whatever the endpoint
+		wrote before it, for failures that have nothing to do with a race. An
+		unrelated failure must leave the transaction exactly as it found it and
+		let the request's own error handling decide.
+		"""
+		money, ctx = _load_money(accounts=BASE_ACCOUNTS, insert_error=Exception("Account is frozen"))
+		with self.assertRaises(Exception) as caught:
+			money.create_journal_entry("Test Co", "2026-08-19", BALANCED_ROWS, idempotency_key="k")
+		self.assertIn("frozen", str(caught.exception))
+		self.assertEqual([t for t in ctx.trace if t.startswith("rollback:")], [])
+
+
+class AConflictNeverAnswersWithTheRequestsOwnDocument(unittest.TestCase):
+	"""The two payment endpoints wrap insert AND submit in one try block.
+
+	So a 1062 raised by an unrelated unique constraint during submit reaches the
+	conflict handler with our own row already written and carrying our own key.
+	Answering with it would report a document that failed to post as posted —
+	the operator sees success, the ledger sees a draft, and the difference shows
+	up in a reconciliation weeks later. The handler only ever answers with a
+	document THIS request did not create.
+	"""
+
+	KEY = "one-intent"
+
+	def test_our_own_row_is_not_a_repeat_of_itself(self):
+		money, _ctx = _load_money(accounts=BASE_ACCOUNTS)
+		doc = money.frappe.new_doc("Journal Entry")
+		doc.name = "JV-0001"
+		setattr(doc, IDEMPOTENCY_FIELD, self.KEY)
+
+		verdict = money._idempotent_conflict(doc, self.KEY, Exception("(1062, 'Duplicate entry')"))
+
+		self.assertIsNone(verdict, "the request was handed back the row it had just failed on")
+
+	def test_somebody_elses_row_is_a_repeat(self):
+		"""The positive control: without it the test above would also pass on a
+		handler that never answers at all."""
+		money, _ctx = _load_money(accounts=BASE_ACCOUNTS)
+		winner = money.frappe.new_doc("Journal Entry")
+		winner.name = "JV-0009"
+		winner.docstatus = 1
+		setattr(winner, IDEMPOTENCY_FIELD, self.KEY)
+		loser = money.frappe.new_doc("Journal Entry")
+		setattr(loser, IDEMPOTENCY_FIELD, self.KEY)
+
+		verdict = money._idempotent_conflict(loser, self.KEY, Exception("(1062, 'Duplicate entry')"))
+
+		self.assertEqual(verdict["name"], "JV-0009")
+		self.assertTrue(verdict["repeat"])
 
 
 if __name__ == "__main__":

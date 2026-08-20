@@ -5,6 +5,7 @@ import { useRouter } from "vue-router";
 import { useSession } from "../../stores/session.js";
 import { call } from "../../api/client.js";
 import { t } from "../../composables/i18n.js";
+import { createIntentKey } from "../../composables/idempotency.js";
 import { getStatusBadgeClass } from "../../composables/status.js";
 import { formatDate, todayIso } from "../../composables/date.js";
 import { formatMoney } from "../../composables/money.js";
@@ -21,6 +22,10 @@ const router = useRouter();
 const session = useSession();
 const { activeCompany, user } = storeToRefs(session);
 const toast = useToast();
+// One key per intent, not per request: a failed save leaves the form filled, and
+// the retry must reach the server as the same click rather than as a second
+// advance. Backed by the unique `custom_idempotency_key`.
+const intent = createIntentKey();
 
 const currency = computed(() => session.currency);
 const finMoney = (v) => formatMoney(v, (fin.value && fin.value.display_currency) || advanceCurrency.value || currency.value, user.value.language);
@@ -292,7 +297,9 @@ async function createTx() {
 			posting_date: newTxForm.value.posting_date,
 			accounts: JSON.stringify([empLine, counterLine]),
 			user_remark: newTxForm.value.remark || undefined,
+			idempotency_key: intent.begin(),
 		});
+		intent.settle();
 		toast.success(t("Draft transaction created."));
 		newTxOpen.value = false;
 		await reloadAfterTx();

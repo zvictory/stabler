@@ -8,6 +8,7 @@ import { formatMoney } from "../../composables/money.js";
 import { formatDate, todayIso } from "../../composables/date.js";
 import { readableRate, formatRate } from "../../composables/fx.js";
 import { t } from "../../composables/i18n.js";
+import { createIntentKey } from "../../composables/idempotency.js";
 import { accountLabel } from "../../composables/accounts.js";
 import MoneyInput from "../../components/MoneyInput.vue";
 import DateInput from "../../components/DateInput.vue";
@@ -181,6 +182,7 @@ const {
 	doctype: "Payment Entry",
 	detailApi: "stabler.api.money.payment_entry_detail",
 	createApi: "stabler.api.money.create_payment_entry",
+	intent: createIntentKey(),
 	updateApi: "stabler.api.money.update_payment_entry",
 	submitApi: "stabler.api.money.submit_payment_entry",
 	cancelApi: "stabler.api.money.cancel_payment_entry",
