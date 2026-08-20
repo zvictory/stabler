@@ -69,6 +69,43 @@ class TestConvertGuards(unittest.TestCase):
 		self.assertIn("_assert_imports_access(company)", self.body)
 		self.assertIn("_assert_cost_visible()", self.body)
 
+	# The three below assert on whole assignment statements rather than bare
+	# tokens: an earlier draft of `test_..._not_by_the_clock` matched the very
+	# comment that explains the fix, and passed/failed on prose.
+
+	def test_the_bill_is_dated_by_the_commercial_invoice_not_by_the_clock(self):
+		# `posting_date = getdate(today())` dated a six-month-old import bill
+		# today, which is wrong twice over: the A/P belongs to the month the
+		# supplier invoiced, and with `update_stock` the posting date IS the day
+		# the goods enter the ledger. The CI's own date is the only date on the
+		# document that describes the transaction.
+		self.assertNotIn("doc.posting_date = getdate(today())", self.body)
+		self.assertIn("doc.posting_date = getdate(ci.ci_date", self.body)
+		# ERPNext discards the date without this (transaction_base.py).
+		self.assertIn("doc.set_posting_time = 1", self.body)
+
+	def test_a_foreign_currency_bill_carries_a_rate_of_its_own(self):
+		# The converter set `currency` and left `conversion_rate` to ERPNext,
+		# which does not fill it server-side. Stabler's own validate_purchase_invoice
+		# then rejected the None: measured on msa.erpstable.com 2026-08-20,
+		# "Conversion rate for USD to UZS cannot be less than 1000 (got None)".
+		# Every day has that window — the CBU feed lands during the day, so until
+		# it does, no foreign-currency CI can be invoiced at all.
+		self.assertIn("doc.conversion_rate = _ci_conversion_rate(", self.body)
+		# For the invoice's OWN date. Resolving it for any other day is how a
+		# document ends up carrying a rate its own validation would refuse.
+		self.assertIn("doc.posting_date)", self.body)
+
+	def test_the_rate_comes_from_the_same_lookup_the_validator_uses(self):
+		body = _func_body(_read("imports.py"), "_ci_conversion_rate")
+		self.assertIn("_cbu_rate_on_or_before", body)
+
+	def test_a_missing_rate_fails_loud(self):
+		# Falling back to 1.0 would post 380 420 USD as 380 420 UZS.
+		body = _func_body(_read("imports.py"), "_ci_conversion_rate")
+		self.assertIn("frappe.throw", body)
+		self.assertNotIn("or 1.0", body)
+
 
 class TestExposureExclusion(unittest.TestCase):
 	"""supplier_import_exposure (WP-I4/I5) no-double-count wiring."""
