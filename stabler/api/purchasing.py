@@ -1273,6 +1273,15 @@ def _apply_invoice_payload(
 	purchase_receipt: str | None = None,
 ):
 	"""Write validated PI fields + item/tax rows onto `doc` (new or draft)."""
+	# ERPNext discards `posting_date` unless this flag is set: validate_posting_time
+	# (erpnext/utilities/transaction_base.py) overwrites it with *now* for any
+	# document that does not carry it. So the API took a posting date, wrote it,
+	# and stored today's — silently. That is not cosmetic: the exchange rate is
+	# validated and applied against the posting date, and with `update_stock` the
+	# posting date is the stock movement's own date. Measured on
+	# msa.erpstable.com 2026-08-20 — USD/UZS was 12 187.68 on the arrival date
+	# and 11 820.40 that morning, a 163 million UZS gap on one 380 420 USD bill.
+	doc.set_posting_time = 1
 	doc.posting_date = getdate(posting_date or today())
 	doc.due_date = getdate(due_date) if due_date else None
 	doc.bill_no = (bill_no or "").strip() or None
