@@ -83,7 +83,23 @@ def _stamp_idempotency(doc, key: str | None) -> None:
 
 
 def _is_duplicate_key_error(err: Exception) -> bool:
-	"""Mirrors `crm_automation._is_duplicate_err` — the same question, one table over."""
+	"""Mirrors `crm_automation._is_duplicate_err` — the same question, one table over.
+
+	Measured against the live bench rather than reasoned about: a repeated key
+	surfaces as `MySQLdb.IntegrityError` (this bench runs MySQLdb, not the
+	pymysql the frappe type hints name), the framework's own
+	`frappe.db.is_unique_key_violation` says True for it, and so does the string
+	test below. The framework answer is asked first because it tracks the driver;
+	the string test stays because it is what makes this function answerable
+	without a bench, which is where its tests run.
+	"""
+	framework = getattr(getattr(frappe, "db", None), "is_unique_key_violation", None)
+	if callable(framework):
+		try:
+			if framework(err):
+				return True
+		except Exception:
+			pass  # a driver-specific probe on a non-driver exception; fall through
 	dup_classes = tuple(
 		cls
 		for cls in (
