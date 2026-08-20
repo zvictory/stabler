@@ -78,6 +78,23 @@ class TestJournalDrawerExitPaths(unittest.TestCase):
 		self.assertIsNotNone(block, "could not read the useEscapeBack handler")
 		self.assertIn('pane.value === "view"', block.group(1))
 
+	def test_escape_actually_reaches_that_handler(self):
+		"""The branch above is worth nothing if the composable never calls it.
+
+		It did not, for a day. `useEscapeBack` bails out on any open
+		`.offcanvas.show` because "those close themselves" — true of an offcanvas
+		Bootstrap instantiated, false of this one, which is markup plus a `show`
+		class. So Escape was a dead key on an open drawer while the handler
+		beside it read perfectly correct, and the test above stayed green
+		throughout: it can see that a branch exists, not that anything reaches
+		it. `ownsDrawer` is what puts it back on the path, and this pins it.
+		"""
+		self.assertRegex(
+			self.body,
+			r"ownsDrawer:\s*\(\)\s*=>",
+			"the page no longer tells useEscapeBack that the drawer is its own",
+		)
+
 
 if __name__ == "__main__":
 	unittest.main()
