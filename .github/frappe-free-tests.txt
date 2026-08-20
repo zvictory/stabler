@@ -235,3 +235,4 @@ stabler.tests.test_patches_pin
 stabler.tests.test_eta_payment_alert_dedupe
 stabler.tests.test_repost_queue_alert_dedupe
 stabler.tests.test_money_idempotency_key_patch
+stabler.tests.test_audit_seal_lock
