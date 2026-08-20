@@ -5,9 +5,9 @@ import { fileURLToPath } from "url";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const receiptPath = resolve(here, "../pages/remittance/PickupCodeReceipt.vue");
-const homePath = resolve(here, "../pages/remittance/RemittanceHome.vue");
+const newPath = resolve(here, "../pages/remittance/NewRemittance.vue");
 const src = readFileSync(receiptPath, "utf8");
-const homeSrc = readFileSync(homePath, "utf8");
+const newSrc = readFileSync(newPath, "utf8");
 
 /**
  * The pickup code exists in exactly one place for exactly one moment.
@@ -150,10 +150,25 @@ describe("the guards are actually wired to the component", () => {
 		expect(src).toMatch(/removeEventListener\("beforeunload", handleBeforeUnload\)/);
 	});
 
-	it("is reached by the company switch, which navigates rather than re-rendering", () => {
-		// RemittanceHome answers an engine change with router.replace. That is a
-		// navigation, so the route guard covers it; if this ever becomes a plain
-		// re-render the code would be destroyed with no prompt at all.
-		expect(homeSrc).toMatch(/router\.replace\(/);
+	it("survives a company switch, which does not navigate at all", () => {
+		// This used to assert that RemittanceHome answered an ENGINE change with
+		// `router.replace`, so the route guard covered the company switch. That
+		// watcher existed to bounce a user off the V1 screens when they switched to
+		// a company running the JE-only engine; the engine was retired on
+		// 2026-08-20 and the watcher went with it. Nothing was lost — it only ever
+		// fired on V1 -> Legacy, and between two V1 companies it never fired either.
+		//
+		// So a company switch now re-renders instead of navigating, and what keeps
+		// the code alive is that `load()` does not touch `issued`. That is the
+		// assertion worth having: `watch(company, load)` runs the whole loader on
+		// every switch, and a later "reset the form for the new company" line inside
+		// it would destroy the only copy of a code the cashier has already taken
+		// cash for — with no navigation, so no guard and no prompt.
+		const start = newSrc.indexOf("async function load()");
+		expect(start, "load() not found in NewRemittance.vue").toBeGreaterThan(-1);
+		const end = newSrc.indexOf("\n}", start);
+		expect(end, "load() has no closing brace at column 0").toBeGreaterThan(start);
+		expect(newSrc.slice(start, end)).not.toMatch(/issued/);
+		expect(newSrc).toMatch(/watch\(company, load\)/);
 	});
 });

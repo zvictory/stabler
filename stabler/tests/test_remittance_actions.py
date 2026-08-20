@@ -44,7 +44,7 @@ from stabler.api import _remittance_actions as actions
 
 _API = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "api")
 _COMMANDS_SRC = os.path.join(_API, "remittance_commands.py")
-_REMITTANCE_SRC = os.path.join(_API, "remittance.py")
+_QUERIES_SRC = os.path.join(_API, "remittance_queries.py")
 _APPROVALS_SRC = os.path.join(_API, "approvals.py")
 
 # The four axes, verbatim from remittance_transfer.json. Duplicated here on
@@ -359,10 +359,38 @@ class PickupCodeNeverOnAReadTest(unittest.TestCase):
 # Every read path in the module, and the function that serves it. Adding a read
 # endpoint means adding a line here — the list is the contract, and a read path
 # that is not on it is a read path nobody proved anything about.
+#
+# Two entries left on 2026-08-20 with the JE-only engine that served them
+# (`list_remittances`, `remittance_detail`). Removing them alone would have left
+# this list naming ONE of the seven read paths that exist while still calling
+# itself "every read path", so the six in `remittance_queries` were measured
+# against these assertions the same day. What that measured, written down here
+# because a silent omission reads as coverage:
+#
+#   All six run `assert_no_pickup_code`. The digest guard — the one this class
+#   exists for — already holds on every read path in the app.
+#
+#   `posting_preview` satisfies all four and is added — once the allowed_actions
+#   assertion stopped matching only `annotate(`; see its docstring below.
+#
+#   `transfer_detail` satisfies all four in substance: it ends in
+#   `assert_no_pickup_code(payload)` and selects no forbidden field. It fails
+#   here only because this class matches raw function SOURCE, and that docstring
+#   explains at length why its block is named `code_state` and not
+#   `pickup_code` — the substring check reads the prose as a selection. Matching
+#   field selections rather than text would fix it, and is not a thing to do
+#   inside a deletion.
+#
+#   `operations_summary`, `work_queue`, `transfers` and `reconciliation` return
+#   NO allowed_actions at all. For a totals endpoint that is expected; for
+#   `work_queue` and `transfers`, which list rows an operator acts on, it is a
+#   question — either their screens ask `transfer_detail` per row, or they decide
+#   the buttons client-side, which is the thing `_remittance_actions` exists to
+#   prevent. Measured 2026-08-20, not investigated: it long predates the engine
+#   retirement and is not its to answer.
 READ_PATHS = (
 	(_COMMANDS_SRC, "payout_queue"),
-	(_REMITTANCE_SRC, "list_remittances"),
-	(_REMITTANCE_SRC, "remittance_detail"),
+	(_QUERIES_SRC, "posting_preview"),
 )
 
 
@@ -378,9 +406,19 @@ class ReadPathSourceTest(unittest.TestCase):
 			self.assertIn("assert_no_pickup_code", body, name)
 
 	def test_every_read_path_returns_allowed_actions(self):
+		"""Both spellings count, because they are one guarantee.
+
+		`annotate(rows, roles)` is a three-line loop over
+		`row["allowed_actions"] = allowed_actions(row, roles)`
+		(`_remittance_actions.py:233`). A read path answering with one object
+		rather than a page of rows calls `allowed_actions` directly and has
+		nothing to loop over. Matching only the wrapper made this assertion about
+		which helper a function reached for, not about what it returned — and it
+		reported a compliant endpoint as non-compliant.
+		"""
 		for name, body in self.bodies.items():
 			self.assertTrue(
-				"annotate(" in body or "_annotate_actions(" in body,
+				"annotate(" in body or "_annotate_actions(" in body or "allowed_actions(" in body,
 				f"{name} returns no allowed_actions",
 			)
 

@@ -80,6 +80,7 @@ Absent,Devamsız
 Add at least one cash desk before switching {0} to the V1 engine: V1 reads every cash account from this table and cannot register a transfer without one.,{0} şirketini V1 motoruna geçirmeden önce en az bir kasa ekleyin: V1 tüm kasa hesaplarını bu tablodan okur ve kasasız transfer kaydedemez.
 Agreement {0} cannot move from {1} to {2}.,{0} sözleşmesi {1} durumundan {2} durumuna geçemez.
 Agreement {0} is closed ({1}) and cannot be rescheduled.,{0} sözleşmesi kapalı ({1}) ve yeniden planlanamaz.
+"Add at least one cash desk for {0}: every cash account comes from this table, and without a row the register desk cannot take a transfer.","{0} için en az bir kasa masası ekleyin: her nakit hesabı bu tablodan gelir ve satır olmadan kayıt masası havale kabul edemez."
 "Box counts cannot be saved on this site: {0} missing on {1}. An administrator must re-run patch {2}; bench migrate will not, it has already run once.","Bu sitede koli sayıları kaydedilemez: {1} üzerinde {0} yok. Bir yönetici {2} patch'ini yeniden çalıştırmalı; bench migrate bunu yapmaz, o bir kez çalıştı."
 Apply to all lines,Tüm satırlara uygula
 Check the code,Kodu doğrula
@@ -92,7 +93,6 @@ Exchange rates,Döviz kurları
 I have checked {receiver}'s identity document.,{receiver} kişisinin kimlik belgesini kontrol ettim.
 I have counted {amount} and am handing it back to {sender}.,{amount} tutarını saydım ve {sender} kişisine geri veriyorum.
 I have written it down,Yazdım
-"Legacy posts journal entries from the New Transfer form it always has. V1 registers a Remittance Transfer and is the only engine where the payout, refund, operations and reconciliation screens exist.","Legacy, her zamanki Yeni Transfer formundan yevmiye kaydı atar. V1 ise bir Remittance Transfer kaydı oluşturur ve ödeme, iade, operasyon ve mutabakat ekranlarının bulunduğu tek motordur."
 Journal entry,Yevmiye kaydı
 Legacy — journal entry screens,Legacy — yevmiye kaydı ekranları
 Lines disagree,Satırlar farklı
@@ -117,7 +117,6 @@ This company runs the {engine} remittance engine. The Transfer V1 screens stay u
 This entry does not balance. Do not hand over cash — report it.,Bu kayıt denkleşmiyor. Nakit vermeyin — bildirin.
 This will post,Şu kayıt işlenecek
 Transfer registered,Havale kaydedildi
-"Transfers registered on V1 stay in their own records and are not shown by the legacy list, which reads journal entries.",V1'de kaydedilen transferler kendi kayıtlarında kalır ve yevmiye kayıtlarını okuyan eski listede görünmez.
 Transfers registered on the legacy engine stay on the legacy list and are not shown by the V1 screens: they have no Remittance Transfer record behind them.,Legacy motorunda kaydedilen transferler eski listede kalır ve V1 ekranlarında görünmez: arkalarında Remittance Transfer kaydı yoktur.
 V1 — operations centre,V1 — operasyon merkezi
 What the customer pays,Müşterinin ödediği
@@ -1662,6 +1661,8 @@ Due Date,Vade Tarihi
 Due date,Vade tarihi
 due date is today,son tarihi bugün olan işler
 due date passed — act today,son tarih geçti — bugün müdahale
+"Every cash account comes from the desk table. Add at least one desk before saving.","Her nakit hesabı masa tablosundan gelir. Kaydetmeden önce en az bir masa ekleyin."
+"Journal Entry is missing {1} on this site, so a remittance voucher cannot be told apart from any other and the cancel guard would let it be cancelled. Run `bench --site <site> migrate` to create the fields before configuring remittance for {0}.","Bu sitede Journal Entry üzerinde {1} eksik; bu yüzden bir havale fişi diğerlerinden ayırt edilemez ve iptal koruması onun iptal edilmesine izin verir. {0} için havaleyi yapılandırmadan önce alanları oluşturmak üzere `bench --site <site> migrate` çalıştırın."
 "due date passed, still open","son tarih geçti, hâlâ açık"
 Due today,Bugün bitmeli
 Duplicate,

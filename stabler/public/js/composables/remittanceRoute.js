@@ -8,7 +8,7 @@
  * Operations stacks `branch -> branch` over `city -> city` on two lines. Fixing
  * them separately would have produced two spellings of one sentence.
  *
- * NOT the same as `deskLabel` inside NewRemittanceV1.vue, and deliberately not
+ * NOT the same as `deskLabel` inside NewRemittance.vue, and deliberately not
  * merged with it: that one writes `TAS-C — Tashkent` for the desk SELECTOR,
  * where the branch code is what the cashier is picking and belongs first. Here
  * the city leads, because a route is read as places before codes.

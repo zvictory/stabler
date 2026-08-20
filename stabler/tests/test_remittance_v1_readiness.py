@@ -1,6 +1,6 @@
-"""Switching a company to V1 must refuse while nothing can protect what V1 posts.
+"""Saving a remittance configuration must refuse while nothing can protect its vouchers.
 
-`_assert_ready_for_v1` already refuses an empty cash-desk table, and its reason
+`_assert_ready_for_remittance` already refuses an empty cash-desk table, and its reason
 generalises: a rollout that cannot do the job is not a rollout, so it is refused
 when it is requested rather than at the counter with the customer present. One
 precondition was missing from it, and the omission was not theoretical.
@@ -104,12 +104,19 @@ def _doc(desks=1):
 	)
 
 
-class V1ReadinessTest(unittest.TestCase):
+class RemittanceReadinessTest(unittest.TestCase):
+	"""Renamed from RemittanceReadinessTest with the gate itself.
+
+	It ran only on the switch to V1 until the engine flag was retired on
+	2026-08-20. Every assertion below is unchanged — none of them was ever about
+	which engine asked, which is why the check survived the flag that triggered it.
+	"""
+
 	def test_v1_is_refused_when_the_guarded_fields_do_not_exist(self):
 		"""The zuma state, exactly: the patch is logged, the fields are not there."""
 		mod = _load(je_fields=())
 		with self.assertRaises(_Thrown) as caught:
-			mod._assert_ready_for_v1(_doc())
+			mod._assert_ready_for_remittance(_doc())
 		self.assertIn("stabler_remittance_id", str(caught.exception))
 
 	def test_v1_is_refused_when_only_the_id_exists(self):
@@ -117,19 +124,19 @@ class V1ReadinessTest(unittest.TestCase):
 		and the payout branch degrades silently to the milder one without it."""
 		mod = _load(je_fields=("stabler_remittance_id",))
 		with self.assertRaises(_Thrown) as caught:
-			mod._assert_ready_for_v1(_doc())
+			mod._assert_ready_for_remittance(_doc())
 		self.assertIn("stabler_remittance_stage", str(caught.exception))
 
 	def test_v1_is_allowed_once_both_fields_exist(self):
 		mod = _load(je_fields=GUARD_FIELDS)
-		mod._assert_ready_for_v1(_doc())  # must not raise
+		mod._assert_ready_for_remittance(_doc())  # must not raise
 
 	def test_the_empty_desk_table_is_still_refused(self):
 		"""The rule this gate already carried stays first — a company with the
 		fields but no desk still cannot register a transfer."""
 		mod = _load(je_fields=GUARD_FIELDS)
 		with self.assertRaises(_Thrown) as caught:
-			mod._assert_ready_for_v1(_doc(desks=0))
+			mod._assert_ready_for_remittance(_doc(desks=0))
 		self.assertIn("cash desk", str(caught.exception).lower())
 
 

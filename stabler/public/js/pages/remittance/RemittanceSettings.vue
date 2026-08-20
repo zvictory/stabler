@@ -43,21 +43,6 @@
  *   plan (`:377-381`) put both in the cashier's hands at register time, with the
  *   last value pre-filled. There is no field for them on Remittance Settings and
  *   this screen does not draw one.
- * ## The engine switch
- *
- * `remittance_engine` is edited here, and this is the only place it can be. Every
- * company ships as `Legacy`, every Transfer V1 screen is gated on the flag, and
- * `CLAUDE.md` forbids sending a user to the Frappe Desk — so with the switch read
- * only, the V1 surface was unreachable on all seven tenants and this screen's own
- * "switch it to V1" advice was a sentence nobody could ever reach to read. That is
- * also why this screen is NOT in the router's `REMITTANCE_V1_ROUTES`: gating the
- * switch on the thing it switches is a door locked from the inside.
- *
- * The rollout decision is still a decision — the picker is a deliberate, saved
- * change with a warning beside it, not a toggle. The server refuses V1 for a
- * company with no cash desk, because a V1 company that cannot register a transfer
- * discovers it at the counter.
- *
  * ## Endpoints
  *
  * Reads go through `frappe.client.get_list`, the same path `NewRemittanceV1.vue`
@@ -85,11 +70,6 @@ const CASH_DESK_CHILD = "Remittance Cash Desk Account";
 
 const SAVE_METHOD = "stabler.api.remittance_settings.save_remittance_settings";
 
-// `Remittance Settings.remittance_engine`, verbatim. Wire values, never labels:
-// the router, the session getter and the server all compare against "V1" exactly.
-const ENGINE_LEGACY = "Legacy";
-const ENGINE_V1 = "V1";
-
 // Only this role may configure a company. The server owns the real gate
 // (`remittance_settings.json:44`); this is the UX layer that keeps a cashier from
 // staring at a form they cannot submit.
@@ -98,11 +78,6 @@ const MANAGER_ROLE = "Remittance Finance Manager";
 const EVIDENCE_OPTIONS = [
 	{ value: "Counted", label: t("Counted") },
 	{ value: "Wallet balance", label: t("Wallet balance") },
-];
-
-const ENGINE_OPTIONS = [
-	{ value: ENGINE_LEGACY, label: t("Legacy — journal entry screens") },
-	{ value: ENGINE_V1, label: t("V1 — operations centre") },
 ];
 
 const session = useSession();
@@ -133,22 +108,12 @@ const baseCurrency = ref(null);
 // null = not asked / unanswered, true|false = the server's own answer.
 const expiryPolicyConfigured = ref(null);
 
-// The engine as it is STORED. `form.remittance_engine` is the pending choice; the
-// badge and the rollout note read this one, so a picked-but-unsaved value never
-// reads as a company that has already switched.
-// null = the field is not deployed on this site yet.
-const engine = ref(null);
-const engineDeployed = ref(false);
-
 // Company can change under a slow load. Every response checks its ticket before
 // it writes, so company A's chart of accounts never lands under company B's name.
 let loadSeq = 0;
 
 function blankForm() {
 	return {
-		// Legacy until `loadEngine` answers otherwise: unknown must never render as
-		// "this company is on V1".
-		remittance_engine: ENGINE_LEGACY,
 		receiver_obligation_account: "",
 		deferred_commission_account: "",
 		commission_income_account: "",
@@ -249,18 +214,6 @@ async function loadCurrencies() {
 	return Array.isArray(rows) ? rows : [];
 }
 
-// The engine field has not shipped. Asking for it in the main request would take
-// the whole screen down with an unknown-column error, so it gets its own.
-async function loadEngine() {
-	const rows = await call("frappe.client.get_list", {
-		doctype: SETTINGS_DOCTYPE,
-		filters: { company: company.value },
-		fields: ["name", "remittance_engine"],
-		limit_page_length: 1,
-	});
-	return { deployed: true, value: rows?.[0]?.remittance_engine || null };
-}
-
 // The only honest source for "does expiry mean anything yet". The queries module
 // answers `policy_configured` itself; nothing here infers it.
 async function loadExpiryPolicy() {
@@ -285,9 +238,6 @@ async function load() {
 		configured.value = !!row;
 		form.value = row
 			? {
-					// Answered by `loadEngine` below, in its own request. Legacy until
-					// then, for the same reason blankForm() starts there.
-					remittance_engine: ENGINE_LEGACY,
 					receiver_obligation_account: row.receiver_obligation_account || "",
 					deferred_commission_account: row.deferred_commission_account || "",
 					commission_income_account: row.commission_income_account || "",
@@ -314,13 +264,12 @@ async function load() {
 	// Everything below is verification input, not the settings themselves: each
 	// failure narrows what can be checked and is reported as such, but none of
 	// them should blank the form the manager came here to edit.
-	const [accountRes, baseRes, branchRes, currencyRes, engineRes, expiryRes] =
+	const [accountRes, baseRes, branchRes, currencyRes, expiryRes] =
 		await Promise.allSettled([
 			loadAccounts(),
 			loadBaseCurrency(),
 			loadBranches(),
 			loadCurrencies(),
-			loadEngine(),
 			loadExpiryPolicy(),
 		]);
 	if (seq !== loadSeq) return;
@@ -334,16 +283,6 @@ async function load() {
 	baseCurrency.value = baseRes.status === "fulfilled" ? baseRes.value : null;
 	branches.value = branchRes.status === "fulfilled" ? branchRes.value : [];
 	currencies.value = currencyRes.status === "fulfilled" ? currencyRes.value : [];
-	if (engineRes.status === "fulfilled") {
-		engineDeployed.value = true;
-		engine.value = engineRes.value.value;
-		// The picker starts on what is stored. On a site where the field has not
-		// deployed it stays on the blankForm() value and the picker is not drawn.
-		form.value.remittance_engine = engine.value || ENGINE_LEGACY;
-	} else {
-		engineDeployed.value = false;
-		engine.value = null;
-	}
 	expiryPolicyConfigured.value = expiryRes.status === "fulfilled" ? expiryRes.value : null;
 
 	loading.value = false;
@@ -675,35 +614,16 @@ const findings = computed(() => {
 		}
 	});
 
-	// --- rollout and policy notes, neither of which blocks a save ---
-	if (!engineDeployed.value) {
-		push(
-			"warning",
-			t(
-				"The remittance engine field has not been deployed on this site yet, so which engine this company runs cannot be read here."
-			)
-		);
-	} else if (engine.value !== ENGINE_V1) {
-		push(
-			"warning",
-			t(
-				"This company runs the {engine} remittance engine. The Transfer V1 screens stay unavailable until it is switched to V1 below.",
-				{
-					engine: engine.value || t("Legacy"),
-				}
-			)
-		);
-	}
-	// Only a desk row is checked here, and only for V1: the three accounts are
-	// already blockers above, and the server refuses the same switch for the same
-	// reason. Stating it as a blocker means the manager reads it before Save is
-	// pressed rather than after it is refused.
-	if (engineDeployed.value && form.value.remittance_engine === ENGINE_V1 && !desks.value.length) {
+	// Only a desk row is checked here: the three accounts are already blockers
+	// above, and the server refuses the same save for the same reason. Stating it
+	// as a blocker means the manager reads it before Save is pressed rather than
+	// after it is refused. Unconditional since the engine flag was retired — it
+	// used to run only when V1 was being picked, and V1 is now the only engine
+	// there is.
+	if (!desks.value.length) {
 		push(
 			"blocker",
-			t(
-				"The V1 engine reads every cash account from the desk table. Add at least one desk before switching to V1."
-			)
+			t("Every cash account comes from the desk table. Add at least one desk before saving.")
 		);
 	}
 	if (expiryPolicyConfigured.value === false) {
@@ -743,23 +663,14 @@ function intOrNull(value) {
 	return Number.isFinite(n) ? Math.trunc(n) : null;
 }
 
-// True while the picker shows something other than what is stored. Drives the
-// warning beside it — switching engine changes which screens a whole company has.
-const engineChanged = computed(
-	() => engineDeployed.value && form.value.remittance_engine !== (engine.value || ENGINE_LEGACY)
-);
-
 async function save() {
 	if (!canSave.value) return;
 	saving.value = true;
 	saveError.value = "";
 	try {
-		const res = await call(SAVE_METHOD, {
+		await call(SAVE_METHOD, {
 			company: company.value,
 			payload: JSON.stringify({
-				// Sent only when the field is deployed on this site. Sending it from a
-				// screen that could not read it would write a guess.
-				...(engineDeployed.value ? { remittance_engine: form.value.remittance_engine } : {}),
 				receiver_obligation_account: form.value.receiver_obligation_account,
 				deferred_commission_account: form.value.deferred_commission_account,
 				commission_income_account: form.value.commission_income_account,
@@ -776,16 +687,6 @@ async function save() {
 				})),
 			}),
 		});
-		// The tab strip and the router guard both read the store, so a company that
-		// just switched to V1 gets its screens now rather than after a reload. Bound
-		// to the company it describes, exactly as `session.ensureRemittanceEngine`
-		// binds it — a bare engine string outlives the question it answered.
-		if (res?.remittance_engine && res?.company === company.value) {
-			session.$patch({
-				remittanceEngine: res.remittance_engine,
-				remittanceEngineCompany: res.company,
-			});
-		}
 		toast.success(t("Remittance settings saved."));
 		await load();
 	} catch (err) {
@@ -823,16 +724,6 @@ async function save() {
 				</div>
 			</div>
 			<div class="ms-auto d-flex align-items-center gap-2">
-				<span
-					v-if="engineDeployed"
-					class="badge"
-					:class="engine === 'V1' ? 'bg-green-lt text-green' : 'bg-secondary-lt text-secondary'"
-				>
-					{{ t("Engine") }}: {{ engine || t("Legacy") }}
-				</span>
-				<span v-else class="badge bg-secondary-lt text-secondary">{{
-					t("Engine: not deployed")
-				}}</span>
 				<button type="button" class="btn btn-primary" :disabled="!canSave" @click="save">
 					<span v-if="saving" class="spinner-border spinner-border-sm me-1"></span>
 					{{ t("Save") }}
@@ -881,53 +772,6 @@ async function save() {
 						<span class="text-secondary">{{ f.text }}</span>
 					</li>
 				</ul>
-			</div>
-
-			<!-- Rollout ------------------------------------------------------------->
-			<div v-if="engineDeployed" class="card mb-3">
-				<div class="card-header">
-					<h3 class="card-title">{{ t("Remittance engine") }}</h3>
-					<div class="card-subtitle">
-						{{ t("Which set of screens this company uses. Changes on save.") }}
-					</div>
-				</div>
-				<div class="card-body">
-					<div class="row g-3 align-items-start">
-						<div class="col-12 col-md-6">
-							<Select v-model="form.remittance_engine" :options="ENGINE_OPTIONS" />
-							<div class="form-hint">
-								{{
-									t(
-										"Legacy posts journal entries from the New Transfer form it always has. V1 registers a Remittance Transfer and is the only engine where the payout, refund, operations and reconciliation screens exist."
-									)
-								}}
-							</div>
-						</div>
-						<div v-if="engineChanged" class="col-12 col-md-6">
-							<div class="alert alert-warning mb-0">
-								<div class="fw-semibold">
-									{{
-										t("Every user of {company} moves to the {engine} screens when this is saved.", {
-											company,
-											engine: form.remittance_engine,
-										})
-									}}
-								</div>
-								<div class="small">
-									{{
-										form.remittance_engine === "V1"
-											? t(
-													"Transfers registered on the legacy engine stay on the legacy list and are not shown by the V1 screens: they have no Remittance Transfer record behind them."
-												)
-											: t(
-													"Transfers registered on V1 stay in their own records and are not shown by the legacy list, which reads journal entries."
-												)
-									}}
-								</div>
-							</div>
-						</div>
-					</div>
-				</div>
 			</div>
 
 			<!-- Company accounts ---------------------------------------------------->

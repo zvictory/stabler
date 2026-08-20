@@ -81,6 +81,7 @@ Absent,Отсутствует
 Add at least one cash desk before switching {0} to the V1 engine: V1 reads every cash account from this table and cannot register a transfer without one.,Добавьте хотя бы одну кассу перед переключением {0} на движок V1: V1 читает все кассовые счета из этой таблицы и без неё не может зарегистрировать перевод.
 Agreement {0} cannot move from {1} to {2}.,Договор {0} не может перейти из состояния {1} в {2}.
 Agreement {0} is closed ({1}) and cannot be rescheduled.,Договор {0} закрыт ({1}) и не может быть перепланирован.
+"Add at least one cash desk for {0}: every cash account comes from this table, and without a row the register desk cannot take a transfer.","Добавьте хотя бы одну кассу для {0}: каждый счёт наличных берётся из этой таблицы, и без строки касса регистрации не сможет принять перевод."
 "Box counts cannot be saved on this site: {0} missing on {1}. An administrator must re-run patch {2}; bench migrate will not, it has already run once.",На этом сайте нельзя сохранить количество коробок: {0} отсутствует в {1}. Администратор должен повторно выполнить патч {2}; bench migrate этого не сделает — он уже выполнялся.
 Apply to all lines,Применить ко всем строкам
 Check the code,Проверить код
@@ -93,7 +94,6 @@ Exchange rates,Курсы валют
 I have checked {receiver}'s identity document.,Я проверил удостоверение личности {receiver}.
 I have counted {amount} and am handing it back to {sender}.,Я пересчитал {amount} и возвращаю их {sender}.
 I have written it down,Код записан
-"Legacy posts journal entries from the New Transfer form it always has. V1 registers a Remittance Transfer and is the only engine where the payout, refund, operations and reconciliation screens exist.","Legacy проводит журнальные записи из той же формы «Новый перевод». V1 регистрирует Remittance Transfer и является единственным движком, где существуют экраны выплаты, возврата, операций и сверки."
 Journal entry,Запись в журнале
 Legacy — journal entry screens,Legacy — экраны журнальных проводок
 Lines disagree,Строки расходятся
@@ -118,7 +118,6 @@ This company runs the {engine} remittance engine. The Transfer V1 screens stay u
 This entry does not balance. Do not hand over cash — report it.,Проводка не сходится. Не выдавайте наличные — сообщите об этом.
 This will post,Будет проведено
 Transfer registered,Перевод зарегистрирован
-"Transfers registered on V1 stay in their own records and are not shown by the legacy list, which reads journal entries.","Переводы, зарегистрированные в V1, остаются в собственных записях и не отображаются в старом списке, который читает журнальные проводки."
 Transfers registered on the legacy engine stay on the legacy list and are not shown by the V1 screens: they have no Remittance Transfer record behind them.,"Переводы, зарегистрированные на движке legacy, остаются в старом списке и не отображаются на экранах V1: за ними нет записи Remittance Transfer."
 V1 — operations centre,V1 — операционный центр
 What the customer pays,Что платит клиент
@@ -1669,6 +1668,8 @@ Due Date,Срок оплаты
 Due date,Срок оплаты
 due date is today,срок — сегодня
 due date passed — act today,срок прошёл — действовать сегодня
+"Every cash account comes from the desk table. Add at least one desk before saving.","Каждый счёт наличных берётся из таблицы касс. Добавьте хотя бы одну кассу перед сохранением."
+"Journal Entry is missing {1} on this site, so a remittance voucher cannot be told apart from any other and the cancel guard would let it be cancelled. Run `bench --site <site> migrate` to create the fields before configuring remittance for {0}.","На этом сайте у Journal Entry отсутствует {1}, поэтому проводку перевода нельзя отличить от любой другой и защита от отмены пропустит её отмену. Запустите `bench --site <site> migrate`, чтобы создать поля, прежде чем настраивать переводы для {0}."
 "due date passed, still open","срок прошёл, всё ещё открыто"
 Due today,Срок сегодня
 Duplicate,
