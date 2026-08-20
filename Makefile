@@ -470,9 +470,14 @@ guards:
 	  echo "$$hits"; fail=1; fi; \
 	exit $$fail
 
-# Lists .py and .json files that exist in prod's package but not in git. Run
-# after every deploy. Exit 1 on drift so it can be scripted; it never touches
-# the server.
+# Lists .py, .json and .vue files that exist in prod's package but not in git.
+# Run after every deploy. Exit 1 on drift so it can be scripted; it never
+# touches the server.
+#
+# The extension list is written THREE times below — the git pathspecs, the
+# find predicates, and the success message the operator reads. Widening one and
+# not the others makes the check report less than it claims;
+# stabler/tests/test_prod_drift_scope.py refuses that.
 #
 # .json is in scope as of 2026-07-27, and it was added because the .py-only
 # version missed something real. Clearing the five stray scripts turned up a
@@ -488,11 +493,24 @@ guards:
 #
 # Both sides are scoped to stabler/ so the comparison is symmetric: package.json
 # and .prettierrc.json live at the repo root, outside the tree `find` walks.
+#
+# .vue is in scope as of 2026-08-20. rsync deploys without --delete, so a
+# renamed or deleted component leaves its old copy on prod forever — and the
+# check the operator is told to run after every deploy (deploy_stabler.sh:312)
+# said "clean". The functional risk is low, because router.js registers routes
+# statically and an orphaned component is never served; the reason to see it
+# anyway is that this report is the only place anyone would ever find out.
+#
+# .js is deliberately NOT in scope. Prod carries build output and locally
+# gitignored js, and this target exits 1 on any extra — so including it would
+# make the check red on every run, which teaches the operator to skip the one
+# thing they are told to run after every deploy. A documented gap beats a check
+# the team has learned to ignore.
 prod-drift:
 	@tmp=$$(mktemp -d); \
-	git ls-files -- 'stabler/*.py' 'stabler/*.json' | sort > $$tmp/local; \
+	git ls-files -- 'stabler/*.py' 'stabler/*.json' 'stabler/*.vue' | sort > $$tmp/local; \
 	ssh $(PROD_HOST) "cd $(PROD_APP) && find stabler -type f \
-	    \( -name '*.py' -o -name '*.json' \) \
+	    \( -name '*.py' -o -name '*.json' -o -name '*.vue' \) \
 	    -not -path '*/node_modules/*' -not -path '*/__pycache__/*' \
 	    -not -path 'stabler/public/dist/*'" \
 	  | sort > $$tmp/prod; \
@@ -509,7 +527,7 @@ prod-drift:
 	  echo "Review before deleting: back up, list with ls, then remove."; \
 	  exit 1; \
 	fi; \
-	echo "prod-drift: clean — no untracked .py/.json under $(PROD_APP)/stabler"
+	echo "prod-drift: clean — no untracked .py/.json/.vue under $(PROD_APP)/stabler"
 
 # ------------------------------------------------------- whole-tree sweeps ---
 

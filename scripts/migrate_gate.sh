@@ -20,6 +20,18 @@ migrate_trigger_files() {
   # can trigger DDL modifications or run database migration code. Other files
   # (like Vue templates or standard Python logic) do not affect the database
   # schema, so a release containing only those files safely skips migration.
+  #
+  # ADD EVERY NEW SCHEMA-MUTATING PATH TO THIS REGEX. A miss here is permanent,
+  # not merely a skipped migrate: the "Skipping migrate" branch advances prod's
+  # stamp anyway (deploy_stabler.sh:266), so the next deploy compares against a
+  # commit that already contains the change this pattern failed to classify. The
+  # change is then invisible to the gate forever, and the only symptom is a
+  # tenant crashing on a column that was never created.
+  #
+  # The gate is fail-safe about what it does not KNOW — an unreadable or missing
+  # stamp migrates (deploy_stabler.sh:248-249) — but it trusts a confident "no
+  # triggers" completely. That asymmetry is deliberate and it is why this list,
+  # not the fallback, is the thing to keep correct.
   git -C "$repo_dir" diff --name-only "$from_sha" "$to_ref" | grep -E '(^|/)doctype/[^/]+/[^/]+\.json$|^stabler/patches\.txt$|^stabler/patches/|^stabler/fixtures/|^stabler/hooks\.py$|(^|/)custom/[^/]+\.json$' || true
 }
 

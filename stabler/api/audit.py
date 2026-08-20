@@ -358,13 +358,33 @@ def _require_admin() -> None:
 		frappe.throw(_("Not permitted — admins only."), frappe.PermissionError)
 
 
-def _last_seal() -> dict | None:
-	"""Return the most recent Stabler Audit Seal row (seq, hash, sealed_at), or None."""
-	rows = frappe.get_all(
-		"Stabler Audit Seal",
-		fields=["name", "seq", "hash", "sealed_at"],
-		order_by="seq desc",
-		limit=1,
+def _last_seal(for_update: bool = False) -> dict | None:
+	"""Return the most recent Stabler Audit Seal row (seq, hash, sealed_at), or None.
+
+	`for_update` takes a row lock, and only the write path asks for it. Sealing
+	reads this row to learn `prev_seq`/`prev_hash`, hashes every Version row
+	since then, and inserts the next seal — a window wide enough for the nightly
+	tick and a hand-run `bench execute` to overlap. `seq` carries no unique flag
+	in the doctype JSON, so nothing below refuses the second seal claiming the
+	same number, and a tamper-evident chain that forks proves nothing from that
+	point on. The lock holds until the transaction commits, which is exactly as
+	long as it needs to.
+
+	Raw SQL because `frappe.get_all` has no `for_update`: `db_query` does not
+	support it, only `frappe.db.get_value`/`get_values` do, and neither takes an
+	`order_by`+`limit` over a doctype the way this needs.
+
+	This is the cheap half of the fix. The complete one is a unique index on
+	`seq`, which is a doctype change and per-site DDL across seven tenants, and
+	is deliberately still owed. On an empty table there is no row to lock; the
+	scan is a full one (`seq` is not indexed) so InnoDB's next-key locking does
+	hold the gap under REPEATABLE READ, but that follows from the isolation
+	level and from an index NOT existing, so it is not something to rely on.
+	"""
+	rows = frappe.db.sql(
+		"SELECT `name`, `seq`, `hash`, `sealed_at` FROM `tabStabler Audit Seal` "
+		"ORDER BY `seq` DESC LIMIT 1" + (" FOR UPDATE" if for_update else ""),
+		as_dict=True,
 	)
 	return rows[0] if rows else None
 
@@ -394,7 +414,8 @@ def seal_audit_log() -> dict:
 
 	from stabler.api._audit_chain import build_chain
 
-	last = _last_seal()
+	# Locked: everything from here to the insert is the fork window.
+	last = _last_seal(for_update=True)
 	prev_seq = last["seq"] if last else 0
 	prev_hash = last["hash"] if last else "0" * 64
 	after_dt = last["sealed_at"] if last else None
