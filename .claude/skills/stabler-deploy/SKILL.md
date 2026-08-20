@@ -10,7 +10,8 @@ loaded in every session, including sessions that only touched a Vue file.
 Original: `docs/archive/CLAUDE.md.2026-08-15.bak`.
 
 **Production deploy always requires explicit approval from Zafar** — one `bench restart`
-blips all seven tenants. Never infer approval. Deploy only from a clean tree.
+blips every stabler tenant at once. Never infer approval. Deploy only from a clean
+tree.
 `./deploy_stabler.sh` is denied to the agent in `.claude/settings.json` by design: the
 agent prepares the deploy, the human runs it.
 
@@ -57,12 +58,16 @@ the merge protocol and the branch gate in `deploy_stabler.sh` are written out in
 
 ## Prod site
 - **Primary prod = `anjan.erpstable.com`.** Stabler is actually installed on
-  **7 sites** on the shared bench (`/home/frappe/frappe-bench`, ~22 tenants):
-  `anjan`, `dts`, `horeca`, `laminor`, `mikas`, `msa`, `smartbox` — verified via
-  `bench --site <site> list-apps` across every tenant. `msa` DOES carry stabler and
+  **8 sites** on the shared bench (`/home/frappe/frappe-bench`, ~22 tenants):
+  `anjan`, `dts`, `horeca`, `laminor`, `mikas`, `msa`, `smartbox`, `zuma` — measured
+  2026-08-20 with `bench --site <site> list-apps` across every tenant. It said seven
+  until then and `zuma` had already been added, which silently shortened every
+  "run this on all sites" step below by one site. **Re-measure rather than trust
+  this number** — it is the kind of fact that goes stale without anything failing:
+  `for s in $(ls sites | grep '\.'); do bench --site $s list-apps | grep -q '^stabler' && echo $s; done` `msa` DOES carry stabler and
   the PI / imports feature lives there. The remaining tenants do NOT have stabler installed.
 - A code change under `apps/stabler/` (shared app code, not per-site) plus
-  `bench restart` takes effect on ALL 7 stabler sites at once — no per-site
+  `bench restart` takes effect on ALL stabler sites at once — no per-site
   redeploy needed. Backend fixes should be spot-checked on at least one
   secondary site (not just anjan) before calling a deploy done.
 - Before ANY `migrate` / `restart` / data command aimed at "prod", confirm the
@@ -107,12 +112,12 @@ the merge protocol and the branch gate in `deploy_stabler.sh` are written out in
    `npm ci` is the command we actually want and is blocked until `package-lock.json`
    is back in sync with `package.json` (`stabler-qee`).
 5. `bench --site anjan.erpstable.com migrate` (only if patches.txt / doctypes changed)
-   — **run for ALL 7 sites, not just anjan.** `migrate` is per-site; rsync+restart
+   — **run for EVERY stabler site, not just anjan.** `migrate` is per-site; rsync+restart
    are bench-wide, so a doctype/patch change reaches every site's code but only the
    sites you migrate get the DDL. (Near-miss 2026-07-18: `msa` was skipped and its
    new `Import PI Group` columns were missing until a follow-up migrate.)
 6. `bench restart` if any `.py` changed.
-7. `bench --site <site> clear-cache` on **all 7 sites** if any
+7. `bench --site <site> clear-cache` on **every stabler site** if any
    `translations/*.csv` changed. `bench restart` does **not** cover this:
    `stabler/www/stabler.py:_load_translations` caches each language map in Redis
    under `stabler:translations:<lang>` with `expires_in_sec=3600`, and restart

@@ -56,7 +56,7 @@ this file is paid for in every session.
 
 ### Production
 - **Production deploy always requires explicit approval from Zafar** — one
-  `bench restart` blips all seven tenants. Never infer approval.
+  `bench restart` blips every stabler tenant at once. Never infer approval.
 - Deploy only from a clean tree.
 - Procedure, prod topology, rollback and smoke checks: `stabler-deploy` skill.
 
