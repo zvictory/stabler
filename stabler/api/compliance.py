@@ -572,17 +572,22 @@ def gl_integrity_scan(company: str) -> dict[str, int]:
 			"clearance_date",
 		],
 	)
+	# A stored rate of 0 is judged, not skipped. It is the most wrong rate a
+	# document can carry -- it books the entire foreign amount as zero base
+	# currency -- and it is what 363 of msa's purchase invoices actually held.
+	# Those were caught only because the invoice branch above divides
+	# unconditionally; guarding on `rate > 0` here would hide the same defect.
 	for pe in payments:
 		date = pe.clearance_date or pe.posting_date
 		if pe.paid_from_account_currency != company_currency:
 			cbu = cache.get_rate(pe.paid_from_account_currency, company_currency, date)
-			if cbu and cbu > 0 and flt(pe.source_exchange_rate) > 0:
+			if cbu and cbu > 0:
 				deviation = abs(flt(pe.source_exchange_rate) - cbu) / cbu
 				if deviation > 0.05:
 					off_cbu_docs += 1
 		if pe.paid_to_account_currency != company_currency:
 			cbu = cache.get_rate(pe.paid_to_account_currency, company_currency, date)
-			if cbu and cbu > 0 and flt(pe.target_exchange_rate) > 0:
+			if cbu and cbu > 0:
 				deviation = abs(flt(pe.target_exchange_rate) - cbu) / cbu
 				if deviation > 0.05:
 					off_cbu_docs += 1
@@ -603,7 +608,7 @@ def gl_integrity_scan(company: str) -> dict[str, int]:
 	)
 	for row in je_rows:
 		cbu = cache.get_rate(row.account_currency, company_currency, row.posting_date)
-		if cbu and cbu > 0 and flt(row.exchange_rate) > 0:
+		if cbu and cbu > 0:
 			deviation = abs(flt(row.exchange_rate) - cbu) / cbu
 			if deviation > 0.05:
 				off_cbu_docs += 1
