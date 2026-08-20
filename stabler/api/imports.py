@@ -7305,8 +7305,11 @@ def convert_ci_to_purchase_invoice(commercial_invoice: str, company: str, dry_ru
 	# import bill today, which is wrong twice over: the payable belongs to the
 	# month the supplier invoiced, and once the bill updates stock its posting
 	# date IS the day the goods enter the ledger — so today's date also valued
-	# them at today's rate. `set_posting_time` is what makes the date stick;
-	# without it ERPNext overwrites it with now (transaction_base.py).
+	# them at today's rate. `set_posting_time` was already here and already
+	# correct: the flag only makes whatever date is written survive
+	# validate_posting_time (transaction_base.py), and the date written was the
+	# wrong one. It is the sibling bug in `_apply_invoice_payload` that was
+	# missing the flag, not this.
 	doc.set_posting_time = 1
 	doc.posting_date = getdate(ci.ci_date or today())
 	if ci.currency:
