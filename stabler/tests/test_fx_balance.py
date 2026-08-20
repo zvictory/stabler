@@ -70,10 +70,14 @@ _COMPANY_VALUES = {
 #: the UZS company this app runs on. MEASURED on genesis-test.local rather than
 #: assumed: `JE.precision("total_debit")` is 2, NOT 0, because `currency_precision`
 #: is unset and `use_number_format_from_currency` is 0, so `get_field_precision`
-#: falls through to the global "#,###.##" (frappe/model/meta.py:910-913). The
-#: module's own `base_precision_for("UZS")` says 0 — the two notions disagree, on
-#: purpose and in the open; see the note in `_balance_journal_entry`. Both are
-#: pinned below so the mismatch cannot drift unnoticed.
+#: falls through to the global "#,###.##" (frappe/model/meta.py:910-913).
+#:
+#: `base_precision_for("UZS")` used to answer 0 here, and the two notions
+#: disagreed in the open — the difference measured at 2 places, the tolerance
+#: sized in whole units, so a 3-leg UZS entry tolerated 4,99. Closed 2026-08-20
+#: by taking UZS out of `ZERO_DECIMAL_CURRENCIES`: both notions now say 2, and
+#: `test_currency_precision_agreement` checks that against the live site rather
+#: than against this constant.
 DOC_PRECISION = 2
 
 
@@ -324,7 +328,12 @@ class ToleranceBoundaryTest(unittest.TestCase):
 
 	Both currency classes are exercised, because the tolerance is sized from
 	`base_precision_for`, which splits them — 0,01-based for USD, whole-unit for
-	UZS. Two rows means `residual_tolerance(2, ...)`: 0,04 for USD, 4 for UZS.
+	JPY. Two rows means `residual_tolerance(2, ...)`: 0,04 for USD, 4 for JPY.
+
+	The whole-unit side used to be spelled UZS. It is JPY now because UZS left
+	that class on 2026-08-20 (ERPNext stores it at precision 2 on every tenant),
+	and a boundary test has to name a currency that really is whole-unit or it
+	stops testing the split and starts testing a typo.
 	"""
 
 	@classmethod
@@ -349,21 +358,34 @@ class ToleranceBoundaryTest(unittest.TestCase):
 		self.assertEqual([], self._booked("USD", 100.00, 99.95), "0,05 is an allocation error")
 
 	def test_a_whole_unit_currency_books_up_to_four_units(self):
-		self.assertEqual(1, len(self._booked(BASE, 100.00, 96.00)), "4 is the boundary")
+		self.assertEqual(1, len(self._booked("JPY", 100.00, 96.00)), "4 is the boundary")
 
 	def test_a_whole_unit_currency_refuses_five_units(self):
-		self.assertEqual([], self._booked(BASE, 100.00, 95.00), "5 is an allocation error")
+		self.assertEqual([], self._booked("JPY", 100.00, 95.00), "5 is an allocation error")
 
 	def test_the_two_currency_classes_really_are_scaled_apart(self):
 		"""Guards the four above: they mean something only while the split holds.
 
-		4,00 is booked in UZS and refused in USD; 0,04 is booked in USD and — on
-		the same two rows — booked in UZS too, because UZS tolerates a thousand
+		4,00 is booked in JPY and refused in USD; 0,04 is booked in USD and — on
+		the same two rows — booked in JPY too, because JPY tolerates a hundred
 		times more. If `base_precision_for` ever stopped splitting the two, half
 		of the assertions above would keep passing for the wrong reason.
 		"""
 		self.assertEqual([], self._booked("USD", 100.00, 96.00), "USD tolerated 4,00")
-		self.assertEqual(1, len(self._booked(BASE, 100.00, 99.96)), "UZS refused 0,04")
+		self.assertEqual(1, len(self._booked("JPY", 100.00, 99.96)), "JPY refused 0,04")
+
+	def test_uzs_is_scaled_like_usd_now_and_not_like_a_whole_unit_currency(self):
+		"""The company this app actually runs on, and the reason for the change.
+
+		A difference of 4,00 so'm is 400 kopecks in a ledger that records
+		kopecks — an allocation error, not rounding. It was booked silently until
+		2026-08-20 because `base_precision_for("UZS")` answered 0. Both
+		directions are asserted: the wide tolerance is gone AND the narrow one
+		still books what genuinely is rounding, so this cannot be satisfied by
+		refusing everything.
+		"""
+		self.assertEqual([], self._booked(BASE, 100.00, 96.00), "UZS still tolerated 4,00")
+		self.assertEqual(1, len(self._booked(BASE, 100.00, 99.96)), "UZS refused real rounding")
 
 
 class HookWiringTest(unittest.TestCase):

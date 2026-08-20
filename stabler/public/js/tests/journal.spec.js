@@ -9,7 +9,9 @@ import {
 	isPostingFrozen,
 	journalFreezeDate,
 	isRowOrphaned,
+	applyRateToCurrency,
 	postableRows,
+	ratesByCurrency,
 	ratesToRefresh,
 	snapshotDraft,
 } from "../composables/journal.js";
@@ -413,5 +415,77 @@ describe("snapshotDraft / isDraftDirty — the difference between a stray keypre
 	it("without a snapshot nothing is dirty", () => {
 		expect(isDraftDirty(draft(), null)).toBe(false);
 		expect(isDraftDirty(draft(), undefined)).toBe(false);
+	});
+});
+
+describe("ratesByCurrency / applyRateToCurrency — a rate belongs to the entry", () => {
+	const BASE = "UZS";
+	const line = (over = {}) => row({ account_currency: BASE, ...over });
+	const usd = (rate, over = {}) => line({ account_currency: "USD", exchange_rate: rate, ...over });
+
+	it("lists one entry per foreign currency, not one per line", () => {
+		const rows = [line(), usd(12335), usd(12335), line()];
+		expect(ratesByCurrency(rows, BASE)).toEqual([{ currency: "USD", rate: 12335, mixed: false }]);
+	});
+
+	it("leaves the base currency out — it has no rate to quote", () => {
+		expect(ratesByCurrency([line(), line()], BASE)).toEqual([]);
+	});
+
+	it("sorts by currency so the block does not reshuffle as lines are added", () => {
+		const rows = [usd(12335), line({ account_currency: "EUR", exchange_rate: 13402 })];
+		expect(ratesByCurrency(rows, BASE).map((r) => r.currency)).toEqual(["EUR", "USD"]);
+	});
+
+	// The reason this function exists. `setRateQuote` wrote to one row, so two
+	// USD lines on one entry could be booked at two different rates for the same
+	// date. The header cannot silently pick one — it has to say so.
+	it("flags a currency whose lines disagree", () => {
+		const [usdRate] = ratesByCurrency([usd(12335), usd(12500)], BASE);
+		expect(usdRate.mixed).toBe(true);
+	});
+
+	it("does not call a line that has not been quoted yet a disagreement", () => {
+		// A freshly picked account sits at 0 until fetchRate answers. Counting
+		// that as a second opinion would light the warning on every new line.
+		const [usdRate] = ratesByCurrency([usd(12335), usd(0)], BASE);
+		expect(usdRate).toEqual({ currency: "USD", rate: 12335, mixed: false });
+	});
+
+	it("ignores lines with no account, as the totals do", () => {
+		const orphan = usd(99999, { account: "" });
+		expect(ratesByCurrency([usd(12335), orphan], BASE)).toEqual([
+			{ currency: "USD", rate: 12335, mixed: false },
+		]);
+	});
+
+	it("applies one rate to every line of that currency", () => {
+		const rows = [usd(12335), usd(12500), line()];
+		expect(applyRateToCurrency(rows, "USD", 12400)).toBe(2);
+		expect(rows.map((r) => r.exchange_rate)).toEqual([12400, 12400, 1]);
+	});
+
+	it("marks the lines it touched so the date watcher will not undo them", () => {
+		// ratesToRefresh() re-fetches on a date change unless _rateTouched is
+		// set. A rate typed into the header is the user's decision just as much
+		// as one typed into a row, and moving the date must not quietly revert it.
+		const rows = [usd(12335)];
+		applyRateToCurrency(rows, "USD", 12400);
+		expect(rows[0]._rateTouched).toBe(true);
+	});
+
+	it("never touches another currency", () => {
+		const eur = line({ account_currency: "EUR", exchange_rate: 13402 });
+		const rows = [usd(12335), eur];
+		applyRateToCurrency(rows, "USD", 12400);
+		expect(eur.exchange_rate).toBe(13402);
+	});
+
+	it("refuses a rate that is not a positive number", () => {
+		const rows = [usd(12335)];
+		for (const bad of [0, -1, null, undefined, "abc"]) {
+			expect(applyRateToCurrency(rows, "USD", bad)).toBe(0);
+		}
+		expect(rows[0].exchange_rate).toBe(12335);
 	});
 });

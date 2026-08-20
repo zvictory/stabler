@@ -12,7 +12,7 @@ A negative delta means the base-currency value has fallen → unrealised LOSS.
 Precision contract:
   * All monetary arithmetic uses Python Decimal with ROUND_HALF_UP.
   * `precision` is the number of decimal places for the *base currency*
-    (e.g. UZS → 0, USD → 2, KWD → 3).  Caller supplies it from ERPNext
+    (e.g. JPY → 0, USD → 2, UZS → 2, KWD → 3).  Caller supplies it from ERPNext
     Currency.smallest_currency_fraction_value metadata; we never hard-code 2.
   * `rate_precision` defaults to 6 (minimum per multi-currency rules); callers
     may pass a larger value for sub-cent currencies.

@@ -13,7 +13,7 @@
  */
 import { computed, ref, watch, onMounted } from "vue";
 
-import { LOCALE_MAP, moneySeparators, parseMoneyInput } from "../composables/money.js";
+import { LOCALE_MAP, moneyFractionDigits, moneySeparators, parseMoneyInput } from "../composables/money.js";
 
 const props = defineProps({
 	modelValue: { type: [Number, String, null], default: null },
@@ -51,16 +51,22 @@ const separators = computed(() => moneySeparators(props.language));
 const groupSep = computed(() => separators.value.group);
 const decimalSep = computed(() => separators.value.decimal);
 const localeCode = computed(() => LOCALE_MAP[props.language] || "en-US");
-// UZS uses integer-only formatting and the native "сўм" suffix
-// (tiyin/coins out of circulation since 1994).
+// `isUZS` picks the native "сўм" suffix and nothing else. It used to decide
+// precision too — a second copy of a policy that already lives in money.js —
+// and the two copies were free to disagree. They did: money.js and this file
+// both said 0, the LEDGER says 2, and a Mikas user's 1 500 000,50 opening
+// balance was rounded to 1 500 001 on blur and posted that way.
 const isUZS = computed(() => (props.currency || "").toUpperCase() === "UZS");
-const minFractionDigits = computed(() => (isUZS.value ? 0 : 2));
+const currencyDigits = computed(() => moneyFractionDigits(props.currency));
+const minFractionDigits = computed(() => currencyDigits.value);
 const maxFractionDigits = computed(() => {
-	if (isUZS.value) return 0;
+	// A currency with no sub-unit (JPY, KRW) cannot show one, and the unit-price
+	// override must not invent it. This guard comes first for that reason.
+	if (currencyDigits.value === 0) return 0;
 	if (props.maxFractionDigits !== null && props.maxFractionDigits !== undefined) {
 		return props.maxFractionDigits;
 	}
-	return 2;
+	return currencyDigits.value;
 });
 
 const parse = (text) => parseMoneyInput(text, props.language);
@@ -88,7 +94,7 @@ function liveGroup(text) {
 	const parts = s.split(ds);
 	const intp = (parts[0] || "").replace(/^0+(?=\d)/, "");
 	const grouped = intp.replace(/\B(?=(\d{3})+(?!\d))/g, gs);
-	if (maxFractionDigits.value === 0) return grouped; // UZS: integer only
+	if (maxFractionDigits.value === 0) return grouped; // whole-unit currency: integer only
 	if (parts.length > 1) return grouped + ds + parts.slice(1).join("").slice(0, maxFractionDigits.value);
 	return grouped;
 }
@@ -143,11 +149,15 @@ function onFocus(event) {
 
 function onBlur(event) {
 	focused.value = false;
-	// A zero-fraction currency (UZS) formats 1500000.5 as "1 500 001", but the
-	// model kept 1500000.5 and that is what reached the ledger — the field
+	// A zero-fraction currency (JPY, KRW) formats 1500000.5 as "1 500 001", but
+	// the model kept 1500000.5 and that is what reached the ledger — the field
 	// showed one number and posted another. Snap the value to what is on
 	// screen. Only for 0 digits: rate fields pass no `currency`, keep the
 	// 2-digit default, and must not lose a 4-decimal rate to this.
+	//
+	// UZS used to land here and this is where it lost the user's kopecks. It no
+	// longer reports 0 digits, so the branch is simply not taken for it — the
+	// fix is in the precision, not in an exception carved out of this guard.
 	if (maxFractionDigits.value === 0 && Number.isFinite(Number(props.modelValue)) && props.modelValue !== null && props.modelValue !== "") {
 		const snapped = Math.round(Number(props.modelValue));
 		if (snapped !== Number(props.modelValue)) emit("update:modelValue", snapped);

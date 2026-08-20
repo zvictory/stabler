@@ -4,13 +4,14 @@ A monetary residual is "zero" only if it is smaller than half the currency's
 smallest representable unit. That threshold is currency metadata, NOT the
 hard-coded ``0.005`` that was scattered across the API layer:
 
-  * 2-dp currencies (USD, EUR, ...) -> 0.005   (half a cent — unchanged)
-  * 0-dp currencies (UZS, JPY, KRW, VND, ...) -> 0.5  (half a whole unit)
-  * 3-dp currencies (BHD, KWD, OMR)  -> 0.0005
+  * 2-dp currencies (USD, EUR, UZS, ...) -> 0.005   (half a cent)
+  * 0-dp currencies (JPY, KRW, VND, ...) -> 0.5     (half a whole unit)
+  * 3-dp currencies (BHD, KWD, OMR)      -> 0.0005
 
-For a 0-dp currency like UZS, the old ``0.005`` was ~100x too tight: a residual
-of 0.4 so'm is below one whole so'm (i.e. rounding noise) yet ``> 0.005`` flagged
-it as a real, non-zero difference. ``money_epsilon("UZS") == 0.5`` fixes that.
+Which class a currency falls into is a property of THE SITE, not of ISO 4217 —
+see the note over ``ZERO_DECIMAL_CURRENCIES``. UZS sat in the 0-dp class until
+2026-08-20 on the tiyin argument; ERPNext stores it at precision 2 on every
+tenant, so ``0.5`` was calling forty kopecks of recorded difference "noise".
 
 The zero-decimal currency set lives in one place (``_fx_residual``); this module
 reuses it so there is a single source of truth for currency precision.

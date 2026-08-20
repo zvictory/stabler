@@ -113,6 +113,7 @@ Any currency,Any currency
 Any status,Any status
 Append-only,Append-only
 Applied rate,Applied rate
+Apply to all lines,Apply to all lines
 Approval note,Approval note
 Approval records the decision only. No cash leaves the drawer until step 3 is posted — do not pay the sender on the strength of this step.,Approval records the decision only. No cash leaves the drawer until step 3 is posted — do not pay the sender on the strength of this step.
 Approve refund,Approve refund
@@ -199,6 +200,7 @@ Evidence,Evidence
 Exception,Exception
 Exceptions only,Exceptions only
 Exceptions: any,Exceptions: any
+Exchange rates,Exchange rates
 Exclude exceptions,Exclude exceptions
 "Exclusive: you type the principal, and the commission is added on top.","Exclusive: you type the principal, and the commission is added on top."
 Expiration time,Expiration time
@@ -235,11 +237,13 @@ Income accounts,Income accounts
 Invalid pickup code. {0} attempt(s) left before this transfer is locked.,Invalid pickup code. {0} attempt(s) left before this transfer is locked.
 Invalid username or password. Please check your credentials.,Invalid username or password. Please check your credentials.
 "It may have been removed, or the reference in the address is wrong.","It may have been removed, or the reference in the address is wrong."
+Journal entry,Journal entry
 Last modified,Last modified
 Leave blank for the default,Leave blank for the default
 "Legacy posts journal entries from the New Transfer form it always has. V1 registers a Remittance Transfer and is the only engine where the payout, refund, operations and reconciliation screens exist.","Legacy posts journal entries from the New Transfer form it always has. V1 registers a Remittance Transfer and is the only engine where the payout, refund, operations and reconciliation screens exist."
 Legacy — journal entry screens,Legacy — journal entry screens
 Liability accounts,Liability accounts
+Lines disagree,Lines disagree
 Locked pickup code,Locked pickup code
 Lockout (minutes),Lockout (minutes)
 Manager Cockpit,Manager Cockpit
@@ -359,6 +363,7 @@ Receiver obligation reversed,Receiver obligation reversed
 Reconciliation,Reconciliation
 Recorded at register,Recorded at register
 "Reference, sender, receiver or desk… ⌘K","Reference, sender, receiver or desk… ⌘K"
+Refresh the rate for this date,Refresh the rate for this date
 Refund,Refund
 Refund approved by {0}. {1},Refund approved by {0}. {1}
 Refund approved. No money has moved yet.,Refund approved. No money has moved yet.

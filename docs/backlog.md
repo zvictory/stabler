@@ -78,9 +78,28 @@ Also note point (1) is a second, quieter trap: the obligation leg is in the RECE
 
 Decide: exempt remittance vouchers from the band (voucher_type or the stabler_remittance_stage custom field), widen it for them, or treat a frozen rate outside the band as an approval-gated exception. This is a policy call, not a code tweak — the guard is there on purpose.
 
-### FX residual toleransi ile farkin olculdugu presizyon ayni sey degil
+### FX residual toleransi ile farkin olculdugu presizyon ayni sey degil — KAPANDI 2026-08-20
 
-`fx-residual-precision` · hata *(kucuk, ama P&L'e yaziyor)*
+`fx-residual-precision` · hata *(kucuk, ama P&L'e yaziyor)* · **cozuldu**
+
+**Kapanis.** Bu kaydin sordugu sey olculdu: "uretimde bu araliga dusen gercek
+bir kalinti var mi". **Yok.** UZS tabanli uc kiracinin (horeca, mikas, msa)
+`tabJournal Entry Account` tablolarinda `user_remark='fx-rounding-auto'` olan
+tek bir satir bile yok; anjan'in 48 satiri zaten USD tabanli, yani sikilan
+toleransla kitaplanmis (maks 0,15). Daraltma bedavaydi ve yapildi: `UZS`,
+`_fx_residual.ZERO_DECIMAL_CURRENCIES` kumesinden cikarildi, boylece iki notion
+da 2 diyor.
+
+Ayni kok neden onyuzde daha pahaliya mal olmustu — `money.js` UZS'yi sifir
+ondalikli ilan ettigi icin `MoneyInput` kullanicinin yazdigi kurusu blur'da
+yuvarliyordu: Mikas'ta `1 500 000,50` acilis bakiyesi `1 500 001` olarak
+kitaplaniyordu. Ayni commit'te duzeltildi.
+
+Bir daha sessizce sapmamasi icin `test_currency_precision_agreement.py` (bench)
+eklendi: her sirketin temel para birimi icin `base_precision_for(ccy)` ile
+`get_field_precision(JE.debit_in_account_currency, currency=ccy)` esit olmak
+zorunda. Asagidaki kayit, karar verilmeden onceki durumu anlatiyor; tarihsel
+kayit olarak birakildi.
 
 2026-08-18'de olculdu, `fix(fx)` duzeltmesi sirasinda ortaya cikti; o commit'te
 **bilerek degistirilmedi** cunku yedi kiracinin her Journal Entry ve Payment

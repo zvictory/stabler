@@ -81,17 +81,21 @@ Add at least one cash desk before switching {0} to the V1 engine: V1 reads every
 Agreement {0} cannot move from {1} to {2}.,{0} шартномаси {1} ҳолатидан {2} ҳолатига ўта олмайди.
 Agreement {0} is closed ({1}) and cannot be rescheduled.,{0} шартномаси ёпиқ ({1}) ва қайта режалаштириб бўлмайди.
 "Box counts cannot be saved on this site: {0} missing on {1}. An administrator must re-run patch {2}; bench migrate will not, it has already run once.","Бу сайтда қути сонини сақлаб бўлмайди: {1} да {0} йўқ. Администратор {2} патчини қайта ишга тушириши керак; bench migrate буни қилмайди, у аллақачон ишлаган."
+Apply to all lines,Барча қаторларга қўллаш
 Check the code,Кодни текшириш
 Credit ({currency}),Кредит ({currency})
 Debit ({currency}),Дебет ({currency})
 Debits equal credits in {currency}.,{currency} бўйича дебет кредитга тенг.
 Direct Sales Invoicing is not enabled for company {0}. Sales Invoices must be created from a submitted Sales Order.,Тўғридан-тўғри ҳисоб-фактура {0} компанияси учун ёқилмаган. Ҳисоб-фактуралар юборилган савдо буюртмасидан яратилиши керак.
 Every user of {company} moves to the {engine} screens when this is saved.,"Сақлангач, {company} нинг барча фойдаланувчилари {engine} экранларига ўтади."
+Exchange rates,Валюта курслари
 I have checked {receiver}'s identity document.,{receiver} шахсини тасдиқловчи ҳужжатни текширдим.
 I have counted {amount} and am handing it back to {sender}.,{amount} миқдорини санадим ва {sender}га қайтариб беряпман.
 I have written it down,Ёзиб олдим
 "Legacy posts journal entries from the New Transfer form it always has. V1 registers a Remittance Transfer and is the only engine where the payout, refund, operations and reconciliation screens exist.","Legacy ўзининг доимий ""Янги ўтказма"" формасидан журнал ёзувларини киритади. V1 эса Remittance Transfer ёзувини рўйхатга олади ва тўлов, қайтариш, операциялар ва солиштириш экранлари фақат шу механизмда мавжуд."
+Journal entry,Журнал ёзуви
 Legacy — journal entry screens,Legacy — журнал ёзуви экранлари
+Lines disagree,Қаторлар мос келмайди
 Not ready — this desk cannot take or hand over a transfer.,"Тайёр эмас — бу касса ўтказмани на қабул қила олади, на бера олади."
 Only an open agreement can be terminated. {0} is {1}.,Фақат очиқ шартномани ёпиш мумкин. {0} ҳолати: {1}.
 Only the remittance desk can verify a pickup code.,Олиб кетиш кодини фақат пул ўтказмалари кассаси текшира олади.
@@ -100,6 +104,7 @@ Pay refund cash,Қайтариш нақдини бериш
 Pickup code,Олиш коди
 Purchase Receipt {0} already has a draft invoice: {1}. Submit or delete that draft instead of raising a second bill for the same goods.,{0} товар қабул қилиш ҳужжатида аллақачон қоралама ҳисоб-фактура бор: {1}. Худди шу мол учун иккинчи ҳисоб-фактура яратиш ўрнига ўша қораламани тасдиқланг ёки ўчиринг.
 Quote updated — switching how the fee is charged recalculates the amounts.,Ҳисоб-китоб янгиланди — комиссияни ҳисоблаш усулини ўзгартириш суммаларни қайта ҳисоблайди.
+Refresh the rate for this date,Ушбу санага курсни янгилаш
 Remittance engine,Ўтказма механизми
 Same as your last transfer,Охирги ўтказмангиздаги каби
 Terminated by {0}: {1},{0} томонидан ёпилди: {1}

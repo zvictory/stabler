@@ -12,9 +12,11 @@ import {
 	describePlugResidual,
 	isDraftDirty,
 	isPostingFrozen,
+	applyRateToCurrency,
 	isRowOrphaned,
 	journalFreezeDate,
 	postableRows,
+	ratesByCurrency,
 	ratesToRefresh,
 	snapshotDraft,
 } from "../../composables/journal.js";
@@ -25,7 +27,6 @@ import { accountLabel } from "../../composables/accounts.js";
 import { getDocstatusLabel, getStatusBadgeClass } from "../../composables/status.js";
 import MoneyInput from "../../components/MoneyInput.vue";
 import DateInput from "../../components/DateInput.vue";
-import EmptyState from "../../components/EmptyState.vue";
 import Select from "../../components/Select.vue";
 import Typeahead from "../../components/Typeahead.vue";
 import SkeletonRows from "../../components/SkeletonRows.vue";
@@ -71,10 +72,24 @@ const detailLoading = ref(false);
 // navigated again, so a draft in the edit pane was discarded — twice over —
 // without a word. One listener, and the edit pane gets first refusal.
 useEscapeBack(() => {
-	if (pane.value !== "edit") return false;
-	requestCancelEdit();
-	return true;
+	if (pane.value === "edit") {
+		requestCancelEdit();
+		return true;
+	}
+	// The drawer is a layer over this page, so Escape has to peel it off before
+	// it can mean "leave the page". Without this branch, viewing an entry and
+	// pressing Escape navigated to /money with the drawer still painted on top.
+	if (pane.value === "view") {
+		requestClose();
+		return true;
+	}
+	return false;
 }, "/money");
+
+const drawerTitle = computed(() => {
+	if (pane.value !== "edit") return t("Journal entry");
+	return isEdit.value ? t("Edit journal entry") : t("New journal entry");
+});
 
 const VOUCHER_TYPES = [
 	"Journal Entry", "Bank Entry", "Cash Entry", "Credit Card Entry",
@@ -132,7 +147,6 @@ const postable = computed(() => postableRows(form.value.accounts));
 const isMultiCurrency = computed(() => postable.value.some(isForeign));
 const baseDebit = computed(() => postable.value.reduce((s, r) => s + (Number(r.debit) || 0) * rateOf(r), 0));
 const baseCredit = computed(() => postable.value.reduce((s, r) => s + (Number(r.credit) || 0) * rateOf(r), 0));
-const baseLine = (r) => (Number(r.debit) || Number(r.credit) || 0) * rateOf(r);
 
 // Single-currency: balance in that currency. Multi-currency: balance in the
 // company base (each leg × its rate); sub-unit residuals are sealed by the JE
@@ -167,25 +181,57 @@ const balanced = computed(() => {
 // its own rounding is what is holding Save shut. See describePlugResidual().
 const plugResidual = computed(() => describePlugResidual(form.value.accounts, { rateOf, tolerance: balanceTol.value }));
 
-// Readable "1 strong = N weak" quote for a line (always the ≥1 direction).
-const rateQuote = (row) => readableRate(row.exchange_rate, row.account_currency, currencyCode.value);
 const fmtRate = (v) => formatRate(v, user.value.language);
 // Readable quote string for a view-pane line, e.g. "1 USD = 12 034 сўм".
 function viewQuote(a) {
 	const q = readableRate(a.exchange_rate, a.account_currency, detail.value?.base_currency || currency.value);
 	return q ? `1 ${q.strong} = ${fmtRate(q.value)} ${q.weak}` : "";
 }
-// User edits the readable N; store it back as the ERPNext per-line rate.
-// Correcting a rate to the bank's or the contract's is the rule in a
-// multi-currency entry, not the exception, and it moves every base figure the
-// balance is measured in — so the plug has to be re-derived with it. -1: no
-// line is off-limits; a rate is not an amount the user typed into a side.
-function setRateQuote(row, val) {
-	const q = rateQuote(row);
-	if (!q) return;
-	row.exchange_rate = toLineRate(val, q.strong, row.account_currency);
-	row._rateTouched = true;
+// The entry's rates, one row per foreign currency. See ratesByCurrency(): the
+// rate is a fact about (posting date, currency pair), and putting an input on
+// every LINE let one entry book two USD legs at two different rates.
+const entryRates = computed(() =>
+	ratesByCurrency(form.value.accounts, currencyCode.value).map((r) => ({
+		...r,
+		// The ≥1 direction, exactly as the row cell used to show it, so a
+		// UZS account in a USD-base company still reads "1 USD = 12 335 сўм"
+		// rather than "1 UZS = 0,000081 USD". The RAW rate decides which side is
+		// strong — substituting 1 for an unquoted line would answer "the foreign
+		// one" every time and flip the quote the moment the real rate arrived.
+		quote: readableRate(r.rate, r.currency, currencyCode.value),
+	})),
+);
+
+// The header's edit path. Same shape as setRateQuote below — read the user's
+// number in the readable direction, store the ERPNext per-line rate — except it
+// lands on every line of the currency instead of one, and re-derives the plug
+// because every base figure the balance is measured in has just moved.
+function setEntryRate(entry, val) {
+	// The direction comes from the quote the user is looking at, not from a
+	// fresh readableRate() call: which side is "strong" is decided by the
+	// current rate, so re-deriving it here would read the number the user typed
+	// against a direction they were never shown.
+	if (!entry?.quote) return;
+	const rate = toLineRate(val, entry.quote.strong, entry.currency);
+	if (!applyRateToCurrency(form.value.accounts, entry.currency, rate)) return;
 	runAutoBalance(-1);
+}
+
+// Ask the server what the rate was on the posting date, then apply it to the
+// whole currency. Deliberately goes through applyRateToCurrency rather than
+// fetchRate per row: a per-row refresh is how the lines drifted apart.
+async function refreshEntryRate(currency) {
+	if (!activeCompany.value) return;
+	try {
+		const rate = await call("stabler.api.money.get_exchange_rate_for_currencies", {
+			from_currency: currency,
+			to_currency: currencyCode.value,
+			posting_date: form.value.posting_date,
+		});
+		if (applyRateToCurrency(form.value.accounts, currency, rate)) runAutoBalance(-1);
+	} catch {
+		/* leave the rate for the user to enter */
+	}
 }
 
 async function fetchRate(row) {
@@ -387,6 +433,20 @@ function cancelEdit() {
 	pristine.value = null;
 	if (detail.value?.name) pane.value = "view";
 	else pane.value = "empty";
+}
+
+// EVERY way out of the drawer goes through here, and that is the point. The
+// backdrop and the ✕ are two new ways to walk away from a half-typed entry, and
+// a click on dimmed background that discards it silently is the worst of them,
+// because it does not look like a decision. Editing defers to the same prompt
+// Escape and Cancel already use; viewing just closes.
+function requestClose() {
+	if (pane.value === "edit") {
+		requestCancelEdit();
+		return;
+	}
+	pane.value = "empty";
+	detail.value = null;
 }
 
 function addRow() { form.value.accounts.push(emptyRow()); }
@@ -593,7 +653,7 @@ watch(() => form.value.posting_date, (d) => {
 	<div class="card">
 		<div class="row g-0">
 			<!-- LEFT: entries -->
-			<div class="col-12 col-md-5 col-lg-4 border-end">
+			<div class="col-12">
 				<div style="max-height: calc(100vh - 12rem); overflow-y: auto">
 					<table class="table table-sm table-hover mb-0">
 						<thead><tr>
@@ -631,180 +691,207 @@ watch(() => form.value.posting_date, (d) => {
 				</div>
 			</div>
 
-			<!-- RIGHT: detail / editor -->
-			<div class="col-12 col-md-7 col-lg-8 bg-light">
-				<!-- empty -->
-				<EmptyState
-					v-if="pane === 'empty'"
-					class="py-6"
-					icon="ti-book"
-					accentIcon="ti-plus"
-					tone="info"
-					:title="t('Select a journal entry')"
-					:subtitle="t('Pick one on the left, or create a new journal.')"
-				/>
+		</div>
+	</div>
 
-				<!-- view -->
-				<div v-else-if="pane === 'view'" class="p-3">
-					<div v-if="detailLoading" class="text-center py-5"><span class="spinner-border text-primary"></span></div>
-					<div v-else-if="detail?.error" class="alert alert-danger">{{ detail.error }}</div>
-					<div v-else-if="detail">
-						<div class="d-flex align-items-center justify-content-between mb-3">
-							<div>
-								<h3 class="m-0 font-monospace">{{ detail.name }}</h3>
-								<div class="small text-secondary">{{ formatDateTime(detail.posting_date) }} · {{ detail.voucher_type }}
-									· <span class="badge" :class="getStatusBadgeClass('Journal Entry', detail.docstatus)">{{ getDocstatusLabel(detail.docstatus) }}</span>
-								</div>
-							</div>
-							<div class="d-flex gap-2">
-								<template v-if="detail.docstatus === 0">
-									<button type="button" class="btn btn-outline-secondary" :disabled="acting" @click="openEdit(detail)">
-										<i class="ti ti-pencil me-1"></i>{{ t("Edit") }}
-									</button>
-									<button type="button" class="btn btn-primary" :disabled="acting" @click="submitJE">
-										<i class="ti ti-check me-1"></i>{{ t("Submit") }}
-									</button>
-								</template>
-								<button v-else-if="detail.docstatus === 1" type="button" class="btn btn-outline-danger" :disabled="acting" @click="cancelJE">
-									<i class="ti ti-ban me-1"></i>{{ t("Cancel entry") }}
-								</button>
-								<button v-else-if="detail.docstatus === 2" type="button" class="btn btn-outline-primary" :disabled="acting" @click="amendJE">
-									<i class="ti ti-copy me-1"></i>{{ t("Amend (new draft)") }}
-								</button>
+	<!-- The entry itself. Both states live in the drawer: the list behind it is
+	     the whole page now, and a detail pane that only ever filled two thirds of
+	     the screen was what squeezed the line table in the first place. -->
+	<div v-if="pane !== 'empty'" class="offcanvas-backdrop fade show" @click="requestClose"></div>
+	<div
+		class="offcanvas offcanvas-end je-drawer"
+		:class="{ show: pane !== 'empty' }"
+		tabindex="-1"
+		style="visibility: visible"
+		:style="{ transform: pane !== 'empty' ? 'translateX(0)' : 'translateX(100%)' }"
+	>
+		<div class="offcanvas-header">
+			<h5 class="offcanvas-title">
+				{{ drawerTitle }}
+				<span v-if="pane === 'edit' && isEdit" class="text-secondary fw-normal font-monospace small ms-1">· {{ editName }}</span>
+				<span v-if="pane === 'edit' && amendedFrom" class="badge bg-azure-lt ms-1">{{ t("Amending") }} {{ amendedFrom }}</span>
+			</h5>
+			<button type="button" class="btn-close" :aria-label='t("Close")' @click="requestClose"></button>
+		</div>
+		<div class="offcanvas-body p-0">
+			<!-- view -->
+			<div v-if="pane === 'view'" class="p-3">
+				<div v-if="detailLoading" class="text-center py-5"><span class="spinner-border text-primary"></span></div>
+				<div v-else-if="detail?.error" class="alert alert-danger">{{ detail.error }}</div>
+				<div v-else-if="detail">
+					<div class="d-flex align-items-center justify-content-between mb-3">
+						<div>
+							<h3 class="m-0 font-monospace">{{ detail.name }}</h3>
+							<div class="small text-secondary">{{ formatDateTime(detail.posting_date) }} · {{ detail.voucher_type }}
+								· <span class="badge" :class="getStatusBadgeClass('Journal Entry', detail.docstatus)">{{ getDocstatusLabel(detail.docstatus) }}</span>
 							</div>
 						</div>
+						<div class="d-flex gap-2">
+							<template v-if="detail.docstatus === 0">
+								<button type="button" class="btn btn-outline-secondary" :disabled="acting" @click="openEdit(detail)">
+									<i class="ti ti-pencil me-1"></i>{{ t("Edit") }}
+								</button>
+								<button type="button" class="btn btn-primary" :disabled="acting" @click="submitJE">
+									<i class="ti ti-check me-1"></i>{{ t("Submit") }}
+								</button>
+							</template>
+							<button v-else-if="detail.docstatus === 1" type="button" class="btn btn-outline-danger" :disabled="acting" @click="cancelJE">
+								<i class="ti ti-ban me-1"></i>{{ t("Cancel entry") }}
+							</button>
+							<button v-else-if="detail.docstatus === 2" type="button" class="btn btn-outline-primary" :disabled="acting" @click="amendJE">
+								<i class="ti ti-copy me-1"></i>{{ t("Amend (new draft)") }}
+							</button>
+						</div>
+					</div>
 
-						<div v-if="detail.user_remark" class="text-secondary mb-3">{{ detail.user_remark }}</div>
+					<div v-if="detail.user_remark" class="text-secondary mb-3">{{ detail.user_remark }}</div>
 
-						<table class="table table-sm table-vcenter">
-							<thead><tr>
-								<th>{{ t("Account") }}</th><th>{{ t("Party") }}</th>
-								<th class="text-end">{{ t("Debit") }}</th><th class="text-end">{{ t("Credit") }}</th>
-							</tr></thead>
-							<tbody>
-								<tr v-for="(a, i) in detail.accounts" :key="i">
-									<td>{{ accountLabel(a) || a.account }}</td>
-									<td>{{ a.party_name || a.party || "—" }}</td>
-									<td class="text-end font-monospace">
-										{{ a.debit_in_account_currency ? formatMoney(a.debit_in_account_currency, a.account_currency || detail.base_currency || currency, user.language) : "—" }}
-										<div v-if="a.debit_in_account_currency && a.account_currency && a.account_currency !== (detail.base_currency || currency)" class="text-secondary" style="font-size:.7rem">
-											{{ viewQuote(a) }} → {{ formatMoney(a.debit_base, detail.base_currency || currency, user.language) }}
-										</div>
-									</td>
-									<td class="text-end font-monospace">
-										{{ a.credit_in_account_currency ? formatMoney(a.credit_in_account_currency, a.account_currency || detail.base_currency || currency, user.language) : "—" }}
-										<div v-if="a.credit_in_account_currency && a.account_currency && a.account_currency !== (detail.base_currency || currency)" class="text-secondary" style="font-size:.7rem">
-											{{ viewQuote(a) }} → {{ formatMoney(a.credit_base, detail.base_currency || currency, user.language) }}
-										</div>
-									</td>
-								</tr>
-							</tbody>
-							<tfoot><tr class="fw-bold">
-								<td colspan="2">{{ t("Total") }} ({{ detail.base_currency || currency }})</td>
-								<td class="text-end font-monospace">{{ formatMoney(detail.total_debit_base, detail.base_currency || currency, user.language) }}</td>
-								<td class="text-end font-monospace">{{ formatMoney(detail.total_credit_base, detail.base_currency || currency, user.language) }}</td>
-							</tr></tfoot>
-						</table>
+					<table class="table table-sm table-vcenter">
+						<thead><tr>
+							<th>{{ t("Account") }}</th><th>{{ t("Party") }}</th>
+							<th class="text-end">{{ t("Debit") }}</th><th class="text-end">{{ t("Credit") }}</th>
+						</tr></thead>
+						<tbody>
+							<tr v-for="(a, i) in detail.accounts" :key="i">
+								<td>{{ accountLabel(a) || a.account }}</td>
+								<td>{{ a.party_name || a.party || "—" }}</td>
+								<td class="text-end font-monospace">
+									{{ a.debit_in_account_currency ? formatMoney(a.debit_in_account_currency, a.account_currency || detail.base_currency || currency, user.language) : "—" }}
+									<div v-if="a.debit_in_account_currency && a.account_currency && a.account_currency !== (detail.base_currency || currency)" class="text-secondary" style="font-size:.7rem">
+										{{ viewQuote(a) }} → {{ formatMoney(a.debit_base, detail.base_currency || currency, user.language) }}
+									</div>
+								</td>
+								<td class="text-end font-monospace">
+									{{ a.credit_in_account_currency ? formatMoney(a.credit_in_account_currency, a.account_currency || detail.base_currency || currency, user.language) : "—" }}
+									<div v-if="a.credit_in_account_currency && a.account_currency && a.account_currency !== (detail.base_currency || currency)" class="text-secondary" style="font-size:.7rem">
+										{{ viewQuote(a) }} → {{ formatMoney(a.credit_base, detail.base_currency || currency, user.language) }}
+									</div>
+								</td>
+							</tr>
+						</tbody>
+						<tfoot><tr class="fw-bold">
+							<td colspan="2">{{ t("Total") }} ({{ detail.base_currency || currency }})</td>
+							<td class="text-end font-monospace">{{ formatMoney(detail.total_debit_base, detail.base_currency || currency, user.language) }}</td>
+							<td class="text-end font-monospace">{{ formatMoney(detail.total_credit_base, detail.base_currency || currency, user.language) }}</td>
+						</tr></tfoot>
+					</table>
+				</div>
+			</div>
+
+			<!-- edit -->
+			<div v-else class="p-3">
+				<div v-if="submitError" class="alert alert-danger">{{ submitError }}</div>
+				<div v-if="postingFrozen" class="alert alert-warning py-2 px-3 d-flex align-items-center">
+					<i class="ti ti-calendar-lock me-2"></i>
+					<span class="flex-fill small">
+						{{ t("Accounting is frozen before {0}.").replace("{0}", formatDate(freezeDate)) }}
+						{{ t("Move the date forward or open the posting window to save.") }}
+					</span>
+					<RouterLink to="/admin/posting-window" class="small text-reset text-decoration-underline ms-2">{{ t("Change") }}</RouterLink>
+				</div>
+
+				<div class="row g-2 mb-2">
+					<div class="col-sm-4"><label class="form-label small">{{ t("Posting date") }}</label><DateInput v-model="form.posting_date" size="sm" /></div>
+					<div class="col-sm-4" v-if="!isEdit"><label class="form-label small">{{ t("Type") }}</label><Select v-model="form.voucher_type" size="sm" :options="VOUCHER_TYPES" /></div>
+					<div class="col-sm-4"><label class="form-label small">{{ t("Cheque no.") }}</label><input v-model="form.cheque_no" type="text" class="form-control form-control-sm" :placeholder="t('optional')" /></div>
+					<div class="col-12"><label class="form-label small">{{ t("Remark") }}</label><input v-model="form.user_remark" type="text" class="form-control form-control-sm" :placeholder="t('What is this entry for?')" /></div>
+				</div>
+
+				<!-- One rate per currency, not one per line. See ratesByCurrency(). -->
+				<div v-if="entryRates.length" class="card card-sm mb-2">
+					<div class="card-body py-2">
+						<div class="d-flex align-items-center gap-2 mb-2">
+							<i class="ti ti-arrows-exchange text-azure"></i>
+							<span class="fw-semibold small">{{ t("Exchange rates") }}</span>
+							<span class="text-secondary je-hint">{{ formatDate(form.posting_date) }}</span>
+						</div>
+						<div v-for="r in entryRates" :key="r.currency" class="d-flex align-items-center flex-wrap gap-2 mb-1">
+							<span class="text-secondary small text-nowrap" style="min-width: 5.5rem">1 {{ r.quote?.strong || r.currency }} =</span>
+							<div style="width: 170px">
+								<MoneyInput :model-value="r.quote?.value || null" :language="user.language" :min="0" hide-currency size="sm" @update:model-value="(v) => setEntryRate(r, v)" />
+							</div>
+							<span class="badge bg-secondary-lt text-uppercase je-ccy">{{ r.quote?.weak || currencyCode }}</span>
+							<button type="button" class="btn btn-sm btn-ghost-secondary" :title="t('Refresh the rate for this date')" @click="refreshEntryRate(r.currency)">
+								<i class="ti ti-refresh"></i>
+							</button>
+							<!-- An entry saved before the rate was lifted up here can carry two
+							     different rates for one currency. The header does not get to pick
+							     one silently — it says so, and overwriting stays the user's call. -->
+							<template v-if="r.mixed">
+								<span class="badge bg-orange-lt">{{ t("Lines disagree") }}</span>
+								<button type="button" class="btn btn-sm btn-ghost-primary" @click="setEntryRate(r, r.quote?.value)">{{ t("Apply to all lines") }}</button>
+							</template>
+						</div>
 					</div>
 				</div>
 
-				<!-- edit -->
-				<div v-else class="p-3">
-					<div class="d-flex align-items-center justify-content-between mb-3">
-						<h3 class="m-0">
-							{{ isEdit ? t("Edit journal entry") : t("New journal entry") }}
-							<span v-if="isEdit" class="text-secondary fw-normal font-monospace small ms-1">· {{ editName }}</span>
-							<span v-if="amendedFrom" class="badge bg-azure-lt ms-1">{{ t("Amending") }} {{ amendedFrom }}</span>
-						</h3>
-					</div>
-					<div v-if="submitError" class="alert alert-danger">{{ submitError }}</div>
-					<div v-if="postingFrozen" class="alert alert-warning py-2 px-3 d-flex align-items-center">
-						<i class="ti ti-calendar-lock me-2"></i>
-						<span class="flex-fill small">
-							{{ t("Accounting is frozen before {0}.").replace("{0}", formatDate(freezeDate)) }}
-							{{ t("Move the date forward or open the posting window to save.") }}
-						</span>
-						<RouterLink to="/admin/posting-window" class="small text-reset text-decoration-underline ms-2">{{ t("Change") }}</RouterLink>
-					</div>
+				<table class="table table-sm table-vcenter mb-0">
+					<thead><tr>
+						<th style="min-width: 170px">{{ t("Account") }}</th>
+						<th style="min-width: 200px">{{ t("Party") }}</th>
+						<th class="text-end" style="width: 148px">{{ t("Debit") }}</th>
+						<th class="text-end" style="width: 148px">{{ t("Credit") }}</th>
+						<th class="w-1"></th>
+					</tr></thead>
+					<tbody>
+						<tr v-for="(row, idx) in form.accounts" :key="idx">
+							<td>
+								<Select v-model="row.account" size="sm" :class="{ 'is-invalid': isRowOrphaned(row) }" :options="accountOptions" value-key="name" :placeholder="t('— Choose account —')" @change="onAccountPicked(row, idx)">
+									<template #option="{ option }">{{ option.account_number ? `${option.account_number} · ` : "" }}{{ accountLabel(option) }}</template>
+									<template #selected="{ option }">{{ option.account_number ? `${option.account_number} · ` : "" }}{{ accountLabel(option) }}</template>
+								</Select>
+								<div v-if="isRowOrphaned(row)" class="text-danger je-hint mt-1">{{ t("No account — this line is not counted.") }}</div>
+								<div v-if="row.account" class="d-flex align-items-center gap-1 mt-1">
+									<span class="badge bg-secondary-lt text-uppercase je-ccy">{{ row.account_currency || currencyCode }}</span>
+									<span v-if="acctBalanceText(row.account)" class="text-secondary je-hint">{{ acctBalanceText(row.account) }}</span>
+								</div>
+							</td>
+							<td>
+								<div class="d-flex gap-1">
+									<Select v-model="row.party_type" size="sm" :options="PARTY_TYPES" style="max-width: 92px" @change="onPartyTypeChange(row)" />
+									<Typeahead v-if="row.party_type" :model-value="row.party" :search="searchParty(row)" :display="row.party_name" size="sm" class="flex-fill" :placeholder="t('Search name…')" @pick="(item) => pickParty(row, item)" @clear="() => onPartyTypeChange(row)">
+										<template #option="{ item }">{{ item.label }}</template>
+									</Typeahead>
+								</div>
+							</td>
+							<td :class="{ 'je-auto': isAutoAmount(row, 'debit') }" :title="isAutoAmount(row, 'debit') ? t('Filled in to balance the entry') : null">
+								<MoneyInput v-model="row.debit" :currency="row.account_currency || currencyCode" hide-currency :language="user.language" size="sm" @update:model-value="onAmountInput(row, idx, 'debit')" />
+								<div v-if="isForeign(row) && Number(row.debit)" class="text-secondary je-hint text-nowrap">
+									= {{ formatMoney(Number(row.debit) * rateOf(row), currencyCode, user.language) }}
+								</div>
+							</td>
+							<td :class="{ 'je-auto': isAutoAmount(row, 'credit') }" :title="isAutoAmount(row, 'credit') ? t('Filled in to balance the entry') : null">
+								<MoneyInput v-model="row.credit" :currency="row.account_currency || currencyCode" hide-currency :language="user.language" size="sm" @update:model-value="onAmountInput(row, idx, 'credit')" />
+								<div v-if="isForeign(row) && Number(row.credit)" class="text-secondary je-hint text-nowrap">
+									= {{ formatMoney(Number(row.credit) * rateOf(row), currencyCode, user.language) }}
+								</div>
+							</td>
+							<td><button type="button" class="btn btn-sm btn-ghost-danger" @click="removeRow(idx)"><i class="ti ti-trash"></i></button></td>
+						</tr>
+					</tbody>
+					<tfoot>
+						<tr class="fw-bold">
+							<td colspan="2"><button type="button" class="btn btn-sm btn-ghost-primary" @click="addRow"><i class="ti ti-plus me-1"></i>{{ t("Add row") }}</button></td>
+							<td class="text-end font-monospace">{{ formatMoney(isMultiCurrency ? baseDebit : totalDebit, currencyCode, user.language) }}</td>
+							<td class="text-end font-monospace">{{ formatMoney(isMultiCurrency ? baseCredit : totalCredit, currencyCode, user.language) }}</td>
+							<td><span class="badge" :class="balanced ? 'bg-green-lt' : 'bg-red-lt'">{{ balanced ? t("Balanced") : "Δ " + formatMoney(diff, currencyCode, user.language) }}</span></td>
+						</tr>
+						<tr v-if="plugResidual"><td colspan="5" class="text-warning small fw-normal pt-0">
+							{{ t("{0} converts to {1}; the other lines come to {2}.")
+								.replace("{0}", formatMoney(plugResidual.amount, plugResidual.currency || currencyCode, user.language))
+								.replace("{1}", formatMoney(plugResidual.base, currencyCode, user.language))
+								.replace("{2}", formatMoney(plugResidual.counterBase, currencyCode, user.language)) }}
+						</td></tr>
+						<tr v-if="isMultiCurrency"><td colspan="5" class="text-secondary small fw-normal pt-0">{{ t("Totals shown in base currency ({0}).").replace("{0}", currencyCode) }}</td></tr>
+					</tfoot>
+				</table>
 
-					<div class="row g-2 mb-2">
-						<div class="col-sm-4"><label class="form-label small">{{ t("Posting date") }}</label><DateInput v-model="form.posting_date" size="sm" /></div>
-						<div class="col-sm-4" v-if="!isEdit"><label class="form-label small">{{ t("Type") }}</label><Select v-model="form.voucher_type" size="sm" :options="VOUCHER_TYPES" /></div>
-						<div class="col-sm-4"><label class="form-label small">{{ t("Cheque no.") }}</label><input v-model="form.cheque_no" type="text" class="form-control form-control-sm" :placeholder="t('optional')" /></div>
-						<div class="col-12"><label class="form-label small">{{ t("Remark") }}</label><input v-model="form.user_remark" type="text" class="form-control form-control-sm" :placeholder="t('What is this entry for?')" /></div>
-					</div>
-
-					<table class="table table-sm table-vcenter mb-0">
-						<thead><tr>
-							<th style="min-width: 170px">{{ t("Account") }}</th>
-							<th style="min-width: 200px">{{ t("Party") }}</th>
-							<th v-if="isMultiCurrency" class="text-end" style="width: 152px">{{ t("Rate") }}</th>
-							<th class="text-end" style="width: 148px">{{ t("Debit") }}</th>
-							<th class="text-end" style="width: 148px">{{ t("Credit") }}</th>
-							<th class="w-1"></th>
-						</tr></thead>
-						<tbody>
-							<tr v-for="(row, idx) in form.accounts" :key="idx">
-								<td>
-									<Select v-model="row.account" size="sm" :class="{ 'is-invalid': isRowOrphaned(row) }" :options="accountOptions" value-key="name" :placeholder="t('— Choose account —')" @change="onAccountPicked(row, idx)">
-										<template #option="{ option }">{{ option.account_number ? `${option.account_number} · ` : "" }}{{ accountLabel(option) }}</template>
-										<template #selected="{ option }">{{ option.account_number ? `${option.account_number} · ` : "" }}{{ accountLabel(option) }}</template>
-									</Select>
-									<div v-if="isRowOrphaned(row)" class="text-danger je-hint mt-1">{{ t("No account — this line is not counted.") }}</div>
-									<div v-if="row.account" class="d-flex align-items-center gap-1 mt-1">
-										<span class="badge bg-secondary-lt text-uppercase je-ccy">{{ row.account_currency || currencyCode }}</span>
-										<span v-if="acctBalanceText(row.account)" class="text-secondary je-hint">{{ acctBalanceText(row.account) }}</span>
-									</div>
-								</td>
-								<td>
-									<div class="d-flex gap-1">
-										<Select v-model="row.party_type" size="sm" :options="PARTY_TYPES" style="max-width: 92px" @change="onPartyTypeChange(row)" />
-										<Typeahead v-if="row.party_type" :model-value="row.party" :search="searchParty(row)" :display="row.party_name" size="sm" class="flex-fill" :placeholder="t('Search name…')" @pick="(item) => pickParty(row, item)" @clear="() => onPartyTypeChange(row)">
-											<template #option="{ item }">{{ item.label }}</template>
-										</Typeahead>
-									</div>
-								</td>
-								<td v-if="isMultiCurrency" class="text-end">
-									<template v-if="isForeign(row) && rateQuote(row)">
-										<MoneyInput :model-value="rateQuote(row).value" :language="user.language" :min="0" size="sm" @update:model-value="(v) => setRateQuote(row, v)" />
-										<div class="text-secondary je-hint text-nowrap">1 {{ rateQuote(row).strong }} = {{ fmtRate(rateQuote(row).value) }} {{ rateQuote(row).weak }}</div>
-										<div v-if="baseLine(row)" class="text-secondary je-hint text-nowrap">= {{ formatMoney(baseLine(row), currencyCode, user.language) }}</div>
-									</template>
-									<span v-else class="text-secondary small">1</span>
-								</td>
-								<td :class="{ 'je-auto': isAutoAmount(row, 'debit') }" :title="isAutoAmount(row, 'debit') ? t('Filled in to balance the entry') : null">
-									<MoneyInput v-model="row.debit" :currency="row.account_currency || currencyCode" hide-currency :language="user.language" size="sm" @update:model-value="onAmountInput(row, idx, 'debit')" />
-								</td>
-								<td :class="{ 'je-auto': isAutoAmount(row, 'credit') }" :title="isAutoAmount(row, 'credit') ? t('Filled in to balance the entry') : null">
-									<MoneyInput v-model="row.credit" :currency="row.account_currency || currencyCode" hide-currency :language="user.language" size="sm" @update:model-value="onAmountInput(row, idx, 'credit')" />
-								</td>
-								<td><button type="button" class="btn btn-sm btn-ghost-danger" @click="removeRow(idx)"><i class="ti ti-trash"></i></button></td>
-							</tr>
-						</tbody>
-						<tfoot>
-							<tr class="fw-bold">
-								<td :colspan="isMultiCurrency ? 3 : 2"><button type="button" class="btn btn-sm btn-ghost-primary" @click="addRow"><i class="ti ti-plus me-1"></i>{{ t("Add row") }}</button></td>
-								<td class="text-end font-monospace">{{ formatMoney(isMultiCurrency ? baseDebit : totalDebit, currencyCode, user.language) }}</td>
-								<td class="text-end font-monospace">{{ formatMoney(isMultiCurrency ? baseCredit : totalCredit, currencyCode, user.language) }}</td>
-								<td><span class="badge" :class="balanced ? 'bg-green-lt' : 'bg-red-lt'">{{ balanced ? t("Balanced") : "Δ " + formatMoney(diff, currencyCode, user.language) }}</span></td>
-							</tr>
-							<tr v-if="plugResidual"><td colspan="6" class="text-warning small fw-normal pt-0">
-								{{ t("{0} converts to {1}; the other lines come to {2}.")
-									.replace("{0}", formatMoney(plugResidual.amount, plugResidual.currency || currencyCode, user.language))
-									.replace("{1}", formatMoney(plugResidual.base, currencyCode, user.language))
-									.replace("{2}", formatMoney(plugResidual.counterBase, currencyCode, user.language)) }}
-							</td></tr>
-							<tr v-if="isMultiCurrency"><td colspan="6" class="text-secondary small fw-normal pt-0">{{ t("Totals shown in base currency ({0}).").replace("{0}", currencyCode) }}</td></tr>
-						</tfoot>
-					</table>
-
-					<div class="d-flex justify-content-end gap-2 mt-3">
-						<button type="button" class="btn btn-link link-secondary" :disabled="submitting" @click="requestCancelEdit">{{ t("Cancel") }}</button>
-						<button type="button" class="btn btn-primary" :disabled="submitting || !balanced || accountsLoading || postingFrozen" @click="submitForm">
-							<span v-if="submitting" class="spinner-border spinner-border-sm me-1"></span>
-							{{ isEdit ? t("Save changes") : t("Save as Draft") }}
-						</button>
-					</div>
+				<div class="d-flex justify-content-end gap-2 mt-3">
+					<button type="button" class="btn btn-link link-secondary" :disabled="submitting" @click="requestCancelEdit">{{ t("Cancel") }}</button>
+					<button type="button" class="btn btn-primary" :disabled="submitting || !balanced || accountsLoading || postingFrozen" @click="submitForm">
+						<span v-if="submitting" class="spinner-border spinner-border-sm me-1"></span>
+						{{ isEdit ? t("Save changes") : t("Save as Draft") }}
+					</button>
 				</div>
 			</div>
 		</div>
@@ -812,6 +899,13 @@ watch(() => form.value.posting_date, (d) => {
 </template>
 
 <style scoped>
+/* Wide on purpose. The line table carries account, party, debit and credit, and
+   it spent its life in a two-thirds pane where the rate column got 152px and the
+   hints under it wrapped to four lines. 96vw keeps it usable on a laptop without
+   the drawer swallowing a large screen whole. */
+.je-drawer {
+	width: min(1100px, 96vw);
+}
 /* The line hints (rate quote, base equivalent, account balance) sit under a
    form control in a table cell. At the default size they wrapped a rate quote
    into four lines — "1 USD =" / "12 000 UZS" / "=" / "12 000 000 сўм" — which
