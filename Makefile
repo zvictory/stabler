@@ -240,6 +240,16 @@ BENCH_TESTS := $(shell ls stabler/tests/test_*.py | sed 's|.*/||; s|\.py$$||' | 
 # alone. Held under one session the same six were identical across three trees.
 # And because `bench` resolves `stabler` through stabler.pth to the MAIN tree, a
 # run started from a worktree measures main and reports it as the branch.
+#
+# One module CAN be iterated from a worktree -- PYTHONPATH is consulted before
+# stabler.pth, so `PYTHONPATH=<worktree> bench run-tests --module ...` imports
+# that worktree's PYTHON (measured 2026-08-21: mutate a guard there and only the
+# PYTHONPATH run goes red; without it the same tree stays green). That is an
+# inner loop, not this gate, and it does NOT weaken either guard above. It takes
+# no lock, so it can land mid-run of the target below. And it measures python,
+# never SCHEMA: doctype meta comes from the site's already-migrated DB, where a
+# worktree-only doctype raises but a worktree-only FIELD is dropped SILENTLY --
+# insert() succeeds and the value vanishes. Full caveats: stabler-orchestrator s3.
 KNOWN_RED := .github/bench-known-red.txt
 
 test-bench:
@@ -264,7 +274,16 @@ test-bench:
 	  echo "  the bench raised ModuleNotFoundError."; \
 	  echo ""; \
 	  echo "  Merge the branch into the main tree and run it there, or check the"; \
-	  echo "  branch out in $$main_tree. There is no flag to override this."; \
+	  echo "  branch out in $$main_tree. There is no flag to override this gate."; \
+	  echo ""; \
+	  echo "  To ITERATE one module from a worktree -- never to gate on it --"; \
+	  echo "  invoke bench directly with PYTHONPATH set to the worktree root, so"; \
+	  echo "  imports resolve there instead of through stabler.pth. That measures"; \
+	  echo "  the worktree PYTHON but NOT its SCHEMA: doctype meta still comes"; \
+	  echo "  from this site, where a worktree-only FIELD is dropped SILENTLY --"; \
+	  echo "  insert succeeds and the value vanishes. It also skips the sweep,"; \
+	  echo "  the ZERO COVERAGE check and the ratchet, and it takes NO lock."; \
+	  echo "  Exact command and caveats: stabler-orchestrator skill, section 3."; \
 	  exit 1; \
 	fi
 	@obs=`mktemp`; known=`mktemp`; derived=`mktemp`; tmp=`mktemp`; live=`mktemp`; log=`mktemp`; clean=`mktemp`; \
