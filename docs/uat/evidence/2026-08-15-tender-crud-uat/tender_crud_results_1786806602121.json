@@ -1,0 +1,117 @@
+{
+ "timestamp": "2026-08-15T15:10:02.122Z",
+ "site": "https://mikas.erpstable.com",
+ "company": "Mikas",
+ "run_id": "1786806602121",
+ "titles": {
+  "scenario_a": "UAT-CRUD-1786806602121",
+  "scenario_a_edited": "UAT-CRUD-1786806602121 EDITED",
+  "scenario_b": "UAT-CRUD-1786806602121-HIST"
+ },
+ "deals": {
+  "scenario_a": "CRM-DEAL-2026-00107",
+  "scenario_b": "CRM-DEAL-2026-00107"
+ },
+ "delete_api_responses": [
+  {
+   "status": 200,
+   "body": "{\"message\":\"ok\"}"
+  },
+  {
+   "status": 417,
+   "body": "{\"exc_type\":\"LinkExistsError\",\"_server_messages\":\"[\\\"{\\\\\\\"message\\\\\\\":\\\\\\\"Cannot delete or cancel because CRM Deal <a href=\\\\\\\\\\\\\\\"https://mikas.erpstable.com/desk/crm-deal/CRM-DEAL-2026-00107\\\\\\\\\\\\\\\" rel=\\\\\\\\\\\\\\\"noopener noreferrer\\\\\\\\\\\\\\\">CRM-DEAL-2026-00107</a> is linked with CRM Stage Event <a href=\\\\\\\\\\\\\\\"https://mikas.erpstable.com/desk/crm-stage-event/STAGE-EVT-2026-000151\\\\\\\\\\\\\\\" rel=\\\\\\\\\\\\\\\"noopener noreferrer\\\\\\\\\\\\\\\">STAGE-EVT-2026-000151</a> \\\\\\\",\\\\\\\"as_table\\\\\\\":false,\\\\\\\"title\\\\\\\":\\\\\\\"Message\\\\\\\",\\\\\\\"indicator\\\\\\\":\\\\\\\"red\\\\\\\",\\\\\\\"raise_exception\\\\\\\":1,\\\\\\\"__frappe_exc_id\\\\\\\":\\\\\\\"186159e4214731166a4c5a3e113f3eec7a8555e36da2949185d1a5b2\\\\\\\"}\\\"]\"}"
+  }
+ ],
+ "steps": [
+  {
+   "id": "UAT-00-LOGIN",
+   "description": "Administrator login via API",
+   "status": "PASS",
+   "details": "HTTP 200"
+  },
+  {
+   "id": "UAT-00-CUSTOMERS",
+   "description": "Tenant has at least one Customer for the typeahead",
+   "status": "PASS",
+   "details": "5 found"
+  },
+  {
+   "id": "UAT-00-BOARD",
+   "description": "Tender CRM board reachable",
+   "status": "PASS",
+   "details": "01_board_initial.png"
+  },
+  {
+   "id": "UAT-A1-CREATE",
+   "description": "New tender lands on the board",
+   "status": "PASS",
+   "details": "CRM-DEAL-2026-00107, column index 0 (0 = Intake)"
+  },
+  {
+   "id": "UAT-A1-LANE",
+   "description": "New tender lands in the first lane (Intake)",
+   "status": "PASS",
+   "details": "column index 0"
+  },
+  {
+   "id": "UAT-A2-READ",
+   "description": "Deep link ?deal= opens the detail drawer for that exact deal",
+   "status": "PASS",
+   "details": "src=\"crm_deal · CRM-DEAL-2026-00107\", kicker=\"CRM-DEAL-2026-00107 · Intake\""
+  },
+  {
+   "id": "UAT-A3-EDIT-OPEN",
+   "description": "Edit tender opens the form in edit mode with the intake restored",
+   "status": "FAIL",
+   "details": "kicker=\"EDIT · CRM DEAL · DEAL_TYPE: TENDER\", title field=\"Metro\""
+  },
+  {
+   "id": "UAT-A3-EDIT-SAVE",
+   "description": "Edited title is persisted and read back",
+   "status": "FAIL",
+   "details": "title field after save=\"Metro\""
+  },
+  {
+   "id": "UAT-A3-EDIT-CARD",
+   "description": "The edited tender still holds exactly one card",
+   "status": "PASS",
+   "details": ""
+  },
+  {
+   "id": "UAT-A4-DELETE",
+   "description": "Fresh tender deletes cleanly",
+   "status": "PASS",
+   "details": "CRM Deal CRM-DEAL-2026-00107 count=0; toast: "
+  },
+  {
+   "id": "UAT-A4-BOARD",
+   "description": "Deleted card is gone from the board",
+   "status": "PASS",
+   "details": ""
+  },
+  {
+   "id": "UAT-B1-CREATE",
+   "description": "Second tender created for the history scenario",
+   "status": "PASS",
+   "details": "CRM-DEAL-2026-00107"
+  },
+  {
+   "id": "UAT-B2-HISTORY",
+   "description": "Lane move records a CRM Stage Event for the deal",
+   "status": "PASS",
+   "details": "move_deal_stage HTTP 200, stage events=1"
+  },
+  {
+   "id": "UAT-B3-DELETE",
+   "description": "Tender carrying only its own stage history deletes cleanly",
+   "status": "FAIL",
+   "details": "CRM Deal CRM-DEAL-2026-00107 count=1; toast: ; api: {\"exc_type\":\"LinkExistsError\",\"_server_messages\":\"[\\\"{\\\\\\\"message\\\\\\\":\\\\\\\"Cannot delete or cancel because CRM Deal <a href=\\\\\\\\\\\\\\\"https://mikas.erpstable.com/desk/crm-deal/CRM-DEAL-2026-00107\\\\\\\\\\\\\\\" rel=\\\\\\\\\\\\\\\"noopener noreferrer\\\\\\\\\\\\\\\">CRM-DEAL-2026-00107</a> is linked with CRM Stage Event <a href=\\\\\\\\\\\\\\\"https://mikas.erpstable.com/desk/crm-stage-event/STAGE-EVT-2026-000151\\\\\\\\\\\\\\\" rel=\\\\\\\\\\\\\\\"noopener noreferrer\\\\\\\\\\\\\\\">STAGE-EVT-2026-000151</a> \\\\\\\",\\\\\\\"as_table\\\\\\\":false,\\\\\\\"title\\\\\\\":\\\\\\\"Message\\\\\\\",\\\\\\\"indicator\\\\\\\":\\\\\\\"red\\\\\\\",\\\\\\\"raise_exception\\\\\\\":1,\\\\\\\"__frappe_exc_id\\\\\\\":\\\\\\\"1"
+  }
+ ],
+ "passed_count": 11,
+ "failed_count": 3,
+ "leftovers": [
+  "CRM-DEAL-2026-00107"
+ ],
+ "customer_probe": "MET"
+}
