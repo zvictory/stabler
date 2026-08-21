@@ -18,7 +18,7 @@ import RelatedDocuments from "../../components/RelatedDocuments.vue";
 import FormPage from "../../components/form/FormPage.vue";
 import LineItemsEditor from "../../components/LineItemsEditor.vue";
 import { useDocumentForm } from "../../composables/useDocumentForm.js";
-import { planRateRefresh } from "../../composables/purchaseInvoiceRate.js";
+import { planRateRefresh } from "../../composables/exchangeRatePolicy.js";
 
 const session = useSession();
 const { activeCompany, user } = storeToRefs(session);
@@ -115,7 +115,7 @@ async function loadTaxTemplates() {
 
 // What the rate planner last saw on screen. `rateTouched` marks a rate the user
 // typed over — the contract's rate, the bank's rate — which a date change must
-// not quietly undo. See `composables/purchaseInvoiceRate.js` for the whole rule
+// not quietly undo. See `composables/exchangeRatePolicy.js` for the whole rule
 // and why a loaded document is never treated as the user moving the date.
 let rateSeen = { docName: undefined, currency: "", postingDate: "", rateTouched: false };
 

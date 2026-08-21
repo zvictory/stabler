@@ -6321,3 +6321,5 @@ Receive into warehouse,Омборга қабул қилиш
 Draft Purchase Invoice created: {0} — goods received into {1},Ҳисоб-фактура қораламаси яратилди: {0} — товар {1} омборига кирим қилинди
 {0} is a warehouse group and cannot receive stock.,"{0} — омбор гуруҳи, у товар қабул қила олмайди."
 "Warehouse {0} belongs to {1}, not {2}.","{0} омбори {2} га эмас, {1} га тегишли."
+Kept your rate {typed} — the Central Bank rate for this date is {cbu}.,Курсингиз {typed} сақланди — бу санадаги Марказий банк курси: {cbu}.
+Your rate {typed} was replaced with {cbu} — the accounts changed.,Курсингиз {typed} {cbu} билан алмаштирилди — ҳисоблар ўзгарди.

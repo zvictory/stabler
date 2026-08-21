@@ -11,6 +11,7 @@ import { accountLabel } from "../../composables/accounts.js";
 import { useConfirm } from "../../composables/useConfirm.js";
 import { useToast } from "../../composables/useToast.js";
 import { createIntentKey } from "../../composables/idempotency.js";
+import { planRateRefresh, rateChangeNotice } from "../../composables/exchangeRatePolicy.js";
 import MoneyInput from "../../components/MoneyInput.vue";
 import DateInput from "../../components/DateInput.vue";
 import EmptyState from "../../components/EmptyState.vue";
@@ -269,7 +270,16 @@ function onRecvInput(val) {
 	derive();
 }
 
-// Track whether the user manually typed a rate (so date changes don't clobber it)
+// Whether the rate on screen is one the user typed. Read by `fetchExchangeRate`
+// to refuse to overwrite it, and by the template to drop the AUTO badge.
+//
+// Until 2026-08-21 this comment said "so date changes don't clobber it" while
+// the posting-date watcher twelve lines below cleared the flag on exactly that
+// event. The comment described the rule this form should have had; the code
+// beside it did the opposite. `composables/exchangeRatePolicy.js` now owns the
+// decision for every money form, and it is the comment that turned out to be
+// right — see the watcher below for why the transfer is the form that needed
+// it most.
 const rateManuallyEdited = ref(false);
 // True while a historical record is being loaded into the form (amend/edit).
 // Suppresses the live-rate fetch and reciprocal watchers so historical
@@ -313,27 +323,103 @@ async function fetchExchangeRate() {
 	}
 }
 
+// What the rate planner last saw on screen. The same sentinel the purchase
+// invoice keeps; the shared rule lives in `composables/exchangeRatePolicy.js`.
+// `rateTouched` is deliberately absent — it is read live off
+// `rateManuallyEdited` at each call so the ref stays the single source of truth
+// for the template's AUTO badge and for `fetchExchangeRate`'s overwrite guard.
+let rateSeen = { docName: undefined, currency: "", postingDate: "" };
+
+function rateNext() {
+	return {
+		docName: editingName.value || null,
+		// The rate question a transfer asks is the account pair, not one
+		// currency: USD→UZS and EUR→UZS are different questions, and so is a
+		// leg swap that inverts the quote.
+		currency: `${fromCurrency.value}→${toCurrency.value}`,
+		postingDate: form.value.posting_date,
+		editable: !submitting.value,
+		isForeign: isCrossCurrency.value,
+	};
+}
+
+function seedRateSeen() {
+	rateSeen = { ...rateNext() };
+}
+
+// The one place this form decides what a change does to the rate.
+//
+// It used to decide twice, differently. The account watcher cleared
+// `rateManuallyEdited` — correct, and the same rule the journal applies on an
+// account change — while the date watcher cleared it too, discarding a rate the
+// user had typed on purpose. Its comment defended that: "the rate is a function
+// of the posting date, so a date change re-anchors it."
+//
+// That premise is weakest in the form that claimed it. A transfer's two legs
+// are observed bank movements — 5 000 USD left, 63 500 000 UZS arrived, at the
+// bank's rate, not the Central Bank's — so the rate here is the residual of two
+// facts, not an estimate the CBU can improve on. The form already agreed:
+// `openEditFromDetail` derives the rate *from* the stored amounts under a
+// `hydrating` guard precisely so today's CBU rate cannot overwrite them. Only
+// the date watcher disagreed, with the rest of its own file.
+//
+// It is also the form where a silent substitution costs the most. Submit sends
+// `to_amount` as authoritative and `to_amount / from_amount` as the rate, and
+// `derive()` re-computes `to_amount` whenever the rate is replaced — so
+// discarding a typed rate here does not merely misstate a valuation, it
+// silently changes how much money lands in the destination account. That is the
+// same defect class as the 675 submitted purchase invoices on msa.erpstable.com
+// carrying a rate that is not the Central Bank rate for their own posting date
+// (363 at rate 0, 312 at a hardcoded 12 800, hundreds of billions of so'm in
+// the wrong direction), pointed at the second leg of a real bank transfer.
+async function reanchorRate() {
+	// Captured before the fetch, which is what overwrites the field.
+	const typedBefore = Number(form.value.exchange_rate) || 0;
+	const plan = planRateRefresh({ ...rateSeen, rateTouched: rateManuallyEdited.value }, rateNext());
+	rateSeen = plan.seen;
+	// Carries the whole decision: `fetchExchangeRate` applies what comes back
+	// only when this is false, so clearing the mark *is* authorising the
+	// overwrite. `plan.refresh` is the same predicate — the fetch must run
+	// either way to move the CBU reference hint onto the new date.
+	rateManuallyEdited.value = plan.seen.rateTouched;
+	await fetchExchangeRate();
+	derive();
+
+	const notice = rateChangeNotice(plan, { typed: typedBefore, cbu: Number(cbuRate.value) || 0 });
+	if (notice.kind === "kept") {
+		toast.info(
+			t("Kept your rate {typed} — the Central Bank rate for this date is {cbu}.", {
+				typed: fmtRate(notice.typed),
+				cbu: fmtRate(notice.cbu),
+			}),
+		);
+	} else if (notice.kind === "reset") {
+		toast.warning(
+			t("Your rate {typed} was replaced with {cbu} — the accounts changed.", {
+				typed: fmtRate(notice.typed),
+				cbu: fmtRate(notice.cbu),
+			}),
+		);
+	}
+}
+
 // Account changes: reseed + re-fetch CBU (currencies may have changed)
 watch(
 	() => [form.value.from_account, form.value.to_account],
 	async () => {
 		if (hydrating.value) return;
 		reseed();
-		rateManuallyEdited.value = false;
-		await fetchExchangeRate();
-		derive();
+		await reanchorRate();
 	},
 );
 
-// Date changes: always re-fetch and show THAT date's CBU rate (the rate is a
-// function of the posting date, so a date change re-anchors it).
+// Date changes: re-fetch so the CBU reference always shows THAT date's rate. An
+// untouched rate follows it; one the user typed does not, and says so.
 watch(
 	() => form.value.posting_date,
 	async () => {
 		if (hydrating.value) return;
-		rateManuallyEdited.value = false;
-		await fetchExchangeRate();
-		derive();
+		await reanchorRate();
 	},
 );
 
@@ -369,6 +455,7 @@ async function openCreate() {
 	editingName.value = "";
 	submitError.value = "";
 	rateManuallyEdited.value = false;
+	seedRateSeen();
 	reseed();
 	detailOpen.value = false;
 	createOpen.value = true;
@@ -429,6 +516,10 @@ async function openEditFromDetail() {
 	await fetchExchangeRate(); // yalnızca referans cbuRate göstergesini tazeler (guard'lı)
 	await nextTick(); // form-atamasının tetiklediği watcher'lar guard altındayken flush olsun
 	hydrating.value = false;
+	// Record the loaded transfer as what the planner has seen, now that the
+	// watchers are live again. Without this the next date change looks like a
+	// document being installed rather than the user moving the date.
+	seedRateSeen();
 	markFormPristine();
 }
 

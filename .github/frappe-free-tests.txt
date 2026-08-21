@@ -149,6 +149,7 @@ stabler.tests.test_pi_group_report_math
 stabler.tests.test_pi_group_report_source
 stabler.tests.test_pi_shipment_ux_source
 stabler.tests.test_purchase_invoice_rate_source
+stabler.tests.test_transfer_rate_source
 stabler.tests.test_supplier_ledger_sources_source
 stabler.tests.test_ci_invoice_drift_math
 stabler.tests.test_ci_invoice_drift_source
