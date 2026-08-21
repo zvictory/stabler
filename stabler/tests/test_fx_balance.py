@@ -316,6 +316,75 @@ class JournalResidualTest(unittest.TestCase):
 
 		self.assertEqual(1, len(_auto_rows(doc, self.fx)))
 
+	def test_no_residual_can_be_booked_on_the_save_that_first_enters_the_amounts(self):
+		"""Which save this hook can act on — measured 2026-08-21, after it cost a day.
+
+		We run at `before_validate`, which frappe calls once per save and before
+		`validate` (frappe/model/document.py:run_before_save_methods). ERPNext
+		fills the company-currency columns `debit` / `credit` inside `validate`,
+		in `set_amounts_in_company_currency` (journal_entry.py:977). So on the
+		FIRST save of a voucher built the way the SPA builds one — only
+		`*_in_account_currency` set — `set_total_debit_credit()` sums base
+		columns that are still empty, the difference is 0, and we return before
+		the tolerance is ever consulted. The residual arrives on the next save.
+
+		The fixture below shows the gap in the account-currency columns already,
+		and at 0,01 it is well inside the tolerance. It is still not booked,
+		because those are not the columns this module is entitled to read: a leg
+		amount is denominated in its own account's currency and legs in different
+		currencies cannot be subtracted. Only the base columns are comparable,
+		and on this pass they do not exist yet.
+
+		Safe rather than lucky: ERPNext enforces the balance in `before_submit`
+		(journal_entry.py:196-200), never in `validate`, so the draft may carry
+		the gap, and every Stabler path submits on a later save.
+
+		Pinned because the property is invisible and the tolerance gets blamed
+		instead: a bench test built a one-save draft, found no residual, and two
+		people reached for the arithmetic first. It is also the tripwire for
+		anyone who moves this hook to `validate` or teaches it to add up the
+		account-currency columns — either would change when a draft balances.
+		"""
+		first_save = _Journal(
+			[
+				_Row(account="Origin Cash - M", debit_in_account_currency=100.01),
+				_Row(account="Receiver Obligation - M", credit_in_account_currency=100.00),
+			]
+		)
+
+		self.fx.auto_balance_fx_residual(first_save)
+
+		self.assertEqual(
+			[],
+			_auto_rows(first_save, self.fx),
+			"a residual was booked out of the account-currency columns — amounts in "
+			"different currencies subtracted as if they were the same unit",
+		)
+
+		# The same voucher on its second save, carrying the base columns
+		# `validate` computed the first time round. NOW there is a difference
+		# this module may legitimately see.
+		second_save = _Journal(
+			[
+				_Row(
+					account="Origin Cash - M",
+					debit_in_account_currency=100.01,
+					debit=100.01,
+				),
+				_Row(
+					account="Receiver Obligation - M",
+					credit_in_account_currency=100.00,
+					credit=100.00,
+				),
+			]
+		)
+
+		self.fx.auto_balance_fx_residual(second_save)
+
+		booked = _auto_rows(second_save, self.fx)
+		self.assertEqual(1, len(booked), "the residual never arrives, on any save")
+		self.assertAlmostEqual(0.01, booked[0].credit, places=2)
+
 
 class ToleranceBoundaryTest(unittest.TestCase):
 	"""Exactly where "rounding residual" ends and "allocation error" begins.
