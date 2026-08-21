@@ -5,7 +5,7 @@ import { useRoute, useRouter } from "vue-router";
 import { useSession } from "../../stores/session.js";
 import { call } from "../../api/client.js";
 import { formatMoney } from "../../composables/money.js";
-import { readableRate, toLineRate, formatRate } from "../../composables/fx.js";
+import { readableRate, toLineRate, formatRate, priceListRateForOrder } from "../../composables/fx.js";
 import { formatDate, formatDateTime, todayIso} from "../../composables/date.js";
 import { t } from "../../composables/i18n.js";
 import { itemSearcher } from "../../composables/items.js";
@@ -39,6 +39,10 @@ const autoSubmit = ref(1);
  * USD defterine 945 000 UZS'lik bir siparişi 945 000 USD olarak yazdırıyordu —
  * sessiz para hatası. Bilinmeyen kur `null` kalır ve payload'a hiç girmez. */
 const exchangeRate = ref(null);
+/* Bir fiyat listesi siparişin parasından başka bir parada kote edilmişse ve
+ * çevirecek kur yoksa, satır fiyatı DOLDURULMAZ — sessizce çevrilmemiş bir sayı
+ * yazmak düzeltilen hatanın ta kendisi. Kullanıcının bunu bilmesi gerekir. */
+const rateWarning = ref(false);
 const forceOverStock = ref(false);
 const agreements = ref([]);
 const agreementsEnabled = computed(() => session.canAccessModule("agreements"));
@@ -342,6 +346,7 @@ async function fetchExchangeRate() {
 	} catch {
 		exchangeRate.value = null;
 	}
+	if (exchangeRate.value) rateWarning.value = false;
 }
 
 // Load existing doc
@@ -456,6 +461,23 @@ function clearCustomer() {
 
 const searchItems = itemSearcher("sales", { warehouse: () => form.value.set_warehouse });
 
+/* Fiyat listesinin parası siparişin parası olmak zorunda değil. Bu form
+ * `price_list_rate`'i alıp satırın kur alanına yazıyordu ama yanında gelen
+ * `currency`'yi hiç okumuyordu: UZS'de kote edilmiş bir liste, USD'ye
+ * yazılmış bir siparişte so'm rakamını dolar alanına koyuyordu — geçerli kurda
+ * ~12 000 katı hata, müşterinin lehine, fiyat listesinden fiyat alan her
+ * yabancı para siparişinde. Kural ve tek uygulaması: composables/fx.js.
+ *
+ * Kur çifti buradan geliyor çünkü Klasik'in kur modeli Modern'inkinden farklı:
+ * burada `exchangeRate` daima "1 işlem parası = N taban parası"dır ve işlem
+ * parası tabanla aynıyken 1'dir. O durumda çift {taban, taban} olur, yani
+ * başka bir paradaki liste çevrilemez ve `unconverted` döner — doğrusu da bu,
+ * form o an gerçekten hiçbir yabancı kur tutmuyor. */
+function toOrderRate(priced, fallback) {
+	const txn = form.value?.currency || currency.value;
+	return priceListRateForOrder(priced, txn, { rate: exchangeRate.value, from: txn, to: currency.value }, fallback);
+}
+
 async function resolveRate(itemCode, fallback = 0, uom = undefined) {
 	if (!itemCode || !activeCompany.value) return { rate: Number(fallback || 0) };
 	try {
@@ -466,10 +488,7 @@ async function resolveRate(itemCode, fallback = 0, uom = undefined) {
 			price_list: form.value.price_list || undefined,
 			uom: uom || undefined,
 		});
-		if (res && !res.unresolved && Number(res.price_list_rate) > 0) {
-			return { rate: Number(res.price_list_rate) };
-		}
-		return { rate: Number(fallback || 0) };
+		return toOrderRate(res, Number(fallback || 0));
 	} catch {
 		return { rate: Number(fallback || 0) };
 	}
@@ -478,8 +497,9 @@ async function resolveRate(itemCode, fallback = 0, uom = undefined) {
 async function refreshLineRatesForPriceList() {
 	const lines = form.value.items.filter((line) => line.item_code && !line.rateTouched);
 	for (const line of lines) {
-		const { rate } = await resolveRate(line.item_code, line.rate, line.uom);
-		if (rate) line.rate = rate;
+		const { rate, unconverted } = await resolveRate(line.item_code, line.rate, line.uom);
+		if (unconverted) rateWarning.value = true;
+		else if (rate) line.rate = rate;
 	}
 }
 
@@ -517,19 +537,31 @@ async function handlePickItem({ line, item, index, field }) {
 			line.uom = preferredUom ? preferredUom.uom : (meta.default_uom || meta.stock_uom || "");
 			line.conversion_factor = preferredUom ? Number(preferredUom.conversion_factor) : 1;
 			line.rateTouched = false;
+			/* `item_sales_meta` de fiyatı aynı fiyat listesinden, aynı `currency`
+			 * etiketiyle veriyor — yani çevrim burada da şart. İki sebeple önce
+			 * çevriliyor: aşağıdaki `else` dalı (tercih edilen birim varsayılanla
+			 * aynı olduğunda) asıl sık kullanılan yol, ve çevrilmemiş bir liste
+			 * fiyatı `resolveRate`'e YEDEK olarak geçirilirse hata o kapıdan geri
+			 * gelir. `listed.rate` her iki durumda da güvenli: ya çevrilmiş liste
+			 * fiyatı ya da kalemin standart fiyatı. */
+			const listed = toOrderRate(meta, Number(meta.standard_rate || 0));
 			if (preferredUom && preferredUom.uom !== meta.default_uom && form.value.price_list) {
-				const { rate } = await resolveRate(line.item_code, meta.price_list_rate || meta.standard_rate || 0, line.uom);
-				line.rate = rate;
+				const { rate, unconverted } = await resolveRate(line.item_code, listed.rate, line.uom);
+				if (unconverted) rateWarning.value = true;
+				else line.rate = rate;
 			} else {
-				line.rate = Number(meta.price_list_rate || meta.standard_rate || 0);
+				const { rate, unconverted } = listed;
+				if (unconverted) rateWarning.value = true;
+				else line.rate = rate;
 			}
 		} catch {
 			line.uom = item.stock_uom || "";
 			line.stock_uom = item.stock_uom || "";
 			line.uoms = [];
 			line.conversion_factor = 1;
-			const { rate } = await resolveRate(line.item_code, item.standard_rate);
-			line.rate = rate;
+			const { rate, unconverted } = await resolveRate(line.item_code, item.standard_rate);
+			if (unconverted) rateWarning.value = true;
+			else line.rate = rate;
 		}
 		scheduleAvailability(line);
 		// Focus qty after all async item data is loaded (nextTick here fires after
@@ -550,8 +582,9 @@ async function handlePickItem({ line, item, index, field }) {
 		}
 	} else if (field === "uom") {
 		if (line.item_code && !line.rateTouched) {
-			const { rate } = await resolveRate(line.item_code, line.rate, line.uom);
-			line.rate = rate;
+			const { rate, unconverted } = await resolveRate(line.item_code, line.rate, line.uom);
+			if (unconverted) rateWarning.value = true;
+			else line.rate = rate;
 		}
 	}
 }
@@ -1156,6 +1189,13 @@ async function closeSalesOrder() {
 				</div>
 				<div v-if="isForeignCurrency && grandTotalBase !== null" class="text-secondary small mt-1 text-end">
 					≈ {{ formatMoney(grandTotalBase, currency, user.language) }}
+				</div>
+				<!-- Fiyat listesi başka bir parada ve çevirecek kur yok: satır fiyatı
+				     doldurulmadı. Kur satırının içinde değil burada, çünkü o satır
+				     yalnız işlem parası tabandan farklıyken çiziliyor — oysa taban
+				     paralı bir siparişte de yabancı bir liste bu duruma düşebilir. -->
+				<div v-if="rateWarning" class="text-danger small fw-semibold mt-2">
+					<i class="ti ti-alert-triangle me-1"></i>{{ t("Exchange rate unavailable — line prices were not converted. Enter the rate manually.") }}
 				</div>
 			</div>
 		</div>

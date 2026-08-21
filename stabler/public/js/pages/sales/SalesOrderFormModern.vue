@@ -5,7 +5,7 @@ import { useRoute, useRouter } from "vue-router";
 import { useSession } from "../../stores/session.js";
 import { call } from "../../api/client.js";
 import { formatMoney } from "../../composables/money.js";
-import { readableRate, formatRate } from "../../composables/fx.js";
+import { readableRate, formatRate, priceListRateForOrder } from "../../composables/fx.js";
 import { formatDate, todayIso} from "../../composables/date.js";
 import { t } from "../../composables/i18n.js";
 import { itemSearcher } from "../../composables/items.js";
@@ -550,6 +550,21 @@ const searchItems = itemSearcher("sales", {
 	priceList: () => form.value.price_list,
 });
 
+/* Fiyat listesi → işlem parası çevrimi. Kural ve tek uygulaması artık
+ * composables/fx.js: iki SO formunun ikisi de aynı fonksiyonu çağırıyor, çünkü
+ * bu çevrimin iki kopyası tam olarak birinin sessizce yanlış kalma yoludur —
+ * Klasik'te `res.currency` hiç okunmuyordu. Buradaki tek davranış değişikliği,
+ * eksik bir fiyat listesi parasının artık "UZS" varsayılmaması. */
+function toOrderRate(priced, fallback) {
+	const { from, to } = exchangeRatePair.value;
+	return priceListRateForOrder(
+		priced,
+		form.value.currency || currency.value,
+		{ rate: activeRate.value, from, to },
+		fallback
+	);
+}
+
 async function resolveRate(itemCode, fallback = 0, uom = undefined) {
 	if (!itemCode || !activeCompany.value) return { rate: Number(fallback || 0) };
 	try {
@@ -560,30 +575,7 @@ async function resolveRate(itemCode, fallback = 0, uom = undefined) {
 			price_list: form.value.price_list || undefined,
 			uom: uom || undefined,
 		});
-		if (res && !res.unresolved && Number(res.price_list_rate) > 0) {
-			let rate = Number(res.price_list_rate);
-			const priceListCurrency = res.currency || "UZS";
-			const txnCurrency = form.value.currency || currency.value;
-
-			if (priceListCurrency !== txnCurrency) {
-				const exRate = activeRate.value;
-				const pair = exchangeRatePair.value;
-				if (!exRate) {
-					// Kur bilinmiyor — yanlış çevrilmiş bir fiyatı sessizce kaydetmek yerine
-					// çeviri yapılmaz; çağıran satıra dokunmaz ve kullanıcı uyarılır.
-					return { rate: Number(fallback || 0), unconverted: true };
-				}
-				if (priceListCurrency === pair.to && txnCurrency === pair.from) {
-					rate = rate / exRate;
-				} else if (priceListCurrency === pair.from && txnCurrency === pair.to) {
-					rate = rate * exRate;
-				} else {
-					return { rate: Number(fallback || 0), unconverted: true };
-				}
-			}
-			return { rate: Number(rate.toFixed(4)) };
-		}
-		return { rate: Number(fallback || 0) };
+		return toOrderRate(res, Number(fallback || 0));
 	} catch {
 		return { rate: Number(fallback || 0) };
 	}
@@ -673,12 +665,22 @@ async function handlePickItem(payload) {
 			line.uom = preferredUom ? preferredUom.uom : (meta.default_uom || meta.stock_uom || "");
 			line.conversion_factor = preferredUom ? Number(preferredUom.conversion_factor) : 1;
 			line.rateTouched = false;
+			/* `item_sales_meta` de fiyatı aynı fiyat listesinden, aynı `currency`
+			 * etiketiyle veriyor — yani çevrim burada da şart. İki sebeple önce
+			 * çevriliyor: aşağıdaki `else` dalı (tercih edilen birim varsayılanla
+			 * aynı olduğunda) asıl sık kullanılan yol, ve çevrilmemiş bir liste
+			 * fiyatı `resolveRate`'e YEDEK olarak geçirilirse hata o kapıdan geri
+			 * gelir. `listed.rate` her iki durumda da güvenli: ya çevrilmiş liste
+			 * fiyatı ya da kalemin standart fiyatı. */
+			const listed = toOrderRate(meta, Number(meta.standard_rate || 0));
 			if (preferredUom && preferredUom.uom !== meta.default_uom && form.value.price_list) {
-				const { rate, unconverted } = await resolveRate(line.item_code, meta.price_list_rate || meta.standard_rate || 0, line.uom);
+				const { rate, unconverted } = await resolveRate(line.item_code, listed.rate, line.uom);
 				if (unconverted) rateWarning.value = true;
 				else line.rate = rate;
 			} else {
-				line.rate = Number(meta.price_list_rate || meta.standard_rate || 0);
+				const { rate, unconverted } = listed;
+				if (unconverted) rateWarning.value = true;
+				else line.rate = rate;
 			}
 		} catch {
 			line.uom = item.stock_uom || "";
