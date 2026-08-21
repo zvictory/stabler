@@ -1865,6 +1865,7 @@ Exceeded (Annual),
 Exceeded (Monthly),
 Excel,Excel
 Excel (.xlsx),Excel (.xlsx)
+"Excel export of this warehouse — every item, not the on-screen filter","Экспорт этого склада в Excel — все позиции, а не текущий фильтр на экране"
 Excel — basic,Excel — базовый
 Excel — professional,Excel — профессиональный
 Exception ignored.,

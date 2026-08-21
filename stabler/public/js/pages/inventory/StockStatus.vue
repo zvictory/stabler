@@ -43,6 +43,10 @@ const warehouseOptions = computed(() =>
 const selectedWarehouseInfo = computed(
 	() => stockWarehouses.value.find((warehouse) => warehouse.name === selectedWarehouse.value) || null
 );
+// The screen and the exported workbook must show the same rows, so both ask the
+// endpoint for the same slice.
+const STOCK_LIMIT = 500;
+
 const stockItems = computed(() => stock.value?.items || []);
 const filteredItems = computed(() => {
 	let list = stockItems.value;
@@ -74,6 +78,24 @@ function bestWarehouse(rows, requested) {
 	return stocked?.name || rows[0]?.name || "";
 }
 
+// Professional .xlsx — the server re-runs `warehouse_stock` (permission and
+// company scope enforced there) and streams a styled workbook; client rows are
+// never trusted. It exports the WHOLE warehouse: `itemSearch` and the anomaly
+// toggle are client-side and the endpoint has no parameter for either, so a
+// "current filters" promise here would be one the file cannot keep.
+function exportXlsx() {
+	if (!activeCompany.value || !selectedWarehouse.value) return;
+	const qs = new URLSearchParams({
+		report_key: "warehouse_stock",
+		filters: JSON.stringify({
+			company: activeCompany.value,
+			warehouse: selectedWarehouse.value,
+			limit: STOCK_LIMIT,
+		}),
+	});
+	window.open(`/api/method/stabler.api.export.export_report_xlsx?${qs.toString()}`, "_blank");
+}
+
 async function loadStock() {
 	if (!activeCompany.value || !selectedWarehouse.value) {
 		stock.value = null;
@@ -85,7 +107,7 @@ async function loadStock() {
 		stock.value = await call("stabler.api.inventory.warehouse_stock", {
 			company: activeCompany.value,
 			warehouse: selectedWarehouse.value,
-			limit: 500,
+			limit: STOCK_LIMIT,
 		});
 	} catch (err) {
 		stock.value = null;
@@ -292,9 +314,20 @@ watch(
 					<div class="card-title m-0">
 						{{ selectedWarehouseInfo?.warehouse_name || selectedWarehouseInfo?.name || t("Warehouse stock") }}
 					</div>
-					<button type="button" class="btn btn-sm btn-ghost-secondary ms-auto" :disabled="stockLoading" @click="loadStock">
-						<i class="ti ti-refresh me-1"></i>{{ t("Refresh") }}
-					</button>
+					<div class="ms-auto d-flex gap-2">
+						<button
+							type="button"
+							class="btn btn-sm btn-primary"
+							:disabled="stockLoading || !stockItems.length"
+							:title="t('Excel export of this warehouse — every item, not the on-screen filter')"
+							@click="exportXlsx"
+						>
+							<i class="ti ti-file-spreadsheet me-1"></i>{{ t("Excel") }}
+						</button>
+						<button type="button" class="btn btn-sm btn-ghost-secondary" :disabled="stockLoading" @click="loadStock">
+							<i class="ti ti-refresh me-1"></i>{{ t("Refresh") }}
+						</button>
+					</div>
 				</div>
 				<div v-if="stockLoading" class="card-body text-center py-5">
 					<div class="spinner-border text-primary"></div>

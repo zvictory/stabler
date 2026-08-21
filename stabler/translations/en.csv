@@ -2274,6 +2274,7 @@ Exceeded (Annual),Exceeded (Annual)
 Exceeded (Monthly),Exceeded (Monthly)
 Excel,Excel
 Excel (.xlsx),Excel (.xlsx)
+"Excel export of this warehouse — every item, not the on-screen filter","Excel export of this warehouse — every item, not the on-screen filter"
 Excel — basic,Excel — basic
 Excel — professional,Excel — professional
 Exception ignored.,Exception ignored.

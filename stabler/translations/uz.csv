@@ -1859,6 +1859,7 @@ Exceeded (Annual),
 Exceeded (Monthly),
 Excel,Excel
 Excel (.xlsx),Excel (.xlsx)
+"Excel export of this warehouse — every item, not the on-screen filter","Bu omborning Excel eksporti — ekrandagi filtr emas, barcha mahsulotlar"
 Excel — basic,Excel — oddiy
 Excel — professional,Excel — professional
 Exception ignored.,

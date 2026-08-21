@@ -177,6 +177,34 @@ REPORT_EXPORTS: dict[str, dict] = {
 		"roles": None,
 		"sensitive": False,
 	},
+	# `warehouse_stock` returns {"items": [...]} and no column metadata of its own,
+	# so the columns are declared here rather than shaped by the source. That hand
+	# link is the fragile part: a mistyped key exports a blank column in silence,
+	# so `test_stock_status_export_source` ties every key below back to
+	# `_format_warehouse_stock_row`.
+	"warehouse_stock": {
+		"title": "Stock Status",
+		"source": "stabler.api.inventory.warehouse_stock",
+		"filename": "Stock_Status",
+		"list_source": True,
+		"rows_key": "items",
+		"columns": [
+			{"key": "item_code", "label": "Item Code", "type": "text"},
+			{"key": "item_name", "label": "Item", "type": "text"},
+			{"key": "item_group", "label": "Group", "type": "text"},
+			{"key": "stock_uom", "label": "UoM", "type": "text"},
+			{"key": "actual_qty", "label": "Actual", "type": "number", "align": "end"},
+			{"key": "reserved_qty", "label": "Reserved", "type": "number", "align": "end"},
+			{"key": "free_qty", "label": "Free", "type": "number", "align": "end"},
+			{"key": "valuation_rate", "label": "Rate", "type": "money", "align": "end"},
+			{"key": "stock_value", "label": "Value", "type": "money", "align": "end"},
+		],
+		# Rate is per-unit: a column of rates has no meaningful sum. The quantities
+		# and the value are exactly what the screen's four KPI cards already total.
+		"total_keys": ["actual_qty", "reserved_qty", "free_qty", "stock_value"],
+		"roles": None,
+		"sensitive": False,
+	},
 	# Sensitive — exposes cost/margin → finance roles only, audit-logged.
 	"gross_margin_by_item": {
 		"title": "Gross Margin by Item",
