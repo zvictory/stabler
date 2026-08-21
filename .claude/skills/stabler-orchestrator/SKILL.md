@@ -114,15 +114,60 @@ makes it report anything at all. `npm ci` is not the alternative — the tracked
 lockfile is out of sync with `package.json` and it exits 1; `npm install` works
 but rewrites the tracked `package-lock.json` inside the worktree.
 
-**`make test-bench` cannot be run from a worktree at all**, and the target now
-refuses. It does `cd $(LOCAL_BENCH) && bench run-tests`, and the bench venv
-resolves the `stabler` package through `stabler.pth`, which points at the MAIN
-tree — so a worktree run measures main's code and reports the verdict as the
-branch's. A bench-gated task is therefore sequenced, not parallelised: merge it
-into the main tree and run it there. There is also exactly one bench, one pinned
+**`make test-bench` cannot be run from a worktree**, and the target refuses. It
+does `cd $(LOCAL_BENCH) && bench run-tests`, and the bench venv resolves the
+`stabler` package through `stabler.pth`, which points at the MAIN tree — so a
+worktree run measures main's code and reports the verdict as the branch's.
+
+**One module at a time CAN be measured from a worktree, for the red/green loop
+only.** `stabler.pth` is a plain path line appended by `site`-module processing;
+`PYTHONPATH` is consulted before it, so prepending the worktree's own root makes
+`import stabler` resolve entirely to the worktree:
+
+```bash
+PYTHONPATH=/abs/path/to/.worktrees/agy-<task> \
+  bench --site genesis-test.local run-tests --module stabler.tests.<module>
+```
+
+Measured 2026-08-21, four ways on one worktree: `stabler.__file__` and
+`frappe.get_app_path("stabler")` both resolve to the worktree; a guard mutated in
+the worktree turns that module RED; the same mutated tree **without**
+`PYTHONPATH` stays GREEN, proving an unset run still measures main. No git
+operation and no write to the main tree — one env var on one invocation.
+
+**It measures the worktree's PYTHON, never its SCHEMA.** Doctype meta comes from
+`genesis-test.local`'s already-migrated database, so a branch that also changes
+doctype JSON or `patches.txt` is not covered — and the two ways that fails are
+not equally visible:
+
+| Branch adds | What the probe run does |
+|---|---|
+| a new doctype | LOUD — `DoesNotExistError: DocType <X> not found` |
+| a field to an existing doctype | **SILENT — `meta.get_field()` returns `None` and `insert()` SUCCEEDS with the field dropped** |
+
+The silent row is the whole hazard: measured 2026-08-21, a document carrying a
+worktree-only field inserted clean and read back with the attribute simply
+missing. That is the same false-pass class the tree guard exists to prevent,
+re-entered through a different door. Such a branch must have the site migrated
+first, which writes the branch's schema into shared state — a merge-to-main
+decision, not a worktree one. (A probe run does not sync JSON on its own:
+verified the worktree-only doctype was still absent from the site afterwards.)
+
+**This adds no locking.** It is a raw `bench` call and never touches the
+`.stabler-test-bench.lock` directory `make test-bench` holds, so it can land in
+the middle of someone else's run. There is still exactly one bench, one pinned
 site (`genesis-test.local`, enforced by the `#pin` line in
 `.github/bench-known-red.txt`), one MariaDB and one redis, so two concurrent runs
-collide inside `before_tests` regardless. The target holds a lock for that.
+collide inside `before_tests` regardless — and `before_tests` itself resolves
+through the worktree's own `hooks.py`, writing that branch's fixtures into the
+shared database. Check the lock is free and no other agent is mid-run first.
+
+**It is the inner loop, not the gate.** It proves one module red then green while
+you iterate. It does not run the derived `BENCH_TESTS` sweep, the ZERO COVERAGE
+check or the four-way ratchet against `.github/bench-known-red.txt` — those live
+in `make test-bench` and still require the main tree. So a bench-gated task is
+*iterated* in parallel but *gated* sequentially: merge into the main tree and run
+`make test-bench` there before the verdict counts.
 
 ## 4. Launch agy
 
@@ -201,8 +246,8 @@ Minimum for every change: `make check` and `git diff --check`. Add by impact:
 |---|---|
 | Frontend | targeted ESLint/Vitest + `bench build --app stabler` |
 | Forms | the `qa-forms` workflow (`.claude/workflows/qa-forms.js`) + direct-route refresh |
-| DB / GL / Payment Entry | focused tests + `make test-bench` **in the main tree, one at a time** (section 3) |
-| Patches / doctypes | local migrate rehearsal + re-run for idempotency |
+| DB / GL / Payment Entry | iterate per module from the worktree with the `PYTHONPATH=` probe (section 3); the gate is still `make test-bench` **in the main tree, one at a time** |
+| Patches / doctypes | local migrate rehearsal + re-run for idempotency. The `PYTHONPATH=` probe does **not** cover these — it reads the site's already-migrated schema, and a worktree-only field fails *silently* (section 3) |
 | Translations | all five catalogs (en, ru, uz, uzc, tr) present; after deploy, Redis lookup |
 | Multi-tenant feature | owner tenant **and** one non-owner leakage smoke test |
 
