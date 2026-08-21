@@ -6330,3 +6330,4 @@ Draft Purchase Invoice created: {0} — goods received into {1},Черновик
 "Warehouse {0} belongs to {1}, not {2}.","Склад {0} принадлежит {1}, а не {2}."
 Kept your rate {typed} — the Central Bank rate for this date is {cbu}.,Ваш курс {typed} сохранён — курс ЦБ на эту дату: {cbu}.
 Your rate {typed} was replaced with {cbu} — the accounts changed.,Ваш курс {typed} заменён на {cbu} — счета изменились.
+Tax recalculates when you save.,Налог пересчитается при сохранении.

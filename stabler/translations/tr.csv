@@ -6242,7 +6242,7 @@ Liability,
 Receivable,
 Round Off for Opening,
 Service Received But Not Billed,
-Tax,
+Tax,Vergi
 Temporary,
 No accounts yet,Henüz hesap yok
 Set up the chart of accounts for {company} to see it here.,Burada görmek için {company} için hesap planını ayarlayın.
@@ -6320,3 +6320,4 @@ Draft Purchase Invoice created: {0} — goods received into {1},Alış faturası
 "Warehouse {0} belongs to {1}, not {2}.","{0} deposu {2} şirketine değil, {1} şirketine ait."
 Kept your rate {typed} — the Central Bank rate for this date is {cbu}.,Girdiğiniz {typed} kuru korundu — bu tarihteki Merkez Bankası kuru {cbu}.
 Your rate {typed} was replaced with {cbu} — the accounts changed.,Girdiğiniz {typed} kuru {cbu} ile değiştirildi — hesaplar değişti.
+Tax recalculates when you save.,Vergi kaydettiğinizde yeniden hesaplanır.
