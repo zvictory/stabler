@@ -64,6 +64,9 @@ export function moneySeparators(language = "en") {
  *   - one separator + exactly 3 trailing digits -> ambiguous, ask the locale
  *     ("1.500" is 1500 to a Russian and 1.5 to an American; nothing but the
  *     locale can break that tie, and pretending otherwise is a coin flip)
+ *   - the locale's own grouping mark + MORE than 3 digits -> grouping. No
+ *     locale groups in fours, and this is the shape `groupMoneyWhileTyping`
+ *     hands back mid-entry ("1,1080")
  *   - anything else            -> the decimal point, whatever the language
  *
  * Returns a Number, or null when the field is blank or unreadable.
@@ -90,10 +93,24 @@ export function parseMoneyInput(text, language = "en") {
 		const count = dots || commas;
 		const idx = s.lastIndexOf(sep);
 		const trailing = s.length - idx - 1;
+		const { group, decimal } = moneySeparators(language);
 		if (count > 1) {
 			decimalSep = null; // repeated -> grouping; 1.500.000 is never 1.5
 		} else if (trailing === 3 && /\d/.test(s.slice(0, idx))) {
-			decimalSep = moneySeparators(language).decimal === sep ? sep : null;
+			decimalSep = decimal === sep ? sep : null;
+		} else if (trailing > 3 && sep === group) {
+			// The locale's OWN grouping mark with more than three digits behind
+			// it is a half-finished group, never a decimal point — no locale
+			// groups in fours. This is precisely what `groupMoneyWhileTyping`
+			// feeds back on every keystroke past the first group boundary, so
+			// typing 1108000 in en arrived here as "1,1080", "11,0800",
+			// "110,8000" and left as 110.8 while the field still displayed
+			// "1,108,000".
+			//
+			// Narrow on purpose: a separator that is NOT this locale's grouping
+			// mark still falls through to the rescue below, so the ru numpad dot
+			// and four-decimal unit prices keep working.
+			decimalSep = null;
 		} else {
 			decimalSep = sep;
 		}
@@ -108,6 +125,31 @@ export function parseMoneyInput(text, language = "en") {
 	}
 	const n = Number(cleaned);
 	return Number.isFinite(n) ? n : null;
+}
+
+/**
+ * Regroup what the user is typing, live, without forcing a decimal part.
+ *
+ * Lived inside `MoneyInput.vue` until it had to be read from a test. It belongs
+ * here for a second reason: it is the exact inverse of `parseMoneyInput`, and
+ * the two only work if they agree about which mark groups and which mark
+ * separates the fraction. Keeping them in one file is what makes a disagreement
+ * visible.
+ *
+ * Never pads decimals — they appear only once the user types the separator, so
+ * the caret is not trapped behind a forced ".00".
+ */
+export function groupMoneyWhileTyping(text, language = "en", maxFractionDigits = 2) {
+	const { group: gs, decimal: ds } = moneySeparators(language);
+	const s = ds === "."
+		? String(text).replace(/[^0-9.]/g, "")
+		: String(text).replace(/[^0-9,]/g, "");
+	const parts = s.split(ds);
+	const intp = (parts[0] || "").replace(/^0+(?=\d)/, "");
+	const grouped = intp.replace(/\B(?=(\d{3})+(?!\d))/g, gs);
+	if (maxFractionDigits === 0) return grouped; // whole-unit currency: integer only
+	if (parts.length > 1) return grouped + ds + parts.slice(1).join("").slice(0, maxFractionDigits);
+	return grouped;
 }
 
 export function formatMoney(value, currency = "USD", language = "en") {
@@ -173,7 +215,16 @@ export function formatCompactMoney(value, currency = "USD", language = "en") {
  * 2026-08-20 on the theory that it has no fractional unit; the ledger records
  * kopecks, so 0.5 called forty kopecks of real difference "noise".
  */
-/** Fraction digits `currency` actually holds — 0 for UZS, 2 for the rest. */
+/**
+ * Fraction digits `currency` actually holds — 2 everywhere, including UZS,
+ * because the ledger stores kopecks (see CURRENCY_OVERRIDES above). The
+ * comment here read "0 for UZS" until 2026-08-21, six lines below the table
+ * that says 2 — and three separate screens had each written their own copy of
+ * the wrong answer rather than call this.
+ *
+ * The single source of truth for precision. Nothing outside this file decides
+ * it; `make guards` enforces that.
+ */
 export function moneyFractionDigits(currency = "USD") {
 	return CURRENCY_OVERRIDES[currency]?.fractionDigits ?? 2;
 }
