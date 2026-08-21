@@ -18,6 +18,7 @@ import RelatedDocuments from "../../components/RelatedDocuments.vue";
 import FormPage from "../../components/form/FormPage.vue";
 import LineItemsEditor from "../../components/LineItemsEditor.vue";
 import { useDocumentForm } from "../../composables/useDocumentForm.js";
+import { planRateRefresh } from "../../composables/purchaseInvoiceRate.js";
 
 const session = useSession();
 const { activeCompany, user } = storeToRefs(session);
@@ -112,6 +113,17 @@ async function loadTaxTemplates() {
 	}
 }
 
+// What the rate planner last saw on screen. `rateTouched` marks a rate the user
+// typed over — the contract's rate, the bank's rate — which a date change must
+// not quietly undo. See `composables/purchaseInvoiceRate.js` for the whole rule
+// and why a loaded document is never treated as the user moving the date.
+let rateSeen = { docName: undefined, currency: "", postingDate: "", rateTouched: false };
+
+function onRateTyped(value) {
+	form.value.conversion_rate = value;
+	rateSeen.rateTouched = true;
+}
+
 async function fetchRateHint() {
 	rateHint.value = null;
 	if (!isForeign.value) return;
@@ -124,7 +136,11 @@ async function fetchRateHint() {
 		});
 		if (res && Number(res.rate) > 0 && res.source) {
 			rateHint.value = res;
-			if (!Number(form.value.conversion_rate)) form.value.conversion_rate = Number(res.rate);
+			// The invoice must carry the rate of its own posting date. The guard
+			// that used to stand here tested the field for emptiness instead,
+			// so a rate fetched for a new date was fetched and then discarded
+			// on every invoice that already had one.
+			if (!rateSeen.rateTouched) form.value.conversion_rate = Number(res.rate);
 		}
 	} catch {
 		rateHint.value = null;
@@ -309,14 +325,28 @@ const {
 	backPath: "/purchasing/invoices",
 });
 
+const docName = computed(() => (route.params.name ? String(route.params.name) : null));
+
+// The posting date decides which day's rate the invoice is booked at, and the
+// currency decides which rate is even being asked for. Both are watched; what
+// to do about them is `planRateRefresh`, kept out of here so it can be tested.
+// Declared below `docName` on purpose — watch() evaluates its source getter
+// eagerly, and the plan reads the document identity to tell "the user moved the
+// date" apart from "a document was just loaded into the form".
 watch(
 	() => [form.value.currency, form.value.posting_date],
 	() => {
-		if (editable.value) fetchRateHint();
+		const plan = planRateRefresh(rateSeen, {
+			docName: docName.value,
+			currency: form.value.currency,
+			postingDate: form.value.posting_date,
+			editable: editable.value,
+			isForeign: isForeign.value,
+		});
+		rateSeen = plan.seen;
+		if (plan.refresh) fetchRateHint();
 	}
 );
-
-const docName = computed(() => (route.params.name ? String(route.params.name) : null));
 
 async function loadDoc() {
 	if (!docName.value) return;
@@ -786,7 +816,11 @@ async function submitDoc() {
 			</div>
 			<div class="col-md-3" v-if="isForeign">
 				<label class="form-label">{{ t("Exchange rate") }}</label>
-				<MoneyInput v-if="editable" v-model="form.conversion_rate" />
+				<MoneyInput
+					v-if="editable"
+					:model-value="form.conversion_rate"
+					@update:model-value="onRateTyped"
+				/>
 				<div v-else class="form-control-plaintext py-1">{{ form.conversion_rate }}</div>
 				<div v-if="editable && rateHintLabel" class="form-hint text-secondary">{{ rateHintLabel }}</div>
 			</div>
