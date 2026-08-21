@@ -243,3 +243,4 @@ stabler.tests.test_money_idempotency_key_patch
 stabler.tests.test_audit_seal_lock
 stabler.tests.test_prod_drift_scope
 stabler.tests.test_coa_load_source
+stabler.tests.test_money_list_currency
