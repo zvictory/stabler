@@ -5,6 +5,8 @@ import { storeToRefs } from "pinia";
 import { useSession } from "../../stores/session.js";
 import { call } from "../../api/client.js";
 import { formatMoney, moneyFractionDigits } from "../../composables/money.js";
+import { quotedLeg, readableRate, toLineRate } from "../../composables/fx.js";
+import { SAVE_MODES, resolveSaveMode } from "../../composables/saveMode.js";
 import { formatDate, formatDateTime, todayIso, daysAgoIso} from "../../composables/date.js";
 import { t } from "../../composables/i18n.js";
 import { useConfirm } from "../../composables/useConfirm.js";
@@ -81,13 +83,17 @@ const equityAccounts = ref([]);
 const assets = ref([]); // existing ERPNext Asset records (asset-purchase picker)
 const optionsLoading = ref(false);
 
-// QuickBooks-style save mode — persisted per user
+// QuickBooks-style save mode — persisted per user. Which modes may be
+// remembered is decided in composables/saveMode.js: whatever is in the store
+// becomes the default action of the primary button, so a mode that does not
+// save cannot be one of them. "Save & clear" used to be, and discarded.
 const SAVE_MODE_KEY = "stabler.expenses.saveMode";
-const savedMode = ref(localStorage.getItem(SAVE_MODE_KEY) || "close");
-const SAVE_LABELS = { close: "Save & close", new: "Save & new", clear: "Save & clear" };
+const savedMode = ref(resolveSaveMode(localStorage.getItem(SAVE_MODE_KEY)));
+const SAVE_LABELS = { close: "Save & close", new: "Save & new" };
 const saveModeLabel = computed(() => t(SAVE_LABELS[savedMode.value] || "Save & close"));
 
 function persistSaveMode(mode) {
+	if (!SAVE_MODES.includes(mode)) return;
 	savedMode.value = mode;
 	localStorage.setItem(SAVE_MODE_KEY, mode);
 }
@@ -98,10 +104,13 @@ const baseCurrency = computed(
 		"USD",
 );
 
-// Exchange rate context
+// Exchange rate context. `fetchedLineRate` holds the server's rate in ERPNext's
+// own direction — base currency per 1 payment-account unit, which is exactly
+// what `submit_expense_entry` multiplies the payment total by. Everything the
+// operator sees (label, input, base preview) and everything the payload carries
+// is derived from it through composables/fx.js, so the three cannot disagree.
+const fetchedLineRate = ref(0);
 const cbuRate = ref(null);
-const fxBaseCur = ref("");
-const fxCounterCur = ref("");
 const rateDate = ref(null);
 const rateError = ref("");
 
@@ -254,6 +263,16 @@ const isCrossCurrency = computed(
 	() => payCurrency.value && payCurrency.value !== baseCurrency.value,
 );
 
+// The quote the operator reads: always the ≥ 1 direction, "1 strong = N weak".
+// Derived from the currency pair currently on screen, so a rate fetched for an
+// account that has since been swapped out can never keep its direction on the
+// label — the number under it would then be read the wrong way round.
+const rateQuote = computed(() =>
+	readableRate(fetchedLineRate.value, payCurrency.value, baseCurrency.value),
+);
+const fxBaseCur = computed(() => rateQuote.value?.strong || "");
+const fxCounterCur = computed(() => rateQuote.value?.weak || "");
+
 const totalAmount = computed(() =>
 	form.value.lines.reduce((sum, l) => sum + (Number(l.amount) || 0), 0),
 );
@@ -271,18 +290,25 @@ const formTitle = computed(() =>
 			: t("New expense"),
 );
 
+// `form.exchange_rate` is the number in the input, in the direction the label
+// states — never the raw API quote. quotedLeg() is the single place that turns
+// it into base currency, and the payload below calls into the same file for the
+// rate it sends, so the preview and the posting cannot drift apart.
 const baseEquivalent = computed(() => {
 	if (!isCrossCurrency.value) return totalAmount.value;
-	const rate = Number(form.value.exchange_rate) || 0;
-	if (rate === 0) return 0;
-	return totalAmount.value / rate;
+	return quotedLeg(form.value.exchange_rate, fxBaseCur.value, payCurrency.value, totalAmount.value)
+		.baseAmount;
 });
 
 function lineBaseAmount(line) {
 	if (!isCrossCurrency.value) return null;
-	const rate = Number(form.value.exchange_rate) || 0;
-	if (rate === 0) return null;
-	return (Number(line.amount) || 0) / rate;
+	const leg = quotedLeg(
+		form.value.exchange_rate,
+		fxBaseCur.value,
+		payCurrency.value,
+		Number(line.amount) || 0,
+	);
+	return leg.lineRate > 0 ? leg.baseAmount : null;
 }
 
 const canSubmit = computed(() => {
@@ -297,39 +323,42 @@ const canSubmit = computed(() => {
 });
 
 async function fetchExchangeRate() {
-	if (!isCrossCurrency.value) {
-		form.value.exchange_rate = null;
-		cbuRate.value = null;
-		fxBaseCur.value = "";
-		fxCounterCur.value = "";
-		rateDate.value = null;
-		rateError.value = "";
-		return;
-	}
+	// Cleared first, on every path. This runs because the account or the date
+	// just changed, which means any rate already on screen was quoted for a pair
+	// or a day that is no longer the one being posted; the failure branches used
+	// to leave it standing, and `canSubmit` only ever asked whether the number
+	// was positive.
+	fetchedLineRate.value = 0;
+	cbuRate.value = null;
+	rateDate.value = null;
 	rateError.value = "";
+	form.value.exchange_rate = null;
+	if (!isCrossCurrency.value) return;
+	const asked = `${baseCurrency.value}|${payCurrency.value}|${form.value.posting_date}`;
 	try {
 		const raw = await call("stabler.api.money.get_exchange_rate_for_currencies", {
 			from_currency: baseCurrency.value,
 			to_currency: payCurrency.value,
 			posting_date: form.value.posting_date,
 		});
+		// The account or the date can have moved while this was in flight. A rate
+		// that arrives for a pair nobody is looking at any more must not land on
+		// the pair that is — it now decides the direction of the label too, not
+		// only its magnitude.
+		if (asked !== `${baseCurrency.value}|${payCurrency.value}|${form.value.posting_date}`) return;
 		if (raw > 0) {
-			// Canonical quote: always >= 1 so UZS↔USD reads "1 USD = 12 950 UZS"
-			let base, counter, R;
-			if (raw >= 1) {
-				base = baseCurrency.value; counter = payCurrency.value; R = raw;
-			} else {
-				base = payCurrency.value; counter = baseCurrency.value; R = 1 / raw;
-			}
-			fxBaseCur.value = base;
-			fxCounterCur.value = counter;
-			cbuRate.value = R;
+			// The API answers in payment units per 1 base unit; ERPNext and
+			// `submit_expense_entry` want the reciprocal — base per payment unit.
+			fetchedLineRate.value = 1 / raw;
+			// The input holds the readable quote, which is what its own label
+			// ("1 USD =") and the CBU hint beneath it both state. It used to hold
+			// the raw API number instead: 0.0000772 under a label asking for
+			// 12 953, rendered as "0.00", and retyping the 12 953 the label asked
+			// for posted a $100 expense as 0.0077 сўм.
+			cbuRate.value = rateQuote.value.value;
+			form.value.exchange_rate = rateQuote.value.value;
 			rateDate.value = form.value.posting_date;
-			form.value.exchange_rate = raw;
 		} else {
-			form.value.exchange_rate = null;
-			cbuRate.value = null;
-			rateDate.value = null;
 			rateError.value = t("No exchange rate for this date — enter manually.");
 		}
 	} catch (err) {
@@ -635,23 +664,41 @@ function removeLine(idx) {
 	form.value.lines.splice(idx, 1);
 }
 
+// Throw the form away without posting anything. This lived inside
+// `submitCreate` under the label "Save & clear" — it saved nothing, and because
+// the split button remembered the choice, the primary button then read
+// "Save & clear" and discarded six typed lines on a single click. It is not a
+// save mode (see composables/saveMode.js), it says what it does, and like every
+// other destructive action on this screen it asks first.
+async function clearForm() {
+	if (formDirty.value) {
+		const ok = await confirm({
+			title: t("Discard unsaved changes?"),
+			body: t("This clears the form without saving. The lines you entered will be lost."),
+			danger: true,
+			confirmLabel: t("Discard"),
+			cancelLabel: t("Keep Editing"),
+		});
+		if (!ok) return;
+	}
+	submitError.value = "";
+	resubmitWarning.value = false;
+	const keepDate = form.value.posting_date;
+	form.value = blankForm();
+	form.value.posting_date = keepDate;
+	ghost.value = newGhost();
+	dealLabel.value = "";
+	// blankForm() drops form.commercial_invoice, so the label has to go with it
+	// — otherwise the next entry displays a CI it is not actually tagged with.
+	ciLabel.value = "";
+	await fetchExchangeRate();
+	markFormPristine();
+}
+
 async function submitCreate(afterAction) {
 	submitError.value = "";
 	resubmitWarning.value = false;
 	persistSaveMode(afterAction);
-
-	if (afterAction === "clear") {
-		const keepDate = form.value.posting_date;
-		form.value = blankForm();
-		form.value.posting_date = keepDate;
-		ghost.value = newGhost();
-		dealLabel.value = "";
-		// blankForm() drops form.commercial_invoice, so the label has to go with it
-		// — otherwise the next entry displays a CI it is not actually tagged with.
-		ciLabel.value = "";
-		await fetchExchangeRate();
-		return;
-	}
 
 	if (!canSubmit.value) {
 		submitError.value = t("Fill in the required fields before submitting.");
@@ -685,9 +732,15 @@ async function submitCreate(afterAction) {
 		if (form.value.import_category) payload.import_category = form.value.import_category;
 	}
 	if (isCrossCurrency.value) {
-
-		const rate = Number(form.value.exchange_rate);
-		payload.exchange_rate = rate > 0 ? 1 / rate : 0;
+		// `submit_expense_entry` wants base per 1 payment unit and does
+		// `base_total = total_pay_amount * exchange_rate`. The operator typed the
+		// rate in the direction the label showed them; fx.js is the only thing
+		// that knows which direction that was.
+		payload.exchange_rate = toLineRate(
+			form.value.exchange_rate,
+			fxBaseCur.value,
+			payCurrency.value,
+		);
 	}
 
 	submitting.value = true;
@@ -724,6 +777,13 @@ async function submitCreate(afterAction) {
 				toast.success(t("Expense saved · {name}", { name: res?.name || "" }));
 			}
 			await fetchExchangeRate();
+			// The saved entry is gone from the form, so the form has nothing left
+			// to lose. Without this the dirty guard still thinks it does, and the
+			// blank form would raise "Discard unsaved changes?" — on leaving the
+			// page, and now also on Clear form. A dialog that fires when there is
+			// nothing to discard is how operators learn to click through the one
+			// that matters.
+			markFormPristine();
 		}
 	} catch (err) {
 		submitError.value = err?.message || t("Failed to submit expense.");
@@ -1110,11 +1170,19 @@ watch(activeCompany, () => {
 							<label class="form-label small">
 								{{ fxBaseCur ? `1 ${fxBaseCur} =` : t("Rate") }}
 							</label>
+							<!-- The field is denominated in the OTHER side of the quote the
+							     label states, never in the payment currency: the label says
+							     "1 USD =" and what follows it is сўм. It carried
+							     :currency="payCurrency" and the raw API rate, so a 12 953
+							     сўм quote showed as "0.00" USD. Rates need more precision
+							     than money does — formatRate's own ceiling is 6. -->
 							<MoneyInput
 								v-model="form.exchange_rate"
-								:currency="payCurrency"
+								:currency="fxCounterCur"
+								:max-fraction-digits="6"
+								:min="0"
 								:language="user.language"
-								:placeholder="payCurrency"
+								:placeholder="fxCounterCur"
 							/>
 							<div v-if="cbuRate" class="text-secondary small mt-1">
 								<i class="ti ti-building-bank" style="font-size: 0.75rem"></i>
@@ -1409,8 +1477,13 @@ watch(activeCompany, () => {
 							<a href="#" class="dropdown-item stbl-menu-item" @click.prevent="submitCreate('new')">
 								<i class="ti ti-plus me-2"></i>{{ t("Save & new") }}
 							</a>
-							<a href="#" class="dropdown-item stbl-menu-item" @click.prevent="submitCreate('clear')">
-								<i class="ti ti-eraser me-2"></i>{{ t("Save & clear") }}
+							<div class="dropdown-divider"></div>
+							<a
+								href="#"
+								class="dropdown-item stbl-menu-item text-danger"
+								@click.prevent="clearForm"
+							>
+								<i class="ti ti-eraser me-2"></i>{{ t("Clear form") }}
 							</a>
 						</div>
 					</div>

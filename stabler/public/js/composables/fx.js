@@ -27,6 +27,23 @@ export function toLineRate(value, strongCcy, accountCcy) {
 	return strongCcy === accountCcy ? v : 1 / v;
 }
 
+// One number in, both numbers out: what a foreign-currency payment leg shows on
+// screen and what it puts on the wire. `quoted` is the value sitting in the rate
+// input, read in the direction the LABEL states — "1 strongCcy = quoted weakCcy"
+// — and `accountCcy` is the currency the leg is actually paid in.
+//
+// Returns the ERPNext per-line rate (base per 1 account unit, which is what
+// `submit_expense_entry` multiplies the payment total by) and the base-currency
+// amount to preview beside it. Both come from the same direction decision on
+// purpose: the Expense form derived them separately, posting `1/quoted` while
+// previewing `amount/quoted` under a label that asked for neither, so an
+// operator who typed the rate the label requested posted a $100 expense as
+// 0.0077 сўм — and the preview printed that as "0".
+export function quotedLeg(quoted, strongCcy, accountCcy, amount = 0) {
+	const lineRate = toLineRate(quoted, strongCcy, accountCcy);
+	return { lineRate, baseAmount: (Number(amount) || 0) * lineRate };
+}
+
 // Pretty number for a rate value (no currency symbol). Big values get grouped,
 // sub-1 values keep precision.
 export function formatRate(value, language = "en") {
