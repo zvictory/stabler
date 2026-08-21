@@ -22,6 +22,7 @@ import { useRoute } from "vue-router";
 import { useSession } from "../../stores/session.js";
 import { call } from "../../api/client.js";
 import { formatMoney } from "../../composables/money.js";
+import { priceListRateForOrder } from "../../composables/fx.js";
 import { todayIso } from "../../composables/date.js";
 import { t } from "../../composables/i18n.js";
 import { useConfirm } from "../../composables/useConfirm.js";
@@ -58,6 +59,12 @@ const currency = computed(() => model.value?.currency || session.currency || "US
 
 const warehouseOptions = ref([]);
 const priceListOptions = ref([]);
+
+// Raised by fetchRate() when a line's price list is quoted in a currency this
+// invoice is not written in and no rate could be had for the pair: the line
+// keeps its existing rate rather than taking an unconverted number, and the
+// cashier is told so instead of being left with a silently wrong price.
+const rateWarning = ref(false);
 
 // A row carries both units; `qty` is the kilos the money is priced on.
 function blankRow() {
@@ -238,22 +245,80 @@ function clearCustomer() {
 	model.value.customer_name = "";
 }
 
+/* One rate per currency pair, not one per line. `refreshAllRates` walks every
+ * row, and every row of a given invoice is priced off the same list, so without
+ * this a twenty-line invoice would fire twenty CBU round trips for the identical
+ * question. Clearing it is `refreshAllRates`'s job — that is also the only retry
+ * a user can perform after a failed fetch, which is why a failure is cached too:
+ * otherwise a CBU outage costs one 5-second timeout per line. */
+const rateCache = new Map();
+
+async function pairRate(from, to, date) {
+	if (!from || !to || from === to) return 0;
+	const key = `${from}>${to}@${date || ""}`;
+	if (rateCache.has(key)) return rateCache.get(key);
+	let rate = 0;
+	try {
+		const res = await call("stabler.api.sales.get_currency_exchange_rate", {
+			from_currency: from,
+			to_currency: to,
+			date: date || undefined,
+		});
+		rate = Number(res?.exchange_rate) > 0 ? Number(res.exchange_rate) : 0;
+	} catch {
+		rate = 0;
+	}
+	rateCache.set(key, rate);
+	return rate;
+}
+
+/* A price list is quoted in its own currency; this invoice is written in
+ * another. The rule and its ONLY implementation live in `composables/fx.js` —
+ * both Sales Order forms call the same `priceListRateForOrder`. A third copy
+ * here is exactly how those two drifted apart, one of them silently wrong.
+ *
+ * The pair is fetched per price-list currency rather than held on the document
+ * the way the Sales Order forms hold theirs, because this screen has no
+ * exchange-rate model at all: no currency picker, no rate input, no
+ * `conversion_rate` on the payload. Adding one would be a product change nobody
+ * asked for. The conversion needs exactly one number — "1 price-list currency =
+ * N invoice currency" — so that is all this fetches, in the direction
+ * `get_currency_exchange_rate` documents and `priceListRateForOrder` reads.
+ *
+ * It is keyed off the currency the LOOKUP returned, never the one labelled in
+ * the price-list dropdown: `get_item_price` falls back to Standard Selling for
+ * an item the chosen list does not carry, and that list can be quoted in a
+ * different currency again. */
 async function fetchRate(row) {
 	if (!row.item_code) return;
+	let priced = null;
 	try {
-		const res = await call("stabler.api.sales.get_item_price", {
+		priced = await call("stabler.api.sales.get_item_price", {
 			item_code: row.item_code,
 			company: activeCompany.value,
 			customer: model.value.customer || undefined,
 			price_list: model.value.price_list || undefined,
 		});
-		if (res && Number(res.price_list_rate) > 0) row.rate = Number(res.price_list_rate);
 	} catch {
 		// no price list entry — the cashier types the rate
+		return;
 	}
+	const from = priced?.currency ? String(priced.currency).trim().toUpperCase() : "";
+	const to = String(currency.value || "").trim().toUpperCase();
+	const rate = await pairRate(from, to, model.value.posting_date);
+	// `priced` goes in whole: whether a price was resolved at all is the helper's
+	// decision too, so that "no price found" stays one case and not two.
+	const converted = priceListRateForOrder(priced, to, { rate, from, to }, Number(row.rate) || 0);
+	if (converted.unconverted) rateWarning.value = true;
+	else if (converted.rate) row.rate = converted.rate;
 }
 
 async function refreshAllRates() {
+	// A full re-price recomputes every line, so any warning left over from the
+	// previous price list is stale — and this is the user's retry after a rate
+	// fetch that failed.
+	rateWarning.value = false;
+	rateCache.clear();
 	for (const row of model.value.items) {
 		if (row.item_code) await fetchRate(row);
 	}
@@ -380,6 +445,14 @@ const pageTitle = computed(() =>
 					</span>
 					<span class="font-monospace fw-bold h4 m-0 text-body">
 						{{ formatMoney(totalAmount, currency, user.language) }}
+					</span>
+					<!-- The price list is quoted in another currency and there is no rate
+					     to convert it with, so the line price was left alone. Beside the
+					     total rather than in the row, because the total is the figure the
+					     cashier actually reads before submitting. -->
+					<span v-if="rateWarning" class="small text-danger fw-semibold">
+						<i class="ti ti-alert-triangle me-1"></i>
+						{{ t("Exchange rate unavailable — line prices were not converted. Enter the rate manually.") }}
 					</span>
 				</div>
 				<div class="d-flex gap-2 ms-auto">

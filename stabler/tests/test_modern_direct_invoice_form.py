@@ -340,3 +340,130 @@ class TestNoTenantIsToldAnotherTenantsName(unittest.TestCase):
 			self.list_form[gate_at : gate_at + 300],
 			"canDirectInvoice backend'in bayrağını okumuyor",
 		)
+
+
+class TestThePriceListsCurrencyIsNotIgnored(unittest.TestCase):
+	"""A price list is quoted in its own currency; this invoice is written in another.
+
+	(English, per CLAUDE.md's "implementation code is English-first". The rest of
+	this file predates that reading and is left as it is — rewriting it would be
+	a change nothing on this branch asked for.)
+
+	`fetchRate` took `price_list_rate` off `stabler.api.sales.get_item_price` and
+	wrote it straight into the line's rate field, never reading the `currency`
+	that came back beside it and describes it. A price list quoted in USD, used
+	on a so'm-denominated invoice, put `4.42` into a field meaning сўм: a ~12 000×
+	error, in the customer's favour, on every line that takes a price-list rate.
+	It did not even look wrong, because a rate of `4` is a plausible-looking
+	number and nothing on the screen says which currency the list was quoted in.
+
+	This is the same defect that was closed in both Sales Order forms, and it is
+	worse here: `router.js` sends both `invoices/new` and `invoices/:name/edit` to
+	this component with no feature flag, and the older `SalesInvoiceForm.vue`
+	calls neither `create_direct_sales_invoice` nor `update_sales_invoice` — it
+	views invoices derived from orders. This form is the only way any of the eight
+	tenants creates a direct sales invoice, so there is no unaffected fallback.
+
+	The arithmetic itself is asserted in `public/js/tests/fx.spec.js`, where
+	`make test-js` runs it against the pure function. What is guarded HERE is that
+	the component actually calls it — the one thing a unit test cannot reach,
+	since `@vue/test-utils` is not a dependency and the component cannot be
+	mounted. A second copy of the conversion is precisely how the two Sales Order
+	forms drifted apart, one of them silently wrong.
+	"""
+
+	def setUp(self):
+		self.src = FORM.read_text(encoding="utf-8") if FORM.exists() else ""
+
+	def _fetch_rate_body(self) -> str:
+		"""The body of `fetchRate` — the function that decides what a line costs."""
+		start = self.src.index("async function fetchRate(")
+		return self.src[start : self.src.index("\n}", start)]
+
+	def test_the_test_reads_the_pricing_path(self):
+		"""Anchor: if the function is renamed, every assertion below reads empty text."""
+		self.assertIn("async function fetchRate(", self.src)
+		self.assertIn("get_item_price", self._fetch_rate_body())
+
+	def test_the_raw_price_list_figure_never_reaches_the_rate_field(self):
+		"""THE defect, in one line: `row.rate = Number(res.price_list_rate)`.
+
+		A number is only meaningful together with the currency it is quoted in.
+		Assigning the price list's figure to a field denominated in the invoice's
+		currency asserts the two are the same currency — which nothing checked.
+		"""
+		for assigned in re.findall(r"row\.rate\s*=\s*([^;\n]+)", self._fetch_rate_body()):
+			self.assertNotIn(
+				"price_list_rate",
+				assigned,
+				f"`row.rate = {assigned.strip()}` writes the price list's own figure into a "
+				"field denominated in the invoice's currency, without converting it",
+			)
+
+	def test_the_currency_that_came_back_with_the_price_is_read(self):
+		"""The lookup returns `currency`, and it describes `price_list_rate` and
+		nothing else. Not reading it is what made the wrong number look right."""
+		self.assertRegex(
+			self._fetch_rate_body(),
+			r"\bpriced[?.]*\.currency\b|\bres[?.]*\.currency\b",
+			"the price lookup's own currency is never read — the form cannot know "
+			"what the number it is about to write actually means",
+		)
+
+	def test_the_conversion_comes_from_the_one_shared_helper(self):
+		"""Two copies of a currency conversion is how one of them ends up wrong and
+		nobody notices. `composables/fx.js` is the only place this rule may live."""
+		self.assertRegex(
+			self.src,
+			r'import \{[^}]*priceListRateForOrder[^}]*\} from "\.\./\.\./composables/fx\.js"',
+			"the shared conversion helper is not imported — a third copy of the rule",
+		)
+		self.assertIn(
+			"priceListRateForOrder(",
+			self._fetch_rate_body(),
+			"the line's rate is decided without the shared helper",
+		)
+
+	def test_a_refusal_is_surfaced_rather_than_guessed_at_or_hidden(self):
+		"""`unconverted: true` means no honest conversion exists.
+
+		The helper refuses in two cases — no rate for the pair, and no price-list
+		currency — and deliberately returns no number rather than a guessed one.
+		Both remaining behaviours are wrong: writing a converted-at-a-guess figure,
+		and silently keeping the old rate with nothing on screen to say so. The
+		Sales Order forms keep the line's rate and raise a banner; so does this.
+		"""
+		self.assertIn(
+			"unconverted",
+			self._fetch_rate_body(),
+			"the helper's refusal is discarded — the line silently keeps a rate "
+			"nobody was told was not converted",
+		)
+		self.assertIn(
+			'v-if="rateWarning"',
+			self.src,
+			"nothing on screen reports that a line's price was not converted",
+		)
+		self.assertIn(
+			"Exchange rate unavailable — line prices were not converted. Enter the rate manually.",
+			self.src,
+			"the refusal does not reuse the wording the Sales Order forms already "
+			"ship translated in all five languages",
+		)
+
+	def test_no_price_found_is_not_reported_as_a_currency_problem(self):
+		"""`unresolved` must reach the helper, which falls back quietly for it.
+
+		A tenant that keeps no price list would otherwise see the rate banner on
+		every single line, and a warning nobody can act on is a warning nobody
+		reads. The old code never passed `unresolved` on at all — both Sales Order
+		forms do.
+		"""
+		body = self._fetch_rate_body()
+		call_at = body.index("priceListRateForOrder(")
+		self.assertNotIn(
+			"unresolved",
+			body[:call_at],
+			"the form decides the no-price case itself instead of letting the "
+			"shared helper do it — that decision now lives in two places",
+		)
