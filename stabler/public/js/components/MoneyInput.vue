@@ -13,7 +13,7 @@
  */
 import { computed, ref, watch, onMounted } from "vue";
 
-import { LOCALE_MAP, moneyFractionDigits, moneySeparators, parseMoneyInput } from "../composables/money.js";
+import { LOCALE_MAP, groupMoneyWhileTyping, moneyFractionDigits, moneySeparators, parseMoneyInput } from "../composables/money.js";
 
 const props = defineProps({
 	modelValue: { type: [Number, String, null], default: null },
@@ -48,7 +48,6 @@ const display = ref("");
 // Turkish user read "20 820,00" inside the input and "20.820,00" in the table
 // beside it, on the same screen.
 const separators = computed(() => moneySeparators(props.language));
-const groupSep = computed(() => separators.value.group);
 const decimalSep = computed(() => separators.value.decimal);
 const localeCode = computed(() => LOCALE_MAP[props.language] || "en-US");
 // `isUZS` picks the native "сўм" suffix and nothing else. It used to decide
@@ -82,22 +81,11 @@ function format(n) {
 	}).format(num);
 }
 
-// Live grouping while typing: group the integer part, preserve the decimal part
-// the user is typing (so the caret isn't trapped after a forced ".00"). Never
-// pads decimals — they only appear once the user types the decimal separator.
-function liveGroup(text) {
-	const ds = decimalSep.value;
-	const gs = groupSep.value;
-	const s = ds === "."
-		? String(text).replace(/[^0-9.]/g, "")
-		: String(text).replace(/[^0-9,]/g, "");
-	const parts = s.split(ds);
-	const intp = (parts[0] || "").replace(/^0+(?=\d)/, "");
-	const grouped = intp.replace(/\B(?=(\d{3})+(?!\d))/g, gs);
-	if (maxFractionDigits.value === 0) return grouped; // whole-unit currency: integer only
-	if (parts.length > 1) return grouped + ds + parts.slice(1).join("").slice(0, maxFractionDigits.value);
-	return grouped;
-}
+// Live grouping while typing. The implementation lives in money.js next to
+// `parseMoneyInput`, which has to read this output back on the very next
+// keystroke — the two are one contract and keeping them apart is what let them
+// disagree.
+const liveGroup = (text) => groupMoneyWhileTyping(text, props.language, maxFractionDigits.value);
 
 function rawText(n) {
 	if (n === null || n === undefined || n === "") return "";

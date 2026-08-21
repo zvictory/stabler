@@ -468,6 +468,12 @@ guards:
 	if [ -n "$$hits" ]; then \
 	  echo "ERROR: bare <input type=\"number\"> for money -- use MoneyInput"; \
 	  echo "$$hits"; fail=1; fi; \
+	hits=$$(grep -rnE 'UZS.*\?.*(\b0\b[[:space:]]*:|Math\.round)' stabler/public/js \
+	         --include='*.vue' --include='*.js' \
+	         | grep -v 'composables/money.js' || true); \
+	if [ -n "$$hits" ]; then \
+	  echo "ERROR: a second opinion on how many decimals UZS has -- ask moneyFractionDigits()"; \
+	  echo "$$hits"; fail=1; fi; \
 	exit $$fail
 
 # Lists .py, .json and .vue files that exist in prod's package but not in git.

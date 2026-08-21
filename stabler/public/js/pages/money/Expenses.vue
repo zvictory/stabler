@@ -4,7 +4,7 @@ import { onBeforeRouteLeave } from "vue-router";
 import { storeToRefs } from "pinia";
 import { useSession } from "../../stores/session.js";
 import { call } from "../../api/client.js";
-import { formatMoney } from "../../composables/money.js";
+import { formatMoney, moneyFractionDigits } from "../../composables/money.js";
 import { formatDate, formatDateTime, todayIso, daysAgoIso} from "../../composables/date.js";
 import { t } from "../../composables/i18n.js";
 import { useConfirm } from "../../composables/useConfirm.js";
@@ -105,12 +105,12 @@ const fxCounterCur = ref("");
 const rateDate = ref(null);
 const rateError = ref("");
 
-function isUZS(cur) {
-	return (cur || "").toUpperCase() === "UZS";
-}
 
 function fmtAmt(v, cur) {
-	const dp = isUZS(cur) ? 0 : 2;
+	// Precision belongs to money.js, which reads it off the ledger. This line
+	// held a third private copy of "UZS -> whole so'm" and outlived c7607d9's
+	// correction, so a 1 500 000,50 balance rendered here as 1 500 001.
+	const dp = moneyFractionDigits(cur);
 	const s = (Number(v) || 0).toFixed(dp);
 	const [i, d] = s.split(".");
 	const gi = i.replace(/\B(?=(\d{3})+(?!\d))/g, " ");

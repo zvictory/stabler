@@ -4,6 +4,7 @@ import {
 	balanceState,
 	formatCompactMoney,
 	formatMoney,
+	groupMoneyWhileTyping,
 	moneyEpsilon,
 	moneySeparators,
 	parseMoneyInput,
@@ -227,6 +228,58 @@ describe("parseMoneyInput — reading back what a human typed", () => {
 
 	it("carries the sign", () => {
 		expect(parseMoneyInput("-1500000.50", "ru")).toBe(-1500000.5);
+	});
+});
+
+describe("grouping and parsing are one contract, read in both directions", () => {
+	// Reported 2026-08-21 on Money -> Transfers: typing 1108000 and pressing Tab
+	// left 110.8 in the field. Nothing in that screen's three-way binding can
+	// produce 110.8 from 1108000 — the loss happens one layer down, between the
+	// two halves of MoneyInput.
+	//
+	// With `group-while-typing`, MoneyInput regroups its own display on every
+	// keystroke and the caret parks at the end, so the NEXT keystroke hands
+	// `parseMoneyInput` a string this module wrote. Typing 1108000 in en walks
+	// through "1,108" -> "1,1080" -> "11,0800" -> "110,8000", and the old rule
+	// read that last lone comma as a decimal point: 110.8. The display still
+	// said "1,108,000", so the field looked right until blur reformatted it
+	// from the model. A UZS transfer of 1 108 000 would have posted as 110.8.
+	//
+	// ru/uz/uzc never saw it: their grouping mark is a non-breaking space, which
+	// `parseMoneyInput` strips before it can be mistaken for anything. en and tr
+	// group with the characters the parser has to disambiguate, so they carried
+	// the whole bug — which is why "it works on my machine" was true.
+	it.each(["en", "ru", "uz", "uzc", "tr"])(
+		"survives a digit-by-digit entry of 1108000 in %s",
+		(language) => {
+			let display = "";
+			let model = null;
+			for (const ch of "1108000") {
+				const text = display + ch; // caret parks at the end while grouping live
+				model = parseMoneyInput(text, language);
+				display = groupMoneyWhileTyping(text, language, 2);
+			}
+			expect(model).toBe(1108000);
+		},
+	);
+
+	// The same defect stated directly, so a regression names itself instead of
+	// arriving as a mysterious loop failure.
+	it("never reads its own half-finished group as a decimal point", () => {
+		expect(parseMoneyInput("1,1080", "en")).toBe(11080);
+		expect(parseMoneyInput("110,8000", "en")).toBe(1108000);
+		expect(parseMoneyInput("1.1080", "tr")).toBe(11080);
+		expect(parseMoneyInput("110.8000", "tr")).toBe(1108000);
+	});
+
+	// The narrowing must not eat the rescue it sits next to: a separator that is
+	// NOT the locale's grouping mark stays a decimal point however many digits
+	// follow it. Four-decimal unit prices and the ru numpad dot both depend on
+	// this, and both are already shipping.
+	it("still reads a foreign or four-decimal separator as the decimal point", () => {
+		expect(parseMoneyInput("1500000.5000", "ru")).toBe(1500000.5);
+		expect(parseMoneyInput("4.4150", "en")).toBe(4.415);
+		expect(parseMoneyInput("4,4150", "tr")).toBe(4.415);
 	});
 });
 

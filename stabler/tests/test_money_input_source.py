@@ -16,8 +16,8 @@ The zero-digit branch is kept and still wins over the unit-price override,
 because a currency with no sub-unit (JPY, KRW) genuinely cannot show one and an
 override of 4 must not invent it.
 
-A JS component cannot be mounted without a Frappe bootstrap, so the test reads
-the source. That is weak verification, but what it guards is a small set of
+A JS component cannot be mounted (@vue/test-utils is not a dependency here), so
+the test reads the source. That is weak verification, but what it guards is a small set of
 structural facts, and the edit that breaks any of them changes exactly this
 text. `money.spec.js` covers the arithmetic itself.
 """
@@ -27,6 +27,7 @@ import unittest
 from pathlib import Path
 
 SOURCE = Path(__file__).parents[1] / "public" / "js" / "components" / "MoneyInput.vue"
+MONEY = Path(__file__).parents[1] / "public" / "js" / "composables" / "money.js"
 
 
 class TestMoneyInputFractionContract(unittest.TestCase):
@@ -74,9 +75,28 @@ class TestMoneyInputFractionContract(unittest.TestCase):
 		)
 
 	def test_the_grouped_display_follows_the_same_maximum(self):
-		"""`liveGroup` is where typing gets cut. A hardcoded 2 would clip a unit
-		price under the key: 4,4150 typed, 4,41 kept."""
-		self.assertIn('parts.slice(1).join("").slice(0, maxFractionDigits.value)', self.body)
+		"""Live grouping is where typing gets cut. A hardcoded 2 would clip a unit
+		price under the key: 4,4150 typed, 4,41 kept.
+
+		The cut moved into `groupMoneyWhileTyping` on 2026-08-21 so a test could
+		run it against `parseMoneyInput`, which has to read its output back. The
+		contract is therefore in two halves and both are pinned: the component
+		must hand its own maximum down, and the helper must cut by the number it
+		was handed rather than one of its own.
+		"""
+		self.assertIn(
+			"groupMoneyWhileTyping(text, props.language, maxFractionDigits.value)",
+			self.body,
+			"MoneyInput no longer passes its own maximum down to the live grouper",
+		)
+		money = MONEY.read_text(encoding="utf-8")
+		block = re.search(r"export function groupMoneyWhileTyping\((.*?)\n\}", money, re.S)
+		self.assertIsNotNone(block, "could not read groupMoneyWhileTyping — has it moved again?")
+		self.assertIn(
+			'parts.slice(1).join("").slice(0, maxFractionDigits)',
+			block.group(1),
+			"the live grouper cuts by something other than the maximum it was given",
+		)
 
 
 if __name__ == "__main__":
