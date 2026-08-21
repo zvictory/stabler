@@ -3014,6 +3014,95 @@ def _normalize_bank_entry_kind(entry_kind: str | None) -> str:
 	return kind
 
 
+#: The remark `stabler.api.fx_balance` stamps on the leg it books to close a
+#: sub-unit base-currency residual (`fx_balance._JE_MARKER`). The same literal
+#: appears at `_je_detail` and `update_journal_entry` above; those predate this
+#: constant and are left alone rather than churned.
+_FX_ROUNDING_REMARK = "fx-rounding-auto"
+
+
+def _bank_entry_credit_legs(names: list[str]) -> dict[str, list[dict]]:
+	"""Every credit leg of these vouchers, grouped by voucher.
+
+	Company scope is inherited rather than restated: `names` comes from the
+	already-scoped list query, so this statement can only reach vouchers the
+	caller was allowed to see in the first place.
+	"""
+	if not names:
+		return {}
+	rows = frappe.db.sql(
+		"""
+		SELECT parent,
+		       account_currency,
+		       credit_in_account_currency AS amount,
+		       credit AS amount_base,
+		       user_remark
+		FROM `tabJournal Entry Account`
+		WHERE parent IN %(names)s AND credit_in_account_currency > 0
+		""",
+		{"names": tuple(names)},
+		as_dict=True,
+	)
+	legs: dict[str, list[dict]] = {}
+	for row in rows:
+		legs.setdefault(row["parent"], []).append(row)
+	return legs
+
+
+def _bank_entry_list_amount(legs: list[dict], base_currency: str | None, fallback_total) -> dict:
+	"""The Amount column for one Bank Entry: a number, and the unit it counts.
+
+	Sibling of `_payment_entry_list_amount`, and it exists for the same reason: a
+	currency rendered next to a number is a claim about what the number means,
+	and the claim has to be true. Two rules decide it.
+
+	**The auto FX-rounding leg is not part of the amount.** `fx_balance` books it
+	on a multi-currency voucher to close a sub-unit gap in the COMPANY currency —
+	which is exactly how a single-currency expense grew a second currency: the
+	user's leg is in the account currency, the correction is in base. Every other
+	reader already drops it (`_je_detail` flags it `is_fx_rounding`,
+	`update_journal_entry` skips it when it rebuilds the account table, and
+	`Expenses.vue` / `Transfers.vue` / `JournalEntryDrawer.vue` filter it out of
+	the leg table). The list column was the last reader still adding it in.
+
+	**A sum may name a currency only when every leg it added is in that
+	currency.** When the remaining legs genuinely span more than one there is no
+	single-currency total to report, so the answer is the voucher's base-currency
+	equivalent — the translation ERPNext already stored on each leg — flagged as
+	a conversion. The rejected alternatives all invent a figure: adding the raw
+	leg amounts produces a quantity of nothing, and letting one leg's currency
+	name the whole voucher labels a part as if it were the whole.
+
+	The previous implementation did both at once —
+	`SUM(credit_in_account_currency)` across currencies, labelled from a
+	`LIMIT 1` with no `ORDER BY` — so a 1 000 000 сўм expense could render as
+	`$1,000,000.02` (council finding P0-MONEY-1). Note that determinism here is
+	structural rather than a sort order: the currency is only ever read out of a
+	set that has exactly one member.
+	"""
+	real = [leg for leg in legs if (leg.get("user_remark") or "") != _FX_ROUNDING_REMARK]
+	if not real:
+		# Defensive: a balanced Journal Entry always has a credit side. The
+		# document's own base total is the only figure left that is true.
+		return {"amount": flt(fallback_total), "currency": base_currency, "is_base_equivalent": 1}
+
+	by_currency: dict[str, float] = {}
+	base_total = 0.0
+	for leg in real:
+		currency = leg.get("account_currency") or ""
+		by_currency[currency] = by_currency.get(currency, 0.0) + flt(leg.get("amount"))
+		base_total += flt(leg.get("amount_base"))
+
+	if len(by_currency) == 1:
+		currency, amount = next(iter(by_currency.items()))
+		# An empty `account_currency` names nothing, so it cannot label a sum
+		# either — fall through to the base equivalent rather than guess.
+		if currency:
+			return {"amount": amount, "currency": currency, "is_base_equivalent": 0}
+
+	return {"amount": base_total, "currency": base_currency, "is_base_equivalent": 1}
+
+
 @frappe.whitelist()
 def list_bank_entries(
 	company: str,
@@ -3080,7 +3169,7 @@ def list_bank_entries(
 		if frappe.db.has_column("Journal Entry", "custom_import_expense_category")
 		else "NULL AS import_category,"
 	)
-	return frappe.db.sql(
+	rows = frappe.db.sql(
 		f"""
 		SELECT je.name, je.posting_date, je.voucher_type, je.user_remark, {deal_col} {ci_col} {category_col}
 		       je.total_debit AS total_debit_base,
@@ -3089,15 +3178,7 @@ def list_bank_entries(
 		       je.multi_currency,
 		       je.docstatus,
 		       {_bank_entry_kind_sql("je")} AS entry_kind,
-		       c.default_currency AS base_currency,
-		       COALESCE(
-		           (SELECT SUM(credit_in_account_currency) FROM `tabJournal Entry Account` WHERE parent = je.name AND credit_in_account_currency > 0),
-		           je.total_credit
-		       ) AS total_amount,
-		       COALESCE(
-		           (SELECT account_currency FROM `tabJournal Entry Account` WHERE parent = je.name AND credit_in_account_currency > 0 LIMIT 1),
-		           c.default_currency
-		       ) AS currency
+		       c.default_currency AS base_currency
 		FROM `tabJournal Entry` je
 		JOIN `tabCompany` c ON c.name = je.company
 		WHERE {where} {type_clause}
@@ -3107,6 +3188,25 @@ def list_bank_entries(
 		params,
 		as_dict=True,
 	)
+	# The Amount column is decided in Python, not by a correlated subquery: the
+	# rule ("only label a sum whose legs all share one currency, and never count
+	# the auto FX-rounding leg") is a judgement about what a number may claim,
+	# and SQL could express neither half of it without a second pass anyway.
+	# See `_bank_entry_list_amount` for the reasoning and the defect it closes.
+	legs_by_voucher = _bank_entry_credit_legs([row["name"] for row in rows])
+	for row in rows:
+		display = _bank_entry_list_amount(
+			legs_by_voucher.get(row["name"], []),
+			row["base_currency"],
+			row["total_credit_base"],
+		)
+		row["total_amount"] = display["amount"]
+		row["currency"] = display["currency"]
+		# 1 when the figure is a conversion into the base currency rather than a
+		# total anybody entered — a mixed-currency voucher has no honest
+		# single-currency total, and the screen must be able to say so.
+		row["amount_is_base_equivalent"] = display["is_base_equivalent"]
+	return rows
 
 
 @frappe.whitelist()
