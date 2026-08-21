@@ -76,6 +76,7 @@ A valid veterinary certificate is required.,Требуется действую�
 "A ≤ {0}%, B ≤ {1}%, C rest — by revenue.","A ≤ {0}%, B ≤ {1}%, C прочее — по выручке."
 "A ≤ {0}%, B ≤ {1}%, C rest — by spend.","A ≤ {0}%, B ≤ {1}%, C прочее — по расходам."
 "A ≤ {0}%, B ≤ {1}%, C rest — by {2}. Submitted; returns netted.","A ≤ {0}%, B ≤ {1}%, C прочее — по {2}. Проведённые; возвраты нетто."
+AR balance per customer as of the selected date — click a row to see the ledger behind the balance.,"Дебиторская задолженность по каждому клиенту на выбранную дату — нажмите на строку, чтобы увидеть лежащий за ней регистр."
 Abbr,Сокр.
 Absent,Отсутствует
 Add at least one cash desk before switching {0} to the V1 engine: V1 reads every cash account from this table and cannot register a transfer without one.,Добавьте хотя бы одну кассу перед переключением {0} на движок V1: V1 читает все кассовые счета из этой таблицы и без неё не может зарегистрировать перевод.
@@ -101,10 +102,12 @@ Not ready — this desk cannot take or hand over a transfer.,"Не готова 
 Only an open agreement can be terminated. {0} is {1}.,Закрыть можно только открытый договор. {0} находится в статусе {1}.
 Only the remittance desk can verify a pickup code.,Проверить код получения может только касса переводов.
 Open draft {name},Открыть черновик {name}
+"Overdue cannot be answered as of a past date: an invoice's outstanding amount is its balance today, not its balance then.","«Просрочено» нельзя определить на прошлую дату: остаток по счёту — это его сальдо сегодня, а не сальдо на тот момент."
 Pay refund cash,Выдать наличные по возврату
 Pickup code,Код получения
 Purchase Receipt {0} already has a draft invoice: {1}. Submit or delete that draft instead of raising a second bill for the same goods.,У приёмки товара {0} уже есть черновик счёта: {1}. Проведите или удалите этот черновик вместо создания второго счёта за тот же товар.
 Quote updated — switching how the fee is charged recalculates the amounts.,Расчёт обновлён — смена способа удержания комиссии пересчитывает суммы.
+Receivable as of {0},Дебиторская задолженность на {0}
 Refresh the rate for this date,Обновить курс на эту дату
 Remittance engine,Движок переводов
 Same as your last transfer,Как в прошлом переводе

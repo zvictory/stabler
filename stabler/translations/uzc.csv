@@ -75,6 +75,7 @@ A valid veterinary certificate is required.,Амалдаги ветеринар�
 "A ≤ {0}%, B ≤ {1}%, C rest — by revenue.","А ≤ {0}%, B ≤ {1}%, C қолган — тушум бўйича."
 "A ≤ {0}%, B ≤ {1}%, C rest — by spend.","А ≤ {0}%, B ≤ {1}%, C қолган — харажат бўйича."
 "A ≤ {0}%, B ≤ {1}%, C rest — by {2}. Submitted; returns netted.","А ≤ {0}%, B ≤ {1}%, C қолган — {2} бўйича. Тасдиқланган; қайтаришлар нетто."
+AR balance per customer as of the selected date — click a row to see the ledger behind the balance.,Танланган санадаги мижозлар бўйича дебиторлик қарзи — қатор устига босинг ва унинг ортидаги дафтарни кўринг.
 Abbr,Қисқартма
 Absent,Йўқ
 Add at least one cash desk before switching {0} to the V1 engine: V1 reads every cash account from this table and cannot register a transfer without one.,{0} ни V1 механизмига ўтказишдан олдин камида битта касса қўшинг: V1 барча касса ҳисобларини шу жадвалдан ўқийди ва усиз ўтказмани рўйхатга ололмайди.
@@ -100,10 +101,12 @@ Not ready — this desk cannot take or hand over a transfer.,"Тайёр эма�
 Only an open agreement can be terminated. {0} is {1}.,Фақат очиқ шартномани ёпиш мумкин. {0} ҳолати: {1}.
 Only the remittance desk can verify a pickup code.,Олиб кетиш кодини фақат пул ўтказмалари кассаси текшира олади.
 Open draft {name},{name} қораламасини очиш
+"Overdue cannot be answered as of a past date: an invoice's outstanding amount is its balance today, not its balance then.","«Муддати ўтган» ўтмишдаги санага аниқланмайди: ҳисоб-фактуранинг қолдиғи бугунги қолдиқдир, ўша кунги эмас."
 Pay refund cash,Қайтариш нақдини бериш
 Pickup code,Олиш коди
 Purchase Receipt {0} already has a draft invoice: {1}. Submit or delete that draft instead of raising a second bill for the same goods.,{0} товар қабул қилиш ҳужжатида аллақачон қоралама ҳисоб-фактура бор: {1}. Худди шу мол учун иккинчи ҳисоб-фактура яратиш ўрнига ўша қораламани тасдиқланг ёки ўчиринг.
 Quote updated — switching how the fee is charged recalculates the amounts.,Ҳисоб-китоб янгиланди — комиссияни ҳисоблаш усулини ўзгартириш суммаларни қайта ҳисоблайди.
+Receivable as of {0},{0} санасидаги дебиторлик қарзи
 Refresh the rate for this date,Ушбу санага курсни янгилаш
 Remittance engine,Ўтказма механизми
 Same as your last transfer,Охирги ўтказмангиздаги каби
