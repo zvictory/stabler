@@ -4,7 +4,7 @@ import { onBeforeRouteLeave } from "vue-router";
 import { storeToRefs } from "pinia";
 import { useSession } from "../../stores/session.js";
 import { call } from "../../api/client.js";
-import { formatMoney } from "../../composables/money.js";
+import { formatMoney, moneyFractionDigits } from "../../composables/money.js";
 import { formatDateTime, todayIso, daysAgoIso} from "../../composables/date.js";
 import { t } from "../../composables/i18n.js";
 import { accountLabel } from "../../composables/accounts.js";
@@ -184,8 +184,14 @@ function reseed() {
 	recent = ["rate", "amt"]; // recv is derived
 }
 
+// Precision comes from money.js, which reads it off the ledger. This function
+// carried its own copy saying "UZS -> whole so'm", and c7607d9 moved UZS to two
+// decimals everywhere else on 2026-08-20 without reaching in here. A derived
+// UZS leg was therefore rounded to the so'm on entry while the account it
+// posted to holds kopecks.
 function roundMoney(n, currency) {
-	return (currency || "").toUpperCase() === "UZS" ? Math.round(n) : Math.round(n * 100) / 100;
+	const f = 10 ** moneyFractionDigits(currency);
+	return Math.round(n * f) / f;
 }
 
 function roundRate(rate) {
@@ -193,13 +199,9 @@ function roundRate(rate) {
 	return rate > 100 ? Math.round(rate * 100) / 100 : Math.round(rate * 1000000) / 1000000;
 }
 
-function isUZS(cur) {
-	return (cur || "").toUpperCase() === "UZS";
-}
-
-// Space-grouped amount with dot decimals — "1 200.00", "15 300 000".
+// Space-grouped amount with dot decimals — "1 200.00", "15 300 000.00".
 function fmtAmt(v, cur) {
-	const dp = isUZS(cur) ? 0 : 2;
+	const dp = moneyFractionDigits(cur);
 	const s = (Number(v) || 0).toFixed(dp);
 	const [i, d] = s.split(".");
 	const gi = i.replace(/\B(?=(\d{3})+(?!\d))/g, " ");

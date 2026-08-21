@@ -31,6 +31,12 @@ sessions. Original: `docs/archive/CLAUDE.md.2026-08-15.bak`.
 ### Money fields
 - Every numeric monetary input MUST use the shared MoneyInput component.
   Never use bare `<input type="number">` for amounts, rates, or balances.
+- **How many decimals a currency has is decided in `composables/money.js` and
+  nowhere else** — call `moneyFractionDigits(currency)`. Do not write
+  `cur === "UZS" ? 0 : 2` in a page. Three files had each grown their own copy
+  of that ternary; `c7607d9` corrected one on 2026-08-20 and the other two kept
+  showing whole so'm over a ledger that stores kopecks. `make guards` now
+  rejects a fourth.
 
 ### Date fields
 - Every date displayed in a table or detail view MUST use `formatDate(value)`
