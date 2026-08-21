@@ -59,10 +59,25 @@ simetrik oluyor: her iki varyant da statik import ediliyor
 (`SalesOrderForm.vue:17-18`), yani altı kiracı hiç render etmeyeceği Modern'i
 (1 879 satır) indiriyor; msa ve mikas da hiç render etmeyeceği Klasik'i (1 413 satır).
 
-Karşılığı: varyantlar `defineAsyncComponent` ile talep üzerine yüklenir, her kiracı
-yalnız kendi varyantını indirir. Bu, `perf/so-variant-lazy-load` dalında yürüyor.
-Rota katmanı değişmiyor — `router.js`'in 205 rotası statik `component:` taşımaya
-devam ediyor.
+**Bu bedel bugün sıfırlanamıyor, ve sebebi bizde değil.** Denendi
+(`perf/so-variant-lazy-load`, merge edilmedi): varyantlar `defineAsyncComponent` ile
+talep üzerine yüklenecek şekilde yazıldı, çalışma zamanı şekli doğru — seçilmeyen
+varyantın yükleyicisi hiç çağrılmıyor. Ama **indirilen bayt değişmiyor**, çünkü
+Frappe'nin `esbuild/esbuild.js` → `get_build_options()` fonksiyonu `bundle: true`
+diyor, `splitting` ve `format` **hiç geçmiyor**; `format: "esm"` olmadan esbuild kod
+bölme yapamaz ve dinamik import'u satır içine alır. Gerçek esbuild ile üretilen çıktıda
+her iki varyantın gövdesi tek `SalesOrderForm.<hash>.js` içinde çıkıyor — ayrı chunk yok.
+
+Bunu açacak tek şey `apps/frappe`'nin build yapılandırmasını değiştirmek: satın alınan
+şey bir SPA'nın 66 KB'ı, ödenen şey bench'teki **her Frappe uygulamasının** bundle
+biçimi ve bir çerçeve güncellemesinde geri gelecek bir yama. Kurulun bu belgedeki
+tavsiyesi: **dal merge edilmesin, açık bırakılsın.** Kod hazır ve testli; yapılandırma
+kararı verilirse bir satırlık iş kalır. Şu hâliyle merge etmek, hiçbir şey kazandırmayan
+yeni bir desen (SPA'nın ilk `defineAsyncComponent`'i), yeni bir composable ve iki yeni
+bileşen taşımak olur.
+
+Yani kararın bedeli gerçek ve şimdilik ödeniyor: altı kiracı hiç render etmeyeceği
+Modern'i indirmeye devam ediyor. Rota katmanı değişmiyor.
 
 ### Klasik kalıcı olduğu için kapatılan kusur
 
