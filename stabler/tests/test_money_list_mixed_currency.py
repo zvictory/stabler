@@ -92,7 +92,7 @@ class BankEntryListAmountTest(FrappeTestCase):
 
 	# -- fixtures ---------------------------------------------------------
 
-	def _bank_entry(self, legs: list[dict], *, multi_currency: int) -> str:
+	def _bank_entry(self, legs: list[dict], *, multi_currency: int, resave: bool = False) -> str:
 		doc = frappe.get_doc(
 			{
 				"doctype": "Journal Entry",
@@ -105,6 +105,33 @@ class BankEntryListAmountTest(FrappeTestCase):
 			}
 		)
 		doc.insert(ignore_permissions=True)
+		if resave:
+			# THE RESIDUAL CANNOT EXIST BEFORE THE SECOND SAVE, and that is a
+			# property of the framework, not of the tolerance.
+			#
+			# `fx_balance` is registered on `before_validate` (hooks.py), which
+			# frappe runs ONCE per save and BEFORE `validate`
+			# (frappe/model/document.py:run_before_save_methods). ERPNext fills
+			# the company-currency columns `debit`/`credit` inside `validate`, in
+			# `set_amounts_in_company_currency` (journal_entry.py:977). So on the
+			# insert of a document built the way the SPA builds one — only
+			# `*_in_account_currency` set — `_balance_journal_entry` calls
+			# `set_total_debit_credit()`, which sums those still-empty base
+			# columns to 0 and 0, finds `diff == 0`, and returns at
+			# `if not diff` long before it reaches the tolerance check.
+			#
+			# Nothing is wrong with that in production: ERPNext only enforces the
+			# balance in `before_submit` (journal_entry.py:196-200), never in
+			# `validate`, and every Stabler path submits on a LATER save
+			# (`doc.insert()` then `doc.submit()`), by which time the base columns
+			# are populated and the residual is booked. `_balance_payment_entry`
+			# documents the same ordering for its own doctype.
+			#
+			# A test that saves once therefore observes a voucher that never had a
+			# residual, and its exclusion assertion passes for no reason. Saving
+			# again is what production does, not a trick to provoke the hook.
+			doc = frappe.get_doc("Journal Entry", doc.name)
+			doc.save(ignore_permissions=True)
 		return doc.name
 
 	def _row(self, name: str) -> dict:
@@ -185,6 +212,10 @@ class BankEntryListAmountTest(FrappeTestCase):
 		the COMPANY currency, on the credit side. The voucher now has a $100 leg
 		and a 0,01 so'm leg both credited, and the old column summed them into
 		100.01 and labelled it with whichever the storage engine returned first.
+
+		Saved twice on purpose — see `_bank_entry`: the hook runs at
+		`before_validate`, so the base-currency columns it needs do not exist
+		yet on the first save and no residual can be booked then.
 		"""
 		if not (
 			frappe.get_cached_value("Company", self.company, "exchange_gain_loss_account")
@@ -206,17 +237,23 @@ class BankEntryListAmountTest(FrappeTestCase):
 				},
 			],
 			multi_currency=1,
+			resave=True,
 		)
 
+		# Asserted, never skipped. This is the only check on the DB path that the
+		# exclusion rule protects anything, so a voucher that turned out to carry
+		# no residual must fail here rather than quietly excuse itself — that is
+		# how the first version of this test reported OK while proving nothing.
 		remarks = frappe.get_all(
 			"Journal Entry Account",
 			filters={"parent": name},
 			pluck="user_remark",
 		)
-		if _JE_MARKER not in remarks:
-			# Without the residual there is nothing to exclude and the assertions
-			# below would pass for the wrong reason.
-			self.skipTest("fx_balance booked no residual on this document — nothing to exclude")
+		self.assertIn(
+			_JE_MARKER,
+			remarks,
+			"fx_balance booked no residual, so the exclusion below would pass for the wrong reason",
+		)
 
 		row = self._row(name)
 

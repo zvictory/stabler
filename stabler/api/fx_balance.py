@@ -104,6 +104,25 @@ def _balance_payment_entry(doc) -> None:
 
 
 def _balance_journal_entry(doc) -> None:
+	# WHICH SAVE THIS CAN ACT ON. We run at `before_validate`, which frappe calls
+	# once per save and before `validate`
+	# (frappe/model/document.py:run_before_save_methods). ERPNext fills the
+	# company-currency columns `debit`/`credit` inside `validate`, in
+	# `set_amounts_in_company_currency` (journal_entry.py:977). So on the FIRST
+	# save of a document built the way the SPA builds one — only
+	# `*_in_account_currency` set — `set_total_debit_credit()` below sums base
+	# columns that are still empty, `diff` is 0, and we return without booking
+	# anything. The residual can only appear from the second save on.
+	#
+	# That is safe rather than lucky: ERPNext enforces the balance in
+	# `before_submit` (journal_entry.py:196-200), never in `validate`, so a draft
+	# is allowed to carry the gap, and every Stabler path submits on a later save
+	# (`doc.insert()` then `doc.submit()`), by which time the columns are
+	# populated. `_balance_payment_entry` above records the same ordering for its
+	# own doctype. Written down here because a bench test built a one-save draft,
+	# found no residual, and the tolerance was blamed first — it was never
+	# reached.
+	#
 	# Strip any prior auto row first (idempotent).
 	accounts = doc.get("accounts") or []
 	if any((a.user_remark or "") == _JE_MARKER for a in accounts):
