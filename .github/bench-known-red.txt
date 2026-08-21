@@ -14,10 +14,10 @@
 #   - a module listed here that now PASSES      -> RED ("delete its line")
 # The set only tightens. Intention is not a mechanism.
 #
-# MEASURED 2026-08-16, and this pin is the whole validity of the file:
-#   commit    main @ e8b44ea
+# MEASURED 2026-08-21, and this pin is the whole validity of the file:
+#   commit    main @ 8a02988
 #   command   make test-bench
-#   scope     the 49 modules BENCH_TESTS derived on that commit
+#   scope     the 64 modules BENCH_TESTS derived on that commit
 #
 # The first version of this file said five. It was wrong, and the ratchet caught
 # it on its first real run. "Red" had been extracted by grepping the output for
@@ -30,6 +30,37 @@
 # cheaper command that looks equivalent.
 # Re-measure before trusting it on a different site or a later commit. A stale
 # baseline is worse than no baseline: it reads as verified.
+#
+# RE-MEASURED 2026-08-21, same site, same command, on main @ 8a02988. The
+# trigger was scope drift, not a suspected regression. The pin said 49 modules;
+# BENCH_TESTS had since derived 64. Fifteen modules had entered the gate after
+# the baseline was taken and not one of them had ever been measured against it,
+# so this file read as verified for a set a third larger than the one it
+# described -- the exact failure named two lines up, arrived at by standing
+# still while the suite grew. Nothing had to break for it to go stale.
+#
+# The red set came back identical: the same five modules, the same beads, none
+# newly green, and all fifteen of the previously unmeasured modules green. So no
+# entry below changed. What changed is the three lines above, which were the
+# stale part -- the debts were right, the claim about what had been checked for
+# them was not.
+#
+# The fifteen: test_ci_conversion_moves_stock, ..._moves_stock_integration,
+# test_crm_deal_trash_integration, test_currency_precision_agreement,
+# test_customer_balance_as_of_bench, test_lcv_receipt_document_type,
+# test_money_list_mixed_currency, test_pi_receipt_link,
+# test_purchase_invoice_posting_date, test_remittance_accounting_bench,
+# test_remittance_allowed_actions_bench, test_remittance_company_scope_bench,
+# test_remittance_digest_below_permlevel_bench,
+# test_tender_intake_master_fields_integration, test_unbilled_receipts_bench.
+# Named because "fifteen were green" is not checkable a year from now and the
+# list is; none was removed from the suite in the same window.
+#
+# main was at 0c44d9c when this was written, three commits past the measured
+# sha. Those three touch docs and .gitignore -- no test module, no
+# frappe-free-tests.txt, no line of this file -- so the scope above still
+# describes the tip. The measured sha is pinned, not the tip, because the tip
+# is not what ran.
 #
 # The site pin below is PARSED, not prose. `make test-bench` compares it to
 # $(TEST_SITE) and, when they differ, refuses to ratchet at all: it falls back to
