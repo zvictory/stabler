@@ -6715,3 +6715,5 @@ Receive into warehouse,Receive into warehouse
 Draft Purchase Invoice created: {0} — goods received into {1},Draft Purchase Invoice created: {0} — goods received into {1}
 {0} is a warehouse group and cannot receive stock.,{0} is a warehouse group and cannot receive stock.
 "Warehouse {0} belongs to {1}, not {2}.","Warehouse {0} belongs to {1}, not {2}."
+Kept your rate {typed} — the Central Bank rate for this date is {cbu}.,Kept your rate {typed} — the Central Bank rate for this date is {cbu}.
+Your rate {typed} was replaced with {cbu} — the accounts changed.,Your rate {typed} was replaced with {cbu} — the accounts changed.

@@ -6321,3 +6321,5 @@ Receive into warehouse,Omborga qabul qilish
 Draft Purchase Invoice created: {0} — goods received into {1},Hisob-faktura qoralamasi yaratildi: {0} — tovar {1} omboriga kirim qilindi
 {0} is a warehouse group and cannot receive stock.,"{0} — ombor guruhi, u tovar qabul qila olmaydi."
 "Warehouse {0} belongs to {1}, not {2}.","{0} ombori {2} ga emas, {1} ga tegishli."
+Kept your rate {typed} — the Central Bank rate for this date is {cbu}.,Kursingiz {typed} saqlandi — bu sanadagi Markaziy bank kursi: {cbu}.
+Your rate {typed} was replaced with {cbu} — the accounts changed.,Kursingiz {typed} {cbu} bilan almashtirildi — hisoblar oʻzgardi.

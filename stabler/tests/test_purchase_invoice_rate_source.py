@@ -1,7 +1,7 @@
 """The Purchase Invoice form's exchange-rate wiring — read out of the source.
 
 What is protected: the form must decide whether to re-fetch the rate through
-`planRateRefresh()` in `composables/purchaseInvoiceRate.js`, and must not carry
+`planRateRefresh()` in `composables/exchangeRatePolicy.js`, and must not carry
 a second copy of that policy in its own branches.
 
 Why that matters, measured: the form fetched the rate for the new posting date
@@ -18,7 +18,7 @@ hardcoded 12 800 — hundreds of billions of so'm of error in the UZS ledger.
 Both halves are load-bearing, and the second is the one that bites back: a form
 that refreshes unconditionally wipes the contract rate the user typed on
 purpose, and rewrites the rate a saved draft was stored with the moment it is
-opened. `purchaseInvoiceRate.spec.js` covers the decision itself; this file
+opened. `exchangeRatePolicy.spec.js` covers the decision itself; this file
 covers the wiring that must keep reaching it.
 
 A Vue component cannot be mounted (@vue/test-utils is not a dependency here), so
@@ -31,7 +31,7 @@ import unittest
 from pathlib import Path
 
 SOURCE = Path(__file__).parents[1] / "public" / "js" / "pages" / "purchasing" / "PurchaseInvoiceForm.vue"
-COMPOSABLE = Path(__file__).parents[1] / "public" / "js" / "composables" / "purchaseInvoiceRate.js"
+COMPOSABLE = Path(__file__).parents[1] / "public" / "js" / "composables" / "exchangeRatePolicy.js"
 
 
 class TestPurchaseInvoiceRateWiring(unittest.TestCase):
@@ -52,7 +52,7 @@ class TestPurchaseInvoiceRateWiring(unittest.TestCase):
 		into the component, where the last version of it went unnoticed for
 		675 invoices."""
 		self.assertIn("planRateRefresh", self.body)
-		self.assertIn('from "../../composables/purchaseInvoiceRate.js"', self.body)
+		self.assertIn('from "../../composables/exchangeRatePolicy.js"', self.body)
 		self.assertIn("if (plan.refresh) fetchRateHint();", self.body)
 
 	def test_the_empty_field_guard_is_gone(self):
