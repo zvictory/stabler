@@ -105,6 +105,7 @@ stabler.tests.test_sidebar_profile_menu
 stabler.tests.test_sod_rules
 stabler.tests.test_stage_event_axis
 stabler.tests.test_stock_recon
+stabler.tests.test_stock_status_export_source
 stabler.tests.test_tender_crm_source
 stabler.tests.test_tender_dashboard
 stabler.tests.test_tender_dashboard_behavior

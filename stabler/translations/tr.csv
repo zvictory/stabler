@@ -1857,6 +1857,7 @@ Exceeded (Annual),
 Exceeded (Monthly),
 Excel,Excel
 Excel (.xlsx),Excel (.xlsx)
+"Excel export of this warehouse — every item, not the on-screen filter","Bu deponun Excel dışa aktarımı — ekrandaki süzgeç değil, tüm kalemler"
 Excel — basic,Excel — temel
 Excel — professional,Excel — profesyonel
 Exception ignored.,
