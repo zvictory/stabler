@@ -167,6 +167,7 @@ stabler.tests.test_customer_balance_rounding_source
 stabler.tests.test_customer_list_grand_total_gate
 stabler.tests.test_journal_opening_entry_source
 stabler.tests.test_money_input_source
+stabler.tests.test_expense_form_source
 stabler.tests.test_lifetime_currency_source
 stabler.tests.test_freight_attribution_source
 stabler.tests.test_related_documents_contract

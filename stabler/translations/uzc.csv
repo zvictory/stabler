@@ -85,6 +85,7 @@ Agreement {0} is closed ({1}) and cannot be rescheduled.,{0} шартномас�
 "Box counts cannot be saved on this site: {0} missing on {1}. An administrator must re-run patch {2}; bench migrate will not, it has already run once.","Бу сайтда қути сонини сақлаб бўлмайди: {1} да {0} йўқ. Администратор {2} патчини қайта ишга тушириши керак; bench migrate буни қилмайди, у аллақачон ишлаган."
 Apply to all lines,Барча қаторларга қўллаш
 Check the code,Кодни текшириш
+Clear form,Формани тозалаш
 Credit ({currency}),Кредит ({currency})
 Debit ({currency}),Дебет ({currency})
 Debits equal credits in {currency}.,{currency} бўйича дебет кредитга тенг.
@@ -116,6 +117,7 @@ The pickup code was refused.,Олиб кетиш коди рад этилди.
 The posting could not be previewed.,Проводкани олдиндан кўрсатиб бўлмади.
 The V1 engine reads every cash account from the desk table. Add at least one desk before switching to V1.,V1 механизми барча касса ҳисобларини касса жадвалидан ўқийди. V1 га ўтишдан олдин камида битта касса қўшинг.
 The settings payload could not be read.,Созламалар маълумотини ўқиб бўлмади.
+This clears the form without saving. The lines you entered will be lost.,Форма сақланмасдан тозаланади. Киритилган қаторлар йўқолади.
 This company runs the {engine} remittance engine. The Transfer V1 screens stay unavailable until it is switched to V1 below.,Бу компания {engine} ўтказма механизмида ишлайди. Қуйида V1 га ўтказилмагунча Transfer V1 экранлари мавжуд бўлмайди.
 This entry does not balance. Do not hand over cash — report it.,Бу проводка тенглашмаяпти. Нақд пул берманг — хабар беринг.
 This will post,Қуйидагилар китобга ўтказилади
@@ -1568,7 +1570,7 @@ Disabled,Нофаол
 Disc,Чегирма
 Disc %,Чегирма %
 Discard,Сақламаслик
-Discard unsaved changes?,
+Discard unsaved changes?,Сақланмаган ўзгаришлар бекор қилинсинми?
 DISCHARGED,Туширилган
 Discipline,Интизом
 Discount,Чегирма
@@ -2581,7 +2583,7 @@ Kassa Bot,Касса бот
 Kassa expenses (GL),Касса харажатлари (БК)
 Kassir not found,Кассир топилмади
 Keep,Сақлаш
-Keep Editing,
+Keep Editing,Таҳрирни давом эттириш
 Keep typing to narrow…,Торайтириш учун ёзишда давом этинг…
 Keeps the audit trail; amend to correct.,Аудит изи сақланади; тузатиш учун amend қилинг.
 Kg,Кг

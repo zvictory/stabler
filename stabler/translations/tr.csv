@@ -85,6 +85,7 @@ Agreement {0} is closed ({1}) and cannot be rescheduled.,{0} sözleşmesi kapal�
 "Box counts cannot be saved on this site: {0} missing on {1}. An administrator must re-run patch {2}; bench migrate will not, it has already run once.","Bu sitede koli sayıları kaydedilemez: {1} üzerinde {0} yok. Bir yönetici {2} patch'ini yeniden çalıştırmalı; bench migrate bunu yapmaz, o bir kez çalıştı."
 Apply to all lines,Tüm satırlara uygula
 Check the code,Kodu doğrula
+Clear form,Formu temizle
 Credit ({currency}),Alacak ({currency})
 Debit ({currency}),Borç ({currency})
 Debits equal credits in {currency}.,{currency} cinsinden borç ile alacak eşit.
@@ -116,6 +117,7 @@ The pickup code was refused.,Teslim kodu reddedildi.
 The posting could not be previewed.,Muhasebe kaydı önizlenemedi.
 The V1 engine reads every cash account from the desk table. Add at least one desk before switching to V1.,V1 motoru tüm kasa hesaplarını kasa tablosundan okur. V1'e geçmeden önce en az bir kasa ekleyin.
 The settings payload could not be read.,Ayar verisi okunamadı.
+This clears the form without saving. The lines you entered will be lost.,Form kaydedilmeden temizlenir. Girdiğiniz satırlar kaybolur.
 This company runs the {engine} remittance engine. The Transfer V1 screens stay unavailable until it is switched to V1 below.,Bu şirket {engine} transfer motorunu çalıştırıyor. Aşağıdan V1'e geçirilene kadar Transfer V1 ekranları kullanılamaz.
 This entry does not balance. Do not hand over cash — report it.,Bu kayıt denkleşmiyor. Nakit vermeyin — bildirin.
 This will post,Şu kayıt işlenecek
@@ -1566,7 +1568,7 @@ Disabled,Pasif
 Disc,İndirim
 Disc %,İndirim %
 Discard,Kaydetme
-Discard unsaved changes?,
+Discard unsaved changes?,Kaydedilmemiş değişiklikler silinsin mi?
 DISCHARGED,Boşaltıldı
 Discipline,Disiplin
 Discount,İndirim
@@ -2579,7 +2581,7 @@ Kassa Bot,Kasa Bot
 Kassa expenses (GL),Kasa giderleri (defter)
 Kassir not found,Kasiyer bulunamadı
 Keep,Sakla
-Keep Editing,
+Keep Editing,Düzenlemeye devam et
 Keep typing to narrow…,Daraltmak için yazmaya devam edin…
 Keeps the audit trail; amend to correct.,Denetim izini korur; düzeltmek için amend edin.
 Kg,Kg

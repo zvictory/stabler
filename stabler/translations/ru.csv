@@ -86,6 +86,7 @@ Agreement {0} is closed ({1}) and cannot be rescheduled.,Договор {0} за
 "Box counts cannot be saved on this site: {0} missing on {1}. An administrator must re-run patch {2}; bench migrate will not, it has already run once.",На этом сайте нельзя сохранить количество коробок: {0} отсутствует в {1}. Администратор должен повторно выполнить патч {2}; bench migrate этого не сделает — он уже выполнялся.
 Apply to all lines,Применить ко всем строкам
 Check the code,Проверить код
+Clear form,Очистить форму
 Credit ({currency}),Кредит ({currency})
 Debit ({currency}),Дебет ({currency})
 Debits equal credits in {currency}.,Дебет равен кредиту в {currency}.
@@ -117,6 +118,7 @@ The pickup code was refused.,Код получения отклонён.
 The posting could not be previewed.,Не удалось показать предварительную проводку.
 The V1 engine reads every cash account from the desk table. Add at least one desk before switching to V1.,Движок V1 читает все кассовые счета из таблицы касс. Добавьте хотя бы одну кассу перед переключением на V1.
 The settings payload could not be read.,Не удалось прочитать данные настроек.
+This clears the form without saving. The lines you entered will be lost.,Форма будет очищена без сохранения. Введённые строки будут потеряны.
 This company runs the {engine} remittance engine. The Transfer V1 screens stay unavailable until it is switched to V1 below.,"Эта компания использует движок переводов {engine}. Экраны Transfer V1 остаются недоступными, пока он не переключён на V1 ниже."
 This entry does not balance. Do not hand over cash — report it.,Проводка не сходится. Не выдавайте наличные — сообщите об этом.
 This will post,Будет проведено
@@ -1573,7 +1575,7 @@ Disabled,Отключен
 Disc,Скидка
 Disc %,Скидка %
 Discard,Не сохранять
-Discard unsaved changes?,
+Discard unsaved changes?,Отменить несохранённые изменения?
 DISCHARGED,Выгружен
 Discipline,Дисциплина
 Discount,Скидка
@@ -2586,7 +2588,7 @@ Kassa Bot,Касса-бот
 Kassa expenses (GL),Кассовые расходы (ГК)
 Kassir not found,Кассир не найден
 Keep,Хранить
-Keep Editing,
+Keep Editing,Продолжить редактирование
 Keep typing to narrow…,Продолжайте вводить для уточнения…
 Keeps the audit trail; amend to correct.,Сохраняет аудит-след; для исправления — корректировка.
 Kg,Кг
