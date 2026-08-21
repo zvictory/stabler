@@ -9,12 +9,17 @@ import { call } from "../../api/client.js";
 import { t } from "../../composables/i18n.js";
 import ReportTable from "../../components/ReportTable.vue";
 import MultiSelectPicker from "../../components/MultiSelectPicker.vue";
+import DateInput from "../../components/DateInput.vue";
 
 const session = useSession();
 const { activeCompany, user } = storeToRefs(session);
 
 const onlyWithBalance = ref(1);
 const customers = ref([]);
+// Boş = canlı bakiye (bugüne kadar her şey). Bir tarih seçilince rapor aynı
+// defteri o güne kadar oynatır ve Customer Center ile 1:1 tutma sözü bilerek
+// düşer — `report.meta.basis` hangisine bakıldığını yazar.
+const asOf = ref("");
 const sortBy = ref("balance");
 const sortDir = ref("desc");
 const loading = ref(false);
@@ -33,6 +38,7 @@ const exportFilters = computed(() => ({
 	customers: customers.value,
 	sort_by: sortBy.value,
 	sort_dir: sortDir.value,
+	as_of: asOf.value,
 }));
 const detailExportFilters = computed(() => ({
 	company: activeCompany.value,
@@ -51,6 +57,7 @@ async function load() {
 			customers: customers.value,
 			sort_by: sortBy.value,
 			sort_dir: sortDir.value,
+			as_of: asOf.value,
 		});
 	} catch (err) {
 		error.value = err?.message || t("Failed to load report.");
@@ -112,7 +119,11 @@ onMounted(load);
 			size="sm"
 			@update:model-value="load"
 		/>
-		<button type="button" class="btn btn-sm btn-primary ms-auto" :disabled="loading" @click="load">
+		<div class="ms-auto">
+			<label class="form-label small mb-1">{{ t("As of") }}</label>
+			<DateInput v-model="asOf" size="sm" @update:model-value="load" />
+		</div>
+		<button type="button" class="btn btn-sm btn-primary" :disabled="loading" @click="load">
 			<i class="ti ti-refresh me-1"></i>{{ t("Apply") }}
 		</button>
 	</div>
@@ -121,6 +132,7 @@ onMounted(load);
 
 	<div v-if="report" class="card">
 		<div class="card-body">
+			<div v-if="report.meta?.basis" class="small fw-semibold mb-1">{{ report.meta.basis }}</div>
 			<div v-if="report.meta?.note" class="text-secondary small mb-2">{{ report.meta.note }}</div>
 			<ReportTable
 				:columns="report.columns"

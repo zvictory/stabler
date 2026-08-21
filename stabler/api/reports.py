@@ -319,16 +319,24 @@ def customer_balance_summary(
 	customers=None,
 	sort_by: str | None = None,
 	sort_dir: str | None = None,
+	as_of: str | None = None,
 ) -> dict:
-	"""QuickBooks-style Customer Balance Summary: every customer's CURRENT
-	receivable (all-time, all vouchers), period-independent. Same source as the
-	Customer Center (list_customers_with_balances), so the numbers tie 1:1.
+	"""QuickBooks-style Customer Balance Summary: every customer's receivable.
+
+	Without `as_of` this is the CURRENT receivable (all-time, all vouchers) and
+	ties 1:1 with the Customer Center, which reads the same source. With `as_of`
+	it is that same ledger replayed to the chosen date — and the tie is broken on
+	purpose, because the Customer Center only ever answers for today. `basis`
+	below says which of the two the reader is looking at; a report that shows a
+	cutoff while calling itself all-time is worse than one that offers no cutoff.
 	"""
 	_require_company(company)
 	_assert_company_scope(company)  # tenant isolation: reject a foreign company arg
 	from stabler.api.sales import list_customers_with_balances
 
-	data = list_customers_with_balances(company, limit=100000, only_with_balance=int(only_with_balance or 0))
+	data = list_customers_with_balances(
+		company, limit=100000, only_with_balance=int(only_with_balance or 0), as_of=as_of
+	)
 	base_ccy = _base_currency(company)
 	customer_set = set(_decode_list(customers))
 	rows = []
@@ -354,9 +362,19 @@ def customer_balance_summary(
 		{"key": "balance", "label": _("Balance"), "type": "money", "align": "end"},
 	]
 	meta = {
-		"basis": _("Live receivable (all-time, all vouchers)"),
+		"basis": (
+			_("Receivable as of {0}").format(as_of)
+			if as_of
+			else _("Live receivable (all-time, all vouchers)")
+		),
 		"currency": base_ccy,
-		"note": _("Current AR balance per customer — click a row to see the ledger behind the balance."),
+		"note": (
+			_(
+				"AR balance per customer as of the selected date — click a row to see the ledger behind the balance."
+			)
+			if as_of
+			else _("Current AR balance per customer — click a row to see the ledger behind the balance.")
+		),
 		"drill_report": "customer_balance_detail",
 		"drill_param": "customer",
 	}

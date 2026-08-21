@@ -94,6 +94,7 @@ A wrong code costs an attempt and eventually locks the transfer.,A wrong code co
 "A ≤ {0}%, B ≤ {1}%, C rest — by revenue.","A ≤ {0}%, B ≤ {1}%, C rest — by revenue."
 "A ≤ {0}%, B ≤ {1}%, C rest — by spend.","A ≤ {0}%, B ≤ {1}%, C rest — by spend."
 "A ≤ {0}%, B ≤ {1}%, C rest — by {2}. Submitted; returns netted.","A ≤ {0}%, B ≤ {1}%, C rest — by {2}. Submitted; returns netted."
+AR balance per customer as of the selected date — click a row to see the ledger behind the balance.,AR balance per customer as of the selected date — click a row to see the ledger behind the balance.
 Abbr,Abbr
 Absent,Absent
 Accounting,Accounting
@@ -310,6 +311,7 @@ Open full detail,Open full detail
 Open in-transit liability,Open in-transit liability
 Open obligation by branch and currency,Open obligation by branch and currency
 Other accounts,Other accounts
+"Overdue cannot be answered as of a past date: an invoice's outstanding amount is its balance today, not its balance then.","Overdue cannot be answered as of a past date: an invoice's outstanding amount is its balance today, not its balance then."
 Pay refund cash,Pay refund cash
 PI Group Container Status,PI Group Container Status
 PI Progress,PI Progress
@@ -356,6 +358,7 @@ Ready for payout,Ready for payout
 Reason for rejecting,Reason for rejecting
 Reason for the refund,Reason for the refund
 Reason for unlocking (recorded),Reason for unlocking (recorded)
+Receivable as of {0},Receivable as of {0}
 Receiver,Receiver
 Receiver obligation,Receiver obligation
 Receiver obligation account is not set. It is required before anything can be saved.,Receiver obligation account is not set. It is required before anything can be saved.

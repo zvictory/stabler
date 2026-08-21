@@ -369,9 +369,13 @@ def list_customers_with_balances(
 	limit: int = 2500,
 	only_with_balance: int = 0,
 	only_overdue: int = 0,
+	as_of: str | None = None,
 ):
-	"""Customers + live receivables balance (base + account currency)
+	"""Customers + receivables balance (base + account currency)
 	aggregated from GL Entry party rows against this company.
+
+	Without `as_of` the balance is live (every posted voucher, all-time). With
+	`as_of` it is the same ledger replayed to that date.
 
 	`balance_base` is in company currency, signed: positive = customer owes us.
 	`balance_acc` is the same in the customer's transaction currency; mixed-
@@ -393,6 +397,29 @@ def list_customers_with_balances(
 		conds.append("(c.customer_name LIKE %(s)s OR c.name LIKE %(s)s)")
 		params["s"] = f"%{search}%"
 	where = " AND ".join(conds)
+
+	# "Vadesi geçmiş" `Sales Invoice.outstanding_amount`'tan gelir; o alan faturanın
+	# BUGÜNKÜ kalanıdır, geçmişe dönük yeniden kurulamaz. Geçmiş bir tarih için
+	# "kimse gecikmemiş" demek, bilmediğini söylemekten kötüdür — o yüzden reddedilir.
+	if as_of and cint(only_overdue):
+		frappe.throw(
+			_(
+				"Overdue cannot be answered as of a past date: an invoice's outstanding amount is its balance today, not its balance then."
+			)
+		)
+
+	# An as-of balance is the ledger replayed to a date, so EVERY GL aggregation
+	# below carries the same bound. Bounding the per-party balance but not the
+	# Payment Entry drift correction yields a figure whose two terms disagree
+	# about which day it is — plausible, and wrong. The bare-column variant is
+	# DERIVED from the aliased one rather than written a second time, because two
+	# hand-written copies of one rule are exactly how they stop matching.
+	as_of_gl = ""
+	as_of_gl_bare = ""
+	if as_of:
+		params["as_of"] = getdate(as_of)
+		as_of_gl = "AND g.posting_date <= %(as_of)s"
+		as_of_gl_bare = as_of_gl.replace("g.", "")
 
 	# Total matching customers BEFORE the limit — lets the UI say "showing 500 of
 	# 1 240" instead of silently truncating the footer total.
@@ -436,6 +463,7 @@ def list_customers_with_balances(
 			  WHERE g.company = %(company)s
 			    AND g.party_type = 'Customer'
 			    AND g.is_cancelled = 0
+			    {as_of_gl}
 			    AND {where}
 			  GROUP BY g.party
 			) p
@@ -490,7 +518,7 @@ def list_customers_with_balances(
 
 	# 2. GL Entry balances for matching parties ONLY
 	gl_rows = frappe.db.sql(
-		"""
+		f"""
 		SELECT
 		  party,
 		  SUM(debit - credit) AS balance_base,
@@ -507,16 +535,17 @@ def list_customers_with_balances(
 		  AND party_type = 'Customer'
 		  AND party IN %(parties)s
 		  AND is_cancelled = 0
+		  {as_of_gl_bare}
 		GROUP BY party
 		""",
-		{"company": company, "parties": parties},
+		{"company": company, "parties": parties, "as_of": params.get("as_of")},
 		as_dict=True,
 	)
 	gl_map = {r["party"]: r for r in gl_rows}
 
 	# 3. Correct PE party-leg drift for matching parties ONLY
 	drift_rows = frappe.db.sql(
-		"""
+		f"""
 		SELECT g.party AS party,
 		       SUM(
 		         (CASE WHEN g.debit_in_account_currency > 0
@@ -539,6 +568,7 @@ def list_customers_with_balances(
 		    AND party_type = 'Customer'
 		    AND party IN %(parties)s
 		    AND is_cancelled = 0
+		    {as_of_gl_bare}
 		  GROUP BY voucher_no
 		  HAVING COUNT(*) = 1
 		) single ON single.voucher_no = g.voucher_no
@@ -547,9 +577,10 @@ def list_customers_with_balances(
 		  AND g.party_type = 'Customer'
 		  AND g.party IN %(parties)s
 		  AND g.is_cancelled = 0
+		  {as_of_gl}
 		GROUP BY g.party
 		""",
-		{"company": company, "parties": parties},
+		{"company": company, "parties": parties, "as_of": params.get("as_of")},
 		as_dict=True,
 	)
 	drift_map = {r["party"]: flt(r["drift"]) for r in drift_rows}
@@ -557,8 +588,10 @@ def list_customers_with_balances(
 	# Overdue AR per party — ONE batched query for the same party set the GL
 	# aggregation already uses. outstanding_amount is in the invoice currency, so
 	# multiply by conversion_rate to get a comparable base-currency figure.
+	# Kesim tarihi verildiğinde bu sorgu hiç koşmaz: cevabı zaten yok (yukarıdaki
+	# ret gerekçesi), ve boş bir harita herkesi "gecikmemiş" göstermeye yeter.
 	overdue_map: dict = {}
-	if parties:
+	if parties and not as_of:
 		overdue_rows = (
 			frappe.db.sql(
 				"""
@@ -590,7 +623,8 @@ def list_customers_with_balances(
 		r["acc_currency_count"] = cint(g.get("currency_count") or 0)
 		r["company_currency"] = company_currency
 		r["parent_customer"] = r.get("parent_customer") or None
-		r["overdue_base"] = overdue_map.get(r["name"], 0.0)
+		# None = bilinmiyor, 0.0 = gecikme yok. Kesim altında ikincisi bir iddia olur.
+		r["overdue_base"] = None if as_of else overdue_map.get(r["name"], 0.0)
 		rows.append(r)
 
 	if cint(only_with_balance):

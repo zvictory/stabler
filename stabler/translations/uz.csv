@@ -75,6 +75,7 @@ A valid veterinary certificate is required.,Amaldagi veterinariya sertifikati ta
 "A ≤ {0}%, B ≤ {1}%, C rest — by revenue.","A ≤ {0}%, B ≤ {1}%, C qolgan — tushum bo'yicha."
 "A ≤ {0}%, B ≤ {1}%, C rest — by spend.","A ≤ {0}%, B ≤ {1}%, C qolgan — xarajat bo'yicha."
 "A ≤ {0}%, B ≤ {1}%, C rest — by {2}. Submitted; returns netted.","A ≤ {0}%, B ≤ {1}%, C qolgan — {2} bo'yicha. Tasdiqlangan; qaytarishlar netto."
+AR balance per customer as of the selected date — click a row to see the ledger behind the balance.,Tanlangan sanadagi mijozlar bo‘yicha debitorlik qarzi — qator ustiga bosing va uning ortidagi daftarni ko‘ring.
 Abbr,Qisqartma
 Absent,Yo'q
 Add at least one cash desk before switching {0} to the V1 engine: V1 reads every cash account from this table and cannot register a transfer without one.,{0} ni V1 mexanizmiga o'tkazishdan oldin kamida bitta kassa qo'shing: V1 barcha kassa hisoblarini shu jadvaldan o'qiydi va usiz o'tkazmani ro'yxatga ololmaydi.
@@ -100,10 +101,12 @@ Not ready — this desk cannot take or hand over a transfer.,"Tayyor emas — bu
 Only an open agreement can be terminated. {0} is {1}.,Faqat ochiq shartnomani yopish mumkin. {0} holati: {1}.
 Only the remittance desk can verify a pickup code.,Olib ketish kodini faqat pul o‘tkazmalari kassasi tekshira oladi.
 Open draft {name},{name} qoralamasini ochish
+"Overdue cannot be answered as of a past date: an invoice's outstanding amount is its balance today, not its balance then.","«Muddati o‘tgan» o‘tmishdagi sanaga aniqlanmaydi: hisob-fakturaning qoldig‘i bugungi qoldiqdir, o‘sha kungi emas."
 Pay refund cash,Qaytarish naqdini berish
 Pickup code,Olish kodi
 Purchase Receipt {0} already has a draft invoice: {1}. Submit or delete that draft instead of raising a second bill for the same goods.,{0} tovar qabul qilish hujjatida allaqachon qoralama hisob-faktura bor: {1}. Xuddi shu mol uchun ikkinchi hisob-faktura yaratish o'rniga o'sha qoralamani tasdiqlang yoki o'chiring.
 Quote updated — switching how the fee is charged recalculates the amounts.,Hisob-kitob yangilandi — komissiyani hisoblash usulini o'zgartirish summalarni qayta hisoblaydi.
+Receivable as of {0},{0} sanasidagi debitorlik qarzi
 Refresh the rate for this date,Ushbu sanaga kursni yangilash
 Remittance engine,O'tkazma mexanizmi
 Same as your last transfer,Oxirgi o'tkazmangizdagi kabi
