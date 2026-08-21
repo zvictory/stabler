@@ -186,7 +186,20 @@ _GA = "(?:ga|га)"
 _UCHUN = "(?:uchun|учун)"
 _KURS = "(?:kurs|курс)"
 
-_DIGIT_AMT_RE = re.compile(rf"(\d[\d\s.,]*?)\s*({_MULT_RE})?(?=\s|$|[{_WORD_CHARS}])", re.IGNORECASE)
+# The left lookbehind is the whole difference between «Tender4 500ming» meaning
+# 500 000 and meaning 4. Without it the scan starts at the first digit ANYWHERE
+# in the line, so a digit glued to the end of a word is read as the figure and
+# the real amount standing next to it is never reached. Measured on mikas
+# 2026-08-10: two such entries went into the drawer as 4 and 5 so'm.
+#
+# `extract_counterparty` already skipped a match whose left neighbour is a
+# letter — it had to, or it would hunt for the payee inside a number. The rule
+# lived in one reader of this regex and not in the regex, so the other readers
+# never got it. It is a property of what counts as an amount, so it belongs here.
+_DIGIT_AMT_RE = re.compile(
+	rf"(?<![{_WORD_CHARS}])(\d[\d\s.,]*?)\s*({_MULT_RE})?(?=\s|$|[{_WORD_CHARS}])",
+	re.IGNORECASE,
+)
 
 
 def extract_amount(text: str) -> float | None:
@@ -382,12 +395,9 @@ def _fields(text: str, op: str | None) -> tuple[str | None, str | None]:
 		if stem and stem.lower() not in _CP_STOP and stem.lower() not in _KONV and detect_kassa(stem) is None:
 			purpose = stem
 
-	spans = [
-		m.span()
-		for m in _DIGIT_AMT_RE.finditer(s)
-		if re.search(r"\d", m.group(1) or "")
-		and not re.match(rf"[{_WORD_CHARS}]", s[m.start() - 1] if m.start() else " ")
-	]
+	# The left-neighbour test that used to sit here is now inside _DIGIT_AMT_RE,
+	# where every reader of an amount gets it rather than this one alone.
+	spans = [m.span() for m in _DIGIT_AMT_RE.finditer(s) if re.search(r"\d", m.group(1) or "")]
 	head = _phrase(s[: spans[0][0]]) if spans else None
 	tail = _phrase(s[spans[-1][1] :]) if spans else _phrase(s)
 

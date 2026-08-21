@@ -152,6 +152,55 @@ class TestFlowKonv(unittest.TestCase):
 		)
 
 
+class TestRecordedParseTellsTheTruth(unittest.TestCase):
+	"""What gets stored in `parsed_json` must describe the entry that was saved.
+
+	`ready` and `missing` are stamped by the FIRST parse of the free text and
+	were never touched again. The slot flow then asks its one question, `_fill`
+	answers it, `_check` returns None and the entry is recorded — complete, and
+	permanently labelled incomplete.
+
+	This is not cosmetic. On 2026-08-21 the mikas store was read to explain a
+	balance the cashiers did not recognise, and five entries carrying
+	`ready: false` were taken as proof that unfinished actions had moved money.
+	Their deltas were correct; only the label was wrong. The audit trail sent the
+	investigation after a bug that did not exist, and away from the two entries
+	that really were broken.
+
+	Reaching the confirm step already means `_check` found nothing missing, so
+	the honest stamp is simply re-asking it at the moment of recording.
+	"""
+
+	def test_a_slot_filled_entry_is_recorded_as_ready(self):
+		_, _, st, _ = handle({}, BTN_KIRIM, CTX)
+		_, _, st, _ = handle(st, "600 ming naqd", CTX)  # counterparty missing
+		self.assertEqual(st["p"]["ready"], False)
+		self.assertEqual(st["p"]["missing"], "kirim_from")
+		_, _, st, _ = handle(st, "Ali", CTX)  # answered
+		_, _, _st, act = handle(st, BTN_CONFIRM, CTX)
+		self.assertTrue(act["parsed"]["ready"], "a completed entry is still stored as unfinished")
+		self.assertIsNone(act["parsed"]["missing"])
+
+	def test_a_button_built_entry_is_recorded_as_ready(self):
+		"""The conversion flow builds its parse by hand and never sets `ready` at
+		all, so those entries stored a null — neither true nor false."""
+		_, _, st, _ = handle({}, BTN_KONV, CTX)
+		_, _, st, _ = handle(st, BTN_KONV_NAQD_USD, CTX)
+		_, _, st, _ = handle(st, "500 12900", CTX)
+		_, _, _st, act = handle(st, BTN_CONFIRM, CTX)
+		self.assertTrue(act["parsed"]["ready"])
+		self.assertIsNone(act["parsed"]["missing"])
+
+	def test_a_one_shot_entry_stays_ready(self):
+		"""The stamp must not flip an entry that was complete from the start."""
+		_, _, st, _ = handle({}, BTN_KIRIM, CTX)
+		_, _, st, _ = handle(st, "Alidan 600 ming naqd", CTX)
+		self.assertEqual(st["step"], "confirm")
+		_, _, _st, act = handle(st, BTN_CONFIRM, CTX)
+		self.assertTrue(act["parsed"]["ready"])
+		self.assertIsNone(act["parsed"]["missing"])
+
+
 class TestQuickPack(unittest.TestCase):
 	def test_confirm_has_no_yangi_qoldiq(self):
 		# 'Yangi qoldiq' projection was removed from the confirm screen.

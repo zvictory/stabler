@@ -346,6 +346,15 @@ def handle(state, text, ctx=None):
 	if step == "confirm":
 		p = dict(state.get("p") or {})
 		if t == BTN_CONFIRM:
+			# `ready`/`missing` are stamped by the first parse of the free text and
+			# were never revisited, so an entry the kassir then COMPLETED through
+			# the slot question was stored describing itself as unfinished — and a
+			# button-built conversion, which never sets them at all, stored a null.
+			# Reaching this step means `_check` found nothing missing; re-asking it
+			# is what makes the stored record describe the entry that was saved
+			# rather than the sentence it started as.
+			p["missing"] = _check(p)
+			p["ready"] = p["missing"] is None
 			action = {
 				"type": "record",
 				"op": p.get("op"),
