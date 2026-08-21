@@ -9,6 +9,10 @@
 
 > **Klasik kalsın, Modern sadece msa ve mikas'ta.**
 
+Bu, Satış Siparişi için geçerlidir. Satış Faturası ölçüldüğünde aynı daraltmanın
+uygulanamayacağı görüldü ve Zafar aynı gün **A**'yı seçti: **SI Modern sekiz kiracıda
+kalır.** Asimetri kasıtlıdır; gerekçesi aşağıda.
+
 ADR-408'in bitişi — *"tek kiracıda açılır; iki hafta gözlem; sonra varsayılan olur ve
 Klasik silinir"* — **geçersizdir**. Klasik silinmeyecek; kalan altı kiracının kalıcı
 formu odur.
@@ -27,10 +31,11 @@ eden bir üst not düşüldü.
 | | Bayrak | Bugün | Kararın gerektirdiği |
 |---|---|---|---|
 | **SO Modern** | `Stabler Company Modules.enable_modern_sales_order` | **8 kiracının hepsinde, her şirkette KAPALI** | msa + mikas'ta AÇIK |
-| **SI Modern** | *yok* | **8 kiracının hepsinde, bayraksız AÇIK** | msa + mikas dışında KAPALI |
+| **SI Modern** | *yok* | **8 kiracının hepsinde, bayraksız AÇIK** | değişiklik yok — sekiz kiracıda kalır (A) |
 
-İkisi de kararın söylediği yerde değil — ve **ters yönlerde**. SO'da Modern hiç
-açılmamış, SI'da Modern zaten her yerde.
+SO'da Modern hiç açılmamış: karar bugünkü durumu kalıcılaştırıyor, üstüne iki kiracıda
+açmayı ekliyor — ve o açma altı P0'a bağlı. SI'da Modern zaten her yerde ve bayraksız;
+karar A bunu olduğu gibi bırakıyor, yani SI tarafında yazılacak kod yok.
 
 ---
 
@@ -76,16 +81,26 @@ davranışının düzeltilmesiydi**.
 
 ---
 
-## SI — karar bu hâliyle uygulanamaz
+## SI — karar: **Modern sekiz kiracıda kalır** (A)
 
-**Bu, kararın uygulanmasını bloke eden bulgudur.**
+İlk talimat SO ve SI'yı birlikte msa+mikas'a daraltıyordu. Ölçüm bunun SI'da
+uygulanamaz olduğunu gösterdi ve Zafar 2026-08-21'de **A** seçeneğini seçti:
+**SI Modern sekiz kiracıda kalsın.** Bayrak yazılmayacak.
 
-`SalesInvoiceFormModern.vue` bir varyant değil. `router.js:344` ve `:351`,
-`invoices/new` ve `invoices/:name/edit` rotalarının **ikisini de** ona bağlıyor ve
-**hiçbir bayrak yok**. Yani sekiz kiracının hepsi bugün doğrudan satış faturasını onunla
-oluşturuyor ve düzenliyor.
+### Neden SO'dan farklı — bu asimetri kasıtlıdır, tutarsızlık değildir
 
-Eski `SalesInvoiceForm.vue` ona alternatif değil:
+Bunu yazmamın sebebi şu: gerekçesi kayıtlı olmayan bir asimetri, ileride birinin
+onu "düzeltip" SI'ya bayrak takmasını davet eder. Fark, tercihte değil, **yapıda**:
+
+| | SO | SI |
+|---|---|---|
+| Kaç gerçek varyant var? | **İki** — `SalesOrderFormClassic.vue` (1 413) ve `SalesOrderFormModern.vue` (1 879), ikisi de tam form | **Bir** |
+| Seçici | `SalesOrderForm.vue`, `enable_modern_sales_order` bayrağını okur | yok |
+| Bayrağı kapatınca ne olur? | Klasik render edilir — çalışan bir form | **Doğrudan fatura oluşturulamaz** |
+
+`SalesInvoiceFormModern.vue` bir varyant değil, tek yol. `router.js:344` ve `:351`,
+`invoices/new` ve `invoices/:name/edit` rotalarının ikisini de ona bağlıyor ve hiçbir
+bayrak yok. Eski `SalesInvoiceForm.vue` ona alternatif değil:
 
 - `create_direct_sales_invoice` ve `update_sales_invoice` çağrılarının **ikisi de yok**;
   yalnızca `sales_invoice_detail`, `submit`, `cancel`, `amend`, `delete`,
@@ -95,31 +110,53 @@ Eski `SalesInvoiceForm.vue` ona alternatif değil:
 - Rotası yalnız `invoices/:name` — görüntüleme.
 
 O ekran, **siparişten türeyen** faturaları görüntüleyip yaşam döngüsünü yöneten bir
-ekran. Doğrudan fatura oluşturan tek yol Modern.
+ekran. SI'da Modern'i kapatmak bir kapsam daraltma değil, altı kiracıdan doğrudan
+fatura oluşturmayı **geri çekmek** olurdu.
 
-**Sonuç:** "SI Modern sadece msa ve mikas'ta" dendiğinde kalan altı kiracı doğrudan
-satış faturası **hiç oluşturamaz** — geri düşecekleri bir Klasik yoktur.
+Kısaca: SO'da bayrak iki çalışan form arasında seçim yapar; SI'da bayrak, olmayan bir
+forma geçiş yapardı.
 
-### Zafar'ın cevaplaması gereken
+### Kararın bedeli: SI Modern'in P0'ları artık dal borcu değil
 
-1. **SI Modern sekiz kiracıda kalsın mı?** (SO'dan farklı olduğu kabul edilerek — SO'da
-   iki gerçek varyant var, SI'da yok.) En ucuz yol; kararın SO yarısı aynen yürür.
-2. **Yoksa altı kiracı doğrudan fatura oluşturmayı gerçekten kaybetsin mi?** O zaman
-   bu bir kapsam daraltma değil, bir **özellik geri çekmesi**dir ve kullanıcıya
-   söylenmesi gerekir.
-3. **Yoksa önce bir Klasik SI yazma formu mu yazılsın?** En pahalı yol; SI Modern'i
-   kapatmadan önce yapılması gerekir, tersi değil.
+A kararı `SalesInvoiceFormModern.vue`'yi **sekiz kiracının kalıcı ve tek** doğrudan
+fatura yolu olarak sabitliyor. Plan §5'teki `P0-SI-*` maddeleri bu yüzden "terk
+edilebilecek bir daldaki kusurlar" olmaktan çıkıp **sekiz kiracıda canlı kusurlar**
+hâline geldi. Karar A ucuz olan seçenekti; bedeli bu.
 
-(1) seçilirse bir bayrağa gerek yok. (2) veya (3) seçilirse `Stabler Company Modules`
-üzerinde `enable_modern_sales_invoice` alanı, `_MODULE_FIELDS` girdisi ve bir patch
-gerekir — SO'nun `enable_modern_sales_order` deseniyle aynı.
+### Planın bayat çıkan maddesi — §7-2
 
-Ayrıca plan §7-2 hâlâ açık: `fix/si-custom-boxes` dalı `P0-SI-1` ile ölü. Kurulun
-önerisi *"önce P0-SI-1 + P0-SI-2 düzeltilsin, uç bağlamasını doğru sebeple kırmızı gören
-bir test yazılsın, sonra merge, sonra `test-bench`"*. Bu karardan bağımsız ve hâlâ
-geçerli.
+Plan §7-2 hâlâ *"`fix/si-custom-boxes` P0-SI-1 ile ölü; önce P0-SI-1 + P0-SI-2
+düzeltilsin, sonra merge"* diyor. **Bu geçersiz, ölçüldü:**
 
----
+- `git merge-base --is-ancestor fix/si-custom-boxes main` → dal **zaten main'de**
+  (`57e512a`, *"the invoice screen lost the edits it was asked to submit, and rewrote
+  the rates of any draft merely opened"*).
+- P0-SI-1 main'de **kapalı**: `SalesInvoiceFormModern.vue:147-149` `detailApi`,
+  `createApi`, `updateApi`'yi doğru sırada taşıyor.
+- P0-SI-5 aynı commit'te kapanmış görünüyor (mesajın ikinci yarısı).
+- P0-SI-4'ün "işlem parası session'a sabitlenmiş" yarısı da kapanmış: `:57` artık
+  `model.value?.currency`'yi önce okuyor, ve toplam para birimiyle etiketli (`:382`).
+
+Yani §7-2 Zafar'dan bir karar beklemiyor; iş yapılmış, belge geride kalmış.
+
+### Karar A'nın açtığı ilk iş
+
+P0-SI-4'ün **diğer** yarısı açık ve bugün SO formlarında kapatılan kusurun tıpatıp
+aynısı: `:250` `row.rate = Number(res.price_list_rate)` yapıyor, `res.currency`'yi hiç
+okumuyor — SO formlarının aksine `res.unresolved`'ı bile kontrol etmiyor. Bir para
+biriminde kotalanmış fiyat listesi, başka bir para biriminde düzenlenen faturaya ham
+iniyor; UZS/USD büyüklüklerinde ~12 000 kat.
+
+Düzeltmesi hazır: `composables/fx.js` → `priceListRateForOrder`, bugün
+`fix/so-classic-price-list-currency` ile indi, mutasyonla doğrulandı. İkinci bir kopya
+yazılmayacak. Dal: `fix/si-modern-price-list-currency`.
+
+### Karardan etkilenmeyen, hâlâ Zafar'da olan
+
+Plan §7-5: **KDV/QQS satış faturasında ne zaman görünür olacak?** P0-SI-3 ekranın
+gösterdiği NET ile deftere yazılan KDV'li grand total'ı ayırıyor. Kurul bunu tasarım
+turunun kapsamına aldı ama vergi şablonu seçiminin bir ürün kararı olduğunu not etti.
+Karar A bunu kapatmıyor — aksine, ekran kalıcı olduğu için daha da gerekli kılıyor.
 
 ## Değişmeyenler
 

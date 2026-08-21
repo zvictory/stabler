@@ -652,10 +652,18 @@ gündeme gelmesin diye kaydediliyorlar.
 1. **SO Modern: düzeltilsin mi, terk mi edilsin?** Kurulun önerisi düzeltmek (ADR-408) —
    tasarım doğru, borç dört maddede toplanmış ve hepsi Klasik'ten taşınacak kod. Ama iki
    varyantı taşımanın maliyeti gerçek (7 kiracıya 66 KB ölü kod) ve karar sizin.
+
+   > **KARARA BAĞLANDI — 2026-08-21.** Düzeltilecek, ama tek varyanta inilmeyecek:
+   > Klasik kalıcı, Modern yalnız msa ve mikas'ta. 66 KB maliyeti `defineAsyncComponent`
+   > ile sıfırlanıyor. Bkz. `docs/plans/2026-08-21-so-si-modern-kapsam-karari.md`.
 2. **SI Modern dalı: düzeltilip merge mi, yoksa `main`'de yeniden mi?**
    `fix/si-custom-boxes` P0-SI-1 ile ölü; devir notu `make test-bench`'in de
    koşulamadığını kaydediyor. Kurul: **önce P0-SI-1 + P0-SI-2 düzeltilsin, uç bağlamasını
    doğru sebeple kırmızı gören bir test yazılsın, sonra merge, sonra `test-bench`.**
+
+   > **BAYAT — 2026-08-21.** Ölçüldü: `fix/si-custom-boxes` (`57e512a`) **zaten main'de**
+   > ve P0-SI-1 kapalı — `SalesInvoiceFormModern.vue:147-149` `detailApi`/`createApi`/
+   > `updateApi`'yi doğru sırada taşıyor. Bu madde karar beklemiyor.
 3. **Gider ekranı nakit esaslı mı kalacak?** Bugün ödenmemiş gider (tedarikçiye borç)
    kaydedilemiyor (D27). Kasıtlıysa ekranda söylenmeli; değilse ayrı bir iş paketi.
 4. **Gidere fiş eki gelecek mi?** Onay kuyruğu var, onaylayıcının bakacağı belge yok (D25).
