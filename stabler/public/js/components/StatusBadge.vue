@@ -9,10 +9,10 @@
  *
  * Contract:
  *   - String status:  <StatusBadge doctype="EHF Status" :status="row.status" />
- *       cls   = getStatusBadgeClass(doctype, status)  (STATUS_MAP[doctype][status])
+ *       cls   = resolveBadgeClass(doctype, status, null)  (STATUS_MAP[doctype][status])
  *       label = t(status)
  *   - Numeric docstatus: <StatusBadge doctype="Sales Invoice" :docstatus="d.docstatus" />
- *       cls   = getStatusBadgeClass(doctype, docstatus)  (STATUS_MAP.docstatus[n])
+ *       cls   = resolveBadgeClass(doctype, "", docstatus)  (STATUS_MAP.docstatus[n])
  *       label = getDocstatusLabel(docstatus)  ("Draft" / "Submitted" / "Cancelled")
  *   - Unknown status falls back to "bg-secondary-lt"; in DEV a console.warn
  *     flags the missing STATUS_MAP entry so gaps surface during development
@@ -22,8 +22,8 @@ import { computed } from "vue";
 import { t } from "../composables/i18n.js";
 import {
 	STATUS_MAP,
-	getStatusBadgeClass,
 	getDocstatusLabel,
+	resolveBadgeClass,
 } from "../composables/status.js";
 
 const props = defineProps({
@@ -40,9 +40,8 @@ const cls = computed(() => {
 				console.warn("STATUS_MAP missing:", props.doctype, props.status);
 			}
 		}
-		return getStatusBadgeClass(props.doctype, props.status);
 	}
-	return getStatusBadgeClass(props.doctype, props.docstatus);
+	return resolveBadgeClass(props.doctype, props.status, props.docstatus);
 });
 
 const label = computed(() =>

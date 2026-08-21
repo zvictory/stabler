@@ -696,6 +696,7 @@ async function submitDoc() {
 		:title="isCreate ? t('New Purchase Invoice') : t('Purchase Invoice')"
 		:doc-name="docName"
 		:status="status"
+		doctype="Purchase Invoice"
 		:docstatus="docstatus"
 		:loading="loading"
 		:error="loadError"

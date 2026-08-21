@@ -90,6 +90,10 @@ function blankModel() {
 		price_list: "",
 		currency: "",
 		remarks: "",
+		// A document the server has never seen has no totals yet. Present and
+		// zero rather than absent, so `taxLine()` reads one shape either way.
+		net_total: 0,
+		grand_total: 0,
 		items: [blankRow()],
 	};
 }
@@ -133,6 +137,11 @@ function fromDetail(d) {
 		price_list: d.price_list || "",
 		currency: d.currency || "",
 		remarks: d.remarks || "",
+		// P0-SI-3. `sales_invoice_detail` has always returned these two
+		// (sales.py:1677-1678) and this mapper dropped them, so the footer had
+		// no way to show the figure the server actually posts.
+		net_total: Number(d.net_total) || 0,
+		grand_total: Number(d.grand_total) || 0,
 		items: (d.items || []).map((it) => ({
 			item_code: it.item_code,
 			item_name: it.item_name || it.item_code,
@@ -366,6 +375,27 @@ const totalAmount = computed(() =>
 	model.value.items.reduce((s, r) => s + Number(r.qty || 0) * Number(r.rate || 0), 0)
 );
 
+// P0-SI-3. `totalAmount` above is summed in the browser, so it is the NET; the
+// server stores `grand_total`, which includes tax. Returns what the footer must
+// add, or null when there is nothing honest to add.
+//
+// `current` is the half that is easy to get wrong. The server's grand_total
+// describes the document as it was at the last load or save. The moment the
+// amounts on screen stop matching the server's net, that figure describes a
+// document that no longer exists, and presenting it as the total to be posted
+// swaps one false number for another.
+function taxLine(netTotal, grandTotal, screenNet) {
+	const net = Number(netTotal) || 0;
+	const grand = Number(grandTotal) || 0;
+	const tax = grand - net;
+	if (Math.abs(tax) < 0.005) return null;
+	return { tax, grand, current: Math.abs(net - screenNet) < 0.005 };
+}
+
+const postedTotals = computed(() =>
+	taxLine(model.value.net_total, model.value.grand_total, totalAmount.value)
+);
+
 // Say what is wrong before the server does, in the words of the thing missing.
 const validationError = computed(() => {
 	if (!model.value.customer) return t("Please select a customer.");
@@ -430,6 +460,7 @@ const pageTitle = computed(() =>
 		:title="pageTitle"
 		:doc-name="route.params.name || 'new'"
 		:status="status"
+		doctype="Sales Invoice"
 		:docstatus="docstatus"
 		:loading="loading"
 		:error="loadError"
@@ -445,6 +476,24 @@ const pageTitle = computed(() =>
 					</span>
 					<span class="font-monospace fw-bold h4 m-0 text-body">
 						{{ formatMoney(totalAmount, currency, user.language) }}
+					</span>
+					<!-- P0-SI-3: the figure above is the browser's sum of the lines, so it
+					     is the NET. When the server holds tax on top of it, the cashier has
+					     to see the number that will actually be posted -- and, once they
+					     start editing, has to be told that it is no longer current rather
+					     than shown a stale one. -->
+					<span v-if="postedTotals" class="small font-monospace">
+						<span v-if="postedTotals.current" class="text-secondary">
+							+ {{ formatMoney(postedTotals.tax, currency, user.language) }}
+							{{ t("Tax") }} =
+							<span class="fw-semibold text-body">
+								{{ formatMoney(postedTotals.grand, currency, user.language) }}
+							</span>
+						</span>
+						<span v-else class="text-warning fw-semibold">
+							<i class="ti ti-alert-triangle me-1"></i>
+							{{ t("Tax recalculates when you save.") }}
+						</span>
 					</span>
 					<!-- The price list is quoted in another currency and there is no rate
 					     to convert it with, so the line price was left alone. Beside the

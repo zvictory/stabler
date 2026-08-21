@@ -1012,6 +1012,7 @@ async function closeSalesOrder() {
 		:title="isCreate ? t('New Sales Order') : t('Sales Order')"
 		:doc-name="docName"
 		:status="status"
+		doctype="Sales Order"
 		:docstatus="docstatus"
 		:loading="loading"
 		:error="loadError"

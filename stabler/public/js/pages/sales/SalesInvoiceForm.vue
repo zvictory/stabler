@@ -203,6 +203,7 @@ onMounted(loadDoc);
 		:title="t('Sales Invoice')"
 		:doc-name="docName"
 		:status="form?.status"
+		doctype="Sales Invoice"
 		:docstatus="form?.docstatus"
 		:loading="loading"
 		:error="loadError"

@@ -385,6 +385,7 @@ const typeBadge = (t) => {
 		:title="isCreate ? t('New payment') : t('Payment Entry')"
 		:doc-name="docName"
 		:status="status"
+		doctype="Payment Entry"
 		:docstatus="docstatus"
 		:loading="loading"
 		:error="loadError"
