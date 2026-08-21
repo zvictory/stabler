@@ -89,7 +89,6 @@ const {
 	saving: actionRunning,
 	loadError,
 	error: actionError,
-	isDirty,
 	isCreate,
 	editable,
 	docstatus,
@@ -142,7 +141,7 @@ function clearCustomer() {
 
 const searchItems = itemSearcher("sales");
 
-async function handlePickItem({ line, item, index, field }) {
+async function handlePickItem({ line, item, field }) {
 	if (field === "item") {
 		line.item_code = item.item_code || item.name;
 		line.item_name = item.item_name;
@@ -192,6 +191,7 @@ async function submitDoc() {
 		:title="isCreate ? t('New Quotation') : t('Quotation')"
 		:doc-name="docName"
 		:status="status"
+		doctype="Quotation"
 		:docstatus="docstatus"
 		:loading="loading"
 		:error="loadError"

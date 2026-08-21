@@ -414,6 +414,27 @@ export function getStatusBadgeClass(doctype, status) {
 	return genericMap[status] || "bg-secondary-lt";
 }
 
+/**
+ * The badge class for a badge whose TEXT is `status`, falling back to `docstatus`
+ * only when there is no status word to show.
+ *
+ * This lives here, and not in the two components that draw badges, because they
+ * had already drifted apart: `StatusBadge` took the colour from the status
+ * string, `FormPage` took it from docstatus while printing the status string.
+ * The same submitted-and-overdue invoice was therefore red in a list and green
+ * on its own form. A badge states one fact, so its colour and its word have to
+ * come from the same input.
+ *
+ * `doctype` must be the real doctype name, never a page heading -- headings are
+ * translated, and a translated heading silently misses STATUS_MAP entirely.
+ */
+export function resolveBadgeClass(doctype, status, docstatus) {
+	if (status) {
+		return getStatusBadgeClass(doctype, status);
+	}
+	return getStatusBadgeClass(doctype, docstatus);
+}
+
 export function getDocstatusLabel(docstatus) {
 	if (docstatus === 0) return t("Draft");
 	if (docstatus === 1) return t("Submitted");

@@ -430,6 +430,7 @@ const pageTitle = computed(() =>
 		:title="pageTitle"
 		:doc-name="route.params.name || 'new'"
 		:status="status"
+		doctype="Sales Invoice"
 		:docstatus="docstatus"
 		:loading="loading"
 		:error="loadError"

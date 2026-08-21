@@ -6,7 +6,9 @@
  * with a routed full-page card that works for any transactional doctype.
  *
  * Props:
- *   title      — page heading (e.g. "Sales Order")
+ *   title      — page heading (e.g. "Sales Order"); TRANSLATED, so it is a
+ *                label only and must never be used as a lookup key
+ *   doctype    — real doctype name for status-colour lookup (e.g. "Sales Invoice")
  *   docName    — document name shown below title (null when creating)
  *   status     — ERPNext status string (e.g. "To Deliver and Bill")
  *   docstatus  — numeric docstatus (0 draft, 1 submitted, 2 cancelled)
@@ -22,10 +24,11 @@
 import { computed, onBeforeUnmount, onMounted } from "vue";
 import { useRouter } from "vue-router";
 import { t } from "../../composables/i18n.js";
-import { getStatusBadgeClass } from "../../composables/status.js";
+import { resolveBadgeClass } from "../../composables/status.js";
 
 const props = defineProps({
 	title: { type: String, required: true },
+	doctype: { type: String, default: null },
 	docName: { type: String, default: null },
 	status: { type: String, default: null },
 	docstatus: { type: Number, default: null },
@@ -63,12 +66,13 @@ onMounted(() => window.addEventListener("keydown", onEscKey));
 onBeforeUnmount(() => window.removeEventListener("keydown", onEscKey));
 
 // NOTE: Status colors are centralized in composables/status.js. Do not define STATUS_BADGE maps locally in pages/components.
-const badgeClass = computed(() => {
-	if (props.docstatus !== null) {
-		return getStatusBadgeClass(props.title, props.docstatus);
-	}
-	return getStatusBadgeClass(props.title, props.status);
-});
+// P0-SI-8: this used to ask docstatus for the colour while printing `status`
+// as the text, so every submitted invoice was green -- including the ones the
+// badge itself called "Overdue". It also passed `props.title` as the doctype,
+// and the title is translated, so STATUS_MAP was never reached at all.
+const badgeClass = computed(() =>
+	resolveBadgeClass(props.doctype, props.status, props.docstatus)
+);
 </script>
 
 <template>

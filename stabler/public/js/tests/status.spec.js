@@ -1,6 +1,11 @@
 import { describe, expect, it } from "vitest";
 
-import { STATUS_MAP, getDocstatusLabel, getStatusBadgeClass } from "../composables/status.js";
+import {
+	STATUS_MAP,
+	getDocstatusLabel,
+	getStatusBadgeClass,
+	resolveBadgeClass,
+} from "../composables/status.js";
 
 // CLAUDE.md: "All status badges and labels must be resolved centrally using
 // getStatusBadgeClass. No per-page status mappings." These tests guard the two
@@ -173,5 +178,57 @@ describe("getDocstatusLabel", () => {
 	it("stringifies anything outside 0/1/2 rather than returning undefined", () => {
 		expect(getDocstatusLabel(9)).toBe("9");
 		expect(getDocstatusLabel(null)).toBe("null");
+	});
+});
+
+// --- resolveBadgeClass: the colour must come from the same fact as the text ---
+//
+// P0-SI-8. `FormPage` printed `t(status)` as the badge's text but asked for its
+// colour with `docstatus`, and every submitted document has docstatus 1, which
+// the docstatus table paints green. So an invoice reading "Overdue" was drawn
+// in the same green as one reading "Paid". Measured on prod 2026-08-21: 2 812
+// Overdue + 343 Unpaid + 8 Partly Paid + 22 Credit Note Issued on anjan alone,
+// and 984 Overdue on msa -- every one of them green.
+//
+// The rule is not "prefer status". It is that a badge states ONE fact, so the
+// colour and the word must be derived from the same input. docstatus is the
+// fallback only because a document with no status string has nothing else.
+describe("resolveBadgeClass — colour follows the word the badge shows", () => {
+	it("paints a submitted-but-overdue invoice red, not submitted-green", () => {
+		expect(resolveBadgeClass("Sales Invoice", "Overdue", 1)).toBe("bg-red-lt");
+		expect(resolveBadgeClass("Sales Invoice", "Unpaid", 1)).toBe("bg-yellow-lt");
+		expect(resolveBadgeClass("Sales Invoice", "Paid", 1)).toBe("bg-green-lt");
+	});
+
+	// Green for "Paid" and green for "Overdue" is worse than no colour at all:
+	// it is a signal that actively contradicts the text next to it.
+	it("never lets two opposite statuses share a colour", () => {
+		const paid = resolveBadgeClass("Sales Invoice", "Paid", 1);
+		const overdue = resolveBadgeClass("Sales Invoice", "Overdue", 1);
+		expect(paid).not.toBe(overdue);
+	});
+
+	// The doctype key has to be a real doctype. FormPage passed `props.title` --
+	// a translated heading ("Счёт-фактура продажи", "New Sales Order") -- so the
+	// doctype table was unreachable and these two fell through to grey.
+	it("reaches the doctype table for vocabulary the generic table lacks", () => {
+		expect(resolveBadgeClass("Sales Invoice", "Credit Note Issued", 1)).toBe("bg-purple-lt");
+		expect(resolveBadgeClass("Sales Invoice", "Partly Paid", 1)).toBe("bg-blue-lt");
+	});
+
+	// A document that carries no status string still has to render something.
+	it.each([
+		[0, "bg-yellow-lt"],
+		[1, "bg-green-lt"],
+		[2, "bg-red-lt"],
+	])("falls back to docstatus %p when there is no status word", (docstatus, cls) => {
+		expect(resolveBadgeClass("Sales Invoice", "", docstatus)).toBe(cls);
+		expect(resolveBadgeClass("Sales Invoice", null, docstatus)).toBe(cls);
+	});
+
+	// Neither input present: grey, never undefined -- an unstyled badge is a
+	// bare word floating in a card header.
+	it("returns the neutral grey when it has nothing to go on", () => {
+		expect(resolveBadgeClass("Sales Invoice", "", null)).toBe("bg-secondary-lt");
 	});
 });

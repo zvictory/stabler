@@ -1,5 +1,5 @@
 <script setup>
-import { computed, nextTick, onMounted, ref, watch } from "vue";
+import { computed, onMounted, ref, watch } from "vue";
 import { storeToRefs } from "pinia";
 import { useRoute, useRouter } from "vue-router";
 import { useSession } from "../../stores/session.js";
@@ -173,7 +173,6 @@ const {
 	saving: actionRunning,
 	loadError,
 	error: actionError,
-	isDirty,
 	isCreate,
 	editable,
 	docstatus,
@@ -237,7 +236,7 @@ function clearSupplier() {
 const searchItems = itemSearcher("purchase");
 
 // Line Item Editor pick handler
-async function handlePickItem({ line, item, index, field }) {
+async function handlePickItem({ line, item, field }) {
 	if (field === "item") {
 		line.item_code = item.item_code || item.name;
 		line.item_name = item.item_name;
@@ -379,6 +378,7 @@ function handleValidityChange(valid) {
 		:title="isCreate ? t('New Purchase Order') : t('Purchase Order')"
 		:doc-name="docName"
 		:status="status"
+		doctype="Purchase Order"
 		:docstatus="docstatus"
 		:loading="loading"
 		:error="loadError"
@@ -534,7 +534,7 @@ function handleValidityChange(valid) {
 				<th v-if="showDiscounts" style="width: 130px;">{{ t("Disc") }}</th>
 			</template>
 
-			<template #row-extra="{ line, index }">
+			<template #row-extra="{ line }">
 				<td v-if="!editable" class="align-top text-end font-monospace py-2">
 					<span v-if="Number(line.received_qty || 0) > 0" class="badge bg-blue-lt">{{ Number(line.received_qty).toFixed(2) }}</span>
 					<span v-else class="text-secondary">—</span>
