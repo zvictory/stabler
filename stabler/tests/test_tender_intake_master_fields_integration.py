@@ -45,7 +45,7 @@ class TestTenderIntakeMasterFieldsRoundTrip(FrappeTestCase):
 		# `has_column`/`table_exists` probes first -- a site without the crm app
 		# must read as "not applicable", not as a failed migrate
 		# (.claude/rules/20-backend-migrations.md).
-		for doctype in ("CRM Deal", "CRM Organization"):
+		for doctype in ("CRM Deal", "CRM Organization", "CRM Deal Status"):
 			if not frappe.db.table_exists(doctype):
 				self.skipTest(f"site does not carry {doctype}")
 		if not frappe.db.has_column("CRM Deal", "custom_tender_intake"):
@@ -53,6 +53,9 @@ class TestTenderIntakeMasterFieldsRoundTrip(FrappeTestCase):
 		self.company = frappe.db.get_value("Company", {}, "name")
 		if not self.company:
 			self.skipTest("a Company fixture is required")
+		self.status = frappe.db.get_value("CRM Deal Status", {"type": "Open"}, "name")
+		if not self.status:
+			self.skipTest("an open CRM Deal Status fixture is required")
 		self._enable_tender_module()
 		self.organization = self._organization()
 		self.deal = self._make_deal()
@@ -63,26 +66,49 @@ class TestTenderIntakeMasterFieldsRoundTrip(FrappeTestCase):
 		if frappe.db.exists("CRM Deal", self.deal.name):
 			frappe.delete_doc("CRM Deal", self.deal.name, force=True, ignore_permissions=True)
 
-	def _module_row(self):
-		from stabler.stabler.doctype.stabler_settings.stabler_settings import get_company_module_row
-
-		return get_company_module_row(self.company)
-
 	def _enable_tender_module(self):
 		"""Tender is opt-in per company (.claude/rules/30-tenant-modules.md) —
 		`_deal_scope` refuses even an Administrator when the company's own
 		`enable_tender` flag is off, so the fixture must set it regardless of
-		the test site's tenant."""
-		row = self._module_row()
+		the test site's tenant.
+
+		A child-table row lives only inside the parent `Document` instance
+		that read it out of the DB — it carries `parentfield`/`parenttype`
+		names, not a live back-reference. An earlier version of this method
+		read the row through `get_company_module_row` (which owns its own
+		internal `frappe.get_single(...)` call), mutated that row, then
+		called `frappe.get_single("Stabler Settings")` *again* and saved
+		that — a second, independent fetch the mutation never touched. The
+		save persisted the site's unchanged state and the flip silently
+		didn't happen (`enable_tender` stayed 0, the `Stabler Company
+		Modules` default), which is what production caught: `save_deal_intake`
+		re-reads `module_map_for` fresh a moment later and throws. Fetching
+		once and saving that same instance is the fix.
+		"""
+		from stabler.stabler.doctype.stabler_settings.stabler_settings import _default_enable_row
+
+		settings = frappe.get_single("Stabler Settings")
+		row = next((r for r in settings.company_modules or [] if r.company == self.company), None)
+		self._created_module_row = row is None
+		if row is None:
+			row = settings.append("company_modules", _default_enable_row(self.company))
 		self._prior_enable_tender = row.get("enable_tender")
 		row.enable_tender = 1
-		frappe.get_single("Stabler Settings").save(ignore_permissions=True)
+		settings.save(ignore_permissions=True)
 		frappe.db.commit()
 
 	def _restore_tender_module(self):
-		row = self._module_row()
-		row.enable_tender = self._prior_enable_tender
-		frappe.get_single("Stabler Settings").save(ignore_permissions=True)
+		"""Leave the site as found: drop a row this fixture created, or put
+		back the flag's prior value on one that already existed."""
+		settings = frappe.get_single("Stabler Settings")
+		row = next((r for r in settings.company_modules or [] if r.company == self.company), None)
+		if row is None:
+			return
+		if self._created_module_row:
+			settings.remove(row)
+		else:
+			row.enable_tender = self._prior_enable_tender
+		settings.save(ignore_permissions=True)
 		frappe.db.commit()
 
 	def _organization(self) -> str:
@@ -96,10 +122,37 @@ class TestTenderIntakeMasterFieldsRoundTrip(FrappeTestCase):
 		return org.name
 
 	def _make_deal(self):
+		"""Deliberately NOT `deal_type = "Tender"`.
+
+		`save_deal_intake`/`deal_intake` (what this module tests) never read
+		`deal_type` -- checked, it appears nowhere in `_deal_scope` or
+		`_clean_intake`. But `hooks.py`'s `CRM Deal` `validate` list also
+		carries `tender_master.validate_deal_parent_tender`, which throws for
+		a NEW `deal_type="Tender"` deal with no `custom_parent_tender`, once
+		the company's tender module is on (`api/tender_master.py:403-432`) --
+		which this fixture now genuinely turns on. In real production that
+		parent link is created transparently by `crm.save_deal`'s
+		`_apply_tender_parent_link` (`api/crm.py:152`), which this fixture
+		does not go through (it writes the CRM Deal directly, the same way
+		`test_crm_deal_trash_integration.py` does). Reproducing that whole
+		Tender Master auto-creation here would pull in a parallel, largely
+		superseded subsystem (see `test_tender_flow_contract.py`'s "tek
+		seviyeli mimaride lot kavramı yok") this module has nothing to do
+		with -- so the simplest correct fixture is a plain CRM Deal.
+
+		`status` / `deal_owner` / `next_action_at` are set because
+		`crm.validate_crm_deal_hygiene` (the other `CRM Deal` validate hook)
+		requires an owner and a dated next action on an open deal whenever
+		the site-wide `Stabler Settings.enforce_crm_next_action` switch is
+		on -- a global setting this fixture cannot see from here, so it
+		satisfies the requirement unconditionally rather than gamble on it.
+		"""
 		deal = frappe.new_doc("CRM Deal")
 		deal.company = self.company
 		deal.organization = self.organization
-		deal.deal_type = "Tender"
+		deal.status = self.status
+		deal.deal_owner = frappe.session.user
+		deal.next_action_at = frappe.utils.now_datetime()
 		deal.insert(ignore_permissions=True, ignore_mandatory=True)
 		return deal
 
