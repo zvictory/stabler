@@ -455,8 +455,15 @@
 			var SORT_DIR = "desc"; /* "desc" = Z-A (Newest first), "asc" = A-Z (Oldest first) */
 
 			/* How far back the cashier can step. The store keeps everything — nothing is
-			   ever deleted — so this bounds the browsing, not the retention. */
-			var WINDOW_DAYS = 7;
+			   ever deleted — so this bounds the browsing, not the retention.
+
+			   The number is NOT written here. It belongs to shadow_store.WINDOW_DAYS,
+			   which is what the query actually used, and it arrives with every
+			   response. A copy in this file would be a second opinion about the size
+			   of the window, free to disagree with the data it is bounding. Nothing
+			   reads it before the first response: the arrows are only wired up once
+			   render() has run. */
+			var WINDOW_DAYS = null;
 			var TODAY = "";
 			var VIEW_DATE = "";
 
@@ -465,6 +472,14 @@
 				var m = String(date.getMonth() + 1).padStart(2, "0");
 				var d = String(date.getDate()).padStart(2, "0");
 				return y + "-" + m + "-" + d;
+			}
+
+			/* "21.08" — the compact form, for the range badge where the year would be
+			   the same on both sides and only take space. */
+			function isoToShort(iso) {
+				if (!iso) return "";
+				var parts = String(iso).split("-");
+				return parts.length === 3 ? parts[2] + "." + parts[1] : iso;
 			}
 
 			function isoToDisplay(iso) {
@@ -562,7 +577,13 @@
 				
 				function runTxt(v) { return (Number(v) < 0 ? "−" : "") + smart(v); }
 				
-				var opening = Number((LAST.opening_balances || {})[k.id]) || 0;
+				/* The running column spans the whole window now, so it has to start
+				   from the window's opening. Starting from the day's own opening would
+				   restate every row against a balance six days too late — the last row
+				   would still land on the right total, and every row above it would be
+				   wrong. */
+				var openingSource = LAST.window_opening_balances || LAST.opening_balances || {};
+				var opening = Number(openingSource[k.id]) || 0;
 				var affecting = (LAST.entries || []).filter(function (e) {
 					return (e.legs || []).some(function (l) { return l.kassa === k.id; });
 				});
@@ -585,7 +606,11 @@
 						'<div class="empty-state">' +
 						'<div class="empty-icon">📂</div>' +
 						"<div>" +
-						(VIEW_DATE === TODAY ? "Bugun" : isoToDisplay(VIEW_DATE)) +
+						(LAST.since && LAST.since !== VIEW_DATE
+							? isoToShort(LAST.since) + " – " + isoToShort(VIEW_DATE) + " oralig'ida"
+							: VIEW_DATE === TODAY
+								? "Bugun"
+								: isoToDisplay(VIEW_DATE)) +
 						" ushbu kassa bo'yicha operatsiyalar yo'q</div>" +
 						'</div>' +
 						'<table><tbody>' +
@@ -732,7 +757,12 @@
 
 			function render(summary) {
 				LAST = summary;
-				dateBadgeEl.textContent = "📅 " + isoToDisplay(summary.date || "");
+				WINDOW_DAYS = Number(summary.window_days) || WINDOW_DAYS;
+				/* The badge names the span on screen, not one end of it: the ledger
+				   below holds every day between these two. */
+				dateBadgeEl.textContent = summary.since
+					? "📅 " + isoToShort(summary.since) + " – " + isoToShort(summary.date || "")
+					: "📅 " + isoToDisplay(summary.date || "");
 				btnPrevDayEl.disabled = VIEW_DATE <= earliestIso(TODAY);
 				btnNextDayEl.disabled = VIEW_DATE >= TODAY;
 				renderCards(summary.balances || {});

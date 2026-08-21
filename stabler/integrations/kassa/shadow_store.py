@@ -25,8 +25,26 @@ import datetime
 import json
 import sqlite3
 import time
+import uuid
 
 KASSAS = ("nakit", "pk", "usd")
+
+# How much of the ledger the mini app shows and how far its arrows reach. The
+# store keeps everything — nothing here is ever deleted — so this bounds the
+# VIEW, not the retention. It lives in this module because this module is the
+# one both the page and the endpoint have to agree with; the page carried its
+# own copy until 2026-08-21, which is one `7` in two files and free to drift.
+WINDOW_DAYS = 7
+
+
+def window_start(date: str) -> str:
+	"""First day of the window ending on `date`, inclusive of both ends.
+
+	WINDOW_DAYS of 7 means `date` plus the six before it. Off by one here loses
+	the cashier a day of their own work at the far end of the week.
+	"""
+	return (datetime.date.fromisoformat(date) - datetime.timedelta(days=WINDOW_DAYS - 1)).isoformat()
+
 
 _SCHEMA = """
 CREATE TABLE IF NOT EXISTS shadow_entry(
@@ -77,7 +95,13 @@ def add_entry(
 	"""
 	ts = int(ts if ts is not None else time.time() * 1000)
 	date = date or _today()
-	eid = "kse%d%03d" % (ts, int((time.time() % 1) * 1000))
+	# `ts` is milliseconds and the suffix used to be milliseconds-within-the-second
+	# read a moment later — the same clock twice, so two entries written inside one
+	# millisecond produced the same id and the second one died on the PRIMARY KEY.
+	# The bot reports that to the kassir as "❌ Xatolik" and the entry is gone. A
+	# human tapping Confirm cannot hit it; anything writing in a loop can, and the
+	# tests in this repo did.
+	eid = "kse%d%s" % (ts, uuid.uuid4().hex[:8])
 	con = connect(path)
 	try:
 		con.execute(
@@ -197,13 +221,21 @@ def opening_balances(path, company, date) -> dict:
 	return {k: float(declared[k]) if k in declared else float(carried.get(k, 0.0)) for k in keys}
 
 
-def list_entries(path, company, date) -> list:
+def list_entries(path, company, date, since=None) -> list:
+	"""Entries from `since` through `date`, both ends included.
+
+	`since` defaults to `date`, so a caller that wants one day still gets one day.
+	The mini app asks for a week: a till statement answers "what moved", and a day
+	at a time behind arrows is not that question — measured 2026-08-21, when a
+	week of real work read as an empty screen because the cashier never found the
+	arrows.
+	"""
 	con = connect(path)
 	try:
 		rows = con.execute(
 			"SELECT id,ts,op,counterparty,purpose,rate,raw_text,parsed_json "
-			"FROM shadow_entry WHERE company=? AND date=? ORDER BY ts DESC",
-			(company, date),
+			"FROM shadow_entry WHERE company=? AND date>=? AND date<=? ORDER BY ts DESC",
+			(company, since or date, date),
 		).fetchall()
 		out = []
 		for r in rows:

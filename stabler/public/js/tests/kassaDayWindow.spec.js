@@ -15,6 +15,11 @@ import { describe, expect, it } from "vitest";
 // wrong — the day-window helpers are lifted out and actually run.
 const here = dirname(fileURLToPath(import.meta.url));
 const html = readFileSync(resolve(here, "../../../www/kassa.html"), "utf8");
+// The window's size belongs to the module that runs the query. The page used to
+// hold its own `7`, which is one number in two languages and free to drift: the
+// arrows could reach further back than the endpoint was willing to return, and
+// the extra days would come back empty and read as "nothing happened".
+const store = readFileSync(resolve(here, "../../../integrations/kassa/shadow_store.py"), "utf8");
 
 const lift = (name) => {
 	const at = html.indexOf(`function ${name}(`);
@@ -30,7 +35,7 @@ const lift = (name) => {
 	return html.slice(at, i + 1);
 };
 
-const windowDays = Number(/var WINDOW_DAYS = (\d+);/.exec(html)?.[1]);
+const windowDays = Number(/^WINDOW_DAYS = (\d+)$/m.exec(store)?.[1]);
 const NAMES = ["toIso", "shiftIso", "earliestIso", "clampIso"];
 // One sandbox for all four: clampIso calls earliestIso calls shiftIso calls toIso,
 // so lifting them separately would only prove they parse.
@@ -43,6 +48,11 @@ const { shiftIso, earliestIso, clampIso } = new Function(
 describe("kassa mini app — the browsable day window", () => {
 	it("declares a seven-day window, which is what the cashiers asked for", () => {
 		expect(windowDays).toBe(7);
+	});
+
+	it("keeps the number in one language — the page carries none of its own", () => {
+		expect(html).not.toMatch(/var WINDOW_DAYS = \d/);
+		expect(html).toContain("summary.window_days");
 	});
 
 	it("steps to the calendar day before", () => {
@@ -113,5 +123,13 @@ describe("kassa mini app — the browsable day window", () => {
 		// the arrows would repaint the same day forever.
 		expect(html).toContain("date: VIEW_DATE,");
 		expect(html).not.toContain("date: toIso(new Date()),");
+	});
+
+	it("runs its balance column from the window's opening, not the day's", () => {
+		// The ledger now spans the whole window. Started from `opening_balances`
+		// — the balance at the start of the LAST day — every row but the final
+		// one would be wrong, and the final one right, which is the hardest
+		// version of this mistake to notice.
+		expect(html).toContain("window_opening_balances");
 	});
 });
