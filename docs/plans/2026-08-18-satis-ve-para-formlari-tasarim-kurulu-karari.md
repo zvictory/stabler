@@ -443,6 +443,13 @@ Bunlar `/money` içinde **kendi modüllerinin tek aykırısı** — `Approvals`,
 `BudgetVsActual`, `FxRevaluation`, `PaymentEntries` hepsi zaten uyumlu.
 
 ### ADR-408 — `modern_sales_order` bayrağı: düzeltilir ve tek varyanta inilir
+
+> **GEÇERSİZ — 2026-08-21.** Bu ADR'nin bitişi (*"varsayılan olur ve Klasik
+> silinir"*) Zafar tarafından geri alındı: **Klasik kalıcıdır, Modern yalnız msa ve
+> mikas'ta açılacaktır.** Aşağıdaki gerekçe ve taşıma listeleri geçerliliğini
+> korur; yalnız varış noktası değişti. Yürürlükteki karar:
+> `docs/plans/2026-08-21-so-si-modern-kapsam-karari.md`.
+
 İki 1400-1900 satırlık varyantı süresiz taşımak seçenek değil — ikisi de statik import
 ediliyor (`SalesOrderForm.vue:17-18`), yani **7 kiracının hepsi hiç görmeyeceği 66 KB'ı
 indiriyor.** Karar: Modern, ADR-401 + ADR-405 + P0-SO-5/6 kapandıktan ve Anlaşma
