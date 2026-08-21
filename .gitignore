@@ -48,6 +48,14 @@ scratch/
 .ruff_cache/
 .smoke/
 
+# Quarantine dir the cowork tooling moves superseded files and regenerable output
+# into. Not a cache: it also collects stale git lock files and dead duplicates of
+# real source. It held 267M on 2026-08-21 -- almost all of it graphify output
+# under names the `graphify-out/` line above does NOT match, because the mover
+# renames each one after the tree it came from. Untracked and noisy is the worst
+# combination here: `deploy only from a clean tree` is the rule this violated.
+_to_delete/
+
 # Per-machine Claude Code state. NOT the whole .claude/ -- .claude/workflows/ is
 # tracked and shared on purpose; only the entries below are machine-local.
 # (Counting them in the comment was one edit away from being wrong, so it doesn't.)
