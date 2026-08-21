@@ -1289,6 +1289,25 @@ _INTAKE_KEYS_STR = (
 	"purchase_method",
 	"fx_currency",
 	"notes",
+	# Tender master fields TenderMasterDrawer.vue also sends in intakePayload
+	# (save()/:255) and restores from the read-back (watch(props.deal)/:166).
+	# `title` has no other home at all: it is not in crm.py's
+	# _DEAL_MUTABLE_FIELDS, so this JSON blob is its only storage — dropping it
+	# here made every edit silently overwrite the real title with the
+	# customer's organization name (TenderMasterDrawer.vue:147's placeholder
+	# fallback, never corrected because the read-back came back empty).
+	# publication_date / submission_deadline are dates, kept as ISO strings
+	# like the existing bid_deadline / delivery_deadline / guarantee_return
+	# above them, not in _INTAKE_KEYS_NUM: _num() would silently coerce a date
+	# string to 0.0. tender_no / source / currency mirror real CRM Deal
+	# fields already validated on save_deal's own write path; this copy is
+	# only the drawer's read-back cache.
+	"title",
+	"tender_no",
+	"source",
+	"publication_date",
+	"submission_deadline",
+	"currency",
 )
 _INTAKE_KEYS_NUM = (
 	"volume",
@@ -1298,6 +1317,8 @@ _INTAKE_KEYS_NUM = (
 	"fx_amount",
 	"fx_bid_rate",
 	"fx_pay_rate",
+	# Currency amount, like won_price above — see _INTAKE_KEYS_STR comment.
+	"estimated_total",
 )
 # Purchase method (способ закупки) drives the BPM branch: selection/tender require
 # tender documents; auction/shop pass without.
