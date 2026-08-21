@@ -381,5 +381,49 @@ class TestCyrillicInput(unittest.TestCase):
 		self.assertEqual(r["purpose"], "Чой ичгани нарса")
 
 
+class TestDigitGluedToAWord(unittest.TestCase):
+	"""A digit stuck to the end of a word belongs to that word, not to the money.
+
+	Measured on the mikas shadow store, 2026-08-10: «Tender4 500ming» was stored
+	as a 4 so'm outgoing and «Tender5 650ming» as 5 so'm. `extract_amount` starts
+	at the first digit it sees anywhere in the line, so it read the 4 out of
+	"Tender4", found no multiplier behind it, and returned before ever reaching
+	the 500ming standing right next to it. 1 150 000 so'm of real spending was
+	recorded as 9 so'm, and nothing could raise: the confirmation step showed
+	"4 s" and the kassir confirmed it — the number was small, not obviously
+	corrupt, and reads as a typo rather than as a parse failure.
+
+	The rule was already known in this module. `extract_counterparty` skips any
+	amount whose left neighbour is a letter, precisely so "Tender4" is not
+	mistaken for a figure while it hunts for the payee. Two readers of the same
+	text, one of them holding the rule. This suite pins it for both.
+	"""
+
+	def test_the_reported_entries_read_the_amount_beside_the_word(self):
+		self.assertEqual(extract_amount("Tender4 500ming"), 500_000.0)
+		self.assertEqual(extract_amount("Tender5 650ming"), 650_000.0)
+
+	def test_a_word_ending_in_a_digit_is_not_itself_an_amount(self):
+		"""No amount at all is the right answer — the bot then asks "Qancha?".
+
+		Answering 4 is worse than answering nothing: an unanswered slot stops the
+		flow, a wrong amount sails through confirmation and reaches the drawer.
+		"""
+		self.assertIsNone(extract_amount("Tender4"))
+		self.assertIsNone(extract_amount("Тендер7"))
+
+	def test_the_whole_entry_carries_the_right_leg(self):
+		"""The leg is what becomes the delta, so pin it and not just the scalar."""
+		r = parse_message("Tender4 500ming", op="chiqim")
+		self.assertEqual(r["legs"], [{"amount": 500_000.0, "kassa": "nakit", "currency": "UZS"}])
+
+	def test_numbers_that_start_a_word_are_still_amounts(self):
+		"""The guard is on the LEFT edge only — 100mln must keep working."""
+		self.assertEqual(extract_amount("100mln"), 100_000_000.0)
+		self.assertEqual(extract_amount("obedga 45ming s"), 45_000.0)
+		self.assertEqual(extract_amount("Hocadan 1568ming s"), 1_568_000.0)
+		self.assertEqual(extract_amount("alisherdan 3.4mln p va 567d"), 3_400_000.0)
+
+
 if __name__ == "__main__":
 	unittest.main()

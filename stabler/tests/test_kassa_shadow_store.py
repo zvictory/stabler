@@ -135,6 +135,132 @@ class TestShadowStore(unittest.TestCase):
 		self.assertEqual(ss.balances(self.path, "other", D)["nakit"], 999.0)
 
 
+class TestListEntriesOverARange(unittest.TestCase):
+	"""The mini app asks for a week, so the store has to be able to answer for one.
+
+	`list_entries` took a single date and the page therefore showed a single day,
+	behind arrows that step one day at a time. Reported 2026-08-21: "the bot only
+	shows today, I wanted a week to stay — can you bring those back". Nothing was
+	lost; a week of work was one day per press away, and the cashier never found
+	the presses. A day at a time is also the wrong unit for the question a till
+	statement answers, which is "what moved this week".
+
+	`since` defaults to `date`, so every existing caller keeps the old answer.
+	"""
+
+	def setUp(self):
+		fd, self.path = tempfile.mkstemp(suffix=".sqlite")
+		os.close(fd)
+		for day, amount in (("2026-07-17", 10), ("2026-07-19", 20), ("2026-07-21", 30)):
+			ss.add_entry(
+				self.path,
+				company=CO,
+				kassir="1",
+				op="kirim",
+				deltas=[{"kassa": "nakit", "delta": amount}],
+				date=day,
+			)
+
+	def tearDown(self):
+		os.unlink(self.path)
+
+	def _days(self, **kw):
+		return sorted(e["legs"][0]["delta"] for e in ss.list_entries(self.path, CO, **kw))
+
+	def test_without_a_start_it_still_answers_for_one_day(self):
+		self.assertEqual(self._days(date="2026-07-19"), [20])
+
+	def test_the_range_includes_both_ends(self):
+		"""Off by one at either end silently drops a day of the cashier's work."""
+		self.assertEqual(self._days(date="2026-07-21", since="2026-07-17"), [10, 20, 30])
+		self.assertEqual(self._days(date="2026-07-19", since="2026-07-17"), [10, 20])
+		self.assertEqual(self._days(date="2026-07-21", since="2026-07-19"), [20, 30])
+
+	def test_a_start_after_the_end_returns_nothing_rather_than_everything(self):
+		self.assertEqual(self._days(date="2026-07-17", since="2026-07-21"), [])
+
+	def test_the_range_stays_inside_the_company(self):
+		ss.add_entry(
+			self.path,
+			company="other",
+			kassir="9",
+			op="kirim",
+			deltas=[{"kassa": "nakit", "delta": 999}],
+			date="2026-07-19",
+		)
+		self.assertEqual(self._days(date="2026-07-21", since="2026-07-17"), [10, 20, 30])
+
+
+class TestOneTillPerCompany(unittest.TestCase):
+	"""The drawer belongs to the company, not to whoever is standing at it.
+
+	`balances()` groups by (company, kassa) and never by kassir, so every kassir
+	of a company reads and writes one pooled figure. That is deliberate for a
+	shared physical till — a cashier taking over a shift must see the cash that
+	is actually in the drawer, not their own running total since they logged in.
+
+	It is also the sharpest reading of the complaint raised on 2026-08-21. On
+	mikas three kassirs have written here; one of them started on 19 August and
+	opened the bot to 581 million so'm accumulated by a colleague in July. "Why
+	is it showing a balance that isn't ours" is exactly what pooling looks like
+	from the other side of a handover.
+
+	No test pinned this either way, so the behaviour was neither a decision nor
+	a guarantee — just what the SQL happened to do. It is pinned here so that
+	changing it to per-kassir has to be a choice someone makes on purpose, with
+	this test in front of them. `docs/plans/2026-07-19-kassabot-shadow-mode.md`
+	promises the opposite ("başka kassir'in verisini ko'rmaydi"); until that is
+	resolved the code, not the plan, is what runs.
+	"""
+
+	def setUp(self):
+		fd, self.path = tempfile.mkstemp(suffix=".sqlite")
+		os.close(fd)
+
+	def tearDown(self):
+		os.unlink(self.path)
+
+	def test_a_second_kassir_reads_the_first_ones_money(self):
+		ss.add_entry(
+			self.path,
+			company=CO,
+			kassir="morning-shift",
+			op="kirim",
+			deltas=[{"kassa": "nakit", "delta": 5_000_000}],
+			date=D,
+		)
+		ss.add_entry(
+			self.path,
+			company=CO,
+			kassir="evening-shift",
+			op="chiqim",
+			deltas=[{"kassa": "nakit", "delta": -1_000_000}],
+			date=D,
+		)
+		# One till: 5m in, 1m out, whoever moved it.
+		self.assertEqual(ss.balances(self.path, CO, D)["nakit"], 4_000_000)
+
+	def test_an_opening_declared_by_one_kassir_resets_it_for_all_of_them(self):
+		"""Counting the drawer is a statement about the drawer, so whoever counts
+		it restates the total for everyone. `set_opening` does not even take a
+		kassir — there is nobody to attribute the count to, and no check on who
+		is allowed to make it (bot.py: "No access restriction for now")."""
+		ss.add_entry(
+			self.path,
+			company=CO,
+			kassir="morning-shift",
+			op="kirim",
+			deltas=[{"kassa": "nakit", "delta": 5_000_000}],
+			date=D,
+		)
+		later = "2026-07-20"
+		# A different kassir counts the till the next morning and finds 90 000.
+		ss.set_opening(self.path, CO, later, "nakit", 90_000)
+		self.assertEqual(ss.balances(self.path, CO, later)["nakit"], 90_000)
+		# Yesterday is untouched: a count restates today, it does not rewrite history.
+		self.assertEqual(ss.balances(self.path, CO, D)["nakit"], 5_000_000)
+
+
 class TestCarryForward(unittest.TestCase):
 	"""The drawer does not empty itself overnight.
 

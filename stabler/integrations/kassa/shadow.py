@@ -70,16 +70,30 @@ def undo_last(company, date):
 
 
 def view(company, date) -> dict:
+	"""One payload for the mini app: balances as of `date`, entries for the week.
+
+	The ledger spans `since`..`date` rather than `date` alone, so the page can
+	show the week the cashier asked for instead of one day behind arrows nobody
+	found. `window_days` travels with it so the page's arrows bound themselves by
+	the same number the query used, rather than by a copy of it.
+	"""
 	p = _db_path()
+	since = shadow_store.window_start(date)
 	return {
 		"date": date,
+		"since": since,
+		"window_days": shadow_store.WINDOW_DAYS,
 		"company": company,
 		"balances": shadow_store.balances(p, company, date),
 		"openings": shadow_store.get_openings(p, company, date),
 		# What the ledger's running column starts at. Not the same as `openings`,
 		# which holds only what was declared for this date and is usually empty.
 		"opening_balances": shadow_store.opening_balances(p, company, date),
-		"entries": shadow_store.list_entries(p, company, date),
+		# The running column now starts a week earlier than `date`, so it must
+		# start from the week's opening — using the day's would restate the whole
+		# column against a balance six days too late.
+		"window_opening_balances": shadow_store.opening_balances(p, company, since),
+		"entries": shadow_store.list_entries(p, company, date, since=since),
 	}
 
 
