@@ -605,8 +605,38 @@ async function openCreate() {
 	markFormPristine();
 }
 
+// P0-MONEY-2 / P0-MONEY-3. "Amend" is not an edit. `amend_*_entry` cancels the
+// original voucher outright and posts a replacement in its place, and if the
+// amount trips the maker-checker threshold `submit_or_route` leaves that
+// replacement a DRAFT -- the original is gone from the ledger and nothing has
+// taken its place until somebody approves. The only notice used to be a toast,
+// fired after the save had already happened.
+//
+// A draft is deliberately NOT confirmed: editing one cancels nothing and posts
+// nothing, and a dialog people learn to dismiss unread stops being a warning.
+function amendConfirmationRequired(docstatus) {
+	return docstatus === 1;
+}
+
+// The threshold cannot be named here. No whitelisted endpoint exposes it and the
+// session does not carry it, so the approval clause is stated as a condition
+// rather than as a prediction about this particular amount.
+function confirmAmend(name) {
+	return confirm({
+		title: t("Amend a posted entry?"),
+		body: t(
+			"This cancels {name} and posts a replacement in its place. If the amount requires approval, the replacement stays a draft until it is approved — and until then the ledger is short by that amount.",
+			{ name }
+		),
+		confirmLabel: t("Amend"),
+		cancelLabel: t("Close"),
+		danger: true,
+	});
+}
+
 async function openEditFromDetail() {
 	if (!detail.value?.name) return;
+	if (amendConfirmationRequired(detail.value.docstatus) && !(await confirmAmend(detail.value.name))) return;
 	if (!payAccounts.value.length || !expAccounts.value.length || !assetAccounts.value.length) await loadOptions();
 	// Exclude the auto exchange-rounding line — it's a base-currency GL detail
 	// (re-derived on save by fx_balance), never a user expense leg.

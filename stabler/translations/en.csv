@@ -6720,3 +6720,5 @@ Draft Purchase Invoice created: {0} — goods received into {1},Draft Purchase I
 Kept your rate {typed} — the Central Bank rate for this date is {cbu}.,Kept your rate {typed} — the Central Bank rate for this date is {cbu}.
 Your rate {typed} was replaced with {cbu} — the accounts changed.,Your rate {typed} was replaced with {cbu} — the accounts changed.
 Tax recalculates when you save.,Tax recalculates when you save.
+Amend a posted entry?,Amend a posted entry?
+"This cancels {name} and posts a replacement in its place. If the amount requires approval, the replacement stays a draft until it is approved — and until then the ledger is short by that amount.","This cancels {name} and posts a replacement in its place. If the amount requires approval, the replacement stays a draft until it is approved — and until then the ledger is short by that amount."
