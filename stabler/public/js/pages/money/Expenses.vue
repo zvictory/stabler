@@ -840,13 +840,6 @@ async function submitCreate(afterAction) {
 
 // --- List + detail ---------------------------------------------------------
 
-const statusBadge = (d) => {
-	if (d === 0) return { cls: "bg-yellow-lt", label: "Draft" };
-	if (d === 1) return { cls: "bg-green-lt", label: "Submitted" };
-	if (d === 2) return { cls: "bg-red-lt", label: "Cancelled" };
-	return { cls: "bg-secondary-lt", label: String(d) };
-};
-
 async function load() {
 	if (!activeCompany.value) return;
 	loading.value = true;
@@ -1071,9 +1064,7 @@ watch(activeCompany, () => {
 							{{ formatMoney(r.total_amount ?? r.total_debit_base, r.currency || r.base_currency || baseCurrency, user.language) }}
 						</td>
 						<td>
-							<span class="badge" :class="statusBadge(r.docstatus).cls">
-								{{ statusBadge(r.docstatus).label }}
-							</span>
+							<StatusBadge doctype="Journal Entry" :docstatus="r.docstatus" />
 						</td>
 					</tr>
 				</tbody>
@@ -1113,14 +1104,6 @@ watch(activeCompany, () => {
 					<div class="datagrid-item">
 						<div class="datagrid-title">{{ t("Posting date") }}</div>
 						<div class="datagrid-content">{{ formatDateTime(detail.posting_date) }}</div>
-					</div>
-					<div class="datagrid-item">
-						<div class="datagrid-title">{{ t("Status") }}</div>
-						<div class="datagrid-content">
-							<span class="badge" :class="statusBadge(detail.docstatus).cls">
-								{{ statusBadge(detail.docstatus).label }}
-							</span>
-						</div>
 					</div>
 					<div class="datagrid-item">
 						<div class="datagrid-title">{{ t("Kind") }}</div>
