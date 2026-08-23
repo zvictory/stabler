@@ -6333,3 +6333,5 @@ Your rate {typed} was replaced with {cbu} — the accounts changed.,Ваш ку�
 Tax recalculates when you save.,Налог пересчитается при сохранении.
 Amend a posted entry?,Изменить проведённую запись?
 "This cancels {name} and posts a replacement in its place. If the amount requires approval, the replacement stays a draft until it is approved — and until then the ledger is short by that amount.","Это отменит {name} и проведёт замену вместо неё. Если сумма требует утверждения, замена останется черновиком до утверждения — и до этого момента в учёте не будет этой суммы."
+Edit draft expense,Изменить черновик расхода
+Edit draft transfer,Изменить черновик перевода

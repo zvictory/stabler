@@ -76,6 +76,10 @@ const submitError = ref("");
 // Until the entry carries a payload-derived key, this warning is the guard.
 const resubmitWarning = ref(false);
 const editingName = ref("");
+// Tracks `editingName`. The badge and the heading are only honest while it
+// does, so every place that clears the name clears this too -- otherwise the
+// next NEW entry renders wearing the last-amended voucher's badge.
+const editingDocstatus = ref(null);
 
 const payAccounts = ref([]);
 const expAccounts = ref([]);
@@ -283,9 +287,15 @@ const lineAccounts = computed(() => {
 	return [...base, ...equityAccounts.value];
 });
 
+// "Amend" is the word for cancelling a POSTED voucher and posting a replacement
+// against it. A draft edit deletes the draft outright and re-creates it under a
+// new name (money.py:3518-3522) -- a different promise, and the one that does
+// not touch the ledger, so it says so.
 const formTitle = computed(() =>
 	editingName.value
-		? t("Amend expense")
+		? editingDocstatus.value === 1
+			? t("Amend expense")
+			: t("Edit draft expense")
 		: form.value.entry_kind === "Asset Purchase"
 			? t("New asset purchase")
 			: t("New expense"),
@@ -594,6 +604,7 @@ async function openCreate() {
 	form.value = blankForm();
 	ghost.value = newGhost();
 	editingName.value = "";
+	editingDocstatus.value = null;
 	submitError.value = "";
 	cbuRate.value = null;
 	rateError.value = "";
@@ -671,6 +682,7 @@ async function openEditFromDetail() {
 	};
 	ghost.value = newGhost();
 	editingName.value = detail.value.name;
+	editingDocstatus.value = detail.value.docstatus;
 	submitError.value = "";
 	cbuRate.value = null;
 	rateError.value = "";
@@ -689,6 +701,7 @@ function closeCreate() {
 	if (submitting.value) return;
 	createOpen.value = false;
 	editingName.value = "";
+	editingDocstatus.value = null;
 }
 
 function removeLine(idx) {
@@ -794,6 +807,7 @@ async function submitCreate(afterAction) {
 		if (editingName.value || afterAction === "close") {
 			createOpen.value = false;
 			editingName.value = "";
+			editingDocstatus.value = null;
 			if (res?.name) await openDetail(res.name);
 			if (pendingApproval) toast.warning(t("Saved — pending approval before it posts."));
 		} else if (afterAction === "new") {
@@ -1166,8 +1180,15 @@ watch(activeCompany, () => {
 			<button type="button" class="btn btn-sm btn-outline-secondary me-2" :disabled="submitting" @click="closeCreate">
 				<i class="ti ti-arrow-left me-1"></i>{{ t("Back") }}
 			</button>
-			<div class="card-title m-0">
-				<i class="ti ti-receipt-2 me-1"></i>{{ formTitle }}
+			<div class="card-title m-0 d-flex align-items-center gap-2">
+				<span><i class="ti ti-receipt-2 me-1"></i>{{ formTitle }}</span>
+				<!-- Which document this is. Without it a draft and a posted voucher
+				     being cancelled-and-replaced look exactly alike from in here. -->
+				<StatusBadge
+					v-if="editingName"
+					doctype="Journal Entry"
+					:docstatus="editingDocstatus"
+				/>
 			</div>
 		</div>
 		<div class="card-body p-3 d-flex flex-column gap-3">

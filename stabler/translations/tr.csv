@@ -6323,3 +6323,5 @@ Your rate {typed} was replaced with {cbu} — the accounts changed.,Girdiğiniz 
 Tax recalculates when you save.,Vergi kaydettiğinizde yeniden hesaplanır.
 Amend a posted entry?,Kaydedilmiş fiş düzeltilsin mi?
 "This cancels {name} and posts a replacement in its place. If the amount requires approval, the replacement stays a draft until it is approved — and until then the ledger is short by that amount.","Bu, {name} kaydını iptal eder ve yerine bir değiştirme kaydı geçer. Tutar onay gerektiriyorsa değiştirme kaydı onaylanana kadar taslak kalır — o zamana kadar defterde bu tutar eksik olur."
+Edit draft expense,Gider taslağını düzenle
+Edit draft transfer,Transfer taslağını düzenle
