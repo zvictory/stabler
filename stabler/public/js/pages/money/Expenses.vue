@@ -11,6 +11,7 @@ import { formatDate, formatDateTime, todayIso, daysAgoIso} from "../../composabl
 import { t } from "../../composables/i18n.js";
 import { useConfirm } from "../../composables/useConfirm.js";
 import { useToast } from "../../composables/useToast.js";
+import StatusBadge from "../../components/StatusBadge.vue";
 import { createIntentKey } from "../../composables/idempotency.js";
 import MoneyInput from "../../components/MoneyInput.vue";
 import DateInput from "../../components/DateInput.vue";
@@ -837,12 +838,31 @@ async function openDetail(name) {
 }
 
 // Read a saved expense back directly into the SAME form (view / edit / amend).
+// P0-MONEY-2. A click on a list row used to land straight in the editor, and on
+// a submitted voucher that editor's save runs the amend path -- `source.cancel()`
+// on the original, then a replacement posted in its place (money.py). Nobody had
+// asked for either. The read-only detail card below already exists and already
+// offers a deliberate button, labelled "Amend" on a submitted entry, so the row
+// click stops there and the person decides.
+//
+// Stated as "not a draft" rather than "is submitted" so it fails safe: a
+// cancelled voucher -- which `openEditFromDetail` never checked for -- and a
+// detail payload that arrives without a docstatus both stay read-only. Guessing
+// "draft" wrong is the guess that has ledger consequences.
+function opensReadOnly(docstatus) {
+	return !(typeof docstatus === "number" && docstatus === 0);
+}
+
 async function openInForm(name) {
 	createOpen.value = false;
 	detailOpen.value = false;
 	detailLoading.value = true;
 	try {
 		detail.value = await call("stabler.api.money.journal_entry_detail", { name });
+		if (opensReadOnly(detail.value?.docstatus)) {
+			detailOpen.value = true;
+			return;
+		}
 		await openEditFromDetail(); // populates the form + sets amend/edit mode
 	} catch (err) {
 		detail.value = { error: err?.message || "Failed to load." };
@@ -1023,8 +1043,16 @@ watch(activeCompany, () => {
 			<button type="button" class="btn btn-sm btn-outline-secondary me-2" @click="closeDetail">
 				<i class="ti ti-arrow-left me-1"></i>{{ t("Back") }}
 			</button>
-			<div class="card-title m-0">
-				<i class="ti ti-receipt-2 me-1"></i>{{ t("Expense") }}
+			<div class="card-title m-0 d-flex align-items-center gap-2">
+				<span><i class="ti ti-receipt-2 me-1"></i>{{ t("Expense") }}</span>
+				<!-- The row click now stops here instead of opening the editor, so this
+				     card is where a person decides whether to touch a posted voucher.
+				     It has to say which kind it is; the button labels alone did not. -->
+				<StatusBadge
+					v-if="detail && !detail.error"
+					doctype="Journal Entry"
+					:docstatus="detail.docstatus"
+				/>
 			</div>
 		</div>
 		<div class="card-body">
