@@ -76,6 +76,10 @@ const submitError = ref("");
 // Until the entry carries a payload-derived key, this warning is the guard.
 const resubmitWarning = ref(false);
 const editingName = ref("");
+// Tracks `editingName`. The badge and the heading are only honest while it
+// does, so every place that clears the name clears this too -- otherwise the
+// next NEW entry renders wearing the last-amended voucher's badge.
+const editingDocstatus = ref(null);
 
 const payAccounts = ref([]);
 const expAccounts = ref([]);
@@ -283,9 +287,15 @@ const lineAccounts = computed(() => {
 	return [...base, ...equityAccounts.value];
 });
 
+// "Amend" is the word for cancelling a POSTED voucher and posting a replacement
+// against it. A draft edit deletes the draft outright and re-creates it under a
+// new name (money.py:3518-3522) -- a different promise, and the one that does
+// not touch the ledger, so it says so.
 const formTitle = computed(() =>
 	editingName.value
-		? t("Amend expense")
+		? editingDocstatus.value === 1
+			? t("Amend expense")
+			: t("Edit draft expense")
 		: form.value.entry_kind === "Asset Purchase"
 			? t("New asset purchase")
 			: t("New expense"),
@@ -594,6 +604,7 @@ async function openCreate() {
 	form.value = blankForm();
 	ghost.value = newGhost();
 	editingName.value = "";
+	editingDocstatus.value = null;
 	submitError.value = "";
 	cbuRate.value = null;
 	rateError.value = "";
@@ -605,8 +616,38 @@ async function openCreate() {
 	markFormPristine();
 }
 
+// P0-MONEY-2 / P0-MONEY-3. "Amend" is not an edit. `amend_*_entry` cancels the
+// original voucher outright and posts a replacement in its place, and if the
+// amount trips the maker-checker threshold `submit_or_route` leaves that
+// replacement a DRAFT -- the original is gone from the ledger and nothing has
+// taken its place until somebody approves. The only notice used to be a toast,
+// fired after the save had already happened.
+//
+// A draft is deliberately NOT confirmed: editing one cancels nothing and posts
+// nothing, and a dialog people learn to dismiss unread stops being a warning.
+function amendConfirmationRequired(docstatus) {
+	return docstatus === 1;
+}
+
+// The threshold cannot be named here. No whitelisted endpoint exposes it and the
+// session does not carry it, so the approval clause is stated as a condition
+// rather than as a prediction about this particular amount.
+function confirmAmend(name) {
+	return confirm({
+		title: t("Amend a posted entry?"),
+		body: t(
+			"This cancels {name} and posts a replacement in its place. If the amount requires approval, the replacement stays a draft until it is approved — and until then the ledger is short by that amount.",
+			{ name }
+		),
+		confirmLabel: t("Amend"),
+		cancelLabel: t("Close"),
+		danger: true,
+	});
+}
+
 async function openEditFromDetail() {
 	if (!detail.value?.name) return;
+	if (amendConfirmationRequired(detail.value.docstatus) && !(await confirmAmend(detail.value.name))) return;
 	if (!payAccounts.value.length || !expAccounts.value.length || !assetAccounts.value.length) await loadOptions();
 	// Exclude the auto exchange-rounding line — it's a base-currency GL detail
 	// (re-derived on save by fx_balance), never a user expense leg.
@@ -641,6 +682,7 @@ async function openEditFromDetail() {
 	};
 	ghost.value = newGhost();
 	editingName.value = detail.value.name;
+	editingDocstatus.value = detail.value.docstatus;
 	submitError.value = "";
 	cbuRate.value = null;
 	rateError.value = "";
@@ -659,6 +701,7 @@ function closeCreate() {
 	if (submitting.value) return;
 	createOpen.value = false;
 	editingName.value = "";
+	editingDocstatus.value = null;
 }
 
 function removeLine(idx) {
@@ -764,6 +807,7 @@ async function submitCreate(afterAction) {
 		if (editingName.value || afterAction === "close") {
 			createOpen.value = false;
 			editingName.value = "";
+			editingDocstatus.value = null;
 			if (res?.name) await openDetail(res.name);
 			if (pendingApproval) toast.warning(t("Saved — pending approval before it posts."));
 		} else if (afterAction === "new") {
@@ -795,13 +839,6 @@ async function submitCreate(afterAction) {
 }
 
 // --- List + detail ---------------------------------------------------------
-
-const statusBadge = (d) => {
-	if (d === 0) return { cls: "bg-yellow-lt", label: "Draft" };
-	if (d === 1) return { cls: "bg-green-lt", label: "Submitted" };
-	if (d === 2) return { cls: "bg-red-lt", label: "Cancelled" };
-	return { cls: "bg-secondary-lt", label: String(d) };
-};
 
 async function load() {
 	if (!activeCompany.value) return;
@@ -1027,9 +1064,7 @@ watch(activeCompany, () => {
 							{{ formatMoney(r.total_amount ?? r.total_debit_base, r.currency || r.base_currency || baseCurrency, user.language) }}
 						</td>
 						<td>
-							<span class="badge" :class="statusBadge(r.docstatus).cls">
-								{{ statusBadge(r.docstatus).label }}
-							</span>
+							<StatusBadge doctype="Journal Entry" :docstatus="r.docstatus" />
 						</td>
 					</tr>
 				</tbody>
@@ -1069,14 +1104,6 @@ watch(activeCompany, () => {
 					<div class="datagrid-item">
 						<div class="datagrid-title">{{ t("Posting date") }}</div>
 						<div class="datagrid-content">{{ formatDateTime(detail.posting_date) }}</div>
-					</div>
-					<div class="datagrid-item">
-						<div class="datagrid-title">{{ t("Status") }}</div>
-						<div class="datagrid-content">
-							<span class="badge" :class="statusBadge(detail.docstatus).cls">
-								{{ statusBadge(detail.docstatus).label }}
-							</span>
-						</div>
 					</div>
 					<div class="datagrid-item">
 						<div class="datagrid-title">{{ t("Kind") }}</div>
@@ -1136,8 +1163,15 @@ watch(activeCompany, () => {
 			<button type="button" class="btn btn-sm btn-outline-secondary me-2" :disabled="submitting" @click="closeCreate">
 				<i class="ti ti-arrow-left me-1"></i>{{ t("Back") }}
 			</button>
-			<div class="card-title m-0">
-				<i class="ti ti-receipt-2 me-1"></i>{{ formTitle }}
+			<div class="card-title m-0 d-flex align-items-center gap-2">
+				<span><i class="ti ti-receipt-2 me-1"></i>{{ formTitle }}</span>
+				<!-- Which document this is. Without it a draft and a posted voucher
+				     being cancelled-and-replaced look exactly alike from in here. -->
+				<StatusBadge
+					v-if="editingName"
+					doctype="Journal Entry"
+					:docstatus="editingDocstatus"
+				/>
 			</div>
 		</div>
 		<div class="card-body p-3 d-flex flex-column gap-3">
