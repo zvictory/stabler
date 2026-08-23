@@ -174,9 +174,18 @@ const isCrossCurrency = computed(
 
 // CBU rate for display hint (canonical: 1 fxBaseCur = cbuRate fxCounterCur, >= 1)
 const cbuRate = ref(null);
+// Set whenever a lookup came back without a rate, on either failure path. The
+// transfer form had nothing of the kind; the expense form has had one for a
+// while, which is why only this screen could post an inverted transfer in
+// silence.
+const rateError = ref("");
 // Canonical quote direction. We ALWAYS quote the rate as "1 strong = N weak"
 // (rate >= 1) so UZS↔USD always reads "1 USD = 12 950 UZS", never "0.000077".
 const fxBaseCur = ref("");
+// The pair the quote below answers for. `rateNext()` already models the rate
+// question as the pair and not one currency; this is the same key, kept beside
+// the quote so the two cannot drift apart.
+const fxPair = ref("");
 const fxCounterCur = ref("");
 const fromIsBase = computed(() => fromCurrency.value === fxBaseCur.value);
 
@@ -299,40 +308,78 @@ const rateManuallyEdited = ref(false);
 // from_amount/to_amount aren't silently overwritten by today's CBU rate.
 const hydrating = ref(false);
 
+// Whether the quote on screen still answers the pair on screen.
+//
+// Scoped to the pair on purpose, not fired on every fetch. A quote's DIRECTION
+// is a fact about the pair and does not expire when the day does -- and the
+// date watcher deliberately keeps a rate the user typed (see `reanchorRate`).
+// Clearing on every fetch would strip the direction out from under that
+// surviving rate and invert it on the next keystroke: the defect below,
+// reintroduced through its own fix.
+function quoteSurvives(quotePair, from, to) {
+	return Boolean(quotePair) && quotePair === `${from}→${to}`;
+}
+
+// The API answers "to per from". Flipped to the canonical >= 1 quote so we
+// never show a sub-1 rate like 1 UZS = 0.000077 USD -- always 1 USD = 12 950
+// UZS. Null means there is no rate: the caller must clear, never keep what was
+// already on screen.
+function canonicalQuote(raw, from, to) {
+	const r = Number(raw) || 0;
+	if (!(r > 0)) return null;
+	if (r >= 1) return { base: from, counter: to, rate: r };
+	return { base: to, counter: from, rate: 1 / r };
+}
+
 async function fetchExchangeRate() {
-	if (!isCrossCurrency.value) {
-		form.value.exchange_rate = null;
-		cbuRate.value = null;
+	// Cleared on every path: this runs because the pair or the date just moved,
+	// so a complaint about the previous lookup is no longer about anything on
+	// screen. Every reset path either calls this directly or changes an account,
+	// which the watcher turns into a call.
+	rateError.value = "";
+	const pair = `${fromCurrency.value}→${toCurrency.value}`;
+	// Nothing from another pair's quote may survive -- `fxBaseCur` feeds
+	// `fromIsBase`, which picks between `amt * R` and `amt / R` in derive(). A
+	// stale one does not merely misprice the transfer, it inverts it.
+	if (!quoteSurvives(fxPair.value, fromCurrency.value, toCurrency.value)) {
+		fxPair.value = "";
 		fxBaseCur.value = "";
 		fxCounterCur.value = "";
+		cbuRate.value = null;
+		if (!rateManuallyEdited.value && !hydrating.value) form.value.exchange_rate = null;
+	}
+	if (!isCrossCurrency.value) {
+		form.value.exchange_rate = null;
 		return;
 	}
+	const asked = `${pair}|${form.value.posting_date}`;
 	try {
 		const raw = await call("stabler.api.money.get_exchange_rate_for_currencies", {
 			from_currency: fromCurrency.value,
 			to_currency: toCurrency.value,
 			posting_date: form.value.posting_date,
 		});
-		// raw = "to per from". Flip to the canonical >= 1 quote so we never show
-		// a sub-1 rate like 1 UZS = 0.000077 USD — always 1 USD = 12 950 UZS.
-		let base, counter, R;
-		if (raw >= 1) {
-			base = fromCurrency.value; counter = toCurrency.value; R = raw;
-		} else if (raw > 0) {
-			base = toCurrency.value; counter = fromCurrency.value; R = 1 / raw;
-		} else {
+		// The accounts or the date can have moved while this was in flight. A
+		// quote for the pair nobody is looking at any more must not land on the
+		// pair that is.
+		if (asked !== `${fromCurrency.value}→${toCurrency.value}|${form.value.posting_date}`) return;
+		const quote = canonicalQuote(raw, fromCurrency.value, toCurrency.value);
+		if (!quote) {
+			rateError.value = t("No exchange rate for this date — enter manually.");
 			return;
 		}
-		fxBaseCur.value = base;
-		fxCounterCur.value = counter;
-		cbuRate.value = roundRate(R);
+		fxPair.value = pair;
+		fxBaseCur.value = quote.base;
+		fxCounterCur.value = quote.counter;
+		cbuRate.value = roundRate(quote.rate);
 		if (!rateManuallyEdited.value && !hydrating.value) {
 			_deriving = true;
-			form.value.exchange_rate = roundRate(R);
+			form.value.exchange_rate = roundRate(quote.rate);
 			_deriving = false;
 		}
 	} catch (err) {
 		console.error("Failed to load exchange rate", err);
+		rateError.value = t("No exchange rate for this date — enter manually.");
 	}
 }
 
@@ -1093,7 +1140,7 @@ watch(activeCompany, () => {
 							<div v-if="isCrossCurrency" class="d-flex align-items-center gap-2 flex-grow-1" style="max-width: 400px">
 								<span class="text-secondary small text-nowrap">
 									{{ t("Exchange rate") }}
-									<span v-if="!rateManuallyEdited" class="badge bg-blue-lt text-blue ms-1">AUTO</span>
+									<span v-if="!rateManuallyEdited && !rateError" class="badge bg-blue-lt text-blue ms-1">AUTO</span>
 								</span>
 								<div class="flex-grow-1">
 									<MoneyInput
@@ -1107,6 +1154,9 @@ watch(activeCompany, () => {
 								</div>
 								<span v-if="cbuRate" class="text-secondary small text-nowrap">
 									CBU: {{ fmtRate(cbuRate) }}
+								</span>
+								<span v-if="rateError" class="text-danger small text-nowrap">
+									<i class="ti ti-alert-triangle me-1"></i>{{ rateError }}
 								</span>
 							</div>
 							<div v-else-if="fromAcc && toAcc" class="text-secondary small">
