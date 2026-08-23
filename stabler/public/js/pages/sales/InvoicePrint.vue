@@ -20,16 +20,29 @@ function fmt(val) {
 	return formatMoney(val ?? 0, doc.value?.currency, user.value.language);
 }
 
-// Per-box unit price: parse a trailing "(N)" from the item name (reference convention).
-function pcsPerBox(name) {
-	const m = (name ?? "").match(/\((\d+)\)\s*$/);
-	return m ? parseInt(m[1], 10) : 1;
+// The Rate column prints the price of one line UOM, which on a line sold in
+// boxes IS the price of a box. The figure worth adding beside it is therefore
+// the price of ONE stock unit inside that box, and ERPNext already stores how
+// many of them fit: `conversion_factor`, the same number it converts qty with.
+//
+// This used to parse a trailing "(N)" out of the item name instead, and call
+// the result `t("Per box")` -- so a 20-piece box at 82 000 so'm printed 4 100
+// under a heading that said "price per box", beside a Rate column that really
+// did say 82 000. The name and the field also disagree: 9 570 submitted anjan
+// lines sell by the box with "(N)" in the name and conversion_factor 1.
+//
+// Returns null when the line's UOM already is the stock unit -- the Rate column
+// has already stated that price, and repeating it under a second heading is how
+// the old column came to contradict itself.
+function unitPriceOf(rate, conversionFactor) {
+	const cf = Number(conversionFactor) || 0;
+	if (!(cf > 1)) return null;
+	return (Number(rate) || 0) / cf;
 }
 
-// Per-box cell: only meaningful when the item is sold in boxes of >1 pieces.
-function perBox(it) {
-	const pcs = pcsPerBox(it.item_name);
-	return pcs > 1 ? fmt(Math.round((it.rate || 0) / pcs)) : "—";
+function unitPriceCell(it) {
+	const unit = unitPriceOf(it.rate, it.conversion_factor);
+	return unit === null ? "—" : fmt(Math.round(unit));
 }
 
 // Discount column appears only when at least one line is discounted.
@@ -200,7 +213,7 @@ onMounted(load);
 						<th class="inv-th inv-num">{{ t("Qty") }}</th>
 						<th class="inv-th inv-center">{{ t("UOM") }}</th>
 						<th class="inv-th inv-num">{{ t("Rate") }}</th>
-						<th class="inv-th inv-num">{{ t("Per box") }}</th>
+						<th class="inv-th inv-num">{{ t("Unit price") }}</th>
 						<th v-if="hasDiscount" class="inv-th inv-num">{{ t("Disc %") }}</th>
 						<th class="inv-th inv-num">{{ t("Amount") }}</th>
 					</tr>
@@ -217,7 +230,7 @@ onMounted(load);
 						<td class="inv-num">{{ it.qty }}</td>
 						<td class="inv-center inv-muted">{{ it.uom || "—" }}</td>
 						<td class="inv-num">{{ fmt(it.rate) }}</td>
-						<td class="inv-num inv-muted">{{ perBox(it) }}</td>
+						<td class="inv-num inv-muted">{{ unitPriceCell(it) }}</td>
 						<td v-if="hasDiscount" class="inv-num" :class="it.discount_percentage > 0 ? 'inv-neg' : 'inv-faint'">
 							{{ it.discount_percentage > 0 ? it.discount_percentage + "%" : "—" }}
 						</td>
