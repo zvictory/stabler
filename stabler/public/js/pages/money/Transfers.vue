@@ -684,12 +684,31 @@ async function openDetail(name) {
 
 // Read a saved transfer back directly into the SAME From→To form (view / edit /
 // amend) instead of a separate read-only detail card.
+// P0-MONEY-2. A click on a list row used to land straight in the editor, and on
+// a submitted voucher that editor's save runs the amend path -- `source.cancel()`
+// on the original, then a replacement posted in its place (money.py). Nobody had
+// asked for either. The read-only detail card below already exists and already
+// offers a deliberate button, labelled "Amend" on a submitted entry, so the row
+// click stops there and the person decides.
+//
+// Stated as "not a draft" rather than "is submitted" so it fails safe: a
+// cancelled voucher -- which `openEditFromDetail` never checked for -- and a
+// detail payload that arrives without a docstatus both stay read-only. Guessing
+// "draft" wrong is the guess that has ledger consequences.
+function opensReadOnly(docstatus) {
+	return !(typeof docstatus === "number" && docstatus === 0);
+}
+
 async function openInForm(name) {
 	createOpen.value = false;
 	detailOpen.value = false;
 	detailLoading.value = true;
 	try {
 		detail.value = await call("stabler.api.money.journal_entry_detail", { name });
+		if (opensReadOnly(detail.value?.docstatus)) {
+			detailOpen.value = true;
+			return;
+		}
 		await openEditFromDetail(); // populates the form + sets amend/edit mode
 	} catch (err) {
 		detail.value = { error: err?.message || "Failed to load." };
