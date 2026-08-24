@@ -52,6 +52,15 @@ a{color:var(--tblr-primary);text-decoration:none}
 .demo-bar{background:#1a2433;color:#fff;padding:14px 20px}
 .demo-bar h1{font-size:16px;margin:0 0 4px;color:#fff}
 .demo-bar p{margin:0;font-size:12.5px;line-height:1.6;color:rgba(255,255,255,.62)}
+/* Что здесь измерено, а что нарисовано. Без этой полосы макет читается как
+   описание завода, и придуманная линия возвращается к нам как факт. */
+.truth{display:flex;flex-wrap:wrap;gap:0;margin-top:12px;border-radius:7px;overflow:hidden;font-size:12px;line-height:1.55}
+.truth>div{flex:1 1 300px;padding:9px 13px}
+.truth .t-real{background:rgba(47,179,68,.14);border-left:3px solid #2fb344;color:#cdeed4}
+.truth .t-fake{background:rgba(214,57,57,.15);border-left:3px solid #d63939;color:#f5ced0}
+.truth b{color:#fff}
+.truth ul{margin:4px 0 0;padding-left:17px}
+.truth li{margin:1px 0}
 .demo-try{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
 .demo-try button{background:rgba(255,255,255,.09);border:1px solid rgba(255,255,255,.18);color:#fff;font-size:12px;padding:5px 11px;border-radius:6px;cursor:pointer}
 .demo-try button:hover{background:rgba(255,255,255,.17)}
@@ -157,6 +166,27 @@ a{color:var(--tblr-primary);text-decoration:none}
     <button onclick="jump('WO-2026-00412')">⚠ Сценарий 2: финиш без упаковщика (WO-2026-00412)</button>
     <button onclick="shiftDemo()">🥛 Сценарий 3: смена оператора целиком — бейдж, старт, пауза, брак, финиш</button>
     <button onclick="reset();render()">↺ Сбросить</button>
+  </div>
+  <div class="truth">
+    <div class="t-real">
+      <b>✔ Это проверено на bench, а не нарисовано</b>
+      <ul>
+        <li>Разделение списания на два документа — механизм ERPNext «Material Consumption for Manufacture»</li>
+        <li>Финиш подбирает то, что роль не списала (сценарий 2) — поведение ERPNext по умолчанию</li>
+        <li>Две роли оператора в одном заказе — уже работает в системе</li>
+        <li>Фамилии операторов и роль «розлив / упаковка» — из вашего файла <span class="font-monospace">operatorlar.xlsx</span></li>
+      </ul>
+    </div>
+    <div class="t-fake">
+      <b>✘ Это придумано для показа — не переписывайте это в анкету</b>
+      <ul>
+        <li><b>Цех, линия и смена</b> — таких полей в системе нет вообще. «Линия 1 · Смена A» ничем не подкреплено</li>
+        <li><b>Кто из операторов на какой линии</b> — в вашем файле этого не было, здесь расставлено наугад</li>
+        <li>Каталог простоев — 16 кодов, придуманы. У вас их 1296</li>
+        <li>Номера заказов, продукция, количества, нормы BOM — демонстрационные</li>
+      </ul>
+      Именно это и собирает анкета <span class="font-monospace">faz0-anjan-anketa.md</span>. Если не знаете — оставьте пустым.
+    </div>
   </div>
 </div>
 <div class="frame" id="frame">
