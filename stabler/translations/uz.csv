@@ -82,6 +82,7 @@ Add at least one cash desk before switching {0} to the V1 engine: V1 reads every
 Agreement {0} cannot move from {1} to {2}.,{0} shartnomasi {1} holatidan {2} holatiga o'ta olmaydi.
 Agreement {0} is closed ({1}) and cannot be rescheduled.,{0} shartnomasi yopiq ({1}) va qayta rejalashtirib bo'lmaydi.
 "Add at least one cash desk for {0}: every cash account comes from this table, and without a row the register desk cannot take a transfer.","{0} uchun kamida bitta kassa qo'shing: har bir naqd hisob shu jadvaldan olinadi va satrsiz ro'yxatga olish kassasi o'tkazmani qabul qila olmaydi."
+Assign operators,Operatorlarni belgilash
 "Box counts cannot be saved on this site: {0} missing on {1}. An administrator must re-run patch {2}; bench migrate will not, it has already run once.","Bu saytda quti sonini saqlab bo'lmaydi: {1} da {0} yo'q. Administrator {2} patchini qayta ishga tushirishi kerak; bench migrate buni qilmaydi, u allaqachon ishlagan."
 Apply to all lines,Barcha qatorlarga qo'llash
 Check the code,Kodni tekshirish
@@ -99,12 +100,15 @@ Journal entry,Jurnal yozuvi
 Legacy — journal entry screens,Legacy — jurnal yozuvi ekranlari
 Lines disagree,Qatorlar mos kelmaydi
 Not ready — this desk cannot take or hand over a transfer.,"Tayyor emas — bu kassa o'tkazmani na qabul qila oladi, na bera oladi."
+One person cannot hold both operator roles on the same Work Order.,Bir kishi bitta ishlab chiqarish buyurtmasida ikkala operator rolini egallay olmaydi.
 Only an open agreement can be terminated. {0} is {1}.,Faqat ochiq shartnomani yopish mumkin. {0} holati: {1}.
 Only the remittance desk can verify a pickup code.,Olib ketish kodini faqat pul o‘tkazmalari kassasi tekshira oladi.
 Open draft {name},{name} qoralamasini ochish
 "Overdue cannot be answered as of a past date: an invoice's outstanding amount is its balance today, not its balance then.","«Muddati o‘tgan» o‘tmishdagi sanaga aniqlanmaydi: hisob-fakturaning qoldig‘i bugungi qoldiqdir, o‘sha kungi emas."
+Packaging operator,Qadoqlash operatori
 Pay refund cash,Qaytarish naqdini berish
 Pickup code,Olish kodi
+Production operator,Ishlab chiqarish operatori
 Purchase Receipt {0} already has a draft invoice: {1}. Submit or delete that draft instead of raising a second bill for the same goods.,{0} tovar qabul qilish hujjatida allaqachon qoralama hisob-faktura bor: {1}. Xuddi shu mol uchun ikkinchi hisob-faktura yaratish o'rniga o'sha qoralamani tasdiqlang yoki o'chiring.
 Quote updated — switching how the fee is charged recalculates the amounts.,Hisob-kitob yangilandi — komissiyani hisoblash usulini o'zgartirish summalarni qayta hisoblaydi.
 Receivable as of {0},{0} sanasidagi debitorlik qarzi
@@ -120,6 +124,7 @@ The settings payload could not be read.,Sozlamalar ma'lumotini o'qib bo'lmadi.
 This clears the form without saving. The lines you entered will be lost.,Forma saqlanmasdan tozalanadi. Kiritilgan qatorlar yo'qoladi.
 This company runs the {engine} remittance engine. The Transfer V1 screens stay unavailable until it is switched to V1 below.,Bu kompaniya {engine} o'tkazma mexanizmida ishlaydi. Quyida V1 ga o'tkazilmaguncha Transfer V1 ekranlari mavjud bo'lmaydi.
 This entry does not balance. Do not hand over cash — report it.,Bu provodka tenglashmayapti. Naqd pul bermang — xabar bering.
+This site is not migrated for packaging operators yet.,Bu saytda qadoqlash operatorlari uchun migratsiya hali bajarilmagan.
 This will post,Quyidagilar kitobga o'tkaziladi
 Transfer registered,Pul o'tkazmasi ro'yxatga olindi
 Transfers registered on the legacy engine stay on the legacy list and are not shown by the V1 screens: they have no Remittance Transfer record behind them.,Legacy mexanizmida ro'yxatga olingan o'tkazmalar eski ro'yxatda qoladi va V1 ekranlarida ko'rinmaydi: ular ortida Remittance Transfer yozuvi yo'q.

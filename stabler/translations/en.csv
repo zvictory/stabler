@@ -123,6 +123,7 @@ Approve this refund?,Approve this refund?
 Approving does not move money.,Approving does not move money.
 Approving records the decision and nothing else. No cash leaves the drawer at this step — the sender is paid back only when the refund is completed.,Approving records the decision and nothing else. No cash leaves the drawer at this step — the sender is paid back only when the refund is completed.
 As of {stamp},As of {stamp}
+Assign operators,Assign operators
 Audit,Audit
 Balance · all time · sits against obligations nobody has collected,Balance · all time · sits against obligations nobody has collected
 Bank and cash accounts,Bank and cash accounts
@@ -299,6 +300,7 @@ Nothing registered is still waiting to be collected.,Nothing registered is still
 "Obligation posted, code unlocked, no refund in flight","Obligation posted, code unlocked, no refund in flight"
 "Oldest first · no overdue threshold is defined, so none is applied","Oldest first · no overdue threshold is defined, so none is applied"
 "One cash account per desk per currency, so a desk's book balance equals the count in that drawer.","One cash account per desk per currency, so a desk's book balance equals the count in that drawer."
+One person cannot hold both operator roles on the same Work Order.,One person cannot hold both operator roles on the same Work Order.
 Only a Remittance Finance Manager can approve or reject a refund.,Only a Remittance Finance Manager can approve or reject a refund.
 Only a Remittance Finance Manager can set the GL accounts and desk mapping for a company.,Only a Remittance Finance Manager can set the GL accounts and desk mapping for a company.
 Only a manager can unlock a pickup code.,Only a manager can unlock a pickup code.
@@ -313,6 +315,7 @@ Open in-transit liability,Open in-transit liability
 Open obligation by branch and currency,Open obligation by branch and currency
 Other accounts,Other accounts
 "Overdue cannot be answered as of a past date: an invoice's outstanding amount is its balance today, not its balance then.","Overdue cannot be answered as of a past date: an invoice's outstanding amount is its balance today, not its balance then."
+Packaging operator,Packaging operator
 Pay refund cash,Pay refund cash
 PI Group Container Status,PI Group Container Status
 PI Progress,PI Progress
@@ -349,6 +352,7 @@ Posting this reverses the obligation and takes {amount} out of the origin desk. 
 Preview — read only.,Preview — read only.
 Principal,Principal
 "Principal {0} plus commission {1} must equal {2}, not {3}.","Principal {0} plus commission {1} must equal {2}, not {3}."
+Production operator,Production operator
 Purchase Receipt {0} already has a draft invoice: {1}. Submit or delete that draft instead of raising a second bill for the same goods.,Purchase Receipt {0} already has a draft invoice: {1}. Submit or delete that draft instead of raising a second bill for the same goods.
 Quote,Quote
 Quote updated — switching how the fee is charged recalculates the amounts.,Quote updated — switching how the fee is charged recalculates the amounts.
@@ -474,6 +478,7 @@ This reason is written to the transfer's permanent event trail and is what the a
 This refund request was rejected.,This refund request was rejected.
 This request was already registered. The pickup code was shown once at that moment and cannot be shown again — a Finance Manager has to reissue the transfer if it was lost.,This request was already registered. The pickup code was shown once at that moment and cannot be shown again — a Finance Manager has to reissue the transfer if it was lost.
 "This screen could not read your employee record, so it cannot tell which desk you are registering from. Ask a Finance Manager to grant the access or to link your desk.","This screen could not read your employee record, so it cannot tell which desk you are registering from. Ask a Finance Manager to grant the access or to link your desk."
+This site is not migrated for packaging operators yet.,This site is not migrated for packaging operators yet.
 This step was already recorded. Nothing was posted a second time.,This step was already recorded. Nothing was posted a second time.
 This transfer could not be loaded.,This transfer could not be loaded.
 This transfer pays out at,This transfer pays out at

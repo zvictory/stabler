@@ -83,6 +83,7 @@ Add at least one cash desk before switching {0} to the V1 engine: V1 reads every
 Agreement {0} cannot move from {1} to {2}.,Договор {0} не может перейти из состояния {1} в {2}.
 Agreement {0} is closed ({1}) and cannot be rescheduled.,Договор {0} закрыт ({1}) и не может быть перепланирован.
 "Add at least one cash desk for {0}: every cash account comes from this table, and without a row the register desk cannot take a transfer.","Добавьте хотя бы одну кассу для {0}: каждый счёт наличных берётся из этой таблицы, и без строки касса регистрации не сможет принять перевод."
+Assign operators,Назначить операторов
 "Box counts cannot be saved on this site: {0} missing on {1}. An administrator must re-run patch {2}; bench migrate will not, it has already run once.",На этом сайте нельзя сохранить количество коробок: {0} отсутствует в {1}. Администратор должен повторно выполнить патч {2}; bench migrate этого не сделает — он уже выполнялся.
 Apply to all lines,Применить ко всем строкам
 Check the code,Проверить код
@@ -100,12 +101,15 @@ Journal entry,Запись в журнале
 Legacy — journal entry screens,Legacy — экраны журнальных проводок
 Lines disagree,Строки расходятся
 Not ready — this desk cannot take or hand over a transfer.,"Не готова — эта касса не может ни принять, ни выдать перевод."
+One person cannot hold both operator roles on the same Work Order.,Один человек не может занимать обе роли оператора в одном производственном заказе.
 Only an open agreement can be terminated. {0} is {1}.,Закрыть можно только открытый договор. {0} находится в статусе {1}.
 Only the remittance desk can verify a pickup code.,Проверить код получения может только касса переводов.
 Open draft {name},Открыть черновик {name}
 "Overdue cannot be answered as of a past date: an invoice's outstanding amount is its balance today, not its balance then.","«Просрочено» нельзя определить на прошлую дату: остаток по счёту — это его сальдо сегодня, а не сальдо на тот момент."
+Packaging operator,Оператор упаковки
 Pay refund cash,Выдать наличные по возврату
 Pickup code,Код получения
+Production operator,Оператор производства
 Purchase Receipt {0} already has a draft invoice: {1}. Submit or delete that draft instead of raising a second bill for the same goods.,У приёмки товара {0} уже есть черновик счёта: {1}. Проведите или удалите этот черновик вместо создания второго счёта за тот же товар.
 Quote updated — switching how the fee is charged recalculates the amounts.,Расчёт обновлён — смена способа удержания комиссии пересчитывает суммы.
 Receivable as of {0},Дебиторская задолженность на {0}
@@ -121,6 +125,7 @@ The settings payload could not be read.,Не удалось прочитать �
 This clears the form without saving. The lines you entered will be lost.,Форма будет очищена без сохранения. Введённые строки будут потеряны.
 This company runs the {engine} remittance engine. The Transfer V1 screens stay unavailable until it is switched to V1 below.,"Эта компания использует движок переводов {engine}. Экраны Transfer V1 остаются недоступными, пока он не переключён на V1 ниже."
 This entry does not balance. Do not hand over cash — report it.,Проводка не сходится. Не выдавайте наличные — сообщите об этом.
+This site is not migrated for packaging operators yet.,На этом сайте ещё не выполнена миграция для операторов упаковки.
 This will post,Будет проведено
 Transfer registered,Перевод зарегистрирован
 Transfers registered on the legacy engine stay on the legacy list and are not shown by the V1 screens: they have no Remittance Transfer record behind them.,"Переводы, зарегистрированные на движке legacy, остаются в старом списке и не отображаются на экранах V1: за ними нет записи Remittance Transfer."

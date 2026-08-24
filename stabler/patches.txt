@@ -98,3 +98,4 @@ stabler.patches.v93_remittance_verification_axis
 stabler.patches.v94_sales_invoice_box_fields
 stabler.patches.v95_payment_plan_roles
 stabler.patches.v96_money_idempotency_key
+stabler.patches.v97_work_order_packaging_operator

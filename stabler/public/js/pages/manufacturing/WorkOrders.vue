@@ -251,10 +251,14 @@ async function close(name) {
 	}
 }
 
-// ----- Assign operator (manager only) -----
+// ----- Assign operators (manager only) -----
+// An order is poured by one person and packed by another, so both roles are
+// edited together and sent in one call: swapping the two would otherwise pass
+// through a state where one name holds both roles, which the backend refuses.
 const assignOpen = ref(false);
 const assignBusy = ref(false);
 const selectedOperator = ref("");
+const selectedPackagingOperator = ref("");
 const operatorList = ref([]);
 
 const operatorSelectOptions = computed(() => [
@@ -262,9 +266,10 @@ const operatorSelectOptions = computed(() => [
 	...operatorList.value.map((u) => ({ value: u.name, label: u.full_name || u.name })),
 ]);
 
-async function openAssign(name) {
+async function openAssign() {
 	assignOpen.value = true;
 	selectedOperator.value = detail.value?.operator || "";
+	selectedPackagingOperator.value = detail.value?.packaging_operator || "";
 	if (!operatorList.value.length) {
 		try {
 			operatorList.value = await call("stabler.api.manufacturing.list_operators", {
@@ -282,6 +287,7 @@ async function confirmAssign(name) {
 		await call("stabler.api.manufacturing.assign_work_order_operator", {
 			name,
 			operator: selectedOperator.value || "",
+			packaging_operator: selectedPackagingOperator.value || "",
 		});
 		assignOpen.value = false;
 		await refreshDetail();
@@ -312,6 +318,7 @@ function blankWO() {
 		wip_warehouse: "",
 		source_warehouse: "",
 		operator: "",
+		packaging_operator: "",
 	};
 }
 const form = ref(blankWO());
@@ -438,6 +445,7 @@ async function saveWO(submitAfter) {
 			wip_warehouse: form.value.wip_warehouse || undefined,
 			source_warehouse: form.value.source_warehouse || undefined,
 			operator: form.value.operator || undefined,
+			packaging_operator: form.value.packaging_operator || undefined,
 			submit: submitAfter ? 1 : 0,
 		});
 		closeCreate();
@@ -526,7 +534,18 @@ async function saveWO(submitAfter) {
 								<div class="fw-semibold">{{ r.item_name || r.production_item }}</div>
 								<div class="small text-secondary font-monospace">{{ r.production_item }}</div>
 							</td>
-							<td class="small text-secondary">{{ r.operator || "—" }}</td>
+							<!-- Both roles, labelled: an unfilled packing slot blocks the order,
+								 so "—" has to be readable as a gap and not as a missing column. -->
+							<td class="small text-secondary">
+								<div>
+									<span class="text-muted">{{ t("Production operator") }}:</span>
+									{{ r.operator || "—" }}
+								</div>
+								<div>
+									<span class="text-muted">{{ t("Packaging operator") }}:</span>
+									{{ r.packaging_operator || "—" }}
+								</div>
+							</td>
 							<td class="text-end font-monospace">{{ formatQty(r.qty) }}</td>
 							<td class="text-end font-monospace text-secondary">{{ formatQty(r.transferred_qty) }}</td>
 							<td class="text-end font-monospace text-blue">{{ formatQty(r.produced_qty) }}</td>
@@ -588,35 +607,44 @@ async function saveWO(submitAfter) {
 
 						<!-- Operator assignment (manager only) -->
 						<div class="mb-3">
-							<div class="text-secondary small">{{ t("Operator") }}</div>
-							<div class="d-flex align-items-center gap-2 mt-1">
-								<span class="small">{{ detail.operator || "—" }}</span>
+							<div class="d-flex align-items-start gap-2">
+								<div class="flex-grow-1">
+									<div class="text-secondary small">{{ t("Production operator") }}</div>
+									<div class="small">{{ detail.operator || "—" }}</div>
+									<div class="text-secondary small mt-2">{{ t("Packaging operator") }}</div>
+									<div class="small">{{ detail.packaging_operator || "—" }}</div>
+								</div>
 								<button
 									type="button"
 									class="btn btn-sm btn-outline-secondary"
 									:disabled="actionBusy"
-									@click="openAssign(detail.name)"
+									@click="openAssign()"
 								>
-									{{ t("Assign operator") }}
+									{{ t("Assign operators") }}
 								</button>
 							</div>
-							<div v-if="assignOpen" class="mt-2 d-flex gap-2 align-items-center">
-								<Select v-model="selectedOperator" :options="operatorSelectOptions" class="flex-grow-1" />
-								<button
-									type="button"
-									class="btn btn-sm btn-primary"
-									:disabled="assignBusy"
-									@click="confirmAssign(detail.name)"
-								>
-									{{ t("Save") }}
-								</button>
-								<button
-									type="button"
-									class="btn btn-sm btn-ghost-secondary"
-									@click="assignOpen = false"
-								>
-									{{ t("Cancel") }}
-								</button>
+							<div v-if="assignOpen" class="mt-2">
+								<label class="form-label small mb-1">{{ t("Production operator") }}</label>
+								<Select v-model="selectedOperator" :options="operatorSelectOptions" />
+								<label class="form-label small mb-1 mt-2">{{ t("Packaging operator") }}</label>
+								<Select v-model="selectedPackagingOperator" :options="operatorSelectOptions" />
+								<div class="d-flex gap-2 mt-2">
+									<button
+										type="button"
+										class="btn btn-sm btn-primary"
+										:disabled="assignBusy"
+										@click="confirmAssign(detail.name)"
+									>
+										{{ t("Save") }}
+									</button>
+									<button
+										type="button"
+										class="btn btn-sm btn-ghost-secondary"
+										@click="assignOpen = false"
+									>
+										{{ t("Cancel") }}
+									</button>
+								</div>
 							</div>
 						</div>
 
@@ -850,8 +878,15 @@ async function saveWO(submitAfter) {
 								<DateInput v-model="form.planned_start_date" />
 							</div>
 							<div class="col-md-4">
-								<label class="form-label">{{ t("Operator") }}</label>
+								<label class="form-label">{{ t("Production operator") }}</label>
 								<Select v-model="form.operator" :options="operatorList" value-key="name" placeholder="—">
+									<template #option="{ option }">{{ option.full_name || option.name }}</template>
+									<template #selected="{ option }">{{ option.full_name || option.name }}</template>
+								</Select>
+							</div>
+							<div class="col-md-4">
+								<label class="form-label">{{ t("Packaging operator") }}</label>
+								<Select v-model="form.packaging_operator" :options="operatorList" value-key="name" placeholder="—">
 									<template #option="{ option }">{{ option.full_name || option.name }}</template>
 									<template #selected="{ option }">{{ option.full_name || option.name }}</template>
 								</Select>

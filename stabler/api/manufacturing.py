@@ -41,10 +41,71 @@ def _require_mfg() -> None:
 		frappe.throw(_("Not permitted"), frappe.PermissionError)
 
 
+#: The Work Order fields naming a shop-floor assignee. `operator` is the production
+#: role, `packaging_operator` the packing role (patch v97) — one order, two people,
+#: and both must pass the same gate. Enumerated once so the access helper and the
+#: SQL filter in `list_work_orders` cannot answer differently; a rule spelled out
+#: twice is a rule that drifts, and test_wo_operator_roles fails if one does.
+_WO_OPERATOR_FIELDS = ("operator", "packaging_operator")
+
+
+def _wo_operator_columns() -> tuple[str, ...]:
+	"""The assignee columns that actually exist on this site.
+
+	`packaging_operator` is a Custom Field, so it exists only after v97 has run.
+	Between a code deploy and the `bench migrate` behind it, naming the column in
+	raw SQL would 500 the work-order list for every operator on the site. Falling
+	back to the production role alone keeps the list serving, and the second role
+	appears the moment migrate lands — the same shape `sourcing.py` and `sales.py`
+	use for their own custom fields.
+	"""
+	return tuple(f for f in _WO_OPERATOR_FIELDS if frappe.db.has_column("Work Order", f))
+
+
+def _require_wo_operator_column(field: str) -> None:
+	"""Refuse to write an operator role whose column this site does not carry yet.
+
+	Reads degrade quietly (`_wo_operator_columns`) so the shop floor keeps working
+	in the window between a code deploy and the `bench migrate` behind it. Writes
+	must not degrade at all: Frappe drops an unknown key before `get_valid_dict()`
+	ever sees it, so the packer would simply not be recorded and nothing would say
+	so — the manager reads back "not assigned" and re-assigns forever. That silence
+	is the exact failure v94 was written about. Fail loudly instead of half-saving.
+	"""
+	if field not in _wo_operator_columns():
+		frappe.throw(_("This site is not migrated for packaging operators yet."))
+
+
+def _is_wo_assignee(doc, user: str | None = None) -> bool:
+	"""Is `user` assigned to this Work Order, in either operator role?
+
+	`doc` is anything answering `.get(fieldname)` — a Document, or the dict
+	`frappe.db.get_value(..., as_dict=True)` returns.
+	"""
+	user = user or frappe.session.user
+	# Without this, an anonymous caller matches every unassigned role (None == None)
+	# and the guard fails open — the one direction a permission check must not fail.
+	if not user:
+		return False
+	return any(doc.get(field) == user for field in _WO_OPERATOR_FIELDS)
+
+
+def _assert_distinct_operators(production: str | None, packaging: str | None) -> None:
+	"""Refuse one person in both operator roles on the same Work Order.
+
+	Pouring and packing are two stations running at the same time, and their
+	output — material used, rejects, minutes — is counted separately per person.
+	One name in both slots makes those two numbers indistinguishable, which is
+	the whole reason the roles were split apart in v97.
+	"""
+	if production and packaging and production == packaging:
+		frappe.throw(_("One person cannot hold both operator roles on the same Work Order."))
+
+
 def _require_own_work_order(name: str) -> None:
-	"""Assert current user is the assigned operator on this WO (non-managers only)."""
-	operator = frappe.db.get_value("Work Order", name, "operator")
-	if operator != frappe.session.user:
+	"""Assert current user is an assigned operator on this WO (non-managers only)."""
+	row = frappe.db.get_value("Work Order", name, list(_wo_operator_columns()), as_dict=True)
+	if not row or not _is_wo_assignee(row):
 		frappe.throw(_("Not permitted"), frappe.PermissionError)
 
 
@@ -313,17 +374,20 @@ def list_work_orders(
 	if search:
 		conds.append("(name LIKE %(s)s OR production_item LIKE %(s)s OR item_name LIKE %(s)s)")
 		params["s"] = f"%{search}%"
-	# Operators see only WOs assigned to themselves; managers see all.
+	assignee_cols = _wo_operator_columns()
+	# Operators see only WOs assigned to themselves; managers see all. Assigned in
+	# EITHER role — the packer has to reach the same order as the pourer.
 	if not _is_mfg_manager():
-		conds.append("operator = %(user)s")
+		conds.append("(" + " OR ".join(f"`{col}` = %(user)s" for col in assignee_cols) + ")")
 		params["user"] = frappe.session.user
 	where = " AND ".join(conds)
+	assignee_select = "".join(f"{col}, " for col in assignee_cols)
 	return frappe.db.sql(
 		f"""
 		SELECT name, production_item, item_name, bom_no, qty, produced_qty,
 		       material_transferred_for_manufacturing AS transferred_qty,
 		       status, planned_start_date, planned_end_date, fg_warehouse,
-		       wip_warehouse, operator, docstatus, modified
+		       wip_warehouse, {assignee_select}docstatus, modified
 		FROM `tabWork Order`
 		WHERE {where}
 		ORDER BY modified DESC
@@ -345,7 +409,7 @@ def work_order_detail(name: str):
 	is_warehouse = _is_warehouse_role()
 
 	# IDOR guard: operators may only view their own WOs, but managers and warehouse staff can view any WO.
-	if not (is_manager or is_warehouse) and doc.get("operator") != frappe.session.user:
+	if not (is_manager or is_warehouse or _is_wo_assignee(doc)):
 		frappe.throw(_("Not permitted"), frappe.PermissionError)
 
 	required = [
@@ -377,6 +441,7 @@ def work_order_detail(name: str):
 		"source_warehouse": doc.source_warehouse,
 		"company": doc.company,
 		"operator": doc.get("operator") or None,
+		"packaging_operator": doc.get("packaging_operator") or None,
 		"batch_no": doc.get("custom_batch_no") or None,
 		"batch_mfg_date": str(doc.custom_batch_mfg_date) if doc.get("custom_batch_mfg_date") else None,
 		"batch_expiry": str(doc.custom_batch_expiry) if doc.get("custom_batch_expiry") else None,
@@ -407,6 +472,7 @@ def create_work_order(
 	wip_warehouse: str | None = None,
 	source_warehouse: str | None = None,
 	operator: str | None = None,
+	packaging_operator: str | None = None,
 	submit: int = 0,
 ):
 	_assert_company_scope(company)  # tenant isolation: reject a foreign company arg
@@ -416,8 +482,10 @@ def create_work_order(
 		frappe.throw(f"Unknown item: {production_item}")
 	if flt(qty) <= 0:
 		frappe.throw("Quantity must be positive.")
-	if operator and not frappe.db.exists("User", operator):
-		frappe.throw(_("Unknown user: {0}").format(operator))
+	for candidate in (operator, packaging_operator):
+		if candidate and not frappe.db.exists("User", candidate):
+			frappe.throw(_("Unknown user: {0}").format(candidate))
+	_assert_distinct_operators(operator, packaging_operator)
 
 	if not bom_no:
 		bom_no = frappe.db.get_value(
@@ -443,6 +511,9 @@ def create_work_order(
 		doc.source_warehouse = source_warehouse
 	if operator:
 		doc.operator = operator
+	if packaging_operator:
+		_require_wo_operator_column("packaging_operator")
+		doc.packaging_operator = packaging_operator
 
 	doc.set_work_order_operations()
 	doc.get_items_and_operations_from_bom()
@@ -598,16 +669,34 @@ def make_work_order_stock_entry(
 
 
 @frappe.whitelist()
-def assign_work_order_operator(name: str, operator: str):
-	"""Assign a shop-floor operator to this Work Order. Manager-only."""
+def assign_work_order_operator(name: str, operator: str = "", packaging_operator: str = ""):
+	"""Set both shop-floor operator roles on this Work Order. Manager-only.
+
+	Both roles are written in one call because they are validated against each
+	other. Assigning them one at a time cannot express a swap: going from
+	(A pours, B packs) to (B pours, A packs) passes through a state where B holds
+	both, and a per-role endpoint would refuse the second half of the very move it
+	was asked to make. The pair is the unit the constraint is about, so the pair is
+	the unit that gets written.
+
+	An empty string clears that role — the "— Remove operator —" option in the SPA.
+	"""
 	_assert_can_write("Work Order", name, "write")
 	_require_mfg_manager()
 	if not frappe.db.exists("Work Order", name):
 		frappe.throw(f"Unknown Work Order: {name}")
-	if operator and not frappe.db.exists("User", operator):
-		frappe.throw(_("Unknown user: {0}").format(operator))
-	frappe.db.set_value("Work Order", name, "operator", operator or None)
-	return {"name": name, "operator": operator or None}
+	assignment = {"operator": operator or None, "packaging_operator": packaging_operator or None}
+	for who in assignment.values():
+		if who and not frappe.db.exists("User", who):
+			frappe.throw(_("Unknown user: {0}").format(who))
+	_assert_distinct_operators(assignment["operator"], assignment["packaging_operator"])
+
+	for field, who in assignment.items():
+		if who:
+			_require_wo_operator_column(field)
+		if field in _wo_operator_columns():
+			frappe.db.set_value("Work Order", name, field, who)
+	return {"name": name, **assignment}
 
 
 # ----- Batch / lot traceability (Faz 4a) -----------------------------------
@@ -687,7 +776,7 @@ def wo_genealogy(work_order: str):
 	if not frappe.db.exists("Work Order", work_order):
 		frappe.throw(f"Unknown Work Order: {work_order}")
 	doc = frappe.get_doc("Work Order", work_order)
-	if not (_is_mfg_manager() or _is_warehouse_role()) and doc.get("operator") != frappe.session.user:
+	if not (_is_mfg_manager() or _is_warehouse_role() or _is_wo_assignee(doc)):
 		frappe.throw(_("Not permitted"), frappe.PermissionError)
 	consumed = frappe.db.sql(
 		"""

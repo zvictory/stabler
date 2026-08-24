@@ -82,6 +82,7 @@ Add at least one cash desk before switching {0} to the V1 engine: V1 reads every
 Agreement {0} cannot move from {1} to {2}.,{0} sözleşmesi {1} durumundan {2} durumuna geçemez.
 Agreement {0} is closed ({1}) and cannot be rescheduled.,{0} sözleşmesi kapalı ({1}) ve yeniden planlanamaz.
 "Add at least one cash desk for {0}: every cash account comes from this table, and without a row the register desk cannot take a transfer.","{0} için en az bir kasa masası ekleyin: her nakit hesabı bu tablodan gelir ve satır olmadan kayıt masası havale kabul edemez."
+Assign operators,Operatörleri ata
 "Box counts cannot be saved on this site: {0} missing on {1}. An administrator must re-run patch {2}; bench migrate will not, it has already run once.","Bu sitede koli sayıları kaydedilemez: {1} üzerinde {0} yok. Bir yönetici {2} patch'ini yeniden çalıştırmalı; bench migrate bunu yapmaz, o bir kez çalıştı."
 Apply to all lines,Tüm satırlara uygula
 Check the code,Kodu doğrula
@@ -99,12 +100,15 @@ Journal entry,Yevmiye kaydı
 Legacy — journal entry screens,Legacy — yevmiye kaydı ekranları
 Lines disagree,Satırlar farklı
 Not ready — this desk cannot take or hand over a transfer.,Hazır değil — bu kasa transferi ne alabilir ne verebilir.
+One person cannot hold both operator roles on the same Work Order.,Bir kişi aynı iş emrinde her iki operatör rolünü birden üstlenemez.
 Only an open agreement can be terminated. {0} is {1}.,Yalnızca açık bir sözleşme kapatılabilir. {0} şu durumda: {1}.
 Only the remittance desk can verify a pickup code.,Teslim kodunu yalnızca havale gişesi doğrulayabilir.
 Open draft {name},{name} taslağını aç
 "Overdue cannot be answered as of a past date: an invoice's outstanding amount is its balance today, not its balance then.","«Vadesi geçmiş» geçmiş bir tarihe göre yanıtlanamaz: faturanın kalanı bugünkü bakiyesidir, o günkü değil."
+Packaging operator,Paketleme operatörü
 Pay refund cash,İade nakdini öde
 Pickup code,Teslim kodu
+Production operator,Üretim operatörü
 Purchase Receipt {0} already has a draft invoice: {1}. Submit or delete that draft instead of raising a second bill for the same goods.,{0} mal kabul fişinin zaten bir taslak faturası var: {1}. Aynı mal için ikinci bir fatura kesmek yerine o taslağı onaylayın veya silin.
 Quote updated — switching how the fee is charged recalculates the amounts.,Fiyat güncellendi — komisyonun alınma şeklini değiştirmek tutarları yeniden hesaplar.
 Receivable as of {0},{0} itibarıyla alacak
@@ -120,6 +124,7 @@ The settings payload could not be read.,Ayar verisi okunamadı.
 This clears the form without saving. The lines you entered will be lost.,Form kaydedilmeden temizlenir. Girdiğiniz satırlar kaybolur.
 This company runs the {engine} remittance engine. The Transfer V1 screens stay unavailable until it is switched to V1 below.,Bu şirket {engine} transfer motorunu çalıştırıyor. Aşağıdan V1'e geçirilene kadar Transfer V1 ekranları kullanılamaz.
 This entry does not balance. Do not hand over cash — report it.,Bu kayıt denkleşmiyor. Nakit vermeyin — bildirin.
+This site is not migrated for packaging operators yet.,Bu sitede paketleme operatörleri için geçiş henüz yapılmadı.
 This will post,Şu kayıt işlenecek
 Transfer registered,Havale kaydedildi
 Transfers registered on the legacy engine stay on the legacy list and are not shown by the V1 screens: they have no Remittance Transfer record behind them.,Legacy motorunda kaydedilen transferler eski listede kalır ve V1 ekranlarında görünmez: arkalarında Remittance Transfer kaydı yoktur.
