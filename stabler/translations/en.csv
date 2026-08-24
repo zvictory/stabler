@@ -125,6 +125,7 @@ Approving records the decision and nothing else. No cash leaves the drawer at th
 As of {stamp},As of {stamp}
 Assign operators,Assign operators
 Audit,Audit
+Background jobs are not running. Queued and scheduled work is paused — tell an administrator.,Background jobs are not running. Queued and scheduled work is paused — tell an administrator.
 Balance · all time · sits against obligations nobody has collected,Balance · all time · sits against obligations nobody has collected
 Bank and cash accounts,Bank and cash accounts
 Base currency: {currency},Base currency: {currency}

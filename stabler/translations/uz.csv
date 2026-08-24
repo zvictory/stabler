@@ -85,6 +85,7 @@ Agreement {0} is closed ({1}) and cannot be rescheduled.,{0} shartnomasi yopiq (
 Assign operators,Operatorlarni belgilash
 "Box counts cannot be saved on this site: {0} missing on {1}. An administrator must re-run patch {2}; bench migrate will not, it has already run once.","Bu saytda quti sonini saqlab bo'lmaydi: {1} da {0} yo'q. Administrator {2} patchini qayta ishga tushirishi kerak; bench migrate buni qilmaydi, u allaqachon ishlagan."
 Apply to all lines,Barcha qatorlarga qo'llash
+Background jobs are not running. Queued and scheduled work is paused — tell an administrator.,Fon vazifalari ishlamayapti. Navbatdagi va rejalashtirilgan ishlar to'xtatildi — administratorga xabar bering.
 Check the code,Kodni tekshirish
 Clear form,Formani tozalash
 Credit ({currency}),Kredit ({currency})

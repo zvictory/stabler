@@ -6,7 +6,9 @@ import CommandPalette from "./components/CommandPalette.vue";
 import ToastHost from "./components/ToastHost.vue";
 import ConfirmHost from "./components/ConfirmHost.vue";
 import UpdateBanner from "./components/UpdateBanner.vue";
+import BackgroundJobsBanner from "./components/BackgroundJobsBanner.vue";
 import { useSession } from "./stores/session.js";
+import { startBackgroundHealthCheck } from "./composables/backgroundHealth.js";
 
 const route = useRoute();
 const session = useSession();
@@ -17,6 +19,7 @@ const isStandalone = computed(() => {
 
 onMounted(() => {
 	session.setupRehydration();
+	startBackgroundHealthCheck();
 });
 </script>
 
@@ -32,6 +35,7 @@ onMounted(() => {
 		<Sidebar />
 		<div class="page-wrapper">
 			<UpdateBanner />
+			<BackgroundJobsBanner />
 			<router-view v-slot="{ Component }">
 				<component :is="Component" />
 			</router-view>
