@@ -6330,3 +6330,10 @@ Amend a posted entry?,Kaydedilmiş fiş düzeltilsin mi?
 "This cancels {name} and posts a replacement in its place. If the amount requires approval, the replacement stays a draft until it is approved — and until then the ledger is short by that amount.","Bu, {name} kaydını iptal eder ve yerine bir değiştirme kaydı geçer. Tutar onay gerektiriyorsa değiştirme kaydı onaylanana kadar taslak kalır — o zamana kadar defterde bu tutar eksik olur."
 Edit draft expense,Gider taslağını düzenle
 Edit draft transfer,Transfer taslağını düzenle
+Enter the exchange rate for the {0} charge: {1},{0} masrafı için kuru girin: {1}
+"A customs line is valued from its customs value, not from a currency quote: {0}","Gümrük satırı kur ile değil, gümrük kıymetinden değerlenir: {0}"
+from CBU,MB'den
+Currency this charge is quoted in,Masrafın belirtildiği para birimi
+Rate date,Kur tarihi
+Fetch the Central Bank rate,Merkez Bankası kurunu getir
+Enter an exchange rate,Bir kur girin
