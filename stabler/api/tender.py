@@ -21,6 +21,7 @@ from stabler.api._bid_package import assemble_bid_package, build_bid_docx
 from stabler.api._common import _require_company
 from stabler.api.approvals import _assert_company_scope
 from stabler.api.organization import _can_access_module
+from stabler.stabler.tender_landed_math import converted_amount
 
 _STAGE = "Stabler SO Stage"
 
@@ -271,6 +272,9 @@ def _parse_landed(raw) -> list[dict]:
 		ctype = str(it.get("type") or "other")
 		if ctype not in _CHARGE_TYPES:
 			ctype = "other"
+		ccy = str(it.get("currency") or "").strip().upper()[:8]
+		amount_ccy = flt(it.get("amount_original"))
+		actual_ccy = flt(it.get("actual_original"))
 		out.append(
 			{
 				"type": ctype,
@@ -297,8 +301,37 @@ def _parse_landed(raw) -> list[dict]:
 				# the document's base total so plan-vs-actual reflects the ledger.
 				"actual_voucher_type": str(it.get("actual_voucher_type") or "").strip()[:40],
 				"actual_voucher": str(it.get("actual_voucher") or "").strip()[:140],
+				# WP-T3: a charge quoted in the forwarder's own currency. An empty
+				# `currency` means the figure is already in company currency, which is
+				# every line stored before T3 — those pass through untouched below.
+				# `rate_date` is provenance, not arithmetic: it records WHICH day's
+				# quote the rate is, so a rate carried over from another day stays
+				# visible instead of merely present.
+				"currency": ccy,
+				"fx_rate": flt(it.get("fx_rate")),
+				"rate_date": str(it.get("rate_date") or "").strip()[:10],
+				"amount_original": amount_ccy,
+				"actual_original": actual_ccy,
 			}
 		)
+		# `amount`/`actual` stay the company-currency figures every consumer sums.
+		# Deriving them here — the one chokepoint both reads and writes pass
+		# through — is what stops the two from ever disagreeing.
+		# A customs line is excluded on purpose: its amount comes from the CIF
+		# calculator (`applyCustoms`), so converting here would give it a second
+		# writer — and the conversion would be wrong anyway. The ГТД declares the
+		# customs value in company currency at the rate customs itself applied;
+		# re-deriving it from a CBU quote produces a figure the declaration does
+		# not agree with. `save_po_landed_charges` refuses the combination.
+		if ccy and ctype != "customs":
+			for field, source in (("amount", amount_ccy), ("actual", actual_ccy)):
+				converted = converted_amount(source, ccy, out[-1]["fx_rate"])
+				# None means the rate is unusable. `save_po_landed_charges` refuses to
+				# store that, so reaching it means hand-edited JSON: keep the stored
+				# figure, which was a real conversion when it was written, rather than
+				# inventing one. Reading must never throw.
+				if converted is not None:
+					out[-1][field] = converted
 	return out
 
 
@@ -443,6 +476,23 @@ def save_po_landed_charges(po: str, charges) -> dict:
 	if not frappe.db.has_column("Purchase Order", "custom_landed_charges"):
 		frappe.throw(_("Run migrate to enable landed-cost planning."))
 	cleaned = _parse_landed(charges)
+	# WP-T3: a line naming a currency with no usable rate cannot be valued, and a
+	# line that cannot be valued must not enter the total that decides which vendor
+	# wins the tender. Refused here rather than in `_parse_landed`, which also
+	# serves every read and must render stored data instead of throwing on it.
+	for c in cleaned:
+		if c["currency"] and c["type"] == "customs":
+			frappe.throw(
+				_("A customs line is valued from its customs value, not from a currency quote: {0}").format(
+					c["label"] or c["type"]
+				)
+			)
+		if c["currency"] and c["fx_rate"] <= 0:
+			frappe.throw(
+				_("Enter the exchange rate for the {0} charge: {1}").format(
+					c["currency"], c["label"] or c["type"]
+				)
+			)
 	frappe.db.set_value(
 		"Purchase Order",
 		po,

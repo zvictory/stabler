@@ -445,5 +445,134 @@ class TestManufacturingKiosk(unittest.TestCase):
 			warehouse_stock("Test Company", "WIP-5")
 
 
+class TestWorkOrderTwoOperatorRoles(unittest.TestCase):
+	"""One order, two operators — the access gate has to admit both (patch v97).
+
+	Before v97 a Work Order named one `operator`, and that field was also the IDOR
+	guard. On anjan's floor the same order is poured by one person and packed by
+	another, so under the old rule whichever of the two was not named in that single
+	field could not open the order at all: not the detail, not the transfer preview,
+	not the finish. Naming the packer instead simply moved the blindness onto the
+	pourer. These tests hold the gate open for both roles and shut for everyone else.
+	"""
+
+	@staticmethod
+	def _doc(production, packaging):
+		"""A Work Order mock whose custom fields answer per fieldname.
+
+		The older cases in this file set a single `get.return_value`, which cannot
+		express "A pours, B packs" — the shape the whole feature is about.
+		"""
+		doc = MagicMock()
+		doc.name = "WO-00003"
+		doc.required_items = []
+		values = {"operator": production, "packaging_operator": packaging}
+		doc.get.side_effect = lambda field, *a: values.get(field)
+		return doc
+
+	@patch("stabler.api.manufacturing._require_mfg")
+	@patch("stabler.api.manufacturing._assert_can_read")
+	@patch("stabler.api.manufacturing.frappe.db.exists")
+	@patch("stabler.api.manufacturing.frappe.get_doc")
+	@patch("stabler.api.manufacturing._is_mfg_manager")
+	@patch("stabler.api.manufacturing._is_warehouse_role")
+	@patch("stabler.api.manufacturing.frappe.session")
+	def test_packaging_operator_may_open_the_order_they_pack(
+		self,
+		mock_session,
+		mock_is_wh,
+		mock_is_mgr,
+		mock_get_doc,
+		mock_exists,
+		mock_assert_can_read,
+		mock_require_mfg,
+	):
+		"""The packer is an assignee of the order, not a stranger to it.
+
+		This is the case the single-field guard got wrong: production is someone
+		else's name, so the old comparison refused the person actually holding the
+		packing station.
+		"""
+		mock_exists.return_value = True
+		mock_is_mgr.return_value = False
+		mock_is_wh.return_value = False
+		mock_session.user = "packer@example.com"
+		mock_get_doc.return_value = self._doc("pourer@example.com", "packer@example.com")
+
+		payload = work_order_detail("WO-00003")
+
+		self.assertEqual(payload["packaging_operator"], "packer@example.com")
+		self.assertEqual(payload["operator"], "pourer@example.com")
+
+	@patch("stabler.api.manufacturing._require_mfg")
+	@patch("stabler.api.manufacturing._assert_can_read")
+	@patch("stabler.api.manufacturing.frappe.db.exists")
+	@patch("stabler.api.manufacturing.frappe.get_doc")
+	@patch("stabler.api.manufacturing._is_mfg_manager")
+	@patch("stabler.api.manufacturing._is_warehouse_role")
+	@patch("stabler.api.manufacturing.frappe.session")
+	def test_second_role_does_not_open_the_order_to_everyone_else(
+		self,
+		mock_session,
+		mock_is_wh,
+		mock_is_mgr,
+		mock_get_doc,
+		mock_exists,
+		mock_assert_can_read,
+		mock_require_mfg,
+	):
+		"""Widening the gate from one name to two must not widen it to any name.
+
+		`any(doc.get(f) == user ...)` fails open the moment an unassigned role and
+		an unknown caller are both falsy, so this asserts the negative directly
+		with the packing slot deliberately empty.
+		"""
+		mock_exists.return_value = True
+		mock_is_mgr.return_value = False
+		mock_is_wh.return_value = False
+		mock_session.user = "stranger@example.com"
+		mock_get_doc.return_value = self._doc("pourer@example.com", None)
+
+		with self.assertRaises(PermissionError):
+			work_order_detail("WO-00003")
+
+	@patch("stabler.api.manufacturing.frappe.db.has_column")
+	def test_assigning_a_packer_before_migrate_fails_loudly(self, mock_has_column):
+		"""A site missing the column must refuse the write, not swallow it.
+
+		Reads degrade on purpose in that window so the floor keeps working. Writes
+		must not: Frappe drops an unknown key before `get_valid_dict()` sees it, so
+		without this guard the packer is simply not recorded, `set_value` reports
+		success, and the manager re-assigns the same person forever with no error
+		anywhere. Silent is the one outcome worse than broken.
+		"""
+		from stabler.api.manufacturing import _require_wo_operator_column
+
+		mock_has_column.side_effect = lambda _dt, col: col == "operator"
+
+		with self.assertRaises(Exception):
+			_require_wo_operator_column("packaging_operator")
+
+		# The production role predates v97, so it stays writable on such a site.
+		_require_wo_operator_column("operator")
+
+	def test_one_person_cannot_hold_both_roles_on_one_order(self):
+		"""Pouring and packing are counted separately per person.
+
+		Both slots on one name makes material use, rejects and minutes
+		indistinguishable between the two stations — which is exactly the
+		measurement the split was made to produce.
+		"""
+		from stabler.api.manufacturing import _assert_distinct_operators
+
+		with self.assertRaises(Exception):
+			_assert_distinct_operators("same@example.com", "same@example.com")
+
+		# The legitimate shapes stay legal: two people, or a role left unfilled.
+		_assert_distinct_operators("pourer@example.com", "packer@example.com")
+		_assert_distinct_operators("pourer@example.com", None)
+		_assert_distinct_operators(None, None)
+
+
 if __name__ == "__main__":
 	unittest.main()

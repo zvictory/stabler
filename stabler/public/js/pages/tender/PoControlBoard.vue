@@ -10,13 +10,14 @@ import { useRoute, useRouter } from "vue-router";
 import { useSession } from "../../stores/session.js";
 import { call } from "../../api/client.js";
 import { formatMoney } from "../../composables/money.js";
-import { formatDate } from "../../composables/date.js";
+import { formatDate, todayIso } from "../../composables/date.js";
 import { t } from "../../composables/i18n.js";
 import { useToast } from "../../composables/useToast.js";
 import { useEscapeBack } from "../../composables/useEscapeBack.js";
 import Typeahead from "../../components/Typeahead.vue";
 import EmptyState from "../../components/EmptyState.vue";
 import MoneyInput from "../../components/MoneyInput.vue";
+import DateInput from "../../components/DateInput.vue";
 import BidPricing from "./BidPricing.vue";
 import TenderPage from "./TenderPage.vue";
 import TenderIntake from "./TenderIntake.vue";
@@ -40,6 +41,11 @@ const selectedVendor = ref("");
 
 // Charge-type catalogue: `type` drives the icon only; `label` is free text so
 // the plan can hold literally any cost item.
+// WP-T3: the currencies a landed charge is realistically quoted in for an Uzbek
+// importer. The empty option is company currency — which is every line stored
+// before T3, and stays the default. Same shape as remittanceCurrencies.js.
+const CHARGE_CURRENCIES = ["USD", "EUR", "RUB", "CNY", "TRY"];
+
 const CHARGE_TYPES = [
 	{ v: "transport", icon: "ti-truck" },
 	{ v: "customs", icon: "ti-building-bank" },
@@ -175,6 +181,8 @@ async function openEditor(card) {
 			tnved: c.tnved || "", supplier: c.supplier || "", supplier_name: c.supplier_name || "",
 			cif: c.cif || null, duty_pct: c.duty_pct || null, vat_pct: c.vat_pct || 12, excise_pct: c.excise_pct || 0,
 			vat_recoverable: c.vat_recoverable !== false, rate_source: "",
+			currency: c.currency || "", fx_rate: c.fx_rate || 0, rate_date: c.rate_date || "",
+			amount_original: c.amount_original || null, actual_original: c.actual_original || null, fx_source: "",
 			actual_voucher_type: c.actual_voucher_type || "", actual_voucher: c.actual_voucher || "", actual_label: c.actual_voucher ? c.actual_voucher : "",
 		}));
 	} catch (err) {
@@ -184,7 +192,7 @@ async function openEditor(card) {
 	}
 }
 function addLine() {
-	editorLines.value.push({ type: "transport", label: "", amount: null, actual: null, tnved: "", supplier: "", supplier_name: "", cif: null, duty_pct: null, vat_pct: 12, excise_pct: 0, vat_recoverable: true, rate_source: "", actual_voucher_type: "", actual_voucher: "", actual_label: "" });
+	editorLines.value.push({ type: "transport", label: "", amount: null, actual: null, tnved: "", supplier: "", supplier_name: "", cif: null, duty_pct: null, vat_pct: 12, excise_pct: 0, vat_recoverable: true, rate_source: "", currency: "", fx_rate: 0, rate_date: "", amount_original: null, actual_original: null, fx_source: "", actual_voucher_type: "", actual_voucher: "", actual_label: "" });
 }
 function removeLine(i) {
 	editorLines.value.splice(i, 1);
@@ -210,6 +218,46 @@ function customsCalc(l) {
 }
 function applyCustoms(l) {
 	l.amount = Math.round(customsCalc(l).capitalized);
+}
+// WP-T3 --------------------------------------------------------------------
+// Mirrors tender_landed_math.converted_amount. The server derives the stored
+// figure with that rule; this is only the preview while typing, and it returns
+// null on an unusable rate for the same reason: a charge shown at its
+// unconverted number reads as CHEAP and hands the tender to the wrong vendor.
+function convertedPreview(l) {
+	if (!l.currency) return Number(l.amount) || 0;
+	const rate = Number(l.fx_rate) || 0;
+	if (rate <= 0) return null;
+	return Math.round((Number(l.amount_original) || 0) * rate * 100) / 100;
+}
+async function fetchChargeRate(l) {
+	l.fx_source = "";
+	if (!l.currency) return;
+	if (!l.rate_date) l.rate_date = todayIso();
+	try {
+		const raw = await call("stabler.api.money.get_exchange_rate_for_currencies", {
+			from_currency: l.currency, to_currency: ccy.value, posting_date: l.rate_date,
+		});
+		const r = Number(raw) || 0;
+		if (r > 0) {
+			l.fx_rate = r;
+			l.fx_source = t("from CBU") + " · " + l.rate_date;
+		} else {
+			l.fx_source = t("No exchange rate for this date — enter manually.");
+		}
+	} catch (e) {
+		l.fx_source = t("No exchange rate for this date — enter manually.");
+	}
+}
+// A rate belongs to the currency it was quoted for. Carrying it across a
+// currency change would price this charge with another currency's quote — the
+// transfer form shipped exactly that bug (P0-TRF-1) and it inverted transfers.
+function onChargeCurrency(l) {
+	l.fx_rate = 0;
+	l.rate_date = "";
+	l.fx_source = "";
+	if (!l.currency) { l.amount_original = null; l.actual_original = null; }
+	else fetchChargeRate(l);
 }
 // WP-T2: pull duty/excise/VAT from the real HS Duty Rate engine when a ТН ВЭД
 // code is entered, instead of typing percentages by hand. Falls back silently
@@ -262,13 +310,18 @@ async function saveEditor() {
 	editorSaving.value = true;
 	try {
 		const clean = editorLines.value
-			.filter((l) => Number(l.amount))
+			// A foreign-currency line carries its figure in `amount_original`; the
+			// company-currency `amount` is derived server-side and is still 0 here.
+			// Filtering on `amount` alone silently dropped every such line on save.
+			.filter((l) => Number(l.amount) || Number(l.amount_original))
 			.map((l) => ({
 				type: l.type || "other", label: (l.label || "").trim(), amount: Number(l.amount), actual: Number(l.actual) || 0,
 				tnved: (l.tnved || "").trim(), supplier: l.supplier || "", supplier_name: l.supplier_name || "",
 				cif: Number(l.cif) || 0, duty_pct: Number(l.duty_pct) || 0, vat_pct: Number(l.vat_pct) || 0, excise_pct: Number(l.excise_pct) || 0,
 				vat_recoverable: l.vat_recoverable !== false,
 				actual_voucher_type: l.actual_voucher_type || "", actual_voucher: l.actual_voucher || "",
+				currency: l.currency || "", fx_rate: Number(l.fx_rate) || 0, rate_date: l.rate_date || "",
+				amount_original: Number(l.amount_original) || 0, actual_original: Number(l.actual_original) || 0,
 			}));
 		await call("stabler.api.tender.save_po_landed_charges", { po: editorPo.value, charges: JSON.stringify(clean) });
 		toast.success(t("Landed plan saved."));
@@ -540,7 +593,61 @@ watch(() => route.query.deal, (d) => { if (d && d !== deal.value) { deal.value =
 									</td>
 									<td><input v-model="l.label" type="text" class="form-control form-control-sm" :placeholder="chargeLabel(l.type)"></td>
 									<td>
-										<MoneyInput v-model="l.amount" :currency="ccy" :language="user.language" size="sm" />
+										<!-- WP-T3: a charge quoted in the forwarder's own currency. A customs
+										     line is excluded — its amount comes from the customs value, which the
+										     ГТД already declares in company currency at the rate customs applied. -->
+										<div class="d-flex gap-1">
+											<MoneyInput
+												v-if="l.currency"
+												v-model="l.amount_original"
+												:currency="l.currency"
+												:language="user.language"
+												size="sm"
+											/>
+											<MoneyInput v-else v-model="l.amount" :currency="ccy" :language="user.language" size="sm" />
+											<select
+												v-if="l.type !== 'customs'"
+												v-model="l.currency"
+												class="form-select form-select-sm"
+												style="max-width:74px"
+												:title="t('Currency this charge is quoted in')"
+												@change="onChargeCurrency(l)"
+											>
+												<option value="">{{ ccy }}</option>
+												<option v-for="cc in CHARGE_CURRENCIES" :key="cc" :value="cc">{{ cc }}</option>
+											</select>
+										</div>
+										<div v-if="l.currency" class="input-group input-group-sm mt-1">
+											<span class="input-group-text px-1 small">1&nbsp;{{ l.currency }}</span>
+											<MoneyInput
+												v-model="l.fx_rate"
+												currency=""
+												:language="user.language"
+												:group-while-typing="true"
+												size="sm"
+											/>
+											<button
+												type="button"
+												class="btn btn-outline-secondary"
+												:title="t('Fetch the Central Bank rate')"
+												@click="fetchChargeRate(l)"
+											>
+												<i class="ti ti-refresh"></i>
+											</button>
+										</div>
+										<div v-if="l.currency" class="d-flex align-items-center justify-content-end gap-1 mt-1">
+											<span class="small text-secondary">{{ t("Rate date") }}</span>
+											<DateInput v-model="l.rate_date" size="sm" @update:model-value="fetchChargeRate(l)" />
+										</div>
+										<div v-if="l.currency" class="small text-end mt-1">
+											<span v-if="convertedPreview(l) !== null" class="font-monospace text-secondary">
+												= {{ fmc(convertedPreview(l)) }}
+											</span>
+											<span v-else class="text-danger">
+												<i class="ti ti-alert-triangle me-1"></i>{{ t("Enter an exchange rate") }}
+											</span>
+										</div>
+										<div v-if="l.fx_source" class="small text-secondary text-end">{{ l.fx_source }}</div>
 									</td>
 									<td>
 										<!-- WP-T5: actual from a linked GL voucher (read-only) or hand-typed -->
