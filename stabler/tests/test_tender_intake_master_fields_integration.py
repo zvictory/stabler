@@ -20,6 +20,17 @@ edit, and confirm the title is still the one the user typed — not blank, and
 never the organization name (that substitution happens client-side in
 `TenderMasterDrawer.vue`, out of reach from here; `test_tender_master_drawer_source.py`
 covers that half).
+
+Since 2026-08-25 this module also carries the ADR-202/203/205 contract, for
+the same reason. `test_tender_intake_contract.py` proves those rules on
+`_clean_intake` in isolation, but three of them are only observable through
+the endpoint. The refusal of an out-of-contract key IS a `frappe.throw`, and
+`frappe.throw` needs `frappe.local`, which a site-free process never binds --
+so nothing under `make test` can assert that a bad payload is refused, nor
+the half that actually matters: that a refused payload wrote nothing. The
+deadline chain is the same. The bid milestone is built inside
+`_deal_deadlines`, which queries Sales Order and Purchase Order before it
+can return, so defect #4 closes against a real database or not at all.
 """
 
 from __future__ import annotations
@@ -40,7 +51,16 @@ _MASTER_FIELDS = {
 }
 
 
-class TestTenderIntakeMasterFieldsRoundTrip(FrappeTestCase):
+class _IntakeBenchFixture:
+	"""setUp/tearDown and the helpers both test classes below need.
+
+	A plain mixin, deliberately NOT a `FrappeTestCase` subclass, so unittest
+	does not collect it as a test class of its own. Copying the fixture into a
+	second module was the alternative, and this repository has already measured
+	what that costs: four copies of the rsync exclude list, all of them
+	disagreeing by the time anyone read them.
+	"""
+
 	def setUp(self):
 		# `has_column`/`table_exists` probes first -- a site without the crm app
 		# must read as "not applicable", not as a failed migrate
@@ -156,6 +176,8 @@ class TestTenderIntakeMasterFieldsRoundTrip(FrappeTestCase):
 		deal.insert(ignore_permissions=True, ignore_mandatory=True)
 		return deal
 
+
+class TestTenderIntakeMasterFieldsRoundTrip(_IntakeBenchFixture, FrappeTestCase):
 	def test_master_fields_survive_save_deal_intake_then_deal_intake(self):
 		"""The whole point: what `TenderMasterDrawer.vue` sends must be what it
 		reads back, through the real whitelisted endpoints end to end."""
@@ -182,3 +204,182 @@ class TestTenderIntakeMasterFieldsRoundTrip(FrappeTestCase):
 		result = tender.deal_intake(deal=self.deal.name)
 		self.assertEqual(result["intake"]["title"], _MASTER_FIELDS["title"])
 		self.assertEqual(result["intake"]["lot_no"], "LOT-1-updated")
+
+
+# --------------------------------------------------------------------------- #
+# ADR-202 / 203 / 205 — the contract, as the endpoint actually enforces it
+# --------------------------------------------------------------------------- #
+_PO_BOARD_INTAKE = {
+	"lot_no": "LOT-9",
+	"buyer": "Uzbekgidroenergo",
+	"volume": "120",
+	"unit": "m3",
+	"delivery_deadline": "2026-11-01",
+	"guarantee_amount": "1500000",
+	"guarantee_return": "2026-12-01",
+	"cert_required": 1,
+	"penalty_pct_per_day": "0.5",
+	"go_no_go": "go",
+	"purchase_method": "tender",
+	"notes": "call the buyer before the site visit",
+	"documents": [
+		{"key": "gtd", "label": "ГТД", "required": 1, "role": "customs"},
+		{"key": "contract", "label": "Shartnoma", "required": 1},
+	],
+}
+
+_DRAWER_INTAKE = {
+	"title": "Real Tender Title — ЁЖ 2026",
+	"tender_no": "TN-2026-00099",
+	"source": "UZEX",
+	"publication_date": "2026-08-01",
+	"currency": "USD",
+	"estimated_total": "15000.50",
+	"items": [
+		{"item_code": "RAIL-01", "item_name": "Rail 01", "qty": 2, "uom": "Nos", "rate": 10, "amount": 20}
+	],
+	"tender_files": [{"file_name": "lot.pdf", "file_url": "/files/lot.pdf", "file_size": 2048}],
+}
+
+
+class TestTheEndpointRefusesWhatItCannotStore(_IntakeBenchFixture, FrappeTestCase):
+	"""ADR-202/2. Only reachable here: the refusal is a `frappe.throw`, and
+	`frappe.throw` is unraisable without `frappe.local`."""
+
+	def test_an_out_of_contract_key_is_refused_and_named(self):
+		"""Naming the key is the whole value. `title` sat outside the whitelist
+		for months and cost a production incident precisely because nothing
+		said so — the save reported success and the field came back wrong."""
+		with self.assertRaises(frappe.ValidationError) as caught:
+			tender.save_deal_intake(deal=self.deal.name, intake={"lot_no": "LOT-1", "budget": 5})
+		self.assertIn("budget", str(caught.exception))
+
+	def test_a_refused_payload_writes_nothing(self):
+		"""The half that matters, and the half no unit test can see: refusing
+		must be refusing, not "throw after a partial write". If the throw landed
+		downstream of `frappe.db.set_value` the user would get an error *and* a
+		mutated record — strictly worse than the silent drop it replaced."""
+		tender.save_deal_intake(deal=self.deal.name, intake={"lot_no": "LOT-KEEP"})
+		with self.assertRaises(frappe.ValidationError):
+			tender.save_deal_intake(deal=self.deal.name, intake={"lot_no": "LOT-GONE", "budget": 5})
+		self.assertEqual(tender.deal_intake(deal=self.deal.name)["intake"]["lot_no"], "LOT-KEEP")
+
+	def test_the_retired_deadline_key_is_still_accepted(self):
+		"""ADR-203's transition clause, end to end. One deploy swaps the API and
+		the bundle together, but a tab opened before it still holds the old
+		bundle — rejecting `submission_deadline` would turn that tab's every Save
+		into an error until the user happened to reload."""
+		result = tender.save_deal_intake(deal=self.deal.name, intake={"submission_deadline": "2026-09-01"})
+		self.assertEqual(result["intake"]["submission_deadline"], "2026-09-01")
+
+
+class TestAPartialSaveKeepsTheOtherScreensWork(_IntakeBenchFixture, FrappeTestCase):
+	"""ADR-202/3 and ADR-205, through the real `custom_tender_intake` column.
+
+	Two screens write this one blob and neither sends all of it. The unit tests
+	prove `_clean_intake` merges correctly; only this module proves the merged
+	result is what the column ends up holding and what the next read returns."""
+
+	def test_a_drawer_shaped_save_keeps_the_po_board_fields(self):
+		"""The production defect in one sequence: sourcing fills the lot in the
+		PO board panel, someone opens the kanban drawer and presses Save, and
+		everything sourcing entered is gone."""
+		tender.save_deal_intake(deal=self.deal.name, intake=dict(_PO_BOARD_INTAKE))
+
+		tender.save_deal_intake(deal=self.deal.name, intake=dict(_DRAWER_INTAKE))
+
+		intake = tender.deal_intake(deal=self.deal.name)["intake"]
+		self.assertEqual(intake["lot_no"], "LOT-9")
+		self.assertEqual(intake["buyer"], "Uzbekgidroenergo")
+		self.assertEqual(intake["guarantee_amount"], 1500000.0)
+		self.assertEqual(intake["cert_required"], 1)
+		self.assertEqual(intake["go_no_go"], "go")
+		self.assertEqual(intake["notes"], "call the buyer before the site visit")
+		# and the drawer's own fields did land
+		self.assertEqual(intake["title"], _DRAWER_INTAKE["title"])
+
+	def test_a_drawer_shaped_save_keeps_the_document_checklist(self):
+		"""ADR-205 / defect #2. The requirement rows are what carry the uploaded
+		files and the waiver justifications, so losing the rows loses those with
+		them — a document centre that calls itself the single source of truth
+		cannot have a second screen quietly emptying it."""
+		tender.save_deal_intake(deal=self.deal.name, intake=dict(_PO_BOARD_INTAKE))
+
+		tender.save_deal_intake(deal=self.deal.name, intake=dict(_DRAWER_INTAKE))
+
+		docs = tender.deal_intake(deal=self.deal.name)["intake"]["documents"]
+		self.assertEqual([d["key"] for d in docs], ["gtd", "contract"])
+
+	def test_an_unrelated_save_does_not_reissue_the_go_no_go_stamp(self):
+		"""Preserving a decision must preserve when it was made. Re-stamping on
+		every save would make the audit trail claim the director decided at the
+		moment an unrelated user edited an item line."""
+		first = tender.save_deal_intake(deal=self.deal.name, intake=dict(_PO_BOARD_INTAKE))
+		stamped_at = first["intake"]["go_no_go_at"]
+		self.assertTrue(stamped_at)
+
+		tender.save_deal_intake(deal=self.deal.name, intake=dict(_DRAWER_INTAKE))
+
+		intake = tender.deal_intake(deal=self.deal.name)["intake"]
+		self.assertEqual(intake["go_no_go_at"], stamped_at)
+		self.assertEqual(intake["go_no_go_by"], first["intake"]["go_no_go_by"])
+
+
+class TestTheBidDeadlineReachesTheTimeline(_IntakeBenchFixture, FrappeTestCase):
+	"""ADR-203 / defect #4. `_deal_deadlines` queries Sales Order and Purchase
+	Order before it can build a single milestone, so the chain from the saved
+	key to the chip the user sees is only observable against a database."""
+
+	def _bid_milestone(self, payload: dict) -> dict:
+		result = tender.save_deal_intake(deal=self.deal.name, intake=payload)
+		milestones = result["deadlines"]["milestones"]
+		return next(m for m in milestones if m["key"] == "bid")
+
+	def test_the_bid_milestone_shows_the_key_the_drawer_now_writes(self):
+		"""Before the rename the drawer wrote `submission_deadline` and this
+		milestone read `bid_deadline`, so a tender entered through the drawer
+		read "not set" and never raised an SLA warning, however close its
+		deadline was."""
+		due = frappe.utils.add_days(frappe.utils.today(), 30)
+		milestone = self._bid_milestone({"bid_deadline": due})
+		self.assertEqual(milestone["date"], str(due))
+		self.assertEqual(milestone["days_left"], 30)
+		self.assertEqual(milestone["status"], "good")
+
+	def test_a_record_written_before_the_rename_still_shows_its_deadline(self):
+		"""Every tender saved by the previous bundle carries only the old key.
+		Without the read tolerance, shipping the rename would blank their bid
+		chips — a regression introduced by the fix for the same defect."""
+		due = frappe.utils.add_days(frappe.utils.today(), 3)
+		milestone = self._bid_milestone({"submission_deadline": due})
+		self.assertEqual(milestone["date"], str(due))
+		self.assertEqual(milestone["status"], "warn")
+
+	def test_a_tender_with_neither_key_reads_as_not_set(self):
+		""" "Not set" and "overdue" must stay distinguishable: a falsy deadline
+		that fell through to the epoch would paint every such tender red."""
+		milestone = self._bid_milestone({"lot_no": "LOT-1"})
+		self.assertIsNone(milestone["date"])
+		self.assertEqual(milestone["status"], "none")
+
+
+class TestTheUploadedPackIsStored(_IntakeBenchFixture, FrappeTestCase):
+	def test_tender_files_survive_the_endpoint_round_trip(self):
+		"""ADR-202/1. The drawer uploads the tender pack and reads it back from
+		`tender_files` — a key neither whitelist carried, so the read-back was
+		always empty and the upload looked like it had never happened."""
+		tender.save_deal_intake(deal=self.deal.name, intake=dict(_DRAWER_INTAKE))
+
+		files = tender.deal_intake(deal=self.deal.name)["intake"]["tender_files"]
+		self.assertEqual([f["file_url"] for f in files], ["/files/lot.pdf"])
+		self.assertEqual(files[0]["file_name"], "lot.pdf")
+
+	def test_a_later_po_board_save_does_not_detach_the_pack(self):
+		"""The PO board panel never sends this key; under the old rebuild rule
+		that alone was enough to drop the whole pack."""
+		tender.save_deal_intake(deal=self.deal.name, intake=dict(_DRAWER_INTAKE))
+
+		tender.save_deal_intake(deal=self.deal.name, intake=dict(_PO_BOARD_INTAKE))
+
+		files = tender.deal_intake(deal=self.deal.name)["intake"]["tender_files"]
+		self.assertEqual(len(files), 1)
