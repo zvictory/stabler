@@ -51,6 +51,7 @@ import MyTenders from "./pages/tender/MyTenders.vue";
 import DirectorBoard from "./pages/tender/DirectorBoard.vue";
 import OperationsDesk from "./pages/tender/OperationsDesk.vue";
 import TenderFlow from "./pages/tender/TenderFlow.vue";
+import TenderWorkflowMockup from "./pages/tender/TenderWorkflowMockup.vue";
 import TenderCrm from "./pages/tender/TenderCrm.vue";
 import TenderOverview from "./pages/tender/TenderOverview.vue";
 import TenderDocuments from "./pages/tender/TenderDocuments.vue";
@@ -288,6 +289,7 @@ const routes = [
 	{ path: "/manufacturing/line", name: "manufacturing-line", component: ManufacturingOperatorBoard, meta: { title: t("Operator Kiosk") } },
 	{ path: "/tender/overview", name: "tender-overview", component: TenderOverview, meta: { title: t("Where the pipeline stands"), module: "tender" } },
 	{ path: "/tender/flow", name: "tender-flow", component: TenderFlow, meta: { title: t("Tender process flow"), module: "tender" } },
+	{ path: "/tender/mockup", name: "tender-mockup", component: TenderWorkflowMockup, meta: { title: t("Workflow mockup"), module: "tender" } },
 	{ path: "/tender/board", name: "tender-board", component: SalesOrderBoard, meta: { title: t("Contract board"), module: "tender" } },
 	{ path: "/tender/crm", name: "tender-crm", component: TenderCrm, meta: { title: t("Tender CRM"), module: "tender" } },
 	{ path: "/tender/documents", name: "tender-documents", component: TenderDocuments, meta: { title: t("Document center"), module: "tender" } },

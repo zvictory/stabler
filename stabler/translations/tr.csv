@@ -91,6 +91,7 @@ Clear form,Formu temizle
 Credit ({currency}),Alacak ({currency})
 Debit ({currency}),Borç ({currency})
 Debits equal credits in {currency}.,{currency} cinsinden borç ile alacak eşit.
+Design view,Tasarım görünümü
 Direct Sales Invoicing is not enabled for company {0}. Sales Invoices must be created from a submitted Sales Order.,Doğrudan Satış Faturalama {0} şirketi için etkin değil. Satış Faturaları gönderilmiş bir Satış Siparişinden oluşturulmalıdır.
 Every user of {company} moves to the {engine} screens when this is saved.,Kaydedildiğinde {company} şirketinin tüm kullanıcıları {engine} ekranlarına geçer.
 Exchange rates,Döviz kurları
@@ -101,10 +102,12 @@ Journal entry,Yevmiye kaydı
 Legacy — journal entry screens,Legacy — yevmiye kaydı ekranları
 Lines disagree,Satırlar farklı
 Not ready — this desk cannot take or hand over a transfer.,Hazır değil — bu kasa transferi ne alabilir ne verebilir.
+Nothing on this page is read from a record,Bu sayfadaki hiçbir değer bir kayıttan okunmuyor
 One person cannot hold both operator roles on the same Work Order.,Bir kişi aynı iş emrinde her iki operatör rolünü birden üstlenemez.
 Only an open agreement can be terminated. {0} is {1}.,Yalnızca açık bir sözleşme kapatılabilir. {0} şu durumda: {1}.
 Only the remittance desk can verify a pickup code.,Teslim kodunu yalnızca havale gişesi doğrulayabilir.
 Open draft {name},{name} taslağını aç
+Open in a new tab,Yeni sekmede aç
 "Overdue cannot be answered as of a past date: an invoice's outstanding amount is its balance today, not its balance then.","«Vadesi geçmiş» geçmiş bir tarihe göre yanıtlanamaz: faturanın kalanı bugünkü bakiyesidir, o günkü değil."
 Packaging operator,Paketleme operatörü
 Pay refund cash,İade nakdini öde
@@ -122,6 +125,7 @@ The pickup code was refused.,Teslim kodu reddedildi.
 The posting could not be previewed.,Muhasebe kaydı önizlenemedi.
 The V1 engine reads every cash account from the desk table. Add at least one desk before switching to V1.,V1 motoru tüm kasa hesaplarını kasa tablosundan okur. V1'e geçmeden önce en az bir kasa ekleyin.
 The settings payload could not be read.,Ayar verisi okunamadı.
+The strip at the top says which parts are built and which are still drawings,"Üstteki şerit hangi kısmın yapıldığını, hangisinin hâlâ çizim olduğunu söyler"
 This clears the form without saving. The lines you entered will be lost.,Form kaydedilmeden temizlenir. Girdiğiniz satırlar kaybolur.
 This company runs the {engine} remittance engine. The Transfer V1 screens stay unavailable until it is switched to V1 below.,Bu şirket {engine} transfer motorunu çalıştırıyor. Aşağıdan V1'e geçirilene kadar Transfer V1 ekranları kullanılamaz.
 This entry does not balance. Do not hand over cash — report it.,Bu kayıt denkleşmiyor. Nakit vermeyin — bildirin.
@@ -134,6 +138,7 @@ V1 — operations centre,V1 — operasyon merkezi
 What the customer pays,Müşterinin ödediği
 What the receiver collects,Alıcının aldığı
 Which set of screens this company uses. Changes on save.,Bu şirketin hangi ekran setini kullandığı. Kaydedince değişir.
+Workflow mockup,İş akışı mockup’ı
 Write this code down and hand it to the sender now. It is shown once and cannot be recovered.,Bu kodu yazın ve şimdi gönderene teslim edin. Bir kez gösterilir ve geri getirilemez.
 absent,gelmedi
 Accept Return,

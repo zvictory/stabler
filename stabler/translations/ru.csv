@@ -92,6 +92,7 @@ Clear form,Очистить форму
 Credit ({currency}),Кредит ({currency})
 Debit ({currency}),Дебет ({currency})
 Debits equal credits in {currency}.,Дебет равен кредиту в {currency}.
+Design view,Проектный вид
 Direct Sales Invoicing is not enabled for company {0}. Sales Invoices must be created from a submitted Sales Order.,Прямое выставление счетов не включено для компании {0}. Счета должны создаваться из проведённого заказа на продажу.
 Every user of {company} moves to the {engine} screens when this is saved.,При сохранении все пользователи {company} перейдут на экраны {engine}.
 Exchange rates,Курсы валют
@@ -102,10 +103,12 @@ Journal entry,Запись в журнале
 Legacy — journal entry screens,Legacy — экраны журнальных проводок
 Lines disagree,Строки расходятся
 Not ready — this desk cannot take or hand over a transfer.,"Не готова — эта касса не может ни принять, ни выдать перевод."
+Nothing on this page is read from a record,Ни одно значение на этой странице не читается из записи
 One person cannot hold both operator roles on the same Work Order.,Один человек не может занимать обе роли оператора в одном производственном заказе.
 Only an open agreement can be terminated. {0} is {1}.,Закрыть можно только открытый договор. {0} находится в статусе {1}.
 Only the remittance desk can verify a pickup code.,Проверить код получения может только касса переводов.
 Open draft {name},Открыть черновик {name}
+Open in a new tab,Открыть в новой вкладке
 "Overdue cannot be answered as of a past date: an invoice's outstanding amount is its balance today, not its balance then.","«Просрочено» нельзя определить на прошлую дату: остаток по счёту — это его сальдо сегодня, а не сальдо на тот момент."
 Packaging operator,Оператор упаковки
 Pay refund cash,Выдать наличные по возврату
@@ -123,6 +126,7 @@ The pickup code was refused.,Код получения отклонён.
 The posting could not be previewed.,Не удалось показать предварительную проводку.
 The V1 engine reads every cash account from the desk table. Add at least one desk before switching to V1.,Движок V1 читает все кассовые счета из таблицы касс. Добавьте хотя бы одну кассу перед переключением на V1.
 The settings payload could not be read.,Не удалось прочитать данные настроек.
+The strip at the top says which parts are built and which are still drawings,"Полоса сверху говорит, что уже построено, а что пока нарисовано"
 This clears the form without saving. The lines you entered will be lost.,Форма будет очищена без сохранения. Введённые строки будут потеряны.
 This company runs the {engine} remittance engine. The Transfer V1 screens stay unavailable until it is switched to V1 below.,"Эта компания использует движок переводов {engine}. Экраны Transfer V1 остаются недоступными, пока он не переключён на V1 ниже."
 This entry does not balance. Do not hand over cash — report it.,Проводка не сходится. Не выдавайте наличные — сообщите об этом.
@@ -135,6 +139,7 @@ V1 — operations centre,V1 — операционный центр
 What the customer pays,Что платит клиент
 What the receiver collects,Что получает получатель
 Which set of screens this company uses. Changes on save.,Какой набор экранов использует эта компания. Меняется при сохранении.
+Workflow mockup,Макет рабочего процесса
 Write this code down and hand it to the sender now. It is shown once and cannot be recovered.,Запишите этот код и передайте его отправителю сейчас. Он показывается один раз и не может быть восстановлен.
 absent,отсутствовал
 Accept Return,
