@@ -74,6 +74,39 @@ the merge protocol and the branch gate in `deploy_stabler.sh` are written out in
   target: `bench --site <site> list-apps | grep stabler`. Never assume the site.
 - SSH alias: `ice-production`. Prod is **NOT a git repo** — deploy is rsync.
 
+## Prod-only supervisor edit (re-apply after any `bench setup supervisor`)
+
+Prod's `config/supervisor.conf` carries **one hand edit that is not in bench's
+template**: `startsecs=20` on the three programs whose `command=` goes through the
+`bench` wrapper — `frappe-schedule`, `frappe-short-worker`, `frappe-long-worker`.
+Applied 2026-08-24; backup at `config/supervisor.conf.bak-2026-08-24`.
+
+Why, measured from `supervisord.log` + `bench.log`: on 2026-07-28 18:59 redis-queue
+began refusing connections and `bench` could no longer resolve `./env/bin/python`
+(`bench/cli.py:201`, `os.execv`). Supervisor respawned those three programs **85 297
+times over 43.7 h**, until 2026-07-30 14:41, dumping 68 100 identical tracebacks into
+`logs/worker.error.log`. `startretries=10` never engaged — it only counts processes
+that die *inside* `startsecs`, and the failing `bench` lives ~2.2 s (0 of 17 047
+samples under 1 s), so supervisor kept declaring RUNNING and `autorestart=true`
+looped with no limit. Background jobs were dead on every tenant for 43.7 h and the
+only symptom was a growing log file.
+
+`startsecs=20` clears the longest observed failure (15 s), so a fast-failing start now
+trips `startretries` and lands in **FATAL** — visible in `supervisorctl status` —
+instead of looping. It does not prevent the outage, only the silence and the flood.
+Web/socketio need no edit: gunicorn's `command=` is an absolute path, so a missing
+binary is a real spawn error that supervisor already gives up on.
+
+`bench setup supervisor` regenerates this file from the template and drops the edit
+without saying so. Re-apply after any `bench update`:
+
+```
+ssh ice-production 'sudo sed -i -E "\|^command=/home/frappe/\.local/bin/bench |a startsecs=20" /home/frappe/frappe-bench/config/supervisor.conf && sudo supervisorctl reread && sudo supervisorctl update'
+```
+
+Proof it took effect: `supervisord.log` must read `stayed up for > than 20 seconds
+(startsecs)`, not `> than 1 seconds`.
+
 ## Deploy procedure (rsync + on-server build)
 1. Commit locally (specific paths) and `bench build --app stabler` to prove it compiles.
 2. Backup first: `ssh ice-production 'tar czf /root/stabler-app-$(date +%F-%H%M).tgz -C /home/frappe/frappe-bench/apps stabler'`.
