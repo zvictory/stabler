@@ -16,7 +16,9 @@ const { jobsDown } = useBackgroundHealth();
 		<div class="d-flex align-items-center gap-3">
 			<i class="ti ti-alert-triangle flex-shrink-0"></i>
 			<span>{{
-				t("Background jobs are not running. Queued and scheduled work is paused — tell an administrator.")
+				t(
+					"Background jobs are not running. Queued and scheduled work is paused — tell an administrator."
+				)
 			}}</span>
 		</div>
 	</div>
