@@ -206,13 +206,25 @@ h1{font-size:20px;margin:0;font-weight:650;letter-spacing:-.01em}
 .rolechip.finance{background:#fdf0dd;color:#8f5b00}
 .rolechip.general{background:var(--line2);color:var(--ink2)}
 footer{margin-top:26px;padding-top:14px;border-top:1px solid var(--line);color:var(--ink3);font-size:12px}
+
+/* Ne ölçüldü, ne çizildi. Bu şerit olmadan mockup sistemin TARİFİ gibi okunur
+   ve çizilmiş olan bize olgu diye geri döner. Gövde 2026-08-17'nin ölçümüdür;
+   dilim 1 indikten sonra bazı satırları artık yanlış — burada adlarıyla anılıyorlar. */
+.truth{display:flex;flex-wrap:wrap;gap:0;margin-top:12px;border-radius:7px;overflow:hidden;font-size:12px;line-height:1.55}
+.truth>div{flex:1 1 320px;padding:9px 13px}
+.truth .t-real{background:var(--ok-bg);border-left:3px solid var(--ok);color:var(--ink)}
+.truth .t-fake{background:var(--dang-bg);border-left:3px solid var(--dang);color:var(--ink)}
+.truth b{color:var(--ink-dark)}
+.truth ul{margin:4px 0 0;padding-left:17px}
+.truth li{margin:1px 0}
+.truth .stale{margin:6px 0 0;color:var(--dang)}
 </style>
 </head>
 <body>
 
 <div class="topbar">
   <div class="wrap">
-    <div class="crumb">docs/plans/assets · Mikas · kiracı: mikas</div>
+    <div class="crumb">assets/stabler/mockups · Mikas · kiracı: mikas</div>
     <div class="h1row">
       <h1>Mikas Tender — İş Akışı ve Form Katmanı</h1>
       <span class="chip info">mockup · 2026-08-17</span>
@@ -223,6 +235,34 @@ footer{margin-top:26px;padding-top:14px;border-top:1px solid var(--line);color:v
       Plan kaynağı: <code>belge_merkezi_draft.html</code> + <code>tender-flow-map.html</code> (ikisi de ship) ·
       Ekran metinleri İngilizce (uygulama English-first), açıklamalar Türkçe.
     </p>
+    <div class="truth">
+      <div class="t-real">
+        <b>✔ Kod oldu — bunlar artık çizim değil (dilim 1, 2026-08-24)</b>
+        <ul>
+          <li><b>ADR-202</b> · gönderilmeyen anahtar korunuyor (PATCH), sözleşme dışı anahtar
+              <code>frappe.throw</code> ile reddediliyor, <code>tender_files</code> kaydediliyor</li>
+          <li><b>ADR-205</b> · intake kaydı belge kontrol listesini artık silmiyor; çekmece
+              <code>documents: []</code> göndermeyi bıraktı</li>
+          <li><b>ADR-203</b> · tek son tarih anahtarı <code>bid_deadline</code>; çekmece ona yazıyor,
+              eski <code>submission_deadline</code> bir sürüm boyunca yalnız okunuyor</li>
+        </ul>
+        <p class="stale">Bu yüzden aşağıdaki gövdede şu dört satır <b>artık yanlış</b>: kusur #3/#4'ün
+          "sessizce düşüyorlar"ı, "<code>tender_files</code> … referans listesi kaydedilmiyor",
+          "çekmece <code>documents: []</code> gönderir", "<code>_clean_intake</code> çıktıyı sıfırdan kurar".</p>
+      </div>
+      <div class="t-fake">
+        <b>✘ Hâlâ çizim — bu ekranlardaki hiçbir sayı kayıttan okunmuyor</b>
+        <ul>
+          <li><b>Dilim 2</b> · ADR-201 + 206: tek yazar, <code>TenderIntake.vue</code> salt-okuma,
+              çekmecede değerlendirme bölümü</li>
+          <li><b>Dilim 3</b> · ADR-204 + 204b + 207: kart değeri türetme, tek kaynaktan hazırlık
+              yüzdesi, SLA rozeti ve sayacı</li>
+          <li><b>Dilim 4</b> · ADR-208: tur (round) gruplama, cevap oranı</li>
+          <li><b>Dilim 5</b> · ADR-209: form katmanının <code>ds-*</code> ve paylaşılan bileşenlere taşınması</li>
+          <li><b>ADR-210 / 211</b>: Tender Master emekliliği ve garanti iadesi otomasyonu — ertelendi</li>
+        </ul>
+      </div>
+    </div>
     <div class="rail">
       <button class="step on" data-p="p1"><div class="n">01</div><div class="t">İhale Giriş Merkezi</div><div class="s">tek yazar + sözleşme</div></button>
       <button class="step" data-p="p2"><div class="n">02</div><div class="t">Kanban + Çekmece</div><div class="s">değer, SLA, karar</div></button>

@@ -182,6 +182,7 @@ Deferred commission,Deferred commission
 "Deferred, still open","Deferred, still open"
 Delivery Notes,Delivery Notes
 Denominated in the send currency,Denominated in the send currency
+Design view,Design view
 Desk,Desk
 Desk {branch} has more than one {currency} account. One account per desk per currency.,Desk {branch} has more than one {currency} account. One account per desk per currency.
 "Desk {branch}: cash account {account} is held in {actual}, but the row declares {declared}. Cash counted at this desk would post to the wrong drawer, so it would be refused.","Desk {branch}: cash account {account} is held in {actual}, but the row declares {declared}. Cash counted at this desk would post to the wrong drawer, so it would be refused."
@@ -294,6 +295,7 @@ Nothing in this list matches. Try another search or another queue.,Nothing in th
 Nothing in this period ({period}),Nothing in this period ({period})
 Nothing in this queue,Nothing in this queue
 Nothing is waiting for payout,Nothing is waiting for payout
+Nothing on this page is read from a record,Nothing on this page is read from a record
 Nothing on this screen moves cash until the final step is posted.,Nothing on this screen moves cash until the final step is posted.
 "Nothing records when a transfer expires, so this queue cannot say whether anything has expired. That is not the same as saying nothing has.","Nothing records when a transfer expires, so this queue cannot say whether anything has expired. That is not the same as saying nothing has."
 Nothing registered is still waiting to be collected.,Nothing registered is still waiting to be collected.
@@ -312,6 +314,7 @@ Only the remittance desk can verify a pickup code.,Only the remittance desk can 
 Open amount,Open amount
 Open draft {name},Open draft {name}
 Open full detail,Open full detail
+Open in a new tab,Open in a new tab
 Open in-transit liability,Open in-transit liability
 Open obligation by branch and currency,Open obligation by branch and currency
 Other accounts,Other accounts
@@ -466,6 +469,7 @@ The server did not return a pickup code for this call. Do not hand over cash aga
 The settings payload could not be read.,The settings payload could not be read.
 "The state of the code, never the code.","The state of the code, never the code."
 The step could not be completed. Nothing was changed.,The step could not be completed. Nothing was changed.
+The strip at the top says which parts are built and which are still drawings,The strip at the top says which parts are built and which are still drawings
 The transfer list could not be loaded.,The transfer list could not be loaded.
 The transfer's status and the journal entries it names do not agree.,The transfer's status and the journal entries it names do not agree.
 This clears the form without saving. The lines you entered will be lost.,This clears the form without saving. The lines you entered will be lost.
@@ -540,6 +544,7 @@ Who,Who
 Why is this transfer being returned?,Why is this transfer being returned?
 Why it is an exception,Why it is an exception
 "Widen the date range, or clear the status, currency and exception filters.","Widen the date range, or clear the status, currency and exception filters."
+Workflow mockup,Workflow mockup
 Write this code down and hand it to the sender now. It is shown once and cannot be recovered.,Write this code down and hand it to the sender now. It is shown once and cannot be recovered.
 Wrong pickup code — attempt {0} of {1},Wrong pickup code — attempt {0} of {1}
 "You cannot make this posting, so it is not previewed.","You cannot make this posting, so it is not previewed."

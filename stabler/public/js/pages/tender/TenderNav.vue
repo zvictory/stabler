@@ -28,7 +28,9 @@ onMounted(() => session.ensureTenderViews());
 <template>
 	<nav class="stbl-ds tender-modnav">
 		<div class="ds-modnav">
-			<router-link to="/dashboard" class="ds-modnav-brand text-decoration-none text-reset">{{ t("Tender") }}</router-link>
+			<router-link to="/dashboard" class="ds-modnav-brand text-decoration-none text-reset">{{
+				t("Tender")
+			}}</router-link>
 
 			<router-link v-if="can('director')" to="/tender/portfolio" active-class="active">
 				{{ t("Director board") }}
@@ -43,6 +45,13 @@ onMounted(() => session.ensureTenderViews());
 			</router-link>
 			<router-link v-if="can('director')" to="/tender/flow" active-class="active">
 				{{ t("Process flow") }}
+			</router-link>
+			<!-- Tasarım kaydı, çalışan ekran değil. `director` kapısı Process flow ile
+			     aynı: mockup'ı inceleyen kitle o. Kenar çubuğuna girmiyor -- yalnız
+			     URL'de yaşayan sayfa kaybolur (yukarıdaki Direktör panosu hikâyesi),
+			     ama çalışmayan bir tasarım da herkesin gezinmesinde durmamalı. -->
+			<router-link v-if="can('director')" to="/tender/mockup" active-class="active">
+				{{ t("Workflow mockup") }}
 			</router-link>
 			<router-link to="/tender/board" active-class="active">{{ t("Contract board") }}</router-link>
 			<router-link v-if="can('director') || can('sourcing')" to="/tender/crm" active-class="active">

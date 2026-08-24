@@ -231,7 +231,7 @@ yalnız kart rozetine yansır; hatırlatma/otomasyon ayrı bead.
 
 ## 6 · Mockuplar
 
-`docs/plans/assets/mikas-tender-workflow-mockup.html` — tek dosya, beş sekme:
+`stabler/public/mockups/mikas-tender-workflow.html` — tek dosya, beş sekme (uygulama içinden: `#/tender/mockup`; `docs/` prod'a rsync edilmediği için servis edilen varlık ağacına taşındı):
 
 | Sekme | Ne gösteriyor | Hangi ADR |
 |---|---|---|
