@@ -107,6 +107,33 @@ ssh ice-production 'sudo sed -i -E "\|^command=/home/frappe/\.local/bin/bench |a
 Proof it took effect: `supervisord.log` must read `stayed up for > than 20 seconds
 (startsecs)`, not `> than 1 seconds`.
 
+### Background-job watchdog (`stabler-watch`)
+
+The other half of the same outage, added 2026-08-24: `startsecs` makes the failure
+*visible*, this makes someone *see* it.
+
+- `scripts/stabler-watch.sh` here → deployed **by hand** to `/usr/local/bin/stabler-watch`,
+  plus `stabler-watch.{service,timer}` in `/etc/systemd/system` (every 5 min,
+  `OnBootSec=3min`). Prod is not a git repo and no deploy step copies this; keep the
+  repo copy and the prod copy identical by `md5sum`, or the file here is a lie.
+- It reads `supervisorctl status` and `redis-cli ping` on 11000/13000 — **never** bench,
+  the venv, or a Frappe job. A Frappe-side alert would have been dead for the same
+  43.7 h as the workers it was meant to report. It also **never restarts anything**:
+  unbounded auto-restart is what produced the 85 297 respawns.
+- `STARTING` is not treated as a fault — with `startsecs=20` a healthy boot sits there
+  for 20 s, and the timer must not cry wolf on an ordinary `bench restart`.
+- Alerts go to Telegram; the bot token lives in `/root/.stabler-watch.env` (0600, never
+  in git, passed to curl via `-K` so it stays out of `ps`). Notifies on *transition*:
+  new problem → alert, unchanged → silent, recovered → alert; re-nags every 6 h while
+  broken, 30 min if the last send failed.
+- Every alert is echoed to `journalctl -u stabler-watch` whether or not Telegram took
+  it. A broken notification channel must not become a second silent outage.
+- **Email is not available on this box**: exim4 is `dc_eximconfig_configtype='local'`
+  with no smarthost, so `mail` and cron-mail never leave the machine (measured
+  2026-08-24). Anything that "sends a mail on failure" here is theatre.
+- Not covered: programs RUNNING and redis answering while jobs still do not drain (a
+  hung worker). Catching that needs a heartbeat job, which would need bench.
+
 ## Deploy procedure (rsync + on-server build)
 1. Commit locally (specific paths) and `bench build --app stabler` to prove it compiles.
 2. Backup first: `ssh ice-production 'tar czf /root/stabler-app-$(date +%F-%H%M).tgz -C /home/frappe/frappe-bench/apps stabler'`.
