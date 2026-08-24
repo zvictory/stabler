@@ -45,7 +45,6 @@ const toast = useToast();
 const saving = ref(false);
 const currencies = ref(["USD", "UZS", "RUB", "EUR"]);
 
-
 const form = reactive({
 	name: "",
 	organization: "",
@@ -109,9 +108,7 @@ function recomputeLine(line) {
 	line.amount = (Number(line.qty) || 0) * (Number(line.rate) || 0);
 }
 
-const itemTotal = computed(() =>
-	form.items.reduce((s, l) => s + (Number(l.amount) || 0), 0)
-);
+const itemTotal = computed(() => form.items.reduce((s, l) => s + (Number(l.amount) || 0), 0));
 
 // ── Dosya yükleme ───────────────────────────────────────────────────────────
 function onFileUploaded(fileInfo) {
@@ -171,7 +168,8 @@ watch(
 						form.submission_deadline = intake.submission_deadline || val.deadline;
 					}
 					if (intake.currency) form.currency = intake.currency;
-					if (Number(intake.estimated_total) > 0) form.estimated_total = Number(intake.estimated_total);
+					if (Number(intake.estimated_total) > 0)
+						form.estimated_total = Number(intake.estimated_total);
 					if (Array.isArray(intake.tender_files) && intake.tender_files.length) {
 						form.files = intake.tender_files.map((f) => ({
 							file_name: f.file_name || "",
@@ -317,7 +315,6 @@ async function save() {
 				<!-- Body -->
 				<div class="tgm-drawer-body">
 					<form @submit.prevent="save">
-
 						<!-- ═══ A: Customer ═══ -->
 						<div class="tgm-section">
 							<div class="tgm-sec-head">
@@ -336,7 +333,11 @@ async function save() {
 											@pick="pickCustomer"
 										/>
 									</div>
-									<button type="button" class="btn btn-outline-secondary btn-sm whitespace-nowrap" @click="goToNewCustomer">
+									<button
+										type="button"
+										class="btn btn-outline-secondary btn-sm whitespace-nowrap"
+										@click="goToNewCustomer"
+									>
 										+ {{ t("New") }}
 										<span class="text-muted ms-1">↗ Sales</span>
 									</button>
@@ -353,14 +354,23 @@ async function save() {
 							<div class="tgm-sec-body">
 								<div class="mb-2">
 									<label class="form-label required">{{ t("Tender Title") }}</label>
-									<input v-model="form.title" type="text" class="form-control"
-										placeholder="UZEX Supply Tender 2026 — Construction Materials" required />
+									<input
+										v-model="form.title"
+										type="text"
+										class="form-control"
+										placeholder="UZEX Supply Tender 2026 — Construction Materials"
+										required
+									/>
 								</div>
 								<div class="row g-2 mb-2">
 									<div class="col-6">
 										<label class="form-label">{{ t("Tender No") }}</label>
-										<input v-model="form.tender_no" type="text" class="form-control mono"
-											placeholder="UZEX-2026-CM-042" />
+										<input
+											v-model="form.tender_no"
+											type="text"
+											class="form-control mono"
+											placeholder="UZEX-2026-CM-042"
+										/>
 									</div>
 									<div class="col-6">
 										<label class="form-label">{{ t("Source") }}</label>
@@ -385,8 +395,11 @@ async function save() {
 								<div class="row g-2 align-items-end">
 									<div class="col-8">
 										<label class="form-label">{{ t("Estimated Total") }}</label>
-										<MoneyInput v-model="form.estimated_total"
-											:currency="form.currency" :language="user.language" />
+										<MoneyInput
+											v-model="form.estimated_total"
+											:currency="form.currency"
+											:language="user.language"
+										/>
 									</div>
 									<div class="col-4">
 										<label class="form-label">{{ t("Currency") }}</label>
@@ -409,14 +422,11 @@ async function save() {
 									<div v-for="(f, i) in form.files" :key="i" class="tgm-file-chip">
 										<span>📄</span>
 										<span class="tgm-file-name font-monospace">{{ f.file_name }}</span>
-										<span class="text-muted small">{{ f.file_size || '' }}</span>
+										<span class="text-muted small">{{ f.file_size || "" }}</span>
 										<button type="button" class="btn-close btn-sm" @click="removeFile(i)"></button>
 									</div>
 								</div>
-								<FileSlot
-									:attached-to="'CRM Deal'"
-									@uploaded="onFileUploaded"
-								/>
+								<FileSlot :attached-to="'CRM Deal'" @uploaded="onFileUploaded" />
 							</div>
 						</div>
 
@@ -427,7 +437,11 @@ async function save() {
 								{{ t("Requested Items") }}
 								<div class="ms-auto d-flex align-items-center gap-1">
 									<span class="text-muted small">{{ t("Currency") }}:</span>
-									<select v-model="form.currency" class="form-select form-select-sm" style="width:80px">
+									<select
+										v-model="form.currency"
+										class="form-select form-select-sm"
+										style="width: 80px"
+									>
 										<option v-for="c in currencies" :key="c" :value="c">{{ c }}</option>
 									</select>
 								</div>
@@ -437,11 +451,11 @@ async function save() {
 									<thead>
 										<tr>
 											<th>{{ t("Item") }}</th>
-											<th class="text-end" style="width:80px">{{ t("Qty") }}</th>
-											<th style="width:70px">{{ t("UOM") }}</th>
-											<th class="text-end" style="width:100px">{{ t("Price") }}</th>
-											<th class="text-end" style="width:110px">{{ t("Amount") }}</th>
-											<th style="width:30px"></th>
+											<th class="text-end" style="width: 80px">{{ t("Qty") }}</th>
+											<th style="width: 70px">{{ t("UOM") }}</th>
+											<th class="text-end" style="width: 100px">{{ t("Price") }}</th>
+											<th class="text-end" style="width: 110px">{{ t("Amount") }}</th>
+											<th style="width: 30px"></th>
 										</tr>
 									</thead>
 									<tbody>
@@ -457,11 +471,19 @@ async function save() {
 												/>
 											</td>
 											<td class="text-end">
-												<input v-model.number="line.qty" type="number" class="form-control form-control-sm text-end"
-													@input="recomputeLine(line)" />
+												<input
+													v-model.number="line.qty"
+													type="number"
+													class="form-control form-control-sm text-end"
+													@input="recomputeLine(line)"
+												/>
 											</td>
 											<td>
-												<input v-model="line.uom" type="text" class="form-control form-control-sm" />
+												<input
+													v-model="line.uom"
+													type="text"
+													class="form-control form-control-sm"
+												/>
 											</td>
 											<td class="text-end">
 												<MoneyInput
@@ -472,18 +494,32 @@ async function save() {
 													@update:model-value="recomputeLine(line)"
 												/>
 											</td>
-											<td class="text-end font-monospace fw-bold">{{ line.amount.toLocaleString() }}</td>
+											<td class="text-end font-monospace fw-bold">
+												{{ line.amount.toLocaleString() }}
+											</td>
 
 											<td>
-												<button type="button" class="btn btn-ghost-danger btn-sm py-0" @click="removeItem(i)">✕</button>
+												<button
+													type="button"
+													class="btn btn-ghost-danger btn-sm py-0"
+													@click="removeItem(i)"
+												>
+													✕
+												</button>
 											</td>
 										</tr>
 									</tbody>
 								</table>
 								<div class="d-flex justify-content-between align-items-center mt-2">
 									<div class="d-flex gap-2">
-										<button type="button" class="btn btn-ghost-primary btn-sm" @click="addItem">+ {{ t("Add Item") }}</button>
-										<button type="button" class="btn btn-outline-secondary btn-sm" @click="goToNewItem">
+										<button type="button" class="btn btn-ghost-primary btn-sm" @click="addItem">
+											+ {{ t("Add Item") }}
+										</button>
+										<button
+											type="button"
+											class="btn btn-outline-secondary btn-sm"
+											@click="goToNewItem"
+										>
 											{{ t("New Item") }} <span class="text-muted ms-1">↗ Inventory</span>
 										</button>
 									</div>
@@ -495,7 +531,6 @@ async function save() {
 								</div>
 							</div>
 						</div>
-
 					</form>
 				</div>
 
@@ -515,58 +550,122 @@ async function save() {
 </template>
 
 <style scoped>
-.modal-backdrop { opacity: 0.5; z-index: 1040; }
-.tgm-drawer {
-	position: fixed; top: 0; right: 0; bottom: 0; z-index: 1050;
-	width: 720px; max-width: 100vw;
-	background: var(--stbl-surface, #fff);
-	box-shadow: -4px 0 24px rgba(0,0,0,0.15);
-	display: flex; flex-direction: column;
+.modal-backdrop {
+	opacity: 0.5;
+	z-index: 1040;
 }
-.tgm-drawer-dialog { height: 100%; display: flex; flex-direction: column; }
-.tgm-drawer-content { height: 100%; display: flex; flex-direction: column; }
+.tgm-drawer {
+	position: fixed;
+	top: 0;
+	right: 0;
+	bottom: 0;
+	z-index: 1050;
+	width: 720px;
+	max-width: 100vw;
+	background: var(--stbl-surface, #fff);
+	box-shadow: -4px 0 24px rgba(0, 0, 0, 0.15);
+	display: flex;
+	flex-direction: column;
+}
+.tgm-drawer-dialog {
+	height: 100%;
+	display: flex;
+	flex-direction: column;
+}
+.tgm-drawer-content {
+	height: 100%;
+	display: flex;
+	flex-direction: column;
+}
 
 .tgm-drawer-header {
-	padding: 16px 24px; border-bottom: 1px solid var(--stbl-border, #dbe1ea);
-	display: flex; align-items: center; justify-content: space-between;
+	padding: 16px 24px;
+	border-bottom: 1px solid var(--stbl-border, #dbe1ea);
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
 }
 .tgm-kicker {
 	font-family: var(--stbl-mono, ui-monospace, monospace);
-	font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.05em;
-	color: var(--stbl-muted, #6c7a91); font-weight: 700;
+	font-size: 10.5px;
+	text-transform: uppercase;
+	letter-spacing: 0.05em;
+	color: var(--stbl-muted, #6c7a91);
+	font-weight: 700;
 }
-.tgm-drawer-title { font-size: 18px; font-weight: 800; margin: 2px 0 0; }
+.tgm-drawer-title {
+	font-size: 18px;
+	font-weight: 800;
+	margin: 2px 0 0;
+}
 
-.tgm-drawer-body { padding: 0; overflow-y: auto; flex: 1; }
+.tgm-drawer-body {
+	padding: 0;
+	overflow-y: auto;
+	flex: 1;
+}
 
-.tgm-section { border-bottom: 1px solid var(--stbl-border, #dbe1ea); }
-.tgm-sec-head {
-	display: flex; align-items: center; gap: 8px;
-	padding: 10px 24px; background: #f8f9fb;
+.tgm-section {
 	border-bottom: 1px solid var(--stbl-border, #dbe1ea);
-	font-size: 13px; font-weight: 700;
+}
+.tgm-sec-head {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	padding: 10px 24px;
+	background: #f8f9fb;
+	border-bottom: 1px solid var(--stbl-border, #dbe1ea);
+	font-size: 13px;
+	font-weight: 700;
 }
 .tgm-sec-num {
-	width: 22px; height: 22px; border-radius: 6px;
-	background: var(--tblr-primary, #206bc4); color: #fff;
-	font-size: 11px; font-weight: 800;
-	display: flex; align-items: center; justify-content: center;
+	width: 22px;
+	height: 22px;
+	border-radius: 6px;
+	background: var(--tblr-primary, #206bc4);
+	color: #fff;
+	font-size: 11px;
+	font-weight: 800;
+	display: flex;
+	align-items: center;
+	justify-content: center;
 }
-.tgm-sec-body { padding: 16px 24px; }
+.tgm-sec-body {
+	padding: 16px 24px;
+}
 
-.tgm-file-list { margin-bottom: 8px; }
-.tgm-file-chip {
-	display: flex; align-items: center; gap: 8px;
-	padding: 6px 10px; background: #fff;
-	border: 1px solid var(--stbl-border, #dbe1ea); border-radius: 7px;
-	font-size: 12px; margin-bottom: 5px;
+.tgm-file-list {
+	margin-bottom: 8px;
 }
-.tgm-file-name { flex: 1; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tgm-file-chip {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	padding: 6px 10px;
+	background: #fff;
+	border: 1px solid var(--stbl-border, #dbe1ea);
+	border-radius: 7px;
+	font-size: 12px;
+	margin-bottom: 5px;
+}
+.tgm-file-name {
+	flex: 1;
+	font-weight: 600;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
 
 .tgm-drawer-footer {
-	padding: 12px 24px; border-top: 1px solid var(--stbl-border, #dbe1ea);
-	background: #fbfcfe; display: flex; justify-content: flex-end; gap: 8px;
+	padding: 12px 24px;
+	border-top: 1px solid var(--stbl-border, #dbe1ea);
+	background: #fbfcfe;
+	display: flex;
+	justify-content: flex-end;
+	gap: 8px;
 }
 
-.whitespace-nowrap { white-space: nowrap; }
+.whitespace-nowrap {
+	white-space: nowrap;
+}
 </style>
