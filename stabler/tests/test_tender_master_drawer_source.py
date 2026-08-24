@@ -39,7 +39,11 @@ _MASTER_FIELDS = (
 	"tender_no",
 	"source",
 	"publication_date",
-	"submission_deadline",
+	# ADR-203: the field is labelled "Submission Deadline" in the UI, but the key
+	# it writes is `bid_deadline` -- the one the deadline timeline and the SLA
+	# badge read. The old key survives on the read side only (see the transition
+	# test below), so it is not in this write-and-read-back set.
+	"bid_deadline",
 	"currency",
 	"estimated_total",
 )
@@ -80,6 +84,26 @@ class TestTenderMasterDrawerIntakeContract(unittest.TestCase):
 		for field in _MASTER_FIELDS:
 			with self.subTest(field=field):
 				self.assertIn(f"intake.{field}", restore_block)
+
+	def test_the_previous_deadline_key_is_read_but_no_longer_written(self):
+		"""ADR-203's transition, both halves. Records saved before the rename
+		carry `submission_deadline` and must still open with their deadline
+		filled in -- but writing it again would keep the two keys alive and
+		leave the bid milestone reading whichever one happened to be last."""
+		start = self.body.index("const intakePayload = {")
+		end = self.body.index("tender_files:", start)
+		self.assertNotIn("submission_deadline:", self.body[start:end])
+		self.assertIn("intake.bid_deadline || intake.submission_deadline", self.body)
+
+	def test_the_drawer_does_not_send_the_document_checklist(self):
+		"""ADR-205 / defect #2. This form has no checklist editor, so the only
+		thing it can say about `documents` is an empty list -- and an empty list
+		used to rebuild the checklist as empty, deleting requirement rows, their
+		uploaded files and their waiver justifications. Saying nothing is the
+		only correct thing a form with no opinion can say."""
+		start = self.body.index("const intakePayload = {")
+		end = self.body.index("await call(", start)
+		self.assertNotIn("documents:", self.body[start:end])
 
 	def test_the_organization_placeholder_is_corrected_once_intake_arrives(self):
 		"""The specific defect: `title` has a customer-name placeholder that

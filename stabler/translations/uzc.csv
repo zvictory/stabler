@@ -129,6 +129,7 @@ This site is not migrated for packaging operators yet.,Бу сайтда қад�
 This will post,Қуйидагилар китобга ўтказилади
 Transfer registered,Пул ўтказмаси рўйхатга олинди
 Transfers registered on the legacy engine stay on the legacy list and are not shown by the V1 screens: they have no Remittance Transfer record behind them.,Legacy механизмида рўйхатга олинган ўтказмалар эски рўйхатда қолади ва V1 экранларида кўринмайди: улар ортида Remittance Transfer ёзуви йўқ.
+"Unknown tender intake field(s): {0}","Номаълум тендер киритиш майдони: {0}"
 V1 — operations centre,V1 — операциялар маркази
 What the customer pays,Мижоз нима тўлайди
 What the receiver collects,Олувчи нима олади

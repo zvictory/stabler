@@ -217,6 +217,8 @@ class TestFullCrudOnTheDrawer(unittest.TestCase):
 			"intake.tender_no",
 			"intake.source",
 			"intake.publication_date",
+			# ADR-203: the new key, plus the retired one it still tolerates on read.
+			"intake.bid_deadline",
 			"intake.submission_deadline",
 			"intake.tender_files",
 		):
