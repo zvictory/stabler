@@ -1,0 +1,1356 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Производственные заказы — два оператора</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/core@1.0.0-beta20/dist/css/tabler.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.19.0/dist/tabler-icons.min.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@100..900&family=JetBrains+Mono:wght@100..800&display=swap" rel="stylesheet">
+<style>
+/* Reproduced from stabler/public/css/stabler.css + stbl-typography.css (source of truth) */
+:root{
+ --tblr-primary:#206bc4; --tblr-primary-rgb:32,107,196;
+ --tblr-font-sans-serif:"Inter",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+ --tblr-font-monospace:"JetBrains Mono",ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+ --stbl-heading-weight:700; --stbl-heading-tracking:-0.02em;
+}
+body{margin:0;background:#f6f8fb;font-family:var(--tblr-font-sans-serif);font-feature-settings:"cv02","cv03","cv04","cv11";font-variant-numeric:tabular-nums}
+h1,h2,h3,.h1,.h2,.h3,.card-title,.page-title{font-weight:var(--stbl-heading-weight);letter-spacing:var(--stbl-heading-tracking)}
+.font-monospace,code,kbd,pre,samp,.table td.text-end,.table th.text-end{font-family:var(--tblr-font-monospace);font-variant-numeric:tabular-nums}
+a{color:var(--tblr-primary);text-decoration:none}
+.stbl-nav{gap:.125rem}
+.stbl-nav-section{color:rgba(255,255,255,.46);font-size:.625rem;font-weight:600;letter-spacing:.08em;margin:.75rem 0 .25rem;padding:0 .75rem;text-transform:uppercase}
+.stbl-nav .nav-link{border-radius:.375rem;margin-inline:.375rem;position:relative}
+.stbl-nav .nav-item.active>.nav-link{background-color:rgba(255,255,255,.06);color:#fff}
+.stbl-nav .nav-item.active>.nav-link::before{background:var(--tblr-primary);border-radius:0 2px 2px 0;bottom:.375rem;content:"";left:-.375rem;position:absolute;top:.375rem;width:3px}
+.stbl-module-header{background:#fff;border-bottom:1px solid var(--tblr-border-color);padding:0}
+.stbl-module-header-row{align-items:center;display:flex;flex-wrap:wrap;gap:0 1.25rem;min-height:3.5rem}
+.stbl-module-title{align-items:center;display:inline-flex;flex:0 0 auto;gap:.5rem;margin:0;font-size:1.25rem}
+.stbl-select{position:relative}
+.stbl-select-trigger{display:flex;align-items:center;gap:.5rem;text-align:left;background-image:none!important;padding-right:.6rem}
+.stbl-select-value{flex:1 1 auto;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.stbl-select-caret{flex:0 0 auto;opacity:.5;font-size:1rem}
+.table:not(.table-no-stripe)>tbody>tr:nth-of-type(odd){background-color:var(--tblr-gray-100,#f6f8fb)}
+.cursor-pointer{cursor:pointer}
+
+/* --- shell: replicate Tabler's >=lg rules inside the demo frame --- */
+.frame{position:relative;min-height:820px;background:#f6f8fb;overflow:hidden;border:1px solid rgba(0,0,0,.12);border-radius:8px}
+.frame .navbar-vertical{position:absolute;inset:0 auto 0 0;width:15rem;flex-direction:column;align-items:stretch;padding:0;overflow:auto}
+.frame .navbar-vertical>.container-fluid{flex-direction:column;align-items:stretch;min-height:100%;justify-content:flex-start;padding-inline:0;flex-wrap:nowrap}
+.frame .navbar-vertical .navbar-brand{display:flex;justify-content:flex-start;padding:.5rem 1.5rem;margin:0;min-height:3.5rem;align-items:center}
+.frame .navbar-vertical .navbar-collapse{display:flex!important;flex-direction:column;flex-grow:1;padding:0;margin:0;width:100%}
+.frame .navbar-vertical .navbar-nav{flex-direction:column;flex-grow:1;min-width:100%;padding-top:.75rem}
+.frame .navbar-vertical .nav-link{padding:.4rem .75rem;justify-content:flex-start}
+.frame .navbar-vertical .nav-link-icon{margin-right:.5rem;opacity:.7}
+.frame .page-wrapper{margin-inline-start:15rem;min-height:820px;display:flex;flex-direction:column;background:#f6f8fb}
+.frame .container-xl{max-width:none}
+
+/* --- demo chrome (not part of the product) --- */
+.demo-bar{background:#1a2433;color:#fff;padding:14px 20px}
+.demo-bar h1{font-size:16px;margin:0 0 4px;color:#fff}
+.demo-bar p{margin:0;font-size:12.5px;line-height:1.6;color:rgba(255,255,255,.62)}
+.demo-try{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+.demo-try button{background:rgba(255,255,255,.09);border:1px solid rgba(255,255,255,.18);color:#fff;font-size:12px;padding:5px 11px;border-radius:6px;cursor:pointer}
+.demo-try button:hover{background:rgba(255,255,255,.17)}
+.demo-try button.on{background:#206bc4;border-color:#206bc4}
+.demo-note{background:#fff8e6;border-left:3px solid #f59f00;padding:8px 12px;font-size:12.5px;line-height:1.55;color:#5c4813;border-radius:0 5px 5px 0;margin-bottom:14px}
+.demo-note b{color:#3d2f08}
+
+/* role chips */
+.role-chip{display:inline-flex;align-items:center;gap:4px;font:600 10px/1 var(--tblr-font-sans-serif);padding:3px 6px;border-radius:4px;text-transform:uppercase;letter-spacing:.03em;white-space:nowrap}
+.role-pour{background:#dbeafe;color:#1e4d8f}
+.role-pack{background:#f3e8ff;color:#6b21a8}
+.op-line{display:flex;align-items:center;gap:6px;padding:1px 0}
+.op-name{font-size:12.5px;color:#1a2433}
+.op-none{font-size:12.5px;color:#d63939;font-weight:500}
+.kbd-num{font:600 20px var(--tblr-font-monospace);height:56px;border:1px solid var(--tblr-border-color);background:#fff;border-radius:8px;cursor:pointer}
+.kbd-num:hover{background:#f1f5f9}
+.drawer{position:absolute;top:0;right:0;bottom:0;width:720px;background:#fff;box-shadow:-8px 0 32px rgba(0,0,0,.14);z-index:30;display:flex;flex-direction:column;overflow:auto}
+.backdrop{position:absolute;inset:0;background:rgba(0,0,0,.28);z-index:20}
+.modal-demo{position:absolute;inset:0;z-index:40;display:flex;align-items:flex-start;justify-content:center;padding-top:48px;background:rgba(0,0,0,.32);overflow:auto}
+.modal-demo .card{width:640px;max-width:calc(100% - 32px)}
+
+/* The real app shows the sidebar from Tabler's lg breakpoint up. Below that it
+   collapses, so the demo does the same — otherwise a narrow preview pane spends
+   15rem of a 720px viewport on navigation and crushes the table this is about. */
+@media (max-width:1100px){
+  .frame .navbar-vertical{display:none}
+  .frame .page-wrapper{margin-inline-start:0}
+  .frame{min-height:640px}
+  .frame .page-wrapper{min-height:640px}
+  .drawer{width:100%}
+}
+
+/* --- stock flow stepper: transfer -> two consumptions -> finish --- */
+.flow{display:flex;gap:8px;align-items:stretch;flex-wrap:wrap;margin-bottom:10px}
+.flow-step{flex:1 1 158px;min-width:158px;border:1px solid var(--tblr-border-color);border-radius:8px;padding:9px 10px;background:#fff}
+.flow-step.done{border-color:#2fb344;background:#f5fdf7}
+.flow-step.ready{border-color:#206bc4;background:#f4f8fe;box-shadow:0 0 0 2px rgba(32,107,196,.10)}
+.flow-step.blocked{background:#f8fafc;color:#98a2b3}
+.flow-step.swept{border-color:#d63939;background:#fff5f5}
+.flow-head{display:flex;align-items:center;gap:6px;font-weight:600;font-size:12px;margin-bottom:3px;line-height:1.25}
+.flow-dot{width:19px;height:19px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font:700 10px var(--tblr-font-sans-serif);background:#e9edf2;color:#667085;flex:0 0 auto}
+.flow-step.done .flow-dot{background:#2fb344;color:#fff}
+.flow-step.ready .flow-dot{background:#206bc4;color:#fff}
+.flow-step.swept .flow-dot{background:#d63939;color:#fff}
+.flow-purpose{font:10px/1.4 var(--tblr-font-monospace);color:#8593a5;word-break:break-word;margin:2px 0 6px}
+.flow-meta{font-size:11px;line-height:1.5;color:#5f6b7a}
+.flow-step.blocked .flow-purpose{color:#b3bcc9}
+.se-id{font:11px var(--tblr-font-monospace);color:#206bc4}
+.mini-flow{display:inline-flex;gap:3px;align-items:center}
+.mini-flow i{width:9px;height:9px;border-radius:50%;background:#dfe3e8;display:inline-block}
+.mini-flow i.on{background:#2fb344}
+.mini-flow i.bad{background:#d63939}
+.erp-note{background:#eef4fd;border-left:3px solid #206bc4;padding:9px 12px;font-size:12px;line-height:1.6;color:#1c3f6e;border-radius:0 5px 5px 0}
+.erp-note code{background:rgba(32,107,196,.10);color:#12386b;padding:1px 4px;border-radius:3px;font-size:11px}
+.erp-note b{color:#12386b}
+.ledger-row{cursor:pointer}
+.ledger-rows{background:#fbfcfe;font:11.5px var(--tblr-font-monospace)}
+
+/* --- kiosk 2.0: tablet, gloves, 64px targets --- */
+.kiosk-grid{display:grid;grid-template-columns:290px minmax(0,1fr);gap:12px;align-items:start}
+@media (max-width:1100px){.kiosk-grid{grid-template-columns:1fr}}
+.q-card{border:1px solid var(--tblr-border-color);border-radius:8px;background:#fff;padding:10px 11px;cursor:pointer;margin-bottom:8px}
+.q-card:hover{border-color:#9dbbe4}
+.q-card.on{border-color:#206bc4;background:#f4f8fe;box-shadow:0 0 0 2px rgba(32,107,196,.12)}
+.q-card .q-item{font-weight:600;font-size:13.5px;line-height:1.3}
+.q-card .q-meta{font:11px var(--tblr-font-monospace);color:#7b8794;margin-top:2px}
+.q-bar{height:5px;border-radius:3px;background:#e6eaef;margin-top:7px;overflow:hidden}
+.q-bar span{display:block;height:100%;background:#206bc4}
+.btn-kiosk{min-height:64px;font-size:15px;font-weight:600;display:inline-flex;align-items:center;justify-content:center;gap:8px}
+.dt-btn{min-height:64px;width:100%;border:1px solid var(--tblr-border-color);background:#fff;border-radius:8px;padding:8px 10px;text-align:left;cursor:pointer;font-size:13px;line-height:1.35}
+.dt-btn:hover{background:#f1f5f9;border-color:#9dbbe4}
+.dt-btn .dt-code{display:block;font:11px var(--tblr-font-monospace);color:#7b8794}
+.dt-group{font:600 10.5px var(--tblr-font-sans-serif);letter-spacing:.06em;text-transform:uppercase;color:#8593a5;margin:10px 0 5px}
+.badge-screen{background:#0f1720;border-radius:10px;padding:34px 26px;text-align:center;color:#fff;min-height:420px;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.badge-screen h2{color:#fff;font-size:20px;margin:0 0 6px}
+.badge-screen p{color:rgba(255,255,255,.55);font-size:13px;margin:0 0 22px}
+.badge-tap{width:190px;height:190px;border-radius:50%;border:3px dashed rgba(255,255,255,.28);background:rgba(255,255,255,.05);color:#fff;font-size:15px;font-weight:600;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px}
+.badge-tap:hover{background:rgba(32,107,196,.24);border-color:#4d8fdc}
+.badge-tap i{font-size:42px}
+.paused-strip{background:#fff4e6;border:1px solid #ffc078;border-radius:8px;padding:9px 12px;font-size:12.5px;color:#7a4b06;display:flex;align-items:center;gap:8px;margin-bottom:10px}
+.draft-strip{background:#fff8e6;border:1px solid #f0c36d;border-radius:8px;padding:9px 12px;font-size:12.5px;color:#5c4813;margin-bottom:10px}
+.tile{border:1px solid var(--tblr-border-color);border-radius:8px;padding:9px 10px;background:#fff}
+.tile .tl{font-size:11px;color:#7b8794}
+.tile .tv{font:600 22px var(--tblr-font-monospace);line-height:1.15}
+.seg{display:flex;gap:0;border:1px solid var(--tblr-border-color);border-radius:8px;overflow:hidden}
+.seg button{flex:1;min-height:52px;border:0;background:#fff;font-size:14px;font-weight:600;cursor:pointer;color:#4b5563}
+.seg button.on{background:#206bc4;color:#fff}
+.seg button.on.bad{background:#d63939}
+</style>
+</head>
+<body>
+
+<div class="demo-bar">
+  <h1>Один производственный заказ, два оператора — и как это ложится на склад</h1>
+  <p>Кликабельный макет. Розлив ведёт один человек, упаковку другой; каждый списывает <b>только свои</b> позиции отдельным складским документом. Проверено на bench — механизм ERPNext называется «Material Consumption for Manufacture».</p>
+  <div class="demo-try" id="roleSwitch">
+    <button data-role="manager" class="on">👤 Нодира — начальник производства</button>
+    <button data-role="pourer">🥛 Абдухоликов Ф — оператор розлива</button>
+    <button data-role="packer">📦 Зайнопова Р — оператор упаковки</button>
+  </div>
+  <div class="demo-try">
+    <button onclick="jump('WO-2026-00408')">▶ Сценарий 1: пройти весь путь с нуля (WO-2026-00408)</button>
+    <button onclick="jump('WO-2026-00412')">⚠ Сценарий 2: финиш без упаковщика (WO-2026-00412)</button>
+    <button onclick="shiftDemo()">🥛 Сценарий 3: смена оператора целиком — бейдж, старт, пауза, брак, финиш</button>
+    <button onclick="reset();render()">↺ Сбросить</button>
+  </div>
+</div>
+<div class="frame" id="frame">
+  <aside class="navbar navbar-vertical navbar-expand-lg" data-bs-theme="dark">
+    <div class="container-fluid">
+      <h1 class="navbar-brand"><a href="#" class="d-flex align-items-center gap-2 text-decoration-none" onclick="return false"><span class="avatar avatar-sm bg-primary text-white">S</span><span class="fw-bold">Stabler</span></a></h1>
+      <div class="collapse navbar-collapse show">
+        <ul class="navbar-nav stbl-nav pt-lg-3">
+          <li class="nav-item"><a href="#" class="nav-link" onclick="return false"><span class="nav-link-icon"><i class="ti ti-home"></i></span><span class="nav-link-title">Панель</span></a></li>
+          <li class="stbl-nav-section">Коммерция</li>
+          <li class="nav-item"><a href="#" class="nav-link" onclick="return false"><span class="nav-link-icon"><i class="ti ti-trending-up"></i></span><span class="nav-link-title">Продажи</span></a></li>
+          <li class="stbl-nav-section">Операции</li>
+          <li class="nav-item"><a href="#" class="nav-link" onclick="return false"><span class="nav-link-icon"><i class="ti ti-package"></i></span><span class="nav-link-title">Склад</span></a></li>
+          <li class="nav-item active"><a href="#" class="nav-link" onclick="return false"><span class="nav-link-icon"><i class="ti ti-tools"></i></span><span class="nav-link-title">Производство</span></a></li>
+          <li class="stbl-nav-section">Финансы</li>
+          <li class="nav-item"><a href="#" class="nav-link" onclick="return false"><span class="nav-link-icon"><i class="ti ti-coin"></i></span><span class="nav-link-title">Деньги</span></a></li>
+        </ul>
+        <div class="mt-auto pt-3 border-top border-secondary-subtle">
+          <div class="px-2 mb-2">
+            <label class="form-label small text-secondary mb-1">Компания</label>
+            <div class="stbl-select"><button type="button" class="form-select stbl-select-trigger form-select-sm"><span class="stbl-select-value">«Ойбек Айс» ООО</span><i class="ti ti-chevron-down stbl-select-caret"></i></button></div>
+          </div>
+          <div class="px-2 pb-2">
+            <button type="button" class="d-flex align-items-center w-100 border-0 bg-transparent text-start text-reset p-2 rounded">
+              <span class="avatar avatar-sm" id="userAvatar">Н</span>
+              <div class="ms-2 flex-grow-1 text-truncate">
+                <div class="text-truncate" id="userName">Нодира Салимова</div>
+                <div class="mt-1 small text-secondary text-truncate" id="userRole">Начальник производства</div>
+              </div>
+              <i class="ti ti-dots-vertical text-secondary"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <div class="page-wrapper">
+    <div class="stbl-module-header d-print-none">
+      <div class="container-xl">
+        <div class="stbl-module-header-row d-flex align-items-center justify-content-between flex-nowrap">
+          <h2 class="page-title stbl-module-title me-3 flex-shrink-0"><i class="ti ti-tools"></i>Производство</h2>
+          <ul class="nav nav-tabs stbl-module-tabs border-0" id="moduleTabs">
+            <li class="nav-item"><a class="nav-link" href="#" onclick="return false">BOMs</a></li>
+            <li class="nav-item"><a class="nav-link active" href="#" onclick="return false"><i class="ti ti-list-check me-1"></i>Производственные заказы</a></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+    <div class="page-body" style="margin-top:1.25rem"><div class="container-xl" id="body"></div></div>
+  </div>
+
+  <div id="overlays"></div>
+</div>
+
+
+<script>
+// ---------------------------------------------------------------------------
+// People. The real anjan floor: 11 pouring operators, 10 packing operators.
+// Nobody is on both lists — that is the constraint the UI has to make visible.
+// ---------------------------------------------------------------------------
+const PEOPLE = [
+  { id: "abduxoliqov@oybek.uz", name: "Абдухоликов Ф", role: "pour", line: "Линия 1", shift: "A" },
+  { id: "yoldashev@oybek.uz",   name: "Йўлдашев Ж",    role: "pour", line: "Линия 1", shift: "A" },
+  { id: "nishonov@oybek.uz",    name: "Нишонов С",     role: "pour", line: "Линия 2", shift: "B" },
+  { id: "xoldorov@oybek.uz",    name: "Холдоров Б",    role: "pour", line: "Линия 3", shift: "A" },
+  { id: "zaynopova@oybek.uz",   name: "Зайнопова Р",   role: "pack", line: "Линия 1", shift: "A" },
+  { id: "iminova@oybek.uz",     name: "Иминова Г",     role: "pack", line: "Линия 2", shift: "B" },
+  { id: "oripova@oybek.uz",     name: "Орипова О",     role: "pack", line: "Линия 1", shift: "A" },
+  { id: "nematova@oybek.uz",    name: "Нематова Д",    role: "pack", line: "Линия 3", shift: "A" },
+];
+const who = (id) => PEOPLE.find((p) => p.id === id);
+
+const ME = {
+  manager: { id: "nodira@oybek.uz",       name: "Нодира Салимова", role: "Начальник производства", av: "Н" },
+  pourer:  { id: "abduxoliqov@oybek.uz",  name: "Абдухоликов Ф",   role: "Оператор розлива · Линия 1 · Смена A", av: "АФ" },
+  packer:  { id: "zaynopova@oybek.uz",    name: "Зайнопова Р",     role: "Оператор упаковки · Линия 1 · Смена A", av: "ЗР" },
+};
+const personName = (id) => (id === ME.manager.id ? ME.manager.name : who(id) ? who(id).name : "—");
+
+// ---------------------------------------------------------------------------
+// The four складских документа behind one Work Order. Names in `purpose` are the
+// literal ERPNext Stock Entry purposes — the macket is only worth something if
+// what it draws maps to a document that really exists.
+// ---------------------------------------------------------------------------
+const STEPS = [
+  { key: "transfer", n: 1, title: "Передача в цех",      purpose: "Material Transfer for Manufacture",    flow: "Сырьё · склад → НЗП",        actor: "Кладовщик / начальник смены" },
+  { key: "pour",     n: 2, title: "Списание · розлив",   purpose: "Material Consumption for Manufacture", flow: "НЗП → списано в производство", actor: "Оператор розлива" },
+  { key: "pack",     n: 3, title: "Списание · упаковка", purpose: "Material Consumption for Manufacture", flow: "НЗП → списано в производство", actor: "Оператор упаковки" },
+  { key: "finish",   n: 4, title: "Финиш · приход ГП",   purpose: "Manufacture",                          flow: "НЗП → готовая продукция",     actor: "Оператор розлива сдаёт выпуск" },
+];
+const step = (key) => STEPS.find((s) => s.key === key);
+
+// ---------------------------------------------------------------------------
+// Materials carry the role they belong to. This is master data on the item, NOT
+// derived from the unit of measure — deriving it from kg-vs-pieces is what puts
+// 28% of the lines on the wrong person. Two lines below prove why: сахар is in
+// кг and belongs to розлив, плёнка is in кг and belongs to упаковке.
+//   req = норма по BOM · act = фактическое количество (его передают в цех и его же списывают)
+// ---------------------------------------------------------------------------
+const SEED = [
+  {
+    name: "WO-2026-00412", item: "Пломбир вафельный рожок 70 г", code: "ICE-ROG-070",
+    line: "Линия 1 · Рожки", shift: "Смена A", start: "24.08.2026 06:00",
+    qty: 4000, done: 4000, scrap: 18, status: "В процессе", badge: "bg-blue-lt",
+    operator: "abduxoliqov@oybek.uz", packaging_operator: "zaynopova@oybek.uz",
+    preset: [["transfer", "nodira@oybek.uz"], ["pour", "abduxoliqov@oybek.uz"]], presetStart: "06:12",
+    materials: [
+      { code: "RAW-MLK-32",  name: "Молоко цельное 3,2%", uom: "л",  req: 1200, act: 1188, role: "pour" },
+      { code: "RAW-CRM-33",  name: "Сливки 33%",          uom: "кг", req: 320,   act: 318,  role: "pour" },
+      { code: "RAW-SGR-01",  name: "Сахар-песок",         uom: "кг", req: 280,   act: 296,  role: "pour" },
+      { code: "PKG-CON-070", name: "Вафельный рожок",     uom: "шт", req: 4040, act: 4062, role: "pack" },
+      { code: "PKG-ETK-070", name: "Этикетка рожок 70 г", uom: "шт", req: 4040, act: 4058, role: "pack" },
+      { code: "PKG-BOX-24",  name: "Гофрокороб на 24 шт", uom: "шт", req: 168,   act: 169,  role: "pack" },
+    ],
+  },
+  {
+    name: "WO-2026-00410", item: "Крем-брюле, ванна 500 г", code: "ICE-VAN-500",
+    line: "Линия 3 · Ванны", shift: "Смена B", start: "24.08.2026 14:00",
+    qty: 1200, done: 0, scrap: 0, status: "Не начат", badge: "bg-yellow-lt",
+    operator: "xoldorov@oybek.uz", packaging_operator: null,
+    preset: [],
+    materials: [
+      { code: "RAW-MLK-32",  name: "Молоко цельное 3,2%", uom: "л",  req: 480,   act: 476,  role: "pour" },
+      { code: "RAW-CRM-33",  name: "Сливки 33%",          uom: "кг", req: 90,     act: 89,   role: "pour" },
+      { code: "PKG-VAN-500", name: "Ванна 500 г",         uom: "шт", req: 1200, act: 1206, role: "pack" },
+      { code: "PKG-ETK-500", name: "Этикетка ванна 500",  uom: "шт", req: 1200, act: 1204, role: "pack" },
+    ],
+  },
+  {
+    name: "WO-2026-00409", item: "Рожок «Клубника» 110 г", code: "ICE-ROG-110",
+    line: "Линия 2 · Эскимо", shift: "Смена B", start: "23.08.2026 14:00",
+    qty: 3500, done: 1750, scrap: 41, status: "Приостановлен", badge: "bg-secondary-lt",
+    operator: "nishonov@oybek.uz", packaging_operator: "iminova@oybek.uz",
+    preset: [["transfer", "nodira@oybek.uz"]], presetStart: "14:20", presetPause: "SR-02",
+    materials: [
+      { code: "RAW-MLK-32",  name: "Молоко цельное 3,2%", uom: "л",  req: 900,   act: 892,  role: "pour" },
+      { code: "RAW-SGR-01",  name: "Сахар-песок",         uom: "кг", req: 210,   act: 214,  role: "pour" },
+      { code: "PKG-PLN-01",  name: "Плёнка упаковочная",  uom: "кг", req: 42,     act: 43,   role: "pack" },
+      { code: "PKG-ETK-110", name: "Этикетка рожок 110 г",uom: "шт", req: 3540, act: 3548, role: "pack" },
+    ],
+  },
+  {
+    name: "WO-2026-00408", item: "Сэндвич ванильный 90 г", code: "ICE-SND-090",
+    line: "Линия 1 · Рожки", shift: "Смена A", start: "25.08.2026 06:00",
+    qty: 2400, done: 0, scrap: 0, status: "Не начат", badge: "bg-yellow-lt",
+    operator: "abduxoliqov@oybek.uz", packaging_operator: "oripova@oybek.uz",
+    preset: [],
+    materials: [
+      { code: "RAW-MLK-32",  name: "Молоко цельное 3,2%", uom: "л",  req: 720,   act: 714,  role: "pour" },
+      { code: "RAW-SGR-01",  name: "Сахар-песок",         uom: "кг", req: 96,    act: 97,   role: "pour" },
+      { code: "PKG-SND-090", name: "Обёртка сэндвич",     uom: "шт", req: 2420, act: 2418, role: "pack" },
+      { code: "PKG-BOX-24",  name: "Гофрокороб на 24 шт", uom: "шт", req: 100,   act: 101,  role: "pack" },
+    ],
+  },
+];
+
+// ---------------------------------------------------------------------------
+// Каталог простоев. Здесь 16 кодов; в прототипе оператора их 1296, поэтому экран
+// выбора обязан работать поиском, а не прокруткой — иначе оператор в перчатках
+// нажмёт первый попавшийся, и весь OEE будет построен на «прочее».
+// ---------------------------------------------------------------------------
+const DOWNTIME = [
+  { g: "Оборудование", items: [
+    { c: "OB-01", t: "Поломка фризера" },
+    { c: "OB-02", t: "Замена ножа или формы" },
+    { c: "OB-03", t: "Мойка CIP" },
+    { c: "OB-04", t: "Настройка датера" },
+  ]},
+  { g: "Сырьё и упаковка", items: [
+    { c: "SR-01", t: "Нет сырья на линии" },
+    { c: "SR-02", t: "Нет этикетки или плёнки" },
+    { c: "SR-03", t: "Смена рулона" },
+    { c: "SR-04", t: "Брак упаковки от поставщика" },
+  ]},
+  { g: "Персонал", items: [
+    { c: "PR-01", t: "Пересменка" },
+    { c: "PR-02", t: "Обед" },
+    { c: "PR-03", t: "Нет оператора на линии" },
+  ]},
+  { g: "Качество", items: [
+    { c: "KA-01", t: "Отбор проб ОТК" },
+    { c: "KA-02", t: "Отклонение по массе" },
+    { c: "KA-03", t: "Отклонение по температуре" },
+  ]},
+  { g: "Плановые", items: [
+    { c: "PL-01", t: "Плановая мойка" },
+    { c: "PL-02", t: "Переналадка на другой SKU" },
+  ]},
+];
+const DT_ALL = DOWNTIME.flatMap((g) => g.items.map((i) => ({ ...i, g: g.g })));
+const dtLabel = (code) => (DT_ALL.find((i) => i.c === code) || { t: code }).t;
+
+const SCRAP = [
+  { c: "BR-01", t: "Деформация рожка" },
+  { c: "BR-02", t: "Недовес" },
+  { c: "BR-03", t: "Плохая пропайка шва" },
+  { c: "BR-04", t: "Загрязнение, посторонний предмет" },
+  { c: "BR-05", t: "Ошибка этикетирования" },
+];
+
+// --- state ---------------------------------------------------------------
+let WOS = [];
+let seq = 0;
+let clockMin = 0;
+let shiftMin = 0;   // часы смены: их двигают действия оператора, а не стоковые проводки
+let view = "manager";
+let openWO = null;
+let assign = null;      // { operator, packaging_operator, error }
+let createOpen = false;
+let createForm = { operator: "", packaging_operator: "", error: "" };
+let kioskEntry = null;  // { wo, value }
+let confirmPost = null; // { wo, key }
+let openSE = null;      // раскрытый документ в журнале
+
+// --- kiosk 2.0 -----------------------------------------------------------
+let badgeIn = { pourer: false, packer: false }; // приложен ли бейдж
+let kioskSel = {};      // выбранный заказ в очереди, по роли
+let startSheet = null;  // { wo, hh, mm, field }
+let pauseSheet = null;  // { wo, q }
+let finishSheet = null; // { wo, step: "draft" | "confirm" }
+
+const num = (n) => n.toLocaleString("ru-RU");
+const meId = () => ME[view].id;
+
+// The access rule, in one place — assigned in EITHER role.
+const isAssignee = (wo, user) => !!user && (wo.operator === user || wo.packaging_operator === user);
+const visibleWOs = () => (view === "manager" ? WOS : WOS.filter((w) => isAssignee(w, meId())));
+// Which role am I on THIS order? Decides which materials sheet I get.
+const myRole = (wo) => (wo.operator === meId() ? "pour" : wo.packaging_operator === meId() ? "pack" : null);
+const roleMats = (w, role) => w.materials.filter((m) => m.role === role);
+
+function nextSe() { seq += 1; return "MAT-STE-2026-0" + seq; }
+function stamp() {
+  clockMin += 47;
+  const h = String(Math.floor(clockMin / 60) % 24).padStart(2, "0");
+  return h + ":" + String(clockMin % 60).padStart(2, "0");
+}
+
+// ---------------------------------------------------------------------------
+// Posting a stock entry. Preset states are replayed through THIS function too —
+// so a starting state can never disagree with what the buttons produce.
+// ---------------------------------------------------------------------------
+function post(w, key, by) {
+  const id = nextSe();
+  const at = stamp();
+  let rows = [];
+  let warn = null;
+
+  if (key === "transfer") {
+    rows = w.materials.map((m) => {
+      m.moved = m.act;
+      return { name: m.name, code: m.code, qty: m.act, uom: m.uom, wh: "Сырьё → НЗП", role: m.role };
+    });
+    if (w.status === "Не начат") { w.status = "В процессе"; w.badge = "bg-blue-lt"; }
+  } else if (key === "pour" || key === "pack") {
+    rows = roleMats(w, key).map((m) => {
+      m.consumed = m.act;
+      return { name: m.name, code: m.code, qty: m.act, uom: m.uom, wh: "НЗП → списано", role: m.role };
+    });
+  } else {
+    // Финиш. ERPNext НЕ проверяет, что все роли отчитались: всё, что осталось
+    // в НЗП несписанным, он добавляет в этот же документ. Проверено на bench.
+    const swept = w.materials.filter((m) => m.moved > m.consumed);
+    rows = swept.map((m) => {
+      const q = m.moved - m.consumed;
+      m.consumed = m.moved;
+      return { name: m.name, code: m.code, qty: q, uom: m.uom, wh: "НЗП → списано", role: m.role, swept: true };
+    });
+    rows.push({ name: w.item, code: w.code, qty: w.done, uom: "шт", wh: "→ Готовая продукция", fg: true });
+    if (swept.length) warn = swept;
+    w.received = w.done;
+    w.status = "Завершён";
+    w.badge = "bg-green-lt";
+  }
+
+  w.flow[key] = { id, by, at, warn };
+  w.entries.push({ id, key, purpose: step(key).purpose, by, at, rows, warn });
+  return id;
+}
+
+function reset() {
+  seq = 1040;
+  clockMin = 6 * 60 + 5;
+  shiftMin = 6 * 60 + 5;
+  WOS = JSON.parse(JSON.stringify(SEED));
+  WOS.forEach((w) => {
+    w.received = 0;
+    w.flow = { transfer: null, pour: null, pack: null, finish: null };
+    w.entries = [];
+    w.actualStart = w.presetStart || null;
+    w.paused = w.presetPause ? { code: w.presetPause, from: "16:05" } : null;
+    w.downtime = [];      // [{ code, from, to, min }]
+    w.finishDraft = null; // черновик финиша: переживает выход оператора
+    w.materials.forEach((m) => { m.moved = 0; m.consumed = 0; });
+  });
+  WOS.forEach((w) => w.preset.forEach(([key, by]) => post(w, key, by)));
+  openWO = null; assign = null; createOpen = false; kioskEntry = null; confirmPost = null; openSE = null;
+  badgeIn = { pourer: false, packer: false };
+  kioskSel = {}; startSheet = null; pauseSheet = null; finishSheet = null;
+}
+
+// Смена идёт: заказ стартован и сейчас не на паузе.
+const isRunning = (w) => !!w.actualStart && !w.paused;
+const dtMinutes = (w) => w.downtime.reduce((a, d) => a + d.min, 0);
+const hhmm = (min) => String(Math.floor(min / 60) % 24).padStart(2, "0") + ":" + String(min % 60).padStart(2, "0");
+const toMin = (s) => { const [h, m] = s.split(":").map(Number); return h * 60 + m; };
+const nowClock = () => hhmm(shiftMin);
+function tick(n) { shiftMin += n; return nowClock(); }
+
+// Может ли документ быть проведён вообще (порядок, а не права).
+function canPost(w, key) {
+  if (w.flow[key]) return { ok: false, why: "уже проведено" };
+  if (!w.operator || !w.packaging_operator) return { ok: false, why: "операторы не назначены" };
+  if (key !== "transfer" && !w.flow.transfer) return { ok: false, why: "сначала передача в цех" };
+  if (key === "finish" && !w.done) return { ok: false, why: "выпуск не записан" };
+  // Нечего списывать: либо роль уже отчиталась, либо её позиции подобрал финиш.
+  // Без этой проверки после финиша кнопка «Списать» остаётся живой и списывает
+  // второй раз то, чего в НЗП уже нет.
+  if ((key === "pour" || key === "pack") && !roleMats(w, key).some((m) => m.moved > m.consumed)) {
+    return { ok: false, why: w.flow.finish ? "позиции подобрал финиш" : "нечего списывать" };
+  }
+  return { ok: true, why: "" };
+}
+
+// Роль не отчиталась, а её материалы уже ушли в документ финиша.
+function sweptByFinish(w, key) {
+  return (key === "pour" || key === "pack") && !w.flow[key]
+    && !!(w.flow.finish && w.flow.finish.warn)
+    && w.flow.finish.warn.some((m) => m.role === key);
+}
+
+// Имеет ли ПРАВО текущий пользователь провести этот документ.
+function mayPost(w, key) {
+  if (view === "manager") return true;
+  const role = myRole(w);
+  if (key === "pour") return role === "pour";
+  if (key === "pack") return role === "pack";
+  if (key === "finish") return role === "pour";
+  return false; // передачу в цех делает кладовщик, не оператор
+}
+
+function actorFor(w, key) {
+  if (view !== "manager") return meId();
+  if (key === "pour") return w.operator;
+  if (key === "pack") return w.packaging_operator;
+  return ME.manager.id;
+}
+
+function opLine(id, role) {
+  const p = who(id);
+  const chip = role === "pour"
+    ? '<span class="role-chip role-pour">розлив</span>'
+    : '<span class="role-chip role-pack">упаковка</span>';
+  return p
+    ? `<div class="op-line">${chip}<span class="op-name">${p.name}</span></div>`
+    : `<div class="op-line">${chip}<span class="op-none">не назначен</span></div>`;
+}
+
+// --- the four documents, as a stepper ------------------------------------
+function flowHtml(w, compact) {
+  const cards = STEPS.map((s) => {
+    const done = w.flow[s.key];
+    const gate = canPost(w, s.key);
+    const mine = mayPost(w, s.key);
+    const stolen = sweptByFinish(w, s.key);
+    const cls = done ? (done.warn ? "swept" : "done") : stolen ? "swept" : gate.ok ? "ready" : "blocked";
+    const mark = done ? (done.warn ? "!" : "✓") : stolen ? "!" : s.n;
+
+    let body;
+    if (stolen) {
+      body = `<div class="flow-meta text-red">не проведено — позиции подобрал <span class="se-id">${w.flow.finish.id}</span></div>`;
+    } else if (done) {
+      body = `<div class="flow-meta"><span class="se-id">${done.id}</span><br>${personName(done.by)} · ${done.at}
+        ${done.warn ? `<div class="text-red fw-semibold mt-1">списал за упаковщика</div>` : ""}</div>`;
+    } else if (!gate.ok) {
+      body = `<div class="flow-meta">${gate.why}</div>`;
+    } else if (mine) {
+      const label = s.key === "finish" ? "Провести финиш" : s.key === "transfer" ? "Передать в цех" : "Списать";
+      body = `<button class="btn btn-sm btn-primary w-100 mt-1" onclick="askPost('${w.name}','${s.key}')">${label}</button>`;
+    } else {
+      const owner = s.key === "pour" ? w.operator : s.key === "pack" ? w.packaging_operator : null;
+      body = `<div class="flow-meta">ждём: ${owner ? personName(owner) : s.actor}</div>`;
+    }
+
+    return `<div class="flow-step ${cls}">
+      <div class="flow-head"><span class="flow-dot">${mark}</span>${s.title}</div>
+      ${compact ? "" : `<div class="flow-purpose">Stock Entry<br>${s.purpose}</div>`}
+      ${body}
+    </div>`;
+  }).join("");
+  return `<div class="flow">${cards}</div>`;
+}
+
+function miniFlow(w) {
+  return `<span class="mini-flow">${STEPS.map((s) => {
+    const d = w.flow[s.key];
+    return `<i class="${d ? (d.warn ? "bad" : "on") : ""}" title="${s.title}"></i>`;
+  }).join("")}</span>`;
+}
+
+// --- posted-documents journal --------------------------------------------
+function ledgerHtml(w) {
+  if (!w.entries.length) return `<div class="text-secondary small">Ни один складской документ ещё не проведён.</div>`;
+  const rows = w.entries.map((e) => {
+    const open = openSE === e.id;
+    const detail = open ? `
+      <tr class="ledger-rows"><td colspan="4" class="p-0">
+        <table class="table table-sm table-no-stripe mb-0">
+          <tbody>${e.rows.map((r) => `
+            <tr>
+              <td style="width:44%">${r.fg ? '<b>' + r.name + '</b>' : r.name}<span class="text-secondary"> · ${r.code}</span></td>
+              <td>${r.fg ? '<span class="badge bg-green-lt">ГП</span>' : r.role === "pour" ? '<span class="role-chip role-pour">розлив</span>' : '<span class="role-chip role-pack">упаковка</span>'}</td>
+              <td class="text-end">${num(r.qty)} ${r.uom}</td>
+              <td class="text-secondary ${r.swept ? "text-red fw-semibold" : ""}">${r.wh}${r.swept ? " · подобрано финишем" : ""}</td>
+            </tr>`).join("")}
+          </tbody>
+        </table>
+      </td></tr>` : "";
+    return `
+      <tr class="ledger-row" onclick="openSE = openSE === '${e.id}' ? null : '${e.id}'; render()">
+        <td><span class="se-id">${e.id}</span><div class="small text-secondary">${e.at}</div></td>
+        <td><div class="small">${step(e.key).title}</div><div class="small text-secondary font-monospace" style="font-size:10.5px">${e.purpose}</div></td>
+        <td class="small">${personName(e.by)}</td>
+        <td class="text-end small text-secondary">${e.rows.length} стр. <i class="ti ti-chevron-${open ? "up" : "down"}"></i></td>
+      </tr>${detail}`;
+  }).join("");
+  return `<div class="table-responsive border rounded">
+    <table class="table table-sm mb-0"><thead><tr><th>Документ</th><th>Тип</th><th>Провёл</th><th class="text-end">Строк</th></tr></thead>
+    <tbody>${rows}</tbody></table></div>`;
+}
+
+const ERP_NOTE = `
+<div class="erp-note">
+  <b>Как это ложится в ERPNext</b> — проверено на bench 24.08.2026, не по документации:
+  <div class="mt-1">1 · Передача — <code>Stock Entry</code>, purpose <code>Material Transfer for Manufacture</code>.</div>
+  <div>2–3 · Каждое списание — <b>отдельный</b> <code>Stock Entry</code>, purpose <code>Material Consumption for Manufacture</code>, только со своими строками. Нужен включённый флаг <code>Manufacturing Settings → Allow Continuous Material Consumption</code> (по умолчанию выключен).</div>
+  <div>4 · Финиш — <code>Stock Entry</code>, purpose <code>Manufacture</code>. Если всё уже списано, в нём остаётся только строка готовой продукции.</div>
+  <div class="mt-1">Списанное ERPNext копит по каждой позиции в <code>Work Order Item.consumed_qty</code> — отдельное поле «кто списал» не нужно, документ и так подписан автором.</div>
+  <div class="mt-1 text-danger"><b>Но ERPNext разделение не навязывает:</b> если чья-то роль не отчиталась, финишный документ подберёт её позиции сам. Дисциплина живёт в интерфейсе — сценарий 2 показывает, как это выглядит.</div>
+</div>`;
+
+// --- manager list --------------------------------------------------------
+function renderList() {
+  const rows = visibleWOs().map((w) => `
+    <tr class="cursor-pointer" onclick="openDetail('${w.name}')">
+      <td>
+        <div class="font-monospace small">${w.name}</div>
+        <div class="small text-secondary">${w.start}</div>
+      </td>
+      <td>
+        <div class="fw-semibold">${w.item}</div>
+        <div class="small text-secondary font-monospace">${w.code}</div>
+      </td>
+      <td class="small text-secondary">${w.line}<div>${w.shift}</div></td>
+      <td>${opLine(w.operator, "pour")}${opLine(w.packaging_operator, "pack")}</td>
+      <td>${miniFlow(w)}<div class="small text-secondary mt-1">${w.entries.length} док.</div></td>
+      <td class="text-end font-monospace">${num(w.qty)}</td>
+      <td class="text-end font-monospace text-blue">${num(w.done)}</td>
+      <td><span class="badge ${w.badge}">${w.status}</span></td>
+    </tr>`).join("");
+
+  const note = view === "manager"
+    ? `<div class="demo-note"><b>Колонка «Склад»</b> — четыре точки: передача в цех, списание розлива, списание упаковки, финиш. Красная точка значит, что финиш подобрал чужие позиции. Нажмите на строку — внутри весь путь и журнал проведённых документов.</div>`
+    : `<div class="demo-note"><b>Роль: ${ME[view].role}.</b> Список отфильтрован по правилу доступа: заказ виден, если вы назначены <b>в любой из двух ролей</b>. До этого изменения оператор упаковки не видел ни одного заказа — поле было одно и в нём стоял разливщик.</div>`;
+
+  return `
+  ${note}
+  <div class="card mb-3">
+    <div class="card-body py-2">
+      <div class="row g-2 align-items-center">
+        <div class="col"><div class="input-icon"><span class="input-icon-addon"><i class="ti ti-search"></i></span><input class="form-control" placeholder="Поиск производственных заказов…  ⌘K"></div></div>
+        <div class="col-auto"><div class="stbl-select"><button class="form-select stbl-select-trigger"><span class="stbl-select-value">Все статусы</span><i class="ti ti-chevron-down stbl-select-caret"></i></button></div></div>
+        ${view === "manager" ? `<div class="col-auto"><button class="btn btn-primary" onclick="openCreate()"><i class="ti ti-plus me-1"></i>Новый производственный заказ</button></div>` : ""}
+      </div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="table-responsive">
+      <table class="table table-vcenter card-table table-hover">
+        <thead><tr>
+          <th>Производственный заказ</th><th>Готовая продукция</th><th>Линия · смена</th>
+          <th style="min-width:200px">Операторы</th><th style="min-width:88px">Склад</th>
+          <th class="text-end">План</th><th class="text-end">Произв.</th><th>Статус</th>
+        </tr></thead>
+        <tbody>${rows || `<tr><td colspan="8" class="text-center text-secondary py-5">Нет заказов, назначенных вам</td></tr>`}</tbody>
+      </table>
+    </div>
+  </div>`;
+}
+
+// =========================================================================
+// Киоск 2.0 — планшет в цехе, перчатки, цели нажатия 64 px.
+// Полная смена: бейдж → очередь → старт → пауза с причиной → выпуск и брак
+// → черновик финиша → подтверждение. Черновик живёт на заказе, а не в этом
+// экране, поэтому переживает выход оператора из системы.
+// =========================================================================
+
+function badgeScreen() {
+  const me = ME[view];
+  return `
+  <div class="demo-note"><b>Вход по бейджу.</b> В цехе один планшет на линию, оператор прикладывает карту. Пока карта не приложена, ни один заказ не открыт — экран не должен показывать чужую смену.</div>
+  <div class="badge-screen">
+    <h2>Линия 1 · Рожки</h2>
+    <p>Приложите бейдж, чтобы начать смену</p>
+    <button class="badge-tap" onclick="badgeIn['${view}']=true;render()">
+      <i class="ti ti-nfc"></i>
+      Приложить бейдж
+    </button>
+    <div class="mt-4" style="color:rgba(255,255,255,.42);font-size:12px">на этом макете карта — это ${me.name}</div>
+  </div>`;
+}
+
+function queueCard(w, active) {
+  const role = myRole(w);
+  const pct = Math.round((w.done / w.qty) * 100);
+  const chip = role === "pour"
+    ? '<span class="role-chip role-pour">розлив</span>'
+    : '<span class="role-chip role-pack">упаковка</span>';
+  const mineKey = role;
+  const flag = w.paused
+    ? '<span class="badge bg-orange-lt">пауза</span>'
+    : w.finishDraft
+      ? '<span class="badge bg-yellow-lt">черновик</span>'
+      : !w.actualStart
+        ? '<span class="badge bg-secondary-lt">не начат</span>'
+        : canPost(w, mineKey).ok
+          ? '<span class="badge bg-blue-lt">списать</span>'
+          : '<span class="badge bg-green-lt">идёт</span>';
+  return `
+  <div class="q-card ${active ? "on" : ""}" onclick="selectWO('${w.name}')">
+    <div class="d-flex justify-content-between align-items-start gap-2">
+      <div class="q-item">${w.item}</div>${flag}
+    </div>
+    <div class="q-meta">${w.name} · ${w.shift}</div>
+    <div class="mt-1">${chip}</div>
+    <div class="q-bar"><span style="width:${pct}%"></span></div>
+    <div class="q-meta mt-1">${num(w.done)} / ${num(w.qty)} шт${w.actualStart ? " · старт " + w.actualStart : ""}</div>
+  </div>`;
+}
+
+function sheetHtml(w) {
+  const role = myRole(w);
+  const mineKey = role;
+  const mats = roleMats(w, role);
+  const chip = role === "pour"
+    ? '<span class="role-chip role-pour">розлив</span>'
+    : '<span class="role-chip role-pack">упаковка</span>';
+  const partner = role === "pour" ? w.packaging_operator : w.operator;
+  const partnerRole = role === "pour" ? "упаковку" : "розлив";
+  const partnerDone = w.flow[role === "pour" ? "pack" : "pour"];
+  const gate = canPost(w, mineKey);
+  const stolen = sweptByFinish(w, mineKey);
+
+  // --- панель действий: ровно то, что можно сделать прямо сейчас ---
+  let actions;
+  if (w.flow.finish) {
+    actions = `<button class="btn btn-outline-secondary btn-kiosk w-100" disabled><i class="ti ti-check"></i>Заказ закрыт</button>`;
+  } else if (!w.actualStart) {
+    actions = `<button class="btn btn-primary btn-kiosk w-100" onclick="openStart('${w.name}')"><i class="ti ti-player-play"></i>Старт смены</button>`;
+  } else if (w.paused) {
+    actions = `<button class="btn btn-success btn-kiosk w-100" onclick="resumeWO('${w.name}')"><i class="ti ti-player-play"></i>Продолжить работу</button>`;
+  } else {
+    const canFinish = mayPost(w, "finish") && canPost(w, "finish").ok;
+    actions = `
+    <div class="row g-2">
+      <div class="col-6"><button class="btn btn-primary btn-kiosk w-100" onclick="openEntry('${w.name}')"><i class="ti ti-plus"></i>Записать выпуск</button></div>
+      <div class="col-6"><button class="btn btn-outline-secondary btn-kiosk w-100" onclick="openPause('${w.name}')"><i class="ti ti-player-pause"></i>Пауза</button></div>
+      <div class="col-6"><button class="btn ${gate.ok ? "btn-success" : "btn-outline-secondary"} btn-kiosk w-100" ${gate.ok ? `onclick="askPost('${w.name}','${mineKey}')"` : "disabled"}><i class="ti ti-transfer-out"></i>${w.flow[mineKey] ? "Списано" : "Списать моё"}</button></div>
+      <div class="col-6"><button class="btn ${canFinish ? "btn-warning" : "btn-outline-secondary"} btn-kiosk w-100" ${canFinish ? `onclick="openFinish('${w.name}')"` : "disabled"}><i class="ti ti-flag-check"></i>Финиш</button></div>
+    </div>
+    ${!canFinish && mayPost(w, "finish") ? `<div class="small text-secondary mt-2">Финиш: ${canPost(w, "finish").why}.</div>` : ""}
+    ${!mayPost(w, "finish") ? `<div class="small text-secondary mt-2">Финиш сдаёт оператор розлива — ${personName(w.operator)}.</div>` : ""}`;
+  }
+
+  return `
+  <div class="card">
+    <div class="card-body">
+      <div class="d-flex justify-content-between align-items-start mb-2">
+        <div>
+          <div class="d-flex align-items-center gap-2">${chip}<h3 class="mb-0" style="font-size:17px">${w.item}</h3></div>
+          <div class="small text-secondary font-monospace mt-1">${w.name} · ${w.line} · ${w.shift}</div>
+        </div>
+        <span class="badge ${w.badge}">${w.status}</span>
+      </div>
+
+      ${w.paused ? `<div class="paused-strip"><i class="ti ti-player-pause-filled"></i><div><b>Простой с ${w.paused.from}</b> — ${dtLabel(w.paused.code)} <span class="font-monospace">(${w.paused.code})</span>. Счётчик выпуска стоит, время идёт в OEE.</div></div>` : ""}
+
+      ${w.finishDraft ? `<div class="draft-strip d-flex align-items-center gap-2">
+        <i class="ti ti-file-pencil"></i>
+        <div class="flex-grow-1"><b>Черновик финиша от ${w.finishDraft.at}</b> — сохранён на заказе, поэтому пережил выход из системы. Выпуск ${num(w.finishDraft.qty)} шт, брак ${num(w.finishDraft.scrap)} шт.</div>
+        <button class="btn btn-sm btn-warning" onclick="openFinish('${w.name}')">Продолжить</button>
+      </div>` : ""}
+
+      ${stolen ? `<div class="alert alert-danger py-2 px-3 small mb-2"><b>Вы не успели списать.</b> Финиш провели без вас — ваши позиции ушли в документ <span class="se-id">${w.flow.finish.id}</span> на имя ${personName(w.flow.finish.by)}.</div>` : ""}
+
+      <div class="row g-2 mb-3">
+        <div class="col"><div class="tile"><div class="tl">План</div><div class="tv">${num(w.qty)}</div></div></div>
+        <div class="col"><div class="tile"><div class="tl">Готово</div><div class="tv text-blue">${num(w.done)}</div></div></div>
+        <div class="col"><div class="tile"><div class="tl">Осталось</div><div class="tv">${num(w.qty - w.done)}</div></div></div>
+        <div class="col"><div class="tile"><div class="tl">Брак</div><div class="tv text-red">${num(w.scrap)}</div></div></div>
+        <div class="col"><div class="tile"><div class="tl">Простой</div><div class="tv ${dtMinutes(w) ? "text-orange" : ""}">${dtMinutes(w)}<span style="font-size:12px"> мин</span></div></div></div>
+      </div>
+
+      ${flowHtml(w, true)}
+
+      <div class="mb-2 fw-semibold small">Мой лист: ${role === "pour" ? "сырьё" : "упаковка"} — ${mats.length} позиц. из ${w.materials.length}</div>
+      <div class="table-responsive border rounded mb-2">
+        <table class="table table-sm mb-0">
+          <thead><tr><th>Позиция</th><th class="text-end">В цеху</th><th class="text-end">Списано мной</th></tr></thead>
+          <tbody>${mats.map((m) => `<tr>
+            <td>${m.name}<div class="small text-secondary font-monospace">${m.code}</div></td>
+            <td class="text-end font-monospace ${m.moved ? "" : "text-secondary"}">${m.moved ? num(m.moved) + " " + m.uom : "—"}</td>
+            <td class="text-end font-monospace ${m.consumed ? "text-green" : "text-secondary"}">${m.consumed ? num(m.consumed) + " " + m.uom : "—"}</td>
+          </tr>`).join("")}</tbody>
+        </table>
+      </div>
+
+      ${w.downtime.length ? `<div class="mb-2">
+        <div class="small fw-semibold mb-1">Простои смены</div>
+        <div class="table-responsive border rounded"><table class="table table-sm mb-0"><tbody>
+          ${w.downtime.map((d) => `<tr><td class="small">${dtLabel(d.code)}<span class="text-secondary font-monospace"> · ${d.code}</span></td><td class="text-end small font-monospace text-secondary">${d.from}–${d.to}</td><td class="text-end small font-monospace">${d.min} мин</td></tr>`).join("")}
+        </tbody></table></div>
+      </div>` : ""}
+
+      <div class="small text-secondary mb-3"><i class="ti ti-user me-1"></i>${partnerRole} ведёт: <b>${who(partner) ? who(partner).name : "не назначен"}</b> — его позиции в вашем листе не показаны и на ваш KPI не попадают.${partnerDone ? ` Своё списание он уже провёл (<span class="se-id">${partnerDone.id}</span>).` : " Своё списание он ещё не провёл."}</div>
+
+      ${actions}
+    </div>
+  </div>`;
+}
+
+function renderKiosk() {
+  if (!badgeIn[view]) return badgeScreen();
+
+  const mine = visibleWOs();
+  if (!mine.length) return `<div class="card"><div class="card-body text-center text-secondary py-5">Нет заказов, назначенных вам</div></div>`;
+  // Явный выбор оператора уважаем. Иначе открываем незакрытое дело: черновик
+  // финиша важнее первого попавшегося заказа, иначе после возврата в систему
+  // оператор видит чужой заказ и думает, что черновик пропал.
+  const sel = mine.find((x) => x.name === kioskSel[view])
+    || mine.find((x) => x.finishDraft)
+    || mine.find((x) => x.paused)
+    || mine[0];
+
+  return `
+  <div class="demo-note d-flex align-items-center gap-2">
+    <div class="flex-grow-1"><b>Смена оператора целиком:</b> бейдж → очередь слева → старт с фактическим временем → пауза с причиной из каталога → выпуск и брак → черновик финиша → подтверждение. Оба оператора открывают <b>один и тот же заказ</b>, но каждый видит и списывает только свои позиции.</div>
+    <button class="btn btn-sm btn-ghost-secondary" onclick="badgeOut()"><i class="ti ti-logout me-1"></i>Выход</button>
+  </div>
+  <div class="kiosk-grid">
+    <div>
+      <div class="small fw-semibold mb-2 text-secondary">Моя очередь — ${mine.length}</div>
+      ${mine.map((w) => queueCard(w, w.name === sel.name)).join("")}
+    </div>
+    <div>${sheetHtml(sel)}</div>
+  </div>`;
+}
+
+// --- старт смены: фактическое время, а не плановое ------------------------
+function startHtml() {
+  const w = WOS.find((x) => x.name === startSheet.wo);
+  const t = String(startSheet.hh).padStart(2, "0") + ":" + String(startSheet.mm).padStart(2, "0");
+  const bump = (f, d) => `onclick="bumpStart('${f}',${d})"`;
+  return `
+  <div class="modal-demo">
+    <div class="card" style="width:520px">
+      <div class="card-header"><h3 class="card-title">Старт смены</h3><button class="btn-close ms-auto" onclick="startSheet=null;render()"></button></div>
+      <div class="card-body">
+        <div class="small text-secondary mb-1 font-monospace">${w.name} · ${w.item}</div>
+        <div class="small text-secondary mb-3">По плану: ${w.start}. Записывается <b>фактическое</b> время — расхождение плана и факта и есть то, ради чего этот экран нужен.</div>
+        <div class="border rounded p-3 text-center font-monospace mb-3" style="font-size:44px;line-height:1.05">${t}</div>
+        <div class="row g-2 mb-3">
+          <div class="col-3"><button class="kbd-num w-100" ${bump("hh", -1)}>−1 ч</button></div>
+          <div class="col-3"><button class="kbd-num w-100" ${bump("hh", 1)}>+1 ч</button></div>
+          <div class="col-3"><button class="kbd-num w-100" ${bump("mm", -5)}>−5 м</button></div>
+          <div class="col-3"><button class="kbd-num w-100" ${bump("mm", 5)}>+5 м</button></div>
+        </div>
+        <button class="btn btn-outline-secondary w-100" style="height:52px" onclick="startNow()">Сейчас — ${nowClock()}</button>
+      </div>
+      <div class="card-footer d-flex gap-2">
+        <button class="btn btn-primary flex-grow-1" style="height:56px" onclick="commitStart()">Начать в ${t}</button>
+        <button class="btn btn-ghost-secondary" onclick="startSheet=null;render()">Отмена</button>
+      </div>
+    </div>
+  </div>`;
+}
+
+// --- пауза: причина обязательна, каталог ищется, а не листается ------------
+function pauseHtml() {
+  const w = WOS.find((x) => x.name === pauseSheet.wo);
+  const q = (pauseSheet.q || "").toLowerCase().trim();
+  const groups = DOWNTIME
+    .map((g) => ({ g: g.g, items: g.items.filter((i) => !q || (i.t + " " + i.c).toLowerCase().includes(q)) }))
+    .filter((g) => g.items.length);
+  const hits = groups.reduce((a, g) => a + g.items.length, 0);
+  return `
+  <div class="modal-demo">
+    <div class="card" style="width:640px">
+      <div class="card-header"><h3 class="card-title">Причина остановки</h3><button class="btn-close ms-auto" onclick="pauseSheet=null;render()"></button></div>
+      <div class="card-body" style="max-height:440px;overflow:auto">
+        <div class="small text-secondary mb-2 font-monospace">${w.name} · ${w.item}</div>
+        <div class="input-icon mb-2">
+          <span class="input-icon-addon"><i class="ti ti-search"></i></span>
+          <input class="form-control" style="height:52px" placeholder="Поиск причины — «этикет», «мойка», SR-02…" value="${pauseSheet.q || ""}" oninput="pauseSheet.q=this.value;render()" autofocus>
+        </div>
+        <div class="small text-secondary mb-2">${hits} из ${DT_ALL.length} кодов. В прототипе оператора их 1296 — без поиска этот экран превращается в «прочее».</div>
+        ${groups.map((g) => `
+          <div class="dt-group">${g.g}</div>
+          <div class="row g-2">
+            ${g.items.map((i) => `<div class="col-6"><button class="dt-btn" onclick="commitPause('${i.c}')"><span class="dt-code">${i.c}</span>${i.t}</button></div>`).join("")}
+          </div>`).join("")}
+        ${hits ? "" : `<div class="text-center text-secondary py-4">Ничего не найдено. Причина простоя обязательна — без неё пауза не ставится.</div>`}
+      </div>
+    </div>
+  </div>`;
+}
+
+// --- финиш черновиком ------------------------------------------------------
+function finishHtml() {
+  const w = WOS.find((x) => x.name === finishSheet.wo);
+  const notConsumed = w.materials.filter((m) => m.moved > m.consumed);
+  const packLeft = notConsumed.filter((m) => m.role === "pack");
+  return `
+  <div class="modal-demo">
+    <div class="card" style="width:600px">
+      <div class="card-header">
+        <div>
+          <h3 class="card-title mb-0">Финиш смены — черновик</h3>
+          <div class="small text-secondary mt-1">${w.name} · ${w.item}</div>
+        </div>
+        <button class="btn-close ms-auto" onclick="finishSheet=null;render()"></button>
+      </div>
+      <div class="card-body">
+        <div class="row g-2 mb-3">
+          <div class="col"><div class="tile"><div class="tl">Выпуск</div><div class="tv text-blue">${num(w.done)}</div></div></div>
+          <div class="col"><div class="tile"><div class="tl">Брак</div><div class="tv text-red">${num(w.scrap)}</div></div></div>
+          <div class="col"><div class="tile"><div class="tl">Простой</div><div class="tv">${dtMinutes(w)}<span style="font-size:12px"> мин</span></div></div></div>
+          <div class="col"><div class="tile"><div class="tl">Старт</div><div class="tv">${w.actualStart || "—"}</div></div></div>
+        </div>
+
+        ${packLeft.length ? `<div class="alert alert-danger py-2 px-3 mb-3 small">
+          <b>${personName(w.packaging_operator)} ещё не списала упаковку</b> — ${packLeft.map((m) => m.name).join(", ")}.
+          Проведёте финиш сейчас — ERPNext спишет их этим же документом, и расход запишется на вас.
+          Это не ошибка макета, это поведение ERPNext по умолчанию.
+        </div>` : `<div class="alert alert-success py-2 px-3 mb-3 small">Обе роли списали своё. В документе финиша останется только готовая продукция.</div>`}
+
+        <div class="demo-note mb-0">Черновик хранится <b>на заказе</b>, а не в этом экране. Сохраните его, нажмите «Выход», приложите бейдж заново — черновик будет на месте. Смена длится 12 часов, планшет один на линию, и он засыпает.</div>
+      </div>
+      <div class="card-footer d-flex gap-2 flex-wrap">
+        <button class="btn btn-outline-secondary btn-kiosk" style="flex:1 1 200px" onclick="saveDraft()"><i class="ti ti-device-floppy"></i>Сохранить черновик</button>
+        <button class="btn btn-warning btn-kiosk" style="flex:1 1 200px" onclick="confirmFinish()"><i class="ti ti-flag-check"></i>Подтвердить финиш</button>
+      </div>
+    </div>
+  </div>`;
+}
+
+// --- detail drawer -------------------------------------------------------
+function drawerHtml() {
+  const w = WOS.find((x) => x.name === openWO);
+  if (!w) return "";
+
+  const matRow = (m) => {
+    const over = m.consumed > m.req;
+    return `
+    <tr>
+      <td>${m.name}<div class="small text-secondary font-monospace">${m.code}</div></td>
+      <td>${m.role === "pour" ? '<span class="role-chip role-pour">розлив</span>' : '<span class="role-chip role-pack">упаковка</span>'}</td>
+      <td class="text-end font-monospace">${num(m.req)} ${m.uom}</td>
+      <td class="text-end font-monospace ${m.moved ? "" : "text-secondary"}">${m.moved ? num(m.moved) : "—"}</td>
+      <td class="text-end font-monospace ${m.consumed ? "text-green" : "text-secondary"}">${m.consumed ? num(m.consumed) : "—"}</td>
+      <td class="text-end font-monospace small ${over ? "text-red" : "text-secondary"}">${m.consumed ? (over ? "+" + num(m.consumed - m.req) : "в норме") : "—"}</td>
+    </tr>`;
+  };
+
+  const roleTotal = (role) => {
+    const ms = roleMats(w, role);
+    const over = ms.filter((m) => m.consumed > m.req).length;
+    const posted = w.flow[role];
+    return `<div class="d-flex align-items-center gap-2 small">
+      ${role === "pour" ? '<span class="role-chip role-pour">розлив</span>' : '<span class="role-chip role-pack">упаковка</span>'}
+      <span>${ms.length} позиц.</span>
+      <span class="${over ? "text-red" : "text-secondary"}">${over ? over + " с перерасходом" : "перерасхода нет"}</span>
+      <span class="ms-auto ${posted ? "text-green" : "text-secondary"}">${posted ? "списано · " + posted.id : "не списано"}</span>
+    </div>`;
+  };
+
+  const assignBlock = assign ? `
+    <div class="border rounded p-3 mt-2" style="background:#f8fafc">
+      <div class="mb-2">
+        <label class="form-label small mb-1">Оператор розлива</label>
+        <select class="form-select" onchange="setAssign('operator', this.value)">
+          <option value="">— Убрать оператора —</option>
+          ${PEOPLE.map((p) => `<option value="${p.id}" ${assign.operator === p.id ? "selected" : ""}>${p.name} · ${p.line} · смена ${p.shift}${p.role === "pack" ? " (обычно упаковка)" : ""}</option>`).join("")}
+        </select>
+      </div>
+      <div class="mb-2">
+        <label class="form-label small mb-1">Оператор упаковки</label>
+        <select class="form-select" onchange="setAssign('packaging_operator', this.value)">
+          <option value="">— Убрать оператора —</option>
+          ${PEOPLE.map((p) => `<option value="${p.id}" ${assign.packaging_operator === p.id ? "selected" : ""}>${p.name} · ${p.line} · смена ${p.shift}${p.role === "pour" ? " (обычно розлив)" : ""}</option>`).join("")}
+        </select>
+      </div>
+      ${assign.error ? `<div class="alert alert-danger py-2 px-3 mb-2 small">${assign.error}</div>` : ""}
+      <div class="d-flex gap-2">
+        <button class="btn btn-sm btn-primary" ${assign.error ? "disabled" : ""} onclick="saveAssign()">Сохранить</button>
+        <button class="btn btn-sm btn-ghost-secondary" onclick="assign=null;render()">Отмена</button>
+        <button class="btn btn-sm btn-ghost-secondary ms-auto" onclick="swapAssign()" title="Поменять двух людей местами"><i class="ti ti-arrows-exchange me-1"></i>Поменять местами</button>
+      </div>
+      <div class="small text-secondary mt-2">Обе роли уходят на сервер <b>одним вызовом</b>. Иначе обмен местами невозможен: на полпути один человек занимал бы обе роли, и сервер отказал бы во второй половине того же действия.</div>
+    </div>` : "";
+
+  const blocked = !w.packaging_operator;
+  const sweptFinish = w.flow.finish && w.flow.finish.warn;
+
+  return `
+  <div class="backdrop" onclick="openWO=null;assign=null;render()"></div>
+  <div class="drawer">
+    <div class="p-3 border-bottom d-flex justify-content-between align-items-start">
+      <div>
+        <div class="font-monospace small text-secondary">${w.name}</div>
+        <h3 class="mb-0">${w.item}</h3>
+        <div class="small text-secondary mt-1">${w.line} · ${w.shift} · старт ${w.start}</div>
+      </div>
+      <div class="d-flex align-items-center gap-2">
+        <span class="badge ${w.badge}">${w.status}</span>
+        <button class="btn btn-sm btn-ghost-secondary" onclick="openWO=null;assign=null;render()"><i class="ti ti-x"></i></button>
+      </div>
+    </div>
+    <div class="p-3">
+      ${blocked ? `<div class="alert alert-warning py-2 px-3 mb-3"><i class="ti ti-alert-triangle me-1"></i><b>Запуск заблокирован:</b> оператор упаковки не назначен. Передать материалы в цех нельзя — списание упаковки не на кого записать.</div>` : ""}
+
+      ${sweptFinish ? `<div class="alert alert-danger py-2 px-3 mb-3">
+        <b>Финиш подобрал чужие позиции.</b> Упаковщик не провёл своё списание, поэтому документ <span class="se-id">${w.flow.finish.id}</span> списал за него: ${sweptFinish.map((m) => m.name).join(", ")}.
+        В учёте этот расход записан на ${personName(w.flow.finish.by)}. Разделить его по ролям задним числом уже нельзя — и именно так ERPNext ведёт себя по умолчанию, если интерфейс не заставит каждого отчитаться.
+      </div>` : ""}
+
+      <div class="row g-2 mb-3">
+        <div class="col"><div class="p-2 bg-light rounded"><div class="small text-secondary">План</div><div class="font-monospace fs-3">${num(w.qty)}</div></div></div>
+        <div class="col"><div class="p-2 bg-light rounded"><div class="small text-secondary">Произведено</div><div class="font-monospace fs-3 text-blue">${num(w.done)}</div></div></div>
+        <div class="col"><div class="p-2 bg-light rounded"><div class="small text-secondary">Оприходовано</div><div class="font-monospace fs-3 ${w.received ? "text-green" : "text-secondary"}">${num(w.received)}</div></div></div>
+        <div class="col"><div class="p-2 bg-light rounded"><div class="small text-secondary">Брак</div><div class="font-monospace fs-3 text-red">${num(w.scrap)}</div></div></div>
+      </div>
+      <div class="small text-secondary mb-3">«Произведено» — счётчик киоска. «Оприходовано» — то, что реально легло на склад, и это происходит только в документе финиша.</div>
+
+      <div class="border rounded p-3 mb-3">
+        <div class="d-flex justify-content-between align-items-start">
+          <div class="flex-grow-1">
+            <div class="text-secondary small mb-1">Операторы</div>
+            ${opLine(w.operator, "pour")}
+            ${opLine(w.packaging_operator, "pack")}
+          </div>
+          ${view === "manager" && !assign ? `<button class="btn btn-sm btn-outline-secondary" onclick="openAssign()">Назначить операторов</button>` : ""}
+        </div>
+        ${assignBlock}
+      </div>
+
+      <div class="mb-2 fw-semibold">Путь заказа по складу</div>
+      ${flowHtml(w, false)}
+
+      <div class="mb-1 fw-semibold mt-3">Материалы</div>
+      <div class="small text-secondary mb-2">Колонка «Ответственный» берётся из роли позиции в справочнике номенклатуры — не из единицы измерения. Сахар в кг ведёт розлив, плёнка в кг ведёт упаковка: по единице измерения их не разделить.</div>
+      <div class="table-responsive border rounded mb-2">
+        <table class="table table-sm mb-0">
+          <thead><tr><th>Позиция</th><th>Ответственный</th><th class="text-end">По BOM</th><th class="text-end">В цеху</th><th class="text-end">Списано</th><th class="text-end">Откл.</th></tr></thead>
+          <tbody>${w.materials.map(matRow).join("")}</tbody>
+        </table>
+      </div>
+      <div class="border rounded p-2 mb-3">${roleTotal("pour")}<div class="mt-1">${roleTotal("pack")}</div></div>
+
+      <div class="mb-2 fw-semibold">Проведённые складские документы</div>
+      <div class="mb-3">${ledgerHtml(w)}</div>
+
+      ${ERP_NOTE}
+    </div>
+  </div>`;
+}
+
+// --- confirm a stock entry -----------------------------------------------
+function confirmHtml() {
+  const w = WOS.find((x) => x.name === confirmPost.wo);
+  const s = step(confirmPost.key);
+  const by = actorFor(w, confirmPost.key);
+
+  let rows, foot;
+  if (confirmPost.key === "transfer") {
+    rows = w.materials.map((m) => ({ name: m.name, code: m.code, qty: m.act, uom: m.uom, role: m.role }));
+    foot = "Все позиции обеих ролей едут в цех одним документом — разделение начинается на списании, а не на передаче.";
+  } else if (confirmPost.key === "finish") {
+    const swept = w.materials.filter((m) => m.moved > m.consumed);
+    rows = swept.map((m) => ({ name: m.name, code: m.code, qty: m.moved - m.consumed, uom: m.uom, role: m.role, swept: true }));
+    rows.push({ name: w.item, code: w.code, qty: w.done, uom: "шт", fg: true });
+    foot = swept.length
+      ? `<span class="text-danger"><b>Внимание.</b> ${swept.length} позиц. никто не списал, и ERPNext добавил их в этот документ автоматически. Проведёте — расход запишется на вас, а не на того, кто эти материалы вёл.</span>`
+      : "Обе роли уже отчитались, поэтому в документе осталась только готовая продукция — так и должно выглядеть.";
+  } else {
+    rows = roleMats(w, confirmPost.key).map((m) => ({ name: m.name, code: m.code, qty: m.act, uom: m.uom, role: m.role }));
+    foot = `В документе только позиции роли «${confirmPost.key === "pour" ? "розлив" : "упаковка"}». Позиции второй роли остаются в НЗП и ждут своего оператора.`;
+  }
+
+  return `
+  <div class="modal-demo">
+    <div class="card">
+      <div class="card-header">
+        <div>
+          <h3 class="card-title mb-0">${s.title}</h3>
+          <div class="small text-secondary font-monospace mt-1">Stock Entry · ${s.purpose}</div>
+        </div>
+        <button class="btn-close ms-auto" onclick="confirmPost=null;render()"></button>
+      </div>
+      <div class="card-body">
+        <div class="small text-secondary mb-2 font-monospace">${w.name} · ${w.item}</div>
+        <div class="small text-secondary mb-2">Проводит: <b>${personName(by)}</b> · ${s.flow}</div>
+        <div class="table-responsive border rounded">
+          <table class="table table-sm mb-0">
+            <thead><tr><th>Позиция</th><th>Роль</th><th class="text-end">Кол-во</th></tr></thead>
+            <tbody>${rows.map((r) => `<tr class="${r.swept ? "table-danger" : ""}">
+              <td>${r.fg ? "<b>" + r.name + "</b>" : r.name}<div class="small text-secondary font-monospace">${r.code}</div></td>
+              <td>${r.fg ? '<span class="badge bg-green-lt">готовая продукция</span>' : r.role === "pour" ? '<span class="role-chip role-pour">розлив</span>' : '<span class="role-chip role-pack">упаковка</span>'}${r.swept ? ' <span class="small text-red">не списано ролью</span>' : ""}</td>
+              <td class="text-end font-monospace">${num(r.qty)} ${r.uom}</td>
+            </tr>`).join("")}</tbody>
+          </table>
+        </div>
+        <div class="demo-note mt-3 mb-0">${foot}</div>
+      </div>
+      <div class="card-footer d-flex gap-2">
+        <button class="btn btn-primary" onclick="doPost()">Провести документ</button>
+        <button class="btn btn-ghost-secondary" onclick="confirmPost=null;render()">Отмена</button>
+      </div>
+    </div>
+  </div>`;
+}
+
+// --- create modal --------------------------------------------------------
+function createHtml() {
+  return `
+  <div class="modal-demo">
+    <div class="card">
+      <div class="card-header"><h3 class="card-title">Новый производственный заказ</h3><button class="btn-close ms-auto" onclick="createOpen=false;render()"></button></div>
+      <div class="card-body">
+        <div class="row g-3 mb-3">
+          <div class="col-md-8"><label class="form-label">Готовая продукция</label><select class="form-select"><option>Пломбир вафельный рожок 70 г · ICE-ROG-070</option></select></div>
+          <div class="col-md-4"><label class="form-label">Количество</label><input class="form-control font-monospace" value="4000"></div>
+        </div>
+        <div class="row g-3 mb-3">
+          <div class="col-md-6">
+            <label class="form-label"><span class="role-chip role-pour me-1">розлив</span> Оператор розлива</label>
+            <select class="form-select" onchange="setCreate('operator', this.value)">
+              <option value="">—</option>
+              ${PEOPLE.map((p) => `<option value="${p.id}" ${createForm.operator === p.id ? "selected" : ""}>${p.name} · ${p.line}</option>`).join("")}
+            </select>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label"><span class="role-chip role-pack me-1">упаковка</span> Оператор упаковки</label>
+            <select class="form-select" onchange="setCreate('packaging_operator', this.value)">
+              <option value="">—</option>
+              ${PEOPLE.map((p) => `<option value="${p.id}" ${createForm.packaging_operator === p.id ? "selected" : ""}>${p.name} · ${p.line}</option>`).join("")}
+            </select>
+          </div>
+        </div>
+        ${createForm.error ? `<div class="alert alert-danger py-2 px-3 small">${createForm.error}</div>` : ""}
+        <div class="demo-note mb-0">Попробуйте выбрать <b>одного человека в обе роли</b> — форма откажет. Розлив и упаковка считаются раздельно: одно имя в двух слотах делает два показателя неразличимыми, а это ровно то, ради чего роли разделили.</div>
+      </div>
+      <div class="card-footer d-flex gap-2">
+        <button class="btn btn-primary" ${createForm.error ? "disabled" : ""}>Создать и провести</button>
+        <button class="btn btn-ghost-secondary" onclick="createOpen=false;render()">Отмена</button>
+      </div>
+    </div>
+  </div>`;
+}
+
+// --- kiosk entry sheet: выпуск и брак в одном листе ----------------------
+function entryHtml() {
+  const w = WOS.find((x) => x.name === kioskEntry.wo);
+  const role = myRole(w) || "pour";
+  const scrap = kioskEntry.mode === "scrap";
+  const blocked = !kioskEntry.value || (scrap && !kioskEntry.reason);
+  return `
+  <div class="modal-demo">
+    <div class="card" style="width:520px">
+      <div class="card-header">
+        <h3 class="card-title">${role === "pour" ? "Розлив" : "Упаковка"} · запись за смену</h3>
+        <button class="btn-close ms-auto" onclick="kioskEntry=null;render()"></button>
+      </div>
+      <div class="card-body">
+        <div class="small text-secondary mb-2 font-monospace">${w.name} · ${w.item}</div>
+        <div class="seg mb-3">
+          <button class="${scrap ? "" : "on"}" onclick="setEntryMode('good')">Годная продукция</button>
+          <button class="${scrap ? "on bad" : ""}" onclick="setEntryMode('scrap')">Брак</button>
+        </div>
+        <div class="border rounded p-3 text-end font-monospace mb-1" style="font-size:34px;line-height:1.1">${num(kioskEntry.value)}</div>
+        <div class="small text-secondary mb-3">${scrap ? "Брак за смену уже: " + num(w.scrap) + " шт" : "Остаток по заказу: " + num(w.qty - w.done) + " · нажмите «Всё»"}</div>
+        <div class="row g-2">
+          ${[1,2,3].map(n=>`<div class="col-3"><button class="kbd-num w-100" onclick="kb('${n}')">${n}</button></div>`).join("")}
+          <div class="col-3"><button class="kbd-num w-100" onclick="kb('all')" style="font-size:14px" ${scrap ? "disabled" : ""}>Всё</button></div>
+          ${[4,5,6].map(n=>`<div class="col-3"><button class="kbd-num w-100" onclick="kb('${n}')">${n}</button></div>`).join("")}
+          <div class="col-3"><button class="kbd-num w-100" onclick="kb('+100')" style="font-size:14px">+100</button></div>
+          ${[7,8,9].map(n=>`<div class="col-3"><button class="kbd-num w-100" onclick="kb('${n}')">${n}</button></div>`).join("")}
+          <div class="col-3"><button class="kbd-num w-100" onclick="kb('+500')" style="font-size:14px">+500</button></div>
+          <div class="col-3"><button class="kbd-num w-100" onclick="kb('0')">0</button></div>
+          <div class="col-3"><button class="kbd-num w-100" onclick="kb('00')">00</button></div>
+          <div class="col-6"><button class="kbd-num w-100" onclick="kb('del')" style="font-size:14px"><i class="ti ti-backspace"></i></button></div>
+        </div>
+        ${scrap ? `
+          <div class="dt-group">Причина брака — обязательна</div>
+          <div class="row g-2">
+            ${SCRAP.map((r) => `<div class="col-6"><button class="dt-btn ${kioskEntry.reason === r.c ? "border-primary bg-blue-lt" : ""}" onclick="kioskEntry.reason='${r.c}';render()"><span class="dt-code">${r.c}</span>${r.t}</button></div>`).join("")}
+          </div>` : `
+          <div class="demo-note mt-3 mb-0">Это заменяет текущий <code>prompt()</code>. Перчатки, планшет, кнопки 56 px. Счётчик выпуска — <b>не</b> складская проводка: на склад продукция попадёт документом финиша.</div>`}
+      </div>
+      <div class="card-footer d-flex gap-2">
+        <button class="btn ${scrap ? "btn-danger" : "btn-primary"} flex-grow-1" style="height:56px" ${blocked ? "disabled" : ""} onclick="commitEntry()">
+          ${scrap ? "Записать брак " + num(kioskEntry.value) + " шт" : "Записать " + num(kioskEntry.value) + " шт"}
+        </button>
+        <button class="btn btn-ghost-secondary" onclick="kioskEntry=null;render()">Отмена</button>
+      </div>
+    </div>
+  </div>`;
+}
+
+// --- actions -------------------------------------------------------------
+function openDetail(name) { openWO = name; assign = null; openSE = null; render(); }
+function jump(name) {
+  view = "manager";
+  [...document.querySelectorAll("#roleSwitch button")].forEach((x) => x.classList.toggle("on", x.dataset.role === "manager"));
+  openDetail(name);
+}
+function shiftDemo() {
+  reset();
+  view = "pourer";
+  [...document.querySelectorAll("#roleSwitch button")].forEach((x) => x.classList.toggle("on", x.dataset.role === "pourer"));
+  kioskSel.pourer = "WO-2026-00408";   // заказ, который ещё не начат — смена с нуля
+  render();
+}
+function askPost(wo, key) { confirmPost = { wo, key }; render(); }
+function doPost() {
+  const w = WOS.find((x) => x.name === confirmPost.wo);
+  const gate = canPost(w, confirmPost.key);
+  if (gate.ok) {
+    post(w, confirmPost.key, actorFor(w, confirmPost.key));
+    if (confirmPost.key === "finish") w.finishDraft = null;  // черновик отработал
+    tick(6);
+  }
+  confirmPost = null;
+  render();
+}
+function openAssign() {
+  const w = WOS.find((x) => x.name === openWO);
+  assign = { operator: w.operator || "", packaging_operator: w.packaging_operator || "", error: "" };
+  render();
+}
+function validateAssign(a) {
+  return a.operator && a.packaging_operator && a.operator === a.packaging_operator
+    ? "Один человек не может занимать обе роли оператора в одном производственном заказе."
+    : "";
+}
+function setAssign(field, val) { assign[field] = val; assign.error = validateAssign(assign); render(); }
+function swapAssign() {
+  const t = assign.operator;
+  assign.operator = assign.packaging_operator;
+  assign.packaging_operator = t;
+  assign.error = validateAssign(assign);
+  render();
+}
+function saveAssign() {
+  if (assign.error) return;
+  const w = WOS.find((x) => x.name === openWO);
+  w.operator = assign.operator || null;
+  w.packaging_operator = assign.packaging_operator || null;
+  assign = null;
+  render();
+}
+function openCreate() { createOpen = true; createForm = { operator: "", packaging_operator: "", error: "" }; render(); }
+function setCreate(field, val) {
+  createForm[field] = val;
+  createForm.error = validateAssign(createForm);
+  render();
+}
+function openEntry(name) { kioskEntry = { wo: name, value: 0, mode: "good", reason: "" }; render(); }
+function setEntryMode(m) { kioskEntry.mode = m; kioskEntry.value = 0; kioskEntry.reason = ""; render(); }
+function kb(k) {
+  const w = WOS.find((x) => x.name === kioskEntry.wo);
+  const rest = w.qty - w.done;
+  if (k === "all") kioskEntry.value = rest;
+  else if (k === "del") kioskEntry.value = Math.floor(kioskEntry.value / 10);
+  else if (k === "+100") kioskEntry.value += 100;
+  else if (k === "+500") kioskEntry.value += 500;
+  else kioskEntry.value = Number(String(kioskEntry.value) + k);
+  render();
+}
+function commitEntry() {
+  const w = WOS.find((x) => x.name === kioskEntry.wo);
+  if (!kioskEntry.value) return;
+  if (kioskEntry.mode === "scrap") {
+    if (!kioskEntry.reason) return;   // причина брака обязательна
+    w.scrap += kioskEntry.value;
+  } else {
+    w.done = Math.min(w.qty, w.done + kioskEntry.value);
+    if (w.done > 0 && w.status === "Не начат") { w.status = "В процессе"; w.badge = "bg-blue-lt"; }
+  }
+  tick(25);
+  kioskEntry = null;
+  render();
+}
+
+// --- смена: бейдж, очередь, старт, пауза, черновик финиша -----------------
+function badgeOut() { badgeIn[view] = false; kioskSel[view] = null; startSheet = null; pauseSheet = null; finishSheet = null; kioskEntry = null; confirmPost = null; render(); }
+function selectWO(name) { kioskSel[view] = name; render(); }
+
+function openStart(name) {
+  const w = WOS.find((x) => x.name === name);
+  const planned = toMin((w.start.split(" ")[1] || "06:00"));
+  startSheet = { wo: name, hh: Math.floor(planned / 60), mm: planned % 60 };
+  render();
+}
+function bumpStart(field, d) {
+  if (field === "hh") startSheet.hh = (startSheet.hh + d + 24) % 24;
+  else startSheet.mm = (startSheet.mm + d + 60) % 60;
+  render();
+}
+function startNow() { startSheet.hh = Math.floor(shiftMin / 60) % 24; startSheet.mm = shiftMin % 60; render(); }
+function commitStart() {
+  const w = WOS.find((x) => x.name === startSheet.wo);
+  w.actualStart = String(startSheet.hh).padStart(2, "0") + ":" + String(startSheet.mm).padStart(2, "0");
+  if (w.status === "Не начат") { w.status = "В процессе"; w.badge = "bg-blue-lt"; }
+  tick(7);
+  startSheet = null;
+  render();
+}
+
+function openPause(name) { pauseSheet = { wo: name, q: "" }; render(); }
+function commitPause(code) {
+  const w = WOS.find((x) => x.name === pauseSheet.wo);
+  w.paused = { code, from: nowClock() };
+  w.status = "Приостановлен"; w.badge = "bg-secondary-lt";
+  pauseSheet = null;
+  render();
+}
+function resumeWO(name) {
+  const w = WOS.find((x) => x.name === name);
+  if (!w.paused) return;
+  // Длительность выводится из кода причины, а не из случайного числа: макет
+  // должен показывать одно и то же при каждом прогоне, иначе его нельзя обсуждать.
+  const mins = 12 + (DT_ALL.findIndex((i) => i.c === w.paused.code) * 7) % 24;
+  const to = tick(mins);
+  w.downtime.push({ code: w.paused.code, from: w.paused.from, to, min: mins });
+  w.paused = null;
+  w.status = "В процессе"; w.badge = "bg-blue-lt";
+  render();
+}
+
+function openFinish(name) { finishSheet = { wo: name }; render(); }
+function saveDraft() {
+  const w = WOS.find((x) => x.name === finishSheet.wo);
+  w.finishDraft = { by: meId(), at: tick(10), qty: w.done, scrap: w.scrap };
+  finishSheet = null;
+  render();
+}
+function confirmFinish() {
+  const wo = finishSheet.wo;
+  finishSheet = null;
+  askPost(wo, "finish");   // дальше — тот же экран складского документа, что у начальника
+}
+
+document.getElementById("roleSwitch").addEventListener("click", (e) => {
+  const b = e.target.closest("button[data-role]");
+  if (!b) return;
+  view = b.dataset.role;
+  openWO = null; assign = null; createOpen = false; kioskEntry = null; confirmPost = null; openSE = null;
+  startSheet = null; pauseSheet = null; finishSheet = null;
+  [...e.currentTarget.querySelectorAll("button")].forEach((x) => x.classList.toggle("on", x === b));
+  render();
+});
+
+function render() {
+  const me = ME[view];
+  document.getElementById("userAvatar").textContent = me.av;
+  document.getElementById("userName").textContent = me.name;
+  document.getElementById("userRole").textContent = me.role;
+  document.getElementById("moduleTabs").style.display = view === "manager" ? "" : "none";
+  document.getElementById("body").innerHTML = view === "manager" ? renderList() : renderKiosk();
+  let ov = "";
+  if (openWO) ov += drawerHtml();
+  if (createOpen) ov += createHtml();
+  if (kioskEntry) ov += entryHtml();
+  if (startSheet) ov += startHtml();
+  if (pauseSheet) ov += pauseHtml();
+  if (finishSheet) ov += finishHtml();
+  if (confirmPost) ov += confirmHtml();
+  document.getElementById("overlays").innerHTML = ov;
+}
+
+reset();
+render();
+</script>
+</body>
+</html>
