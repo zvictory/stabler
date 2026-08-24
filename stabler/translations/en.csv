@@ -515,6 +515,7 @@ Type the sender name as registered,Type the sender name as registered
 USDT,USDT
 Unbilled Receipts,Unbilled Receipts
 Unknown remittance queue: {0},Unknown remittance queue: {0}
+"Unknown tender intake field(s): {0}","Unknown tender intake field(s): {0}"
 Unlock,Unlock
 Unlock code,Unlock code
 Unlock pickup code,Unlock pickup code

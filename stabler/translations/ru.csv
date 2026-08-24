@@ -130,6 +130,7 @@ This site is not migrated for packaging operators yet.,На этом сайте 
 This will post,Будет проведено
 Transfer registered,Перевод зарегистрирован
 Transfers registered on the legacy engine stay on the legacy list and are not shown by the V1 screens: they have no Remittance Transfer record behind them.,"Переводы, зарегистрированные на движке legacy, остаются в старом списке и не отображаются на экранах V1: за ними нет записи Remittance Transfer."
+"Unknown tender intake field(s): {0}","Неизвестное поле тендерной заявки: {0}"
 V1 — operations centre,V1 — операционный центр
 What the customer pays,Что платит клиент
 What the receiver collects,Что получает получатель

@@ -1374,6 +1374,84 @@ _INTAKE_KEYS_NUM = (
 # tender documents; auction/shop pass without.
 _PURCHASE_METHODS = ("auction", "shop", "selection", "tender")
 
+# Keys `_clean_intake` writes from the *prior* payload and never from the browser.
+# Not part of the client contract, but not unknown either: three of _clean_intake's
+# four callers hand it the stored blob as the payload (`_clean_intake(intake, intake)`
+# at save/assign time), so a check that rejected these would throw on our own data.
+_INTAKE_SERVER_KEYS = (
+	"go_no_go_at",
+	"go_no_go_by",
+	"result_at",
+	"result_by",
+	"submitted_at",
+	"submitted_by",
+	"submission_reference",
+	"assigned_to",
+	"assigned_to_name",
+	"assigned_at",
+	"assigned_by",
+	"ready_at",
+	"ready_by",
+)
+# Everything a browser may send to save_deal_intake. `submission_deadline` stays for
+# one release as the drawer's retired deadline key (ADR-203): one deploy swaps the
+# API and the bundle together, but a tab opened before it still holds the old bundle
+# in memory and would otherwise fail every save until the user reloads.
+_INTAKE_CLIENT_KEYS = frozenset(
+	_INTAKE_KEYS_STR + _INTAKE_KEYS_NUM + ("cert_required", "items", "documents", "tender_files")
+)
+_TENDER_FILE_LIMIT = 40
+
+
+def unknown_intake_keys(data: dict) -> list[str]:
+	"""Keys in an intake payload that this server carries nowhere.
+
+	Dropping one in silence costs more than refusing the save: `title` sat outside
+	the whitelist for months, so the form said "saved", the field read back as the
+	customer's organization name, and the next save persisted that name over the
+	real title (measured on prod mikas 2026-08-15). Pure, so the contract is
+	testable without a site; `save_deal_intake` turns the result into a throw.
+	"""
+	known = _INTAKE_CLIENT_KEYS.union(_INTAKE_SERVER_KEYS)
+	return sorted(k for k in (data or {}) if k not in known)
+
+
+def _clean_tender_files(rows) -> list:
+	"""The uploaded tender pack, as `TenderMasterDrawer.vue` sends it.
+
+	A row without `file_url` is not a file: keeping it would leave a permanently
+	broken link in the drawer's file list and in every later read of the pack.
+	"""
+	out: list = []
+	for r in rows or []:
+		if not isinstance(r, dict):
+			continue
+		url = str(r.get("file_url") or "").strip()[:500]
+		if not url:
+			continue
+		out.append(
+			{
+				"file_name": str(r.get("file_name") or "").strip()[:200],
+				"file_url": url,
+				"file_size": _num(r.get("file_size")),
+			}
+		)
+		if len(out) >= _TENDER_FILE_LIMIT:
+			break
+	return out
+
+
+def _intake_bid_deadline(intake: dict) -> str:
+	"""The bid deadline under ADR-203's single key, `bid_deadline`.
+
+	`submission_deadline` is what the drawer wrote before the rename; it is
+	tolerated on read for one release. Without the tolerance every tender created
+	through the drawer keeps showing "not set" on its bid milestone and never
+	raises an SLA warning, however close the deadline is (defect #4).
+	"""
+	intake = intake or {}
+	return str(intake.get("bid_deadline") or intake.get("submission_deadline") or "")
+
 
 def _merge_client_documents(client_docs: list, prior_docs: list) -> list:
 	"""Reconcile client-edited checklist rows with server-owned file/waiver facts.
@@ -1434,10 +1512,20 @@ def _clean_intake(data: dict, prior: dict | None = None, audit_actor: str | None
 	from stabler.api._tender_intake_items import clean_intake_items
 
 	prior = prior or {}
-	out = {k: str(data.get(k) or "").strip()[:200] for k in _INTAKE_KEYS_STR}
+
+	# PATCH, not PUT (ADR-202/3): a key the sender left out keeps its stored value;
+	# a key that is present and empty still clears, so a user can empty a field they
+	# once filled. Two screens write this single blob and neither sends all of it, so
+	# rebuilding it from the payload alone made every save wipe whatever the other
+	# screen had entered (defect #1). `cert_required` is the sharpest case — a bare
+	# `data.get()` cannot tell "left out" from "unticked".
+	def _sent(key):
+		return data[key] if key in data else prior.get(key)
+
+	out = {k: str(_sent(k) or "").strip()[:200] for k in _INTAKE_KEYS_STR}
 	for k in _INTAKE_KEYS_NUM:
-		out[k] = _num(data.get(k))
-	out["cert_required"] = 1 if data.get("cert_required") else 0
+		out[k] = _num(_sent(k))
+	out["cert_required"] = 1 if _sent("cert_required") else 0
 	# normalize decision / result / purchase-method vocab
 	out["go_no_go"] = out["go_no_go"] if out["go_no_go"] in ("go", "no_go") else ""
 	out["result"] = out["result"] if out["result"] in ("won", "lost", "pending") else ""
@@ -1475,11 +1563,25 @@ def _clean_intake(data: dict, prior: dict | None = None, audit_actor: str | None
 	# files / waiver facts are reconciled back from the prior payload and never
 	# trusted from the client. This keeps _clean_intake and the dedicated document
 	# endpoints (upload/waive) over the same single source of truth.
-	out["documents"] = _merge_client_documents(data.get("documents") or [], prior.get("documents") or [])[:40]
+	# ADR-205: an intake save that never mentions the checklist leaves it alone.
+	# The drawer used to send `documents: []` on every save and the empty list
+	# rebuilt the checklist as empty, deleting the requirement rows, their uploaded
+	# files and their waiver justifications (defect #2). A present list still
+	# replaces — `TenderIntake.vue` is a real template editor and its `rmDoc()` has
+	# to keep meaning "the user removed every row".
+	if "documents" in data:
+		out["documents"] = _merge_client_documents(data.get("documents") or [], prior.get("documents") or [])[
+			:40
+		]
+	else:
+		out["documents"] = list(prior.get("documents") or [])[:40]
 	# Item lines follow the same reconciliation idea as documents, but simpler:
 	# they carry no server-owned facts, so an absent key preserves and a present
 	# list replaces. They are the scope the RFQ step later copies line by line.
 	out["items"] = clean_intake_items(data, prior.get("items"))
+	# The uploaded tender pack (ADR-202/1). Same present-replaces / absent-preserves
+	# rule: the PO board panel never sends this key and must not detach the pack.
+	out["tender_files"] = _clean_tender_files(_sent("tender_files"))
 	# The transition rule is shared with the document endpoints, which also move
 	# a lot across the ready line (see apply_ready_audit). Carry the prior audit
 	# in first so an unchanged decision keeps its original timestamp.
@@ -1637,7 +1739,7 @@ def _deal_deadlines(deal: str, company: str, intake: dict) -> dict:
 	delivery_date = intake.get("delivery_deadline") or so_delivery
 
 	milestones = [
-		_milestone("bid", _("Bid deadline"), intake.get("bid_deadline"), bid_done, today_d),
+		_milestone("bid", _("Bid deadline"), _intake_bid_deadline(intake), bid_done, today_d),
 		_milestone("contract", _("Contract"), so_first_txn, so_exists, today_d),
 		_milestone("po_eta", _("PO ETA"), po_eta, po_received, today_d),
 		_milestone("delivery", _("Delivery deadline"), delivery_date, so_delivered, today_d),
@@ -1699,6 +1801,11 @@ def save_deal_intake(deal: str, intake) -> dict:
 		data = intake if isinstance(intake, dict) else json.loads(intake)
 	except (ValueError, TypeError):
 		frappe.throw(_("Invalid intake payload."))
+	# ADR-202/2: refuse rather than drop. Only the browser boundary is checked --
+	# the internal callers pass the stored blob straight back in.
+	unknown = unknown_intake_keys(data)
+	if unknown:
+		frappe.throw(_("Unknown tender intake field(s): {0}").format(", ".join(unknown)))
 	clean = _clean_intake(data, _read_intake_for_update(deal))
 	frappe.db.set_value(
 		"CRM Deal", deal, "custom_tender_intake", json.dumps(clean, ensure_ascii=False), update_modified=False

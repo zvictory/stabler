@@ -164,8 +164,11 @@ watch(
 					if (intake.tender_no) form.tender_no = intake.tender_no;
 					if (intake.source) form.source = intake.source;
 					if (intake.publication_date) form.publication_date = intake.publication_date;
-					if (intake.submission_deadline || val.deadline) {
-						form.submission_deadline = intake.submission_deadline || val.deadline;
+					// bid_deadline is the single key (ADR-203); submission_deadline is
+					// what this drawer wrote before the rename and still reads back.
+					if (intake.bid_deadline || intake.submission_deadline || val.deadline) {
+						form.submission_deadline =
+							intake.bid_deadline || intake.submission_deadline || val.deadline;
 					}
 					if (intake.currency) form.currency = intake.currency;
 					if (Number(intake.estimated_total) > 0)
@@ -256,7 +259,7 @@ async function save() {
 			tender_no: form.tender_no,
 			source: form.source,
 			publication_date: form.publication_date,
-			submission_deadline: form.submission_deadline,
+			bid_deadline: form.submission_deadline,
 			currency: form.currency,
 			estimated_total: form.estimated_total || itemTotal.value || 0,
 			items: (form.items || [])
@@ -274,7 +277,6 @@ async function save() {
 				file_url: f.file_url,
 				file_size: f.file_size || 0,
 			})),
-			documents: [],
 		};
 
 		await call("stabler.api.tender.save_deal_intake", {

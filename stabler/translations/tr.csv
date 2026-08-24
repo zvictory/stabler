@@ -129,6 +129,7 @@ This site is not migrated for packaging operators yet.,Bu sitede paketleme opera
 This will post,Şu kayıt işlenecek
 Transfer registered,Havale kaydedildi
 Transfers registered on the legacy engine stay on the legacy list and are not shown by the V1 screens: they have no Remittance Transfer record behind them.,Legacy motorunda kaydedilen transferler eski listede kalır ve V1 ekranlarında görünmez: arkalarında Remittance Transfer kaydı yoktur.
+"Unknown tender intake field(s): {0}","Bilinmeyen ihale giriş alanı: {0}"
 V1 — operations centre,V1 — operasyon merkezi
 What the customer pays,Müşterinin ödediği
 What the receiver collects,Alıcının aldığı
