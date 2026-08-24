@@ -11,7 +11,8 @@ Claude Design'a "şuna benzesin" diye referans olarak da gösterebilirsiniz.
 > zaten karşılıyor; üstüne P1–P4'te hiç olmayan **stok akışını** da ekliyor:
 > cehe verme → iki ayrı tüketim → finiş, gerçek ERPNext `Stock Entry` purpose
 > adlarıyla. Bu promptları vermeden önce mockup'a bakın — geriye kalan tek
-> gerçek boşluk P3'ün vardiya akışı (badge girişi, duruş nedenleri, taslak finiş).
+> gerçek boşluk 1b (kanban) ve 1c (hat × zaman) — ikisi de Work Order'da olmayan
+> bir hat/iş merkezi alanı istiyor, yani önce veri modeli kararı.
 
 ---
 
@@ -61,7 +62,7 @@ Claude Design'a "şuna benzesin" diye referans olarak da gösterebilirsiniz.
 смена, чтобы начальник смены не ставил разливщика на упаковку по ошибке.
 ```
 
-## P3 — Kiosk, rol rol tam senaryo
+## P3 — Kiosk, rol rol tam senaryo  ·  **mockup'ta yapıldı**
 
 ```
 Разверни киоск в полный сценарий смены ОТДЕЛЬНО для каждой из двух ролей,
