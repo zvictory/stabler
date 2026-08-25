@@ -2175,6 +2175,7 @@ Edit Vendor Category,Edit Vendor Category
 Edit Visit,Edit Visit
 Edited,Edited
 Edited 1 field,Edited 1 field
+Edited in the tender drawer,Edited in the tender drawer
 Edited {0} field(s),Edited {0} field(s)
 Editing a past day,Editing a past day
 Editing the rate updates the received amount.,Editing the rate updates the received amount.
@@ -5233,7 +5234,7 @@ Set,Set
 Set a Google Drive folder ID first.,Set a Google Drive folder ID first.
 Set as company default,Set as company default
 Set as company default.,Set as company default.
-Set deadlines in Tender details.,Set deadlines in Tender details.
+Set deadlines in the tender drawer.,Set deadlines in the tender drawer.
 Set exactly one of Commercial Invoice or Container on a Freight Booking.,Set exactly one of Commercial Invoice or Container on a Freight Booking.
 Set exactly one of Commercial Invoice or Container.,Set exactly one of Commercial Invoice or Container.
 Set Reports-To on employees to build the positions hierarchy.,Set Reports-To on employees to build the positions hierarchy.
@@ -5273,6 +5274,7 @@ Shipping & logistics,Shipping & logistics
 Shop,Shop
 Short code,Short code
 short stock,short stock
+Should We Bid?,Should We Bid?
 Show,Show
 Show all allocations,Show all allocations
 Show all items,Show all items

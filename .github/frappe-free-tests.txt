@@ -205,6 +205,7 @@ stabler.tests.test_imports_list_selection_source
 stabler.tests.test_tender_intake_contract
 stabler.tests.test_tender_intake_items
 stabler.tests.test_tender_intake_master_fields
+stabler.tests.test_tender_intake_single_writer
 stabler.tests.test_tender_master_drawer_source
 stabler.tests.test_lcv_expense_account
 stabler.tests.test_landed_cost_per_kg_source

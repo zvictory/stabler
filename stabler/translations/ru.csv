@@ -1765,6 +1765,7 @@ Edit Vendor Category,Изменить категорию
 Edit Visit,Редактировать визит
 Edited,Изменено
 Edited 1 field,Изменено 1 поле
+Edited in the tender drawer,Редактируется в карточке тендера
 Edited {0} field(s),
 Editing a past day,Изменение прошедшего дня
 Editing the rate updates the received amount.,Редактирование цены обновляет полученную сумму.
@@ -4823,7 +4824,7 @@ Set,
 Set a Google Drive folder ID first.,Сначала укажите ID папки Google Drive.
 Set as company default,Сделать стандартом компании
 Set as company default.,Установлено как стандарт компании.
-Set deadlines in Tender details.,Укажите сроки в деталях тендера.
+Set deadlines in the tender drawer.,Укажите сроки в карточке тендера.
 Set exactly one of Commercial Invoice or Container on a Freight Booking.,Укажите ровно одно из значений: коммерческий инвойс или контейнер в бронировании перевозки.
 Set exactly one of Commercial Invoice or Container.,Укажите ровно одно: коммерческий инвойс или контейнер.
 Set Reports-To on employees to build the positions hierarchy.,"Установите «Руководитель» для сотрудников, чтобы построить иерархию должностей."
@@ -4863,6 +4864,7 @@ Shipping & logistics,Отгрузка и логистика
 Shop,Магазин
 Short code,Короткий код
 short stock,недостаточно
+Should We Bid?,Участвовать в тендере?
 Show,
 Show all allocations,Показать все распределения
 Show all items,

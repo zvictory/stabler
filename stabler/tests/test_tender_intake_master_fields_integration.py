@@ -215,12 +215,6 @@ _PO_BOARD_INTAKE = {
 	"volume": "120",
 	"unit": "m3",
 	"delivery_deadline": "2026-11-01",
-	"guarantee_amount": "1500000",
-	"guarantee_return": "2026-12-01",
-	"cert_required": 1,
-	"penalty_pct_per_day": "0.5",
-	"go_no_go": "go",
-	"purchase_method": "tender",
 	"notes": "call the buyer before the site visit",
 	"documents": [
 		{"key": "gtd", "label": "ГТД", "required": 1, "role": "customs"},
@@ -235,6 +229,13 @@ _DRAWER_INTAKE = {
 	"publication_date": "2026-08-01",
 	"currency": "USD",
 	"estimated_total": "15000.50",
+	# Section E — pre-win evaluation, moved off the PO board by ADR-206.
+	"guarantee_amount": "1500000",
+	"guarantee_return": "2026-12-01",
+	"cert_required": 1,
+	"penalty_pct_per_day": "0.5",
+	"go_no_go": "go",
+	"purchase_method": "tender",
 	"items": [
 		{"item_code": "RAIL-01", "item_name": "Rail 01", "qty": 2, "uom": "Nos", "rate": 10, "amount": 20}
 	],
@@ -291,12 +292,31 @@ class TestAPartialSaveKeepsTheOtherScreensWork(_IntakeBenchFixture, FrappeTestCa
 		intake = tender.deal_intake(deal=self.deal.name)["intake"]
 		self.assertEqual(intake["lot_no"], "LOT-9")
 		self.assertEqual(intake["buyer"], "Uzbekgidroenergo")
-		self.assertEqual(intake["guarantee_amount"], 1500000.0)
-		self.assertEqual(intake["cert_required"], 1)
-		self.assertEqual(intake["go_no_go"], "go")
+		self.assertEqual(intake["unit"], "m3")
+		self.assertEqual(intake["delivery_deadline"], "2026-11-01")
 		self.assertEqual(intake["notes"], "call the buyer before the site visit")
 		# and the drawer's own fields did land
 		self.assertEqual(intake["title"], _DRAWER_INTAKE["title"])
+
+	def test_a_po_board_save_keeps_the_drawer_s_decision(self):
+		"""The same defect the other way round, and it is new: until ADR-206 the
+		decision was entered on the PO board, so a PO board save could not lose
+		it. Now the drawer owns it and this panel sits on a board a user leaves
+		open for hours — the sequence that has to survive is: director records
+		Go in the drawer at 11:00, sourcing saves a lot number here at 11:05."""
+		tender.save_deal_intake(deal=self.deal.name, intake=dict(_DRAWER_INTAKE))
+
+		tender.save_deal_intake(deal=self.deal.name, intake=dict(_PO_BOARD_INTAKE))
+
+		intake = tender.deal_intake(deal=self.deal.name)["intake"]
+		self.assertEqual(intake["go_no_go"], "go")
+		self.assertEqual(intake["guarantee_amount"], 1500000.0)
+		self.assertEqual(intake["guarantee_return"], "2026-12-01")
+		self.assertEqual(intake["cert_required"], 1)
+		self.assertEqual(intake["penalty_pct_per_day"], 0.5)
+		self.assertEqual(intake["purchase_method"], "tender")
+		# and the PO board's own field did land
+		self.assertEqual(intake["lot_no"], "LOT-9")
 
 	def test_a_drawer_shaped_save_keeps_the_document_checklist(self):
 		"""ADR-205 / defect #2. The requirement rows are what carry the uploaded
@@ -314,11 +334,11 @@ class TestAPartialSaveKeepsTheOtherScreensWork(_IntakeBenchFixture, FrappeTestCa
 		"""Preserving a decision must preserve when it was made. Re-stamping on
 		every save would make the audit trail claim the director decided at the
 		moment an unrelated user edited an item line."""
-		first = tender.save_deal_intake(deal=self.deal.name, intake=dict(_PO_BOARD_INTAKE))
+		first = tender.save_deal_intake(deal=self.deal.name, intake=dict(_DRAWER_INTAKE))
 		stamped_at = first["intake"]["go_no_go_at"]
 		self.assertTrue(stamped_at)
 
-		tender.save_deal_intake(deal=self.deal.name, intake=dict(_DRAWER_INTAKE))
+		tender.save_deal_intake(deal=self.deal.name, intake=dict(_PO_BOARD_INTAKE))
 
 		intake = tender.deal_intake(deal=self.deal.name)["intake"]
 		self.assertEqual(intake["go_no_go_at"], stamped_at)
