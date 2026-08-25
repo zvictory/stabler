@@ -218,6 +218,12 @@ footer{margin-top:26px;padding-top:14px;border-top:1px solid var(--line);color:v
 .truth ul{margin:4px 0 0;padding-left:17px}
 .truth li{margin:1px 0}
 .truth .stale{margin:6px 0 0;color:var(--dang)}
+/* Şeridin adıyla andığı satırların yanına konan işaret. Şerit yalnız başta
+   duruyor; gövdeye kaydıran okur oraya bir daha bakmıyor ve kırmızı bayrağı
+   bugünün ölçümü sanıyor. Ölçüm silinmiyor — üstüne tarihi yazılıyor. */
+.fixed{margin-top:7px;padding:6px 10px;border-radius:6px;background:var(--ok-bg);
+  border-left:3px solid var(--ok);color:var(--ink);font-size:11.5px;line-height:1.5}
+.fixed b{color:var(--ink-dark)}
 </style>
 </head>
 <body>
@@ -237,7 +243,7 @@ footer{margin-top:26px;padding-top:14px;border-top:1px solid var(--line);color:v
     </p>
     <div class="truth">
       <div class="t-real">
-        <b>✔ Kod oldu — bunlar artık çizim değil (dilim 1, 2026-08-24)</b>
+        <b>✔ Kod oldu ve prod'da — bunlar artık çizim değil (dilim 1, 2026-08-25)</b>
         <ul>
           <li><b>ADR-202</b> · gönderilmeyen anahtar korunuyor (PATCH), sözleşme dışı anahtar
               <code>frappe.throw</code> ile reddediliyor, <code>tender_files</code> kaydediliyor</li>
@@ -246,9 +252,11 @@ footer{margin-top:26px;padding-top:14px;border-top:1px solid var(--line);color:v
           <li><b>ADR-203</b> · tek son tarih anahtarı <code>bid_deadline</code>; çekmece ona yazıyor,
               eski <code>submission_deadline</code> bir sürüm boyunca yalnız okunuyor</li>
         </ul>
-        <p class="stale">Bu yüzden aşağıdaki gövdede şu dört satır <b>artık yanlış</b>: kusur #3/#4'ün
-          "sessizce düşüyorlar"ı, "<code>tender_files</code> … referans listesi kaydedilmiyor",
-          "çekmece <code>documents: []</code> gönderir", "<code>_clean_intake</code> çıktıyı sıfırdan kurar".</p>
+        <p class="stale">Gövde 2026-08-17'nin ölçümü olarak <b>olduğu gibi duruyor</b> — silinmedi, çünkü
+          o gün neyin ölçüldüğünün kaydı. Ama artık yanlış olan dört yerin her birinin altına
+          <span style="background:var(--ok-bg);border-left:3px solid var(--ok);padding:0 5px">✔ Düzeldi</span>
+          işareti kondu, çünkü şerit yalnız başta duruyor ve gövdeye kaydıran okur kırmızı bayrağı
+          bugünün ölçümü sanıyor.</p>
       </div>
       <div class="t-fake">
         <b>✘ Hâlâ çizim — bu ekranlardaki hiçbir sayı kayıttan okunmuyor</b>
@@ -364,6 +372,11 @@ footer{margin-top:26px;padding-top:14px;border-top:1px solid var(--line);color:v
                     (<code>crm.py:463</code>). Son tarih ikiye bölünmüş: form <code>submission_deadline</code> gönderiyor,
                     sistem <code>bid_deadline</code> okuyor, <code>save_deal</code>'in kabul ettiği
                     <code>tender_deadline</code> ise hiç gönderilmiyor — <b>tarih hiçbir yere ulaşmıyor</b>.
+                    <div class="fixed"><b>✔ Düzeldi · 2026-08-25 prod.</b> ADR-202 ile <code>title</code>,
+                      <code>publication_date</code>, <code>tender_files</code> sözleşmeye girdi ve sözleşme dışı
+                      anahtar artık sessizce düşmüyor, <code>frappe.throw</code> ile reddediliyor. ADR-203 ile
+                      son tarih tek anahtar: çekmece <code>bid_deadline</code> yazıyor, okuma bir sürüm boyunca
+                      <code>submission_deadline</code>'ı da kabul ediyor.</div>
                   </div>
                 </div>
               </div>
@@ -381,6 +394,9 @@ footer{margin-top:26px;padding-top:14px;border-top:1px solid var(--line);color:v
                     <span class="flag bad">!</span> Dosyalar <code>upload_file</code> ile gerçekten yükleniyor, ama
                     <code>tender_files</code> anahtarı sözleşmede olmadığı için <b>referans listesi</b> kaydedilmiyor —
                     dosya sunucuda kalıyor, ihaleye bağı kayboluyor.
+                    <div class="fixed"><b>✔ Düzeldi · 2026-08-25 prod.</b> <code>tender_files</code> sözleşmede;
+                      liste kaydediliyor ve çekmece bir sonraki açılışta geri okuyor. <code>file_url</code>'ü
+                      olmayan satır düşürülüyor — indirilemeyecek bir bağ saklamanın anlamı yok.</div>
                   </div>
                 </div>
               </div>
@@ -483,7 +499,11 @@ footer{margin-top:26px;padding-top:14px;border-top:1px solid var(--line);color:v
     <div class="body">
       <div class="grid2">
         <div>
-          <div class="note bad" style="margin-top:0"><span class="flag bad">!</span> <b>Bugün — tam nesne PUT</b></div>
+          <div class="note bad" style="margin-top:0"><span class="flag bad">!</span> <b>2026-08-17'de — tam nesne PUT</b>
+            <div class="fixed"><b>✔ Düzeldi · 2026-08-25 prod.</b> Artık PATCH: gönderilmeyen anahtar korunuyor,
+              gönderilen ama boş olan hâlâ temizliyor (kullanıcı bir alanı bilerek boşaltabilmeli). Çekmece
+              <code>documents: []</code> göndermeyi bıraktı, <code>go_no_go</code> damgası ilgisiz kayıtta
+              yeniden basılmıyor. Aşağıdaki tablo o günün davranışıdır.</div></div>
           <table class="tbl" style="margin-top:8px;border:1px solid var(--line);border-radius:8px">
             <tbody>
               <tr><td>Çekmece <code>{items, tender_files, documents: []}</code> gönderir</td></tr>
@@ -917,7 +937,11 @@ footer{margin-top:26px;padding-top:14px;border-top:1px solid var(--line);color:v
           <div class="note bad" style="margin-top:0"><span class="flag bad">!</span> <b>Kusur #2 — bu liste siliniyor.</b>
             Kanban çekmecesinden ihaleyi düzenlemek <code>documents: []</code> gönderiyor
             (<code>TenderMasterDrawer.vue:279</code>); <code>_merge_client_documents</code> client listesinde olmayan
-            satırı düşürüyor (<code>tender.py:1331-1352</code>). Yüklenmiş dosyaya bağlı satırlar dahil <b>tümü</b> gider.</div>
+            satırı düşürüyor (<code>tender.py:1331-1352</code>). Yüklenmiş dosyaya bağlı satırlar dahil <b>tümü</b> gider.
+            <div class="fixed"><b>✔ Düzeldi · 2026-08-25 prod.</b> Çekmece <code>documents</code> göndermiyor ve
+              gönderilmeyen anahtar prior'dan aynen taşınıyor — ADR-205'in sonucu. <code>_merge_client_documents</code>
+              hâlâ duruyor, çünkü <code>TenderIntake.vue</code> canlı bir şablon editörü; onun ölmesi gereken yer
+              editörün salt-okumaya döndüğü dilim 2.</div></div>
           <div class="note adr"><b>ADR-205.</b> <code>_clean_intake</code> <code>documents</code>'a dokunmaz; prior'ı
             aynen taşır. Listeyi yalnız belge uçları ve açık bir "requirement düzenle" eylemi değiştirir.</div>
         </div>
