@@ -454,7 +454,18 @@ def wo_consumption_preview(work_order: str):
 	if not is_manager:
 		_require_own_work_order(work_order)
 
-	empty = {"items": [], "from_warehouse": None, "role": None, "unassigned_item_count": 0, "enabled": False}
+	# Resolved before anything can fail: the caller's role is a fact about the Work
+	# Order, not about whether ERPNext could build a list. Dropping it on the way out
+	# of an empty preview blanks the role badge and the "the rest of this order is
+	# X's" line in the kiosk for a reason that has nothing to do with either.
+	role = (
+		None
+		if is_manager
+		else _wo_role_of(
+			frappe.db.get_value("Work Order", work_order, list(_wo_operator_columns()), as_dict=True)
+		)
+	)
+	empty = {"items": [], "from_warehouse": None, "role": role, "unassigned_item_count": 0, "enabled": False}
 	if not _material_consumption_enabled():
 		# Not an error: the site is not set up for the split, and the kiosk shows the
 		# single-document flow instead of two write-off buttons. Returning nothing is
@@ -474,13 +485,6 @@ def wo_consumption_preview(work_order: str):
 	stub = se if isinstance(se, dict) else se.as_dict()
 	rows = [r for r in (stub.get("items") or []) if not r.get("is_finished_item")]
 	roles = _item_roles([r.get("item_code") for r in rows])
-	role = (
-		None
-		if is_manager
-		else _wo_role_of(
-			frappe.db.get_value("Work Order", work_order, list(_wo_operator_columns()), as_dict=True)
-		)
-	)
 	from_wh = next((r.get("s_warehouse") for r in rows if r.get("s_warehouse")), None)
 
 	items = [
