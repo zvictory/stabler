@@ -2847,6 +2847,8 @@ Matched employee,
 Material,Malzeme
 Material Issue submitted: {0},Malzeme çıkışı onaylandı: {0}
 Material Staging,
+Materials cannot be transferred until both operator roles are assigned.,Her iki operatör rolü atanmadan malzeme aktarılamaz.
+Materials cannot be transferred until both operator roles are assigned. Missing: {0},Her iki operatör rolü atanmadan malzeme aktarılamaz. Eksik: {0}
 Materials cannot be written off per operator on this site yet. Switch on 'Allow Continuous Material Consumption' in Manufacturing Settings.,"Bu sitede malzemeler operatör bazında düşülemiyor. Üretim Ayarları'nda ""Allow Continuous Material Consumption"" seçeneğini açın."
 Materials to Transfer,Transfer Edilecek Malzemeler
 Materials transferred successfully!,
@@ -5910,6 +5912,7 @@ YTD,Yıl başından
 Yuborilgan,Gönderildi
 Yuk xati,Yuk xati
 Yutilgan,Kazanıldı
+not assigned,atanmadı
 {0} ({1}),
 {0} can only be created or changed through the Stabler app.,{0} yalnızca Stabler uygulaması üzerinden oluşturulabilir veya değiştirilebilir.
 {0} has invoices in more than one currency — record those payments separately.,«{0}» birden fazla para biriminde faturalara sahip — bu ödemeleri ayrı ayrı kaydedin.

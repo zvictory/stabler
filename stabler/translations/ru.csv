@@ -2849,12 +2849,14 @@ Marketing claim settlement for {0},Расчёт маркетинговой пр�
 Marketing Claims,Маркетинговые претензии
 Markup on cost,Наценка к себестоимости
 Match & reconcile,Сопоставить и сверить
+Materials cannot be transferred until both operator roles are assigned.,"Материалы нельзя передать, пока не назначены оба оператора."
 Materials cannot be written off per operator on this site yet. Switch on 'Allow Continuous Material Consumption' in Manufacturing Settings.,Списание материалов по операторам на этом сайте пока недоступно. Включите «Allow Continuous Material Consumption» в настройках производства.
 matched,совпало
 Matched employee,
 Material,Материал
 Material Issue submitted: {0},Списание материалов подтверждено: {0}
 Material Staging,
+Materials cannot be transferred until both operator roles are assigned. Missing: {0},"Материалы нельзя передать, пока не назначены оба оператора. Не хватает: {0}"
 Materials to Transfer,Материалы для перемещения
 Materials transferred successfully!,
 Max CI Value (USD),Макс. стоимость CI (USD)
@@ -5921,6 +5923,7 @@ YTD,С начала года
 Yuborilgan,Подано
 Yuk xati,Юк хати
 Yutilgan,Выиграно
+not assigned,не назначен
 {0} ({1}),
 {0} can only be created or changed through the Stabler app.,{0} можно создавать и изменять только через приложение Stabler.
 {0} has invoices in more than one currency — record those payments separately.,У «{0}» есть счета в нескольких валютах — регистрируйте эти платежи отдельно.

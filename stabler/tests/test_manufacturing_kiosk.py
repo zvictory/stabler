@@ -11,6 +11,7 @@ from frappe import PermissionError
 from stabler.api.manufacturing import (
 	_SE_CONSUMPTION,
 	_assert_may_consume,
+	_assert_roles_are_both_or_neither,
 	make_work_order_stock_entry,
 	work_order_detail,
 )
@@ -889,3 +890,90 @@ class TestConsumedMaterialDoesNotArriveAnywhere(unittest.TestCase):
 		than one place — `set_missing_values` among them."""
 		se = self._post('[{"item_code": "RAW-MLK", "qty": 5}]')
 		self.assertIsNone(se.to_warehouse)
+
+
+class TestAHalfAssignedOrderCannotStart(unittest.TestCase):
+	"""One role filled and the other empty is not a partial setup — it is a silent
+	miscount waiting to happen.
+
+	`list_work_orders` filters an operator's list by the assignee columns, so the
+	person who was never named cannot see the order at all. They never write off
+	their own materials, and ERPNext's Manufacture entry sweeps every unconsumed
+	line into whoever presses finish. The order completes, the numbers look
+	plausible, and the packer's kilograms are on the pourer's document — which is
+	the exact number the split was created to separate.
+
+	An order with *neither* role filled is a different thing: a site that is not
+	using the split. Refusing those would stop every shop floor on the day this
+	deploys, for orders that were never half-anything.
+	"""
+
+	@staticmethod
+	def _wo(production, packaging):
+		return {"operator": production, "packaging_operator": packaging}
+
+	def _assert(self, production, packaging):
+		with (
+			patch(
+				"stabler.api.manufacturing._wo_operator_columns",
+				return_value=("operator", "packaging_operator"),
+			),
+			patch(
+				"stabler.api.manufacturing.frappe.db.get_value",
+				return_value=self._wo(production, packaging),
+			),
+		):
+			_assert_roles_are_both_or_neither("WO-00009")
+
+	def test_both_roles_assigned_passes(self):
+		self._assert("pourer@x.uz", "packer@x.uz")
+
+	def test_neither_role_assigned_passes(self):
+		"""The site is not using the split. Nothing to be half of."""
+		self._assert(None, None)
+
+	def test_a_missing_packer_is_refused(self):
+		with self.assertRaises(frappe.ValidationError) as cm:
+			self._assert("pourer@x.uz", None)
+		self.assertIn("packaging", str(cm.exception).lower())
+
+	def test_a_missing_pourer_is_refused(self):
+		"""Symmetric on purpose: the packer is not the junior role, and an order run
+		by a packer alone loses the raw material side the same way."""
+		with self.assertRaises(frappe.ValidationError) as cm:
+			self._assert(None, "packer@x.uz")
+		self.assertIn("production", str(cm.exception).lower())
+
+	def test_a_blank_string_counts_as_unassigned(self):
+		"""A cleared role and a never-set one are the same state.
+
+		`assign_work_order_operator` clears a role by writing "" — the
+		"- Remove operator -" option in the SPA — while a column nobody has touched
+		is NULL. The guard reads emptiness, so both land together. Written as
+		`is not None` it would pass every order a manager had explicitly emptied,
+		which is the one case where somebody made the decision on purpose.
+		"""
+		with self.assertRaises(frappe.ValidationError):
+			self._assert("pourer@x.uz", "")
+
+	def test_the_transfer_endpoint_refuses_before_it_builds_anything(self):
+		"""Same ordering requirement as the consumption guard: `make_stock_entry`
+		reads the BOM and prices every row, and a refusal after that has already
+		done the work it was meant to prevent."""
+		with (
+			patch("stabler.api.manufacturing._require_mfg"),
+			patch("stabler.api.manufacturing._is_mfg_manager", return_value=True),
+			patch(
+				"stabler.api.manufacturing._assert_roles_are_both_or_neither",
+				side_effect=frappe.ValidationError("half-assigned"),
+			) as guard,
+			patch("erpnext.manufacturing.doctype.work_order.work_order.make_stock_entry") as build,
+		):
+			with self.assertRaises(frappe.ValidationError):
+				make_work_order_stock_entry(
+					"WO-00009",
+					"Material Transfer for Manufacture",
+					items='[{"item_code": "RAW-MLK", "qty": 1}]',
+				)
+		guard.assert_called_once()
+		build.assert_not_called()

@@ -2849,6 +2849,8 @@ Matched employee,
 Material,Материал
 Material Issue submitted: {0},Материаллар чиқими тасдиқланди: {0}
 Material Staging,
+Materials cannot be transferred until both operator roles are assigned.,Иккала оператор роли тайинланмагунча материалларни ўтказиб бўлмайди.
+Materials cannot be transferred until both operator roles are assigned. Missing: {0},Иккала оператор роли тайинланмагунча материалларни ўтказиб бўлмайди. Етишмаяпти: {0}
 Materials cannot be written off per operator on this site yet. Switch on 'Allow Continuous Material Consumption' in Manufacturing Settings.,"Бу сайтда материаллар оператор бўйича ҳисобдан чиқарилмайди. Ишлаб чиқариш созламаларида ""Allow Continuous Material Consumption"" ни ёқинг."
 Materials to Transfer,Кўчириладиган материаллар
 Materials transferred successfully!,
@@ -5916,6 +5918,7 @@ YTD,Йил бошидан
 Yuborilgan,Юборилган
 Yuk xati,Юк хати
 Yutilgan,Ютилган
+not assigned,тайинланмаган
 {0} ({1}),
 {0} can only be created or changed through the Stabler app.,{0} фақат Stabler иловаси орқали яратилиши ёки ўзгартирилиши мумкин.
 {0} has invoices in more than one currency — record those payments separately.,«{0}» да бир нечта валютадаги ҳисоб-фактуралар бор — бу тўловларни алоҳида рўйхатга олинг.
