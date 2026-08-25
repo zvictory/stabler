@@ -121,3 +121,71 @@ class TestTenderMasterDrawerIntakeContract(unittest.TestCase):
 
 if __name__ == "__main__":
 	unittest.main()
+
+
+# --------------------------------------------------------------------------- #
+# ADR-206 — the evaluation form moves to where the decision is made
+# --------------------------------------------------------------------------- #
+_EVALUATION_FIELDS = (
+	"go_no_go",
+	"guarantee_amount",
+	"guarantee_return",
+	"penalty_pct_per_day",
+	"cert_required",
+	"purchase_method",
+)
+
+# Server-owned: `_clean_intake` stamps these from the server clock and the
+# session user, and never reads them from the payload.
+_DECISION_STAMP = ("go_no_go_at", "go_no_go_by")
+
+
+class TestTheEvaluationSectionLivesWhereTheDecisionIsMade(unittest.TestCase):
+	"""ADR-206. Go/No-Go, the guarantee, the daily penalty, the certificate
+	requirement and the purchase method are *pre-win* decisions, and they are
+	made in the kanban drawer — where a manager looks at a tender and decides
+	whether to bid at all. Today they live only in `TenderIntake.vue`, which is
+	embedded in the **PO control board**: a post-win screen nobody opens before
+	a tender is won. So the decision surface sits behind the decision."""
+
+	@classmethod
+	def setUpClass(cls):
+		cls.body = SOURCE.read_text(encoding="utf-8")
+
+	def _payload_block(self) -> str:
+		start = self.body.index("const intakePayload = {")
+		return self.body[start : self.body.index("await call(", start)]
+
+	def test_every_evaluation_field_is_sent_in_the_intake_payload(self):
+		"""A field the drawer does not send cannot be decided in the drawer,
+		whatever the form shows."""
+		block = self._payload_block()
+		for field in _EVALUATION_FIELDS:
+			with self.subTest(field=field):
+				self.assertIn(f"{field}:", block)
+
+	def test_every_evaluation_field_is_restored_from_the_intake_read_back(self):
+		"""The other half. Without the read-back the drawer opens blank on an
+		existing tender, and the first save writes those blanks over a decision
+		somebody already made — the defect-#1 shape, one field set later."""
+		start = self.body.index(".then((res) => {")
+		restore = self.body[start : self.body.index("const lines =", start)]
+		for field in _EVALUATION_FIELDS:
+			with self.subTest(field=field):
+				self.assertIn(f"intake.{field}", restore)
+
+	def test_the_section_is_lettered_E_after_the_existing_four(self):
+		"""The drawer numbers its sections A–D and the decision document calls
+		this one E (mockup Tab 1/Tab 2). A fifth section with no letter reads as
+		an afterthought bolted to the bottom of the form."""
+		self.assertIn('<span class="tgm-sec-num">E</span>', self.body)
+
+	def test_the_decision_stamp_is_never_sent_from_the_browser(self):
+		"""ADR-206 keeps today's behaviour: the server stamps who decided and
+		when. A browser-supplied stamp is a claim about the past that nobody can
+		check — and the audit trail is the only reason to record a decision
+		rather than just its outcome."""
+		block = self._payload_block()
+		for key in _DECISION_STAMP:
+			with self.subTest(key=key):
+				self.assertNotIn(f"{key}:", block)

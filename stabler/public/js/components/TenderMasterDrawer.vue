@@ -57,6 +57,16 @@ const form = reactive({
 	estimated_total: 0,
 	items: [],
 	files: [],
+	// ── E: pre-win evaluation (ADR-206) ──────────────────────────────────────
+	// These six were only editable in TenderIntake.vue, which is embedded in the
+	// PO control board — a post-win screen. So the Go/No-Go call had to be made
+	// on a screen you only reach after the tender is already won.
+	go_no_go: "",
+	guarantee_amount: 0,
+	guarantee_return: "",
+	penalty_pct_per_day: null,
+	cert_required: 0,
+	purchase_method: "",
 });
 
 // ── Müşteri arama (Typeahead) ──────────────────────────────────────────────
@@ -132,6 +142,12 @@ function reset() {
 	form.estimated_total = 0;
 	form.items = [];
 	form.files = [];
+	form.go_no_go = "";
+	form.guarantee_amount = 0;
+	form.guarantee_return = "";
+	form.penalty_pct_per_day = null;
+	form.cert_required = 0;
+	form.purchase_method = "";
 }
 
 watch(
@@ -173,6 +189,15 @@ watch(
 					if (intake.currency) form.currency = intake.currency;
 					if (Number(intake.estimated_total) > 0)
 						form.estimated_total = Number(intake.estimated_total);
+					// Unconditional, unlike the fields above: nothing else writes these
+					// six, so the stored value is the only truth there is — and a guard
+					// that skipped an empty one would make "cleared" unsavable.
+					form.go_no_go = intake.go_no_go || "";
+					form.guarantee_amount = Number(intake.guarantee_amount) || 0;
+					form.guarantee_return = intake.guarantee_return || "";
+					form.penalty_pct_per_day = Number(intake.penalty_pct_per_day) || null;
+					form.cert_required = intake.cert_required ? 1 : 0;
+					form.purchase_method = intake.purchase_method || "";
 					if (Array.isArray(intake.tender_files) && intake.tender_files.length) {
 						form.files = intake.tender_files.map((f) => ({
 							file_name: f.file_name || "",
@@ -277,6 +302,15 @@ async function save() {
 				file_url: f.file_url,
 				file_size: f.file_size || 0,
 			})),
+			// Section E. `go_no_go_at` / `go_no_go_by` are deliberately absent:
+			// the server stamps who decided and when (_clean_intake), and a
+			// browser-supplied stamp is a claim about the past nobody can check.
+			go_no_go: form.go_no_go,
+			guarantee_amount: form.guarantee_amount || 0,
+			guarantee_return: form.guarantee_return,
+			penalty_pct_per_day: form.penalty_pct_per_day || 0,
+			cert_required: form.cert_required ? 1 : 0,
+			purchase_method: form.purchase_method,
 		};
 
 		await call("stabler.api.tender.save_deal_intake", {
@@ -529,6 +563,71 @@ async function save() {
 										<span class="text-muted small">{{ form.items.length }} item · </span>
 										<span class="font-monospace fw-bold">{{ itemTotal.toLocaleString() }}</span>
 										<span class="text-muted small ms-1">{{ form.currency }}</span>
+									</div>
+								</div>
+							</div>
+						</div>
+
+						<!-- ═══ E: Should We Bid? ═══ -->
+						<div class="tgm-section">
+							<div class="tgm-sec-head">
+								<span class="tgm-sec-num">E</span>
+								{{ t("Should We Bid?") }}
+							</div>
+							<div class="tgm-sec-body">
+								<div class="row g-2 mb-2">
+									<div class="col-6 col-md-4">
+										<label class="form-label">{{ t("Decision") }}</label>
+										<select v-model="form.go_no_go" class="form-select">
+											<option value="">—</option>
+											<option value="go">{{ t("Go") }}</option>
+											<option value="no_go">{{ t("No-go") }}</option>
+										</select>
+									</div>
+									<div class="col-6 col-md-4">
+										<label class="form-label">{{ t("Purchase method") }}</label>
+										<select v-model="form.purchase_method" class="form-select">
+											<option value="">—</option>
+											<option value="auction">{{ t("Auction") }}</option>
+											<option value="shop">{{ t("Shop") }}</option>
+											<option value="selection">{{ t("Selection") }}</option>
+											<option value="tender">{{ t("Tender") }}</option>
+										</select>
+									</div>
+									<div class="col-6 col-md-4">
+										<label class="form-label">{{ t("Penalty %/day") }}</label>
+										<input
+											v-model.number="form.penalty_pct_per_day"
+											type="number"
+											step="0.01"
+											class="form-control"
+										/>
+									</div>
+								</div>
+								<div class="row g-2 align-items-end">
+									<div class="col-6 col-md-4">
+										<label class="form-label">{{ t("Guarantee") }}</label>
+										<MoneyInput
+											v-model="form.guarantee_amount"
+											:currency="form.currency"
+											:language="user.language"
+										/>
+									</div>
+									<div class="col-6 col-md-4">
+										<label class="form-label">{{ t("Guarantee return") }}</label>
+										<DateInput v-model="form.guarantee_return" />
+									</div>
+									<div class="col-12 col-md-4">
+										<label class="form-check mb-2">
+											<input
+												v-model="form.cert_required"
+												type="checkbox"
+												class="form-check-input"
+												:true-value="1"
+												:false-value="0"
+											/>
+											<span class="form-check-label">{{ t("Certificate required") }}</span>
+										</label>
 									</div>
 								</div>
 							</div>
