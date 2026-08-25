@@ -32,13 +32,18 @@ except Exception:  # pragma: no cover - older/newer frappe
 
 from stabler.api.manufacturing import (
 	_assert_may_consume,
+	_clear_finish_draft,
 	_material_consumption_enabled,
+	discard_finish_draft,
+	list_work_orders,
+	save_finish_draft,
 	wo_consumption_preview,
 	work_order_detail,
 )
 
 POURER = "stabler-pourer@test.local"
 PACKER = "stabler-packer@test.local"
+STRANGER = "stabler-stranger@test.local"
 
 #: Set on the Work Order's own items, so the split is exercised on whatever
 #: fixture the site happens to carry rather than on a shape invented here.
@@ -239,3 +244,100 @@ class TestRoleScopingOnRealColumns(FrappeTestCase):
 		self.assertEqual(out["enabled"], _material_consumption_enabled())
 		if not out["enabled"]:
 			self.assertEqual(out["items"], [])
+
+
+@unittest.skipUnless(
+	frappe.db.table_exists("Work Order") and frappe.db.has_column("Work Order", "custom_finish_draft"),
+	"v99 has not run on this site — nothing can hold a draft",
+)
+class TestTheDraftSurvivesTheOperator(FrappeTestCase):
+	"""Written to the real columns and read back through the real endpoints.
+
+	The whole promise of this feature is "it is still there when you come back",
+	and the unit tests prove the encoding round-trips in memory. What they cannot
+	prove is that it reaches the database and comes back out — which is the only
+	part the operator experiences.
+	"""
+
+	@classmethod
+	def setUpClass(cls):
+		super().setUpClass()
+		_ensure_user(POURER)
+		cls.wo = _a_submitted_work_order()
+
+	def setUp(self):
+		if not self.wo:
+			self.skipTest("no submitted Work Order on this site")
+		frappe.db.set_value("Work Order", self.wo, "operator", POURER)
+		frappe.db.set_value("Work Order", self.wo, "packaging_operator", PACKER)
+		self.addCleanup(frappe.set_user, "Administrator")
+
+	def _detail_as(self, user):
+		frappe.set_user(user)
+		return work_order_detail(self.wo)
+
+	def test_a_parked_count_comes_back_after_the_operator_leaves(self):
+		frappe.set_user(POURER)
+		save_finish_draft(self.wo, produced_qty=182, scrap_qty=6, batch_no="ICE-20260825")
+		# Badge out, badge back in: a fresh session reads it off the order.
+		frappe.set_user("Administrator")
+		draft = self._detail_as(POURER)["finish_draft"]
+		self.assertEqual(draft["produced_qty"], 182.0)
+		self.assertEqual(draft["scrap_qty"], 6.0)
+		self.assertEqual(draft["batch_no"], "ICE-20260825")
+
+	def test_the_other_operator_on_the_same_order_sees_whose_it_is(self):
+		"""The reason the author is a column. Two people share this order, and the
+		one who opens it next is deciding whether to confirm somebody else's count
+		or walk the pallet again."""
+		frappe.set_user(POURER)
+		save_finish_draft(self.wo, produced_qty=182, scrap_qty=6)
+		draft = self._detail_as(PACKER)["finish_draft"]
+		self.assertEqual(draft["saved_by"], POURER)
+		self.assertTrue(draft["saved_at"])
+
+	def test_a_zero_count_survives_the_round_trip_too(self):
+		"""The unit test proves the decoder keeps it. This proves the column does —
+		an empty-ish value is exactly what a database layer likes to normalise away.
+		"""
+		frappe.set_user(POURER)
+		save_finish_draft(self.wo, produced_qty=0, scrap_qty=40)
+		draft = self._detail_as(POURER)["finish_draft"]
+		self.assertIsNotNone(draft)
+		self.assertEqual(draft["produced_qty"], 0.0)
+		self.assertEqual(draft["scrap_qty"], 40.0)
+
+	def test_discarding_leaves_no_draft_behind(self):
+		frappe.set_user(POURER)
+		save_finish_draft(self.wo, produced_qty=182, scrap_qty=6)
+		discard_finish_draft(self.wo)
+		self.assertIsNone(self._detail_as(POURER)["finish_draft"])
+
+	def test_a_stranger_cannot_park_a_count_on_someone_elses_order(self):
+		"""`_require_own_work_order` is the gate. Without it any operator could write
+		a finish count onto an order they have never seen, and the person who does
+		own it would find it waiting and confirm it."""
+		_ensure_user(STRANGER)
+		frappe.set_user(STRANGER)
+		with self.assertRaises(frappe.PermissionError):
+			save_finish_draft(self.wo, produced_qty=1)
+
+	def test_the_board_carries_the_draft_without_leaking_the_raw_columns(self):
+		"""The kiosk reads its whole board from `list_work_orders`, so the banner has
+		to arrive with the rows. The raw columns do not: they are storage, and a row
+		carrying both shapes invites the client to pick the wrong one."""
+		frappe.set_user(POURER)
+		save_finish_draft(self.wo, produced_qty=182, scrap_qty=6)
+		company = frappe.db.get_value("Work Order", self.wo, "company")
+		row = next(r for r in list_work_orders(company=company, limit=100) if r["name"] == self.wo)
+		self.assertEqual(row["finish_draft"]["produced_qty"], 182.0)
+		self.assertNotIn("custom_finish_draft", row)
+
+	def test_the_draft_is_gone_once_the_order_is_finished(self):
+		"""Posting the Manufacture entry is out of reach here — it moves real stock —
+		so this drives the same helper that path calls, against the real columns."""
+		frappe.set_user(POURER)
+		save_finish_draft(self.wo, produced_qty=182, scrap_qty=6)
+		frappe.set_user("Administrator")
+		_clear_finish_draft(self.wo)
+		self.assertIsNone(self._detail_as(POURER)["finish_draft"])

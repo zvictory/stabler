@@ -1479,6 +1479,7 @@ Consolidated View,Consolidated View
 Construction,Construction
 Consumed,Consumed
 Consumed materials,Consumed materials
+Could not discard the draft.,Could not discard the draft.
 cont.,cont.
 Contact,Contact
 Contacted,Contacted
@@ -1643,6 +1644,7 @@ Could not save sourcing decision.,Could not save sourcing decision.
 Could not save tender,Could not save tender
 Could not save tender intake.,Could not save tender intake.
 Could not save the PI group.,Could not save the PI group.
+Could not save the draft.,Could not save the draft.
 Could not save the proforma.,Could not save the proforma.
 Could not save the quotation.,Could not save the quotation.
 Could not save the vendor category.,Could not save the vendor category.
@@ -2000,6 +2002,7 @@ Disabled,Disabled
 Disc,Disc
 Disc %,Disc %
 Discard,Discard
+Discard draft,Discard draft
 Discard unsaved changes?,Discard unsaved changes?
 DISCHARGED,DISCHARGED
 Discipline,Discipline
@@ -3263,6 +3266,7 @@ Marketing Claims,Marketing Claims
 Markup on cost,Markup on cost
 Match & reconcile,Match & reconcile
 Materials cannot be transferred until both operator roles are assigned. Missing: {0},Materials cannot be transferred until both operator roles are assigned. Missing: {0}
+"Unconfirmed finish saved by {0} at {1} — {2} good, {3} rejected.","Unconfirmed finish saved by {0} at {1} — {2} good, {3} rejected."
 matched,matched
 Matched employee,Matched employee
 Material,Material
@@ -5777,6 +5781,7 @@ to_date must be >= from_date.,to_date must be >= from_date.
 Today,Today
 today,today
 TODAY,TODAY
+This site is not migrated for unconfirmed finishes yet.,This site is not migrated for unconfirmed finishes yet.
 Today's queue lives on the operations desk — this is the whole pipeline,Today's queue lives on the operations desk — this is the whole pipeline
 Toggle date sort,Toggle date sort
 Token status,Token status
