@@ -156,6 +156,11 @@ a{color:var(--tblr-primary);text-decoration:none}
 <div class="demo-bar">
   <h1>Один производственный заказ, два оператора — и как это ложится на склад</h1>
   <p>Кликабельный макет. Розлив ведёт один человек, упаковку другой; каждый списывает <b>только свои</b> позиции отдельным складским документом. Проверено на bench — механизм ERPNext называется «Material Consumption for Manufacture».</p>
+  <p style="background:#fff4e5;border-left:4px solid #f59f00;padding:10px 14px;margin:0 0 14px;border-radius:0 6px 6px 0">
+    <b>«Проверено на bench» — это не «уже работает у вас».</b> На вашем сайте это ещё не включено:
+    настройка «Allow Continuous Material Consumption» выключена, и у позиций номенклатуры пока не
+    проставлено, кто их списывает — розлив или упаковка. Макет показывает, как это будет выглядеть,
+    когда включим; сегодня заказ по-прежнему ведётся одним документом.</p>
   <div class="demo-try" id="roleSwitch">
     <button data-role="manager" class="on">👤 Нодира — начальник производства</button>
     <button data-role="pourer">🥛 Абдухоликов Ф — оператор розлива</button>

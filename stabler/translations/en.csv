@@ -3261,11 +3261,13 @@ Marketing claim settlement for {0},Marketing claim settlement for {0}
 Marketing Claims,Marketing Claims
 Markup on cost,Markup on cost
 Match & reconcile,Match & reconcile
+Materials cannot be transferred until both operator roles are assigned. Missing: {0},Materials cannot be transferred until both operator roles are assigned. Missing: {0}
 matched,matched
 Matched employee,Matched employee
 Material,Material
 Material Issue submitted: {0},Material Issue submitted: {0}
 Material Staging,Material Staging
+Materials cannot be transferred until both operator roles are assigned.,Materials cannot be transferred until both operator roles are assigned.
 Materials to Transfer,Materials to Transfer
 Materials transferred successfully!,Materials transferred successfully!
 Max CI Value (USD),Max CI Value (USD)
@@ -6331,6 +6333,7 @@ YTD,YTD
 Yuborilgan,Submitted
 Yuk xati,Yuk xati
 Yutilgan,Won
+not assigned,not assigned
 {0} ({1}),{0} ({1})
 {0} can only be created or changed through the Stabler app.,{0} can only be created or changed through the Stabler app.
 {0} has invoices in more than one currency — record those payments separately.,{0} has invoices in more than one currency — record those payments separately.

@@ -4,6 +4,7 @@ import { storeToRefs } from "pinia";
 import { useSession } from "../../stores/session.js";
 import { call } from "../../api/client.js";
 import { t } from "../../composables/i18n.js";
+import { halfAssigned } from "../../composables/workOrderRoles.js";
 import { formatDate, formatDateTime, todayIso} from "../../composables/date.js";
 import { useConfirm } from "../../composables/useConfirm.js";
 import { useToast } from "../../composables/useToast.js";
@@ -534,16 +535,23 @@ async function saveWO(submitAfter) {
 								<div class="fw-semibold">{{ r.item_name || r.production_item }}</div>
 								<div class="small text-secondary font-monospace">{{ r.production_item }}</div>
 							</td>
-							<!-- Both roles, labelled: an unfilled packing slot blocks the order,
-								 so "—" has to be readable as a gap and not as a missing column. -->
+							<!-- Both roles, labelled. A half-assigned order stops at the transfer,
+								 so the empty half is red and says so: a grey "—" reads as "no data
+								 here", which is the one thing it is not. -->
 							<td class="small text-secondary">
 								<div>
 									<span class="text-muted">{{ t("Production operator") }}:</span>
-									{{ r.operator || "—" }}
+									<span v-if="r.operator">{{ r.operator }}</span>
+									<span v-else :class="halfAssigned(r) ? 'text-danger fw-bold' : 'text-muted'">
+										{{ halfAssigned(r) ? t("not assigned") : "—" }}
+									</span>
 								</div>
 								<div>
 									<span class="text-muted">{{ t("Packaging operator") }}:</span>
-									{{ r.packaging_operator || "—" }}
+									<span v-if="r.packaging_operator">{{ r.packaging_operator }}</span>
+									<span v-else :class="halfAssigned(r) ? 'text-danger fw-bold' : 'text-muted'">
+										{{ halfAssigned(r) ? t("not assigned") : "—" }}
+									</span>
 								</div>
 							</td>
 							<td class="text-end font-monospace">{{ formatQty(r.qty) }}</td>
@@ -610,9 +618,16 @@ async function saveWO(submitAfter) {
 							<div class="d-flex align-items-start gap-2">
 								<div class="flex-grow-1">
 									<div class="text-secondary small">{{ t("Production operator") }}</div>
-									<div class="small">{{ detail.operator || "—" }}</div>
+									<div class="small" :class="{ 'text-danger fw-bold': !detail.operator && halfAssigned(detail) }">
+										{{ detail.operator || (halfAssigned(detail) ? t("not assigned") : "—") }}
+									</div>
 									<div class="text-secondary small mt-2">{{ t("Packaging operator") }}</div>
-									<div class="small">{{ detail.packaging_operator || "—" }}</div>
+									<div class="small" :class="{ 'text-danger fw-bold': !detail.packaging_operator && halfAssigned(detail) }">
+										{{ detail.packaging_operator || (halfAssigned(detail) ? t("not assigned") : "—") }}
+									</div>
+									<div v-if="halfAssigned(detail)" class="alert alert-danger py-1 px-2 small mt-2 mb-0">
+										{{ t("Materials cannot be transferred until both operator roles are assigned.") }}
+									</div>
 								</div>
 								<button
 									type="button"

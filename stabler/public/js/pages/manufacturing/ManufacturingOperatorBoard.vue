@@ -4,6 +4,7 @@ import { storeToRefs } from "pinia";
 import { useSession } from "../../stores/session.js";
 import { call } from "../../api/client.js";
 import { t } from "../../composables/i18n.js";
+import { halfAssigned } from "../../composables/workOrderRoles.js";
 import { useConfirm } from "../../composables/useConfirm.js";
 import { formatDate } from "../../composables/date.js";
 import EmptyState from "../../components/EmptyState.vue";
@@ -952,11 +953,15 @@ const sortedRows = computed(() => {
 
 						<!-- Large touch-friendly control buttons (sized for gloves) -->
 						<div v-if="r.docstatus === 1" class="d-flex flex-wrap gap-2 mt-auto pt-2">
+							<div v-if="halfAssigned(r)" class="alert alert-danger py-2 px-3 small w-100 mb-1">
+								<i class="ti ti-user-exclamation me-1"></i>{{ t("Materials cannot be transferred until both operator roles are assigned.") }}
+							</div>
+
 							<button
 								v-if="canStart(r)"
 								type="button"
 								class="btn btn-success btn-lg flex-grow-1 py-3 fw-bold shadow-sm d-flex align-items-center justify-content-center gap-2"
-								:disabled="isBusy(r.name)"
+								:disabled="isBusy(r.name) || halfAssigned(r)"
 								@click="start(r)"
 							>
 								<span v-if="isBusy(r.name)" class="spinner-border spinner-border-sm"></span>

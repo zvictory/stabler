@@ -189,6 +189,41 @@ def _unassigned_rows(rows, roles: dict[str, str]) -> list:
 	return [r for r in rows if not roles.get(r["item_code"])]
 
 
+def _assert_roles_are_both_or_neither(work_order: str) -> None:
+	"""Refuse a Work Order that names one operator role and leaves the other empty.
+
+	`list_work_orders` filters an operator's list by the assignee columns, so the
+	person who was never named cannot open the order at all. They never write off
+	their own materials, and ERPNext's Manufacture entry sweeps every unconsumed
+	line onto whoever presses finish. The order completes, the totals look
+	plausible, and the packer's kilograms sit on the pourer's document — the exact
+	number the split was created to keep apart.
+
+	Neither role filled is a different state and passes: that is a site not using
+	the split at all. Refusing those would stop every shop floor on the day this
+	deploys, over orders that were never half of anything. Only the deliberate
+	half — a manager who filled one box and left the other — is refused, and
+	`assign_work_order_operator` writes both boxes in a single call precisely so
+	that half is never an accident of ordering.
+	"""
+	row = frappe.db.get_value("Work Order", work_order, list(_wo_operator_columns()), as_dict=True) or {}
+	# Truthiness, not `is None`. `assign_work_order_operator` clears a role by
+	# writing "" (the "- Remove operator -" option) while a never-touched column is
+	# NULL, and both mean the same thing here: nobody is holding that role.
+	assigned = {field: row.get(field) for field in _WO_FIELD_ROLE}
+	if all(assigned.values()) or not any(assigned.values()):
+		return
+	missing = [_WO_FIELD_ROLE[field] for field, who in assigned.items() if not who]
+	# The role name goes after a colon rather than inside the sentence: it is a
+	# stored value ("Production"/"Packaging"), and inlining an English word into
+	# the middle of a translated clause reads as a bug in every other language.
+	frappe.throw(
+		_("Materials cannot be transferred until both operator roles are assigned. Missing: {0}").format(
+			", ".join(missing)
+		)
+	)
+
+
 def _material_consumption_enabled() -> bool:
 	"""Is ERPNext's per-role write-off switched on for this site?
 
@@ -870,6 +905,11 @@ def make_work_order_stock_entry(
 	# role's material must be refused before anything is inserted, not unwound after.
 	if purpose == _SE_CONSUMPTION:
 		_assert_may_consume(work_order, item_list, role_scoped=not is_manager)
+	elif purpose == "Material Transfer for Manufacture":
+		# The first stock document of the order, and the last moment a missing
+		# assignee is cheap to fix: after this the material is in WIP and somebody
+		# has to write it off under a name.
+		_assert_roles_are_both_or_neither(work_order)
 
 	doc = make_stock_entry(work_order, purpose, qty=flt(qty) if qty else None)
 	stub = doc if isinstance(doc, dict) else doc.as_dict()
