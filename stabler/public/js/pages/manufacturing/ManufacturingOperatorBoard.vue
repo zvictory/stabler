@@ -4,7 +4,7 @@ import { storeToRefs } from "pinia";
 import { useSession } from "../../stores/session.js";
 import { call } from "../../api/client.js";
 import { t } from "../../composables/i18n.js";
-import { halfAssigned } from "../../composables/workOrderRoles.js";
+import { halfAssigned, roleLabel } from "../../composables/workOrderRoles.js";
 import { useConfirm } from "../../composables/useConfirm.js";
 import { formatDate } from "../../composables/date.js";
 import EmptyState from "../../components/EmptyState.vue";
@@ -489,12 +489,6 @@ const consumeLoading = ref(false);
 // Only once material is actually in WIP. Before the transfer there is nothing to
 // write off, and ERPNext would build the list from the BOM instead of from stock.
 const canConsume = (r) => r.docstatus === 1 && ["In Process", "Material Transferred"].includes(r.status);
-
-const roleLabel = (role) => {
-	if (role === "Production") return t("Pouring");
-	if (role === "Packaging") return t("Packaging");
-	return "";
-};
 
 // Whoever holds the other half of this order. Shown so the operator can see that
 // the lines missing from their sheet are somebody's, not lost.

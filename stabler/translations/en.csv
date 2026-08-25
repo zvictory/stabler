@@ -1948,6 +1948,7 @@ Departure override reason,Departure override reason
 Departure released by override: {0},Departure released by override: {0}
 Deposit,Deposit
 Deposit to,Deposit to
+Deviation from BOM,Deviation from BOM
 depts,depts
 derived from child lots,derived from child lots
 Describe the problem…,Describe the problem…
@@ -4881,6 +4882,7 @@ Resolved At,Resolved At
 Responded,Responded
 Response,Response
 Response by,Response by
+Responsible,Responsible
 Restore test,Restore test
 Restore test recorded.,Restore test recorded.
 "Restrict this mapping to a specific reader, or leave blank to match all devices.","Restrict this mapping to a specific reader, or leave blank to match all devices."
@@ -6334,6 +6336,7 @@ Yuborilgan,Submitted
 Yuk xati,Yuk xati
 Yutilgan,Won
 not assigned,not assigned
+undecided,undecided
 {0} ({1}),{0} ({1})
 {0} can only be created or changed through the Stabler app.,{0} can only be created or changed through the Stabler app.
 {0} has invoices in more than one currency — record those payments separately.,{0} has invoices in more than one currency — record those payments separately.
@@ -6761,4 +6764,5 @@ Currency this charge is quoted in,Currency this charge is quoted in
 Rate date,Rate date
 Fetch the Central Bank rate,Fetch the Central Bank rate
 Enter an exchange rate,Enter an exchange rate
+{0} line(s) not written off yet — not in this total.,{0} line(s) not written off yet — not in this total.
 {0} more line(s) on this order have not been assigned to an operator. The shift lead settles those.,{0} more line(s) on this order have not been assigned to an operator. The shift lead settles those.

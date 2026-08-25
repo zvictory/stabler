@@ -1543,6 +1543,7 @@ Destination warehouse,Hedef depo
 Detach from this lot,Bu lottan bağını kaldır
 Details,Ayrıntılar
 Deviating lines,Sapan satırlar
+Deviation from BOM,BOM'dan sapma
 Device,
 Device created.,
 Device late (min),
@@ -4462,6 +4463,7 @@ Resolved At,Çözüldüğü Yer
 Responded,Yanıtlandı
 Response,Yanıt
 Response by,Yanıt tarihi
+Responsible,Sorumlu
 Restore test,Geri yükleme testi
 Restore test recorded.,Geri yükleme testi kaydedildi.
 "Restrict this mapping to a specific reader, or leave blank to match all devices.",
@@ -5913,6 +5915,7 @@ Yuborilgan,Gönderildi
 Yuk xati,Yuk xati
 Yutilgan,Kazanıldı
 not assigned,atanmadı
+undecided,karara bağlanmadı
 {0} ({1}),
 {0} can only be created or changed through the Stabler app.,{0} yalnızca Stabler uygulaması üzerinden oluşturulabilir veya değiştirilebilir.
 {0} has invoices in more than one currency — record those payments separately.,«{0}» birden fazla para biriminde faturalara sahip — bu ödemeleri ayrı ayrı kaydedin.
@@ -5923,6 +5926,7 @@ not assigned,atanmadı
 {0} is not a remittance posting stage.,{0} bir havale muhasebe aşaması değil.
 {0} is required.,{0} zorunludur.
 {0} line item change(s),
+{0} line(s) not written off yet — not in this total.,{0} satır henüz düşülmedi — bu toplama dahil değil.
 {0} more line(s) on this order have not been assigned to an operator. The shift lead settles those.,Bu emirde {0} satır daha hiçbir operatöre atanmadı. Onları vardiya amiri karara bağlar.
 {0} must be a number,{0} bir sayı olmalıdır
 {0} must be a {1} account.,{0} bir {1} hesabı olmalıdır.

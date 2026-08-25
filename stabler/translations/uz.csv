@@ -1545,6 +1545,7 @@ Destination warehouse,Manzil ombori
 Detach from this lot,Ushbu lotdan ajratish
 Details,Tafsilotlar
 Deviating lines,Og'ishli qatorlar
+Deviation from BOM,Spetsifikatsiyadan chetlanish
 Device,
 Device created.,
 Device late (min),
@@ -4466,6 +4467,7 @@ Resolved At,Hal qilish vaqti
 Responded,Javob berildi
 Response,Javob
 Response by,Javob muddati
+Responsible,Mas'ul
 Restore test,Tiklash sinovi
 Restore test recorded.,Tiklash sinovi qayd etildi.
 "Restrict this mapping to a specific reader, or leave blank to match all devices.",
@@ -5919,6 +5921,7 @@ Yuborilgan,Yuborilgan
 Yuk xati,Yuk xati
 Yutilgan,Yutilgan
 not assigned,tayinlanmagan
+undecided,hal qilinmagan
 {0} ({1}),
 {0} can only be created or changed through the Stabler app.,{0} faqat Stabler ilovasi orqali yaratilishi yoki o'zgartirilishi mumkin.
 {0} has invoices in more than one currency — record those payments separately.,«{0}» da bir nechta valyutadagi hisob-fakturalar bor — bu to‘lovlarni alohida ro‘yxatga oling.
@@ -5929,6 +5932,7 @@ not assigned,tayinlanmagan
 {0} is not a remittance posting stage.,{0} pul o‘tkazmasi provodkasining bosqichi emas.
 {0} is required.,{0} majburiy.
 {0} line item change(s),
+{0} line(s) not written off yet — not in this total.,{0} ta qator hali hisobdan chiqarilmagan — bu jamiga kirmaydi.
 {0} more line(s) on this order have not been assigned to an operator. The shift lead settles those.,Bu buyurtmada yana {0} ta qator operatorga biriktirilmagan. Ularni smena boshlig'i hal qiladi.
 {0} must be a number,{0} raqam bo'lishi kerak
 {0} must be a {1} account.,{0} {1} turidagi hisob bo'lishi kerak.

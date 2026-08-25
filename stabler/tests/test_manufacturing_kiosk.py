@@ -57,6 +57,9 @@ class TestManufacturingKiosk(unittest.TestCase):
 
 		mock_doc = MagicMock()
 		mock_doc.name = "WO-00001"
+		# A real Work Order always has one, and work_order_detail reads it to name
+		# the currency the per-role deviation totals are in.
+		mock_doc.company = "_Test Company"
 		mock_doc.production_item = "FG-001"
 		mock_doc.item_name = "Finished Good 1"
 		mock_doc.qty = 10.0
@@ -168,6 +171,9 @@ class TestManufacturingKiosk(unittest.TestCase):
 
 		mock_doc = MagicMock()
 		mock_doc.name = "WO-00001"
+		# A real Work Order always has one, and work_order_detail reads it to name
+		# the currency the per-role deviation totals are in.
+		mock_doc.company = "_Test Company"
 		mock_doc.bom_no = "BOM-001"
 		mock_doc.required_items = [mock_req_item]
 		mock_doc.get.return_value = "operator_a@example.com"
@@ -235,6 +241,9 @@ class TestManufacturingKiosk(unittest.TestCase):
 
 		mock_doc = MagicMock()
 		mock_doc.name = "WO-00001"
+		# A real Work Order always has one, and work_order_detail reads it to name
+		# the currency the per-role deviation totals are in.
+		mock_doc.company = "_Test Company"
 		mock_doc.bom_no = "BOM-001"
 		mock_doc.required_items = [mock_req_item]
 		mock_doc.get.return_value = "operator_a@example.com"
@@ -480,6 +489,7 @@ class TestWorkOrderTwoOperatorRoles(unittest.TestCase):
 		"""
 		doc = MagicMock()
 		doc.name = "WO-00003"
+		doc.company = "_Test Company"
 		doc.required_items = []
 		values = {"operator": production, "packaging_operator": packaging}
 		doc.get.side_effect = lambda field, *a: values.get(field)
@@ -620,6 +630,7 @@ class TestOperatorSeesOnlyTheirOwnMaterials(unittest.TestCase):
 	def _doc(cls, production, packaging):
 		doc = MagicMock()
 		doc.name = "WO-00009"
+		doc.company = "_Test Company"
 		doc.required_items = [cls._item(c) for c in cls.ROLES]
 		values = {"operator": production, "packaging_operator": packaging}
 		doc.get.side_effect = lambda field, *a: values.get(field)

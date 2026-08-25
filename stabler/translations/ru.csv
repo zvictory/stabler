@@ -1536,6 +1536,7 @@ Departure override reason,Причина разрешения в обход
 Departure released by override: {0},Выезд разрешён в обход правил: {0}
 Deposit,Поступление
 Deposit to,Внести на
+Deviation from BOM,Отклонение от спецификации
 depts,отделов
 derived from child lots,рассчитано по лотам
 Describe the problem…,Опишите проблему…
@@ -3982,6 +3983,7 @@ Placing,Размещение
 Plan Type,Тип плана
 Plan vs actual,План vs факт
 Planned,Запланировано
+Responsible,Ответственный
 planned,план
 Planned Date,Плановая дата
 Planned date,Плановая дата
@@ -5924,6 +5926,7 @@ Yuborilgan,Подано
 Yuk xati,Юк хати
 Yutilgan,Выиграно
 not assigned,не назначен
+undecided,не решено
 {0} ({1}),
 {0} can only be created or changed through the Stabler app.,{0} можно создавать и изменять только через приложение Stabler.
 {0} has invoices in more than one currency — record those payments separately.,У «{0}» есть счета в нескольких валютах — регистрируйте эти платежи отдельно.
@@ -5934,6 +5937,7 @@ not assigned,не назначен
 {0} is not a remittance posting stage.,{0} не является этапом проводки перевода.
 {0} is required.,{0} обязателен.
 {0} line item change(s),
+{0} line(s) not written off yet — not in this total.,{0} позиц. ещё не списано — в этот итог не входят.
 {0} more line(s) on this order have not been assigned to an operator. The shift lead settles those.,Ещё {0} позиций в этом заказе не закреплены за оператором. Их решает начальник смены.
 {0} must be a number,{0} должно быть числом
 {0} must be a {1} account.,{0} должен быть счётом типа {1}.
