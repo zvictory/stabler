@@ -99,3 +99,4 @@ stabler.patches.v94_sales_invoice_box_fields
 stabler.patches.v95_payment_plan_roles
 stabler.patches.v96_money_idempotency_key
 stabler.patches.v97_work_order_packaging_operator
+stabler.patches.v98_item_operator_role

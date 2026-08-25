@@ -48,6 +48,34 @@ def _require_mfg() -> None:
 #: twice is a rule that drifts, and test_wo_operator_roles fails if one does.
 _WO_OPERATOR_FIELDS = ("operator", "packaging_operator")
 
+#: Operator field -> the material role that person answers for. The right-hand
+#: values are the `Item.custom_operator_role` Select options (patch v98) verbatim:
+#: one vocabulary for the role a person holds and the role a material carries, so
+#: a sheet cannot come back empty because two literals drifted apart in two files.
+#: test_wo_operator_roles pins the keys to `_WO_OPERATOR_FIELDS` and the values to
+#: the patch's options.
+_WO_FIELD_ROLE = {"operator": "Production", "packaging_operator": "Packaging"}
+
+#: Where the role lives. On the Item, because it is a fact about the material and
+#: not about its unit: sugar is in kg and belongs to pouring, packing film is in kg
+#: and belongs to packing. The prototype derived it from the unit instead and
+#: disagreed with its own catalogue on 28% of its BOM lines.
+_ITEM_ROLE_FIELD = "custom_operator_role"
+
+#: ERPNext decides what a Stock Entry *is* by matching this string exactly — it
+#: does so in a dozen places in stock_entry.py alone. The consumption purpose gets
+#: one spelling here because it is read from three call sites at once, and three
+#: copies of a string nobody validates is how the prototype ended up answering the
+#: same question two different ways (see patches/v98_item_operator_role.py). The
+#: other two purposes predate this and are still spelled inline; they are not
+#: worth a rename that touches every line they appear on.
+_SE_CONSUMPTION = "Material Consumption for Manufacture"
+
+#: The purposes the kiosk may post. Transfer carries raw material into WIP once for
+#: the whole order; consumption writes off one role's share of what is in there;
+#: Manufacture receives the finished goods and closes the order.
+_SE_PURPOSES = ("Material Transfer for Manufacture", _SE_CONSUMPTION, "Manufacture")
+
 
 def _wo_operator_columns() -> tuple[str, ...]:
 	"""The assignee columns that actually exist on this site.
@@ -107,6 +135,131 @@ def _require_own_work_order(name: str) -> None:
 	row = frappe.db.get_value("Work Order", name, list(_wo_operator_columns()), as_dict=True)
 	if not row or not _is_wo_assignee(row):
 		frappe.throw(_("Not permitted"), frappe.PermissionError)
+
+
+def _wo_role_of(doc, user: str | None = None) -> str | None:
+	"""Which material role does `user` hold on this Work Order, if any?
+
+	Permission is still decided in exactly one place — this asks `_is_wo_assignee`
+	first and only then labels the answer, so the yes/no and the which-one cannot
+	disagree. Returns None for anyone the gate already refused.
+	"""
+	user = user or frappe.session.user
+	if not _is_wo_assignee(doc, user):
+		return None
+	return next((role for field, role in _WO_FIELD_ROLE.items() if doc.get(field) == user), None)
+
+
+def _item_roles(item_codes) -> dict[str, str]:
+	"""item_code -> operator role, for the codes that carry one.
+
+	Returns an empty map on a site that has not run v98 yet, which reads as "no
+	line has a role" — every line lands in the shift lead's column and the kiosk
+	says so. Naming a column that does not exist would 500 the order instead, in
+	the window between a code deploy and the `bench migrate` behind it.
+	"""
+	codes = [c for c in dict.fromkeys(item_codes) if c]
+	if not codes or not frappe.db.has_column("Item", _ITEM_ROLE_FIELD):
+		return {}
+	rows = frappe.get_all("Item", filters={"name": ("in", codes)}, fields=["name", _ITEM_ROLE_FIELD])
+	return {r["name"]: (r.get(_ITEM_ROLE_FIELD) or "") for r in rows}
+
+
+def _rows_for_role(rows, roles: dict[str, str], role: str | None) -> list:
+	"""The material rows `role` is answerable for.
+
+	The `if not role` guard is the one that matters. An undecided item answers
+	`roles.get(code)` with None or "", and a caller holding no role is also None —
+	compared naively the two match, and a stranger to the order is handed exactly
+	the lines nobody owns. Refuse first, compare second.
+	"""
+	if not role:
+		return []
+	return [r for r in rows if roles.get(r["item_code"]) == role]
+
+
+def _unassigned_rows(rows, roles: dict[str, str]) -> list:
+	"""Material rows whose operator role nobody has decided yet.
+
+	These belong to the shift lead, not to a default operator. v98 ships the field
+	empty on every existing Item on purpose: the answer lives with the people who
+	run the floor, and a default would hide the gap behind a value that looks
+	answered. Surfacing the count is what keeps it shrinking.
+	"""
+	return [r for r in rows if not roles.get(r["item_code"])]
+
+
+def _material_consumption_enabled() -> bool:
+	"""Is ERPNext's per-role write-off switched on for this site?
+
+	With the setting off ERPNext does not refuse a consumption entry. It silently
+	builds the wrong one. Measured on genesis-test 2026-08-25, against a Work Order
+	whose lines were already fully consumed (consumed_qty == required_qty on both):
+
+	    material_consumption = 1  ->  rows []                       (nothing left)
+	    material_consumption = 0  ->  rows MILK 20.0, LABEL 10.0
+
+	The second is `get_bom_raw_materials` where the first is
+	`get_unconsumed_raw_materials` — stock_entry.py picks between them on this very
+	setting. So with it off the kiosk is handed the whole BOM, scaled to the
+	quantity asked for, including material written off days ago; submitting that
+	adds it to `consumed_qty` a second time, on top of whoever consumed it first.
+	Nothing throws at any point.
+
+	Which is why the check sits here, ahead of ERPNext. It ships off (default 0,
+	measured off on genesis-test) — the ordinary state of a site not yet set up for
+	the split, not an error condition.
+	"""
+	return bool(frappe.db.get_single_value("Manufacturing Settings", "material_consumption"))
+
+
+def _assert_may_consume(work_order: str, item_list: list, role_scoped: bool) -> None:
+	"""Refuse a consumption entry that writes off material this caller does not own.
+
+	The whole point of the split is that pouring and packing are counted per
+	person. Nothing in ERPNext enforces it — `Work Order Item.consumed_qty` simply
+	accumulates whatever any entry names — so an operator posting the other role's
+	lines would move that material onto their own document and out of the packer's,
+	and both KPIs would be wrong with no trace of why.
+
+	Lines nobody has given a role to are refused separately and by name. They are
+	not an operator's to guess at: v98 leaves the role empty rather than defaulting
+	it, so an empty role means the question is still open and belongs to the shift
+	lead. A manager (`role_scoped=False`) posts what they like — deciding on behalf
+	of the floor is exactly their job.
+	"""
+	if not _material_consumption_enabled():
+		frappe.throw(
+			_(
+				"Materials cannot be written off per operator on this site yet. "
+				"Switch on 'Allow Continuous Material Consumption' in Manufacturing Settings."
+			)
+		)
+	if not item_list:
+		# An empty list would otherwise reach ERPNext as "consume everything the BOM
+		# says", which is the other role's material too.
+		frappe.throw(_("Select the materials to write off."))
+	if not role_scoped:
+		return
+
+	row = frappe.db.get_value("Work Order", work_order, list(_wo_operator_columns()), as_dict=True)
+	role = _wo_role_of(row)
+	codes = list(dict.fromkeys(it.get("item_code") for it in item_list))
+	roles = _item_roles(codes)
+	undecided = [c for c in codes if not roles.get(c)]
+	if undecided:
+		frappe.throw(
+			_("Nobody has decided which operator these materials belong to yet: {0}").format(
+				", ".join(undecided)
+			)
+		)
+	foreign = [c for c in codes if roles.get(c) != role]
+	if foreign:
+		frappe.throw(
+			_("These materials are the other operator's to write off, not yours: {0}").format(
+				", ".join(foreign)
+			)
+		)
 
 
 # ----- BOMs ----------------------------------------------------------------
@@ -271,6 +424,87 @@ def wo_transfer_preview(work_order: str):
 
 
 @frappe.whitelist()
+def wo_consumption_preview(work_order: str):
+	"""What this caller may still write off — ERPNext's own pending list, narrowed
+	to the role they hold on this Work Order.
+
+	The twin of `wo_transfer_preview`, and narrower on purpose. Transfer is one trip
+	to the shop floor and carries both roles' material at once; consumption is
+	counted per person, so the pouring operator must not be shown the label rolls
+	they will then tap through by habit.
+
+	The list itself is ERPNext's, built by the same `make_stock_entry` that builds
+	the document the operator posts a moment later — so what the kiosk offers and
+	what the entry contains cannot drift apart, and already-consumed quantities drop
+	out without us tracking them.
+
+	`unassigned_item_count` is the lines nobody has given a role to. They appear in
+	nobody's list and are refused if posted anyway (`_assert_may_consume`), so the
+	count is the only thing that keeps them from going quiet — it is what the shift
+	lead is meant to see and clear. Managers get those rows themselves.
+
+	Operator (own WO) or manager."""
+	from erpnext.manufacturing.doctype.work_order.work_order import make_stock_entry
+
+	_assert_can_read("Work Order", work_order)
+	_require_mfg()
+	if not frappe.db.exists("Work Order", work_order):
+		frappe.throw(f"Unknown Work Order: {work_order}")
+	is_manager = _is_mfg_manager()
+	if not is_manager:
+		_require_own_work_order(work_order)
+
+	empty = {"items": [], "from_warehouse": None, "role": None, "unassigned_item_count": 0, "enabled": False}
+	if not _material_consumption_enabled():
+		# Not an error: the site is not set up for the split, and the kiosk shows the
+		# single-document flow instead of two write-off buttons. Returning nothing is
+		# also the safe answer — with the setting off ERPNext would build this list
+		# from the full BOM rather than from what is actually left in WIP
+		# (`_material_consumption_enabled`), so the rows would be a lie.
+		return empty
+	try:
+		se = make_stock_entry(work_order, _SE_CONSUMPTION)
+	except Exception as e:  # preview must never hard-fail the kiosk
+		# Routinely reached, not only on breakage: ERPNext refuses the stub once the
+		# order is fully produced (fg_completed_qty falls to 0), which is exactly the
+		# state a finished order is in when an operator reopens it.
+		frappe.log_error(title="Kassa/mfg: wo_consumption_preview failed", message=f"wo={work_order} err={e}")
+		return {**empty, "enabled": True}
+
+	stub = se if isinstance(se, dict) else se.as_dict()
+	rows = [r for r in (stub.get("items") or []) if not r.get("is_finished_item")]
+	roles = _item_roles([r.get("item_code") for r in rows])
+	role = (
+		None
+		if is_manager
+		else _wo_role_of(
+			frappe.db.get_value("Work Order", work_order, list(_wo_operator_columns()), as_dict=True)
+		)
+	)
+	from_wh = next((r.get("s_warehouse") for r in rows if r.get("s_warehouse")), None)
+
+	items = [
+		{
+			"item_code": r.get("item_code"),
+			"item_name": r.get("item_name") or frappe.db.get_value("Item", r.get("item_code"), "item_name"),
+			"qty": flt(r.get("qty")),
+			"uom": r.get("uom") or r.get("stock_uom"),
+			"s_warehouse": r.get("s_warehouse"),
+			"operator_role": roles.get(r.get("item_code")) or None,
+		}
+		for r in rows
+		if is_manager or (role and roles.get(r.get("item_code")) == role)
+	]
+	return {
+		"items": items,
+		"from_warehouse": from_wh,
+		"role": role,
+		"unassigned_item_count": len([r for r in rows if not roles.get(r.get("item_code"))]),
+		"enabled": True,
+	}
+
+
+@frappe.whitelist()
 def create_bom(
 	company: str,
 	item: str,
@@ -412,6 +646,7 @@ def work_order_detail(name: str):
 	if not (is_manager or is_warehouse or _is_wo_assignee(doc)):
 		frappe.throw(_("Not permitted"), frappe.PermissionError)
 
+	item_roles = _item_roles([r.item_code for r in (doc.required_items or [])])
 	required = [
 		{
 			"item_code": r.item_code,
@@ -420,11 +655,13 @@ def work_order_detail(name: str):
 			"transferred_qty": flt(r.transferred_qty),
 			"consumed_qty": flt(r.consumed_qty),
 			"source_warehouse": r.source_warehouse,
+			"operator_role": item_roles.get(r.item_code) or None,
 			# Rates reveal BOM cost data — only managers see them.
 			**({"rate": flt(r.rate), "amount": flt(r.amount)} if is_manager else {}),
 		}
 		for r in (doc.required_items or [])
 	]
+	my_role = _wo_role_of(doc)
 	payload: dict = {
 		"name": doc.name,
 		"production_item": doc.production_item,
@@ -455,9 +692,21 @@ def work_order_detail(name: str):
 			fields=["name", "content", "owner", "creation", "comment_by"],
 			order_by="creation desc",
 		)
-	# required_items visible to managers and warehouse users (for staging transfers).
+	#: Which of the two roles the caller holds here, and how many material lines
+	#: belong to neither. v98 ships `custom_operator_role` empty on every existing
+	#: Item, so on day one that count is every line — which is the point: an
+	#: undecided line has to be visible on the screen, not defaulted onto whichever
+	#: operator happens to open the order.
+	payload["my_role"] = my_role
+	payload["unassigned_item_count"] = len(_unassigned_rows(required, item_roles))
+	# Managers and warehouse users stage the transfer, which is one document for the
+	# whole order, so they keep the whole list — and an undecided line is theirs.
+	# An operator gets only the lines their own role writes off: hand a pourer the
+	# label rows and that loss lands on the wrong person's KPI, silently.
 	if is_manager or is_warehouse:
 		payload["required_items"] = required
+	elif my_role:
+		payload["required_items"] = _rows_for_role(required, item_roles, my_role)
 	return payload
 
 
@@ -600,10 +849,23 @@ def make_work_order_stock_entry(
 	from erpnext.stock.get_item_details import get_conversion_factor
 
 	_require_mfg()
-	if purpose not in ("Material Transfer for Manufacture", "Manufacture"):
+	if purpose not in _SE_PURPOSES:
 		frappe.throw(f"Unsupported purpose: {purpose}")
-	if not _is_mfg_manager():
+	is_manager = _is_mfg_manager()
+	if not is_manager:
 		_require_own_work_order(work_order)
+
+	item_list: list = []
+	if items:
+		try:
+			item_list = json.loads(items)
+		except Exception:
+			frappe.throw("Invalid items format.")
+
+	# Parsed before the document is built: a consumption entry that names the wrong
+	# role's material must be refused before anything is inserted, not unwound after.
+	if purpose == _SE_CONSUMPTION:
+		_assert_may_consume(work_order, item_list, role_scoped=not is_manager)
 
 	doc = make_stock_entry(work_order, purpose, qty=flt(qty) if qty else None)
 	stub = doc if isinstance(doc, dict) else doc.as_dict()
@@ -613,11 +875,6 @@ def make_work_order_stock_entry(
 		se.process_loss_qty = flt(scrap_qty)
 
 	if items:
-		try:
-			item_list = json.loads(items)
-		except Exception:
-			frappe.throw("Invalid items format.")
-
 		if from_warehouse:
 			se.from_warehouse = from_warehouse
 		if to_warehouse:
@@ -651,12 +908,30 @@ def make_work_order_stock_entry(
 				item.t_warehouse = to_warehouse
 			item.allow_zero_valuation_rate = 1
 
+	if purpose == _SE_CONSUMPTION:
+		# ERPNext's make_stock_entry puts fg_warehouse on the header for every
+		# purpose that is not a transfer (work_order.py, the `else` branch), and its
+		# own get_items() then leaves each row's t_warehouse empty — measured on
+		# genesis-test, 2026-08-25. Consumed material leaves WIP and does not arrive
+		# anywhere, so that is right. The `items` override above is what breaks it:
+		# it fills every row from `se.to_warehouse`, which would receipt raw milk
+		# into finished goods and value the order twice.
+		se.to_warehouse = None
+		for row in se.items:
+			row.t_warehouse = None
+
 	assert_stock_entry_valuation_sane(se)
 	se.insert(ignore_permissions=False)
 	se.submit()
 
 	if purpose == "Material Transfer for Manufacture":
 		_log_wo_event(work_order, "Work Order started (materials transferred)")
+	elif purpose == _SE_CONSUMPTION:
+		# Named per person on purpose: this is the record that says whose number the
+		# write-off landed on, and it is the only one a manager can read back after
+		# the fact without joining Stock Entry Detail to the item catalogue.
+		what = ", ".join(f"{it['item_code']} x {flt(it.get('qty'))}" for it in item_list)
+		_log_wo_event(work_order, f"Materials written off by {frappe.session.user}: {what}")
 	elif purpose == "Manufacture":
 		if (batch_no or "").strip():
 			_stamp_wo_batch(work_order, batch_no, mfg_date, expiry_date)

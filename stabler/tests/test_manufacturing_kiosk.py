@@ -1,15 +1,23 @@
 from __future__ import annotations
 
 import unittest
+from types import SimpleNamespace
+from typing import ClassVar
 from unittest.mock import MagicMock, patch
 
 import frappe
 from frappe import PermissionError
 
-from stabler.api.manufacturing import work_order_detail
+from stabler.api.manufacturing import (
+	_SE_CONSUMPTION,
+	_assert_may_consume,
+	make_work_order_stock_entry,
+	work_order_detail,
+)
 
 
 class TestManufacturingKiosk(unittest.TestCase):
+	@patch("stabler.api.manufacturing._item_roles")
 	@patch("stabler.api.manufacturing._require_mfg")
 	@patch("stabler.api.manufacturing._assert_can_read")
 	@patch("stabler.api.manufacturing.frappe.db.exists")
@@ -26,12 +34,14 @@ class TestManufacturingKiosk(unittest.TestCase):
 		mock_exists,
 		mock_assert_can_read,
 		mock_require_mfg,
+		mock_item_roles,
 	):
 		# Setup
 		mock_exists.return_value = True
 		mock_is_mgr.return_value = False
 		mock_is_wh.return_value = False
 		mock_session.user = "operator_a@example.com"
+		mock_item_roles.return_value = {"RAW-001": "Production"}
 
 		# Mock required item
 		mock_req_item = MagicMock()
@@ -71,13 +81,17 @@ class TestManufacturingKiosk(unittest.TestCase):
 		# Asserts for Operator A (non-manager, non-warehouse)
 		self.assertEqual(payload["name"], "WO-00001")
 		self.assertNotIn("bom_no", payload)
-		# NOT required_items: those rows carry rate/amount, i.e. BOM cost data. The
-		# same commit that wrote this assertion gated the payload to managers +
-		# warehouse roles (api/manufacturing.py, "required_items visible to managers
-		# and warehouse users"), so the assertion contradicted its own implementation
-		# from day one. Operators get their transfer list from wo_transfer_preview,
-		# which recomputes the rows without prices.
-		self.assertNotIn("required_items", payload)
+		# This assertion used to read `assertNotIn("required_items", payload)`. What it
+		# was really guarding is named in its own comment: those rows carry rate and
+		# amount, i.e. BOM cost data. Withholding the whole key was how that was
+		# enforced, because before role-scoped consumption there was no subset worth
+		# handing over — operators rebuilt their list from wo_transfer_preview.
+		# Now each role writes off its own lines, so the subset is the point. The
+		# cost guard is unchanged and asserted directly instead of by omission.
+		self.assertEqual([r["item_code"] for r in payload["required_items"]], ["RAW-001"])
+		for row in payload["required_items"]:
+			self.assertNotIn("rate", row, "operator payload leaked BOM cost data")
+			self.assertNotIn("amount", row, "operator payload leaked BOM cost data")
 		self.assertNotIn("timeline", payload)
 		# assert_ANY_call, not assert_called_with: the latter only inspects the LAST
 		# call, and the payload reads three more custom fields (custom_batch_no /
@@ -574,5 +588,304 @@ class TestWorkOrderTwoOperatorRoles(unittest.TestCase):
 		_assert_distinct_operators(None, None)
 
 
+class TestOperatorSeesOnlyTheirOwnMaterials(unittest.TestCase):
+	"""One order, two sheets. The packer must not be able to write off cream.
+
+	Until now the API handed operators no material list at all — `required_items`
+	went to managers and warehouse staff only, and the kiosk worked around it by
+	asking for the whole transfer preview, both roles included. That was survivable
+	while transfer was the only stock document an operator posted, because transfer
+	is genuinely one document for the whole order. It stops being survivable the
+	moment each role posts its own consumption entry: hand a pourer the label lines
+	and the loss lands on the wrong person's KPI, silently and permanently.
+	"""
+
+	ROLES: ClassVar = {"RAW-MLK": "Production", "PKG-LBL": "Packaging", "RAW-NEW": ""}
+
+	@staticmethod
+	def _item(code):
+		it = MagicMock()
+		it.item_code = code
+		it.item_name = code
+		it.required_qty = 10.0
+		it.transferred_qty = 10.0
+		it.consumed_qty = 0.0
+		it.source_warehouse = "Stores - X"
+		it.rate = 1.0
+		it.amount = 10.0
+		return it
+
+	@classmethod
+	def _doc(cls, production, packaging):
+		doc = MagicMock()
+		doc.name = "WO-00009"
+		doc.required_items = [cls._item(c) for c in cls.ROLES]
+		values = {"operator": production, "packaging_operator": packaging}
+		doc.get.side_effect = lambda field, *a: values.get(field)
+		return doc
+
+	def _detail(self, user, is_mgr=False):
+		"""Call work_order_detail as `user`, with the item role map stubbed."""
+		stack = [
+			patch("stabler.api.manufacturing._require_mfg"),
+			patch("stabler.api.manufacturing._assert_can_read"),
+			patch("stabler.api.manufacturing.frappe.db.exists", return_value=True),
+			patch("stabler.api.manufacturing._is_mfg_manager", return_value=is_mgr),
+			patch("stabler.api.manufacturing._is_warehouse_role", return_value=False),
+			patch("stabler.api.manufacturing._item_roles", return_value=self.ROLES),
+			patch(
+				"stabler.api.manufacturing.frappe.get_doc",
+				return_value=self._doc("pourer@x.uz", "packer@x.uz"),
+			),
+			patch("stabler.api.manufacturing.frappe.session"),
+		]
+		started = [c.start() for c in stack]
+		started[-1].user = user
+		try:
+			return work_order_detail("WO-00009")
+		finally:
+			for c in reversed(stack):
+				c.stop()
+
+	def test_pourer_gets_the_raw_material_and_not_the_label(self):
+		out = self._detail("pourer@x.uz")
+		self.assertEqual(out["my_role"], "Production")
+		codes = [r["item_code"] for r in out["required_items"]]
+		self.assertEqual(codes, ["RAW-MLK"])
+
+	def test_packer_gets_the_label_and_not_the_cream(self):
+		out = self._detail("packer@x.uz")
+		self.assertEqual(out["my_role"], "Packaging")
+		codes = [r["item_code"] for r in out["required_items"]]
+		self.assertEqual(codes, ["PKG-LBL"])
+
+	def test_an_undecided_line_is_counted_out_loud_and_given_to_neither(self):
+		"""v98 ships every Item with an empty role on purpose, so this is the
+		common case on day one, not an edge case. It must be visible rather than
+		quietly folded into one of the two sheets."""
+		for user in ("pourer@x.uz", "packer@x.uz"):
+			out = self._detail(user)
+			self.assertNotIn("RAW-NEW", [r["item_code"] for r in out["required_items"]])
+			self.assertEqual(out["unassigned_item_count"], 1)
+
+	def test_the_manager_still_sees_every_line(self):
+		"""The shift lead is who an undecided line belongs to, so their list cannot
+		shrink — this is the half that makes the counter actionable."""
+		out = self._detail("nodira@x.uz", is_mgr=True)
+		self.assertEqual([r["item_code"] for r in out["required_items"]], ["RAW-MLK", "PKG-LBL", "RAW-NEW"])
+		self.assertIsNone(out["my_role"])
+
+	def test_every_row_carries_the_role_that_decided_it(self):
+		"""So the manager screen can show responsibility per line rather than
+		leaving the reader to infer it from the unit of measure."""
+		out = self._detail("nodira@x.uz", is_mgr=True)
+		by_code = {r["item_code"]: r["operator_role"] for r in out["required_items"]}
+		self.assertEqual(by_code, {"RAW-MLK": "Production", "PKG-LBL": "Packaging", "RAW-NEW": None})
+
+
 if __name__ == "__main__":
 	unittest.main()
+
+
+class TestOnlyYourOwnMaterialsCanBeWrittenOff(unittest.TestCase):
+	"""The write-off is the moment the split stops being cosmetic.
+
+	ERPNext does not enforce any of this. `Work Order Item.consumed_qty` accumulates
+	whatever quantity any submitted entry happens to name, so a pourer who taps
+	through the packer's label rolls moves that loss onto their own document and out
+	of the packer's — both KPIs wrong, both wrong quietly, and nothing in the
+	stock ledger recording that the two people were ever different. The guard is the
+	only thing standing there.
+	"""
+
+	ROLES: ClassVar = {"RAW-MLK": "Production", "PKG-LBL": "Packaging", "RAW-NEW": ""}
+	WO: ClassVar = {"operator": "pourer@x.uz", "packaging_operator": "packer@x.uz"}
+
+	def _guard(self, codes, user="pourer@x.uz", role_scoped=True, enabled=True):
+		stack = [
+			patch("stabler.api.manufacturing._material_consumption_enabled", return_value=enabled),
+			patch("stabler.api.manufacturing._item_roles", return_value=self.ROLES),
+			patch("stabler.api.manufacturing._wo_operator_columns", return_value=tuple(self.WO)),
+			patch("stabler.api.manufacturing.frappe.db.get_value", return_value=dict(self.WO)),
+			patch("stabler.api.manufacturing.frappe.session"),
+		]
+		started = [c.start() for c in stack]
+		started[-1].user = user
+		try:
+			_assert_may_consume("WO-00009", [{"item_code": c, "qty": 1} for c in codes], role_scoped)
+		finally:
+			for c in reversed(stack):
+				c.stop()
+
+	def test_the_setting_being_off_is_refused_rather_than_miscounted(self):
+		"""`material_consumption` ships off, so this is what an un-migrated site hits
+		first — and ERPNext does not stop it.
+
+		Measured on genesis-test 2026-08-25 against a fully-consumed Work Order: with
+		the setting on the pending list came back empty, with it off it came back as
+		the full BOM. So the failure is not a confusing error, it is a write-off of
+		material that was already written off, counted onto `consumed_qty` twice.
+		There is nothing to translate or re-word downstream; the refusal has to
+		originate here, and name the setting so someone can go and switch it on.
+		"""
+		with self.assertRaises(frappe.ValidationError) as cm:
+			self._guard(["RAW-MLK"], enabled=False)
+		self.assertIn("Allow Continuous Material Consumption", str(cm.exception))
+
+	def test_an_empty_selection_is_refused(self):
+		"""Not pedantry: `make_work_order_stock_entry` only overrides `se.items` when
+		the caller sends some. An empty list falls through to ERPNext's own BOM
+		expansion, which writes off the whole order — both roles — under one name.
+		"""
+		with self.assertRaises(frappe.ValidationError):
+			self._guard([])
+
+	def test_the_other_operators_material_is_refused_by_name(self):
+		"""The item code is in the message because the operator can act on it: it
+		tells them they are on the wrong sheet, not that the system is broken."""
+		with self.assertRaises(frappe.ValidationError) as cm:
+			self._guard(["RAW-MLK", "PKG-LBL"])
+		self.assertIn("PKG-LBL", str(cm.exception))
+
+	def test_material_nobody_has_assigned_is_refused_as_undecided(self):
+		"""A separate message from the wrong-role one, because the remedy is
+		different and belongs to someone else. Nobody has decided this line's role —
+		v98 leaves it empty rather than guessing — so it is the shift lead's to
+		settle, and an operator told "not yours" would go looking for a colleague who
+		does not exist.
+		"""
+		with self.assertRaises(frappe.ValidationError) as cm:
+			self._guard(["RAW-NEW"])
+		self.assertIn("RAW-NEW", str(cm.exception))
+		self.assertNotIn("other operator", str(cm.exception))
+
+	def test_your_own_material_passes(self):
+		self._guard(["RAW-MLK"])
+
+	def test_a_manager_writes_off_whatever_they_choose(self):
+		"""Deciding on behalf of the floor is the manager's job — a line nobody has
+		classified still has to be written off by someone before the order closes."""
+		self._guard(["RAW-MLK", "PKG-LBL", "RAW-NEW"], user="boss@x.uz", role_scoped=False)
+
+	def test_the_endpoint_refuses_before_it_builds_anything(self):
+		"""The guard has to run ahead of ERPNext, not alongside it.
+
+		`make_stock_entry` reads the BOM, prices every row and reserves batches. If
+		the refusal came after that, a rejected write-off would still have done all
+		of it — and any later reordering of this function would move the guard behind
+		an `insert()` with no test noticing. So this asserts the order, not just the
+		refusal.
+		"""
+		with (
+			patch("stabler.api.manufacturing._require_mfg"),
+			patch("stabler.api.manufacturing._is_mfg_manager", return_value=False),
+			patch("stabler.api.manufacturing._require_own_work_order"),
+			patch(
+				"stabler.api.manufacturing._assert_may_consume", side_effect=frappe.ValidationError("nope")
+			) as guard,
+			patch("erpnext.manufacturing.doctype.work_order.work_order.make_stock_entry") as build,
+		):
+			with self.assertRaises(frappe.ValidationError):
+				make_work_order_stock_entry(
+					"WO-00009", _SE_CONSUMPTION, items='[{"item_code": "PKG-LBL", "qty": 1}]'
+				)
+		guard.assert_called_once()
+		build.assert_not_called()
+
+
+class _FakeStockEntry:
+	"""Just enough Stock Entry for `make_work_order_stock_entry` to fill in.
+
+	A MagicMock cannot stand in here: the assertion is about which attributes end
+	up set to what, and a mock answers every attribute with a new mock, so every
+	assertion about a warehouse would pass whatever the code did.
+	"""
+
+	def __init__(self, stub):
+		self.__dict__.update(stub)
+		self.items = []
+		self.name = "STE-FAKE"
+		self.docstatus = 0
+		self.inserted = False
+
+	def append(self, key, _value):
+		row = SimpleNamespace()
+		getattr(self, key).append(row)
+		return row
+
+	def set(self, key, value):
+		setattr(self, key, value)
+
+	def set_missing_values(self):
+		pass
+
+	def insert(self, **_kw):
+		self.inserted = True
+
+	def submit(self):
+		self.docstatus = 1
+
+
+class TestConsumedMaterialDoesNotArriveAnywhere(unittest.TestCase):
+	"""A consumption entry has a source and no target: the material leaves WIP and
+	is gone. ERPNext's own rows get this right — measured on genesis-test 2026-08-25,
+	`make_stock_entry` returns rows with an empty `t_warehouse`.
+
+	What it also does is put `fg_warehouse` on the *header*, because its
+	`make_stock_entry` treats every non-transfer purpose as one that receipts
+	something. Harmless while ERPNext builds the rows; not harmless here, where the
+	kiosk sends its own rows and each one inherits `se.to_warehouse`. That would
+	receipt raw milk into finished goods — stock the floor never made, at a
+	valuation nobody chose, on the same order that is about to receipt the real
+	output.
+	"""
+
+	STUB: ClassVar = {
+		"purpose": _SE_CONSUMPTION,
+		"work_order": "WO-00009",
+		"from_warehouse": "WIP - X",
+		"to_warehouse": "Finished Goods - X",  # ERPNext's doing, and the whole problem
+	}
+
+	def _post(self, items):
+		se_holder = {}
+
+		def _get_doc(stub):
+			se_holder["se"] = _FakeStockEntry(stub)
+			return se_holder["se"]
+
+		with (
+			patch("stabler.api.manufacturing._require_mfg"),
+			patch("stabler.api.manufacturing._is_mfg_manager", return_value=True),
+			patch("stabler.api.manufacturing._assert_may_consume"),
+			patch("stabler.api.manufacturing.assert_stock_entry_valuation_sane"),
+			patch("stabler.api.manufacturing._log_wo_event"),
+			patch("stabler.api.manufacturing.frappe.get_doc", side_effect=_get_doc),
+			patch("stabler.api.manufacturing.frappe.session"),
+			patch(
+				"erpnext.manufacturing.doctype.work_order.work_order.make_stock_entry",
+				return_value=dict(self.STUB),
+			),
+			patch(
+				"erpnext.stock.get_item_details.get_conversion_factor",
+				return_value={"conversion_factor": 1.0},
+			),
+		):
+			make_work_order_stock_entry("WO-00009", _SE_CONSUMPTION, items=items)
+		return se_holder["se"]
+
+	def test_caller_supplied_rows_get_no_target_warehouse(self):
+		se = self._post('[{"item_code": "RAW-MLK", "qty": 5}]')
+		self.assertEqual([r.s_warehouse for r in se.items], ["WIP - X"])
+		self.assertEqual(
+			[r.t_warehouse for r in se.items],
+			[None],
+			"consumed material was given somewhere to arrive",
+		)
+
+	def test_the_header_target_is_cleared_too(self):
+		"""Clearing only the rows would leave the document itself claiming a
+		destination, and ERPNext re-derives row warehouses from the header in more
+		than one place — `set_missing_values` among them."""
+		se = self._post('[{"item_code": "RAW-MLK", "qty": 5}]')
+		self.assertIsNone(se.to_warehouse)
