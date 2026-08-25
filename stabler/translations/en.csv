@@ -73,6 +73,7 @@ A reason is required to reject a refund.,A reason is required to reject a refund
 A reason is required to request a refund.,A reason is required to request a refund.
 A registered transfer cannot be unposted — the obligation must exist ,A registered transfer cannot be unposted — the obligation must exist 
 A rejection reason is required.,A rejection reason is required.
+A role left empty keeps the operator already assigned.,A role left empty keeps the operator already assigned.
 A selected location does not belong to this customer chain.,A selected location does not belong to this customer chain.
 A status correction reason is required to move {0} back from {1} to {2}.,A status correction reason is required to move {0} back from {1} to {2}.
 A status with that name already exists.,A status with that name already exists.
@@ -94,6 +95,7 @@ A wrong code costs an attempt and eventually locks the transfer.,A wrong code co
 "A ≤ {0}%, B ≤ {1}%, C rest — by revenue.","A ≤ {0}%, B ≤ {1}%, C rest — by revenue."
 "A ≤ {0}%, B ≤ {1}%, C rest — by spend.","A ≤ {0}%, B ≤ {1}%, C rest — by spend."
 "A ≤ {0}%, B ≤ {1}%, C rest — by {2}. Submitted; returns netted.","A ≤ {0}%, B ≤ {1}%, C rest — by {2}. Submitted; returns netted."
+Already {0},Already {0}
 AR balance per customer as of the selected date — click a row to see the ledger behind the balance.,AR balance per customer as of the selected date — click a row to see the ledger behind the balance.
 Abbr,Abbr
 Absent,Absent
@@ -123,6 +125,7 @@ Approve this refund?,Approve this refund?
 Approving does not move money.,Approving does not move money.
 Approving records the decision and nothing else. No cash leaves the drawer at this step — the sender is paid back only when the refund is completed.,Approving records the decision and nothing else. No cash leaves the drawer at this step — the sender is paid back only when the refund is completed.
 As of {stamp},As of {stamp}
+Assign,Assign
 Assign operators,Assign operators
 Audit,Audit
 Background jobs are not running. Queued and scheduled work is paused — tell an administrator.,Background jobs are not running. Queued and scheduled work is paused — tell an administrator.
@@ -130,6 +133,7 @@ Balance · all time · sits against obligations nobody has collected,Balance · 
 Bank and cash accounts,Bank and cash accounts
 Base currency: {currency},Base currency: {currency}
 Base rate the register leg posted at,Base rate the register leg posted at
+Belongs to another company,Belongs to another company
 "Box counts cannot be saved on this site: {0} missing on {1}. An administrator must re-run patch {2}; bench migrate will not, it has already run once.","Box counts cannot be saved on this site: {0} missing on {1}. An administrator must re-run patch {2}; bench migrate will not, it has already run once."
 Cash account,Cash account
 "Cash account {account} on desk {branch} could not be read, so its currency was not verified.","Cash account {account} on desk {branch} could not be read, so its currency was not verified."
@@ -142,10 +146,12 @@ Charged at registration,Charged at registration
 Check the code,Check the code
 "Check the sender's ID at the counter, then type their name exactly as it was registered. The refund is paid to that person and nobody else.","Check the sender's ID at the counter, then type their name exactly as it was registered. The refund is paid to that person and nobody else."
 Choose a company first.,Choose a company first.
+Choose at least one operator to assign.,Choose at least one operator to assign.
 Choose the destination cash desk.,Choose the destination cash desk.
 Clear form,Clear form
 Client request id,Client request id
 Client request id {0} already registered transfer {1} with different ,Client request id {0} already registered transfer {1} with different 
+Closed,Closed
 Code given to the receiver,Code given to the receiver
 Code locked,Code locked
 Commission ({pct}%),Commission ({pct}%)
@@ -267,6 +273,7 @@ No company is selected,No company is selected
 No desk is carrying an open obligation,No desk is carrying an open obligation
 No desk is mapped yet. Add one for every desk and currency that takes or pays out cash.,No desk is mapped yet. Add one for every desk and currency that takes or pays out cash.
 No journal entry is linked to this transfer.,No journal entry is linked to this transfer.
+No longer exists,No longer exists
 No note given.,No note given.
 No obligation is still open,No obligation is still open
 No open transfer has passed its pickup deadline.,No open transfer has passed its pickup deadline.
@@ -285,6 +292,7 @@ No transfer matches these filters,No transfer matches these filters
 No transfers here,No transfers here
 No transfers registered yet,No transfers registered yet
 None available,None available
+Not changed:,Not changed:
 Not Issued,Not Issued
 Not configured yet,Not configured yet
 Not locked,Not locked
@@ -317,6 +325,7 @@ Open full detail,Open full detail
 Open in a new tab,Open in a new tab
 Open in-transit liability,Open in-transit liability
 Open obligation by branch and currency,Open obligation by branch and currency
+Operators,Operators
 Other accounts,Other accounts
 "Overdue cannot be answered as of a past date: an invoice's outstanding amount is its balance today, not its balance then.","Overdue cannot be answered as of a past date: an invoice's outstanding amount is its balance today, not its balance then."
 Packaging operator,Packaging operator
@@ -426,7 +435,9 @@ Scorecards,Scorecards
 Select a company,Select a company
 Select a company to pay out a transfer.,Select a company to pay out a transfer.
 Select a desk…,Select a desk…
+Select at least one Work Order.,Select at least one Work Order.
 Select desk…,Select desk…
+Selected work orders: {0},Selected work orders: {0}
 Sender,Sender
 Sender handed over,Sender handed over
 Sender hands over,Sender hands over
@@ -6361,6 +6372,7 @@ undecided,undecided
 {0} tender lots are not linked to a tender.,{0} tender lots are not linked to a tender.
 {0} uses {1}; this {2} advance must be paid from a {2} account.,{0} uses {1}; this {2} advance must be paid from a {2} account.
 {0} will be permanently deleted. This cannot be undone.,{0} will be permanently deleted. This cannot be undone.
+{0} would hold both roles here,{0} would hold both roles here
 "{0} · {1}: {2} boxes / {3} kg allocated, {4} boxes / {5} kg remaining","{0} · {1}: {2} boxes / {3} kg allocated, {4} boxes / {5} kg remaining"
 {0}: discount_amount cannot be negative,{0}: discount_amount cannot be negative
 {0}: discount_percentage must be between 0 and 100,{0}: discount_percentage must be between 0 and 100

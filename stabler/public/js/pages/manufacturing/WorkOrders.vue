@@ -301,6 +301,78 @@ async function confirmAssign(name) {
 	}
 }
 
+// ----- Assign operators to a whole selection (manager only) -----
+// A shift lead sets one pouring/packing pair per line per shift, so the gesture
+// that matches the floor is "these fifteen orders, these two people". Two things
+// separate it from the single-order panel above:
+//
+//   * a role left empty here is left alone, not cleared — silence about packing
+//     must not strip fifteen packers;
+//   * the response has two halves and both are shown. `skipped` is why a finished
+//     order, a foreign id or a name that would hold both roles did not change,
+//     and hiding it makes "14 of 15" look exactly like "15 of 15".
+const selected = ref(new Set());
+const bulkOpen = ref(false);
+const bulkBusy = ref(false);
+const bulkOperator = ref("");
+const bulkPackagingOperator = ref("");
+const bulkSkipped = ref([]);
+
+const allSelected = computed(() => rows.value.length > 0 && selected.value.size === rows.value.length);
+
+function toggleRow(name) {
+	// Reassigning the ref is what makes Vue see the change; mutating a Set in place
+	// does not trigger reactivity.
+	const next = new Set(selected.value);
+	next.has(name) ? next.delete(name) : next.add(name);
+	selected.value = next;
+}
+
+function toggleAll() {
+	selected.value = allSelected.value ? new Set() : new Set(rows.value.map((r) => r.name));
+}
+
+async function openBulk() {
+	bulkOpen.value = true;
+	bulkSkipped.value = [];
+	bulkOperator.value = "";
+	bulkPackagingOperator.value = "";
+	if (!operatorList.value.length) {
+		try {
+			operatorList.value = await call("stabler.api.manufacturing.list_operators", {
+				company: activeCompany.value,
+			});
+		} catch (err) {
+			actionError.value = err?.message || "Failed to load operators.";
+		}
+	}
+}
+
+async function confirmBulk() {
+	bulkBusy.value = true;
+	try {
+		const res = await call("stabler.api.manufacturing.assign_work_order_operators_bulk", {
+			company: activeCompany.value,
+			names: JSON.stringify([...selected.value]),
+			operator: bulkOperator.value || "",
+			packaging_operator: bulkPackagingOperator.value || "",
+		});
+		const assigned = res?.assigned || [];
+		bulkSkipped.value = res?.skipped || [];
+		// Only the written ones leave the selection. The refused ones stay ticked so
+		// the manager can act on the reason without re-finding them in the list.
+		const next = new Set(selected.value);
+		assigned.forEach((name) => next.delete(name));
+		selected.value = next;
+		if (!bulkSkipped.value.length) bulkOpen.value = false;
+		await load();
+	} catch (err) {
+		actionError.value = err?.message || "Assign failed.";
+	} finally {
+		bulkBusy.value = false;
+	}
+}
+
 // ----- Create modal -----
 const createOpen = ref(false);
 const submitting = ref(false);
@@ -486,6 +558,15 @@ async function saveWO(submitAfter) {
 						<Select v-model="statusFilter" :options="statusOptions" />
 					</div>
 					<div class="col-md-4 d-flex justify-content-md-end gap-2">
+						<button
+							type="button"
+							class="btn btn-outline-primary"
+							:disabled="!selected.size"
+							@click="openBulk"
+						>
+							<i class="ti ti-users me-1"></i>{{ t("Assign operators") }}
+							<span v-if="selected.size" class="badge bg-primary ms-1">{{ selected.size }}</span>
+						</button>
 						<button type="button" class="btn btn-ghost-secondary" @click="load">
 							<i class="ti ti-refresh me-1"></i>{{ t("Refresh") }}
 						</button>
@@ -517,9 +598,18 @@ async function saveWO(submitAfter) {
 				<table class="table table-vcenter card-table table-hover">
 					<thead>
 						<tr>
+							<th class="w-1">
+								<input
+									type="checkbox"
+									class="form-check-input m-0"
+									:checked="allSelected"
+									:aria-label="t('Select all')"
+									@change="toggleAll"
+								/>
+							</th>
 							<th>{{ t("Work Order") }}</th>
 							<th>{{ t("Finished good") }}</th>
-							<th>{{ t("Operator") }}</th>
+							<th>{{ t("Operators") }}</th>
 							<th class="text-end">{{ t("Planned") }}</th>
 							<th class="text-end">{{ t("Transferred") }}</th>
 							<th class="text-end">{{ t("Produced") }}</th>
@@ -528,6 +618,18 @@ async function saveWO(submitAfter) {
 					</thead>
 					<tbody>
 						<tr v-for="r in rows" :key="r.name" class="cursor-pointer" @click="openDetail(r.name)">
+							<!-- The row opens the detail panel, so the checkbox has to stop the
+								 click it sits inside: without this, ticking five orders opens
+								 five panels and the last one covers the toolbar. -->
+							<td class="wo-select w-1" @click.stop>
+								<input
+									type="checkbox"
+									class="form-check-input m-0"
+									:checked="selected.has(r.name)"
+									:aria-label="t('Select')"
+									@change="toggleRow(r.name)"
+								/>
+							</td>
 							<td>
 								<div class="font-monospace small">{{ r.name }}</div>
 								<div class="small text-secondary">{{ formatDateTime(r.planned_start_date) }}</div>
@@ -539,16 +641,16 @@ async function saveWO(submitAfter) {
 							<!-- Both roles, labelled. A half-assigned order stops at the transfer,
 								 so the empty half is red and says so: a grey "—" reads as "no data
 								 here", which is the one thing it is not. -->
-							<td class="small text-secondary">
-								<div>
-									<span class="text-muted">{{ t("Production operator") }}:</span>
+							<td class="wo-operators small text-secondary">
+								<div class="d-flex align-items-center gap-1">
+									<span class="badge bg-azure-lt">{{ roleLabel("Production") }}</span>
 									<span v-if="r.operator">{{ r.operator }}</span>
 									<span v-else :class="halfAssigned(r) ? 'text-danger fw-bold' : 'text-muted'">
 										{{ halfAssigned(r) ? t("not assigned") : "—" }}
 									</span>
 								</div>
-								<div>
-									<span class="text-muted">{{ t("Packaging operator") }}:</span>
+								<div class="d-flex align-items-center gap-1 mt-1">
+									<span class="badge bg-lime-lt">{{ roleLabel("Packaging") }}</span>
 									<span v-if="r.packaging_operator">{{ r.packaging_operator }}</span>
 									<span v-else :class="halfAssigned(r) ? 'text-danger fw-bold' : 'text-muted'">
 										{{ halfAssigned(r) ? t("not assigned") : "—" }}
@@ -854,6 +956,58 @@ async function saveWO(submitAfter) {
 						</div>
 					</div>
 				</template>
+			</div>
+		</div>
+
+		<!-- Bulk assign modal -->
+		<div v-if="bulkOpen" class="modal-backdrop fade show" @click="bulkOpen = false"></div>
+		<div v-if="bulkOpen" class="modal fade show d-block" tabindex="-1" style="background: transparent">
+			<div class="modal-dialog">
+				<div class="modal-content">
+					<div class="modal-header">
+						<h5 class="modal-title">{{ t("Assign operators") }}</h5>
+						<button type="button" class="btn-close" @click="bulkOpen = false"></button>
+					</div>
+					<div class="modal-body">
+						<p class="text-secondary small">
+							{{ t("Selected work orders: {0}", [selected.size]) }}
+						</p>
+						<!-- Unlike the single-order panel, an empty box here means "leave this
+							 role as it is". Saying so is the whole difference between the two
+							 dialogs, so it is said in the dialog and not only in the code. -->
+						<div class="mb-2">
+							<label class="form-label small mb-1">{{ roleLabel("Production") }}</label>
+							<Select v-model="bulkOperator" :options="operatorSelectOptions" />
+						</div>
+						<div class="mb-2">
+							<label class="form-label small mb-1">{{ roleLabel("Packaging") }}</label>
+							<Select v-model="bulkPackagingOperator" :options="operatorSelectOptions" />
+						</div>
+						<div class="form-hint">{{ t("A role left empty keeps the operator already assigned.") }}</div>
+
+						<div v-if="bulkSkipped.length" class="alert alert-warning mt-3 mb-0">
+							<div class="fw-bold">{{ t("Not changed:") }}</div>
+							<ul class="mb-0 ps-3 small">
+								<li v-for="s in bulkSkipped" :key="s.name">
+									<span class="font-monospace">{{ s.name }}</span> — {{ s.reason }}
+								</li>
+							</ul>
+						</div>
+					</div>
+					<div class="modal-footer">
+						<button type="button" class="btn btn-ghost-secondary" @click="bulkOpen = false">
+							{{ t("Cancel") }}
+						</button>
+						<button
+							type="button"
+							class="btn btn-primary"
+							:disabled="bulkBusy || !selected.size || (!bulkOperator && !bulkPackagingOperator)"
+							@click="confirmBulk"
+						>
+							{{ t("Assign") }}
+						</button>
+					</div>
+				</div>
 			</div>
 		</div>
 
