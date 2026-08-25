@@ -469,6 +469,100 @@ async function confirmStart() {
 	}
 }
 
+// ----- Write off my materials (Material Consumption for Manufacture) -----
+//
+// Transfer is one trip to the shop floor and carries both roles' material at once,
+// which is why `start()` above seeds itself from the whole preview. This one is
+// counted per person, so the list arrives from the backend already narrowed to the
+// role the caller holds on this order — the pourer is never shown the label rolls
+// to tap through by habit. The narrowing is not repeated here on purpose: a filter
+// in the UI is a filter an operator can be handed around, and the endpoint refuses
+// the other role's lines anyway (stabler.api.manufacturing._assert_may_consume).
+const consumeTarget = ref(null); // the WO row currently being written off
+const consumeItems = ref([]);
+const consumeRole = ref("");
+const consumeEnabled = ref(true);
+const consumeUnassigned = ref(0);
+const consumeLoading = ref(false);
+
+// Only once material is actually in WIP. Before the transfer there is nothing to
+// write off, and ERPNext would build the list from the BOM instead of from stock.
+const canConsume = (r) => r.docstatus === 1 && ["In Process", "Material Transferred"].includes(r.status);
+
+const roleLabel = (role) => {
+	if (role === "Production") return t("Pouring");
+	if (role === "Packaging") return t("Packaging");
+	return "";
+};
+
+// Whoever holds the other half of this order. Shown so the operator can see that
+// the lines missing from their sheet are somebody's, not lost.
+function counterpartOperator(row) {
+	if (!row) return "";
+	return (consumeRole.value === "Production" ? row.packaging_operator : row.operator) || "";
+}
+
+async function openConsume(row) {
+	consumeTarget.value = row;
+	consumeItems.value = [];
+	consumeRole.value = "";
+	consumeEnabled.value = true;
+	consumeUnassigned.value = 0;
+	consumeLoading.value = true;
+	actionError.value = "";
+	resetIdleTimer();
+	try {
+		const pv = await call("stabler.api.manufacturing.wo_consumption_preview", { work_order: row.name });
+		consumeEnabled.value = pv?.enabled !== false;
+		consumeRole.value = pv?.role || "";
+		consumeUnassigned.value = Number(pv?.unassigned_item_count) || 0;
+		consumeItems.value = (pv?.items || []).map((it) => ({
+			item_code: it.item_code,
+			item_name: it.item_name || it.item_code,
+			qty: Number(it.qty) || 0,
+			planned: Number(it.qty) || 0, // what is still in WIP — for the variance chip
+			uom: it.uom || "",
+		}));
+	} catch (err) {
+		actionError.value = humanizeError(err) || t("Failed to load your materials.");
+	} finally {
+		consumeLoading.value = false;
+	}
+}
+
+function cancelConsume() {
+	consumeTarget.value = null;
+	actionError.value = "";
+	resetIdleTimer();
+}
+
+async function confirmConsume() {
+	const row = consumeTarget.value;
+	if (!row) return;
+	busyName.value = row.name;
+	actionError.value = "";
+	resetIdleTimer();
+	try {
+		await call("stabler.api.manufacturing.make_work_order_stock_entry", {
+			work_order: row.name,
+			purpose: "Material Consumption for Manufacture",
+			items: JSON.stringify(
+				consumeItems.value.map((it) => ({
+					item_code: it.item_code,
+					qty: it.qty,
+					uom: it.uom || undefined,
+				}))
+			),
+		});
+		consumeTarget.value = null;
+		await load();
+	} catch (err) {
+		actionError.value = humanizeError(err) || t("Write-off failed.");
+	} finally {
+		busyName.value = "";
+	}
+}
+
 // ----- Finish dialog -----
 const finishTarget = ref(null); // the WO row currently finishing
 const producedQty = ref(0);
@@ -873,6 +967,17 @@ const sortedRows = computed(() => {
 							</button>
 
 							<button
+								v-if="canConsume(r)"
+								type="button"
+								class="btn btn-warning btn-lg flex-grow-1 py-3 fw-bold shadow-sm d-flex align-items-center justify-content-center gap-2"
+								:disabled="isBusy(r.name)"
+								@click="openConsume(r)"
+							>
+								<i class="ti ti-flame"></i>
+								<span>{{ t("Write Off My Materials") }}</span>
+							</button>
+
+							<button
 								v-if="canFinish(r)"
 								type="button"
 								class="btn btn-primary btn-lg flex-grow-1 py-3 fw-bold shadow-sm d-flex align-items-center justify-content-center gap-2"
@@ -918,6 +1023,81 @@ const sortedRows = computed(() => {
 			</div>
 		</div>
 		
+		<!-- Write-off Modal: this operator's own materials, nobody else's -->
+		<template v-if="consumeTarget">
+			<div class="modal-backdrop fade show" @click="cancelConsume"></div>
+			<div class="modal fade show d-block" tabindex="-1" style="background: transparent">
+				<div class="modal-dialog modal-dialog-centered modal-lg">
+					<div class="modal-content shadow-lg border-0" style="border-radius: 12px; max-height: 90vh; display: flex; flex-direction: column;">
+						<div class="modal-header bg-light">
+							<h5 class="modal-title fw-bold">
+								{{ t("Write Off My Materials") }}
+								<span v-if="consumeRole" class="badge bg-warning text-dark ms-2 align-middle">{{ roleLabel(consumeRole) }}</span>
+							</h5>
+							<button type="button" class="btn-close" @click="cancelConsume"></button>
+						</div>
+						<div class="modal-body p-4" style="overflow-y: auto; flex: 1;">
+							<div v-if="actionError" class="alert alert-danger mb-3 border-0 shadow-sm">{{ actionError }}</div>
+
+							<div v-if="consumeLoading" class="text-center py-4">
+								<span class="spinner-border"></span>
+							</div>
+
+							<div v-else-if="!consumeEnabled" class="alert alert-warning border-0 shadow-sm mb-0">
+								{{ t("Per-operator write-off is not switched on for this site yet. Ask a manager to enable 'Allow Continuous Material Consumption' in Manufacturing Settings.") }}
+							</div>
+
+							<template v-else>
+								<div v-if="counterpartOperator(consumeTarget)" class="text-secondary small mb-3">
+									<i class="ti ti-users me-1"></i>{{ t("The rest of this order is {0}'s — those lines do not count towards you.", [counterpartOperator(consumeTarget)]) }}
+								</div>
+
+								<div v-if="!consumeItems.length" class="text-muted text-center py-4">
+									{{ t("Nothing left for you to write off.") }}
+								</div>
+
+								<div v-for="it in consumeItems" :key="it.item_code" class="d-flex align-items-center justify-content-between mb-3 pb-3 border-bottom border-light">
+									<div class="flex-grow-1 min-w-0 me-3">
+										<div class="fw-semibold text-dark text-truncate">{{ it.item_name }}</div>
+										<div class="small text-muted font-monospace">{{ it.item_code }} · {{ it.uom }}</div>
+										<div v-if="Number(it.qty) !== it.planned" class="small text-warning fw-semibold mt-1">
+											{{ t("Plan") }}: {{ it.planned }}
+										</div>
+									</div>
+									<input
+										type="number"
+										v-model.number="it.qty"
+										class="form-control text-end font-monospace fw-bold"
+										style="width: 140px; height: 64px; font-size: 1.25rem;"
+										min="0"
+										step="any"
+									/>
+								</div>
+
+								<div v-if="consumeUnassigned" class="alert alert-secondary border-0 mt-3 mb-0 small">
+									<i class="ti ti-help-circle me-1"></i>{{ t("{0} more line(s) on this order have not been assigned to an operator. The shift lead settles those.", [consumeUnassigned]) }}
+								</div>
+							</template>
+						</div>
+						<div class="modal-footer bg-light">
+							<button type="button" class="btn btn-lg btn-outline-secondary px-4" @click="cancelConsume">
+								{{ t("Cancel") }}
+							</button>
+							<button
+								type="button"
+								class="btn btn-lg btn-warning fw-bold px-4"
+								:disabled="isBusy(consumeTarget.name) || consumeLoading || !consumeEnabled || !consumeItems.length || consumeItems.some(it => Number(it.qty) <= 0)"
+								@click="confirmConsume"
+							>
+								<span v-if="isBusy(consumeTarget.name)" class="spinner-border spinner-border-sm me-2"></span>
+								{{ t("Write Off") }}
+							</button>
+						</div>
+					</div>
+				</div>
+			</div>
+		</template>
+
 		<!-- Start Modal -->
 		<template v-if="startTarget">
 			<div class="modal-backdrop fade show" @click="cancelStart"></div>

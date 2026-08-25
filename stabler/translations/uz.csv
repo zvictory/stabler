@@ -2114,6 +2114,7 @@ Failed to load veterinary certificates.,Veterinariya sertifikatlarini yuklab bo�
 Failed to load visit.,Tashrif yuklashda xato.
 Failed to load warehouses.,Omborlarni yuklashda xato.
 Failed to load work orders.,
+Failed to load your materials.,Materiallaringizni yuklab bo'lmadi.
 Failed to load.,Yuklashda xato.
 Failed to move deal.,Bitimni ko'chirish muvaffaqiyatsiz bo'ldi.
 Failed to move ticket.,Murojaatni ko'chirib bo'lmadi.
@@ -2848,6 +2849,7 @@ Matched employee,
 Material,Material
 Material Issue submitted: {0},Materiallar chiqimi tasdiqlandi: {0}
 Material Staging,
+Materials cannot be written off per operator on this site yet. Switch on 'Allow Continuous Material Consumption' in Manufacturing Settings.,"Bu saytda materiallar operator bo'yicha hisobdan chiqarilmaydi. Ishlab chiqarish sozlamalarida ""Allow Continuous Material Consumption"" ni yoqing."
 Materials to Transfer,Ko'chiriladigan materiallar
 Materials transferred successfully!,
 Max CI Value (USD),Maksimal CI qiymati (USD)
@@ -3409,6 +3411,7 @@ No {0} account is set for this advance. Choose one before recording it.,Bu avans
 No {0} receivable account exists for company {1}. ,{0} uchun {1} kompaniyasida debitorlik hisobi mavjud emas. 
 No {0} {1} account exists for company {2}. ,
 No-go,Bormaymiz
+Nobody has decided which operator these materials belong to yet: {0},Bu materiallar qaysi operatorga tegishli ekani hali hal qilinmagan: {0}
 Non-compliant,Mos kelmaydi
 None,Yo'q
 none,yo'q
@@ -3460,6 +3463,7 @@ Not posted,o'tkazilmagan
 Not ready,
 Not ready to lock,
 Not registered,Ro'yxatdan o'tmagan
+Nothing left for you to write off.,Hisobdan chiqarish uchun hech narsa qolmadi.
 not saved,saqlanmagan
 Not set,
 not set,kiritilmagan
@@ -3689,6 +3693,7 @@ Owes us,Bizga qarzdor
 Own,Oʻzi
 Owner,Masʼul
 P,Ku
+Packaging,Qadoqlash
 pack_key is required,pack_key majburiy
 Package incomplete — fill the missing fields,Paket to'liq emas — yetishmayotgan maydonlarni to'ldiring
 Packaging damaged,Qadoqlash shikastlangan
@@ -3856,6 +3861,7 @@ Per box,Quti narxi
 Per container,Konteynerga
 Per kg,Kg uchun
 Per-PIGroup planned FCL and container shipment lifecycle tracking,PI guruh bo'yicha rejalashtirilgan FCL va konteyner hayot sikli
+Per-operator write-off is not switched on for this site yet. Ask a manager to enable 'Allow Continuous Material Consumption' in Manufacturing Settings.,"Bu saytda operator bo'yicha hisobdan chiqarish hali yoqilmagan. Rahbardan Ishlab chiqarish sozlamalarida ""Allow Continuous Material Consumption"" ni yoqishni so'rang."
 Percent off,Foiz chegirma
 Period,Davr
 Period belongs to another company.,
@@ -3966,6 +3972,7 @@ Place branded freezer at {0} (deal {1}),
 Place your RFID badge on the reader to log in,
 Placed Freezer,Muzlatgich o'rnatildi
 Placing,Joylashtirish
+Plan,Reja
 Plan Type,Rejani turi
 Plan vs actual,Reja vs haqiqiy
 Planned,Rejalashtirilgan
@@ -4037,6 +4044,7 @@ Posting Window,
 Posting window saved.,
 Postings,Kiritishlar
 PR,Qabul
+Pouring,Quyish
 Pre-season freezer push,Mavsum oldidan muzlatgich o‘rnatish
 Premium,
 Prepaid,Avans
@@ -4769,6 +4777,7 @@ Select suppliers to ask,So'rov yuboriladigan etkazib beruvchilarni tanlang
 Select technician,Texnikni tanlang
 Select template…,Shablonni tanlang…
 Select the bank account this statement belongs to.,Ushbu ko'chirma tegishli bo'lgan hisobni tanlang.
+Select the materials to write off.,Hisobdan chiqariladigan materiallarni tanlang.
 Select warehouse,Omborni tanlang
 Select warehouse…,Omborni tanlang…
 Select winning quotation,G'olib taklifni tanlang
@@ -5227,6 +5236,7 @@ The proportional PI advance will be reserved for this CI. Accounts must review a
 "The queue is blocked — {0} repost(s) stuck. Re-queue them, then Run now.","Navbat bloklangan — {0} ta osilgan. Ularni qayta navbatga qo'ying, so'ng 'Hozir ishga tushirish'."
 The referenced document is cancelled and cannot be approved.,
 The referenced document no longer exists.,
+The rest of this order is {0}'s — those lines do not count towards you.,Bu buyurtmaning qolgani {0} zimmasida — u qatorlar sizga hisoblanmaydi.
 The selected parent already belongs to another parent. ,
 The selected parent already belongs to another parent. Only one level of hierarchy is allowed.,Tanlangan bosh mijoz allaqachon boshqa bosh mijozga tegishli. Faqat bitta ierarxiya darajasi mumkin.
 The selected parent customer does not exist.,Tanlangan bosh mijoz mavjud emas.
@@ -5242,6 +5252,7 @@ These are ERPNext's back-dating guards — the reason it blocks creating or edit
 These device users have no employee link. Confirm a match to re-queue their punches.,Bu qurilma foydalanuvchilari xodimga bog'lanmagan. Belgilashlarni qayta ishlash uchun moslikni tasdiqlang.
 These lines allocate more than the Proforma Invoice has left: {0},Bu qatorlar proforma-invoysda qolganidan koʻproq ajratmoqda: {0}
 These linked records go with it:,U bilan birga quyidagi bog‘langan yozuvlar ketadi:
+"These materials are the other operator's to write off, not yours: {0}","Bu materiallarni boshqa operator hisobdan chiqaradi, siz emas: {0}"
 This account will be hidden from the active chart of accounts.,Hisob faol hisoblar rejasidan yashiriladi.
 This account will be shown in the active chart of accounts again.,Hisob faol hisoblar rejasida qayta ko'rsatiladi.
 This adjusts stock for {0} item(s) and posts the difference to the ledger. The action is recorded against your name.,Bu {0} ta tovar bo'yicha zaxirani tuzatadi va farqni hisobga kiritadi. Amal sizning nomingizga yoziladi.
@@ -5856,6 +5867,8 @@ Working,Ish kuni
 Workspace,
 Worst,Eng yomon
 Write,Yozish
+Write Off My Materials,O'z materialimni chiqarish
+Write-off failed.,Hisobdan chiqarish bajarilmadi.
 Writes one net Additional Salary line per locked employee for this period. Re-running replaces the previous figures.,Bu davr uchun har bir qulflangan xodimga bitta sof Additional Salary qatori yozadi. Qayta ishga tushirish oldingi raqamlarni almashtiradi.
 Wrong Account Postings,
 Year to date,
@@ -5913,6 +5926,7 @@ Yutilgan,Yutilgan
 {0} is not a remittance posting stage.,{0} pul o‘tkazmasi provodkasining bosqichi emas.
 {0} is required.,{0} majburiy.
 {0} line item change(s),
+{0} more line(s) on this order have not been assigned to an operator. The shift lead settles those.,Bu buyurtmada yana {0} ta qator operatorga biriktirilmagan. Ularni smena boshlig'i hal qiladi.
 {0} must be a number,{0} raqam bo'lishi kerak
 {0} must be a {1} account.,{0} {1} turidagi hisob bo'lishi kerak.
 {0} must be an enabled stock sales item.,
@@ -6248,7 +6262,7 @@ Temporary Opening,
 Travel Expenses,
 Unsecured Loans,
 Utility Expenses,
-Write Off,
+Write Off,Hisobdan chiqarish
 Capital Work in Progress,
 Chargeable,
 Current Asset,

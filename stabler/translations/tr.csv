@@ -2112,6 +2112,7 @@ Failed to load veterinary certificates.,Veteriner sertifikaları yüklenemedi.
 Failed to load visit.,Ziyaret yüklenemedi.
 Failed to load warehouses.,Depolar yüklenemedi.
 Failed to load work orders.,
+Failed to load your materials.,Malzemeleriniz yüklenemedi.
 Failed to load.,Yüklenemedi.
 Failed to move deal.,Fırsat taşınamadı.
 Failed to move ticket.,Talep taşınamadı.
@@ -2846,6 +2847,7 @@ Matched employee,
 Material,Malzeme
 Material Issue submitted: {0},Malzeme çıkışı onaylandı: {0}
 Material Staging,
+Materials cannot be written off per operator on this site yet. Switch on 'Allow Continuous Material Consumption' in Manufacturing Settings.,"Bu sitede malzemeler operatör bazında düşülemiyor. Üretim Ayarları'nda ""Allow Continuous Material Consumption"" seçeneğini açın."
 Materials to Transfer,Transfer Edilecek Malzemeler
 Materials transferred successfully!,
 Max CI Value (USD),Maks CI Değeri (USD)
@@ -3407,6 +3409,7 @@ No {0} account is set for this advance. Choose one before recording it.,Bu avans
 No {0} receivable account exists for company {1}. ,{1} şirketi için {0} alacak hesabı mevcut değil. 
 No {0} {1} account exists for company {2}. ,
 No-go,Girme
+Nobody has decided which operator these materials belong to yet: {0},Bu malzemelerin hangi operatöre ait olduğuna henüz karar verilmedi: {0}
 Non-compliant,Uygun değil
 None,Yok
 none,yok
@@ -3469,6 +3472,7 @@ Notes,Notlar
 Nothing booked yet,Henüz hiçbir kayıt yok
 Nothing else points at this invoice.,Bu faturaya başka hiçbir şey işaret etmiyor.
 Nothing else points at this proforma.,Bu proformaya başka hiçbir şey işaret etmiyor.
+Nothing left for you to write off.,Düşecek bir şeyiniz kalmadı.
 Nothing moves forward until these are answered.,Bunlar cevaplanmadan hiçbir şey ilerlemiyor.
 Nothing to allocate yet — add invoice items and costs first.,Dağıtılacak bir şey yok — önce fatura kalemlerini ve masrafları ekleyin.
 Nothing to compare.,Karşılaştırılacak bir şey yok.
@@ -3661,6 +3665,7 @@ Outstanding Balance,Kalan Nakliyeci Borcu
 Outstanding customer balances for field teams.,
 Outstanding salary payable,Ödenmemiş maaş borcu
 OVD,GEC
+Packaging,Paketleme
 over cheapest bid,en ucuz teklife kıyasla
 Over SLA,SLA dışı
 Over-allocated,Fazla tahsis
@@ -3853,6 +3858,7 @@ Per box,Kutu başına
 Per container,Konteyner başına
 Per kg,Kg başına
 Per-PIGroup planned FCL and container shipment lifecycle tracking,PI grubu başına planlı FCL ve konteyner yaşam döngüsü takibi
+Per-operator write-off is not switched on for this site yet. Ask a manager to enable 'Allow Continuous Material Consumption' in Manufacturing Settings.,"Bu sitede operatör bazlı düşüm henüz açık değil. Bir yöneticiden Üretim Ayarları'nda ""Allow Continuous Material Consumption"" seçeneğini açmasını isteyin."
 Percent off,İndirim oranı
 Period,Dönem
 Period belongs to another company.,
@@ -3915,6 +3921,7 @@ Pick a finished-good item.,Bir mamul ürün seçin.
 Pick a leave type,İzin türü seçin
 Pick a leave type.,İzin türü seçin.
 Pick a payment to reallocate.,Yeniden tahsis için bir ödeme seçin.
+Plan,Plan
 pick a product above,yukarıdan bir ürün seçin
 Pick a quotation,Bir teklif seçin
 Pick a rule set…,
@@ -4034,6 +4041,7 @@ Posting Window,
 Posting window saved.,
 Postings,Kayıtlar
 PR,Mal kabul
+Pouring,Dolum
 Pre-season freezer push,Sezon öncesi dondurucu yerleştirme
 Premium,
 Prepaid,Avans
@@ -4765,6 +4773,7 @@ Select suppliers to ask,Teklif istenilecek tedarikçileri seçin
 Select technician,Teknisyen seçin
 Select template…,Şablon seçin…
 Select the bank account this statement belongs to.,Bu ekstrenin ait olduğu banka hesabını seçin.
+Select the materials to write off.,Düşülecek malzemeleri seçin.
 Select warehouse,Depo seçin
 Select warehouse…,Depo seçin…
 Select winning quotation,Kazanan teklifi seçin
@@ -5223,6 +5232,7 @@ The proportional PI advance will be reserved for this CI. Accounts must review a
 "The queue is blocked — {0} repost(s) stuck. Re-queue them, then Run now.",Kuyruk bloke — {0} takılı. Kuyruğa alıp 'Şimdi çalıştır' deyin.
 The referenced document is cancelled and cannot be approved.,
 The referenced document no longer exists.,
+The rest of this order is {0}'s — those lines do not count towards you.,Bu emrin geri kalanı {0} kişisine ait — o satırlar sizin hesabınıza yazılmaz.
 The selected parent already belongs to another parent. ,
 The selected parent already belongs to another parent. Only one level of hierarchy is allowed.,Seçilen ana müşteri zaten başka bir ana müşteriye bağlı. Yalnızca tek seviye hiyerarşiye izin verilir.
 The selected parent customer does not exist.,Seçilen ana müşteri mevcut değil.
@@ -5238,6 +5248,7 @@ These are ERPNext's back-dating guards — the reason it blocks creating or edit
 These device users have no employee link. Confirm a match to re-queue their punches.,Bu cihaz kullanıcılarının çalışan bağlantısı yok. Kayıtlarını yeniden işlemek için eşleşmeyi onaylayın.
 These lines allocate more than the Proforma Invoice has left: {0},Bu satırlar proforma faturada kalandan fazlasını tahsis ediyor: {0}
 These linked records go with it:,Şu bağlı kayıtlar da onunla birlikte gider:
+"These materials are the other operator's to write off, not yours: {0}","Bu malzemeleri diğer operatör düşer, siz değil: {0}"
 This account will be hidden from the active chart of accounts.,Bu hesap etkin hesap planından gizlenecek.
 This account will be shown in the active chart of accounts again.,Bu hesap etkin hesap planında yeniden gösterilecek.
 This adjusts stock for {0} item(s) and posts the difference to the ledger. The action is recorded against your name.,Bu {0} kalem için stoğu düzeltir ve farkı deftere işler. İşlem sizin adınıza kaydedilir.
@@ -5851,6 +5862,8 @@ Working,İşleniyor
 Workspace,
 Worst,En kötü
 Write,Yaz
+Write Off My Materials,Kendi malzememi düş
+Write-off failed.,Düşüm başarısız oldu.
 Writes one net Additional Salary line per locked employee for this period. Re-running replaces the previous figures.,Bu dönem için her kilitli çalışana bir net Additional Salary satırı yazar. Tekrar çalıştırmak önceki tutarları değiştirir.
 Wrong Account Postings,
 Year to date,
@@ -5907,6 +5920,7 @@ Yutilgan,Kazanıldı
 {0} is not a remittance posting stage.,{0} bir havale muhasebe aşaması değil.
 {0} is required.,{0} zorunludur.
 {0} line item change(s),
+{0} more line(s) on this order have not been assigned to an operator. The shift lead settles those.,Bu emirde {0} satır daha hiçbir operatöre atanmadı. Onları vardiya amiri karara bağlar.
 {0} must be a number,{0} bir sayı olmalıdır
 {0} must be a {1} account.,{0} bir {1} hesabı olmalıdır.
 {0} must be an enabled stock sales item.,
@@ -6243,7 +6257,7 @@ Temporary Opening,
 Travel Expenses,
 Unsecured Loans,
 Utility Expenses,
-Write Off,
+Write Off,Düş
 Capital Work in Progress,
 Chargeable,
 Current Asset,

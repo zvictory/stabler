@@ -2529,6 +2529,7 @@ Failed to load veterinary certificates.,Failed to load veterinary certificates.
 Failed to load visit.,Failed to load visit.
 Failed to load warehouses.,Failed to load warehouses.
 Failed to load work orders.,Failed to load work orders.
+Failed to load your materials.,Failed to load your materials.
 Failed to load.,Failed to load.
 Failed to move deal.,Failed to move deal.
 Failed to move ticket.,Failed to move ticket.
@@ -2937,6 +2938,7 @@ Invoice Reference,Invoice Reference
 Invoice reference,Invoice reference
 Invoice total does not match the agreed total.,Invoice total does not match the agreed total.
 Invoiced,Invoiced
+Materials cannot be written off per operator on this site yet. Switch on 'Allow Continuous Material Consumption' in Manufacturing Settings.,Materials cannot be written off per operator on this site yet. Switch on 'Allow Continuous Material Consumption' in Manufacturing Settings.
 invoiced,invoiced
 Invoiced %,Invoiced %
 Invoiced (KG),Invoiced (KG)
@@ -3825,6 +3827,7 @@ No {0} account is set for this advance. Choose one before recording it.,No {0} a
 No {0} receivable account exists for company {1}. ,No {0} receivable account exists for company {1}. 
 No {0} {1} account exists for company {2}. ,No {0} {1} account exists for company {2}. 
 No-go,No-go
+Nobody has decided which operator these materials belong to yet: {0},Nobody has decided which operator these materials belong to yet: {0}
 Non-compliant,Non-compliant
 None,None
 none,none
@@ -3888,6 +3891,7 @@ Notes,Notes
 Nothing booked yet,Nothing booked yet
 Nothing else points at this invoice.,Nothing else points at this invoice.
 Nothing else points at this proforma.,Nothing else points at this proforma.
+Nothing left for you to write off.,Nothing left for you to write off.
 Nothing moves forward until these are answered.,Nothing moves forward until these are answered.
 Nothing to allocate yet — add invoice items and costs first.,Nothing to allocate yet — add invoice items and costs first.
 Nothing to compare.,Nothing to compare.
@@ -4108,6 +4112,7 @@ Owner,Owner
 P,P
 pack_key is required,pack_key is required
 Package incomplete — fill the missing fields,Package incomplete — fill the missing fields
+Packaging,Packaging
 Packaging damaged,Packaging damaged
 Packaging OK,Packaging OK
 Packed kg,Packed kg
@@ -4324,6 +4329,7 @@ PI ref,PI ref
 PI Total Cost,PI Total Cost
 PI № / vendor,PI № / vendor
 PI ↔ CI deviations,PI ↔ CI deviations
+Per-operator write-off is not switched on for this site yet. Ask a manager to enable 'Allow Continuous Material Consumption' in Manufacturing Settings.,Per-operator write-off is not switched on for this site yet. Ask a manager to enable 'Allow Continuous Material Consumption' in Manufacturing Settings.
 Pick a cash desk first,Pick a cash desk first
 Pick a cash/bank account.,Pick a cash/bank account.
 Pick a company from the switcher in the header to see your financial overview.,Pick a company from the switcher in the header to see your financial overview.
@@ -4382,6 +4388,7 @@ Place branded freezer at {0} (deal {1}),Place branded freezer at {0} (deal {1})
 Place your RFID badge on the reader to log in,Place your RFID badge on the reader to log in
 Placed Freezer,Placed Freezer
 Placing,Placing
+Plan,Plan
 Plan Type,Plan Type
 Plan vs actual,Plan vs actual
 Planned,Planned
@@ -4453,6 +4460,7 @@ Posting Window,Posting Window
 Posting window saved.,Posting window saved.
 Postings,Postings
 PR,PR
+Pouring,Pouring
 Pre-season freezer push,Pre-season freezer push
 Premium,Premium
 Prepaid,Prepaid
@@ -5184,6 +5192,7 @@ Select suppliers to ask,Select suppliers to ask
 Select technician,Select technician
 Select template…,Select template…
 Select the bank account this statement belongs to.,Select the bank account this statement belongs to.
+Select the materials to write off.,Select the materials to write off.
 Select warehouse,Select warehouse
 Select warehouse…,Select warehouse…
 Select winning quotation,Select winning quotation
@@ -5642,6 +5651,7 @@ The proportional PI advance will be reserved for this CI. Accounts must review a
 "The queue is blocked — {0} repost(s) stuck. Re-queue them, then Run now.","The queue is blocked — {0} repost(s) stuck. Re-queue them, then Run now."
 The referenced document is cancelled and cannot be approved.,The referenced document is cancelled and cannot be approved.
 The referenced document no longer exists.,The referenced document no longer exists.
+The rest of this order is {0}'s — those lines do not count towards you.,The rest of this order is {0}'s — those lines do not count towards you.
 The selected parent already belongs to another parent. ,The selected parent already belongs to another parent. 
 The selected parent already belongs to another parent. Only one level of hierarchy is allowed.,The selected parent already belongs to another parent. Only one level of hierarchy is allowed.
 The selected parent customer does not exist.,The selected parent customer does not exist.
@@ -5657,6 +5667,7 @@ These are ERPNext's back-dating guards — the reason it blocks creating or edit
 These device users have no employee link. Confirm a match to re-queue their punches.,These device users have no employee link. Confirm a match to re-queue their punches.
 These lines allocate more than the Proforma Invoice has left: {0},These lines allocate more than the Proforma Invoice has left: {0}
 These linked records go with it:,These linked records go with it:
+"These materials are the other operator's to write off, not yours: {0}","These materials are the other operator's to write off, not yours: {0}"
 This account will be hidden from the active chart of accounts.,This account will be hidden from the active chart of accounts.
 This account will be shown in the active chart of accounts again.,This account will be shown in the active chart of accounts again.
 This adjusts stock for {0} item(s) and posts the difference to the ledger. The action is recorded against your name.,This adjusts stock for {0} item(s) and posts the difference to the ledger. The action is recorded against your name.
@@ -6274,6 +6285,8 @@ Working,Working
 Workspace,Workspace
 Worst,Worst
 Write,Write
+Write Off My Materials,Write Off My Materials
+Write-off failed.,Write-off failed.
 Writes one net Additional Salary line per locked employee for this period. Re-running replaces the previous figures.,Writes one net Additional Salary line per locked employee for this period. Re-running replaces the previous figures.
 Wrong Account Postings,Wrong Account Postings
 Year to date,Year to date
@@ -6745,3 +6758,4 @@ Currency this charge is quoted in,Currency this charge is quoted in
 Rate date,Rate date
 Fetch the Central Bank rate,Fetch the Central Bank rate
 Enter an exchange rate,Enter an exchange rate
+{0} more line(s) on this order have not been assigned to an operator. The shift lead settles those.,{0} more line(s) on this order have not been assigned to an operator. The shift lead settles those.
