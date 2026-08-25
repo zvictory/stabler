@@ -2,8 +2,12 @@
 // Tender intake + deadline control ("muddat nazorati").
 // Top of the PO control board: a milestone timeline (bid / contract / PO ETA /
 // delivery) with days-left + risk colour, plus a collapsible intake editor
-// (lot, buyer, deadlines, guarantee, certificate, penalty, go/no-go).
+// (lot, buyer, delivery deadline, result, FX, notes, document checklist).
 // Persisted as a JSON overlay on the CRM Deal. No ERPNext child doctype.
+//
+// It writes only the fields it owns — see OWNED_FIELDS. Bid deadline,
+// guarantee, penalty, certificate, purchase method and Go/No-Go moved to
+// TenderMasterDrawer.vue (ADR-201/206) and are read-only here.
 import { computed, reactive, ref, watch } from "vue";
 import { storeToRefs } from "pinia";
 import { useSession } from "../../stores/session.js";
@@ -53,6 +57,28 @@ const intake = reactive({
 	go_no_go: "", result: "", won_price: null, purchase_method: "", notes: "", documents: [],
 	fx_currency: "", fx_amount: null, fx_bid_rate: null, fx_pay_rate: null,
 });
+// The fields this screen owns. Everything else in `intake` is read-only here
+// and written by TenderMasterDrawer.vue. Sending our copy back would re-open
+// defect #1 in its quietest form: this panel sits on a board a user leaves
+// open for hours, so a stale `go_no_go` would roll back a decision recorded in
+// the drawer minutes earlier — and the field would still look filled.
+// `save_deal_intake` is PATCH (ADR-202/3): an absent key keeps its stored value.
+const OWNED_FIELDS = [
+	"lot_no",
+	"buyer",
+	"volume",
+	"unit",
+	"delivery_deadline",
+	"result",
+	"won_price",
+	"notes",
+	"documents",
+	"fx_currency",
+	"fx_amount",
+	"fx_bid_rate",
+	"fx_pay_rate",
+];
+
 const fx = ref({ status: "none", currency: "", delta: 0, delta_pct: 0, planned_base: 0, realized_base: 0 });
 
 function apply(d) {
@@ -222,7 +248,8 @@ async function load() {
 async function save() {
 	saving.value = true;
 	try {
-		apply(await call("stabler.api.tender.save_deal_intake", { deal: props.deal, intake: JSON.stringify({ ...intake }) }));
+		const payload = Object.fromEntries(OWNED_FIELDS.map((k) => [k, intake[k]]));
+		apply(await call("stabler.api.tender.save_deal_intake", { deal: props.deal, intake: JSON.stringify(payload) }));
 		toast.success(t("Tender intake saved."));
 		editing.value = false;
 	} catch (err) {
@@ -272,7 +299,31 @@ watch(() => props.deal, load, { immediate: true });
 					<div class="dl-date">{{ m.date ? formatDate(m.date) : "—" }}</div>
 					<div class="dl-left">{{ chipText(m) }}</div>
 				</div>
-				<div v-if="!milestones.length" class="text-secondary small">{{ t("Set deadlines in Tender details.") }}</div>
+				<div v-if="!milestones.length" class="text-secondary small">{{ t("Set deadlines in the tender drawer.") }}</div>
+			</div>
+
+			<!-- Read-only: the drawer owns these now (ADR-201). Shown because a
+			     sourcing user on this board still needs to know the guarantee is
+			     due back next week — they just no longer type it here. -->
+			<div
+				v-if="!loading"
+				class="d-flex flex-wrap align-items-center gap-3 mt-3 pt-2 border-top small"
+			>
+				<span
+					v-if="intake.go_no_go"
+					class="badge"
+					:class="intake.go_no_go === 'go' ? 'bg-green-lt text-green' : 'bg-red-lt text-red'"
+				>{{ intake.go_no_go === "go" ? t("Go") : t("No-go") }}</span>
+				<span v-if="intake.guarantee_amount" class="text-secondary">
+					{{ t("Guarantee") }}
+					<span class="fw-semibold">{{ formatMoney(intake.guarantee_amount, currency) }}</span>
+					<template v-if="intake.guarantee_return">
+						· {{ t("Guarantee return") }} {{ formatDate(intake.guarantee_return) }}
+					</template>
+				</span>
+				<span class="text-secondary ms-auto">
+					<i class="ti ti-edit me-1"></i>{{ t("Edited in the tender drawer") }}
+				</span>
 			</div>
 
 			<!-- Intake editor -->
@@ -293,34 +344,15 @@ watch(() => props.deal, load, { immediate: true });
 					<div class="col-6 col-md-2"><label class="form-label small mb-1">{{ t("Volume") }}</label><input v-model.number="intake.volume" type="number" step="any" class="form-control form-control-sm"></div>
 					<div class="col-6 col-md-2"><label class="form-label small mb-1">{{ t("Unit") }}</label><input v-model="intake.unit" type="text" class="form-control form-control-sm" placeholder="t, kg…"></div>
 
-					<div class="col-6 col-md-3"><label class="form-label small mb-1">{{ t("Bid deadline") }}</label><DateInput v-model="intake.bid_deadline" size="sm" /></div>
 					<div class="col-6 col-md-3"><label class="form-label small mb-1">{{ t("Delivery deadline") }}</label><DateInput v-model="intake.delivery_deadline" size="sm" /></div>
-					<div class="col-6 col-md-3"><label class="form-label small mb-1">{{ t("Guarantee") }}</label><MoneyInput v-model="intake.guarantee_amount" :currency="currency" :language="user.language" size="sm" /></div>
-					<div class="col-6 col-md-3"><label class="form-label small mb-1">{{ t("Guarantee return") }}</label><DateInput v-model="intake.guarantee_return" size="sm" /></div>
 
-					<div class="col-6 col-md-3"><label class="form-label small mb-1">{{ t("Purchase method") }}</label>
-						<select v-model="intake.purchase_method" class="form-select form-select-sm">
-							<option value="">—</option>
-							<option value="auction">{{ t("Auction") }}</option>
-							<option value="shop">{{ t("Shop") }}</option>
-							<option value="selection">{{ t("Selection") }}</option>
-							<option value="tender">{{ t("Tender") }}</option>
-						</select></div>
-					<div class="col-6 col-md-3"><label class="form-label small mb-1">{{ t("Penalty %/day") }}</label><input v-model.number="intake.penalty_pct_per_day" type="number" step="0.01" class="form-control form-control-sm"></div>
-					<div class="col-6 col-md-3"><label class="form-label small mb-1">{{ t("Decision") }}</label>
-						<select v-model="intake.go_no_go" class="form-select form-select-sm">
-							<option value="">—</option><option value="go">{{ t("Go") }}</option><option value="no_go">{{ t("No-go") }}</option>
-						</select></div>
 					<div class="col-6 col-md-3"><label class="form-label small mb-1">{{ t("Result") }}</label>
 						<select v-model="intake.result" class="form-select form-select-sm">
 							<option value="">—</option><option value="pending">{{ t("Pending") }}</option><option value="won">{{ t("Won") }}</option><option value="lost">{{ t("Lost") }}</option>
 						</select></div>
 					<div class="col-6 col-md-3"><label class="form-label small mb-1">{{ t("Won price") }}</label><MoneyInput v-model="intake.won_price" :currency="currency" :language="user.language" size="sm" /></div>
 
-					<div class="col-12 col-md-9"><label class="form-label small mb-1">{{ t("Notes") }}</label><input v-model="intake.notes" type="text" class="form-control form-control-sm"></div>
-					<div class="col-12 col-md-3 d-flex align-items-end">
-						<label class="form-check mb-1"><input v-model="intake.cert_required" type="checkbox" class="form-check-input" :true-value="1" :false-value="0"> <span class="form-check-label small">{{ t("Certificate required") }}</span></label>
-					</div>
+					<div class="col-12"><label class="form-label small mb-1">{{ t("Notes") }}</label><input v-model="intake.notes" type="text" class="form-control form-control-sm"></div>
 				</div>
 				<!-- FX / currency risk -->
 				<div class="border-top mt-3 pt-2">

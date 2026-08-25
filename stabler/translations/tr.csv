@@ -1758,6 +1758,7 @@ Edit Vendor Category,Kategoriyi düzenle
 Edit Visit,Ziyareti Düzenle
 Edited,Düzenlendi
 Edited 1 field,1 alan düzenlendi
+Edited in the tender drawer,İhale çekmecesinde düzenlenir
 Edited {0} field(s),
 Editing a past day,Geçmiş bir günü düzenliyorsunuz
 Editing the rate updates the received amount.,Oranı düzenlemek alınan tutarı günceller.
@@ -4814,7 +4815,7 @@ Set,
 Set a Google Drive folder ID first.,Önce bir Google Drive klasör kimliği ayarlayın.
 Set as company default,Şirket varsayılanı yap
 Set as company default.,Şirket varsayılanı olarak ayarlandı.
-Set deadlines in Tender details.,Süreleri İhale Detaylarında belirleyin.
+Set deadlines in the tender drawer.,Son tarihleri ihale çekmecesinde belirleyin.
 Set exactly one of Commercial Invoice or Container on a Freight Booking.,Nakliye Rezervasyonunda Ticari Fatura veya Konteynerden tam olarak birini belirtin.
 Set exactly one of Commercial Invoice or Container.,Ticari Fatura veya Konteynerden tam olarak birini belirtin.
 Set Reports-To on employees to build the positions hierarchy.,Pozisyon hiyerarşisi oluşturmak için çalışanlarda Bağlı Olduğu Kişi alanını doldurun.

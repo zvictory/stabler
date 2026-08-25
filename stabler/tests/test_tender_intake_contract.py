@@ -145,9 +145,13 @@ class TestTheContractIsVisible(unittest.TestCase):
 
 	def test_every_field_the_two_intake_screens_send_is_accepted(self):
 		"""Both writers, measured from source: `TenderMasterDrawer.vue`'s
-		`intakePayload` (:256) and `TenderIntake.vue`'s `intake` reactive
-		(:50-55). If rejection ever outruns the whitelist, the save the user
-		presses does not fail quietly — it fails loudly, on every tender."""
+		`intakePayload` and `TenderIntake.vue`'s `OWNED_FIELDS`. If rejection
+		ever outruns the whitelist, the save the user presses does not fail
+		quietly — it fails loudly, on every tender.
+
+		The two sets are disjoint by design since ADR-201: one writer per key.
+		`test_tender_intake_single_writer.py` is what holds them apart; this one
+		only asks that their union is storable."""
 		drawer = {
 			"title",
 			"tender_no",
@@ -158,22 +162,22 @@ class TestTheContractIsVisible(unittest.TestCase):
 			"estimated_total",
 			"items",
 			"tender_files",
+			# Section E, moved off the PO board by ADR-206.
+			"go_no_go",
+			"guarantee_amount",
+			"guarantee_return",
+			"penalty_pct_per_day",
+			"cert_required",
+			"purchase_method",
 		}
 		po_board = {
 			"lot_no",
 			"buyer",
 			"volume",
 			"unit",
-			"bid_deadline",
 			"delivery_deadline",
-			"guarantee_amount",
-			"guarantee_return",
-			"cert_required",
-			"penalty_pct_per_day",
-			"go_no_go",
 			"result",
 			"won_price",
-			"purchase_method",
 			"notes",
 			"documents",
 			"fx_currency",
@@ -181,6 +185,7 @@ class TestTheContractIsVisible(unittest.TestCase):
 			"fx_bid_rate",
 			"fx_pay_rate",
 		}
+		self.assertEqual(drawer & po_board, set(), "one writer per key (ADR-201)")
 		self.assertEqual(tender.unknown_intake_keys(dict.fromkeys(drawer | po_board, "")), [])
 
 	def test_the_previous_bundle_s_deadline_key_is_still_accepted(self):

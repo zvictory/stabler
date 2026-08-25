@@ -1760,6 +1760,7 @@ Edit Vendor Category,Категорияни таҳрирлаш
 Edit Visit,Буюртманы таҳриф
 Edited,Таҳрирланди
 Edited 1 field,1 майдон таҳрирланди
+Edited in the tender drawer,Тендер карточкасида таҳрирланади
 Edited {0} field(s),
 Editing a past day,Ўтган кунни таҳрирлаш
 Editing the rate updates the received amount.,Нархни таҳриф қилиш қабул қилинган суммани янгилайди.
@@ -4818,7 +4819,7 @@ Set,
 Set a Google Drive folder ID first.,Аввал Google Drive папка ID'сини киритинг.
 Set as company default,Компания стандарти қилиш
 Set as company default.,Компания стандарти қилиб ўрнатилди.
-Set deadlines in Tender details.,Муддатларни Тендер тафсилотларида белгиланг.
+Set deadlines in the tender drawer.,Муддатларни тендер карточкасида белгиланг.
 Set exactly one of Commercial Invoice or Container on a Freight Booking.,Юк ташиш бронида Тижорий ҳисоб-фактура ёки Контейнердан айнан биттасини белгиланг.
 Set exactly one of Commercial Invoice or Container.,Тижорат инвойси ёки контейнердан айнан биттасини белгиланг.
 Set Reports-To on employees to build the positions hierarchy.,"Лавозимлар иерархиясини тузиш учун ходимларга ""Ҳисоб берувчи""ни ўрнатинг."

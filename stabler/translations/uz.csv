@@ -1760,6 +1760,7 @@ Edit Vendor Category,Kategoriyani tahrirlash
 Edit Visit,Tashrif buyrumasini tahrirlash
 Edited,Tahrirlandi
 Edited 1 field,1 maydon tahrirlandi
+Edited in the tender drawer,Tender kartochkasida tahrirlanadi
 Edited {0} field(s),
 Editing a past day,O'tgan kunni tahrirlash
 Editing the rate updates the received amount.,Narxni tahrirlash qabul qilingan summani yangilaydi.
@@ -4818,7 +4819,7 @@ Set,
 Set a Google Drive folder ID first.,Avval Google Drive papka ID'sini kiriting.
 Set as company default,Kompaniya standarti qilish
 Set as company default.,Kompaniya standarti qilib o'rnatildi.
-Set deadlines in Tender details.,Muddatlarni Tender tafsilotlarida belgilang.
+Set deadlines in the tender drawer.,Muddatlarni tender kartochkasida belgilang.
 Set exactly one of Commercial Invoice or Container on a Freight Booking.,Yuk tashish bronida Tijoriy hisob-faktura yoki Konteynerdan aynan bittasini belgilang.
 Set exactly one of Commercial Invoice or Container.,Tijorat invoysi yoki konteynerdan aynan bittasini belgilang.
 Set Reports-To on employees to build the positions hierarchy.,Lavozimlar ierarxiyasini yaratish uchun xodimlarda Reports-To ni o'rnating.
