@@ -2119,6 +2119,7 @@ Failed to load veterinary certificates.,Не удалось загрузить �
 Failed to load visit.,Ошибка загрузки визита.
 Failed to load warehouses.,Ошибка загрузки складов.
 Failed to load work orders.,
+Failed to load your materials.,Не удалось загрузить ваши материалы.
 Failed to load.,Ошибка загрузки.
 Failed to move deal.,Не удалось переместить сделку.
 Failed to move ticket.,Не удалось переместить заявку.
@@ -2848,6 +2849,7 @@ Marketing claim settlement for {0},Расчёт маркетинговой пр�
 Marketing Claims,Маркетинговые претензии
 Markup on cost,Наценка к себестоимости
 Match & reconcile,Сопоставить и сверить
+Materials cannot be written off per operator on this site yet. Switch on 'Allow Continuous Material Consumption' in Manufacturing Settings.,Списание материалов по операторам на этом сайте пока недоступно. Включите «Allow Continuous Material Consumption» в настройках производства.
 matched,совпало
 Matched employee,
 Material,Материал
@@ -3414,6 +3416,7 @@ No {0} account is set for this advance. Choose one before recording it.,Для �
 No {0} receivable account exists for company {1}. ,Дебиторский счёт {0} для компании {1} не найден. 
 No {0} {1} account exists for company {2}. ,
 No-go,Не идём
+Nobody has decided which operator these materials belong to yet: {0},"Ещё не решено, какому оператору принадлежат эти материалы: {0}"
 Non-compliant,Не соответствует
 None,Нет
 none,нет
@@ -3476,6 +3479,7 @@ Notes,Примечания
 Nothing booked yet,Пока ничего не проведено
 Nothing else points at this invoice.,На этот инвойс больше ничто не ссылается.
 Nothing else points at this proforma.,На эту проформу больше ничто не ссылается.
+Nothing left for you to write off.,Списывать больше нечего.
 Nothing moves forward until these are answered.,"Пока на них не ответят, ничего не движется."
 Nothing to allocate yet — add invoice items and costs first.,Пока нечего распределять — сначала добавьте товары и затраты.
 Nothing to compare.,Нечего сравнивать.
@@ -3672,6 +3676,7 @@ over cheapest bid,превышение над наименьшей ценой
 Over SLA,Вне SLA
 Over-allocated,Превышение распределения
 Over-shipped,Сверх контракта
+Packaging,Упаковка
 over-shipped,перегруз
 over-shipped by key: -{count} boxes,перегруз по ключу: -{count} кор.
 over-shipped keys,ключей с перегрузом
@@ -3846,6 +3851,7 @@ Pays out this share of the KPI pool. Locked periods are read-only.,Выплач�
 Penalty %/day,Штраф %/день
 PENDING,Ожидает
 Pending,Ожидание
+Per-operator write-off is not switched on for this site yet. Ask a manager to enable 'Allow Continuous Material Consumption' in Manufacturing Settings.,Списание по операторам на этом сайте пока не включено. Попросите руководителя включить «Allow Continuous Material Consumption» в настройках производства.
 pending,в ожидании
 Pending (kg),Ожидается (кг)
 Pending Approval,Ожидает согласования
@@ -4028,6 +4034,7 @@ Position,
 Positions,Позиции
 Positions hierarchy,Иерархия позиций
 POSM,ПОСМ
+Plan,План
 Post reconciliation,Провести сверку
 Post stock reconciliation,Провести сверку остатков
 Post transfer,Провести перевод
@@ -4042,6 +4049,7 @@ Posting Window,
 Posting window saved.,
 Postings,Учёты
 PR,Приход
+Pouring,Розлив
 Pre-season freezer push,Предсезонная установка морозильников
 Premium,
 Prepaid,Аванс
@@ -4774,6 +4782,7 @@ Select suppliers to ask,Выберите поставщиков для запр�
 Select technician,Выберите техника
 Select template…,Выберите шаблон…
 Select the bank account this statement belongs to.,"Выберите счёт, к которому относится выписка."
+Select the materials to write off.,Выберите материалы для списания.
 Select warehouse,Выберите склад
 Select warehouse…,Выберите склад…
 Select winning quotation,Выберите победившее предложение
@@ -5232,6 +5241,7 @@ The proportional PI advance will be reserved for this CI. Accounts must review a
 "The queue is blocked — {0} repost(s) stuck. Re-queue them, then Run now.","Очередь заблокирована — зависло {0}. Перезапустите их, затем «Запустить сейчас»."
 The referenced document is cancelled and cannot be approved.,
 The referenced document no longer exists.,
+The rest of this order is {0}'s — those lines do not count towards you.,Остальное по этому заказу ведёт {0} — эти позиции на вас не считаются.
 The selected parent already belongs to another parent. ,
 The selected parent already belongs to another parent. Only one level of hierarchy is allowed.,Выбранный родитель уже относится к другому родителю. Допускается только один уровень иерархии.
 The selected parent customer does not exist.,Выбранный родительский клиент не существует.
@@ -5247,6 +5257,7 @@ These are ERPNext's back-dating guards — the reason it blocks creating or edit
 These device users have no employee link. Confirm a match to re-queue their punches.,"У этих пользователей устройства нет связи с сотрудником. Подтвердите совпадение, чтобы переобработать их отметки."
 These lines allocate more than the Proforma Invoice has left: {0},"Эти строки распределяют больше, чем осталось по проформе-инвойсу: {0}"
 These linked records go with it:,Вместе с ним пойдут эти связанные записи:
+"These materials are the other operator's to write off, not yours: {0}","Эти материалы списывает другой оператор, а не вы: {0}"
 This account will be hidden from the active chart of accounts.,Счёт будет скрыт из активного плана счетов.
 This account will be shown in the active chart of accounts again.,Счёт снова будет показан в активном плане счетов.
 This adjusts stock for {0} item(s) and posts the difference to the ledger. The action is recorded against your name.,Это скорректирует остатки по {0} позиции(ям) и проведёт разницу в учёте. Действие записывается на ваше имя.
@@ -5861,6 +5872,8 @@ Working,Рабочих дней
 Workspace,
 Worst,Худший
 Write,Написать
+Write Off My Materials,Списать своё
+Write-off failed.,Списание не выполнено.
 Writes one net Additional Salary line per locked employee for this period. Re-running replaces the previous figures.,Создаёт по одной нетто-строке Additional Salary на каждого заблокированного сотрудника за период. Повторный запуск заменяет прежние суммы.
 Wrong Account Postings,
 Year to date,
@@ -5918,6 +5931,7 @@ Yutilgan,Выиграно
 {0} is not a remittance posting stage.,{0} не является этапом проводки перевода.
 {0} is required.,{0} обязателен.
 {0} line item change(s),
+{0} more line(s) on this order have not been assigned to an operator. The shift lead settles those.,Ещё {0} позиций в этом заказе не закреплены за оператором. Их решает начальник смены.
 {0} must be a number,{0} должно быть числом
 {0} must be a {1} account.,{0} должен быть счётом типа {1}.
 {0} must be an enabled stock sales item.,

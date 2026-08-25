@@ -2114,6 +2114,7 @@ Failed to load veterinary certificates.,Ветеринария сертифик�
 Failed to load visit.,Сўроғини юклаб бўла олмади.
 Failed to load warehouses.,Омборларни юклаб бўла олмади.
 Failed to load work orders.,
+Failed to load your materials.,Материалларингизни юклаб бўлмади.
 Failed to load.,Юклаб бўла олмади.
 Failed to move deal.,Битимни кўчириш муваффақиятсиз бўлди.
 Failed to move ticket.,Мурожаатни кўчириб бўлмади.
@@ -2848,6 +2849,7 @@ Matched employee,
 Material,Материал
 Material Issue submitted: {0},Материаллар чиқими тасдиқланди: {0}
 Material Staging,
+Materials cannot be written off per operator on this site yet. Switch on 'Allow Continuous Material Consumption' in Manufacturing Settings.,"Бу сайтда материаллар оператор бўйича ҳисобдан чиқарилмайди. Ишлаб чиқариш созламаларида ""Allow Continuous Material Consumption"" ни ёқинг."
 Materials to Transfer,Кўчириладиган материаллар
 Materials transferred successfully!,
 Max CI Value (USD),Максимал CI қиймати (USD)
@@ -3409,6 +3411,7 @@ No {0} account is set for this advance. Choose one before recording it.,Бу а�
 No {0} receivable account exists for company {1}. ,{0} учун {1} компаниясида дебиторлик ҳисоби мавжуд эмас. 
 No {0} {1} account exists for company {2}. ,
 No-go,Бормаймиз
+Nobody has decided which operator these materials belong to yet: {0},Бу материаллар қайси операторга тегишли экани ҳали ҳал қилинмаган: {0}
 Non-compliant,Мос келайди
 None,Йўқ
 none,йўқ
@@ -3460,6 +3463,7 @@ Not posted,ўтказилмаган
 Not ready,
 Not ready to lock,
 Not registered,Рўйхатдан ўтмаган
+Nothing left for you to write off.,Ҳисобдан чиқариш учун ҳеч нарса қолмади.
 not saved,сақланмаган
 Not set,
 not set,киритилмаган
@@ -3689,6 +3693,7 @@ Owes us,Бизга қарздор
 Own,Ўзи
 Owner,Масъул
 P,Ку
+Packaging,Қадоқлаш
 pack_key is required,pack_key керак
 Package incomplete — fill the missing fields,Пакет тўлиқ эмас — етишмаётган майдонларни тўлдиринг
 Packaging damaged,Қадоқлаш шикастланган
@@ -3856,6 +3861,7 @@ Per box,Қути нархи
 Per container,Контейнерга
 Per kg,Кг учун
 Per-PIGroup planned FCL and container shipment lifecycle tracking,PI гуруҳ бўйича режалаштирилган FCL ва контейнер ҳаёт цикли
+Per-operator write-off is not switched on for this site yet. Ask a manager to enable 'Allow Continuous Material Consumption' in Manufacturing Settings.,"Бу сайтда оператор бўйича ҳисобдан чиқариш ҳали ёқилмаган. Раҳбардан Ишлаб чиқариш созламаларида ""Allow Continuous Material Consumption"" ни ёқишни сўранг."
 Percent off,Фоизни камайтириш
 Period,Давр
 Period belongs to another company.,
@@ -3966,6 +3972,7 @@ Place branded freezer at {0} (deal {1}),
 Place your RFID badge on the reader to log in,
 Placed Freezer,Музлатгич ўрнатилди
 Placing,Жойлаштириш
+Plan,Режа
 Plan Type,Режа тури
 Plan vs actual,Режа vs ҳақиқий
 Planned,Режалаштирилган
@@ -4037,6 +4044,7 @@ Posting Window,
 Posting window saved.,
 Postings,Жамиялар
 PR,Қабул
+Pouring,Қуйиш
 Pre-season freezer push,Мавсум олдидан музлатгич ўрнатиш
 Premium,
 Prepaid,Аванс
@@ -4769,6 +4777,7 @@ Select suppliers to ask,Сўров юбориладиган етказиб бе�
 Select technician,Техникни танланг
 Select template…,Шаблонни танланг…
 Select the bank account this statement belongs to.,Ушбу кўчирма тегишли бўлган ҳисобни танланг.
+Select the materials to write off.,Ҳисобдан чиқариладиган материалларни танланг.
 Select warehouse,Омборни танланг
 Select warehouse…,Омборни танланг…
 Select winning quotation,Ғолиб таклифни танланг
@@ -5227,6 +5236,7 @@ The proportional PI advance will be reserved for this CI. Accounts must review a
 "The queue is blocked — {0} repost(s) stuck. Re-queue them, then Run now.","Навбат бloкланган — {0} та осилган. Уларни қайта навбатга қўйинг, сўнг 'Ҳозир ишга тушириш'."
 The referenced document is cancelled and cannot be approved.,
 The referenced document no longer exists.,
+The rest of this order is {0}'s — those lines do not count towards you.,Бу буюртманинг қолгани {0} зиммасида — у қаторлар сизга ҳисобланмайди.
 The selected parent already belongs to another parent. ,
 The selected parent already belongs to another parent. Only one level of hierarchy is allowed.,Танланган бош мижоз аллақачон бошқа бош мижозга тегишли. Фақат битта иерархия даражаси мумкин.
 The selected parent customer does not exist.,Танланган бош мижоз мавжуд эмас.
@@ -5242,6 +5252,7 @@ These are ERPNext's back-dating guards — the reason it blocks creating or edit
 These device users have no employee link. Confirm a match to re-queue their punches.,Бу қурилма фойдаланувчилари ходимга боғланмаган. Белгилашларни қайта ишлаш учун мосликни тасдиқланг.
 These lines allocate more than the Proforma Invoice has left: {0},Бу қаторлар проформа-инвойсда қолганидан кўпроқ ажратмоқда: {0}
 These linked records go with it:,У билан бирга қуйидаги боғланган ёзувлар кетади:
+"These materials are the other operator's to write off, not yours: {0}","Бу материалларни бошқа оператор ҳисобдан чиқаради, сиз эмас: {0}"
 This account will be hidden from the active chart of accounts.,Ҳисоб фаол ҳисоблар режасидан яширилади.
 This account will be shown in the active chart of accounts again.,Ҳисоб фаол ҳисоблар режасида қайта кўрсатилади.
 This adjusts stock for {0} item(s) and posts the difference to the ledger. The action is recorded against your name.,Бу {0} та товар бўйича захирани тузатади ва фарқни ҳисобга киритади. Амал сизнинг номингизга ёзилади.
@@ -5856,6 +5867,8 @@ Working,Иш куни
 Workspace,
 Worst,Энг ёмон
 Write,Ёзиш
+Write Off My Materials,Ўз материалимни чиқариш
+Write-off failed.,Ҳисобдан чиқариш бажарилмади.
 Writes one net Additional Salary line per locked employee for this period. Re-running replaces the previous figures.,Бу давр учун ҳар бир қулфланган ходимга битта соф Additional Salary қатори ёзади. Қайта ишга тушириш олдинги рақамларни алмаштиради.
 Wrong Account Postings,
 Year to date,
@@ -5913,6 +5926,7 @@ Yutilgan,Ютилган
 {0} is not a remittance posting stage.,{0} пул ўтказмаси проводкасининг босқичи эмас.
 {0} is required.,{0} керак.
 {0} line item change(s),
+{0} more line(s) on this order have not been assigned to an operator. The shift lead settles those.,Бу буюртмада яна {0} та қатор операторга бириктирилмаган. Уларни смена бошлиғи ҳал қилади.
 {0} must be a number,{0} сон бўлиши керак
 {0} must be a {1} account.,{0} {1} туридаги ҳисоб бўлиши керак.
 {0} must be an enabled stock sales item.,
@@ -6248,7 +6262,7 @@ Temporary Opening,
 Travel Expenses,
 Unsecured Loans,
 Utility Expenses,
-Write Off,
+Write Off,Ҳисобдан чиқариш
 Capital Work in Progress,
 Chargeable,
 Current Asset,
