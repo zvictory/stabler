@@ -12,6 +12,8 @@ from stabler.api.manufacturing import (
 	_SE_CONSUMPTION,
 	_assert_may_consume,
 	_assert_roles_are_both_or_neither,
+	_clear_finish_draft,
+	_require_wo_draft_columns,
 	make_work_order_stock_entry,
 	work_order_detail,
 )
@@ -988,3 +990,85 @@ class TestAHalfAssignedOrderCannotStart(unittest.TestCase):
 				)
 		guard.assert_called_once()
 		build.assert_not_called()
+
+
+class TestTheDraftIsClearedWhenTheOrderCloses(unittest.TestCase):
+	"""A confirmed order must not still be showing an unconfirmed count.
+
+	The draft exists so a walked-and-counted pallet survives a badge-out. The
+	moment the Manufacture entry posts, that count is no longer unconfirmed — it is
+	on a submitted stock document. Leaving the draft behind puts a "somebody has an
+	unconfirmed finish here" banner on a finished order, and the next operator to
+	open it re-enters numbers that are already posted.
+	"""
+
+	def test_finishing_clears_the_draft(self):
+		with (
+			patch("stabler.api.manufacturing._require_mfg"),
+			patch("stabler.api.manufacturing._is_mfg_manager", return_value=True),
+			patch("stabler.api.manufacturing.assert_stock_entry_valuation_sane"),
+			patch("stabler.api.manufacturing._log_wo_event"),
+			patch("stabler.api.manufacturing.frappe.session"),
+			patch("stabler.api.manufacturing.frappe.get_doc", side_effect=lambda stub: _FakeStockEntry(stub)),
+			patch(
+				"erpnext.manufacturing.doctype.work_order.work_order.make_stock_entry",
+				return_value={"purpose": "Manufacture", "work_order": "WO-00009"},
+			),
+			patch("stabler.api.manufacturing._clear_finish_draft") as clear,
+		):
+			make_work_order_stock_entry("WO-00009", "Manufacture", qty=100)
+		clear.assert_called_once_with("WO-00009")
+
+	def test_transferring_does_not_clear_it(self):
+		"""The transfer happens at the *start* of the order. A draft cannot exist yet,
+		and clearing on every stock document would wipe one written between a partial
+		consumption and the finish."""
+		with (
+			patch("stabler.api.manufacturing._require_mfg"),
+			patch("stabler.api.manufacturing._is_mfg_manager", return_value=True),
+			patch("stabler.api.manufacturing._assert_roles_are_both_or_neither"),
+			patch("stabler.api.manufacturing.assert_stock_entry_valuation_sane"),
+			patch("stabler.api.manufacturing._log_wo_event"),
+			patch("stabler.api.manufacturing.frappe.session"),
+			patch("stabler.api.manufacturing.frappe.get_doc", side_effect=lambda stub: _FakeStockEntry(stub)),
+			patch(
+				"erpnext.manufacturing.doctype.work_order.work_order.make_stock_entry",
+				return_value={"purpose": "Material Transfer for Manufacture", "work_order": "WO-00009"},
+			),
+			patch("stabler.api.manufacturing._clear_finish_draft") as clear,
+		):
+			make_work_order_stock_entry("WO-00009", "Material Transfer for Manufacture", qty=100)
+		clear.assert_not_called()
+
+	def test_clearing_on_an_unmigrated_site_is_a_no_op_not_a_crash(self):
+		"""v99 may not have run. A finish must still post — the draft feature being
+		absent is not a reason to refuse the document that closes the order."""
+		with (
+			patch("stabler.api.manufacturing._wo_draft_columns", return_value=()),
+			patch("stabler.api.manufacturing.frappe.db.set_value") as write,
+		):
+			_clear_finish_draft("WO-00009")
+		write.assert_not_called()
+
+
+class TestSavingADraftOnAnUnmigratedSite(unittest.TestCase):
+	"""Refuse loudly rather than accept and discard.
+
+	This is the v94 lesson, and v97 restated it for the packaging operator: a write
+	that goes nowhere and reports success is worse than an error, because the
+	operator walks away believing the count is stored. They find out at the end of
+	the next shift, when it is gone and the pallet has moved.
+	"""
+
+	def test_a_missing_column_is_an_error_the_operator_can_read(self):
+		with patch("stabler.api.manufacturing._wo_draft_columns", return_value=()):
+			with self.assertRaises(frappe.ValidationError) as cm:
+				_require_wo_draft_columns()
+		self.assertIn("migrated", str(cm.exception).lower())
+
+	def test_with_the_columns_present_it_says_nothing(self):
+		with patch(
+			"stabler.api.manufacturing._wo_draft_columns",
+			return_value=("custom_finish_draft", "custom_finish_draft_at", "custom_finish_draft_by"),
+		):
+			_require_wo_draft_columns()

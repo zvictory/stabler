@@ -189,6 +189,113 @@ def _unassigned_rows(rows, roles: dict[str, str]) -> list:
 	return [r for r in rows if not roles.get(r["item_code"])]
 
 
+#: The Work Order columns holding an unconfirmed finish (patch v99). The payload
+#: is one field because it is only ever read back into the dialog that wrote it;
+#: the author and the time are separate columns because they are the two things
+#: somebody else asks about a draft, and because the server must own them.
+_WO_DRAFT_FIELDS = ("custom_finish_draft", "custom_finish_draft_at", "custom_finish_draft_by")
+
+#: What a caller may put inside the draft. Anything else it sends is dropped —
+#: `saved_by` in particular, which the server writes as a column of its own.
+_FINISH_DRAFT_NUMBERS = ("produced_qty", "scrap_qty")
+_FINISH_DRAFT_STRINGS = ("batch_no", "mfg_date", "expiry_date")
+
+
+def _wo_draft_columns() -> tuple[str, ...]:
+	"""The draft columns that actually exist on this site (patch v99).
+
+	Same shape as `_wo_operator_columns`, same reason: between a code deploy and
+	the `bench migrate` behind it, naming a column that is not there takes the
+	kiosk down for every operator on the site.
+	"""
+	return tuple(f for f in _WO_DRAFT_FIELDS if frappe.db.has_column("Work Order", f))
+
+
+def _require_wo_draft_columns() -> None:
+	"""Refuse to *save* a draft the site cannot hold.
+
+	Reading degrades quietly — no columns means no draft, and the dialog opens
+	blank, which is what it did before v99. Writing must not: an operator who has
+	walked the pallet and pressed save has to be told the count did not land, in
+	the moment, while the pallet is still there. This is the v94 lesson that v97
+	restated — a write that reports success and goes nowhere is worse than an
+	error, because nothing ever says so.
+	"""
+	if len(_wo_draft_columns()) != len(_WO_DRAFT_FIELDS):
+		frappe.throw(_("This site is not migrated for unconfirmed finishes yet."))
+
+
+def _clear_finish_draft(work_order: str) -> None:
+	"""Drop the draft. Silent on an unmigrated site: the absence of the feature is
+	not a reason to refuse the document that closes the order."""
+	columns = _wo_draft_columns()
+	if not columns:
+		return
+	for field in columns:
+		frappe.db.set_value("Work Order", work_order, field, None, update_modified=False)
+
+
+def _encode_finish_draft(
+	produced_qty=0,
+	scrap_qty=0,
+	batch_no: str | None = None,
+	mfg_date: str | None = None,
+	expiry_date: str | None = None,
+) -> str:
+	"""The dialog's contents as one field. Named arguments rather than a passthrough
+	dict: whatever a caller adds beyond these five is not stored, so a crafted
+	payload cannot smuggle an author or a timestamp in beside them."""
+	import json
+
+	return json.dumps(
+		{
+			"produced_qty": flt(produced_qty),
+			"scrap_qty": flt(scrap_qty),
+			"batch_no": (batch_no or "").strip() or None,
+			"mfg_date": (mfg_date or "").strip() or None,
+			"expiry_date": (expiry_date or "").strip() or None,
+		}
+	)
+
+
+def _decode_finish_draft(row) -> dict | None:
+	"""The draft on this Work Order row, or None when there is not one.
+
+	None covers three different situations on purpose, because the kiosk does the
+	same thing in all of them — offers a blank finish dialog:
+
+	  * the site has not run v99 and the columns do not exist yet;
+	  * nobody has saved a draft;
+	  * the field holds something that is not a draft. It is editable in Desk and
+	    outlives schema changes, and an operator cannot fix JSON. Losing one draft
+	    is better than taking the kiosk down for a shift over one bad row.
+
+	What it is *not* allowed to cover is a legitimate zero. Nothing good and forty
+	rejects is a real shift, and the one you least want to make somebody count
+	twice — so emptiness is tested on the field, never on the numbers inside it.
+
+	`saved_at` and `saved_by` are read from the row's own columns, never from the
+	payload: with two operators on one order, "whose count is this" decides whether
+	the person reading it confirms or re-counts.
+	"""
+	import json
+
+	raw = (row.get("custom_finish_draft") or "").strip()
+	if not raw:
+		return None
+	try:
+		payload = json.loads(raw)
+	except Exception:
+		return None
+	if not isinstance(payload, dict):
+		return None
+	draft = {k: flt(payload.get(k)) for k in _FINISH_DRAFT_NUMBERS}
+	draft.update({k: payload.get(k) or None for k in _FINISH_DRAFT_STRINGS})
+	draft["saved_at"] = str(row.get("custom_finish_draft_at") or "") or None
+	draft["saved_by"] = row.get("custom_finish_draft_by") or None
+	return draft
+
+
 def _role_deviation(rows, with_cost: bool) -> list[dict]:
 	"""How far each role ran from the BOM, one bucket per role.
 
@@ -694,12 +801,17 @@ def list_work_orders(
 		params["user"] = frappe.session.user
 	where = " AND ".join(conds)
 	assignee_select = "".join(f"{col}, " for col in assignee_cols)
-	return frappe.db.sql(
+	# The kiosk reads its whole board from here, so the draft banner has to arrive
+	# with the rows. Optional for the same reason the assignee columns are: v99 may
+	# not have run yet.
+	draft_cols = _wo_draft_columns()
+	draft_select = "".join(f"{col}, " for col in draft_cols)
+	rows = frappe.db.sql(
 		f"""
 		SELECT name, production_item, item_name, bom_no, qty, produced_qty,
 		       material_transferred_for_manufacturing AS transferred_qty,
 		       status, planned_start_date, planned_end_date, fg_warehouse,
-		       wip_warehouse, {assignee_select}docstatus, modified
+		       wip_warehouse, {assignee_select}{draft_select}docstatus, modified
 		FROM `tabWork Order`
 		WHERE {where}
 		ORDER BY modified DESC
@@ -708,6 +820,11 @@ def list_work_orders(
 		params,
 		as_dict=True,
 	)
+	for row in rows:
+		row["finish_draft"] = _decode_finish_draft(row)
+		for col in draft_cols:
+			row.pop(col, None)
+	return rows
 
 
 @frappe.whitelist()
@@ -780,6 +897,10 @@ def work_order_detail(name: str):
 	#: undecided line has to be visible on the screen, not defaulted onto whichever
 	#: operator happens to open the order.
 	payload["my_role"] = my_role
+	# Managers see it as well as operators: "what is sitting unconfirmed right now"
+	# is a shift lead's question, and it is the reason the draft lives on the order
+	# rather than in one tablet's storage.
+	payload["finish_draft"] = _decode_finish_draft(doc)
 	# Manager-only, and not because of the money: the panel answers "who ran over
 	# plan", which is a question about a named person's shift. `_role_deviation`
 	# withholds the cost on its own, but the whole comparison belongs upstairs.
@@ -1025,6 +1146,10 @@ def make_work_order_stock_entry(
 		what = ", ".join(f"{it['item_code']} x {flt(it.get('qty'))}" for it in item_list)
 		_log_wo_event(work_order, f"Materials written off by {frappe.session.user}: {what}")
 	elif purpose == "Manufacture":
+		# The count is on a submitted stock document now, so it is not unconfirmed
+		# any more. Left behind, the banner outlives the order it describes and the
+		# next operator re-enters numbers that are already posted.
+		_clear_finish_draft(work_order)
 		if (batch_no or "").strip():
 			_stamp_wo_batch(work_order, batch_no, mfg_date, expiry_date)
 		batch_note = f", Batch: {batch_no}" if (batch_no or "").strip() else ""
@@ -1033,6 +1158,72 @@ def make_work_order_stock_entry(
 		)
 
 	return {"name": se.name, "purpose": purpose, "docstatus": se.docstatus}
+
+
+@frappe.whitelist()
+def save_finish_draft(
+	work_order: str,
+	produced_qty: float = 0,
+	scrap_qty: float = 0,
+	batch_no: str | None = None,
+	mfg_date: str | None = None,
+	expiry_date: str | None = None,
+):
+	"""Park an unconfirmed finish on the Work Order.
+
+	Same permission shape as `update_work_order_materials`: an assigned operator on
+	their own order, or a manager on any. Deliberately not narrowed to one role —
+	one order has two operators and either of them may be the person who walks the
+	pallet at the end of the shift.
+
+	Zero produced is a legitimate draft. A shift that made nothing and rejected
+	forty is a real thing to report, and refusing to store it is how it gets
+	counted twice.
+	"""
+	from frappe.utils import now
+
+	_assert_can_read("Work Order", work_order)
+	_require_mfg()
+	if not frappe.db.exists("Work Order", work_order):
+		frappe.throw(f"Unknown Work Order: {work_order}")
+	if not _is_mfg_manager():
+		_require_own_work_order(work_order)
+	_require_wo_draft_columns()
+
+	frappe.db.set_value(
+		"Work Order",
+		work_order,
+		{
+			"custom_finish_draft": _encode_finish_draft(
+				produced_qty=produced_qty,
+				scrap_qty=scrap_qty,
+				batch_no=batch_no,
+				mfg_date=mfg_date,
+				expiry_date=expiry_date,
+			),
+			"custom_finish_draft_at": now(),
+			"custom_finish_draft_by": frappe.session.user,
+		},
+		# A parked count is not a change to the order, and the kiosk list is ordered
+		# by `modified` — bumping it would shuffle the board under the operator's
+		# hand every time they saved.
+		update_modified=False,
+	)
+	return {"name": work_order, "saved_by": frappe.session.user}
+
+
+@frappe.whitelist()
+def discard_finish_draft(work_order: str):
+	"""Throw the parked count away. Without this the only way out of a wrong draft
+	is posting it, which is the one thing a wrong count must not do."""
+	_assert_can_read("Work Order", work_order)
+	_require_mfg()
+	if not frappe.db.exists("Work Order", work_order):
+		frappe.throw(f"Unknown Work Order: {work_order}")
+	if not _is_mfg_manager():
+		_require_own_work_order(work_order)
+	_clear_finish_draft(work_order)
+	return {"name": work_order}
 
 
 @frappe.whitelist()

@@ -1168,6 +1168,7 @@ Could not delete the proforma.,Proformani o‘chirib bo‘lmadi.
 Could not delete the tender.,Tenderni o'chirib bo'lmadi.
 Could not delete the vendor category.,Kategoriyani o'chirib bo'lmadi.
 Could not detach quotation.,Taklifni ajratib bo'lmadi.
+Could not discard the draft.,Qoralamani o'chirib bo'lmadi.
 Could not fetch available PI lines.,Mavjud proforma qatorlarini yuklab bo‘lmadi.
 Could not link lot,Lotni bogʻlab boʻlmadi
 Could not link the proforma.,Proformani bog'lab bo'lmadi.
@@ -1226,6 +1227,7 @@ Could not save sourcing decision.,Xarid qarorini saqlab bo'lmadi.
 Could not save tender,Tenderni saqlab boʻlmadi
 Could not save tender intake.,Tender qabulini saqlab bo‘lmadi.
 Could not save the PI group.,PI guruhini saqlab boʻlmadi.
+Could not save the draft.,Qoralamani saqlab bo'lmadi.
 Could not save the proforma.,Proformani saqlab bo'lmadi.
 Could not save the quotation.,Taklifni saqlab bo'lmadi.
 Could not save the vendor category.,Kategoriyani saqlab bo'lmadi.
@@ -1585,6 +1587,7 @@ Disc %,Chegirma %
 Discard,Saqlamaslik
 Discard unsaved changes?,Saqlanmagan o'zgarishlar bekor qilinsinmi?
 DISCHARGED,Tushirilgan
+Discard draft,Qoralamani o'chirish
 Discipline,Intizom
 Discount,Chegirma
 Discount %,Chegirma %
@@ -4624,7 +4627,7 @@ Save changes,O'zgarishlarni saqlash
 Save Details,Tafsilotlarni Saqlash
 Save device,
 Save document,Hujjatni saqlash
-Save draft,
+Save draft,Qoralamani saqlash
 Save draft decision,Qaror qoralamasini saqlash
 Save Draft Revaluation,
 Save estimate,Bahoni saqlash
@@ -5308,6 +5311,7 @@ This role may edit frozen accounting entries.,
 "This sale would bring {0}'s group balance to {1}, over its credit limit of {2}. ",
 "This sale would bring {0}'s group balance to {1}, over its credit limit of {2}. Ask an Accounts Manager to approve or increase the limit.",Bu sotuv «{0}» guruhi balansini {1} ga yetkazadi va uning {2} kredit limitidan oshib ketadi. Tasdiqlash yoki limitni oshirish uchun buxgalteriya menejeriga murojaat qiling.
 This Service workspace will be added after Tickets P1.,Bu ish maydoni P1 dan so'ng qo'shiladi.
+This site is not migrated for unconfirmed finishes yet.,Bu saytda tasdiqlanmagan finish uchun migratsiya hali bajarilmagan.
 This supplier is paid in {0}. Select a {0} account: the selected payment account is in {1}.,Bu ta'minotchiga {0} da to‘lanadi. {0} dagi hisobni tanlang: tanlangan to‘lov hisobi {1} da.
 "This total uses the rate you typed. Creating the voucher does not — it reads the stored Currency Exchange rate. Record the USD rate for {0} first, then create the voucher.","Bu jami siz kiritgan kursdan foydalanadi. Vaucher yaratish esa saqlangan Currency Exchange kursini o'qiydi. Avval {0} sanasidagi USD kursini kiriting, so'ng vaucherni yarating."
 This truck cannot leave Iran yet:,Bu mashina hali Erondan chiqa olmaydi:
@@ -5519,6 +5523,7 @@ Unassigned dept / position,Bo'lim / lavozim yo'q
 Unbilled,Hisoblanmagan
 Unbilled landed costs,Fakturalanmagan xarajatlar
 Unbilled queue,Hisob-faktura navbati
+"Unconfirmed finish saved by {0} at {1} — {2} good, {3} rejected.","Tasdiqlanmagan finish: {0}, {1} — yaroqli {2}, brak {3}."
 Under Inspection,Tekshiruvda
 Under Review,Ko'rib chiqilmoqda
 Under review,Ko'rib chiqilmoqda

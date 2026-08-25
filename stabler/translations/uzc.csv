@@ -1168,6 +1168,7 @@ Could not delete the proforma.,Проформани ўчириб бўлмади.
 Could not delete the tender.,Тендерни ўчириб бўлмади.
 Could not delete the vendor category.,Категорияни ўчириб бўлмади.
 Could not detach quotation.,Таклифни ажратиб бўлмади.
+Could not discard the draft.,Қораламани ўчириб бўлмади.
 Could not fetch available PI lines.,Мавжуд проформа қаторларини юклаб бўлмади.
 Could not link lot,Лотни боғлаб бўлмади
 Could not link the proforma.,Проформани боғлаб бўлмади.
@@ -1226,6 +1227,7 @@ Could not save sourcing decision.,Харид қарорини сақлаб бў�
 Could not save tender,Тендерни сақлаб бўлмади
 Could not save tender intake.,Тендер қабулини сақлаб бўлмади.
 Could not save the PI group.,PI гуруҳини сақлаб бўлмади.
+Could not save the draft.,Қораламани сақлаб бўлмади.
 Could not save the proforma.,Проформани сақлаб бўлмади.
 Could not save the quotation.,Таклифни сақлаб бўлмади.
 Could not save the vendor category.,Категорияни сақлаб бўлмади.
@@ -1585,6 +1587,7 @@ Disc %,Чегирма %
 Discard,Сақламаслик
 Discard unsaved changes?,Сақланмаган ўзгаришлар бекор қилинсинми?
 DISCHARGED,Туширилган
+Discard draft,Қораламани ўчириш
 Discipline,Интизом
 Discount,Чегирма
 Discount %,Чегирма %
@@ -4624,7 +4627,7 @@ Save changes,Ўзгаришларни сақлаш
 Save Details,Тафсилотларни Сақлаш
 Save device,
 Save document,Ҳужжатни сақлаш
-Save draft,
+Save draft,Қораламани сақлаш
 Save draft decision,Қарор қораламасини сақлаш
 Save Draft Revaluation,
 Save estimate,Баҳони сақлаш
@@ -5308,6 +5311,7 @@ This role may edit frozen accounting entries.,
 "This sale would bring {0}'s group balance to {1}, over its credit limit of {2}. ",
 "This sale would bring {0}'s group balance to {1}, over its credit limit of {2}. Ask an Accounts Manager to approve or increase the limit.",Бу сотув «{0}» гуруҳи балансини {1} га етказади ва унинг {2} кредит лимитидан ошиб кетади. Тасдиқлаш ёки лимитни ошириш учун бухгалтерия менежерига мурожаат қилинг.
 This Service workspace will be added after Tickets P1.,Бу иш майдони P1 дан сўнг қўшилади.
+This site is not migrated for unconfirmed finishes yet.,Бу сайтда тасдиқланмаган финиш учун миграция ҳали бажарилмаган.
 This supplier is paid in {0}. Select a {0} account: the selected payment account is in {1}.,Бу таъминотчига {0} да тўланади. {0} даги ҳисобни танланг: танланган тўлов ҳисоби {1} да.
 "This total uses the rate you typed. Creating the voucher does not — it reads the stored Currency Exchange rate. Record the USD rate for {0} first, then create the voucher.","Бу жами сиз киритган курсдан фойдаланади. Ваучер яратиш эса сақланган Currency Exchange курсини ўқийди. Аввал {0} санасидаги USD курсини киритинг, сўнг ваучерни яратинг."
 This truck cannot leave Iran yet:,Бу машина ҳали Эрондан чиқа олмайди:
@@ -5519,6 +5523,7 @@ Unassigned dept / position,Бўлим / лавозим йўқ
 Unbilled,Ҳисобланмаган
 Unbilled landed costs,Фактураланмаган харажатлар
 Unbilled queue,Ҳисоб-фактура навбати
+"Unconfirmed finish saved by {0} at {1} — {2} good, {3} rejected.","Тасдиқланмаган финиш: {0}, {1} — яроқли {2}, брак {3}."
 Under Inspection,Текширувда
 Under Review,Кўриб чиқилмоқда
 Under review,Кўриб чиқилмоқда

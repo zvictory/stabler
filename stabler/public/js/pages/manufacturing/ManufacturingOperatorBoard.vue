@@ -566,6 +566,8 @@ const batchNo = ref("");
 const batchMfg = ref("");
 const batchExpiry = ref("");
 
+const draftBusy = ref(false);
+
 async function openFinish(row) {
 	finishTarget.value = row;
 	producedQty.value = remainingQty(row);
@@ -582,6 +584,59 @@ async function openFinish(row) {
 		batchExpiry.value = s?.expiry_date || "";
 	} catch (err) {
 		console.error("Failed to suggest batch", err);
+	}
+	// After the suggestion, not before: a parked count is somebody's actual walk of
+	// the pallet and outranks anything the server guessed. `?? ` and not `||` —
+	// zero produced with forty rejects is a real shift, and the one nobody should
+	// be made to count twice.
+	const d = row.finish_draft;
+	if (d) {
+		producedQty.value = d.produced_qty ?? producedQty.value;
+		scrapQty.value = d.scrap_qty ?? 0;
+		if (d.batch_no) batchNo.value = d.batch_no;
+		if (d.mfg_date) batchMfg.value = d.mfg_date;
+		if (d.expiry_date) batchExpiry.value = d.expiry_date;
+	}
+}
+
+async function saveDraft() {
+	const row = finishTarget.value;
+	if (!row) return;
+	draftBusy.value = true;
+	actionError.value = "";
+	resetIdleTimer();
+	try {
+		await call("stabler.api.manufacturing.save_finish_draft", {
+			work_order: row.name,
+			produced_qty: producedQty.value,
+			scrap_qty: scrapQty.value,
+			batch_no: batchNo.value || undefined,
+			mfg_date: batchNo.value && batchMfg.value ? batchMfg.value : undefined,
+			expiry_date: batchNo.value && batchExpiry.value ? batchExpiry.value : undefined,
+		});
+		finishTarget.value = null;
+		await load();
+	} catch (err) {
+		actionError.value = humanizeError(err) || t("Could not save the draft.");
+	} finally {
+		draftBusy.value = false;
+	}
+}
+
+async function discardDraft() {
+	const row = finishTarget.value;
+	if (!row) return;
+	draftBusy.value = true;
+	actionError.value = "";
+	resetIdleTimer();
+	try {
+		await call("stabler.api.manufacturing.discard_finish_draft", { work_order: row.name });
+		finishTarget.value = null;
+		await load();
+	} catch (err) {
+		actionError.value = humanizeError(err) || t("Could not discard the draft.");
+	} finally {
+		draftBusy.value = false;
 	}
 }
 function cancelFinish() {
@@ -947,6 +1002,10 @@ const sortedRows = computed(() => {
 
 						<!-- Large touch-friendly control buttons (sized for gloves) -->
 						<div v-if="r.docstatus === 1" class="d-flex flex-wrap gap-2 mt-auto pt-2">
+							<div v-if="r.finish_draft" class="alert alert-warning py-2 px-3 small w-100 mb-1">
+								<i class="ti ti-device-floppy me-1"></i>{{ t("Unconfirmed finish saved by {0} at {1} — {2} good, {3} rejected.", [r.finish_draft.saved_by, r.finish_draft.saved_at, r.finish_draft.produced_qty, r.finish_draft.scrap_qty]) }}
+							</div>
+
 							<div v-if="halfAssigned(r)" class="alert alert-danger py-2 px-3 small w-100 mb-1">
 								<i class="ti ti-user-exclamation me-1"></i>{{ t("Materials cannot be transferred until both operator roles are assigned.") }}
 							</div>
@@ -1315,6 +1374,26 @@ const sortedRows = computed(() => {
 						<div class="modal-footer bg-light p-3">
 							<button type="button" class="btn btn-link link-secondary fw-semibold" @click="cancelFinish">
 								{{ t("Cancel") }}
+							</button>
+							<button
+								v-if="finishTarget.finish_draft"
+								type="button"
+								class="btn btn-link link-danger fw-semibold"
+								:disabled="draftBusy"
+								@click="discardDraft"
+							>
+								{{ t("Discard draft") }}
+							</button>
+							<!-- Saving parks the count without posting stock. The button is live at
+								 zero produced on purpose: nothing good and forty rejected is a real
+								 shift, and it is the one you least want counted twice. -->
+							<button
+								type="button"
+								class="btn btn-outline-secondary btn-lg px-4 fw-semibold"
+								:disabled="draftBusy"
+								@click="saveDraft"
+							>
+								<i class="ti ti-device-floppy me-1"></i>{{ t("Save draft") }}
 							</button>
 							<button
 								type="button"
