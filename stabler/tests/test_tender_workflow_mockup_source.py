@@ -92,17 +92,51 @@ class TestItDoesNotPassItselfOffAsTheProduct(unittest.TestCase):
 		self.assertIn("t-real", mockup)
 		self.assertIn("t-fake", mockup)
 
-	def test_the_strip_names_the_body_claims_slice_1_made_false(self):
-		"""The body is dated 2026-08-17 and is deliberately not rewritten — it is
-		a record of what was measured then. That only stays honest while the strip
-		names the lines the contract slice has since falsified; otherwise a reader
-		carries away "`tender_files` is not saved" as today's truth."""
+	def test_every_claim_slice_1_falsified_carries_an_inline_correction(self):
+		"""The body is dated 2026-08-17 and is deliberately NOT rewritten -- it
+		records what was measured that day, and a design record that gets edited
+		to match today stops being evidence of anything.
+
+		That only stays honest while each falsified line says so *where it is
+		read*. The strip sits at the top of a five-tab document; a reader who
+		scrolls into the body meets a red flag with nothing next to it and takes
+		"`tender_files` is not saved" for today's measurement. So the contract
+		pinned here is proximity, not mere presence: every one of the four claims
+		the contract slice falsified is followed closely by its correction."""
+		mockup = (ROOT / "public/mockups/mikas-tender-workflow.html").read_text(encoding="utf-8")
+		# (the falsified claim, the last words of the note that carries it). Two
+		# anchors because a note can run on past its claim -- the #3/#4 one does,
+		# for two more sentences -- and the correction belongs at the end of the
+		# note, not wedged into the middle of the measurement it dates.
+		claims = (
+			("o listede <b>yok</b> — sessizce düşüyorlar.", "<b>tarih hiçbir yere ulaşmıyor</b>."),
+			(
+				"<b>referans listesi</b> kaydedilmiyor",
+				"dosya sunucuda kalıyor, ihaleye bağı kayboluyor.",
+			),
+			("çıktıyı <b>sıfırdan</b> kurar", "tam nesne PUT</b>"),
+			(
+				"<code>documents: []</code> gönderiyor",
+				"Yüklenmiş dosyaya bağlı satırlar dahil <b>tümü</b> gider.",
+			),
+		)
+		for claim, note_end in claims:
+			with self.subTest(claim=claim[:40]):
+				self.assertIn(claim, mockup, "iddia gövdede bulunamadı — çapa kaymış")
+				at = mockup.find(note_end)
+				self.assertNotEqual(at, -1, "not sonu bulunamadı — çapa kaymış")
+				after = mockup[at + len(note_end) : at + len(note_end) + 300]
+				self.assertIn('class="fixed"', after)
+				self.assertIn("Düzeldi", after)
+
+	def test_the_strip_says_the_body_was_kept_not_corrected(self):
+		"""Without this line the reader cannot tell a preserved measurement from
+		a stale one nobody noticed -- and the next person to find a wrong claim
+		here will 'helpfully' edit the record instead of dating it."""
 		mockup = (ROOT / "public/mockups/mikas-tender-workflow.html").read_text(encoding="utf-8")
 		strip = mockup[mockup.index('<div class="truth">') : mockup.index('<div class="rail">')]
-		self.assertIn("artık yanlış", strip)
-		for claim in ("tender_files", "documents: []", "_clean_intake"):
-			with self.subTest(claim=claim):
-				self.assertIn(claim, strip)
+		self.assertIn("olduğu gibi duruyor", strip)
+		self.assertIn("silinmedi", strip)
 
 
 if __name__ == "__main__":
