@@ -40,6 +40,7 @@ from typing import ClassVar
 from stabler.api.manufacturing import (
 	_SE_CONSUMPTION,
 	_SE_PURPOSES,
+	_role_deviation,
 	_rows_for_role,
 	_unassigned_rows,
 )
@@ -420,3 +421,106 @@ class TestConsumptionPurposeHasOneSpelling(unittest.TestCase):
 			[CONSUMPTION_CONST],
 			f"the single spelling must be the definition of {CONSUMPTION_CONST}, found {assigned_at}",
 		)
+
+
+class TestPerRoleDeviationFromBom(unittest.TestCase):
+	"""How much each of the two people used against what the BOM said.
+
+	This is the number the split was built to produce, and the first thing it has
+	to survive is that it cannot be a quantity. One order's materials are measured
+	in litres, kilograms and pieces at once; adding those is how you get a total
+	that is wrong in a way no reader can see. Money is the only common denominator
+	on the row, and it is already manager-only — which is where this panel lives.
+
+	The second thing it has to survive is a shift in progress. `consumed_qty` is 0
+	on every line until somebody writes it off, so a naive `consumed - required`
+	reports the entire order as under-used at the moment work starts, and the
+	manager watches an alarming number shrink towards zero all day.
+	"""
+
+	@staticmethod
+	def _row(code, role, required, consumed, rate=None):
+		row = {
+			"item_code": code,
+			"operator_role": role,
+			"required_qty": required,
+			"consumed_qty": consumed,
+		}
+		if rate is not None:
+			row["rate"] = rate
+		return row
+
+	def _by_role(self, rows, with_cost=True):
+		return {b["role"]: b for b in _role_deviation(rows, with_cost=with_cost)}
+
+	def test_using_more_than_planned_costs_money(self):
+		out = self._by_role([self._row("MLK", "Production", 100, 112, rate=50)])
+		self.assertEqual(out["Production"]["cost"], 600.0)
+
+	def test_using_less_than_planned_shows_as_a_saving(self):
+		out = self._by_role([self._row("MLK", "Production", 100, 94, rate=50)])
+		self.assertEqual(out["Production"]["cost"], -300.0)
+
+	def test_a_line_nobody_has_written_off_yet_is_pending_not_a_shortfall(self):
+		"""The one that would have made this panel unreadable during a shift. Zero
+		consumed means "not yet", not "used none of it"."""
+		out = self._by_role([self._row("MLK", "Production", 100, 0, rate=50)])
+		self.assertEqual(out["Production"]["cost"], 0.0)
+		self.assertEqual(out["Production"]["counted_lines"], 0)
+		self.assertEqual(out["Production"]["pending_lines"], 1)
+
+	def test_a_partial_total_says_how_much_is_missing(self):
+		"""Silently totalling half an order is the same lie as truncating a list
+		without saying so — the number looks complete because nothing says it isn't.
+		"""
+		out = self._by_role(
+			[
+				self._row("MLK", "Production", 100, 110, rate=50),
+				self._row("SGR", "Production", 20, 0, rate=10),
+			]
+		)
+		self.assertEqual(out["Production"]["counted_lines"], 1)
+		self.assertEqual(out["Production"]["pending_lines"], 1)
+
+	def test_the_two_roles_are_totalled_apart(self):
+		out = self._by_role(
+			[
+				self._row("MLK", "Production", 100, 110, rate=50),
+				self._row("LBL", "Packaging", 100, 130, rate=2),
+			]
+		)
+		self.assertEqual(out["Production"]["cost"], 500.0)
+		self.assertEqual(out["Packaging"]["cost"], 60.0)
+
+	def test_both_roles_appear_even_with_nothing_on_them(self):
+		"""A missing bucket reads as "the packer has no deviation". An empty one
+		reads as "the packer has written nothing off", which is the truth."""
+		out = self._by_role([self._row("MLK", "Production", 100, 110, rate=50)])
+		self.assertIn("Packaging", out)
+		self.assertEqual(out["Packaging"]["counted_lines"], 0)
+
+	def test_a_line_with_no_role_is_not_quietly_charged_to_production(self):
+		"""v98 leaves the role empty on purpose. Folding those into either operator
+		puts a number on a person who never agreed to it."""
+		out = self._by_role(
+			[
+				self._row("MLK", "Production", 100, 110, rate=50),
+				self._row("NEW", None, 10, 20, rate=7),
+			]
+		)
+		self.assertEqual(out["Production"]["cost"], 500.0)
+		self.assertIn(None, out)
+		self.assertEqual(out[None]["cost"], 70.0)
+
+	def test_an_empty_unassigned_bucket_is_left_out(self):
+		"""Unlike the two real roles: "nobody has decided" is worth showing only when
+		there is actually something undecided."""
+		out = self._by_role([self._row("MLK", "Production", 100, 110, rate=50)])
+		self.assertNotIn(None, out)
+
+	def test_without_cost_permission_the_total_is_absent_not_zero(self):
+		"""An operator must not be shown BOM cost, and a zero would read as "no
+		deviation" rather than "not your business"."""
+		out = self._by_role([self._row("MLK", "Production", 100, 110)], with_cost=False)
+		self.assertIsNone(out["Production"]["cost"])
+		self.assertEqual(out["Production"]["counted_lines"], 1)

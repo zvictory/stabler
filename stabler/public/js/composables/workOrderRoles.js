@@ -1,3 +1,5 @@
+import { t } from "./i18n.js";
+
 /**
  * Whether a Work Order's two shop-floor roles are in a state the backend accepts.
  *
@@ -17,4 +19,18 @@
  * the manager's Work Orders list and the operator kiosk — and the backend guard is
  * a third copy of the same rule. Two of them can drift; three certainly would.
  */
+/**
+ * The stored role value as a word a person on the floor uses.
+ *
+ * `Item.custom_operator_role` holds "Production" / "Packaging" because those are
+ * the values the API compares against; the floor calls the first one pouring. An
+ * unset role returns "" — the caller says what an undecided line means in its own
+ * context, which is not the same sentence in a material table as on a kiosk.
+ */
+export const roleLabel = (role) => {
+	if (role === "Production") return t("Pouring");
+	if (role === "Packaging") return t("Packaging");
+	return "";
+};
+
 export const halfAssigned = (row) => Boolean(row?.operator) !== Boolean(row?.packaging_operator);

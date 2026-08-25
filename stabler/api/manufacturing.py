@@ -189,6 +189,45 @@ def _unassigned_rows(rows, roles: dict[str, str]) -> list:
 	return [r for r in rows if not roles.get(r["item_code"])]
 
 
+def _role_deviation(rows, with_cost: bool) -> list[dict]:
+	"""How far each role ran from the BOM, one bucket per role.
+
+	**Money, not quantity.** One order's materials are litres, kilograms and pieces
+	at once; a total that adds them is wrong in a way nobody reading it can see.
+	The BOM rate is the only common denominator on the row, and it is already
+	manager-only — which is exactly who this panel is for. Without that permission
+	`cost` is None rather than 0, because a zero reads as "no deviation" instead of
+	"not shown to you".
+
+	**A line nobody has written off yet is pending, not a shortfall.**
+	`consumed_qty` is 0 until somebody posts the write-off, so counting those would
+	report the whole order as under-used the moment work begins and then walk the
+	number back all day. They are counted separately and said out loud, so a total
+	built from half an order cannot pass for a total built from all of it.
+
+	The two real roles always appear, empty or not: a missing bucket reads as "no
+	deviation on that side", an empty one reads as "nothing written off there".
+	The undecided bucket appears only when something is actually undecided —
+	folding those lines into either operator would put a number on a person who
+	never agreed to it, and v98 leaves the role empty on purpose.
+	"""
+	buckets: dict = {}
+	for role in _WO_FIELD_ROLE.values():
+		buckets[role] = {"role": role, "counted_lines": 0, "pending_lines": 0, "cost": 0.0}
+	for row in rows:
+		role = row.get("operator_role") or None
+		bucket = buckets.setdefault(role, {"role": role, "counted_lines": 0, "pending_lines": 0, "cost": 0.0})
+		consumed = flt(row.get("consumed_qty"))
+		if not consumed:
+			bucket["pending_lines"] += 1
+			continue
+		bucket["counted_lines"] += 1
+		bucket["cost"] += (consumed - flt(row.get("required_qty"))) * flt(row.get("rate"))
+	for bucket in buckets.values():
+		bucket["cost"] = flt(bucket["cost"]) if with_cost else None
+	return [b for role, b in buckets.items() if role is not None or b["counted_lines"] or b["pending_lines"]]
+
+
 def _assert_roles_are_both_or_neither(work_order: str) -> None:
 	"""Refuse a Work Order that names one operator role and leaves the other empty.
 
@@ -716,6 +755,10 @@ def work_order_detail(name: str):
 		"wip_warehouse": doc.wip_warehouse,
 		"source_warehouse": doc.source_warehouse,
 		"company": doc.company,
+		# The deviation panel totals in money because litres, kilograms and pieces
+		# cannot be added; the reader has to know which money. A Work Order carries
+		# no currency of its own, so it is the company's.
+		"currency": frappe.get_cached_value("Company", doc.company, "default_currency"),
 		"operator": doc.get("operator") or None,
 		"packaging_operator": doc.get("packaging_operator") or None,
 		"batch_no": doc.get("custom_batch_no") or None,
@@ -737,6 +780,11 @@ def work_order_detail(name: str):
 	#: undecided line has to be visible on the screen, not defaulted onto whichever
 	#: operator happens to open the order.
 	payload["my_role"] = my_role
+	# Manager-only, and not because of the money: the panel answers "who ran over
+	# plan", which is a question about a named person's shift. `_role_deviation`
+	# withholds the cost on its own, but the whole comparison belongs upstairs.
+	if is_manager:
+		payload["role_deviation"] = _role_deviation(required, with_cost=True)
 	payload["unassigned_item_count"] = len(_unassigned_rows(required, item_roles))
 	# Managers and warehouse users stage the transfer, which is one document for the
 	# whole order, so they keep the whole list — and an undecided line is theirs.

@@ -4,7 +4,8 @@ import { storeToRefs } from "pinia";
 import { useSession } from "../../stores/session.js";
 import { call } from "../../api/client.js";
 import { t } from "../../composables/i18n.js";
-import { halfAssigned } from "../../composables/workOrderRoles.js";
+import { halfAssigned, roleLabel } from "../../composables/workOrderRoles.js";
+import { formatMoney } from "../../composables/money.js";
 import { formatDate, formatDateTime, todayIso} from "../../composables/date.js";
 import { useConfirm } from "../../composables/useConfirm.js";
 import { useToast } from "../../composables/useToast.js";
@@ -731,6 +732,7 @@ async function saveWO(submitAfter) {
 										<th class="text-end">{{ t("Required") }}</th>
 										<th class="text-end">{{ t("Transferred") }}</th>
 										<th class="text-end">{{ t("Consumed") }}</th>
+										<th>{{ t("Responsible") }}</th>
 									</tr>
 								</thead>
 								<tbody>
@@ -742,8 +744,32 @@ async function saveWO(submitAfter) {
 										<td class="text-end font-monospace">{{ formatQty(it.required_qty) }}</td>
 										<td class="text-end font-monospace text-secondary">{{ formatQty(it.transferred_qty) }}</td>
 										<td class="text-end font-monospace text-blue">{{ formatQty(it.consumed_qty) }}</td>
+										<td>
+											<span v-if="it.operator_role" class="badge bg-blue-lt">{{ roleLabel(it.operator_role) }}</span>
+											<span v-else class="small text-warning">{{ t("undecided") }}</span>
+										</td>
 									</tr>
 								</tbody>
+								<!-- One total per role, in money: the rows are litres, kilograms and
+									 pieces at once and adding those gives a number that is wrong
+									 without looking wrong. Backend decides the buckets
+									 (_role_deviation) so the split is not re-derived here. -->
+								<tfoot v-if="detail.role_deviation">
+									<tr v-for="b in detail.role_deviation" :key="b.role || 'unassigned'">
+										<td colspan="3" class="small">
+											<span class="text-secondary">{{ t("Deviation from BOM") }}:</span>
+											<b>{{ b.role ? roleLabel(b.role) : t("undecided") }}</b>
+											<span v-if="b.pending_lines" class="text-secondary ms-2">
+												{{ t("{0} line(s) not written off yet — not in this total.", [b.pending_lines]) }}
+											</span>
+										</td>
+										<td class="text-end font-monospace" :class="b.cost > 0 ? 'text-danger' : b.cost < 0 ? 'text-success' : 'text-secondary'">
+											<template v-if="b.counted_lines">{{ formatMoney(b.cost, detail.currency, user.language) }}</template>
+											<span v-else class="text-secondary">—</span>
+										</td>
+										<td></td>
+									</tr>
+								</tfoot>
 							</table>
 						</div>
 
