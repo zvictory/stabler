@@ -156,6 +156,14 @@ class TestTheDecisionIsStillVisibleWhereItIsNoLongerEditable(unittest.TestCase):
 			with self.subTest(field=field):
 				self.assertIn(f"intake.{field}", summary)
 
+	def test_the_guarantee_is_formatted_in_the_user_s_language(self):
+		"""Four of the five shipped languages group thousands with a space and
+		use a decimal comma. `formatMoney` defaults to en-US when the language
+		is left out, so an omitted argument does not fail — it quietly prints
+		one number on this screen in a format the rest of the screen does not
+		use."""
+		self.assertIn("formatMoney(intake.guarantee_amount, currency, user.language)", INTAKE)
+
 	def test_it_says_where_the_fields_went(self):
 		"""A control that disappears with no explanation reads as a bug, and
 		the user's next move is to file one."""

@@ -316,7 +316,7 @@ watch(() => props.deal, load, { immediate: true });
 				>{{ intake.go_no_go === "go" ? t("Go") : t("No-go") }}</span>
 				<span v-if="intake.guarantee_amount" class="text-secondary">
 					{{ t("Guarantee") }}
-					<span class="fw-semibold">{{ formatMoney(intake.guarantee_amount, currency) }}</span>
+					<span class="fw-semibold">{{ formatMoney(intake.guarantee_amount, currency, user.language) }}</span>
 					<template v-if="intake.guarantee_return">
 						· {{ t("Guarantee return") }} {{ formatDate(intake.guarantee_return) }}
 					</template>
