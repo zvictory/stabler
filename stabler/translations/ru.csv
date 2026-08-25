@@ -57,6 +57,7 @@ A password reset email will be sent. The account is disabled until the user sets
 A Payroll Attendance Summary for employee {0} and period {1} already exists: {2},
 A quotation needs at least one line.,Предложение должно содержать хотя бы одну строку.
 A rejection reason is required.,Требуется причина отклонения.
+A role left empty keeps the operator already assigned.,Пустая роль оставляет назначенного оператора без изменений.
 A selected location does not belong to this customer chain.,Выбранная локация не относится к этой цепочке клиентов.
 A status correction reason is required to move {0} back from {1} to {2}.,"Чтобы вернуть {0} с {1} на {2}, укажите причину корректировки статуса."
 A status with that name already exists.,
@@ -76,6 +77,7 @@ A valid veterinary certificate is required.,Требуется действую�
 "A ≤ {0}%, B ≤ {1}%, C rest — by revenue.","A ≤ {0}%, B ≤ {1}%, C прочее — по выручке."
 "A ≤ {0}%, B ≤ {1}%, C rest — by spend.","A ≤ {0}%, B ≤ {1}%, C прочее — по расходам."
 "A ≤ {0}%, B ≤ {1}%, C rest — by {2}. Submitted; returns netted.","A ≤ {0}%, B ≤ {1}%, C прочее — по {2}. Проведённые; возвраты нетто."
+Already {0},Уже {0}
 AR balance per customer as of the selected date — click a row to see the ledger behind the balance.,"Дебиторская задолженность по каждому клиенту на выбранную дату — нажмите на строку, чтобы увидеть лежащий за ней регистр."
 Abbr,Сокр.
 Absent,Отсутствует
@@ -83,12 +85,16 @@ Add at least one cash desk before switching {0} to the V1 engine: V1 reads every
 Agreement {0} cannot move from {1} to {2}.,Договор {0} не может перейти из состояния {1} в {2}.
 Agreement {0} is closed ({1}) and cannot be rescheduled.,Договор {0} закрыт ({1}) и не может быть перепланирован.
 "Add at least one cash desk for {0}: every cash account comes from this table, and without a row the register desk cannot take a transfer.","Добавьте хотя бы одну кассу для {0}: каждый счёт наличных берётся из этой таблицы, и без строки касса регистрации не сможет принять перевод."
+Assign,Назначить
 Assign operators,Назначить операторов
+Belongs to another company,Принадлежит другой компании
 "Box counts cannot be saved on this site: {0} missing on {1}. An administrator must re-run patch {2}; bench migrate will not, it has already run once.",На этом сайте нельзя сохранить количество коробок: {0} отсутствует в {1}. Администратор должен повторно выполнить патч {2}; bench migrate этого не сделает — он уже выполнялся.
 Apply to all lines,Применить ко всем строкам
 Background jobs are not running. Queued and scheduled work is paused — tell an administrator.,Фоновые задачи не выполняются. Очередь и расписание приостановлены — сообщите администратору.
 Check the code,Проверить код
+Choose at least one operator to assign.,Выберите хотя бы одного оператора для назначения.
 Clear form,Очистить форму
+Closed,Закрыт
 Credit ({currency}),Кредит ({currency})
 Debit ({currency}),Дебет ({currency})
 Debits equal credits in {currency}.,Дебет равен кредиту в {currency}.
@@ -102,6 +108,8 @@ I have written it down,Код записан
 Journal entry,Запись в журнале
 Legacy — journal entry screens,Legacy — экраны журнальных проводок
 Lines disagree,Строки расходятся
+No longer exists,Больше не существует
+Not changed:,Не изменены:
 Not ready — this desk cannot take or hand over a transfer.,"Не готова — эта касса не может ни принять, ни выдать перевод."
 Nothing on this page is read from a record,Ни одно значение на этой странице не читается из записи
 One person cannot hold both operator roles on the same Work Order.,Один человек не может занимать обе роли оператора в одном производственном заказе.
@@ -109,6 +117,7 @@ Only an open agreement can be terminated. {0} is {1}.,Закрыть можно 
 Only the remittance desk can verify a pickup code.,Проверить код получения может только касса переводов.
 Open draft {name},Открыть черновик {name}
 Open in a new tab,Открыть в новой вкладке
+Operators,Операторы
 "Overdue cannot be answered as of a past date: an invoice's outstanding amount is its balance today, not its balance then.","«Просрочено» нельзя определить на прошлую дату: остаток по счёту — это его сальдо сегодня, а не сальдо на тот момент."
 Packaging operator,Оператор упаковки
 Pay refund cash,Выдать наличные по возврату
@@ -120,6 +129,8 @@ Receivable as of {0},Дебиторская задолженность на {0}
 Refresh the rate for this date,Обновить курс на эту дату
 Remittance engine,Движок переводов
 Same as your last transfer,Как в прошлом переводе
+Select at least one Work Order.,Выберите хотя бы один производственный заказ.
+Selected work orders: {0},Выбрано заказов: {0}
 Terminated by {0}: {1},Закрыт пользователем {0}: {1}
 The destination desk ({branch}) has no {currency} cash account — add it in Remittance Settings before registering.,У кассы назначения ({branch}) нет счёта в {currency} — добавьте его в настройках переводов до регистрации.
 The pickup code was refused.,Код получения отклонён.
@@ -5953,6 +5964,7 @@ undecided,не решено
 {0} tender lots are not linked to a tender.,{0} лотов тендера не привязаны к тендеру.
 {0} uses {1}; this {2} advance must be paid from a {2} account.,{0} использует {1}; этот аванс в {2} должен быть оплачен со счёта в {2}.
 {0} will be permanently deleted. This cannot be undone.,{0} будет удалён навсегда. Это нельзя отменить.
+{0} would hold both roles here,{0} занял бы обе роли здесь
 "{0} · {1}: {2} boxes / {3} kg allocated, {4} boxes / {5} kg remaining","{0} · {1}: распределено {2} кор. / {3} кг, остаток {4} кор. / {5} кг"
 {0}: discount_amount cannot be negative,{0}: discount_amount не может быть отрицательным
 {0}: discount_percentage must be between 0 and 100,{0}: discount_percentage должен быть между 0 и 100

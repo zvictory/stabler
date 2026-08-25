@@ -34,6 +34,7 @@ from stabler.api.manufacturing import (
 	_assert_may_consume,
 	_clear_finish_draft,
 	_material_consumption_enabled,
+	assign_work_order_operators_bulk,
 	discard_finish_draft,
 	list_work_orders,
 	save_finish_draft,
@@ -341,3 +342,101 @@ class TestTheDraftSurvivesTheOperator(FrappeTestCase):
 		frappe.set_user("Administrator")
 		_clear_finish_draft(self.wo)
 		self.assertIsNone(self._detail_as(POURER)["finish_draft"])
+
+
+@unittest.skipUnless(
+	frappe.db.table_exists("Work Order") and frappe.db.has_column("Work Order", "packaging_operator"),
+	"v97 has not run on this site — nothing to assign",
+)
+class TestBulkAssignAgainstRealOrders(FrappeTestCase):
+	"""The partition is proved pure elsewhere; this proves the endpoint writes what
+	the partition decided and does not go on to write what it refused.
+
+	The order's `status` is forced open for the duration of each test and put back
+	afterwards. Every Work Order on a fresh test site is Completed, and the endpoint
+	is right to refuse those — so without this the whole class would only ever prove
+	that a finished order is left alone, which the pure tests already say. The write
+	is to the status field the partition actually reads, at docstatus 1, restored in
+	`tearDown` together with the operator pair.
+	"""
+
+	@classmethod
+	def setUpClass(cls):
+		super().setUpClass()
+		frappe.set_user("Administrator")
+		_ensure_user(POURER)
+		_ensure_user(PACKER)
+		_ensure_user(STRANGER)
+		cls.wo = _a_submitted_work_order()
+
+	def setUp(self):
+		if not self.wo:
+			self.skipTest("no submitted Work Order on this site")
+		frappe.set_user("Administrator")
+		self.company = frappe.db.get_value("Work Order", self.wo, "company")
+		self._before = frappe.db.get_value(
+			"Work Order", self.wo, ["operator", "packaging_operator", "status"], as_dict=True
+		)
+		frappe.db.set_value("Work Order", self.wo, "status", "In Process")
+
+	def tearDown(self):
+		for field, value in (self._before or {}).items():
+			frappe.db.set_value("Work Order", self.wo, field, value)
+		frappe.db.commit()
+
+	def _pair(self):
+		return frappe.db.get_value("Work Order", self.wo, ["operator", "packaging_operator"], as_dict=True)
+
+	def test_both_roles_land_on_the_order(self):
+		out = assign_work_order_operators_bulk(
+			self.company, [self.wo], operator=POURER, packaging_operator=PACKER
+		)
+		self.assertEqual(out["assigned"], [self.wo])
+		self.assertEqual(out["skipped"], [])
+		self.assertEqual(self._pair(), {"operator": POURER, "packaging_operator": PACKER})
+
+	def test_filling_one_box_does_not_wipe_the_other_role(self):
+		"""The whole reason bulk needs its own write rule. If this regresses, a shift
+		lead assigning pourers to a day's orders removes every packer on them, and
+		nothing in the response says so."""
+		assign_work_order_operators_bulk(self.company, [self.wo], operator=POURER, packaging_operator=PACKER)
+		assign_work_order_operators_bulk(self.company, [self.wo], operator=STRANGER)
+		self.assertEqual(self._pair(), {"operator": STRANGER, "packaging_operator": PACKER})
+
+	def test_the_same_person_in_both_roles_is_refused_per_order_not_thrown(self):
+		"""One clashing order must not cost the manager the other fourteen writes,
+		so this comes back as a refusal in the payload and not as an exception."""
+		assign_work_order_operators_bulk(self.company, [self.wo], operator=POURER, packaging_operator=PACKER)
+		out = assign_work_order_operators_bulk(self.company, [self.wo], operator=PACKER)
+		self.assertEqual(out["assigned"], [])
+		self.assertIn(PACKER, out["skipped"][0]["reason"])
+		self.assertEqual(self._pair(), {"operator": POURER, "packaging_operator": PACKER})
+
+	def test_a_finished_order_is_left_alone(self):
+		"""The refusal the class otherwise forces open, tested on purpose."""
+		frappe.db.set_value("Work Order", self.wo, "status", "Completed")
+		out = assign_work_order_operators_bulk(self.company, [self.wo], operator=POURER)
+		self.assertEqual(out["assigned"], [])
+		self.assertIn("Completed", out["skipped"][0]["reason"])
+		self.assertIsNone(self._pair()["operator"])
+
+	def test_a_company_that_is_not_the_orders_company_writes_nothing(self):
+		"""Tenant isolation, checked at the endpoint rather than in the partition.
+		Either the company guard throws before the query or the partition refuses
+		the id — both are correct, and the invariant either way is that the order
+		is not written."""
+		try:
+			out = assign_work_order_operators_bulk("Not A Real Company", [self.wo], operator=POURER)
+		except Exception:
+			pass
+		else:
+			self.assertEqual(out["assigned"], [])
+		self.assertIsNone(self._pair()["operator"])
+
+	def test_an_empty_selection_is_refused_rather_than_reported_as_success(self):
+		with self.assertRaises(frappe.ValidationError):
+			assign_work_order_operators_bulk(self.company, [], operator=POURER)
+
+	def test_choosing_nobody_is_refused_rather_than_clearing_the_selection(self):
+		with self.assertRaises(frappe.ValidationError):
+			assign_work_order_operators_bulk(self.company, [self.wo])

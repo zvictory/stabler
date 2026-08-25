@@ -56,6 +56,7 @@ A password reset email will be sent. The account is disabled until the user sets
 A Payroll Attendance Summary for employee {0} and period {1} already exists: {2},
 A quotation needs at least one line.,Bir teklifte en az bir satır olmalı.
 A rejection reason is required.,Ret nedeni gereklidir.
+A role left empty keeps the operator already assigned.,"Boş bırakılan rol, atanmış operatörü olduğu gibi bırakır."
 A selected location does not belong to this customer chain.,Seçilen konum bu müşteri zincirine ait değil.
 A status correction reason is required to move {0} back from {1} to {2}.,{0} kaydını {1} durumundan {2} durumuna geri almak için bir durum düzeltme nedeni gereklidir.
 A status with that name already exists.,
@@ -75,6 +76,7 @@ A valid veterinary certificate is required.,Geçerli bir veteriner sertifikası 
 "A ≤ {0}%, B ≤ {1}%, C rest — by revenue.","A ≤ {0}%, B ≤ {1}%, C diğer — gelir bazında."
 "A ≤ {0}%, B ≤ {1}%, C rest — by spend.","A ≤ {0}%, B ≤ {1}%, C diğer — harcama bazında."
 "A ≤ {0}%, B ≤ {1}%, C rest — by {2}. Submitted; returns netted.","A ≤ {0}%, B ≤ {1}%, C diğer — {2} bazında. Onaylanmış; iadeler netleştirilmiş."
+Already {0},Zaten {0}
 AR balance per customer as of the selected date — click a row to see the ledger behind the balance.,"Seçilen tarih itibarıyla müşteri başına alacak — satıra tıklayın, bakiyenin ardındaki defteri görün."
 Abbr,Kısaltma
 Absent,Devamsız
@@ -82,12 +84,16 @@ Add at least one cash desk before switching {0} to the V1 engine: V1 reads every
 Agreement {0} cannot move from {1} to {2}.,{0} sözleşmesi {1} durumundan {2} durumuna geçemez.
 Agreement {0} is closed ({1}) and cannot be rescheduled.,{0} sözleşmesi kapalı ({1}) ve yeniden planlanamaz.
 "Add at least one cash desk for {0}: every cash account comes from this table, and without a row the register desk cannot take a transfer.","{0} için en az bir kasa masası ekleyin: her nakit hesabı bu tablodan gelir ve satır olmadan kayıt masası havale kabul edemez."
+Assign,Ata
 Assign operators,Operatörleri ata
+Belongs to another company,Başka bir şirkete ait
 "Box counts cannot be saved on this site: {0} missing on {1}. An administrator must re-run patch {2}; bench migrate will not, it has already run once.","Bu sitede koli sayıları kaydedilemez: {1} üzerinde {0} yok. Bir yönetici {2} patch'ini yeniden çalıştırmalı; bench migrate bunu yapmaz, o bir kez çalıştı."
 Apply to all lines,Tüm satırlara uygula
 Background jobs are not running. Queued and scheduled work is paused — tell an administrator.,Arka plan işleri çalışmıyor. Kuyruktaki ve zamanlanmış işler durdu — bir yöneticiye haber verin.
 Check the code,Kodu doğrula
+Choose at least one operator to assign.,Atamak için en az bir operatör seçin.
 Clear form,Formu temizle
+Closed,Kapalı
 Credit ({currency}),Alacak ({currency})
 Debit ({currency}),Borç ({currency})
 Debits equal credits in {currency}.,{currency} cinsinden borç ile alacak eşit.
@@ -101,6 +107,8 @@ I have written it down,Yazdım
 Journal entry,Yevmiye kaydı
 Legacy — journal entry screens,Legacy — yevmiye kaydı ekranları
 Lines disagree,Satırlar farklı
+No longer exists,Artık mevcut değil
+Not changed:,Değiştirilmedi:
 Not ready — this desk cannot take or hand over a transfer.,Hazır değil — bu kasa transferi ne alabilir ne verebilir.
 Nothing on this page is read from a record,Bu sayfadaki hiçbir değer bir kayıttan okunmuyor
 One person cannot hold both operator roles on the same Work Order.,Bir kişi aynı iş emrinde her iki operatör rolünü birden üstlenemez.
@@ -108,6 +116,7 @@ Only an open agreement can be terminated. {0} is {1}.,Yalnızca açık bir sözl
 Only the remittance desk can verify a pickup code.,Teslim kodunu yalnızca havale gişesi doğrulayabilir.
 Open draft {name},{name} taslağını aç
 Open in a new tab,Yeni sekmede aç
+Operators,Operatörler
 "Overdue cannot be answered as of a past date: an invoice's outstanding amount is its balance today, not its balance then.","«Vadesi geçmiş» geçmiş bir tarihe göre yanıtlanamaz: faturanın kalanı bugünkü bakiyesidir, o günkü değil."
 Packaging operator,Paketleme operatörü
 Pay refund cash,İade nakdini öde
@@ -119,6 +128,8 @@ Receivable as of {0},{0} itibarıyla alacak
 Refresh the rate for this date,Bu tarih için kuru yenile
 Remittance engine,Transfer motoru
 Same as your last transfer,Son transferinizdeki gibi
+Select at least one Work Order.,En az bir iş emri seçin.
+Selected work orders: {0},Seçilen iş emri: {0}
 Terminated by {0}: {1},{0} tarafından kapatıldı: {1}
 The destination desk ({branch}) has no {currency} cash account — add it in Remittance Settings before registering.,Hedef kasada ({branch}) {currency} hesabı yok — kaydetmeden önce Havale Ayarları'ndan ekleyin.
 The pickup code was refused.,Teslim kodu reddedildi.
@@ -5942,6 +5953,7 @@ undecided,karara bağlanmadı
 {0} tender lots are not linked to a tender.,{0} ihale kalemi bir ihaleye bağlı değil.
 {0} uses {1}; this {2} advance must be paid from a {2} account.,{0} {1} kullanıyor; bu {2} avansı bir {2} hesabından ödenmelidir.
 {0} will be permanently deleted. This cannot be undone.,{0} kalıcı olarak silinecek. Bu geri alınamaz.
+{0} would hold both roles here,{0} burada her iki rolü de üstlenirdi
 "{0} · {1}: {2} boxes / {3} kg allocated, {4} boxes / {5} kg remaining","{0} · {1}: {2} kutu / {3} kg tahsis edildi, kalan {4} kutu / {5} kg"
 {0}: discount_amount cannot be negative,{0}: discount_amount negatif olamaz
 {0}: discount_percentage must be between 0 and 100,{0}: discount_percentage 0 ile 100 arasında olmalıdır

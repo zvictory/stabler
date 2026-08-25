@@ -56,6 +56,7 @@ A password reset email will be sent. The account is disabled until the user sets
 A Payroll Attendance Summary for employee {0} and period {1} already exists: {2},
 A quotation needs at least one line.,Таклифда камида битта қатор бўлиши керак.
 A rejection reason is required.,Рад этиш сабаби талаб қилинади.
+A role left empty keeps the operator already assigned.,Бўш қолдирилган рол тайинланган операторни ўзгартирмайди.
 A selected location does not belong to this customer chain.,Танланган манзил ушбу мижозлар занжирига тегишли эмас.
 A status correction reason is required to move {0} back from {1} to {2}.,{0} ни {1} дан {2} га қайтариш учун ҳолатни тузатиш сабаби керак.
 A status with that name already exists.,
@@ -75,6 +76,7 @@ A valid veterinary certificate is required.,Амалдаги ветеринар�
 "A ≤ {0}%, B ≤ {1}%, C rest — by revenue.","А ≤ {0}%, B ≤ {1}%, C қолган — тушум бўйича."
 "A ≤ {0}%, B ≤ {1}%, C rest — by spend.","А ≤ {0}%, B ≤ {1}%, C қолган — харажат бўйича."
 "A ≤ {0}%, B ≤ {1}%, C rest — by {2}. Submitted; returns netted.","А ≤ {0}%, B ≤ {1}%, C қолган — {2} бўйича. Тасдиқланган; қайтаришлар нетто."
+Already {0},Аллақачон {0}
 AR balance per customer as of the selected date — click a row to see the ledger behind the balance.,Танланган санадаги мижозлар бўйича дебиторлик қарзи — қатор устига босинг ва унинг ортидаги дафтарни кўринг.
 Abbr,Қисқартма
 Absent,Йўқ
@@ -82,12 +84,16 @@ Add at least one cash desk before switching {0} to the V1 engine: V1 reads every
 Agreement {0} cannot move from {1} to {2}.,{0} шартномаси {1} ҳолатидан {2} ҳолатига ўта олмайди.
 Agreement {0} is closed ({1}) and cannot be rescheduled.,{0} шартномаси ёпиқ ({1}) ва қайта режалаштириб бўлмайди.
 "Add at least one cash desk for {0}: every cash account comes from this table, and without a row the register desk cannot take a transfer.","{0} учун камида битта касса қўшинг: ҳар бир нақд ҳисоб шу жадвалдан олинади ва сатрсиз рўйхатга олиш кассаси ўтказмани қабул қила олмайди."
+Assign,Тайинлаш
 Assign operators,Операторларни тайинлаш
+Belongs to another company,Бошқа компанияга тегишли
 "Box counts cannot be saved on this site: {0} missing on {1}. An administrator must re-run patch {2}; bench migrate will not, it has already run once.","Бу сайтда қути сонини сақлаб бўлмайди: {1} да {0} йўқ. Администратор {2} патчини қайта ишга тушириши керак; bench migrate буни қилмайди, у аллақачон ишлаган."
 Apply to all lines,Барча қаторларга қўллаш
 Background jobs are not running. Queued and scheduled work is paused — tell an administrator.,Фон вазифалари ишламаяпти. Навбатдаги ва режалаштирилган ишлар тўхтатилди — администраторга хабар беринг.
 Check the code,Кодни текшириш
+Choose at least one operator to assign.,Тайинлаш учун камида битта оператор танланг.
 Clear form,Формани тозалаш
+Closed,Ёпилган
 Credit ({currency}),Кредит ({currency})
 Debit ({currency}),Дебет ({currency})
 Debits equal credits in {currency}.,{currency} бўйича дебет кредитга тенг.
@@ -101,6 +107,8 @@ I have written it down,Ёзиб олдим
 Journal entry,Журнал ёзуви
 Legacy — journal entry screens,Legacy — журнал ёзуви экранлари
 Lines disagree,Қаторлар мос келмайди
+No longer exists,Энди мавжуд эмас
+Not changed:,Ўзгартирилмади:
 Not ready — this desk cannot take or hand over a transfer.,"Тайёр эмас — бу касса ўтказмани на қабул қила олади, на бера олади."
 Nothing on this page is read from a record,Бу саҳифадаги ҳеч бир қиймат ёзувдан ўқилмайди
 One person cannot hold both operator roles on the same Work Order.,Бир киши битта ишлаб чиқариш буюртмасида иккала оператор ролини эгаллай олмайди.
@@ -108,6 +116,7 @@ Only an open agreement can be terminated. {0} is {1}.,Фақат очиқ шар
 Only the remittance desk can verify a pickup code.,Олиб кетиш кодини фақат пул ўтказмалари кассаси текшира олади.
 Open draft {name},{name} қораламасини очиш
 Open in a new tab,Янги ички ойнада очиш
+Operators,Операторлар
 "Overdue cannot be answered as of a past date: an invoice's outstanding amount is its balance today, not its balance then.","«Муддати ўтган» ўтмишдаги санага аниқланмайди: ҳисоб-фактуранинг қолдиғи бугунги қолдиқдир, ўша кунги эмас."
 Packaging operator,Қадоқлаш оператори
 Pay refund cash,Қайтариш нақдини бериш
@@ -119,6 +128,8 @@ Receivable as of {0},{0} санасидаги дебиторлик қарзи
 Refresh the rate for this date,Ушбу санага курсни янгилаш
 Remittance engine,Ўтказма механизми
 Same as your last transfer,Охирги ўтказмангиздаги каби
+Select at least one Work Order.,Камида битта ишлаб чиқариш буюртмасини танланг.
+Selected work orders: {0},Танланган буюртмалар: {0}
 Terminated by {0}: {1},{0} томонидан ёпилди: {1}
 The destination desk ({branch}) has no {currency} cash account — add it in Remittance Settings before registering.,Манзил кассасида ({branch}) {currency} ҳисоби йўқ — рўйхатга олишдан олдин уни Ўтказма созламаларида қўшинг.
 The pickup code was refused.,Олиб кетиш коди рад этилди.
@@ -5948,6 +5959,7 @@ undecided,ҳал қилинмаган
 {0} tender lots are not linked to a tender.,{0} та тендер лоти тендерга боғланмаган.
 {0} uses {1}; this {2} advance must be paid from a {2} account.,{0} {1} дан фойдаланади; ушбу {2} аванси {2} ҳисобидан тўланиши керак.
 {0} will be permanently deleted. This cannot be undone.,{0} бутунлай ўчирилади. Буни қайтариб бўлмайди.
+{0} would hold both roles here,{0} бу ерда иккала ролни ҳам эгалларди
 "{0} · {1}: {2} boxes / {3} kg allocated, {4} boxes / {5} kg remaining","{0} · {1}: {2} қути / {3} кг ажратилган, қолдиқ {4} қути / {5} кг"
 {0}: discount_amount cannot be negative,{0}: чегирма миқдори манфий бўла олмайди
 {0}: discount_percentage must be between 0 and 100,{0}: чегирма фоизи 0 ва 100 орасида бўлиши керак

@@ -6,7 +6,7 @@ import json
 
 import frappe
 from frappe import _
-from frappe.utils import flt, getdate, today
+from frappe.utils import cint, flt, getdate, today
 
 from stabler.api._common import _assert_can_read, _assert_can_write, _require_company
 from stabler.api.approvals import _assert_company_scope
@@ -128,6 +128,63 @@ def _assert_distinct_operators(production: str | None, packaging: str | None) ->
 	"""
 	if production and packaging and production == packaging:
 		frappe.throw(_("One person cannot hold both operator roles on the same Work Order."))
+
+
+_BULK_ASSIGN_CLOSED = ("Completed", "Closed", "Cancelled")
+
+
+def _partition_bulk_assign(names, rows, company: str) -> tuple[list[str], list[dict]]:
+	"""Split the requested ids into "will be assigned" and "will not, and here is why".
+
+	Pure and separate from the endpoint so the one property the whole gesture rests
+	on can be held without a database: **every id the caller sent comes back exactly
+	once**, in one list or the other. A sweep that quietly drops four ids out of
+	thirty returns the same cheerful success as one that touched all thirty.
+
+	A finished order is refused rather than swept. Changing the operator on a
+	Completed or Closed Work Order rewrites who is credited for a shift that is
+	already over, against which per-role consumption entries are already posted.
+	The detail panel still allows it one order at a time, which is where a
+	deliberate correction belongs.
+	"""
+	by_name = {row["name"]: row for row in rows}
+	assign: list[str] = []
+	skipped: list[dict] = []
+	seen: set[str] = set()
+	for name in names:
+		if name in seen:  # a double-clicked checkbox is one order, not two writes
+			continue
+		seen.add(name)
+		row = by_name.get(name)
+		if row is None:
+			# Absent from the query result, so nothing further down would ever
+			# mention it: thirty sent, twenty-eight assigned, two typos silent.
+			skipped.append({"name": name, "reason": _("No longer exists")})
+		elif row.get("company") != company:
+			# One app, seven businesses. A foreign id here is a bug or an attempt,
+			# and either way the answer is to name it rather than drop it.
+			skipped.append({"name": name, "reason": _("Belongs to another company")})
+		elif cint(row.get("docstatus")) == 2:
+			# `docstatus` is the truth about a cancelled document; `status` is a
+			# field somebody can leave stale.
+			skipped.append({"name": name, "reason": _("Cancelled")})
+		elif row.get("status") in _BULK_ASSIGN_CLOSED:
+			skipped.append({"name": name, "reason": _("Already {0}").format(_(row["status"]))})
+		else:
+			assign.append(name)
+	return assign, skipped
+
+
+def _bulk_pair_after(row, assignment: dict) -> dict:
+	"""The operator pair an order would end up with once the bulk dialog is applied.
+
+	A role the manager left empty keeps whoever is already on the order. This is
+	deliberately unlike `assign_work_order_operator`, where an empty box clears the
+	role: on one order that is the "— Remove operator —" choice, but across a
+	selection it would read a manager's silence about packing as an instruction to
+	strip every packer.
+	"""
+	return {field: assignment.get(field) or row.get(field) for field in _WO_FIELD_ROLE}
 
 
 def _require_own_work_order(name: str) -> None:
@@ -1255,6 +1312,84 @@ def assign_work_order_operator(name: str, operator: str = "", packaging_operator
 		if field in _wo_operator_columns():
 			frappe.db.set_value("Work Order", name, field, who)
 	return {"name": name, **assignment}
+
+
+@frappe.whitelist()
+def assign_work_order_operators_bulk(company: str, names, operator: str = "", packaging_operator: str = ""):
+	"""Put the same operator pair on many Work Orders in one gesture. Manager-only.
+
+	A shift lead sets one pouring/packing pair per line per shift. The gesture that
+	matches that is "these fifteen orders, these two people", not fifteen trips
+	through a detail panel — which is the version that gets abandoned halfway and
+	leaves half a shift unassigned.
+
+	Two rules make the sweep safe to hand somebody:
+
+	* **A role left empty is left alone**, unlike the single-order endpoint where an
+	  empty box clears it. Silence about packing is not an instruction to remove
+	  every packer.
+	* **Nothing is skipped silently.** Finished orders, ids from another company,
+	  ids that no longer exist and orders where the new name would land the same
+	  person in both roles all come back in `skipped` with a reason, and the caller
+	  shows them. A bulk action that reports only its successes cannot be told apart
+	  from one that worked.
+
+	Partial success is the intended outcome, not a failure mode: fourteen assigned
+	and one refused is a better answer than a throw that rolls back all fifteen
+	because one order was closed yesterday.
+	"""
+	_assert_company_scope(company)  # tenant isolation: reject a foreign company arg
+	_require_company(company)
+	_require_mfg_manager()
+
+	requested = names if isinstance(names, list) else json.loads(names or "[]")
+	requested = [str(name) for name in requested if name]
+	if not requested:
+		frappe.throw(_("Select at least one Work Order."))
+
+	assignment = {"operator": operator or None, "packaging_operator": packaging_operator or None}
+	if not any(assignment.values()):
+		# Clearing both roles across a selection would strand a shift's worth of
+		# orders in one click, and no floor workflow asks for it. Removing an
+		# operator stays a per-order decision.
+		frappe.throw(_("Choose at least one operator to assign."))
+	for who in assignment.values():
+		if who:
+			if not frappe.db.exists("User", who):
+				frappe.throw(_("Unknown user: {0}").format(who))
+	_assert_distinct_operators(assignment["operator"], assignment["packaging_operator"])
+	for field, who in assignment.items():
+		if who:
+			_require_wo_operator_column(field)
+
+	columns = _wo_operator_columns()
+	rows = frappe.get_all(
+		"Work Order",
+		filters={"name": ["in", requested]},
+		fields=["name", "company", "status", "docstatus", *columns],
+	)
+	assign, skipped = _partition_bulk_assign(requested, rows, company)
+
+	by_name = {row["name"]: row for row in rows}
+	writable = {field: who for field, who in assignment.items() if who and field in columns}
+	assigned: list[str] = []
+	for name in assign:
+		after = _bulk_pair_after(by_name[name], assignment)
+		if after["operator"] and after["operator"] == after["packaging_operator"]:
+			# Only reachable when one box was filled and the counterpart already
+			# held that person — a clash the manager could not see from the list.
+			skipped.append(
+				{
+					"name": name,
+					"reason": _("{0} would hold both roles here").format(after["operator"]),
+				}
+			)
+			continue
+		_assert_can_write("Work Order", name, "write")
+		for field, who in writable.items():
+			frappe.db.set_value("Work Order", name, field, who)
+		assigned.append(name)
+	return {"assigned": assigned, "skipped": skipped}
 
 
 # ----- Batch / lot traceability (Faz 4a) -----------------------------------
