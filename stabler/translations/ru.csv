@@ -1,3 +1,4 @@
+"The existing material request {0} could not be withdrawn, so the plan was not saved. Sort that request out first.","Существующую заявку на материалы {0} не удалось отозвать, поэтому план не сохранён. Сначала разберитесь с этой заявкой."
 "These materials are the other operator's to plan, not yours: {0}","Эти материалы планирует другой оператор, а не вы: {0}"
 "This order's material has already been written off per operator, but 'Allow Continuous Material Consumption' is switched off in Manufacturing Settings — finishing now would count that material a second time. Ask a manager to switch it back on.","Материал этого заказа уже списан по операторам, но «Allow Continuous Material Consumption» в настройках производства выключен — завершение сейчас посчитает этот материал второй раз. Попросите руководителя включить его обратно."
 #,#

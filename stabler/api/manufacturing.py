@@ -2097,7 +2097,13 @@ def create_material_request_for_tomorrow_wo(doc, method=None):
 		return
 
 	mr = frappe.new_doc("Material Request")
-	mr.material_request_type = "Transfer"
+	# D8 (P0): this was "Transfer", which is not one of the six values the doctype
+	# offers, so `insert` raised and the Work Order could not be SUBMITTED at all —
+	# the manager lost the whole form, not a click. Measured genesis-test
+	# 2026-08-26: Purpose cannot be "Transfer". It should be one of "Purchase",
+	# "Material Transfer", "Material Issue", "Manufacture", "Subcontracting",
+	# "Customer Provided".
+	mr.material_request_type = "Material Transfer"
 	mr.transaction_date = today()
 	mr.company = doc.company
 	mr.schedule_date = doc.planned_start_date
@@ -2225,7 +2231,25 @@ def update_work_order_materials(work_order: str, materials: str):
 	from frappe.utils import add_days, getdate, today
 
 	tomorrow = getdate(add_days(today(), 1))
-	if doc.wip_warehouse and getdate(doc.planned_start_date) >= tomorrow:
+	forward_dated = doc.wip_warehouse and getdate(doc.planned_start_date) >= tomorrow
+
+	# D9 (P0): this block cancels SUBMITTED Material Requests as a side effect of
+	# someone correcting a quantity. That is a manager's decision — an approved
+	# order to a warehouse is not an operator's to withdraw, and until D8 was
+	# fixed the invalid purpose literal below was the only thing stopping the loop
+	# from ever completing. An operator's plan change now lands and the request is
+	# left standing; said out loud on the document, because a stale request nobody
+	# is told about is its own quiet failure.
+	if forward_dated and not is_manager:
+		if frappe.db.exists("Material Request", {"work_order": doc.name, "docstatus": ["!=", 2]}):
+			_log_wo_event(
+				work_order,
+				f"Plan changed by {frappe.session.user}; the existing material request was left as it "
+				"stands. A manager must refresh it.",
+			)
+		return {"ok": True}
+
+	if forward_dated:
 		# Cancel existing draft/submitted Material Request for this WO and create a fresh one with updated shortages
 		existing_mrs = frappe.get_all(
 			"Material Request", filters={"work_order": doc.name, "docstatus": ["!=", 2]}, pluck="name"
@@ -2237,12 +2261,27 @@ def update_work_order_materials(work_order: str, materials: str):
 					mr_doc.cancel()
 				elif mr_doc.docstatus == 0:
 					frappe.delete_doc("Material Request", mr_name)
-			except Exception:
-				pass
+			except Exception as e:
+				# D9 (P0): this was `pass`. The loop exists to clear the way for a
+				# fresh request, so continuing past a failed cancel leaves the old
+				# one live and puts a second one beside it — the same material
+				# ordered twice, from one edit, with nothing said. The throw rolls
+				# back whatever the loop already cancelled, which is the only
+				# consistent outcome available here.
+				frappe.log_error(
+					title="Kassa/mfg: could not clear a Material Request",
+					message=f"wo={doc.name} mr={mr_name} err={e}",
+				)
+				frappe.throw(
+					_(
+						"The existing material request {0} could not be withdrawn, so the plan "
+						"was not saved. Sort that request out first."
+					).format(mr_name)
+				)
 
 		# Create fresh MR
 		mr = frappe.new_doc("Material Request")
-		mr.material_request_type = "Transfer"
+		mr.material_request_type = "Material Transfer"
 		mr.transaction_date = today()
 		mr.company = doc.company
 		mr.schedule_date = doc.planned_start_date

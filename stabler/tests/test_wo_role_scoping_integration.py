@@ -23,9 +23,10 @@ from __future__ import annotations
 
 import json
 import unittest
+from pathlib import Path
 
 import frappe
-from frappe.utils import flt
+from frappe.utils import add_days, flt, today
 
 try:
 	from frappe.tests.utils import FrappeTestCase
@@ -40,6 +41,7 @@ from stabler.api.manufacturing import (
 	_material_consumption_enabled,
 	_unconsumed_material_rows,
 	assign_work_order_operators_bulk,
+	create_material_request_for_tomorrow_wo,
 	discard_finish_draft,
 	list_work_orders,
 	save_finish_draft,
@@ -480,6 +482,112 @@ class TestRoleScopingOnRealColumns(FrappeTestCase):
 		if not any(r["item_code"] == self.codes[0] for r in _unconsumed_material_rows(self.wo) or []):
 			self.skipTest(f"{self.wo} has nothing pending even after clearing consumed_qty")
 		_assert_sweep_is_acknowledged(self.wo, "Production", True)  # must not raise
+
+
+@unittest.skipUnless(frappe.db.table_exists("Work Order"), "no Work Order table on this site")
+class TestAForwardDatedOrderCanActuallyBeSubmitted(FrappeTestCase):
+	"""D8 (P0) — nothing to do with the two-operator split, but on the ground it
+	was built on: `create_material_request_for_tomorrow_wo` is wired to Work Order
+	`on_submit` in hooks.py, and it set `material_request_type = "Transfer"`,
+	which is not one of the six values the doctype offers. Measured
+	genesis-test 2026-08-26:
+
+	    Purpose cannot be "Transfer". It should be one of "Purchase",
+	    "Material Transfer", "Material Issue", "Manufacture", "Subcontracting",
+	    "Customer Provided"
+
+	So the module did not support ordinary planning. The manager hits the wall on
+	SUBMIT, not on save — the cost is the whole form they filled in, not a click.
+
+	The hook has a `if not doc.wip_warehouse: return` branch that looks like an
+	escape, and is unreachable: ERPNext calls `validate_warehouse()` from
+	`on_submit` and makes `wip_warehouse` mandatory (work_order.py:786-793) unless
+	`skip_transfer` or `track_semi_finished_goods`, and Stabler sets neither
+	anywhere. That branch is dead by our configuration, not by ERPNext's design.
+	"""
+
+	@classmethod
+	def setUpClass(cls):
+		super().setUpClass()
+		cls.wo = _a_submitted_work_order()
+
+	def setUp(self):
+		if not self.wo:
+			self.skipTest("no submitted Work Order on this site")
+		frappe.set_user("Administrator")
+
+	def test_the_type_is_one_the_doctype_actually_offers(self):
+		"""The cheap forever-guard. Read off the live meta rather than hardcoded,
+		so it keeps holding when ERPNext changes the list — and it is the check
+		whose absence let a value that matches nothing sit in two places for
+		months, on a path no test ever reached."""
+		import re
+
+		from stabler.api import manufacturing
+
+		options = (
+			frappe.get_meta("Material Request").get_field("material_request_type").options or ""
+		).split("\n")
+
+		# Scoped to a local function so the 2000-line source never becomes a frame
+		# variable — unittest prints every local on failure, and the whole module
+		# in the traceback buries the one line that matters.
+		def _literals():
+			return set(
+				re.findall(
+					r'material_request_type = "([^"]+)"',
+					Path(manufacturing.__file__).read_text(encoding="utf-8"),
+				)
+			)
+
+		used = _literals()
+		self.assertTrue(used, "no material_request_type literal found to check")
+		for value in used:
+			self.assertIn(value, options, f'"{value}" is not a Material Request purpose')
+
+	def test_a_forward_dated_order_produces_a_request_the_warehouse_can_act_on(self):
+		"""End to end through the hook itself, on a real order, with a shortage
+		forced so the request is guaranteed to have a line. Before the fix this
+		raised on `insert` and the Work Order could not be submitted at all."""
+		doc = frappe.get_doc("Work Order", self.wo)
+		if frappe.db.exists("Material Request", {"work_order": doc.name, "docstatus": ["!=", 2]}):
+			self.skipTest(f"{doc.name} already carries a Material Request; the hook returns early")
+
+		before_date = doc.planned_start_date
+		self.addCleanup(frappe.db.set_value, "Work Order", doc.name, "planned_start_date", before_date)
+		doc.planned_start_date = add_days(today(), 3)
+
+		# A shortage no warehouse can already hold, so `mr.items` is never empty and
+		# the test cannot pass by quietly creating nothing.
+		item = doc.required_items[0]
+		before_qty = flt(item.required_qty)
+		self.addCleanup(
+			frappe.db.set_value,
+			"Work Order Item",
+			{"parent": doc.name, "item_code": item.item_code},
+			"required_qty",
+			before_qty,
+		)
+		item.required_qty = before_qty + 999_999
+
+		create_material_request_for_tomorrow_wo(doc)
+
+		mr = frappe.db.get_value(
+			"Material Request",
+			{"work_order": doc.name, "docstatus": 1},
+			["name", "material_request_type"],
+			as_dict=True,
+		)
+		self.assertTrue(mr, "the hook created no submitted Material Request")
+		self.addCleanup(self._drop_mr, mr["name"])
+		self.assertEqual(mr["material_request_type"], "Material Transfer")
+
+	def _drop_mr(self, name):
+		frappe.set_user("Administrator")
+		doc = frappe.get_doc("Material Request", name)
+		if doc.docstatus == 1:
+			doc.cancel()
+		frappe.delete_doc("Material Request", name, force=True, ignore_permissions=True)
 
 
 @unittest.skipUnless(

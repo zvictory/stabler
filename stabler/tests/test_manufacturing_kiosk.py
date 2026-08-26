@@ -7,6 +7,7 @@ from unittest.mock import MagicMock, patch
 
 import frappe
 from frappe import PermissionError
+from frappe.utils import add_days, today
 
 from stabler.api.manufacturing import (
 	_SE_CONSUMPTION,
@@ -17,6 +18,7 @@ from stabler.api.manufacturing import (
 	_require_wo_draft_columns,
 	_sweep_risk_rows,
 	make_work_order_stock_entry,
+	update_work_order_materials,
 	wo_consumption_preview,
 	work_order_detail,
 )
@@ -349,7 +351,13 @@ class TestManufacturingKiosk(unittest.TestCase):
 
 		# Assert MR was created and submitted
 		mock_new_doc.assert_called_with("Material Request")
-		self.assertEqual(mock_mr.material_request_type, "Transfer")
+		# Was "Transfer" here until 2026-08-26, and that is how D8 survived: the
+		# Material Request is a MagicMock, so the assignment is never validated
+		# against the doctype and this line asserted the broken value was correct.
+		# A test can only lock in what it was told. The check that actually bites
+		# is in test_wo_role_scoping_integration.py, where a real insert either
+		# happens or raises.
+		self.assertEqual(mock_mr.material_request_type, "Material Transfer")
 		self.assertEqual(mock_mr.work_order, "WO-TOMORROW")
 		self.assertTrue(mock_mr.append.called)
 		# Assert shortage quantity (100.0 - 40.0 = 60.0) is appended
@@ -1266,6 +1274,82 @@ class TestFinishingAfterTheSettingWasSwitchedOff(unittest.TestCase):
 		has not adopted the split still works. Refusing here would take
 		manufacturing away from all of them to fix a bug they cannot have."""
 		self._finish(enabled=False, prior_entries=False)  # must not raise
+
+
+class TestPlanChangesDoNotWithdrawSubmittedRequests(unittest.TestCase):
+	"""D9 (P0) — `update_work_order_materials` cancels SUBMITTED Material Requests
+	as a side effect of somebody correcting a quantity, and swallowed every
+	failure while doing it.
+
+	Both halves matter and they fail differently. An approved order to a
+	warehouse is not an operator's to withdraw, so the cancel path is a
+	manager's. And `except Exception: pass` around the cancel meant a request
+	that would not cancel stayed live while a fresh one was created beside it —
+	the same material ordered twice, from one edit, with nothing said anywhere.
+
+	Until D8 was fixed, the invalid `material_request_type` literal further down
+	was the only thing stopping this loop from ever completing. Fixing that
+	literal alone would have armed it, which is why the three went together.
+	"""
+
+	def _edit(self, is_manager, mrs=(), cancel_raises=False):
+		doc = SimpleNamespace(
+			name="WO-00009",
+			docstatus=1,
+			status="In Process",
+			company="X",
+			wip_warehouse="WIP - X",
+			planned_start_date=add_days(today(), 3),
+			required_items=[],
+			reload=lambda: None,
+		)
+		mr = MagicMock()
+		mr.docstatus = 1
+		mr.cancel.side_effect = Exception("linked entries") if cancel_raises else None
+		with (
+			patch("stabler.api.manufacturing._require_mfg"),
+			patch("stabler.api.manufacturing._is_mfg_manager", return_value=is_manager),
+			patch("stabler.api.manufacturing._require_own_work_order"),
+			patch("stabler.api.manufacturing._lines_not_yours", return_value=([], [])),
+			patch("stabler.api.manufacturing.frappe.get_doc", return_value=doc) as get_doc,
+			patch("stabler.api.manufacturing.frappe.db.sql"),
+			patch("stabler.api.manufacturing.frappe.db.get_value", return_value=1.0),
+			patch("stabler.api.manufacturing.frappe.db.exists", return_value=bool(mrs)),
+			patch("stabler.api.manufacturing.frappe.get_all", return_value=list(mrs)),
+			patch("stabler.api.manufacturing.frappe.log_error"),
+			patch("stabler.api.manufacturing.frappe.new_doc", return_value=MagicMock()),
+			patch("stabler.api.manufacturing._log_wo_event") as log,
+		):
+			get_doc.side_effect = lambda dt, *a, **k: mr if dt == "Material Request" else doc
+			out = update_work_order_materials("WO-00009", '[{"item_code": "RAW-MLK", "required_qty": 5}]')
+			return out, mr, log
+
+	def test_an_operator_does_not_withdraw_the_warehouses_approved_order(self):
+		out, mr, _ = self._edit(is_manager=False, mrs=["MAT-MR-0001"])
+		mr.cancel.assert_not_called()
+		self.assertEqual(out, {"ok": True})
+
+	def test_the_operator_is_told_the_request_was_left_standing(self):
+		"""A stale request nobody is told about is its own quiet failure — the
+		plan says one thing and the order to the warehouse says another, and the
+		person who caused it walked away believing they had fixed it."""
+		_, _, log = self._edit(is_manager=False, mrs=["MAT-MR-0001"])
+		notes = [str(c) for c in log.call_args_list]
+		left = [n for n in notes if "left as it stands" in n]
+		self.assertTrue(left, f"nothing said the request was untouched: {notes}")
+		self.assertIn("manager", left[0].lower(), "the note does not say who can fix it")
+
+	def test_a_manager_still_refreshes_it(self):
+		"""The gate is about who, not about switching the behaviour off."""
+		_, mr, _ = self._edit(is_manager=True, mrs=["MAT-MR-0001"])
+		mr.cancel.assert_called_once()
+
+	def test_a_request_that_will_not_cancel_stops_the_edit_instead_of_doubling_it(self):
+		"""The `pass` this replaces let the loop continue, leaving the old request
+		live and creating a second one for the same material."""
+		with self.assertRaises(frappe.ValidationError) as cm:
+			self._edit(is_manager=True, mrs=["MAT-MR-0001"], cancel_raises=True)
+		self.assertIn("MAT-MR-0001", str(cm.exception))
 
 
 class TestConsumptionPreviewNarrowsToOwnRole(unittest.TestCase):

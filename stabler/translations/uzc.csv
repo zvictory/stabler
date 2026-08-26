@@ -1,3 +1,4 @@
+"The existing material request {0} could not be withdrawn, so the plan was not saved. Sort that request out first.","Мавжуд {0} материал сўровини қайтариб бўлмади, шунинг учун режа сақланмади. Аввал ўша сўровни ҳал қилинг."
 "These materials are the other operator's to plan, not yours: {0}","Бу материалларни бошқа оператор режалаштиради, сиз эмас: {0}"
 "This order's material has already been written off per operator, but 'Allow Continuous Material Consumption' is switched off in Manufacturing Settings — finishing now would count that material a second time. Ask a manager to switch it back on.","Бу буюртманинг материали оператор бўйича аллақачон ҳисобдан чиқарилган, лекин Ишлаб чиқариш созламаларида ""Allow Continuous Material Consumption"" ўчирилган — ҳозир якунлаш бу материални иккинчи марта ҳисоблайди. Раҳбардан уни қайта ёқишни сўранг."
 #,#
