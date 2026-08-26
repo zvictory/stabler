@@ -1,3 +1,4 @@
+"These materials are the other operator's to plan, not yours: {0}","Бу материалларни бошқа оператор режалаштиради, сиз эмас: {0}"
 "This order's material has already been written off per operator, but 'Allow Continuous Material Consumption' is switched off in Manufacturing Settings — finishing now would count that material a second time. Ask a manager to switch it back on.","Бу буюртманинг материали оператор бўйича аллақачон ҳисобдан чиқарилган, лекин Ишлаб чиқариш созламаларида ""Allow Continuous Material Consumption"" ўчирилган — ҳозир якунлаш бу материални иккинчи марта ҳисоблайди. Раҳбардан уни қайта ёқишни сўранг."
 #,#
 % of total,Жами %
@@ -150,6 +151,7 @@ The strip at the top says which parts are built and which are still drawings,"Ю
 This clears the form without saving. The lines you entered will be lost.,Форма сақланмасдан тозаланади. Киритилган қаторлар йўқолади.
 This company runs the {engine} remittance engine. The Transfer V1 screens stay unavailable until it is switched to V1 below.,Бу компания {engine} ўтказма механизмида ишлайди. Қуйида V1 га ўтказилмагунча Transfer V1 экранлари мавжуд бўлмайди.
 This entry does not balance. Do not hand over cash — report it.,Бу проводка тенглашмаяпти. Нақд пул берманг — хабар беринг.
+This order is {0} — its plan can no longer be changed.,Бу буюртма {0} — унинг режасини энди ўзгартириб бўлмайди.
 This site is not migrated for packaging operators yet.,Бу сайтда қадоқлаш операторлари учун миграция ҳали бажарилмаган.
 This will post,Қуйидагилар китобга ўтказилади
 To Warehouse (WIP),Омборга (жараёнда)

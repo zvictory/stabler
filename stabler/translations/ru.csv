@@ -1,3 +1,4 @@
+"These materials are the other operator's to plan, not yours: {0}","Эти материалы планирует другой оператор, а не вы: {0}"
 "This order's material has already been written off per operator, but 'Allow Continuous Material Consumption' is switched off in Manufacturing Settings — finishing now would count that material a second time. Ask a manager to switch it back on.","Материал этого заказа уже списан по операторам, но «Allow Continuous Material Consumption» в настройках производства выключен — завершение сейчас посчитает этот материал второй раз. Попросите руководителя включить его обратно."
 #,#
 % of total,% от итога
@@ -151,6 +152,7 @@ The strip at the top says which parts are built and which are still drawings,"П
 This clears the form without saving. The lines you entered will be lost.,Форма будет очищена без сохранения. Введённые строки будут потеряны.
 This company runs the {engine} remittance engine. The Transfer V1 screens stay unavailable until it is switched to V1 below.,"Эта компания использует движок переводов {engine}. Экраны Transfer V1 остаются недоступными, пока он не переключён на V1 ниже."
 This entry does not balance. Do not hand over cash — report it.,Проводка не сходится. Не выдавайте наличные — сообщите об этом.
+This order is {0} — its plan can no longer be changed.,Этот заказ {0} — его план больше нельзя изменить.
 This site is not migrated for packaging operators yet.,На этом сайте ещё не выполнена миграция для операторов упаковки.
 This will post,Будет проведено
 To Warehouse (WIP),На склад (НЗП)

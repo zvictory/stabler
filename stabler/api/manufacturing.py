@@ -487,24 +487,45 @@ def _assert_may_consume(work_order: str, item_list: list, role_scoped: bool) -> 
 	if not role_scoped:
 		return
 
-	row = frappe.db.get_value("Work Order", work_order, list(_wo_operator_columns()), as_dict=True)
-	role = _wo_role_of(row)
 	codes = list(dict.fromkeys(it.get("item_code") for it in item_list))
-	roles = _item_roles(codes)
-	undecided = [c for c in codes if not roles.get(c)]
+	undecided, foreign = _lines_not_yours(work_order, codes)
 	if undecided:
 		frappe.throw(
 			_("Nobody has decided which operator these materials belong to yet: {0}").format(
 				", ".join(undecided)
 			)
 		)
-	foreign = [c for c in codes if roles.get(c) != role]
 	if foreign:
 		frappe.throw(
 			_("These materials are the other operator's to write off, not yours: {0}").format(
 				", ".join(foreign)
 			)
 		)
+
+
+def _lines_not_yours(work_order: str, codes: list[str]) -> tuple[list[str], list[str]]:
+	"""Which of these item codes are not the caller's to touch on this Work
+	Order: `(undecided, foreign)`.
+
+	Two lists and not one because they are two different problems with two
+	different fixes. A foreign line belongs to the other operator and the caller
+	should leave it alone; an undecided line belongs to nobody yet, because v98
+	deliberately filled in no roles, and it is the shift lead who has to answer
+	it. Telling an operator to "leave the other operator's line alone" about a
+	line that has no operator sends them to a colleague who does not exist.
+
+	Split out so `_assert_may_consume` and `update_work_order_materials` decide
+	from one answer. They phrase their refusals differently — writing material
+	off and rewriting a planned quantity are not the same act, and the message
+	has to say which one was refused — but the question underneath is identical,
+	and answering it twice is how the two drift apart.
+	"""
+	row = frappe.db.get_value("Work Order", work_order, list(_wo_operator_columns()), as_dict=True)
+	role = _wo_role_of(row)
+	roles = _item_roles(codes)
+	undecided = [c for c in codes if not roles.get(c)]
+	foreign = [c for c in codes if roles.get(c) and roles.get(c) != role]
+	return undecided, foreign
 
 
 def _unconsumed_material_rows(work_order: str) -> list[dict] | None:
@@ -2123,18 +2144,56 @@ def update_work_order_materials(work_order: str, materials: str):
 		frappe.throw(f"Unknown Work Order: {work_order}")
 
 	# Operators can only edit their own assigned Work Orders
-	if not _is_mfg_manager():
+	is_manager = _is_mfg_manager()
+	if not is_manager:
 		_require_own_work_order(work_order)
+
+	# D7 (P0): `required_qty` is the denominator the deviation panel scores people
+	# against, and the SQL below goes around the docstatus lock on purpose — so on
+	# a closed order nothing else refuses this. Rewriting the plan for a shift that
+	# has already been scored rewrites the score, silently and after the fact.
+	if cint(doc.docstatus) == 2 or doc.status in ("Completed", "Closed"):
+		frappe.throw(_("This order is {0} — its plan can no longer be changed.").format(_(doc.status)))
 
 	try:
 		mat_list = json.loads(materials)
 	except Exception:
 		frappe.throw("Invalid materials format.")
 
+	# D7 (P0), the other half: unscoped, one operator can move the OTHER one's bar
+	# — raise the packer's plan and the packer looks efficient, lower it and the
+	# packer looks wasteful, and the packer is never told. The kiosk has only sent
+	# the caller's own lines since 238592a role-scoped `list_work_orders`, which is
+	# exactly why this has to live here: the screen was never the guard.
+	if not is_manager:
+		codes = list(dict.fromkeys(m.get("item_code") for m in mat_list))
+		undecided, foreign = _lines_not_yours(work_order, codes)
+		if undecided:
+			frappe.throw(
+				_("Nobody has decided which operator these materials belong to yet: {0}").format(
+					", ".join(undecided)
+				)
+			)
+		if foreign:
+			frappe.throw(
+				_("These materials are the other operator's to plan, not yours: {0}").format(
+					", ".join(foreign)
+				)
+			)
+
 	# Update the quantities in the child table directly
+	changes = []
 	for m in mat_list:
 		item_code = m.get("item_code")
 		new_qty = flt(m.get("required_qty"))
+		# Read before the write: the number being replaced is the whole point of
+		# the audit line, and after the UPDATE it is gone from the row and from
+		# every version table (raw SQL leaves no Version document behind either).
+		old_qty = flt(
+			frappe.db.get_value(
+				"Work Order Item", {"parent": work_order, "item_code": item_code}, "required_qty"
+			)
+		)
 
 		# Update required_qty directly in db to bypass docstatus read-only restriction
 		frappe.db.sql(
@@ -2145,9 +2204,19 @@ def update_work_order_materials(work_order: str, materials: str):
 			""",
 			(new_qty, work_order, item_code),
 		)
+		if old_qty != new_qty:
+			changes.append(f"{item_code}: {old_qty} -> {new_qty}")
 
-	# Log the event
-	_log_wo_event(work_order, f"Raw materials manually adjusted by {frappe.session.user}")
+	# Log the event. Named, with the number it replaced: "Raw materials manually
+	# adjusted by X" — the whole audit trail before this — says a number moved
+	# without saying which, from what, or to what, so a plan quietly raised 20%
+	# reads exactly like a typo corrected back. English like every other event on
+	# this document: it is a record, not a screen.
+	if changes:
+		_log_wo_event(
+			work_order,
+			f"Raw materials manually adjusted by {frappe.session.user}: " + ", ".join(changes),
+		)
 
 	# Reload document to reflect database changes
 	doc.reload()

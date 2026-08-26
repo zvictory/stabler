@@ -1,3 +1,4 @@
+"These materials are the other operator's to plan, not yours: {0}","These materials are the other operator's to plan, not yours: {0}"
 "This order's material has already been written off per operator, but 'Allow Continuous Material Consumption' is switched off in Manufacturing Settings — finishing now would count that material a second time. Ask a manager to switch it back on.","This order's material has already been written off per operator, but 'Allow Continuous Material Consumption' is switched off in Manufacturing Settings — finishing now would count that material a second time. Ask a manager to switch it back on."
 #,#
 % of total,% of total
@@ -498,6 +499,7 @@ This company runs the {engine} remittance engine. The Transfer V1 screens stay u
 "This compares each transfer against the journal entries it names. The ledger-side balances are not read here, so agreement means the master is self-consistent, not that the trial balance was checked.","This compares each transfer against the journal entries it names. The ledger-side balances are not read here, so agreement means the master is self-consistent, not that the trial balance was checked."
 This entry does not balance. Do not hand over cash — report it.,This entry does not balance. Do not hand over cash — report it.
 This is the step that moves cash.,This is the step that moves cash.
+This order is {0} — its plan can no longer be changed.,This order is {0} — its plan can no longer be changed.
 This pickup code is locked.,This pickup code is locked.
 This posts the reversal and hands {amount} back to {sender} at the origin desk. The pickup code stops working and the transfer can no longer be paid out.,This posts the reversal and hands {amount} back to {sender} at the origin desk. The pickup code stops working and the transfer can no longer be paid out.
 This reason is written to the transfer's permanent event trail and is what the approving manager reads.,This reason is written to the transfer's permanent event trail and is what the approving manager reads.

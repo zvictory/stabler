@@ -21,6 +21,7 @@ consumption setting off the real Manufacturing Settings single.
 
 from __future__ import annotations
 
+import json
 import unittest
 
 import frappe
@@ -42,6 +43,7 @@ from stabler.api.manufacturing import (
 	discard_finish_draft,
 	list_work_orders,
 	save_finish_draft,
+	update_work_order_materials,
 	wo_consumption_preview,
 	work_order_detail,
 )
@@ -319,6 +321,103 @@ class TestRoleScopingOnRealColumns(FrappeTestCase):
 		self.assertEqual(out["enabled"], _material_consumption_enabled())
 		if not out["enabled"]:
 			self.assertEqual(out["items"], [])
+
+	def _required(self, item_code):
+		return flt(
+			frappe.db.get_value(
+				"Work Order Item", {"parent": self.wo, "item_code": item_code}, "required_qty"
+			)
+		)
+
+	def _save_materials(self, item_code, qty):
+		"""Restores what it wrote. `FrappeTestCase` rolls this file back once per
+		CLASS, not per test — measured 2026-08-26, when a status forced to
+		Completed by one test was still Completed two tests later and refused a
+		manager who should have been let through. Every test below writes real
+		rows, so each puts its own back and none of them depends on the order the
+		loader happens to pick."""
+		before = self._required(item_code)
+		self.addCleanup(
+			frappe.db.set_value,
+			"Work Order Item",
+			{"parent": self.wo, "item_code": item_code},
+			"required_qty",
+			before,
+		)
+		return update_work_order_materials(
+			self.wo, json.dumps([{"item_code": item_code, "required_qty": qty}])
+		)
+
+	def _force_status(self, status):
+		before = frappe.db.get_value("Work Order", self.wo, "status")
+		self.addCleanup(frappe.db.set_value, "Work Order", self.wo, "status", before)
+		frappe.db.set_value("Work Order", self.wo, "status", status)
+
+	def test_the_pourer_cannot_rewrite_the_packers_planned_quantity(self):
+		"""D7 (P0). `required_qty` is the denominator the deviation panel scores
+		people against, and this endpoint writes it with raw SQL that deliberately
+		bypasses the docstatus lock. Unscoped, one operator can move the other
+		one's bar: raise the packer's plan and the packer looks efficient, lower
+		it and the packer looks wasteful, and the packer is never told.
+
+		The kiosk only ever sends the caller's own lines — `list_work_orders` has
+		been role-scoped since 238592a — so this closes the hand-made request, not
+		the screen. Which is the point: the screen was never the guard."""
+		before = self._required(self.codes[0])  # the packer's line
+		frappe.set_user(POURER)
+		with self.assertRaises(frappe.ValidationError):
+			self._save_materials(self.codes[0], before + 99)
+		frappe.set_user("Administrator")
+		self.assertEqual(self._required(self.codes[0]), before, "the packer's plan moved")
+
+	def test_the_pourer_can_still_correct_their_own_line(self):
+		"""The other half, and the one that proves the guard is scoping rather
+		than simply refusing everything — a test suite where the endpoint had been
+		disabled outright would pass the test above just as well."""
+		frappe.set_user(POURER)
+		self._save_materials(self.codes[1], 77)
+		frappe.set_user("Administrator")
+		self.assertEqual(self._required(self.codes[1]), 77)
+
+	def test_the_manager_may_still_plan_both_roles(self):
+		frappe.set_user("Administrator")
+		self._save_materials(self.codes[0], 55)
+		self.assertEqual(self._required(self.codes[0]), 55)
+
+	def test_a_finished_order_no_longer_accepts_a_new_plan(self):
+		"""Rewriting the plan for a shift that has already been scored rewrites
+		the score. The raw SQL goes through docstatus on purpose, so nothing else
+		stops this."""
+		before = self._required(self.codes[1])
+		self._force_status("Completed")
+		frappe.set_user(POURER)
+		with self.assertRaises(frappe.ValidationError):
+			self._save_materials(self.codes[1], before + 5)
+		frappe.set_user("Administrator")
+		self.assertEqual(self._required(self.codes[1]), before)
+
+	def test_the_change_is_recorded_with_the_number_it_replaced(self):
+		"""An adjustment nobody can reconstruct is indistinguishable from the
+		fraud it enables. "Raw materials manually adjusted by X" — the whole audit
+		trail before this — says a number moved without saying which, from what,
+		or to what, so a plan quietly raised 20% reads exactly like a typo
+		corrected back."""
+		before = self._required(self.codes[1])
+		frappe.set_user(POURER)
+		self._save_materials(self.codes[1], before + 3)
+		frappe.set_user("Administrator")
+		note = frappe.get_all(
+			"Comment",
+			filters={"reference_doctype": "Work Order", "reference_name": self.wo},
+			fields=["content"],
+			order_by="creation desc",
+			limit=1,
+		)
+		self.assertTrue(note, "no event was logged at all")
+		content = note[0]["content"]
+		self.assertIn(self.codes[1], content)
+		self.assertIn(str(before), content)
+		self.assertIn(str(before + 3), content)
 
 	def _force_pending(self, item_code):
 		"""Zero this line's consumed_qty so ERPNext's own stub still lists it as
