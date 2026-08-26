@@ -1276,6 +1276,87 @@ class TestFinishingAfterTheSettingWasSwitchedOff(unittest.TestCase):
 		self._finish(enabled=False, prior_entries=False)  # must not raise
 
 
+class TestAShiftWithRejectsCanBeFinished(unittest.TestCase):
+	"""D4 (P0) — the kiosk's "Scrap / Rejects Qty" box made Finish fail outright.
+
+	It set `process_loss_qty` on the Stock Entry and left the finished-goods row
+	at the full quantity. ERPNext checks `fg_completed_qty == fg row qty +
+	process_loss_qty` and throws otherwise. Measured genesis-test 2026-08-26,
+	MFG-WO-2026-00009:
+
+	    loss=0   -> OK, fg row 1.0
+	    loss=0.2 -> Since there is a process loss of 0.2 units for the finished
+	                good PROBE-ICE, you should reduce the quantity by 0.2 units
+	                ... in the Items Table.
+
+	Not a silent miscount — a wall, in ERPNext's words, in front of an operator
+	who typed a reject count on a tablet. Nothing wrong lands; the shift simply
+	cannot be closed, and the only way through is to lie about the rejects.
+
+	The kiosk counts `qty` as GOOD units (its label says so, and its default is
+	the target remaining), so the attempt is good+scrap and the finished-goods
+	row stays at good. Measured with that shape: fg_completed_qty 10, fg row 8,
+	process_loss_qty 2, and `Work Order.produced_qty` 0 -> 8 — only the good units
+	count toward the plan, which is the whole reason the two numbers are separate.
+	"""
+
+	class Row:
+		"""A real object, not a MagicMock: an untouched MagicMock attribute is a
+		MagicMock, which is truthy and compares unequal to everything, so "this row
+		was left alone" cannot be asserted on one without reaching into its
+		internals."""
+
+		def __init__(self, is_finished_item, qty):
+			self.is_finished_item = is_finished_item
+			self.qty = qty
+
+	def _post(self, qty, scrap_qty=None):
+		fg, raw = self.Row(1, 999.0), self.Row(0, 20.0)
+		se = MagicMock()
+		se.company, se.items = "Test Company", [fg, raw]
+		with (
+			patch("stabler.api.manufacturing._require_mfg"),
+			patch("stabler.api.manufacturing._is_mfg_manager", return_value=True),
+			patch("stabler.api.manufacturing._assert_consumption_setting_still_holds"),
+			patch("stabler.api.manufacturing._assert_roles_are_both_or_neither"),
+			patch("stabler.api.manufacturing._assert_sweep_is_acknowledged"),
+			patch(
+				"erpnext.manufacturing.doctype.work_order.work_order.make_stock_entry",
+				return_value=se,
+			) as build,
+			patch("stabler.api.manufacturing.frappe.get_doc", return_value=se),
+		):
+			make_work_order_stock_entry("WO-00009", "Manufacture", qty=qty, scrap_qty=scrap_qty)
+		return build, se, fg
+
+	def test_the_attempt_is_asked_for_as_good_plus_scrap(self):
+		"""`fg_completed_qty` is what was attempted, not what came out good. Ask
+		ERPNext for the good figure and the arithmetic it validates cannot close —
+		that is the throw, and it is also why raising the attempt is right rather
+		than a trick: the milk for the rejected units was really used."""
+		build, _, _ = self._post(qty=8, scrap_qty=2)
+		self.assertEqual(build.call_args.kwargs["qty"], 10.0)
+
+	def test_the_finished_goods_row_carries_only_the_good_units(self):
+		_, se, fg = self._post(qty=8, scrap_qty=2)
+		self.assertEqual(fg.qty, 8.0)
+		self.assertEqual(se.process_loss_qty, 2.0)
+
+	def test_the_raw_material_rows_are_left_where_erpnext_put_them(self):
+		"""Only the finished-goods row moves. Reducing a raw line here would
+		unpick the consumption the operators already recorded, and raising the
+		attempt is exactly what puts the rejected units' milk back in."""
+		_, se, _ = self._post(qty=8, scrap_qty=2)
+		raw = next(r for r in se.items if not r.is_finished_item)
+		self.assertEqual(raw.qty, 20.0)
+
+	def test_a_run_with_no_rejects_asks_for_exactly_what_was_made(self):
+		build, se, fg = self._post(qty=8)
+		self.assertEqual(build.call_args.kwargs["qty"], 8.0)
+		self.assertNotIsInstance(se.process_loss_qty, float)
+		self.assertEqual(fg.qty, 999.0, "the finished-goods row was rewritten for no reason")
+
+
 class TestPlanChangesDoNotWithdrawSubmittedRequests(unittest.TestCase):
 	"""D9 (P0) — `update_work_order_materials` cancels SUBMITTED Material Requests
 	as a side effect of somebody correcting a quantity, and swallowed every

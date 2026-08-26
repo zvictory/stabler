@@ -485,6 +485,67 @@ class TestRoleScopingOnRealColumns(FrappeTestCase):
 
 
 @unittest.skipUnless(frappe.db.table_exists("Work Order"), "no Work Order table on this site")
+class TestErpnextAcceptsTheShapeWeBuildForRejects(FrappeTestCase):
+	"""D4 (P0), against ERPNext's own validation rather than a mock of it.
+
+	`validate_fg_completed_qty` (stock_entry.py:747) requires
+	`fg_completed_qty == fg row qty + process_loss_qty`. Setting process_loss_qty
+	and leaving the finished-goods row whole therefore does not miscount — it
+	throws, in front of an operator who typed a reject count on a tablet, and the
+	only way through was to lie about the rejects.
+
+	Both shapes are built and INSERTED AS DRAFTS. Validation is what is being
+	tested and it runs on insert; submitting would move real stock and rewrite
+	`produced_qty` on a real order for nothing. The mocked tests in
+	test_manufacturing_kiosk.py hold our side of the arithmetic; this holds
+	ERPNext's, which is the half that can change under us on an upgrade.
+	"""
+
+	@classmethod
+	def setUpClass(cls):
+		super().setUpClass()
+		cls.wo = None
+		for row in frappe.get_all(
+			"Work Order", filters={"docstatus": 1}, fields=["name", "qty", "produced_qty"], order_by="name"
+		):
+			if flt(row["qty"]) - flt(row["produced_qty"]) >= 2:
+				cls.wo = row["name"]
+				break
+
+	def setUp(self):
+		if not self.wo:
+			self.skipTest("no submitted Work Order with at least 2 units left to produce")
+		frappe.set_user("Administrator")
+
+	def _draft(self, attempted, fg_qty, loss):
+		from erpnext.manufacturing.doctype.work_order.work_order import make_stock_entry
+
+		stub = make_stock_entry(self.wo, "Manufacture", qty=attempted)
+		se = frappe.get_doc(stub if isinstance(stub, dict) else stub.as_dict())
+		se.process_loss_qty = loss
+		for r in se.items:
+			r.allow_zero_valuation_rate = 1
+			if r.is_finished_item:
+				r.qty = fg_qty
+		se.insert(ignore_permissions=True)
+		self.addCleanup(frappe.delete_doc, "Stock Entry", se.name, force=True)
+		return se
+
+	def test_the_old_shape_is_refused_by_erpnext_itself(self):
+		"""One good unit, one rejected, and the finished-goods row left whole —
+		exactly what the endpoint built before. If this ever stops raising, the
+		arithmetic we now do is no longer needed and should go."""
+		with self.assertRaises(frappe.ValidationError) as cm:
+			self._draft(attempted=1, fg_qty=1, loss=1)
+		self.assertIn("process loss", str(cm.exception).lower())
+
+	def test_the_shape_we_build_now_validates(self):
+		se = self._draft(attempted=2, fg_qty=1, loss=1)
+		self.assertEqual(flt(se.fg_completed_qty), 2.0)
+		self.assertEqual([flt(r.qty) for r in se.items if r.is_finished_item], [1.0])
+
+
+@unittest.skipUnless(frappe.db.table_exists("Work Order"), "no Work Order table on this site")
 class TestAForwardDatedOrderCanActuallyBeSubmitted(FrappeTestCase):
 	"""D8 (P0) — nothing to do with the two-operator split, but on the ground it
 	was built on: `create_material_request_for_tomorrow_wo` is wired to Work Order

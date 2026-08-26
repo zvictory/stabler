@@ -1419,12 +1419,35 @@ def make_work_order_stock_entry(
 		)
 		_assert_sweep_is_acknowledged(work_order, my_role, acknowledge_sweep)
 
-	doc = make_stock_entry(work_order, purpose, qty=flt(qty) if qty else None)
+	# D4 (P0): a Manufacture entry with process loss has to be ASKED FOR as
+	# good+scrap. ERPNext validates `fg_completed_qty == fg row qty +
+	# process_loss_qty` and throws otherwise (stock_entry.py:747) — so setting
+	# process_loss_qty while leaving the finished-goods row whole did not
+	# miscount, it made Finish fail outright, in ERPNext's words, in front of an
+	# operator who typed a reject count on a tablet. The only way through was to
+	# lie about the rejects. Measured genesis-test 2026-08-26 on
+	# MFG-WO-2026-00009: loss=0 submits, loss=0.2 throws.
+	#
+	# `qty` is GOOD units here — the kiosk labels it so and defaults it to the
+	# target remaining — while `fg_completed_qty` is what was attempted. Raising
+	# the attempt is not a trick to satisfy the check: the raw material for the
+	# rejected units really was used, and ERPNext scales consumption off
+	# fg_completed_qty. Measured with this shape: fg_completed_qty 10, fg row 8,
+	# process_loss_qty 2, Work Order.produced_qty 0 -> 8. Only good units count
+	# toward the plan, which is why the two figures are separate at all.
+	loss = flt(scrap_qty) if (purpose == "Manufacture" and scrap_qty and qty) else 0.0
+	attempted = (flt(qty) + loss) if qty else None
+	doc = make_stock_entry(work_order, purpose, qty=attempted)
 	stub = doc if isinstance(doc, dict) else doc.as_dict()
 	se = frappe.get_doc(stub)
 
-	if purpose == "Manufacture" and scrap_qty and flt(scrap_qty) > 0:
-		se.process_loss_qty = flt(scrap_qty)
+	if loss > 0:
+		se.process_loss_qty = loss
+		for row in se.items:
+			# The finished-goods row only. A raw line reduced here would unpick the
+			# consumption the operators already recorded.
+			if cint(getattr(row, "is_finished_item", 0)):
+				row.qty = flt(qty)
 
 	if items:
 		if from_warehouse:
