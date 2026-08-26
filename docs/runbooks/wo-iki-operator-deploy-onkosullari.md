@@ -1,7 +1,7 @@
 # Runbook — Work Order iki-operatör özelliğinin deploy ön koşulları
 
-> **Neden bu dosya var:** Bu özelliğin kodu `main`'de ve testleri yeşil, ama
-> **kodu deploy etmek tek başına hiçbir şey yapmıyor.** Dört adet kod-dışı adım
+> **Neden bu dosya var:** Bu özelliğin testleri yeşil, ama **kodu deploy etmek
+> tek başına hiçbir şey yapmıyor.** Dört adet kod-dışı adım
 > var ve bunlardan biri atlanırsa sistem hata vermiyor — sessizce yanlış sayı
 > üretiyor. Bir `bench migrate` ile bitecek bir iş sanılıp yarım bırakılması,
 > tam da bu dosyanın engellemek için yazıldığı şey.
@@ -14,64 +14,72 @@
 
 ---
 
-## ⛔ Şu an deploy edilemez
+## Durum — kod tarafı hazır, deploy onayı bekliyor
 
-2026-08-26 uçtan uca doğrulaması (`genesis-test.local`, gerçek rollerle, gerçek
-stok fişleriyle) dört adet P0 buldu. Dördü de **sıradan kullanım yolunda**
-tetikleniyor, hatalı kullanımda değil.
+2026-08-26 uçtan uca doğrulaması dört P0 bulmuştu; sonraki turlarda üç tane daha
+çıktı. 2026-08-27 itibarıyla aşağıdakilerin hepsi düzeltildi ve her biri
+mutasyonla doğrulandı — düzeltmeyi geri al, tam bir test düşsün.
 
-| Kod | Ne oluyor | Tetikleyici |
+| Kod | Neydi | Commit |
 |---|---|---|
-| D1 | Finish, iki-rol guard'ını atlıyor; ilk basan diğerinin malzemesini üstüne alıyor | İki operatör farklı hızda çalışınca |
-| D2 | `consumed_qty` ikiye katlanıyor | `material_consumption` **kapalıyken** — yani varsayılanda |
-| D7 | Ölçülen kişi kendi sapma barajını yeniden yazabiliyor, her iki rol için | İsteyen istediğinde |
-| D8 | İleri tarihli üretim emri gönderilemiyor | İleri tarih **+** en az bir kalem WIP'te eksik |
+| D1 | Finish iki-rol guard'ını atlıyordu | `238592a` |
+| Part 3 | İlk basan, diğerinin malzemesini üstüne alıyordu | `7beeb77` |
+| D2 | Ayar kapalıyken `consumed_qty` ikiye katlanıyordu | `e08dc1d` |
+| D7 | Ölçülen kişi kendi ve diğerinin barajını yeniden yazabiliyordu | `cc5fec7` |
+| D8/D9 | İleri tarihli emir gönderilemiyordu; MR iptali her hatayı yutuyordu | `ab3f770` |
+| XSS | Kalem adı her operatörün ekranına script sokabiliyordu | `b509b1f` |
+| D4 | Fire miktarı girmek Finish'i tamamen düşürüyordu | `5a0fa33` |
 
-D8'in bu özellikle ilgisi yok — üstüne inşa edilen zeminde vardı
-(`material_request_type = "Transfer"` geçersiz bir değer, `hooks.py`'de Work Order
-`on_submit`'e bağlı). Ama modülün sıradan planlamayı desteklememesi anlamına
-geliyor, o yüzden aynı kapıdan geçiyor.
+**Sapma paneli artık güvenilir girdiye sahip.** Daha önce değildi: `consumed_qty`
+başkasının belgesi olabiliyordu (D1/D2), `required_qty` ölçülen kişi tarafından
+düzenlenebiliyordu (D7). Üçü de kapandı.
 
-D8'in ikinci koşulu kulağa dar geliyor ama değil: transfer adımı malzemeyi WIP'e
-emir **başlarken** taşıyor, **planlanırken** değil. Yani planlama anında her
-kalem zaten eksik — biri depoyu elle önceden doldurmadıkça. Pratikte her ileri
-tarihli emirde sağlanıyor. Kesin koşulu da yazıyorum çünkü depoyu önceden
-doldurulmuş bir örnekle test eden biri emrin gönderildiğini görüp bu dosyanın
-yanıldığını sanabilir.
+D4 ölçüldüğünde beklenenden farklı çıktı: sessiz bir yanlış sayım değil, sert bir
+ret. ERPNext `fg_completed_qty == mamul satırı + process_loss_qty` denkliğini
+doğruluyor (`stock_entry.py:747`), yani fire yazıp mamul satırını tam bırakmak
+Finish'i hiç geçirmiyordu. Bozuk hiçbir şey kaydolmuyordu — vardiya sadece
+kapanamıyordu, ve tek çıkış yolu fireyi gizlemekti. Asıl sayıları bozan sürüm o.
 
-Kancanın kendi içinde `if not doc.wip_warehouse: return` diye üçüncü bir çıkış
-var ama **ulaşılamaz**: ERPNext `validate_warehouse()`'u `on_submit`'ten çağırıp
-`wip_warehouse`'u zorunlu kılıyor (`work_order.py:786-793`). O kontrolün iki
-bypass'ı var — `skip_transfer` ve `track_semi_finished_goods` — ve Stabler
-ikisini de hiçbir yerde set etmiyor, yani her emirde doctype varsayılanı 0.
-Dal **ERPNext'in tasarımı gereği değil, bizim yapılandırmamız gereği** ölü: biri
-ileride `skip_transfer` desteği eklerse uyanır ve tetikleyici şekil değiştirir.
+D8 aylarca ayakta kaldı çünkü **bir test onu doğru diye iddia ediyordu.**
+`test_tomorrow_wo_material_request_creation` Material Request'i tamamen mock'ladığı
+için atama hiç doctype'a karşı doğrulanmıyor, sonra test bozuk değeri bekliyordu.
+Yerine gerçek `insert` koyuldu; ayrıca canlı meta'dan seçenekleri okuyup doctype'ın
+sunmadığı hiçbir literali kabul etmeyen ucuz bir kontrol eklendi.
 
-Yönetici bu duvara **kaydederken değil, gönderirken** çarpıyor. Yani bedeli bir
-tıklama değil, doldurduğu formun tamamı.
+### 2026-08-27 uçtan uca doğrulaması
 
-**D8'in yapılandırmayla geçici çözümü yok.** `skip_transfer = 1` gerçekten
-D8'den kaçıyor — ölçüldü — ama mekanizması şu: ERPNext `skip_transfer` açıkken
-`wip_warehouse`'u **siliyor**, kanca da boş depoda erken dönüyor. Yani iki koşul
-bağımsız değil, biri diğerini kuruyor. Ve `skip_transfer` "Material Transfer for
-Manufacture adımı hiç olmasın" demek — oysa iki-operatör tasarımının tamamı o
-transferin üstünde duruyor: `_assert_roles_are_both_or_neither` o purpose'a
-bağlı, ve rol bazlı yazım malzemenin WIP'te durduğunu varsayıyor. **D8'den kaçan
-tek yapılandırma, bu özelliği kapatan yapılandırma.** Düzeltilmesi gerekiyor,
-etrafından dolaşılması değil.
+`genesis-test.local`, gerçek rollerle, gerçek uç noktalardan, sonunda geri alındı
+(`MFG-WO-2026-00008`: iki rol atanmış, malzeme WIP'te, paketleyici düşmüş,
+dökümcü düşmemiş):
 
-Bir uyarı daha, aynı kod bloğu hakkında: `"Transfer"` → `"Material Transfer"`
-düzeltmesi **tek başına yapılırsa açık yaratır.** O literal şu an iptal
-döngüsünün çalışmasını engelleyen tek şey; düzeltildiği anda döngü, MR iptal
-yetkisi *olan* yöneticiler için çalışmaya başlar ve miktar düzeltmek yan etki
-olarak onaylanmış satın alma belgesi iptal eder — üstelik oradaki
-`except Exception: pass` her hatayı yutar. Literal, yutulan exception ve loglama
-aynı commit'te gitmeli.
+| Adım | Ölçülen |
+|---|---|
+| Ayar kapalı + rol bazlı düşüm var → Finish | Reddedildi, `Manufacturing Settings`'e yönlendirdi |
+| Önizleme, dökümcü | `items=[PROBE-MILK]`, `sweep_risk=[]` |
+| Önizleme, paketleyici | `items=[]`, `sweep_risk=[PROBE-MILK]` |
+| Paketleyici, onaysız Finish | Reddedildi, kalemi **adıyla** söyledi |
+| Dökümcü → paketleyicinin planı | Reddedildi |
+| Dökümcü → kendi planı | Geçti; denetim: `PROBE-MILK: 20.0 -> 21.0` |
+| Yönetici, fireyle Finish (8 sağlam, 2 fire) | `fg_completed_qty=10`, mamul satırı `8`, `process_loss_qty=2`, `produced_qty 0 → 8` |
 
-**Kapı:** dördü de düzelmeden ve uçtan uca doğrulama tekrar koşup temiz çıkmadan
-deploy yok. `make check` bu iş için yeterli kanıt değil — hepsi DB davranışı.
+Süit: `make check` yeşil, `test_manufacturing_kiosk` 67,
+`test_wo_role_scoping_integration` 41, **sıfır atlama**.
 
----
+Sıfır atlama önemli: bu dosya daha önce üç sessiz atlamayla koşuyordu.
+`_a_submitted_work_order` sitedeki ilk gönderilmiş emri alıyordu — 100/100
+tamamlanmış olanı — ve ERPNext bitmiş emir için stub kurmayı reddettiğinden
+"ne tüketilmemiş kaldı" sorusu hep boş dönüyordu. Üç test yeşil tik verip hiçbir
+şey kanıtlamıyordu; arkasında payı kalan 13 emir duruyordu.
+
+### Hâlâ yapılmadı
+
+- **Hiçbir şey push edilmedi.** Dal: `fix/wo-finish-posts-around-the-guard`.
+- Yalnız `genesis-test.local` üzerinde doğrulandı. Diğer siteler koşulmadı.
+- **Prodüksiyon deploy'u Zafar'ın açık onayını bekliyor.** Bir `bench restart`
+  tüm stabler tenant'larını aynı anda etkiler.
+- Aşağıdaki dört ön koşul **hâlâ geçerli** — hiçbiri kodla çözülmedi. Özellikle
+  Ön koşul 2: D2 guard'ı bozulmayı engelliyor, ayarı gereksiz kılmıyor. Ayar
+  kapalıyken rol bazlı düşüm zaten tümüyle reddediliyor, yani özellik çalışmıyor.
 
 ## Ön koşul 1 — Migrate
 
@@ -160,6 +168,23 @@ Onay geldiğinde, canlıda şu sırayla:
 5. adım bu özelliğin ana riski: ERPNext'in `make_stock_entry`'si tüketim fişinin
 başlığına `fg_warehouse` yazıyor. Boş olmayan bir `t_warehouse` görürsen dur —
 ham süt mamul deposuna giriyor demektir.
+
+2026-08-27'de eklenen adımlar — hepsi canlıda tekrar edilmeli, çünkü hepsi
+`genesis-test` verisi üzerinde ölçüldü:
+
+7. Yalnız **bir** operatör malzemesini yazsın, diğeri beklesin. Yazan kişi Finish
+   diyaloğunu açsın → **diğerinin kalemleri adıyla listelenmeli** ve onay kutusu
+   tikli değilken Confirm **kapalı** olmalı. Tik atınca açılmalı ve geçmeli.
+8. Bir operatör diğerinin bir kaleminde miktar değiştirmeyi denesin →
+   **reddedilmeli**. Kendi kalemini değiştirsin → geçmeli, ve emrin zaman
+   çizelgesinde `kalem: eski -> yeni` satırı görünmeli.
+9. Fire miktarı girip bitir → **geçmeli**. `produced_qty` yalnız sağlam miktar
+   kadar artmalı, fire kadar değil.
+10. İleri tarihli bir emir gönder → Material Request `Material Transfer` türüyle
+    oluşmalı; emir gönderilebilmeli.
+11. `Manufacturing Settings`'te ayarı kapat ve rol bazlı düşümü olan bir emri
+    bitirmeyi dene → **reddedilmeli**, ve mesaj hangi kutunun açılacağını
+    söylemeli. Ayarı geri aç.
 
 ---
 
