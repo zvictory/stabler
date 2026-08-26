@@ -272,7 +272,7 @@ function isBusy(name) {
 }
 
 const canStart = (r) => r.docstatus === 1 && ["Not Started", "Stock Partially Reserved", "Submitted"].includes(r.status);
-const canFinish = (r) => r.docstatus === 1 && ["Not Started", "In Process", "Stock Partially Reserved", "Material Transferred", "Submitted"].includes(r.status);
+const canFinish = (r) => r.docstatus === 1 && ["In Process", "Stock Partially Reserved", "Material Transferred", "Submitted"].includes(r.status);
 const canPause = (r) => r.docstatus === 1 && ["Not Started", "In Process", "Stock Partially Reserved", "Material Transferred", "Submitted"].includes(r.status);
 const canResume = (r) => r.docstatus === 1 && r.status === "Stopped";
 
@@ -971,7 +971,7 @@ const sortedRows = computed(() => {
 											<div class="fw-semibold text-dark text-truncate small">{{ it.item_name || it.item_code }}</div>
 											<div class="small text-muted font-monospace" style="font-size: 0.75rem;">{{ it.item_code }}</div>
 											<div class="text-secondary small mt-0.5">
-												{{ t("WIP Stock") }}: <span class="fw-semibold" :class="it.wip_stock >= it.required_qty ? 'text-success' : 'text-danger'">{{ it.wip_stock || 0 }}</span>
+												{{ t("Transferred") }}: <span class="fw-semibold" :class="it.transferred_qty >= it.required_qty ? 'text-success' : 'text-danger'">{{ it.transferred_qty || 0 }}</span>
 											</div>
 										</div>
 										<div style="width: 100px;">
@@ -1039,7 +1039,7 @@ const sortedRows = computed(() => {
 								v-if="canFinish(r)"
 								type="button"
 								class="btn btn-primary btn-lg flex-grow-1 py-3 fw-bold shadow-sm d-flex align-items-center justify-content-center gap-2"
-								:disabled="isBusy(r.name)"
+								:disabled="isBusy(r.name) || halfAssigned(r)"
 								@click="openFinish(r)"
 							>
 								<i class="ti ti-square-rounded-check-filled"></i>

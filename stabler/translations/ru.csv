@@ -77,6 +77,7 @@ A valid veterinary certificate is required.,Требуется действую�
 "A ≤ {0}%, B ≤ {1}%, C rest — by revenue.","A ≤ {0}%, B ≤ {1}%, C прочее — по выручке."
 "A ≤ {0}%, B ≤ {1}%, C rest — by spend.","A ≤ {0}%, B ≤ {1}%, C прочее — по расходам."
 "A ≤ {0}%, B ≤ {1}%, C rest — by {2}. Submitted; returns netted.","A ≤ {0}%, B ≤ {1}%, C прочее — по {2}. Проведённые; возвраты нетто."
+Add Material,Добавить материал
 Already {0},Уже {0}
 AR balance per customer as of the selected date — click a row to see the ledger behind the balance.,"Дебиторская задолженность по каждому клиенту на выбранную дату — нажмите на строку, чтобы увидеть лежащий за ней регистр."
 Abbr,Сокр.
@@ -102,12 +103,14 @@ Design view,Проектный вид
 Direct Sales Invoicing is not enabled for company {0}. Sales Invoices must be created from a submitted Sales Order.,Прямое выставление счетов не включено для компании {0}. Счета должны создаваться из проведённого заказа на продажу.
 Every user of {company} moves to the {engine} screens when this is saved.,При сохранении все пользователи {company} перейдут на экраны {engine}.
 Exchange rates,Курсы валют
+From Warehouse,Со склада
 I have checked {receiver}'s identity document.,Я проверил удостоверение личности {receiver}.
 I have counted {amount} and am handing it back to {sender}.,Я пересчитал {amount} и возвращаю их {sender}.
 I have written it down,Код записан
 Journal entry,Запись в журнале
 Legacy — journal entry screens,Legacy — экраны журнальных проводок
 Lines disagree,Строки расходятся
+No items to transfer. Click 'Add Material' to add items manually.,"Нет позиций для передачи. Нажмите «Добавить материал», чтобы добавить вручную."
 No longer exists,Больше не существует
 Not changed:,Не изменены:
 Not ready — this desk cannot take or hand over a transfer.,"Не готова — эта касса не может ни принять, ни выдать перевод."
@@ -130,9 +133,11 @@ Refresh the rate for this date,Обновить курс на эту дату
 Remittance engine,Движок переводов
 Same as your last transfer,Как в прошлом переводе
 Select at least one Work Order.,Выберите хотя бы один производственный заказ.
+Select Warehouse,Выберите склад
 Selected work orders: {0},Выбрано заказов: {0}
 Terminated by {0}: {1},Закрыт пользователем {0}: {1}
 The destination desk ({branch}) has no {currency} cash account — add it in Remittance Settings before registering.,У кассы назначения ({branch}) нет счёта в {currency} — добавьте его в настройках переводов до регистрации.
+The order cannot be finished until both operator roles are assigned. Missing: {0},"Заказ нельзя завершить, пока не назначены оба оператора. Не хватает: {0}"
 The pickup code was refused.,Код получения отклонён.
 The posting could not be previewed.,Не удалось показать предварительную проводку.
 The V1 engine reads every cash account from the desk table. Add at least one desk before switching to V1.,Движок V1 читает все кассовые счета из таблицы касс. Добавьте хотя бы одну кассу перед переключением на V1.
@@ -143,6 +148,7 @@ This company runs the {engine} remittance engine. The Transfer V1 screens stay u
 This entry does not balance. Do not hand over cash — report it.,Проводка не сходится. Не выдавайте наличные — сообщите об этом.
 This site is not migrated for packaging operators yet.,На этом сайте ещё не выполнена миграция для операторов упаковки.
 This will post,Будет проведено
+To Warehouse (WIP),На склад (НЗП)
 Transfer registered,Перевод зарегистрирован
 Transfers registered on the legacy engine stay on the legacy list and are not shown by the V1 screens: they have no Remittance Transfer record behind them.,"Переводы, зарегистрированные на движке legacy, остаются в старом списке и не отображаются на экранах V1: за ними нет записи Remittance Transfer."
 "Unknown tender intake field(s): {0}","Неизвестное поле тендерной заявки: {0}"
@@ -202,7 +208,7 @@ Actions,Действия
 Activation rate,Конверсия
 Active,Активные
 active,
-Active Company,
+Active Company,Текущая компания
 active contracts,активных контрактов
 Active contracts — serving,Активные контракты — исполняем
 Active from,
@@ -604,7 +610,7 @@ Backup created.,Резервная копия создана.
 Backup file not found: {0},
 Backup set,Набор копий
 Badge,Значок
-Badge Timeline,
+Badge Timeline,История событий
 Badge UID is required.,
 Bal,Остаток
 Balance,Остаток
@@ -823,7 +829,7 @@ Capitalize,Капитализировать
 Captured At,Захвачено
 Car / Item,Авто / Товар
 Car item is required.,Товар (автомобиль) обязателен.
-Card not recognized,
+Card not recognized,Карта не распознана
 Cargo,Груз
 Cargo Insurance,Страхование груза
 Carrier,Перевозчик
@@ -961,7 +967,7 @@ Click a line to see suggested matches.,"Нажмите на строку, что
 Click a status to open exactly those records.,"Нажмите на статус, чтобы открыть именно эти записи."
 Click an installment chip to view the contract.,Нажмите на чип рассрочки для просмотра договора.
 Click New Revaluation to preview unrealised FX deltas and post an Exchange Rate Revaluation.,
-Click to Activate Scanner,
+Click to Activate Scanner,"Нажмите, чтобы включить сканер"
 Clock drift tolerance (min),
 Close,Закрыть
 Close & release,
@@ -971,7 +977,7 @@ Close Sales Order,
 Close this Work Order? This finalizes it.,Закрыть этот производственный заказ? Это финальное действие.
 Close Visit,Закрыть выезд
 Close visit,Закрыть выезд
-Close Work Order,
+Close Work Order,Закрыть производственный заказ
 Closing,Закрытие
 Closing Balance,Конечный остаток
 Closing balance,Сальдо на конец периода
@@ -1067,7 +1073,7 @@ Confirm (submit) this import order? It can no longer be edited here afterwards.,
 Confirm finish,Подтвердить завершение
 Confirm import order,Подтвердить импортный заказ
 Confirm restore test,Подтвердите тест восстановления
-Confirm Submit,
+Confirm Submit,Подтвердить и провести
 Confirm waiver,Подтвердить освобождение
 Confirmed,Подтверждено
 CONFIRMED,Подтверждено
@@ -1798,7 +1804,7 @@ Employee carries additional responsibilities.,
 Employee Device Mapping,
 Employee Device Mapping {0} not found.,
 Employee has no linked user account.,
-Employee ID,
+Employee ID,Табельный номер
 Employee ID and PIN are required.,
 Employee ID is required.,
 Employee is required.,
@@ -1842,7 +1848,7 @@ Enter cost and term to see the payment schedule.,Введите себестои
 enter password,введите пароль
 Enter protocol / authorization reason…,Введите номер протокола или причину…
 Enter the quantity to return for each line. Leave 0 to exclude a line.,"Введите количество возврата для каждой строки. Укажите 0, чтобы исключить строку."
-Enter your Employee ID and secure PIN,
+Enter your Employee ID and secure PIN,Введите табельный номер и PIN-код
 Entered rate deviates by {pct}% from CBU rate.,Введённый курс отклоняется от курса ЦБ на {pct}%.
 entries,записей
 Entries on/before this date are frozen.,
@@ -2133,7 +2139,7 @@ Failed to load vendor categories.,Не удалось загрузить кат�
 Failed to load veterinary certificates.,Не удалось загрузить ветеринарные сертификаты.
 Failed to load visit.,Ошибка загрузки визита.
 Failed to load warehouses.,Ошибка загрузки складов.
-Failed to load work orders.,
+Failed to load work orders.,Не удалось загрузить производственные заказы.
 Failed to load your materials.,Не удалось загрузить ваши материалы.
 Failed to load.,Ошибка загрузки.
 Failed to move deal.,Не удалось переместить сделку.
@@ -2184,7 +2190,7 @@ FCL,FCL
 Female,Женский
 Fetch,Загрузить
 Fetched,Загружено
-FG Whse,
+FG Whse,Склад ГП
 Field Receivables,
 Field Sales,Полевые продажи
 Field User,Полевой сотрудник
@@ -2213,8 +2219,8 @@ Fines,Штрафы
 Finish,Завершить
 Finish failed.,Ошибка завершения.
 Finish Google Drive setup,Завершите настройку Google Drive
-Finish Order,
-Finish Production Run,
+Finish Order,Завершить заказ
+Finish Production Run,Завершить производственный цикл
 Finish setup,Завершить настройку
 Finished Good,
 Finished good,Готовая продукция
@@ -2323,7 +2329,7 @@ GO Decision,GO Решение
 Go to Sales Orders,Перейти к заказам на продажу
 GO — awaiting sourcing,GO — ждёт закупа цен
 Good kg,Годн. кг
-Good Produced Qty,
+Good Produced Qty,Годной продукции
 Goods,Товар
 Goods (PO),Товар (PO)
 Goods receipt,Приёмка товара
@@ -2387,7 +2393,7 @@ Heavy-conditions allowance,Надбавка за тяжёлые условия
 Height,Высота
 Hello {name},"Привет, {name}"
 Hidden for your role,Скрыто для вашей роли
-Hide,
+Hide,Скрыть
 Hide password,Скрыть пароль
 high,высокий
 High conflicts,Высокие конфликты
@@ -2719,7 +2725,7 @@ Lifetime sales,Продажи за всё время
 Light,
 line,строка
 Line details,
-Line Operator Kiosk,
+Line Operator Kiosk,Киоск оператора линии
 Line total,Итого по строке
 Line total (UZS),Итого по строке (UZS)
 Line-level (pre-tax) — item-filtered,На уровне строк (до налога) — с фильтром по товару
@@ -2795,11 +2801,11 @@ Lock {0}? No further changes will be allowed once locked.,
 Locked,
 Locked at,
 Locked on/before,Заблокировано до
-Log Out,
+Log Out,Выйти
 Log out,Выйти
 Login required,Требуется вход
 Login required.,
-Login with PIN,
+Login with PIN,Войти по PIN-коду
 Logistics,Логистика
 Logistics & duties,Логистика и пошлины
 Logistics readiness,Логистическая готовность
@@ -2807,7 +2813,7 @@ Longitude,Долгота
 Look up rates,Найти ставки
 Lost,Проиграли
 lost,проиграно
-Lost Badge? Login with PIN,
+Lost Badge? Login with PIN,Потеряли карту? Войдите по PIN-коду
 Lot,Лот
 Lot loaded from UZEX,Лот загружен из UZEX
 Lot Name,Название лота
@@ -2956,7 +2962,7 @@ must close today,должно закрыться сегодня
 My requests,Мои заявки
 My tenders,Мои тендеры
 My work orders,Мои заказы на производство
-My Work Orders Queue,
+My Work Orders Queue,Моя очередь заказов
 N/A,—
 Name,Название
 Name is required.,
@@ -3115,7 +3121,7 @@ no action from you,от вас действий не требуется
 No active customs declarations or won lots in the pipeline.,В процессе нет активных таможенных деклараций или выигранных лотов.
 No active shipments or won lots in the pipeline.,В процессе нет активных отгрузок или выигранных лотов.
 No active tenders found for {0}.,Активные тендеры не найдены для {0}.
-No activity recorded yet.,
+No activity recorded yet.,Событий пока нет.
 No advance ledger movements yet.,Движений по авансам пока нет.
 No advance payments yet.,Авансовых платежей пока нет.
 No advances yet.,Авансов пока нет.
@@ -3255,7 +3261,7 @@ No low-stock items,Товаров с низким уровнем запасов 
 No matches found,Совпадений не найдено
 No matching items,
 "No matching vouchers found. Create a payment, or widen the date/amount window.",Совпадающие документы не найдены. Создайте платёж или расширьте окно даты/суммы.
-No materials required.,
+No materials required.,Материалы не требуются.
 No materials to stage,
 No movements yet.,Движений пока нет.
 No new Version rows since the last seal.,
@@ -3628,7 +3634,7 @@ Operations,Операции
 Operations desk,Операционная панель
 Operations desk →,Операционная панель →
 Operator,Оператор
-Operator Kiosk,
+Operator Kiosk,Киоск оператора
 Optional,Необязательно
 optional,необязательно
 Optional note (leave blank to skip):,
@@ -3785,12 +3791,12 @@ Paste access token JWT…,
 Paste new token to replace…,
 Paste refresh token JWT…,
 Paste UZEX lot URL,Вставьте URL лота UZEX
-Pause,
+Pause,Пауза
 Pause failed.,Ошибка паузы.
-Pause this Work Order?,
+Pause this Work Order?,Приостановить этот заказ?
 Pause this Work Order? You can resume it later.,Приостановить заказ? Можно возобновить позже.
-Pause Work,
-Pause Work Order,
+Pause Work,Приостановить работу
+Pause Work Order,Приостановить заказ
 Pay,Выплатить
 Pay advance,Выдать аванс
 "Pay an advance, or turn off the balance filter to see everyone.","Выдайте аванс или отключите фильтр баланса, чтобы увидеть всех."
@@ -3985,13 +3991,13 @@ Pickup date,Дата забора
 Pickup Location,Место забора
 Pickup location,Место забора
 Pieces,Штук
-PIN,
+PIN,PIN-код
 Pipeline,Конвейер
 Pipeline Value,Стоимость воронки
 PIs,PI
 Pistachio,
 Place branded freezer at {0} (deal {1}),
-Place your RFID badge on the reader to log in,
+Place your RFID badge on the reader to log in,Приложите карту к считывателю для входа
 Placed Freezer,Холодильник размещён
 Placing,Размещение
 Plan Type,Тип плана
@@ -4004,10 +4010,10 @@ Planned date,Плановая дата
 Planned FCL,Плановые FCL
 Planned Qty,
 Planned service,Плановое обслуживание
-Planned Start,
+Planned Start,Плановое начало
 Planned start,Плановая дата начала
 Planned Time,Планируемое время
-Planned Total,
+Planned Total,План всего
 Planning,Планирование
 Planogram name is required.,Название планограммы обязательно.
 Planograms,Планограммы
@@ -4217,7 +4223,7 @@ Quantity (KG),Количество (кг)
 Quantity must be greater than zero.,Количество должно быть больше нуля.
 Quantity must be positive.,Количество должно быть положительным.
 Queue is clear. Nothing pending.,Очередь пуста. Ничего не ожидает.
-Queue is empty,
+Queue is empty,Очередь пуста
 Quick view,Быстрый просмотр
 Quotation,Предложение
 Quotation #,№ Предложения
@@ -4413,7 +4419,7 @@ Remove holiday?,Удалить праздник?
 Remove Lane,Удалить полосу
 Remove Lane?,
 Remove line,Удалить строку
-Remove operator,
+Remove operator,Убрать оператора
 Remove row,Удалить строку
 Remove Telegram access for {0}? This cannot be undone.,Убрать доступ Telegram для {0}? Это действие необратимо.
 Remove the link between {0} and device user {1}? This will not affect attendance records already generated.,
@@ -4496,9 +4502,9 @@ Result date,Дата итога
 Result?,Итог?
 Resume,Возобновить
 Resume failed.,Ошибка возобновления.
-Resume this Work Order?,
-Resume Work,
-Resume Work Order,
+Resume this Work Order?,Возобновить этот заказ?
+Resume Work,Возобновить работу
+Resume Work Order,Возобновить заказ
 Retail,
 Retired,Снято с производства
 Retries,Повторы
@@ -4670,7 +4676,7 @@ Scan to pay,Отсканируйте для оплаты
 Scanned,Просканировано
 Scanned / Required,Просканировано / требуется
 Scanned declaration,Скан декларации
-Scanner Ready,
+Scanner Ready,Сканер готов
 Scanning…,Сканирование…
 Schedule,График
 Schedule date,Дата графика
@@ -4682,7 +4688,7 @@ Scheme Name,Название схемы
 Scheme Type,Тип схемы
 Score cards above show this selection only,Карточки выше показывают только этот выбор
 Scrap / rejects,Брак / отходы
-Scrap / Rejects Qty,
+Scrap / Rejects Qty,Брак / отходы
 SE In,SE приход
 Seal broken,Пломба нарушена
 Seal intact,Пломба цела
@@ -4892,7 +4898,7 @@ Shop,Магазин
 Short code,Короткий код
 short stock,недостаточно
 Should We Bid?,Участвовать в тендере?
-Show,
+Show,Показать
 Show all allocations,Показать все распределения
 Show all items,
 Show discounts,Показать скидки
@@ -5056,7 +5062,7 @@ Stock UOM,Ед. изм. складского учёта
 Stock value,Стоимость складских остатков
 Stop,Остановить
 Stop this Work Order? You can resume it later.,Остановить этот производственный заказ? Можно будет возобновить позже.
-Stop Work Order,
+Stop Work Order,Остановить заказ
 Storage,Хранение
 Storefront,Витрина
 Stream,Поток
@@ -5089,7 +5095,7 @@ Submit the GRN Checklist before adding a Landed Cost Voucher.,Проведите
 Submit this BOM? You won't be able to edit it after.,Провести эту спецификацию? После этого её нельзя будет редактировать.
 Submit this GRN checklist? This closes receiving and drafts a landed cost voucher.,Провести этот лист приёмки? Приёмка закроется и будет создан черновик ваучера себестоимости.
 Submit transfer,Отправить перевод
-Submit Work Order,
+Submit Work Order,Провести производственный заказ
 Submitted,Отправлен
 "Submitted and lost — the bid was in, the result went the other way.","Подали и проиграли — заявка была, результат оказался другим."
 Submitted and waiting on the result. Nothing to do but track it.,"Заявка подана, ждём результат. Остаётся только следить."
@@ -5153,7 +5159,7 @@ Taken from the cash desk — never chosen by hand.,Берётся из касс�
 Target,Цель
 Target margin (profit ÷ net revenue),Целевая маржа (прибыль ÷ чистая выручка)
 Target rate,Целевая цена
-Target Remaining,
+Target Remaining,Осталось по плану
 Target Temp Max,Целевая макс. температура
 Target temp max (°C),Макс. темп. (°C)
 Target Temp Min,Целевая мин. температура
@@ -5268,7 +5274,7 @@ The selected quotation was NOT the cheapest bid.,Выбранное предло
 "The server returned a capped page; this total covers the rows loaded, not the whole book.","Сервер вернул ограниченную страницу; этот итог охватывает загруженные строки, а не всю книгу."
 The top-level category cannot be deleted.,Категорию верхнего уровня нельзя удалить.
 The voucher is created as a draft; an accountant reviews and submits it in the books.,Ваучер создаётся как черновик; бухгалтер проверяет и проводит его в учёте.
-There are currently no work orders assigned to you.,
+There are currently no work orders assigned to you.,На вас сейчас не назначено ни одного заказа.
 There are no proformas available to link yet.,Пока нет проформ для привязки.
 These are ERPNext's back-dating guards — the reason it blocks creating or editing transactions older than a set window. They protect closed periods; relax them only deliberately.,
 "These are the toxic role combinations Stabler checks for. Findings are advisory — accept them with a compensating control, or split the duties.","Это опасные комбинации ролей, которые проверяет Stabler. Результаты носят рекомендательный характер — примите их с компенсирующим контролем или разделите обязанности."
@@ -5859,10 +5865,10 @@ Win-rate,Процент побед
 Win-rate — {won}W / {lost}L in {days} days,Победы — {won}П / {lost}Пр за {days} дней
 Win/Loss Reason,Причина выигрыша/проигрыша
 Winner,Победитель
-WIP Stock,
+WIP Stock,Остаток НЗП
 WIP Warehouse,
 WIP warehouse,Склад НЗП
-WIP Whse,
+WIP Whse,Склад НЗП
 Withdrawal,Списание
 Withheld,Удержано
 Within,В пределах
@@ -5880,10 +5886,10 @@ Work done is required.,
 Work From Home,Удалённо
 Work mode,
 Work Order,Производственный заказ
-Work Order closed.,
-Work Order resumed.,
-Work Order stopped.,
-Work Order submitted and released.,
+Work Order closed.,Заказ закрыт.
+Work Order resumed.,Заказ возобновлён.
+Work Order stopped.,Заказ остановлен.
+Work Order submitted and released.,Заказ проведён и запущен.
 Work Orders,Производственные заказы
 Worked,
 Workers with advances,Сотрудников с авансами

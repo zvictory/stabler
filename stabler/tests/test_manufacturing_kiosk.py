@@ -925,7 +925,7 @@ class TestAHalfAssignedOrderCannotStart(unittest.TestCase):
 	def _wo(production, packaging):
 		return {"operator": production, "packaging_operator": packaging}
 
-	def _assert(self, production, packaging):
+	def _assert(self, production, packaging, purpose="Material Transfer for Manufacture"):
 		with (
 			patch(
 				"stabler.api.manufacturing._wo_operator_columns",
@@ -936,7 +936,35 @@ class TestAHalfAssignedOrderCannotStart(unittest.TestCase):
 				return_value=self._wo(production, packaging),
 			),
 		):
-			_assert_roles_are_both_or_neither("WO-00009")
+			_assert_roles_are_both_or_neither("WO-00009", purpose)
+
+	def _refusal(self, purpose):
+		"""The message an operator would read, or "" if the call was allowed."""
+		try:
+			self._assert("pourer@x.uz", "", purpose)
+		except frappe.ValidationError as exc:
+			return str(exc)
+		return ""
+
+	def test_the_refusal_names_the_gesture_the_operator_actually_performed(self):
+		"""One guard now serves two buttons, and the first version of that reused
+		one sentence for both — so an operator who pressed Finish was told that
+		materials "cannot be transferred", naming a gesture they had not performed.
+		On a kiosk with no Desk access that sends them hunting for a transfer screen
+		that is not the problem.
+
+		The half that must survive verbatim in both is "Missing: <role>". Naming the
+		absent role is what turns a refusal into an instruction.
+		"""
+		finish = self._refusal("Manufacture")
+		transfer = self._refusal("Material Transfer for Manufacture")
+
+		self.assertNotEqual(finish, transfer, "both buttons still read the same sentence")
+		self.assertNotIn("transferred", finish.lower(), "Finish still talks about transferring")
+		self.assertIn("finish", finish.lower(), "Finish's refusal does not name finishing")
+		self.assertIn("transferred", transfer.lower())
+		for message in (finish, transfer):
+			self.assertIn("Packaging", message, "the refusal stopped naming the missing role")
 
 	def test_both_roles_assigned_passes(self):
 		self._assert("pourer@x.uz", "packer@x.uz")
@@ -988,6 +1016,44 @@ class TestAHalfAssignedOrderCannotStart(unittest.TestCase):
 					"Material Transfer for Manufacture",
 					items='[{"item_code": "RAW-MLK", "qty": 1}]',
 				)
+		guard.assert_called_once()
+		build.assert_not_called()
+
+	def test_the_manufacture_endpoint_also_refuses_before_it_builds_anything(self):
+		"""D1 (P0): until now `_assert_roles_are_both_or_neither` ran only on the
+		transfer branch. A half-assigned order that skipped straight to Finish (the
+		packer never wrote anything off because they could never open the order)
+		reached ERPNext's Manufacture entry unchecked, which sweeps the packer's
+		unconsumed lines onto the pourer's document — the exact misattribution the
+		split exists to prevent, at the one moment (order close) it can no longer be
+		corrected. Same ordering requirement as the transfer branch: refused before
+		`make_stock_entry` builds anything, not after.
+
+		The downstream Manufacture machinery (`frappe.get_doc`, valuation, event log)
+		is mocked well enough to run to completion so that, without the fix, this
+		fails on `assertRaises` itself ("ValidationError not raised") rather than on
+		an unrelated mock-shape crash — red for the right reason, not an artifact of
+		under-mocking.
+		"""
+		with (
+			patch("stabler.api.manufacturing._require_mfg"),
+			patch("stabler.api.manufacturing._is_mfg_manager", return_value=True),
+			patch(
+				"stabler.api.manufacturing._assert_roles_are_both_or_neither",
+				side_effect=frappe.ValidationError("half-assigned"),
+			) as guard,
+			patch("stabler.api.manufacturing.assert_stock_entry_valuation_sane"),
+			patch("stabler.api.manufacturing._log_wo_event"),
+			patch("stabler.api.manufacturing._clear_finish_draft"),
+			patch("stabler.api.manufacturing.frappe.session"),
+			patch("stabler.api.manufacturing.frappe.get_doc", side_effect=lambda stub: _FakeStockEntry(stub)),
+			patch(
+				"erpnext.manufacturing.doctype.work_order.work_order.make_stock_entry",
+				return_value={"purpose": "Manufacture", "work_order": "WO-00009"},
+			) as build,
+		):
+			with self.assertRaises(frappe.ValidationError):
+				make_work_order_stock_entry("WO-00009", "Manufacture", qty=5)
 		guard.assert_called_once()
 		build.assert_not_called()
 

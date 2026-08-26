@@ -76,6 +76,7 @@ A valid veterinary certificate is required.,Amaldagi veterinariya sertifikati ta
 "A ≤ {0}%, B ≤ {1}%, C rest — by revenue.","A ≤ {0}%, B ≤ {1}%, C qolgan — tushum bo'yicha."
 "A ≤ {0}%, B ≤ {1}%, C rest — by spend.","A ≤ {0}%, B ≤ {1}%, C qolgan — xarajat bo'yicha."
 "A ≤ {0}%, B ≤ {1}%, C rest — by {2}. Submitted; returns netted.","A ≤ {0}%, B ≤ {1}%, C qolgan — {2} bo'yicha. Tasdiqlangan; qaytarishlar netto."
+Add Material,Material qo'shish
 Already {0},Allaqachon {0}
 AR balance per customer as of the selected date — click a row to see the ledger behind the balance.,Tanlangan sanadagi mijozlar bo‘yicha debitorlik qarzi — qator ustiga bosing va uning ortidagi daftarni ko‘ring.
 Abbr,Qisqartma
@@ -101,12 +102,14 @@ Design view,Loyiha ko‘rinishi
 Direct Sales Invoicing is not enabled for company {0}. Sales Invoices must be created from a submitted Sales Order.,To'g'ridan-to'g'ri hisob-faktura {0} kompaniyasi uchun yoqilmagan. Hisob-fakturalar yuborilgan savdo buyurtmasidan yaratilishi kerak.
 Every user of {company} moves to the {engine} screens when this is saved.,"Saqlangach, {company} ning barcha foydalanuvchilari {engine} ekranlariga o'tadi."
 Exchange rates,Valyuta kurslari
+From Warehouse,Ombordan
 I have checked {receiver}'s identity document.,{receiver} shaxsini tasdiqlovchi hujjatni tekshirdim.
 I have counted {amount} and am handing it back to {sender}.,{amount} miqdorini sanadim va {sender}ga qaytarib beryapman.
 I have written it down,Yozib oldim
 Journal entry,Jurnal yozuvi
 Legacy — journal entry screens,Legacy — jurnal yozuvi ekranlari
 Lines disagree,Qatorlar mos kelmaydi
+No items to transfer. Click 'Add Material' to add items manually.,O'tkaziladigan pozitsiyalar yo'q. Qo'lda qo'shish uchun «Material qo'shish» tugmasini bosing.
 No longer exists,Endi mavjud emas
 Not changed:,O'zgartirilmadi:
 Not ready — this desk cannot take or hand over a transfer.,"Tayyor emas — bu kassa o'tkazmani na qabul qila oladi, na bera oladi."
@@ -129,9 +132,11 @@ Refresh the rate for this date,Ushbu sanaga kursni yangilash
 Remittance engine,O'tkazma mexanizmi
 Same as your last transfer,Oxirgi o'tkazmangizdagi kabi
 Select at least one Work Order.,Kamida bitta ishlab chiqarish buyurtmasini tanlang.
+Select Warehouse,Omborni tanlang
 Selected work orders: {0},Tanlangan buyurtmalar: {0}
 Terminated by {0}: {1},{0} tomonidan yopildi: {1}
 The destination desk ({branch}) has no {currency} cash account — add it in Remittance Settings before registering.,Manzil kassasida ({branch}) {currency} hisobi yo'q — ro'yxatga olishdan oldin uni O'tkazma sozlamalarida qo'shing.
+The order cannot be finished until both operator roles are assigned. Missing: {0},Ikkala operator roli tayinlanmaguncha buyurtmani yakunlab bo'lmaydi. Yetishmayapti: {0}
 The pickup code was refused.,Olib ketish kodi rad etildi.
 The posting could not be previewed.,Provodkani oldindan ko‘rsatib bo‘lmadi.
 The V1 engine reads every cash account from the desk table. Add at least one desk before switching to V1.,V1 mexanizmi barcha kassa hisoblarini kassa jadvalidan o'qiydi. V1 ga o'tishdan oldin kamida bitta kassa qo'shing.
@@ -142,6 +147,7 @@ This company runs the {engine} remittance engine. The Transfer V1 screens stay u
 This entry does not balance. Do not hand over cash — report it.,Bu provodka tenglashmayapti. Naqd pul bermang — xabar bering.
 This site is not migrated for packaging operators yet.,Bu saytda qadoqlash operatorlari uchun migratsiya hali bajarilmagan.
 This will post,Quyidagilar kitobga o'tkaziladi
+To Warehouse (WIP),Omborga (jarayonda)
 Transfer registered,Pul o'tkazmasi ro'yxatga olindi
 Transfers registered on the legacy engine stay on the legacy list and are not shown by the V1 screens: they have no Remittance Transfer record behind them.,Legacy mexanizmida ro'yxatga olingan o'tkazmalar eski ro'yxatda qoladi va V1 ekranlarida ko'rinmaydi: ular ortida Remittance Transfer yozuvi yo'q.
 "Unknown tender intake field(s): {0}","Noma'lum tender kiritish maydoni: {0}"
@@ -201,7 +207,7 @@ Actions,Harakatlar
 Activation rate,Konversiya
 Active,Faol
 active,
-Active Company,
+Active Company,Joriy kompaniya
 active contracts,faol shartnoma
 Active contracts — serving,Faol shartnomalar — xizmat ko'rsatmoqdamiz
 Active from,
@@ -600,7 +606,7 @@ Backup created.,Zaxira nusxa yaratildi.
 Backup file not found: {0},
 Backup set,Zaxira to'plami
 Badge,Belgi
-Badge Timeline,
+Badge Timeline,Hodisalar tarixi
 Badge UID is required.,
 Bal,Qoldiq
 Balance,Balans
@@ -819,7 +825,7 @@ Capitalize,Kapitallashtirish
 Captured At,Qabul qilingan vaqti
 Car / Item,Avtomobil / Mahsulot
 Car item is required.,Mahsulot (avtomobil) majburiy.
-Card not recognized,
+Card not recognized,Karta tanilmadi
 Cargo,Yuk
 Cargo Insurance,Yuk sugʻurtasi
 Carrier,Tashuvchi
@@ -956,7 +962,7 @@ Click a line to see suggested matches.,Taklif etilgan mosliklarni ko'rish uchun 
 Click a status to open exactly those records.,Aynan shu yozuvlarni ochish uchun holatni bosing.
 Click an installment chip to view the contract.,Shartnomani ko'rish uchun bo'lib to'lash chipini bosing.
 Click New Revaluation to preview unrealised FX deltas and post an Exchange Rate Revaluation.,
-Click to Activate Scanner,
+Click to Activate Scanner,Skanerni yoqish uchun bosing
 Clock drift tolerance (min),
 Close,Yopish
 Close & release,
@@ -966,7 +972,7 @@ Close Sales Order,
 Close this Work Order? This finalizes it.,Bu buyurtmani yopasizmi? Bu yakuniy harakat.
 Close Visit,Tashrifni yopish
 Close visit,Tashrifni yopish
-Close Work Order,
+Close Work Order,Ishlab chiqarish buyurtmasini yopish
 Closing,Yopilmoqda
 Closing Balance,Yakuniy qoldiq
 Closing balance,Yopilish qoldig'i
@@ -1062,7 +1068,7 @@ Confirm (submit) this import order? It can no longer be edited here afterwards.,
 Confirm finish,Yakunlashni tasdiqlash
 Confirm import order,Import buyurtmasini tasdiqlash
 Confirm restore test,Tiklash sinovini tasdiqlang
-Confirm Submit,
+Confirm Submit,Tasdiqlash va yuborish
 Confirm waiver,Muafiyatni tasdiqlash
 Confirmed,Tasdiqlangan
 CONFIRMED,Tasdiqlangan
@@ -1792,7 +1798,7 @@ Employee carries additional responsibilities.,
 Employee Device Mapping,
 Employee Device Mapping {0} not found.,
 Employee has no linked user account.,
-Employee ID,
+Employee ID,Tabel raqami
 Employee ID and PIN are required.,
 Employee ID is required.,
 Employee is required.,
@@ -1836,7 +1842,7 @@ Enter cost and term to see the payment schedule.,To'lov jadvalini ko'rish uchun 
 enter password,parolni kiriting
 Enter protocol / authorization reason…,Bayonnoma raqami yoki sababni kiriting…
 Enter the quantity to return for each line. Leave 0 to exclude a line.,Har bir qator uchun qaytarish miqdorini kiriting. Qatorni istisno qilish uchun 0 ni qoldiring.
-Enter your Employee ID and secure PIN,
+Enter your Employee ID and secure PIN,Tabel raqamingiz va PIN kodni kiriting
 Entered rate deviates by {pct}% from CBU rate.,Kiritilgan kurs CBU kursidan {pct}% ga farq qiladi.
 entries,yozuv
 Entries on/before this date are frozen.,
@@ -2128,7 +2134,7 @@ Failed to load vendor categories.,Kategoriyalarni yuklab bo'lmadi.
 Failed to load veterinary certificates.,Veterinariya sertifikatlarini yuklab bo‘lmadi.
 Failed to load visit.,Tashrif yuklashda xato.
 Failed to load warehouses.,Omborlarni yuklashda xato.
-Failed to load work orders.,
+Failed to load work orders.,Ishlab chiqarish buyurtmalarini yuklab bo'lmadi.
 Failed to load your materials.,Materiallaringizni yuklab bo'lmadi.
 Failed to load.,Yuklashda xato.
 Failed to move deal.,Bitimni ko'chirish muvaffaqiyatsiz bo'ldi.
@@ -2179,7 +2185,7 @@ FCL,FCL
 Female,Ayol
 Fetch,Yuklash
 Fetched,Yuklandi
-FG Whse,
+FG Whse,TM ombori
 Field Receivables,
 Field Sales,Sotuv maydoni
 Field User,Foydalanuvchi maydoni
@@ -2208,8 +2214,8 @@ Fines,Jarimalar
 Finish,Yakunlash
 Finish failed.,Yakunlash muvaffaqiyatsiz.
 Finish Google Drive setup,Google Drive sozlashni yakunlang
-Finish Order,
-Finish Production Run,
+Finish Order,Buyurtmani yakunlash
+Finish Production Run,Ishlab chiqarish siklini yakunlash
 Finish setup,Sozlashni yakunlash
 Finished Good,
 Finished good,Tayyor mahsulot
@@ -2318,7 +2324,7 @@ GO Decision,GO Qaror
 Go to Sales Orders,Sotuv buyurtmalariga o'ting
 GO — awaiting sourcing,GO — narx so'rovi kutilmoqda
 Good kg,Yaroqli kg
-Good Produced Qty,
+Good Produced Qty,Yaroqli mahsulot miqdori
 Goods,Tovar
 Goods (PO),Tovar (PO)
 Goods receipt,Tovarni qabul qilish
@@ -2382,7 +2388,7 @@ Heavy-conditions allowance,Og'ir sharoit ustamasi
 Height,Balandlik
 Hello {name},"Salom, {name}"
 Hidden for your role,Sizning rolingiz uchun yashirilgan
-Hide,
+Hide,Yashirish
 Hide password,Parolni yashirish
 high,yuqori
 High conflicts,Yuqori nizolar
@@ -2714,7 +2720,7 @@ Lifetime sales,Umumiy savdo
 Light,
 line,Qator
 Line details,
-Line Operator Kiosk,
+Line Operator Kiosk,Liniya operatori kioski
 Line total,Qator jami
 Line total (UZS),Qator jami (UZS)
 Line-level (pre-tax) — item-filtered,Qator darajasida (soliqsiz) — mahsulot bo'yicha filtrlangan
@@ -2790,11 +2796,11 @@ Lock {0}? No further changes will be allowed once locked.,
 Locked,
 Locked at,
 Locked on/before,Bu sanagacha qulflangan
-Log Out,
+Log Out,Chiqish
 Log out,Chiqish
 Login required,Kirish talab qilinadi
 Login required.,
-Login with PIN,
+Login with PIN,PIN kod bilan kirish
 Logistics,Logistika
 Logistics & duties,Logistika va bojxona
 Logistics readiness,Logistika tayyorligi
@@ -2802,7 +2808,7 @@ Longitude,Uzunlik
 Look up rates,Stavkalarni topish
 Lost,Yutqazdik
 lost,yo'qotildi
-Lost Badge? Login with PIN,
+Lost Badge? Login with PIN,Kartani yo'qotdingizmi? PIN kod bilan kiring
 Lot,Lot
 Lot loaded from UZEX,Lot UZEX'dan yuklandi
 Lot Name,Lot nomi
@@ -2951,7 +2957,7 @@ must close today,bugun yopilishi kerak
 My requests,Mening so'rovlarim
 My tenders,Mening tenderlarim
 My work orders,Mening ishlab chiqarish buyurtmalarim
-My Work Orders Queue,
+My Work Orders Queue,Mening buyurtmalar navbatim
 N/A,—
 Name,Nomi
 Name is required.,
@@ -3110,7 +3116,7 @@ no action from you,sizdan harakat talab qilinmaydi
 No active customs declarations or won lots in the pipeline.,Jarayonda faol bojxona deklaratsiyalari yoki yutilgan lotlar yo'q.
 No active shipments or won lots in the pipeline.,Jarayonda faol jo'natmalar yoki yutilgan lotlar yo'q.
 No active tenders found for {0}.,{0} uchun faol tenderlar topilmadi.
-No activity recorded yet.,
+No activity recorded yet.,Hozircha hodisalar yo'q.
 No advance ledger movements yet.,Hozircha avans harakatlari yo'q.
 No advance payments yet.,Hozircha avans to‘lovlari yo‘q.
 No advances yet.,Hali avanslar yo'q.
@@ -3250,7 +3256,7 @@ No low-stock items,Kam ombordagi tovarlar yo'q
 No matches found,Mos keluvchilar topilmadi
 No matching items,
 "No matching vouchers found. Create a payment, or widen the date/amount window.",Mos hujjatlar topilmadi. To'lov yarating yoki sana/summa oynasini kengaytiring.
-No materials required.,
+No materials required.,Material talab qilinmaydi.
 No materials to stage,
 No movements yet.,Hozircha harakatlar yo'q.
 No new Version rows since the last seal.,
@@ -3623,7 +3629,7 @@ Operations,Operatsiyalar
 Operations desk,Operatsion stol
 Operations desk →,Operatsion stol →
 Operator,Operator
-Operator Kiosk,
+Operator Kiosk,Operator kioski
 Optional,Ixtiyoriy
 optional,Ixtiyoriy
 Optional note (leave blank to skip):,
@@ -3780,12 +3786,12 @@ Paste access token JWT…,
 Paste new token to replace…,
 Paste refresh token JWT…,
 Paste UZEX lot URL,UZEX lot havolasini kiriting
-Pause,
+Pause,Pauza
 Pause failed.,To'xtatish muvaffaqiyatsiz.
-Pause this Work Order?,
+Pause this Work Order?,Bu buyurtma to'xtatib turilsinmi?
 Pause this Work Order? You can resume it later.,Bu buyurtmani to'xtatilsinmi? Keyinroq davom ettirishingiz mumkin.
-Pause Work,
-Pause Work Order,
+Pause Work,Ishni to'xtatib turish
+Pause Work Order,Buyurtmani to'xtatib turish
 Pay,To'lash
 Pay advance,Avans berish
 "Pay an advance, or turn off the balance filter to see everyone.",Avans bering yoki hammani ko'rish uchun balans filtrini o'chiring.
@@ -3980,13 +3986,13 @@ Pickup date,Olib ketish sanasi
 Pickup Location,Olib ketish joyi
 Pickup location,Olib ketish joyi
 Pieces,Dona
-PIN,
+PIN,PIN kod
 Pipeline,Bosqichlar
 Pipeline Value,Voronka qiymati
 PIs,PI
 Pistachio,
 Place branded freezer at {0} (deal {1}),
-Place your RFID badge on the reader to log in,
+Place your RFID badge on the reader to log in,Kirish uchun kartani o'quvchiga tekkizing
 Placed Freezer,Muzlatgich o'rnatildi
 Placing,Joylashtirish
 Plan,Reja
@@ -3999,10 +4005,10 @@ Planned date,Rejalashtirilgan sana
 Planned FCL,Rejalashtirilgan FCL
 Planned Qty,
 Planned service,Rejalashtirilgan xizmat
-Planned Start,
+Planned Start,Rejadagi boshlanish
 Planned start,Boshlanish sanasi
 Planned Time,Rejalashtirilgan vaqt
-Planned Total,
+Planned Total,Reja bo'yicha jami
 Planning,Rejalashtirish
 Planogram name is required.,Planogram nomi talab qilinadi.
 Planograms,Planogramlar
@@ -4211,7 +4217,7 @@ Quantity (KG),Miqdor (kg)
 Quantity must be greater than zero.,Miqdor noldan katta bo'lishi kerak.
 Quantity must be positive.,Miqdor musbat bo'lishi kerak.
 Queue is clear. Nothing pending.,Navbat bo'sh. Kutilayotgan narsa yo'q.
-Queue is empty,
+Queue is empty,Navbat bo'sh
 Quick view,Tezkor ko‘rish
 Quotation,Taklif
 Quotation #,Taklif №
@@ -4407,7 +4413,7 @@ Remove holiday?,Bayram o'chirilsinmi?
 Remove Lane,Yo'lakni o'chirish
 Remove Lane?,
 Remove line,Qatorni o'chirish
-Remove operator,
+Remove operator,Operatorni olib tashlash
 Remove row,Qatorni o'chirish
 Remove Telegram access for {0}? This cannot be undone.,{0} uchun Telegram kirishini olib tashlansinmi? Buni ortga qaytarib bo'lmaydi.
 Remove the link between {0} and device user {1}? This will not affect attendance records already generated.,
@@ -4491,9 +4497,9 @@ Result date,Natija sanasi
 Result?,Natija?
 Resume,Davom ettirish
 Resume failed.,Davom ettirish muvaffaqiyatsiz.
-Resume this Work Order?,
-Resume Work,
-Resume Work Order,
+Resume this Work Order?,Bu buyurtma davom ettirilsinmi?
+Resume Work,Ishni davom ettirish
+Resume Work Order,Buyurtmani davom ettirish
 Retail,
 Retired,Foydalanishdan chiqarilgan
 Retries,Takrorlanishlar
@@ -4665,7 +4671,7 @@ Scan to pay,To‘lash uchun skanerlang
 Scanned,Skaneerlandi
 Scanned / Required,Skaneerlandi / Talab qilinadi
 Scanned declaration,Deklaratsiya skani
-Scanner Ready,
+Scanner Ready,Skaner tayyor
 Scanning…,Skanelanmoqda…
 Schedule,Jadval
 Schedule date,Jadval sanasi
@@ -4677,7 +4683,7 @@ Scheme Name,Sxema nomi
 Scheme Type,Sxema turi
 Score cards above show this selection only,Yuqoridagi kartalar faqat shu tanlovni ko'rsatadi
 Scrap / rejects,Chiqindi / nosoz
-Scrap / Rejects Qty,
+Scrap / Rejects Qty,Brak / chiqindi miqdori
 SE In,SE kirim
 Seal broken,Plomba buzilgan
 Seal intact,Plomba butun
@@ -4887,7 +4893,7 @@ Shop,Do‘kon
 Short code,Qisqa kod
 short stock,yetarli emas
 Should We Bid?,Tenderda qatnashamizmi?
-Show,
+Show,Ko'rsatish
 Show all allocations,Barcha taqsimotlarni ko'rsatish
 Show all items,
 Show discounts,Chegirtilarni ko'rsatish
@@ -5051,7 +5057,7 @@ Stock UOM,Zaxira o'lchov birligi
 Stock value,Zaxira qiymati
 Stop,To'xtatish
 Stop this Work Order? You can resume it later.,Bu buyurtmani to'xtatasizmi? Keyin davom ettirsa bo'ladi.
-Stop Work Order,
+Stop Work Order,Buyurtmani to'xtatish
 Storage,Saqlash
 Storefront,Do'kon ko'rinishi
 Stream,Oqim
@@ -5084,7 +5090,7 @@ Submit the GRN Checklist before adding a Landed Cost Voucher.,Yetkazib berish xa
 Submit this BOM? You won't be able to edit it after.,Bu spetsifikatsiyani tasdiqlaysizmi? Keyin tahrirlay olmaysiz.
 Submit this GRN checklist? This closes receiving and drafts a landed cost voucher.,Ushbu qabul varaqasi tasdiqlansinmi? Qabul yopiladi va tannarx vaucheri qoralamasi yaratiladi.
 Submit transfer,Transferni tasdiqlash
-Submit Work Order,
+Submit Work Order,Ishlab chiqarish buyurtmasini yuborish
 Submitted,Tasdiqlangan
 "Submitted and lost — the bid was in, the result went the other way.","Yuborildi va yutqazildi — taklif berilgan edi, natija boshqacha chiqdi."
 Submitted and waiting on the result. Nothing to do but track it.,"Taklif topshirildi, natija kutilmoqda. Faqat kuzatib borish qoldi."
@@ -5148,7 +5154,7 @@ Taken from the cash desk — never chosen by hand.,Kassadan olinadi — qo'lda t
 Target,Maqsad
 Target margin (profit ÷ net revenue),Maqsadli marja (foyda ÷ sof tushum)
 Target rate,Maqsadli narx
-Target Remaining,
+Target Remaining,Rejadan qolgan
 Target Temp Max,Maqsadli maks. harorat
 Target temp max (°C),Maks. harorat (°C)
 Target Temp Min,Maqsadli min. harorat
@@ -5263,7 +5269,7 @@ The selected quotation was NOT the cheapest bid.,Tanlangan taklif eng arzon takl
 "The server returned a capped page; this total covers the rows loaded, not the whole book.","Server cheklangan sahifa qaytardi; bu jami yuklangan qatorlarni qamrab oladi, butun kitobni emas."
 The top-level category cannot be deleted.,Yuqori darajadagi toifani o'chirib bo'lmaydi.
 The voucher is created as a draft; an accountant reviews and submits it in the books.,"Vaucher qoralama sifatida yaratiladi; buxgalter uni tekshirib, hisobda tasdiqlaydi."
-There are currently no work orders assigned to you.,
+There are currently no work orders assigned to you.,Hozircha sizga biror buyurtma tayinlanmagan.
 There are no proformas available to link yet.,Bogʻlash uchun hali proforma yoʻq.
 These are ERPNext's back-dating guards — the reason it blocks creating or editing transactions older than a set window. They protect closed periods; relax them only deliberately.,
 "These are the toxic role combinations Stabler checks for. Findings are advisory — accept them with a compensating control, or split the duties.",Bular Stabler tekshiradigan xavfli rol kombinatsiyalari. Natijalar tavsiyaviy — ularni kompensatsion nazorat bilan qabul qiling yoki vazifalarni ajrating.
@@ -5854,10 +5860,10 @@ Win-rate,Yutuq ulushi
 Win-rate — {won}W / {lost}L in {days} days,Yutuq — {days} kunda {won}Y / {lost}M
 Win/Loss Reason,Yutuq/yutqaziq sababi
 Winner,G'olib
-WIP Stock,
+WIP Stock,Jarayondagi qoldiq
 WIP Warehouse,
 WIP warehouse,Tugallanmagan ishlab chiqarish ombori
-WIP Whse,
+WIP Whse,Jarayon ombori
 Withdrawal,Yechib olish
 Withheld,Ushlab qolingan
 Within,Ichida
@@ -5875,10 +5881,10 @@ Work done is required.,
 Work From Home,Uydan ish
 Work mode,
 Work Order,Ishlab chiqarish buyurtmasi
-Work Order closed.,
-Work Order resumed.,
-Work Order stopped.,
-Work Order submitted and released.,
+Work Order closed.,Buyurtma yopildi.
+Work Order resumed.,Buyurtma davom ettirildi.
+Work Order stopped.,Buyurtma to'xtatildi.
+Work Order submitted and released.,Buyurtma yuborildi va ishga tushirildi.
 Work Orders,Ishlab chiqarish buyurtmalari
 Worked,
 Workers with advances,Avansli xodimlar

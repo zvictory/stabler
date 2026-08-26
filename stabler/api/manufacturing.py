@@ -392,7 +392,7 @@ def _role_deviation(rows, with_cost: bool) -> list[dict]:
 	return [b for role, b in buckets.items() if role is not None or b["counted_lines"] or b["pending_lines"]]
 
 
-def _assert_roles_are_both_or_neither(work_order: str) -> None:
+def _assert_roles_are_both_or_neither(work_order: str, purpose: str) -> None:
 	"""Refuse a Work Order that names one operator role and leaves the other empty.
 
 	`list_work_orders` filters an operator's list by the assignee columns, so the
@@ -417,14 +417,21 @@ def _assert_roles_are_both_or_neither(work_order: str) -> None:
 	if all(assigned.values()) or not any(assigned.values()):
 		return
 	missing = [_WO_FIELD_ROLE[field] for field, who in assigned.items() if not who]
+	# `purpose` is required rather than defaulted, and the reason is a bug this
+	# already had: one guard now serves two buttons, and the first version reused
+	# the transfer sentence for both, so an operator who pressed Finish was told
+	# that materials "cannot be transferred" — a gesture they had not performed, on
+	# a kiosk with no Desk access to go looking on. A default would let the next
+	# caller reintroduce exactly that, silently. Making it required costs one
+	# argument and forces whoever adds the third button to pick the verb.
+	if purpose == "Manufacture":
+		message = _("The order cannot be finished until both operator roles are assigned. Missing: {0}")
+	else:
+		message = _("Materials cannot be transferred until both operator roles are assigned. Missing: {0}")
 	# The role name goes after a colon rather than inside the sentence: it is a
 	# stored value ("Production"/"Packaging"), and inlining an English word into
 	# the middle of a translated clause reads as a bug in every other language.
-	frappe.throw(
-		_("Materials cannot be transferred until both operator roles are assigned. Missing: {0}").format(
-			", ".join(missing)
-		)
-	)
+	frappe.throw(message.format(", ".join(missing)))
 
 
 def _material_consumption_enabled() -> bool:
@@ -851,9 +858,10 @@ def list_work_orders(
 		conds.append("(name LIKE %(s)s OR production_item LIKE %(s)s OR item_name LIKE %(s)s)")
 		params["s"] = f"%{search}%"
 	assignee_cols = _wo_operator_columns()
+	is_manager = _is_mfg_manager()
 	# Operators see only WOs assigned to themselves; managers see all. Assigned in
 	# EITHER role — the packer has to reach the same order as the pourer.
-	if not _is_mfg_manager():
+	if not is_manager:
 		conds.append("(" + " OR ".join(f"`{col}` = %(user)s" for col in assignee_cols) + ")")
 		params["user"] = frappe.session.user
 	where = " AND ".join(conds)
@@ -877,10 +885,57 @@ def list_work_orders(
 		params,
 		as_dict=True,
 	)
+	# The card on the kiosk board shows a Required Materials block, role-scoped the
+	# same way `work_order_detail` scopes it — an operator sees only their own
+	# role's lines, a manager sees the lot. One bulk query for every row on the
+	# page rather than a Work Order document load per row, which is what a naive
+	# per-row `frappe.get_doc(...).required_items` would cost: 100 rows would mean
+	# 100 extra document loads on every board poll.
+	names = [row["name"] for row in rows]
+	item_rows = (
+		frappe.get_all(
+			"Work Order Item",
+			filters={"parent": ["in", names]},
+			fields=[
+				"parent",
+				"item_code",
+				"item_name",
+				"required_qty",
+				"transferred_qty",
+				"consumed_qty",
+				"source_warehouse",
+				*(["rate", "amount"] if is_manager else []),
+			],
+			order_by="parent, idx",
+			ignore_permissions=True,  # rows already scoped to WOs this user may see, above
+		)
+		if names
+		else []
+	)
+	item_roles = _item_roles([r["item_code"] for r in item_rows])
+	items_by_wo: dict[str, list] = {}
+	for r in item_rows:
+		items_by_wo.setdefault(r["parent"], []).append(
+			{
+				"item_code": r["item_code"],
+				"item_name": r["item_name"],
+				"required_qty": flt(r["required_qty"]),
+				"transferred_qty": flt(r["transferred_qty"]),
+				"consumed_qty": flt(r["consumed_qty"]),
+				"source_warehouse": r["source_warehouse"],
+				"operator_role": item_roles.get(r["item_code"]) or None,
+				# Rates reveal BOM cost data — only managers see them.
+				**({"rate": flt(r["rate"]), "amount": flt(r["amount"])} if is_manager else {}),
+			}
+		)
 	for row in rows:
 		row["finish_draft"] = _decode_finish_draft(row)
 		for col in draft_cols:
 			row.pop(col, None)
+		wo_items = items_by_wo.get(row["name"], [])
+		row["required_items"] = (
+			wo_items if is_manager else _rows_for_role(wo_items, item_roles, _wo_role_of(row))
+		)
 	return rows
 
 
@@ -1135,7 +1190,24 @@ def make_work_order_stock_entry(
 		# The first stock document of the order, and the last moment a missing
 		# assignee is cheap to fix: after this the material is in WIP and somebody
 		# has to write it off under a name.
-		_assert_roles_are_both_or_neither(work_order)
+		_assert_roles_are_both_or_neither(work_order, purpose)
+	elif purpose == "Manufacture":
+		# D1 (P0): this guard used to run only on the transfer branch, so a
+		# half-assigned order (the never-named role could not even open the order
+		# to write anything off) reached ERPNext's Manufacture entry unchecked.
+		# ERPNext sweeps every unconsumed line onto whoever posts this document —
+		# the packer's kilograms land on the pourer's Stock Entry, with no
+		# attribution the deviation panel can later untangle.
+		#
+		# Caller-blind on purpose, including managers: unlike `_assert_may_consume`
+		# (which asks "whose lines may you touch?" and rightly exempts a manager,
+		# who is not claiming a role), this guard asks "is this order in a fit
+		# state to post at all?" — a property of the order, not of who is pressing
+		# the button. A half-assigned order yields the same unattributable document
+		# whichever of them posts it, so there is nothing to exempt. The escape
+		# hatch for a manager is to assign both roles first, which is one action
+		# and makes the record true — not to post around the gap.
+		_assert_roles_are_both_or_neither(work_order, purpose)
 
 	doc = make_stock_entry(work_order, purpose, qty=flt(qty) if qty else None)
 	stub = doc if isinstance(doc, dict) else doc.as_dict()

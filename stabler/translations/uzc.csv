@@ -76,6 +76,7 @@ A valid veterinary certificate is required.,Амалдаги ветеринар�
 "A ≤ {0}%, B ≤ {1}%, C rest — by revenue.","А ≤ {0}%, B ≤ {1}%, C қолган — тушум бўйича."
 "A ≤ {0}%, B ≤ {1}%, C rest — by spend.","А ≤ {0}%, B ≤ {1}%, C қолган — харажат бўйича."
 "A ≤ {0}%, B ≤ {1}%, C rest — by {2}. Submitted; returns netted.","А ≤ {0}%, B ≤ {1}%, C қолган — {2} бўйича. Тасдиқланган; қайтаришлар нетто."
+Add Material,Материал қўшиш
 Already {0},Аллақачон {0}
 AR balance per customer as of the selected date — click a row to see the ledger behind the balance.,Танланган санадаги мижозлар бўйича дебиторлик қарзи — қатор устига босинг ва унинг ортидаги дафтарни кўринг.
 Abbr,Қисқартма
@@ -101,12 +102,14 @@ Design view,Лойиҳа кўриниши
 Direct Sales Invoicing is not enabled for company {0}. Sales Invoices must be created from a submitted Sales Order.,Тўғридан-тўғри ҳисоб-фактура {0} компанияси учун ёқилмаган. Ҳисоб-фактуралар юборилган савдо буюртмасидан яратилиши керак.
 Every user of {company} moves to the {engine} screens when this is saved.,"Сақлангач, {company} нинг барча фойдаланувчилари {engine} экранларига ўтади."
 Exchange rates,Валюта курслари
+From Warehouse,Омбордан
 I have checked {receiver}'s identity document.,{receiver} шахсини тасдиқловчи ҳужжатни текширдим.
 I have counted {amount} and am handing it back to {sender}.,{amount} миқдорини санадим ва {sender}га қайтариб беряпман.
 I have written it down,Ёзиб олдим
 Journal entry,Журнал ёзуви
 Legacy — journal entry screens,Legacy — журнал ёзуви экранлари
 Lines disagree,Қаторлар мос келмайди
+No items to transfer. Click 'Add Material' to add items manually.,Ўтказиладиган позициялар йўқ. Қўлда қўшиш учун «Материал қўшиш» тугмасини босинг.
 No longer exists,Энди мавжуд эмас
 Not changed:,Ўзгартирилмади:
 Not ready — this desk cannot take or hand over a transfer.,"Тайёр эмас — бу касса ўтказмани на қабул қила олади, на бера олади."
@@ -129,9 +132,11 @@ Refresh the rate for this date,Ушбу санага курсни янгилаш
 Remittance engine,Ўтказма механизми
 Same as your last transfer,Охирги ўтказмангиздаги каби
 Select at least one Work Order.,Камида битта ишлаб чиқариш буюртмасини танланг.
+Select Warehouse,Омборни танланг
 Selected work orders: {0},Танланган буюртмалар: {0}
 Terminated by {0}: {1},{0} томонидан ёпилди: {1}
 The destination desk ({branch}) has no {currency} cash account — add it in Remittance Settings before registering.,Манзил кассасида ({branch}) {currency} ҳисоби йўқ — рўйхатга олишдан олдин уни Ўтказма созламаларида қўшинг.
+The order cannot be finished until both operator roles are assigned. Missing: {0},Иккала оператор роли тайинланмагунча буюртмани якунлаб бўлмайди. Етишмаяпти: {0}
 The pickup code was refused.,Олиб кетиш коди рад этилди.
 The posting could not be previewed.,Проводкани олдиндан кўрсатиб бўлмади.
 The V1 engine reads every cash account from the desk table. Add at least one desk before switching to V1.,V1 механизми барча касса ҳисобларини касса жадвалидан ўқийди. V1 га ўтишдан олдин камида битта касса қўшинг.
@@ -142,6 +147,7 @@ This company runs the {engine} remittance engine. The Transfer V1 screens stay u
 This entry does not balance. Do not hand over cash — report it.,Бу проводка тенглашмаяпти. Нақд пул берманг — хабар беринг.
 This site is not migrated for packaging operators yet.,Бу сайтда қадоқлаш операторлари учун миграция ҳали бажарилмаган.
 This will post,Қуйидагилар китобга ўтказилади
+To Warehouse (WIP),Омборга (жараёнда)
 Transfer registered,Пул ўтказмаси рўйхатга олинди
 Transfers registered on the legacy engine stay on the legacy list and are not shown by the V1 screens: they have no Remittance Transfer record behind them.,Legacy механизмида рўйхатга олинган ўтказмалар эски рўйхатда қолади ва V1 экранларида кўринмайди: улар ортида Remittance Transfer ёзуви йўқ.
 "Unknown tender intake field(s): {0}","Номаълум тендер киритиш майдони: {0}"
@@ -201,7 +207,7 @@ Actions,Амаллар
 Activation rate,Конверсия
 Active,Фаол
 active,
-Active Company,
+Active Company,Жорий компания
 active contracts,фаол шартнома
 Active contracts — serving,Фаол шартномалар — хизмат кўрсатмоқдамиз
 Active from,
@@ -600,7 +606,7 @@ Backup created.,Захира нусха яратилди.
 Backup file not found: {0},
 Backup set,Захира тўплами
 Badge,Белги
-Badge Timeline,
+Badge Timeline,Ҳодисалар тарихи
 Badge UID is required.,
 Bal,Қолдиқ
 Balance,Баланс
@@ -819,7 +825,7 @@ Capitalize,Капиталлаштириш
 Captured At,Қўлга олингани
 Car / Item,Автомобил / Маҳсулот
 Car item is required.,Маҳсулот (автомобил) мажбурий.
-Card not recognized,
+Card not recognized,Карта танилмади
 Cargo,Юк
 Cargo Insurance,Юк суғуртаси
 Carrier,Ташувчи
@@ -956,7 +962,7 @@ Click a line to see suggested matches.,Таклиф этилган мослик�
 Click a status to open exactly those records.,Айнан шу ёзувларни очиш учун ҳолатни босинг.
 Click an installment chip to view the contract.,Шартномани кўриш учун бўлиб тўлаш чипини босинг.
 Click New Revaluation to preview unrealised FX deltas and post an Exchange Rate Revaluation.,
-Click to Activate Scanner,
+Click to Activate Scanner,Сканерни ёқиш учун босинг
 Clock drift tolerance (min),
 Close,Ёпиш
 Close & release,
@@ -966,7 +972,7 @@ Close Sales Order,
 Close this Work Order? This finalizes it.,Бу буюртмани ёпасизми? Бу якуний ҳаракат.
 Close Visit,Ташрифни ёпиш
 Close visit,Ташрифни ёпиш
-Close Work Order,
+Close Work Order,Ишлаб чиқариш буюртмасини ёпиш
 Closing,Ёпилмокда
 Closing Balance,Якуний қолдиқ
 Closing balance,Ёпилиш баланси
@@ -1062,7 +1068,7 @@ Confirm (submit) this import order? It can no longer be edited here afterwards.,
 Confirm finish,Якунлашни тасдиқлаш
 Confirm import order,Импорт буюртмасини тасдиқлаш
 Confirm restore test,Тиклаш синовини тасдиқланг
-Confirm Submit,
+Confirm Submit,Тасдиқлаш ва юбориш
 Confirm waiver,Муафиятни тасдиқлаш
 Confirmed,Тасдиқланган
 CONFIRMED,Тасдиқланган
@@ -1792,7 +1798,7 @@ Employee carries additional responsibilities.,
 Employee Device Mapping,
 Employee Device Mapping {0} not found.,
 Employee has no linked user account.,
-Employee ID,
+Employee ID,Табел рақами
 Employee ID and PIN are required.,
 Employee ID is required.,
 Employee is required.,
@@ -1836,7 +1842,7 @@ Enter cost and term to see the payment schedule.,Тўлов жадвалини �
 enter password,паролни киритинг
 Enter protocol / authorization reason…,Баённома рақами ёки сабабни киритинг…
 Enter the quantity to return for each line. Leave 0 to exclude a line.,Ҳар бир сатр учун қайтарилиши керак бўлган миқдорни киритинг. Сатрни чиқариб юбориш учун 0 қўйинг.
-Enter your Employee ID and secure PIN,
+Enter your Employee ID and secure PIN,Табел рақамингиз ва ПИН кодни киритинг
 Entered rate deviates by {pct}% from CBU rate.,Киритилган курс CBU курсидан {pct}% га фарқ қилади.
 entries,ёзув
 Entries on/before this date are frozen.,
@@ -2128,7 +2134,7 @@ Failed to load vendor categories.,Категорияларни юклаб бўл
 Failed to load veterinary certificates.,Ветеринария сертификатларини юклаб бўлмади.
 Failed to load visit.,Сўроғини юклаб бўла олмади.
 Failed to load warehouses.,Омборларни юклаб бўла олмади.
-Failed to load work orders.,
+Failed to load work orders.,Ишлаб чиқариш буюртмаларини юклаб бўлмади.
 Failed to load your materials.,Материалларингизни юклаб бўлмади.
 Failed to load.,Юклаб бўла олмади.
 Failed to move deal.,Битимни кўчириш муваффақиятсиз бўлди.
@@ -2179,7 +2185,7 @@ FCL,FCL
 Female,Аёл
 Fetch,Юклаш
 Fetched,Юкланди
-FG Whse,
+FG Whse,ТМ омбори
 Field Receivables,
 Field Sales,Соли майдони
 Field User,Фойдаланувчи майдони
@@ -2208,8 +2214,8 @@ Fines,Жарималар
 Finish,Якунлаш
 Finish failed.,Якунлаш муваффақиятсиз.
 Finish Google Drive setup,Google Drive созлашни якунланг
-Finish Order,
-Finish Production Run,
+Finish Order,Буюртмани якунлаш
+Finish Production Run,Ишлаб чиқариш циклини якунлаш
 Finish setup,Созлашни якунлаш
 Finished Good,
 Finished good,Тайёр маҳсулот
@@ -2318,7 +2324,7 @@ GO Decision,GO Қарор
 Go to Sales Orders,Сотув буюртмасига ўтиш
 GO — awaiting sourcing,GO — нарх сўрови кутилмоқда
 Good kg,Яроқли кг
-Good Produced Qty,
+Good Produced Qty,Яроқли маҳсулот миқдори
 Goods,Товар
 Goods (PO),Товар (PO)
 Goods receipt,Товарни қабул қилиш
@@ -2382,7 +2388,7 @@ Heavy-conditions allowance,Оғир шароит устамаси
 Height,Баландлик
 Hello {name},Салом {name}
 Hidden for your role,Сизнинг ролингиз учун яширилган
-Hide,
+Hide,Яшириш
 Hide password,Паролни яшириш
 high,юқори
 High conflicts,Юқори низолар
@@ -2714,7 +2720,7 @@ Lifetime sales,Умумий савдо
 Light,
 line,Қатор
 Line details,
-Line Operator Kiosk,
+Line Operator Kiosk,Линия оператори киоски
 Line total,Қатор жами
 Line total (UZS),Қатор жами (UZS)
 Line-level (pre-tax) — item-filtered,Қатор даражасида (солиқсиз) — маҳсулот бўйича фильтрланган
@@ -2790,11 +2796,11 @@ Lock {0}? No further changes will be allowed once locked.,
 Locked,
 Locked at,
 Locked on/before,Бу санагача қулфланган
-Log Out,
+Log Out,Чиқиш
 Log out,Чиқиш
 Login required,Кириш зарур
 Login required.,
-Login with PIN,
+Login with PIN,ПИН код билан кириш
 Logistics,Логистика
 Logistics & duties,Логистика ва божхона
 Logistics readiness,Логистика тайёрлиги
@@ -2802,7 +2808,7 @@ Longitude,Географик узунлик
 Look up rates,Ставкаларни топиш
 Lost,Ютқаздик
 lost,йўқотилди
-Lost Badge? Login with PIN,
+Lost Badge? Login with PIN,Картани йўқотдингизми? ПИН код билан киринг
 Lot,Лот
 Lot loaded from UZEX,Лот UZEX'дан юкланди
 Lot Name,Лот номи
@@ -2951,7 +2957,7 @@ must close today,бугун ёпилиши керак
 My requests,Менинг сўровларим
 My tenders,Менинг тендерларим
 My work orders,Менинг ишлаб чиқариш буюртмаларим
-My Work Orders Queue,
+My Work Orders Queue,Менинг буюртмалар навбатим
 N/A,—
 Name,Ном
 Name is required.,
@@ -3110,7 +3116,7 @@ no action from you,сиздан ҳаракат талаб қилинмайди
 No active customs declarations or won lots in the pipeline.,Жараёнда фаол божхона декларациялари ёки ютилган лотлар йўқ.
 No active shipments or won lots in the pipeline.,Жараёнда фаол жўнатмалар ёки ютилган лотлар йўқ.
 No active tenders found for {0}.,{0} учун фаол тендерлар топилмади.
-No activity recorded yet.,
+No activity recorded yet.,Ҳозирча ҳодисалар йўқ.
 No advance ledger movements yet.,Ҳозирча аванс ҳаракатлари йўқ.
 No advance payments yet.,Ҳозирча аванс тўловлари йўқ.
 No advances yet.,Ҳали аванслар йўқ.
@@ -3250,7 +3256,7 @@ No low-stock items,Паст омбор товарлари йўқ
 No matches found,Мост булганлар топилмади
 No matching items,
 "No matching vouchers found. Create a payment, or widen the date/amount window.",Мос ҳужжатлар топилмади. Тўлов яратинг ёки сана/сумма ойнасини кенгайтиринг.
-No materials required.,
+No materials required.,Материал талаб қилинмайди.
 No materials to stage,
 No movements yet.,Ҳозирча ҳаракатлар йўқ.
 No new Version rows since the last seal.,
@@ -3623,7 +3629,7 @@ Operations,Операциялар
 Operations desk,Операцион стол
 Operations desk →,Операцион стол →
 Operator,Оператор
-Operator Kiosk,
+Operator Kiosk,Оператор киоски
 Optional,Ихтиёрий
 optional,Ихтиёрий
 Optional note (leave blank to skip):,
@@ -3780,12 +3786,12 @@ Paste access token JWT…,
 Paste new token to replace…,
 Paste refresh token JWT…,
 Paste UZEX lot URL,UZEX лот ҳаволасини киритинг
-Pause,
+Pause,Пауза
 Pause failed.,Тўхтатиш муваффақиятсиз.
-Pause this Work Order?,
+Pause this Work Order?,Бу буюртма тўхтатиб турилсинми?
 Pause this Work Order? You can resume it later.,Бу буюртмани тўхтатилсинми? Кейинроқ давом эттиришингиз мумкин.
-Pause Work,
-Pause Work Order,
+Pause Work,Ишни тўхтатиб туриш
+Pause Work Order,Буюртмани тўхтатиб туриш
 Pay,Тўлаш
 Pay advance,Аванс бериш
 "Pay an advance, or turn off the balance filter to see everyone.",Аванс беринг ёки ҳаммани кўриш учун баланс филтрини ўчиринг.
@@ -3980,13 +3986,13 @@ Pickup date,Олиб кетиш санаси
 Pickup Location,Олиб кетиш жойи
 Pickup location,Олиб кетиш жойи
 Pieces,Дона
-PIN,
+PIN,ПИН код
 Pipeline,Босқичлар
 Pipeline Value,Воронка қиймати
 PIs,PI
 Pistachio,
 Place branded freezer at {0} (deal {1}),
-Place your RFID badge on the reader to log in,
+Place your RFID badge on the reader to log in,Кириш учун картани ўқувчига теккизинг
 Placed Freezer,Музлатгич ўрнатилди
 Placing,Жойлаштириш
 Plan,Режа
@@ -3999,10 +4005,10 @@ Planned date,Режалаштирилган сана
 Planned FCL,Режалаштирилган FCL
 Planned Qty,
 Planned service,Режалаштирилган хизмат
-Planned Start,
+Planned Start,Режадаги бошланиш
 Planned start,Бошланиш санаси
 Planned Time,Режалаштирилган вақт
-Planned Total,
+Planned Total,Режа бўйича жами
 Planning,Режалаштириш
 Planogram name is required.,Планограмма номи керак.
 Planograms,Планограммалар
@@ -4211,7 +4217,7 @@ Quantity (KG),Миқдор (кг)
 Quantity must be greater than zero.,Миқдор нолдан катта бўлиши керак.
 Quantity must be positive.,Миқдор мусбат бўлиши керак.
 Queue is clear. Nothing pending.,Навбат бўш. Кутилаётган нарса йўқ.
-Queue is empty,
+Queue is empty,Навбат бўш
 Quick view,Тезкор кўриш
 Quotation,Нарх таклифи
 Quotation #,Таклиф №
@@ -4407,7 +4413,7 @@ Remove holiday?,Байрам ўчирилсинми?
 Remove Lane,Йўлакни ўчириш
 Remove Lane?,
 Remove line,Қаторни ўчириш
-Remove operator,
+Remove operator,Операторни олиб ташлаш
 Remove row,Қаторни ўчириш
 Remove Telegram access for {0}? This cannot be undone.,{0} учун Telegram киришини олиб ташлансинми? Буни ортга қайтариб бўлмайди.
 Remove the link between {0} and device user {1}? This will not affect attendance records already generated.,
@@ -4491,9 +4497,9 @@ Result date,Натижа санаси
 Result?,Натижа?
 Resume,Давом эттириш
 Resume failed.,Давом эттириш муваффақиятсиз.
-Resume this Work Order?,
-Resume Work,
-Resume Work Order,
+Resume this Work Order?,Бу буюртма давом эттирилсинми?
+Resume Work,Ишни давом эттириш
+Resume Work Order,Буюртмани давом эттириш
 Retail,
 Retired,Пенсияга чиққан
 Retries,Қайта уринишлар
@@ -4665,7 +4671,7 @@ Scan to pay,Тўлаш учун сканерланг
 Scanned,Сканерланди
 Scanned / Required,Сканерланди / Зарур
 Scanned declaration,Декларация скани
-Scanner Ready,
+Scanner Ready,Сканер тайёр
 Scanning…,Сканерланмоқда…
 Schedule,Режа
 Schedule date,Режа саны
@@ -4677,7 +4683,7 @@ Scheme Name,Схема номи
 Scheme Type,Схема тури
 Score cards above show this selection only,Юқоридаги карталар фақат шу танловни кўрсатади
 Scrap / rejects,Чиқинди / носоз
-Scrap / Rejects Qty,
+Scrap / Rejects Qty,Брак / чиқинди миқдори
 SE In,SE кирим
 Seal broken,Пломба бузилган
 Seal intact,Пломба бутун
@@ -4887,7 +4893,7 @@ Shop,Дўкон
 Short code,Қисқа код
 short stock,етарли эмас
 Should We Bid?,Тендерда қатнашамизми?
-Show,
+Show,Кўрсатиш
 Show all allocations,Барча тақсимотларни кўрсатиш
 Show all items,
 Show discounts,Чегирмаларни кўрсатиш
@@ -5051,7 +5057,7 @@ Stock UOM,Сўзи ўлчов бирлиги
 Stock value,Сўзи қиймати
 Stop,Тўхтатиш
 Stop this Work Order? You can resume it later.,Бу буюртмани тўхтатасизми? Кейин давом эттирса бўлади.
-Stop Work Order,
+Stop Work Order,Буюртмани тўхтатиш
 Storage,Сақлаш
 Storefront,Дўкон саҳнаси
 Stream,Оқим
@@ -5084,7 +5090,7 @@ Submit the GRN Checklist before adding a Landed Cost Voucher.,Етказиб б�
 Submit this BOM? You won't be able to edit it after.,Бу спецификацияни тасдиқлайсизми? Кейин таҳрирлаб бўлмайди.
 Submit this GRN checklist? This closes receiving and drafts a landed cost voucher.,Ушбу қабул варақаси тасдиқлансинми? Қабул ёпилади ва таннарх ваучери қораламаси яратилади.
 Submit transfer,Ўтказмани тасдиқлаш
-Submit Work Order,
+Submit Work Order,Ишлаб чиқариш буюртмасини юбориш
 Submitted,Тасдиқланган
 "Submitted and lost — the bid was in, the result went the other way.","Юборилди ва ютқазилди — таклиф берилган эди, натижа бошқача чиқди."
 Submitted and waiting on the result. Nothing to do but track it.,"Таклиф топширилди, натижа кутилмоқда. Фақат кузатиб бориш қолди."
@@ -5148,7 +5154,7 @@ Taken from the cash desk — never chosen by hand.,Кассадан олинад
 Target,Мақсад
 Target margin (profit ÷ net revenue),Мақсадли маржа (фойда ÷ соф тушум)
 Target rate,Мақсадли нарх
-Target Remaining,
+Target Remaining,Режадан қолган
 Target Temp Max,Мақсадли макс. ҳарорат
 Target temp max (°C),Макс. ҳарорат (°C)
 Target Temp Min,Мақсадли мин. ҳарорат
@@ -5263,7 +5269,7 @@ The selected quotation was NOT the cheapest bid.,Танланган таклиф
 "The server returned a capped page; this total covers the rows loaded, not the whole book.","Сервер чекланган саҳифа қайтарди; бу жами юкланган қаторларни қамраб олади, бутун китобни эмас."
 The top-level category cannot be deleted.,Юқори даражадаги турғунни ўчириб бўлмайди.
 The voucher is created as a draft; an accountant reviews and submits it in the books.,"Ваучер қоралама сифатида яратилади; бухгалтер уни текшириб, ҳисобда тасдиқлайди."
-There are currently no work orders assigned to you.,
+There are currently no work orders assigned to you.,Ҳозирча сизга бирор буюртма тайинланмаган.
 There are no proformas available to link yet.,Боғлаш учун ҳали проформа йўқ.
 These are ERPNext's back-dating guards — the reason it blocks creating or editing transactions older than a set window. They protect closed periods; relax them only deliberately.,
 "These are the toxic role combinations Stabler checks for. Findings are advisory — accept them with a compensating control, or split the duties.",Булар Stabler текширадиган хавфли рол комбинациялари. Натижалар тавсиявий — уларни компенсацион назорат билан қабул қилинг ёки вазифаларни ажратинг.
@@ -5854,10 +5860,10 @@ Win-rate,Ютуқ улуши
 Win-rate — {won}W / {lost}L in {days} days,Ютуқ — {days} кунда {won}Й / {lost}М
 Win/Loss Reason,Ютуқ/ютқазиқ сабаби
 Winner,Ғолиб
-WIP Stock,
+WIP Stock,Жараёндаги қолдиқ
 WIP Warehouse,
 WIP warehouse,Тугалланмаган ишлаб чиқариш омбори
-WIP Whse,
+WIP Whse,Жараён омбори
 Withdrawal,Ечиб олиш
 Withheld,Ушлаб қолинган
 Within,Ичида
@@ -5875,10 +5881,10 @@ Work done is required.,
 Work From Home,Уйдан иш
 Work mode,
 Work Order,Ишлаб чиқариш буюртмаси
-Work Order closed.,
-Work Order resumed.,
-Work Order stopped.,
-Work Order submitted and released.,
+Work Order closed.,Буюртма ёпилди.
+Work Order resumed.,Буюртма давом эттирилди.
+Work Order stopped.,Буюртма тўхтатилди.
+Work Order submitted and released.,Буюртма юборилди ва ишга туширилди.
 Work Orders,Ишлаб чиқариш буюртмалари
 Worked,
 Workers with advances,Авансли ходимлар

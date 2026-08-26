@@ -95,6 +95,7 @@ A wrong code costs an attempt and eventually locks the transfer.,A wrong code co
 "A ≤ {0}%, B ≤ {1}%, C rest — by revenue.","A ≤ {0}%, B ≤ {1}%, C rest — by revenue."
 "A ≤ {0}%, B ≤ {1}%, C rest — by spend.","A ≤ {0}%, B ≤ {1}%, C rest — by spend."
 "A ≤ {0}%, B ≤ {1}%, C rest — by {2}. Submitted; returns netted.","A ≤ {0}%, B ≤ {1}%, C rest — by {2}. Submitted; returns netted."
+Add Material,Add Material
 Already {0},Already {0}
 AR balance per customer as of the selected date — click a row to see the ledger behind the balance.,AR balance per customer as of the selected date — click a row to see the ledger behind the balance.
 Abbr,Abbr
@@ -231,6 +232,7 @@ Find,Find
 Find a transfer,Find a transfer
 "Flow · {period} · charged, earned only on payout","Flow · {period} · charged, earned only on payout"
 Flow · {period} · moved to income at payout,Flow · {period} · moved to income at payout
+From Warehouse,From Warehouse
 From {date},From {date}
 Frozen at registration,Frozen at registration
 Hand over the cash?,Hand over the cash?
@@ -272,6 +274,7 @@ No cash desk is mapped. A desk cannot take cash in or pay it out until it has an
 No company is selected,No company is selected
 No desk is carrying an open obligation,No desk is carrying an open obligation
 No desk is mapped yet. Add one for every desk and currency that takes or pays out cash.,No desk is mapped yet. Add one for every desk and currency that takes or pays out cash.
+No items to transfer. Click 'Add Material' to add items manually.,No items to transfer. Click 'Add Material' to add items manually.
 No journal entry is linked to this transfer.,No journal entry is linked to this transfer.
 No longer exists,No longer exists
 No note given.,No note given.
@@ -437,6 +440,7 @@ Select a company to pay out a transfer.,Select a company to pay out a transfer.
 Select a desk…,Select a desk…
 Select at least one Work Order.,Select at least one Work Order.
 Select desk…,Select desk…
+Select Warehouse,Select Warehouse
 Selected work orders: {0},Selected work orders: {0}
 Sender,Sender
 Sender handed over,Sender handed over
@@ -453,6 +457,7 @@ Terminated by {0}: {1},Terminated by {0}: {1}
 That is not the name this transfer was registered under.,That is not the name this transfer was registered under.
 That screen is not available yet.,That screen is not available yet.
 The destination desk ({branch}) has no {currency} cash account — add it in Remittance Settings before registering.,The destination desk ({branch}) has no {currency} cash account — add it in Remittance Settings before registering.
+The order cannot be finished until both operator roles are assigned. Missing: {0},The order cannot be finished until both operator roles are assigned. Missing: {0}
 The pickup code was refused.,The pickup code was refused.
 The posting could not be previewed.,The posting could not be previewed.
 The V1 engine reads every cash account from the desk table. Add at least one desk before switching to V1.,The V1 engine reads every cash account from the desk table. Add at least one desk before switching to V1.
@@ -500,6 +505,7 @@ This transfer could not be loaded.,This transfer could not be loaded.
 This transfer pays out at,This transfer pays out at
 This transfer was saved without its pickup-code digest. The field is ,This transfer was saved without its pickup-code digest. The field is 
 This will post,This will post
+To Warehouse (WIP),To Warehouse (WIP)
 To {date},To {date}
 Too many wrong attempts — only a manager can reopen it,Too many wrong attempts — only a manager can reopen it
 Too many wrong codes were entered. Ask a manager to unlock it — there is no timer.,Too many wrong codes were entered. Ask a manager to unlock it — there is no timer.

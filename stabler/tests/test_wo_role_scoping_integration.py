@@ -120,6 +120,41 @@ class TestRoleScopingOnRealColumns(FrappeTestCase):
 		self.assertEqual(out["my_role"], "Packaging")
 		self.assertEqual([r["item_code"] for r in out["required_items"]], [self.codes[0]])
 
+	def test_the_board_gives_the_pourer_only_their_own_material(self):
+		"""`list_work_orders` is the only endpoint the kiosk board calls to fill its
+		rows. Until now it never sent a `required_items` key at all, so the
+		Required Materials block on every card rendered its empty state no matter
+		who was looking or what the order actually needed."""
+		frappe.set_user(POURER)
+		company = frappe.db.get_value("Work Order", self.wo, "company")
+		row = next(r for r in list_work_orders(company=company, limit=100) if r["name"] == self.wo)
+		self.assertEqual([r["item_code"] for r in row["required_items"]], [self.codes[1]])
+
+	def test_the_board_gives_the_packer_only_their_own_material(self):
+		frappe.set_user(PACKER)
+		company = frappe.db.get_value("Work Order", self.wo, "company")
+		row = next(r for r in list_work_orders(company=company, limit=100) if r["name"] == self.wo)
+		self.assertEqual([r["item_code"] for r in row["required_items"]], [self.codes[0]])
+
+	def test_the_board_never_shows_an_operator_a_price(self):
+		"""Same reason `work_order_detail` withholds it: the rows are the operator's,
+		the BOM cost behind them is the manager's."""
+		frappe.set_user(POURER)
+		company = frappe.db.get_value("Work Order", self.wo, "company")
+		row = next(r for r in list_work_orders(company=company, limit=100) if r["name"] == self.wo)
+		self.assertTrue(row["required_items"], "fixture produced no rows to check")
+		for item in row["required_items"]:
+			self.assertNotIn("rate", item, "an operator was shown BOM cost on the board")
+			self.assertNotIn("amount", item, "an operator was shown BOM cost on the board")
+
+	def test_the_manager_sees_every_material_line_on_the_board(self):
+		"""Managers stage the whole transfer, so they keep the whole list — same
+		rule `work_order_detail` applies, now proven on the list endpoint too."""
+		frappe.set_user("Administrator")
+		company = frappe.db.get_value("Work Order", self.wo, "company")
+		row = next(r for r in list_work_orders(company=company, limit=100) if r["name"] == self.wo)
+		self.assertEqual(sorted(r["item_code"] for r in row["required_items"]), sorted(self.codes))
+
 	def test_neither_operator_is_shown_a_price(self):
 		"""The reason operators were handed no material list at all until now. The
 		rows are theirs; the BOM cost behind them is not."""
