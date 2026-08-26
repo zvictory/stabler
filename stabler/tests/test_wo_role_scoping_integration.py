@@ -32,6 +32,7 @@ except Exception:  # pragma: no cover - older/newer frappe
 	FrappeTestCase = unittest.TestCase
 
 from stabler.api.manufacturing import (
+	_assert_consumption_setting_still_holds,
 	_assert_may_consume,
 	_assert_sweep_is_acknowledged,
 	_clear_finish_draft,
@@ -221,10 +222,16 @@ class TestRoleScopingOnRealColumns(FrappeTestCase):
 		`_material_consumption_enabled` then reads back. FrappeTestCase rolls the
 		transaction back afterwards, and the site is off again.
 		"""
-		frappe.db.set_single_value("Manufacturing Settings", "material_consumption", 1)
+		self._set_consumption(1)
+
+	def _set_consumption(self, value):
+		"""Either way round — D2 needs the off state written just as literally as
+		the on state, and reading it back is the only thing that proves the single
+		and its cache actually moved."""
+		frappe.db.set_single_value("Manufacturing Settings", "material_consumption", value)
 		frappe.clear_document_cache("Manufacturing Settings", "Manufacturing Settings")
 		self.addCleanup(frappe.clear_document_cache, "Manufacturing Settings", "Manufacturing Settings")
-		self.assertTrue(_material_consumption_enabled(), "the setting did not take")
+		self.assertEqual(_material_consumption_enabled(), bool(value), "the setting did not take")
 
 	def test_the_pourer_cannot_write_off_the_packers_material(self):
 		"""No stubs anywhere: `_assert_may_consume` reads the roles straight off the
@@ -340,6 +347,29 @@ class TestRoleScopingOnRealColumns(FrappeTestCase):
 		with self.assertRaises(frappe.ValidationError) as cm:
 			_assert_sweep_is_acknowledged(self.wo, "Production", False)
 		self.assertIn(item_name, str(cm.exception))
+
+	def test_a_written_off_order_is_refused_while_the_setting_is_off(self):
+		"""D2 against the real Stock Entry table, which is the half mocks cannot
+		reach: the guard's whole decision rests on a filter over `work_order`,
+		`purpose` and `docstatus`, and a mocked `frappe.db.exists` proves those
+		field names spelled right exactly as well as it proves them spelled wrong.
+
+		Picks a real order that genuinely carries submitted per-role write-offs
+		rather than manufacturing one, so what is asserted is the state the shop
+		floor actually leaves behind."""
+		wo = frappe.db.get_value(
+			"Stock Entry",
+			{"purpose": "Material Consumption for Manufacture", "docstatus": 1},
+			"work_order",
+		)
+		if not wo:
+			self.skipTest("no submitted per-role consumption entry on this site to guard against")
+		self._set_consumption(0)
+		with self.assertRaises(frappe.ValidationError) as cm:
+			_assert_consumption_setting_still_holds(wo)
+		self.assertIn("Manufacturing Settings", str(cm.exception))
+		self._set_consumption(1)
+		_assert_consumption_setting_still_holds(wo)  # must not raise
 
 	def test_acknowledging_the_sweep_lets_the_real_finish_through(self):
 		"""The other half of the same guard, against the same real state — proving

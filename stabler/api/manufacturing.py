@@ -548,6 +548,52 @@ def _unconsumed_material_rows(work_order: str) -> list[dict] | None:
 	]
 
 
+def _assert_consumption_setting_still_holds(work_order: str) -> None:
+	"""Refuse to finish an order whose material was already written off per role
+	while the site's continuous-consumption setting is now off.
+
+	`Manufacturing Settings.material_consumption` decides which list ERPNext
+	builds the Manufacture entry from — `get_unconsumed_raw_materials` when it is
+	on, `get_bom_raw_materials` when it is off. On an order the operators have
+	already written off, that is the difference between nothing left and the
+	whole BOM again, and `Work Order Item.consumed_qty` simply accumulates the
+	second helping. Nothing raises. Measured genesis-test 2026-08-26 on
+	MFG-WO-2026-00009, two submitted consumption entries against it:
+
+	    material_consumption=1 -> Manufacture stub raw rows: []
+	    material_consumption=0 -> Manufacture stub raw rows: [MILK 2.0, LABEL 1.0]
+
+	Narrowed to orders that actually carry submitted consumption entries, and not
+	to the setting alone: with the setting off and no per-role write-offs behind
+	it, ERPNext lists the BOM once and counts it once. That is the single-document
+	flow every tenant who has not adopted the split still runs on, and refusing it
+	would take manufacturing away from all of them to fix a bug they cannot have.
+
+	Refused rather than repaired. The setting is wrong for every order on the
+	site; dropping the duplicate rows from this one document would hide that and
+	leave the rest to rot.
+	"""
+	if _material_consumption_enabled():
+		return
+	if not frappe.db.exists(
+		"Stock Entry", {"work_order": work_order, "purpose": _SE_CONSUMPTION, "docstatus": 1}
+	):
+		return
+	frappe.throw(
+		# Worded to match the two sibling refusals about this same switch: name
+		# the checkbox in English (that is the label in the desk, untranslated by
+		# ERPNext) and the screen in the reader's language. A manager who is told
+		# "consumption is off" still has to go looking; one who is told which box
+		# does not.
+		_(
+			"This order's material has already been written off per operator, but "
+			"'Allow Continuous Material Consumption' is switched off in Manufacturing "
+			"Settings — finishing now would count that material a second time. Ask a "
+			"manager to switch it back on."
+		)
+	)
+
+
 class SweepNotAcknowledged(frappe.ValidationError):
 	"""Raised by `_assert_sweep_is_acknowledged`, and given its own class so a
 	caller can tell this refusal apart from every other reason a Finish fails.
@@ -1313,6 +1359,12 @@ def make_work_order_stock_entry(
 		# has to write it off under a name.
 		_assert_roles_are_both_or_neither(work_order, purpose)
 	elif purpose == "Manufacture":
+		# First, because it outranks the other two: they are questions about this
+		# order, and this is a question about the site. An order can be perfectly
+		# assigned and perfectly written off and still be double-counted here, and
+		# so can every other order on the site — which is why the message sends
+		# somebody to the setting rather than to this order.
+		_assert_consumption_setting_still_holds(work_order)
 		# D1 (P0): this guard used to run only on the transfer branch, so a
 		# half-assigned order (the never-named role could not even open the order
 		# to write anything off) reached ERPNext's Manufacture entry unchecked.

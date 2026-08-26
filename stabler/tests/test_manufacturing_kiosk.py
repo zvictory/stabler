@@ -1178,6 +1178,7 @@ class TestFinishingDoesNotSweepTheOtherRole(unittest.TestCase):
 		with (
 			patch("stabler.api.manufacturing._require_mfg"),
 			patch("stabler.api.manufacturing._is_mfg_manager", return_value=True),
+			patch("stabler.api.manufacturing._assert_consumption_setting_still_holds"),
 			patch("stabler.api.manufacturing._assert_roles_are_both_or_neither"),
 			patch(
 				"stabler.api.manufacturing._assert_sweep_is_acknowledged",
@@ -1189,6 +1190,82 @@ class TestFinishingDoesNotSweepTheOtherRole(unittest.TestCase):
 				make_work_order_stock_entry("WO-00009", "Manufacture", qty=5, acknowledge_sweep=False)
 		guard.assert_called_once_with("WO-00009", None, False)
 		build.assert_not_called()
+
+
+class TestFinishingAfterTheSettingWasSwitchedOff(unittest.TestCase):
+	"""D2 (P0) — the failure that needs nobody to do anything wrong.
+
+	`Manufacturing Settings.material_consumption` decides which list ERPNext
+	builds a Manufacture entry from: with it ON, `get_unconsumed_raw_materials`,
+	which is empty once the operators have written their material off; with it
+	OFF, `get_bom_raw_materials`, which is the whole BOM again. Nothing raises,
+	and `Work Order Item.consumed_qty` just accumulates the second helping.
+
+	Measured on genesis-test 2026-08-26, MFG-WO-2026-00009 — two submitted
+	consumption entries against it, both lines already fully consumed:
+
+	    material_consumption=1 -> Manufacture stub raw rows: []
+	    material_consumption=0 -> Manufacture stub raw rows: [MILK 2.0, LABEL 1.0]
+
+	The setting ships OFF. It is the one thing a new tenant has to switch on, and
+	the shape of this failure — right answer, then a config change, then silently
+	wrong answers — is exactly what nobody goes looking for.
+
+	Refused rather than repaired: a site-level setting is wrong for every order
+	on the site, so stripping the duplicate rows from this one document would
+	hide it and leave the rest to rot. Turning the setting back on is one action
+	and fixes all of them.
+	"""
+
+	def _finish(self, enabled, prior_entries):
+		with (
+			patch("stabler.api.manufacturing._material_consumption_enabled", return_value=enabled),
+			patch(
+				"stabler.api.manufacturing.frappe.db.exists",
+				return_value="MAT-STE-2026-00031" if prior_entries else None,
+			),
+		):
+			from stabler.api.manufacturing import _assert_consumption_setting_still_holds
+
+			_assert_consumption_setting_still_holds("WO-00009")
+
+	def test_an_order_already_written_off_per_role_is_refused_while_the_setting_is_off(self):
+		with self.assertRaises(frappe.ValidationError) as cm:
+			self._finish(enabled=False, prior_entries=True)
+		# The message has to send somebody to the right switch. An operator on the
+		# kiosk cannot act on "double counting"; they can act on "tell your manager
+		# the setting is off", and the manager can act on the setting's own name.
+		self.assertIn("Manufacturing Settings", str(cm.exception))
+
+	def test_the_ordinary_case_is_not_touched(self):
+		self._finish(enabled=True, prior_entries=True)  # must not raise
+
+	def test_the_endpoint_asks_before_erpnext_builds_anything(self):
+		"""A guard nothing calls is a comment. And it has to be asked before
+		`make_stock_entry`: the duplicate rows are put there by the stub itself,
+		so a check after the build is checking a document that is already wrong.
+		"""
+		with (
+			patch("stabler.api.manufacturing._require_mfg"),
+			patch("stabler.api.manufacturing._is_mfg_manager", return_value=True),
+			patch(
+				"stabler.api.manufacturing._assert_consumption_setting_still_holds",
+				side_effect=frappe.ValidationError("setting"),
+			) as guard,
+			patch("erpnext.manufacturing.doctype.work_order.work_order.make_stock_entry") as build,
+		):
+			with self.assertRaises(frappe.ValidationError):
+				make_work_order_stock_entry("WO-00009", "Manufacture", qty=5)
+		guard.assert_called_once_with("WO-00009")
+		build.assert_not_called()
+
+	def test_a_site_that_never_used_the_split_still_finishes(self):
+		"""The setting being off is not itself the failure. With no per-role
+		write-offs behind it, ERPNext lists the BOM once and counts it once —
+		which is simply the single-document flow, and the way every tenant that
+		has not adopted the split still works. Refusing here would take
+		manufacturing away from all of them to fix a bug they cannot have."""
+		self._finish(enabled=False, prior_entries=False)  # must not raise
 
 
 class TestConsumptionPreviewNarrowsToOwnRole(unittest.TestCase):
