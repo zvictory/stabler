@@ -41,9 +41,15 @@ function humanizeError(err) {
 	let msg = err && err.message ? String(err.message) : "";
 	if (!msg) return "";
 	if (msg.indexOf("<") !== -1) {
-		const tmp = document.createElement("div");
-		tmp.innerHTML = msg;
-		msg = tmp.textContent || tmp.innerText || "";
+		// DOMParser, not a detached <div>. An element from document.createElement
+		// belongs to a document WITH a browsing context, so `innerHTML = msg`
+		// fires <img src=x onerror=...> the moment it parses — attached or not.
+		// DOMParser's document is inert: nothing loads, nothing runs. The path is
+		// not theoretical, because these messages are assembled from data:
+		// `_assert_sweep_is_acknowledged` interpolates item_name straight off the
+		// Item master, so whoever can name an Item can put markup into a string
+		// every operator's kiosk renders.
+		msg = new DOMParser().parseFromString(msg, "text/html").body.textContent || "";
 	}
 	return msg.replace(/\s+/g, " ").trim();
 }
