@@ -231,6 +231,8 @@ Failed to load the transfer.,Failed to load the transfer.
 Find,Find
 Find a transfer,Find a transfer
 "Flow · {period} · charged, earned only on payout","Flow · {period} · charged, earned only on payout"
+Finishing now will also write off material the other operator has not consumed yet: {0}. Confirm to include it on your document anyway.,Finishing now will also write off material the other operator has not consumed yet: {0}. Confirm to include it on your document anyway.
+Finishing now writes it off under your name.,Finishing now writes it off under your name.
 Flow · {period} · moved to income at payout,Flow · {period} · moved to income at payout
 From Warehouse,From Warehouse
 From {date},From {date}
@@ -370,6 +372,7 @@ Principal,Principal
 "Principal {0} plus commission {1} must equal {2}, not {3}.","Principal {0} plus commission {1} must equal {2}, not {3}."
 Production operator,Production operator
 Purchase Receipt {0} already has a draft invoice: {1}. Submit or delete that draft instead of raising a second bill for the same goods.,Purchase Receipt {0} already has a draft invoice: {1}. Submit or delete that draft instead of raising a second bill for the same goods.
+Put it on my document anyway,Put it on my document anyway
 Quote,Quote
 Quote updated — switching how the fee is charged recalculates the amounts.,Quote updated — switching how the fee is charged recalculates the amounts.
 Rate quoted to the sender,Rate quoted to the sender
@@ -458,6 +461,7 @@ That is not the name this transfer was registered under.,That is not the name th
 That screen is not available yet.,That screen is not available yet.
 The destination desk ({branch}) has no {currency} cash account — add it in Remittance Settings before registering.,The destination desk ({branch}) has no {currency} cash account — add it in Remittance Settings before registering.
 The order cannot be finished until both operator roles are assigned. Missing: {0},The order cannot be finished until both operator roles are assigned. Missing: {0}
+The other operator has not written this off yet,The other operator has not written this off yet
 The pickup code was refused.,The pickup code was refused.
 The posting could not be previewed.,The posting could not be previewed.
 The V1 engine reads every cash account from the desk table. Add at least one desk before switching to V1.,The V1 engine reads every cash account from the desk table. Add at least one desk before switching to V1.

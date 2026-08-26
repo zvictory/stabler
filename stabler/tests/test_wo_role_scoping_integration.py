@@ -24,6 +24,7 @@ from __future__ import annotations
 import unittest
 
 import frappe
+from frappe.utils import flt
 
 try:
 	from frappe.tests.utils import FrappeTestCase
@@ -32,8 +33,10 @@ except Exception:  # pragma: no cover - older/newer frappe
 
 from stabler.api.manufacturing import (
 	_assert_may_consume,
+	_assert_sweep_is_acknowledged,
 	_clear_finish_draft,
 	_material_consumption_enabled,
+	_unconsumed_material_rows,
 	assign_work_order_operators_bulk,
 	discard_finish_draft,
 	list_work_orders,
@@ -66,11 +69,33 @@ def _ensure_user(email: str) -> None:
 
 
 def _a_submitted_work_order() -> str | None:
-	"""Any submitted WO carrying at least two required items, or None."""
-	for name in frappe.get_all("Work Order", filters={"docstatus": 1}, pluck="name"):
-		if frappe.db.count("Work Order Item", {"parent": name}) >= 2:
-			return name
-	return None
+	"""A submitted WO carrying at least two required items, preferring one with
+	production still to do.
+
+	The preference is not cosmetic. ERPNext builds its consumption and Manufacture
+	stubs off `fg_completed_qty`, which is zero once `produced_qty` reaches `qty` —
+	on a finished order `make_stock_entry` raises "For Quantity (Manufactured Qty)
+	is mandatory" and every "what is still unconsumed" question in this file
+	answers empty. Measured on genesis-test 2026-08-26: the first submitted order
+	on the site is `MFG-WO-2026-00001`, Completed at 100/100, and picking it
+	self-skipped the sweep-guard tests and hollowed out the preview one — green,
+	proving nothing, in the file whose entire job is to run against real columns.
+	Thirteen orders with room left were sitting behind it.
+
+	Falls back to any submitted order so a site with only finished ones still runs
+	the checks that do not need pending material.
+	"""
+	fallback = None
+	for row in frappe.get_all(
+		"Work Order", filters={"docstatus": 1}, fields=["name", "qty", "produced_qty"], order_by="name"
+	):
+		if frappe.db.count("Work Order Item", {"parent": row["name"]}) < 2:
+			continue
+		if flt(row["produced_qty"]) < flt(row["qty"]):
+			return row["name"]
+		if fallback is None:
+			fallback = row["name"]
+	return fallback
 
 
 @unittest.skipUnless(
@@ -256,20 +281,27 @@ class TestRoleScopingOnRealColumns(FrappeTestCase):
 
 	def test_the_preview_never_offers_the_other_operators_material(self):
 		"""End to end on the real thing: the setting on, ERPNext building the list,
-		roles read from the Item column."""
+		roles read from the Item column.
+
+		BOTH lines are forced pending, and both directions are asserted. With only
+		the pourer's line pending the `assertNotIn` passes without proving
+		anything — the packer's material was never in ERPNext's list to be scoped
+		out of it, so a preview with no role filter at all would be just as green.
+		"""
 		self._enable_consumption()
+		self._force_pending(self.codes[0])  # the packer's line
+		self._force_pending(self.codes[1])  # the pourer's own
 		frappe.set_user(POURER)
 		out = wo_consumption_preview(self.wo)
 		if not out["items"]:
-			# Said out loud rather than passing quietly. Every Work Order on this site
-			# is fully produced, so ERPNext refuses the stub and there is no list to
-			# scope — a green tick here would claim coverage this run did not have.
+			# Said out loud rather than passing quietly. ERPNext refuses the stub
+			# outright once an order is fully produced (fg_completed_qty falls to 0)
+			# no matter what consumed_qty says — a green tick here would claim
+			# coverage this run did not have.
 			self.skipTest(f"{self.wo} has nothing pending to consume, so no list was built to scope")
-		self.assertNotIn(
-			self.codes[0],
-			[r["item_code"] for r in out["items"]],
-			"the pourer was offered the packer's material",
-		)
+		offered = [r["item_code"] for r in out["items"]]
+		self.assertIn(self.codes[1], offered, "the pourer was not offered their own material")
+		self.assertNotIn(self.codes[0], offered, "the pourer was offered the packer's material")
 
 	def test_the_preview_reports_the_sites_actual_consumption_setting(self):
 		"""Reads the real Manufacturing Settings single. With it off the preview must
@@ -280,6 +312,45 @@ class TestRoleScopingOnRealColumns(FrappeTestCase):
 		self.assertEqual(out["enabled"], _material_consumption_enabled())
 		if not out["enabled"]:
 			self.assertEqual(out["items"], [])
+
+	def _force_pending(self, item_code):
+		"""Zero this line's consumed_qty so ERPNext's own stub still lists it as
+		unconsumed regardless of whatever this real Work Order already had —
+		FrappeTestCase rolls the write back with everything else."""
+		frappe.db.set_value("Work Order Item", {"parent": self.wo, "item_code": item_code}, "consumed_qty", 0)
+
+	def test_a_role_is_refused_finish_while_the_other_has_unwritten_off_material(self):
+		"""Failure B, end to end on the real columns: measured live on genesis-test
+		2026-08-25 against a fully assigned order where the packer never wrote off
+		his material — the pourer pressed Finish and it succeeded onto his own
+		document (MAT-STE-2026-00037, PROBE-LABEL consumed_qty 0.0 -> 10.0).
+		`_assert_sweep_is_acknowledged` is asked the same question ERPNext itself
+		answers when it builds the Manufacture stub, off the real child table.
+		"""
+		self._enable_consumption()
+		self._force_pending(self.codes[0])  # the packer's (Packaging) line
+		frappe.set_user(POURER)
+		if not any(r["item_code"] == self.codes[0] for r in _unconsumed_material_rows(self.wo) or []):
+			# ERPNext refuses the stub once the order is fully produced regardless
+			# of consumed_qty (fg_completed_qty falls to 0) — said out loud rather
+			# than passing quietly, the same escape hatch this file already uses
+			# for the preview above.
+			self.skipTest(f"{self.wo} has nothing pending even after clearing consumed_qty")
+		item_name = frappe.db.get_value("Item", self.codes[0], "item_name") or self.codes[0]
+		with self.assertRaises(frappe.ValidationError) as cm:
+			_assert_sweep_is_acknowledged(self.wo, "Production", False)
+		self.assertIn(item_name, str(cm.exception))
+
+	def test_acknowledging_the_sweep_lets_the_real_finish_through(self):
+		"""The other half of the same guard, against the same real state — proving
+		`acknowledge_sweep` genuinely reaches and overrides it, not just that the
+		refusal fires."""
+		self._enable_consumption()
+		self._force_pending(self.codes[0])
+		frappe.set_user(POURER)
+		if not any(r["item_code"] == self.codes[0] for r in _unconsumed_material_rows(self.wo) or []):
+			self.skipTest(f"{self.wo} has nothing pending even after clearing consumed_qty")
+		_assert_sweep_is_acknowledged(self.wo, "Production", True)  # must not raise
 
 
 @unittest.skipUnless(
@@ -448,25 +519,33 @@ class TestBulkAssignAgainstRealOrders(FrappeTestCase):
 		self.assertEqual(self._pair(), {"operator": POURER, "packaging_operator": PACKER})
 
 	def test_a_finished_order_is_left_alone(self):
-		"""The refusal the class otherwise forces open, tested on purpose."""
+		"""The refusal the class otherwise forces open, tested on purpose.
+
+		"Left alone" is asserted as UNCHANGED, not as empty. Empty was true only
+		of the one order this file used to pick — a fresh Work Order nobody had
+		assigned — and a bulk assign that wiped an existing pair while reporting
+		`assigned: []` would have passed it. That is the exact failure the bulk
+		write rule exists to prevent, and the shift lead sees no sign of it."""
+		before = self._pair()
 		frappe.db.set_value("Work Order", self.wo, "status", "Completed")
 		out = assign_work_order_operators_bulk(self.company, [self.wo], operator=POURER)
 		self.assertEqual(out["assigned"], [])
 		self.assertIn("Completed", out["skipped"][0]["reason"])
-		self.assertIsNone(self._pair()["operator"])
+		self.assertEqual(self._pair(), before)
 
 	def test_a_company_that_is_not_the_orders_company_writes_nothing(self):
 		"""Tenant isolation, checked at the endpoint rather than in the partition.
 		Either the company guard throws before the query or the partition refuses
 		the id — both are correct, and the invariant either way is that the order
-		is not written."""
+		is not written. Unchanged rather than empty, for the reason above."""
+		before = self._pair()
 		try:
 			out = assign_work_order_operators_bulk("Not A Real Company", [self.wo], operator=POURER)
 		except Exception:
 			pass
 		else:
 			self.assertEqual(out["assigned"], [])
-		self.assertIsNone(self._pair()["operator"])
+		self.assertEqual(self._pair(), before)
 
 	def test_an_empty_selection_is_refused_rather_than_reported_as_success(self):
 		with self.assertRaises(frappe.ValidationError):

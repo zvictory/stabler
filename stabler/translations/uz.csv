@@ -102,6 +102,8 @@ Design view,Loyiha ko‘rinishi
 Direct Sales Invoicing is not enabled for company {0}. Sales Invoices must be created from a submitted Sales Order.,To'g'ridan-to'g'ri hisob-faktura {0} kompaniyasi uchun yoqilmagan. Hisob-fakturalar yuborilgan savdo buyurtmasidan yaratilishi kerak.
 Every user of {company} moves to the {engine} screens when this is saved.,"Saqlangach, {company} ning barcha foydalanuvchilari {engine} ekranlariga o'tadi."
 Exchange rates,Valyuta kurslari
+Finishing now will also write off material the other operator has not consumed yet: {0}. Confirm to include it on your document anyway.,"Hozir yakunlasangiz, boshqa operator hali sarflamagan material ham hisobdan chiqariladi: {0}. Baribir o'z hujjatingizga yozish uchun tasdiqlang."
+Finishing now writes it off under your name.,"Hozir yakunlasangiz, sizning nomingizga hisobdan chiqariladi."
 From Warehouse,Ombordan
 I have checked {receiver}'s identity document.,{receiver} shaxsini tasdiqlovchi hujjatni tekshirdim.
 I have counted {amount} and am handing it back to {sender}.,{amount} miqdorini sanadim va {sender}ga qaytarib beryapman.
@@ -126,6 +128,7 @@ Pay refund cash,Qaytarish naqdini berish
 Pickup code,Olish kodi
 Production operator,Ishlab chiqarish operatori
 Purchase Receipt {0} already has a draft invoice: {1}. Submit or delete that draft instead of raising a second bill for the same goods.,{0} tovar qabul qilish hujjatida allaqachon qoralama hisob-faktura bor: {1}. Xuddi shu mol uchun ikkinchi hisob-faktura yaratish o'rniga o'sha qoralamani tasdiqlang yoki o'chiring.
+Put it on my document anyway,Baribir mening hujjatimga yozilsin
 Quote updated — switching how the fee is charged recalculates the amounts.,Hisob-kitob yangilandi — komissiyani hisoblash usulini o'zgartirish summalarni qayta hisoblaydi.
 Receivable as of {0},{0} sanasidagi debitorlik qarzi
 Refresh the rate for this date,Ushbu sanaga kursni yangilash
@@ -137,6 +140,7 @@ Selected work orders: {0},Tanlangan buyurtmalar: {0}
 Terminated by {0}: {1},{0} tomonidan yopildi: {1}
 The destination desk ({branch}) has no {currency} cash account — add it in Remittance Settings before registering.,Manzil kassasida ({branch}) {currency} hisobi yo'q — ro'yxatga olishdan oldin uni O'tkazma sozlamalarida qo'shing.
 The order cannot be finished until both operator roles are assigned. Missing: {0},Ikkala operator roli tayinlanmaguncha buyurtmani yakunlab bo'lmaydi. Yetishmayapti: {0}
+The other operator has not written this off yet,Boshqa operator buni hali hisobdan chiqarmagan
 The pickup code was refused.,Olib ketish kodi rad etildi.
 The posting could not be previewed.,Provodkani oldindan ko‘rsatib bo‘lmadi.
 The V1 engine reads every cash account from the desk table. Add at least one desk before switching to V1.,V1 mexanizmi barcha kassa hisoblarini kassa jadvalidan o'qiydi. V1 ga o'tishdan oldin kamida bitta kassa qo'shing.

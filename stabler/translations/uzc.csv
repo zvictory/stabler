@@ -102,6 +102,8 @@ Design view,Лойиҳа кўриниши
 Direct Sales Invoicing is not enabled for company {0}. Sales Invoices must be created from a submitted Sales Order.,Тўғридан-тўғри ҳисоб-фактура {0} компанияси учун ёқилмаган. Ҳисоб-фактуралар юборилган савдо буюртмасидан яратилиши керак.
 Every user of {company} moves to the {engine} screens when this is saved.,"Сақлангач, {company} нинг барча фойдаланувчилари {engine} экранларига ўтади."
 Exchange rates,Валюта курслари
+Finishing now will also write off material the other operator has not consumed yet: {0}. Confirm to include it on your document anyway.,"Ҳозир якунласангиз, бошқа оператор ҳали сарфламаган материал ҳам ҳисобдан чиқарилади: {0}. Барибир ўз ҳужжатингизга ёзиш учун тасдиқланг."
+Finishing now writes it off under your name.,"Ҳозир якунласангиз, сизнинг номингизга ҳисобдан чиқарилади."
 From Warehouse,Омбордан
 I have checked {receiver}'s identity document.,{receiver} шахсини тасдиқловчи ҳужжатни текширдим.
 I have counted {amount} and am handing it back to {sender}.,{amount} миқдорини санадим ва {sender}га қайтариб беряпман.
@@ -126,6 +128,7 @@ Pay refund cash,Қайтариш нақдини бериш
 Pickup code,Олиш коди
 Production operator,Ишлаб чиқариш оператори
 Purchase Receipt {0} already has a draft invoice: {1}. Submit or delete that draft instead of raising a second bill for the same goods.,{0} товар қабул қилиш ҳужжатида аллақачон қоралама ҳисоб-фактура бор: {1}. Худди шу мол учун иккинчи ҳисоб-фактура яратиш ўрнига ўша қораламани тасдиқланг ёки ўчиринг.
+Put it on my document anyway,Барибир менинг ҳужжатимга ёзилсин
 Quote updated — switching how the fee is charged recalculates the amounts.,Ҳисоб-китоб янгиланди — комиссияни ҳисоблаш усулини ўзгартириш суммаларни қайта ҳисоблайди.
 Receivable as of {0},{0} санасидаги дебиторлик қарзи
 Refresh the rate for this date,Ушбу санага курсни янгилаш
@@ -137,6 +140,7 @@ Selected work orders: {0},Танланган буюртмалар: {0}
 Terminated by {0}: {1},{0} томонидан ёпилди: {1}
 The destination desk ({branch}) has no {currency} cash account — add it in Remittance Settings before registering.,Манзил кассасида ({branch}) {currency} ҳисоби йўқ — рўйхатга олишдан олдин уни Ўтказма созламаларида қўшинг.
 The order cannot be finished until both operator roles are assigned. Missing: {0},Иккала оператор роли тайинланмагунча буюртмани якунлаб бўлмайди. Етишмаяпти: {0}
+The other operator has not written this off yet,Бошқа оператор буни ҳали ҳисобдан чиқармаган
 The pickup code was refused.,Олиб кетиш коди рад этилди.
 The posting could not be previewed.,Проводкани олдиндан кўрсатиб бўлмади.
 The V1 engine reads every cash account from the desk table. Add at least one desk before switching to V1.,V1 механизми барча касса ҳисобларини касса жадвалидан ўқийди. V1 га ўтишдан олдин камида битта касса қўшинг.

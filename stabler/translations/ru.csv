@@ -103,6 +103,8 @@ Design view,Проектный вид
 Direct Sales Invoicing is not enabled for company {0}. Sales Invoices must be created from a submitted Sales Order.,Прямое выставление счетов не включено для компании {0}. Счета должны создаваться из проведённого заказа на продажу.
 Every user of {company} moves to the {engine} screens when this is saved.,При сохранении все пользователи {company} перейдут на экраны {engine}.
 Exchange rates,Курсы валют
+Finishing now will also write off material the other operator has not consumed yet: {0}. Confirm to include it on your document anyway.,"Если завершить сейчас, спишется и материал, который другой оператор ещё не израсходовал: {0}. Подтвердите, чтобы всё равно включить его в свой документ."
+Finishing now writes it off under your name.,"Если завершить сейчас, он спишется на ваше имя."
 From Warehouse,Со склада
 I have checked {receiver}'s identity document.,Я проверил удостоверение личности {receiver}.
 I have counted {amount} and am handing it back to {sender}.,Я пересчитал {amount} и возвращаю их {sender}.
@@ -127,6 +129,7 @@ Pay refund cash,Выдать наличные по возврату
 Pickup code,Код получения
 Production operator,Оператор производства
 Purchase Receipt {0} already has a draft invoice: {1}. Submit or delete that draft instead of raising a second bill for the same goods.,У приёмки товара {0} уже есть черновик счёта: {1}. Проведите или удалите этот черновик вместо создания второго счёта за тот же товар.
+Put it on my document anyway,Всё равно включить в мой документ
 Quote updated — switching how the fee is charged recalculates the amounts.,Расчёт обновлён — смена способа удержания комиссии пересчитывает суммы.
 Receivable as of {0},Дебиторская задолженность на {0}
 Refresh the rate for this date,Обновить курс на эту дату
@@ -138,6 +141,7 @@ Selected work orders: {0},Выбрано заказов: {0}
 Terminated by {0}: {1},Закрыт пользователем {0}: {1}
 The destination desk ({branch}) has no {currency} cash account — add it in Remittance Settings before registering.,У кассы назначения ({branch}) нет счёта в {currency} — добавьте его в настройках переводов до регистрации.
 The order cannot be finished until both operator roles are assigned. Missing: {0},"Заказ нельзя завершить, пока не назначены оба оператора. Не хватает: {0}"
+The other operator has not written this off yet,Другой оператор ещё не списал это
 The pickup code was refused.,Код получения отклонён.
 The posting could not be previewed.,Не удалось показать предварительную проводку.
 The V1 engine reads every cash account from the desk table. Add at least one desk before switching to V1.,Движок V1 читает все кассовые счета из таблицы касс. Добавьте хотя бы одну кассу перед переключением на V1.

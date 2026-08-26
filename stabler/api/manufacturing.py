@@ -507,6 +507,129 @@ def _assert_may_consume(work_order: str, item_list: list, role_scoped: bool) -> 
 		)
 
 
+def _unconsumed_material_rows(work_order: str) -> list[dict] | None:
+	"""Every raw-material line ERPNext still considers unconsumed on this Work
+	Order, each tagged with the role that owns it — the computation behind
+	`wo_consumption_preview` (which narrows it to the caller's own role) and
+	behind `_assert_sweep_is_acknowledged` (which asks the opposite question:
+	what has the OTHER role left behind). One call to ERPNext, read two ways,
+	rather than two independent guesses at "what is left" that could drift apart.
+
+	Returns None when the site's consumption setting is off:
+	`_material_consumption_enabled` measures why an "unconsumed" answer cannot be
+	trusted in that state — ERPNext hands back the whole BOM, not what is
+	actually left — so a caller must be able to tell "not applicable here" apart
+	from "genuinely nothing pending" ([]).
+	"""
+	from erpnext.manufacturing.doctype.work_order.work_order import make_stock_entry
+
+	if not _material_consumption_enabled():
+		return None
+	try:
+		se = make_stock_entry(work_order, _SE_CONSUMPTION)
+	except Exception as e:  # must never hard-fail a preview or a Finish
+		frappe.log_error(
+			title="Kassa/mfg: _unconsumed_material_rows failed", message=f"wo={work_order} err={e}"
+		)
+		return []
+	stub = se if isinstance(se, dict) else se.as_dict()
+	rows = [r for r in (stub.get("items") or []) if not r.get("is_finished_item")]
+	roles = _item_roles([r.get("item_code") for r in rows])
+	return [
+		{
+			"item_code": r.get("item_code"),
+			"item_name": r.get("item_name") or frappe.db.get_value("Item", r.get("item_code"), "item_name"),
+			"qty": flt(r.get("qty")),
+			"uom": r.get("uom") or r.get("stock_uom"),
+			"s_warehouse": r.get("s_warehouse"),
+			"operator_role": roles.get(r.get("item_code")) or None,
+		}
+		for r in rows
+	]
+
+
+class SweepNotAcknowledged(frappe.ValidationError):
+	"""Raised by `_assert_sweep_is_acknowledged`, and given its own class so a
+	caller can tell this refusal apart from every other reason a Finish fails.
+
+	The kiosk needs that: this is the one refusal with an exit — tick the box,
+	post anyway — and the only thing it can match on. The message cannot serve:
+	it is translated into five languages, so matching its text works in English
+	and silently strands the operator in the other four. `frappe.response`
+	carries the class name back on V1 (`utils/response.py:52`), unconditionally,
+	traceback suppression included.
+	"""
+
+
+def _sweep_risk_of(rows: list[dict], my_role: str | None) -> list[dict]:
+	"""The sweep predicate itself, over rows somebody has already fetched.
+
+	Split out from `_sweep_risk_rows` so the two places that ask the question
+	share one answer: `wo_consumption_preview` warns the operator before they
+	type a count, `_assert_sweep_is_acknowledged` refuses after. Written twice
+	they drift — the kiosk lists the label rolls, the server refuses over the
+	milk, and the operator ticks a box that does not unblock them. It is also
+	the only way the preview can answer without a second `make_stock_entry`
+	round trip for rows it is already holding.
+	"""
+	return [r for r in rows if r.get("operator_role") and r.get("operator_role") != my_role]
+
+
+def _sweep_risk_rows(work_order: str, my_role: str | None) -> list[dict]:
+	"""Unconsumed rows a Manufacture entry would sweep onto this caller's
+	document without the role that owns them ever writing them off — every
+	role-owned row that is not `my_role`.
+
+	`my_role=None` is how a manager is represented here (they hold no role of
+	their own), and it correctly names every role-owned row: none of them is
+	"theirs" either, so the sweep is just as invisible to a manager posting on
+	the floor's behalf as it is to the other operator. A row nobody has given a
+	role to is not named here in either direction — that is `_unassigned_rows`'
+	open question, not a cross-role sweep.
+	"""
+	return _sweep_risk_of(_unconsumed_material_rows(work_order) or [], my_role)
+
+
+def _assert_sweep_is_acknowledged(work_order: str, my_role: str | None, acknowledge_sweep: bool) -> None:
+	"""Refuse to finish an order while the other role's material is still
+	sitting unconsumed, unless the caller has been shown the list and confirmed
+	anyway.
+
+	This is the failure `_assert_roles_are_both_or_neither` cannot see: a FULLY
+	assigned order, both boxes filled, where the two operators are simply
+	running at different speeds — the ordinary state of an order mid-shift, not
+	a misconfiguration. ERPNext does not tell the difference either —
+	`Work Order Item.consumed_qty` accumulates whatever entry names it — so
+	posting here sweeps whatever the other role has not yet written off onto
+	this caller's document. Measured live, genesis-test 2026-08-25: a fully
+	assigned order, consumption on, the pourer finished after writing off only
+	his own milk — MAT-STE-2026-00037 carries PROBE-LABEL, consumed_qty
+	0.0 -> 10.0, on the pourer's document, and the packer's deviation panel
+	scored a clean on-plan shift for an order he never touched.
+
+	Server-side because the kiosk is not the only caller of this endpoint — a
+	UI-only warning is a courtesy, not the fix.
+	"""
+	if acknowledge_sweep:
+		return
+	sweep = _sweep_risk_rows(work_order, my_role)
+	if not sweep:
+		return
+	# item_name, not item_code: this reaches an operator on the kiosk mid-shift,
+	# and the kiosk's own materials list (`ManufacturingOperatorBoard.vue`) shows
+	# item_name as the primary label everywhere, item_code only as a small
+	# reference underneath. `_assert_may_consume`'s refusals name item_code
+	# instead — a real, pre-existing divergence, not one this change resolves.
+	names = ", ".join(r.get("item_name") or r.get("item_code") for r in sweep)
+	frappe.throw(
+		_(
+			"Finishing now will also write off material the other operator has not "
+			"consumed yet: {0}. Confirm to include it on your document anyway."
+		).format(names),
+		exc=SweepNotAcknowledged,
+	)
+
+
 # ----- BOMs ----------------------------------------------------------------
 
 
@@ -689,8 +812,6 @@ def wo_consumption_preview(work_order: str):
 	lead is meant to see and clear. Managers get those rows themselves.
 
 	Operator (own WO) or manager."""
-	from erpnext.manufacturing.doctype.work_order.work_order import make_stock_entry
-
 	_assert_can_read("Work Order", work_order)
 	_require_mfg()
 	if not frappe.db.exists("Work Order", work_order):
@@ -710,45 +831,38 @@ def wo_consumption_preview(work_order: str):
 			frappe.db.get_value("Work Order", work_order, list(_wo_operator_columns()), as_dict=True)
 		)
 	)
-	empty = {"items": [], "from_warehouse": None, "role": role, "unassigned_item_count": 0, "enabled": False}
-	if not _material_consumption_enabled():
+	empty = {
+		"items": [],
+		"from_warehouse": None,
+		"role": role,
+		"unassigned_item_count": 0,
+		"sweep_risk": [],
+		"enabled": False,
+	}
+	rows = _unconsumed_material_rows(work_order)
+	if rows is None:
 		# Not an error: the site is not set up for the split, and the kiosk shows the
-		# single-document flow instead of two write-off buttons. Returning nothing is
-		# also the safe answer — with the setting off ERPNext would build this list
-		# from the full BOM rather than from what is actually left in WIP
-		# (`_material_consumption_enabled`), so the rows would be a lie.
+		# single-document flow instead of two write-off buttons.
 		return empty
-	try:
-		se = make_stock_entry(work_order, _SE_CONSUMPTION)
-	except Exception as e:  # preview must never hard-fail the kiosk
-		# Routinely reached, not only on breakage: ERPNext refuses the stub once the
-		# order is fully produced (fg_completed_qty falls to 0), which is exactly the
-		# state a finished order is in when an operator reopens it.
-		frappe.log_error(title="Kassa/mfg: wo_consumption_preview failed", message=f"wo={work_order} err={e}")
-		return {**empty, "enabled": True}
+	# `rows == []` also covers ERPNext refusing the stub once the order is fully
+	# produced (fg_completed_qty falls to 0) — routinely reached, not only on
+	# breakage, and `enabled: True` here is what tells the kiosk this order really
+	# has nothing left rather than that the site is unset up for the split.
 
-	stub = se if isinstance(se, dict) else se.as_dict()
-	rows = [r for r in (stub.get("items") or []) if not r.get("is_finished_item")]
-	roles = _item_roles([r.get("item_code") for r in rows])
 	from_wh = next((r.get("s_warehouse") for r in rows if r.get("s_warehouse")), None)
-
-	items = [
-		{
-			"item_code": r.get("item_code"),
-			"item_name": r.get("item_name") or frappe.db.get_value("Item", r.get("item_code"), "item_name"),
-			"qty": flt(r.get("qty")),
-			"uom": r.get("uom") or r.get("stock_uom"),
-			"s_warehouse": r.get("s_warehouse"),
-			"operator_role": roles.get(r.get("item_code")) or None,
-		}
-		for r in rows
-		if is_manager or (role and roles.get(r.get("item_code")) == role)
-	]
+	items = [r for r in rows if is_manager or (role and r.get("operator_role") == role)]
 	return {
 		"items": items,
 		"from_warehouse": from_wh,
 		"role": role,
-		"unassigned_item_count": len([r for r in rows if not roles.get(r.get("item_code"))]),
+		"unassigned_item_count": len([r for r in rows if not r.get("operator_role")]),
+		# The complement of `items`, and the reason it rides this payload rather
+		# than its own endpoint: it is the same `rows`, already paid for. The
+		# kiosk shows it in the Finish dialog so the operator meets the sweep as
+		# a warning they can act on — call the other operator, wait ten minutes —
+		# instead of as `_assert_sweep_is_acknowledged`'s refusal after the
+		# pallet is already counted.
+		"sweep_risk": _sweep_risk_of(rows, role),
 		"enabled": True,
 	}
 
@@ -1156,13 +1270,20 @@ def make_work_order_stock_entry(
 	batch_no: str | None = None,
 	mfg_date: str | None = None,
 	expiry_date: str | None = None,
+	acknowledge_sweep: bool = False,
 ):
 	"""Generate and submit a Stock Entry for material transfer or manufacture.
 
 	`scrap_qty` is accepted for the Manufacture purpose and recorded as
 	process loss (operator-reported rejects). On Manufacture, an optional
 	`batch_no` (+ mfg/expiry) is stamped on the Work Order for lot traceability
-	(Faz 4a) — informational only, does not touch the stock batch engine."""
+	(Faz 4a) — informational only, does not touch the stock batch engine.
+
+	`acknowledge_sweep` confirms the caller has been shown, and accepts, that
+	finishing now will also write off the other role's unconsumed material
+	(`_assert_sweep_is_acknowledged`). Default False on purpose: the guard is a
+	safety net against a stale or failed client-side preview, not just a prompt,
+	so the server must still refuse when the flag is simply absent."""
 	import json
 
 	from erpnext.manufacturing.doctype.work_order.work_order import make_stock_entry
@@ -1208,6 +1329,22 @@ def make_work_order_stock_entry(
 		# hatch for a manager is to assign both roles first, which is one action
 		# and makes the record true — not to post around the gap.
 		_assert_roles_are_both_or_neither(work_order, purpose)
+		# Part 3 (the actual P0): a FULLY assigned order reaches this point on
+		# every ordinary shift — the two operators simply running at different
+		# speeds — and the guard above cannot see that, because both boxes are
+		# filled. ERPNext cannot see it either: consumed_qty just accumulates
+		# whatever entry names it, so posting here sweeps whatever the other role
+		# has not yet written off onto this caller's document. Measured live,
+		# genesis-test 2026-08-25: MAT-STE-2026-00037 carries PROBE-LABEL that the
+		# packer never touched.
+		my_role = (
+			None
+			if is_manager
+			else _wo_role_of(
+				frappe.db.get_value("Work Order", work_order, list(_wo_operator_columns()), as_dict=True)
+			)
+		)
+		_assert_sweep_is_acknowledged(work_order, my_role, acknowledge_sweep)
 
 	doc = make_stock_entry(work_order, purpose, qty=flt(qty) if qty else None)
 	stub = doc if isinstance(doc, dict) else doc.as_dict()
