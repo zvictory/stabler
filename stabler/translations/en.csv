@@ -1,3 +1,6 @@
+"The existing material request {0} could not be withdrawn, so the plan was not saved. Sort that request out first.","The existing material request {0} could not be withdrawn, so the plan was not saved. Sort that request out first."
+"These materials are the other operator's to plan, not yours: {0}","These materials are the other operator's to plan, not yours: {0}"
+"This order's material has already been written off per operator, but 'Allow Continuous Material Consumption' is switched off in Manufacturing Settings — finishing now would count that material a second time. Ask a manager to switch it back on.","This order's material has already been written off per operator, but 'Allow Continuous Material Consumption' is switched off in Manufacturing Settings — finishing now would count that material a second time. Ask a manager to switch it back on."
 #,#
 % of total,% of total
 (defaults to today),(defaults to today)
@@ -95,6 +98,7 @@ A wrong code costs an attempt and eventually locks the transfer.,A wrong code co
 "A ≤ {0}%, B ≤ {1}%, C rest — by revenue.","A ≤ {0}%, B ≤ {1}%, C rest — by revenue."
 "A ≤ {0}%, B ≤ {1}%, C rest — by spend.","A ≤ {0}%, B ≤ {1}%, C rest — by spend."
 "A ≤ {0}%, B ≤ {1}%, C rest — by {2}. Submitted; returns netted.","A ≤ {0}%, B ≤ {1}%, C rest — by {2}. Submitted; returns netted."
+Add Material,Add Material
 Already {0},Already {0}
 AR balance per customer as of the selected date — click a row to see the ledger behind the balance.,AR balance per customer as of the selected date — click a row to see the ledger behind the balance.
 Abbr,Abbr
@@ -230,7 +234,10 @@ Failed to load the transfer.,Failed to load the transfer.
 Find,Find
 Find a transfer,Find a transfer
 "Flow · {period} · charged, earned only on payout","Flow · {period} · charged, earned only on payout"
+Finishing now will also write off material the other operator has not consumed yet: {0}. Confirm to include it on your document anyway.,Finishing now will also write off material the other operator has not consumed yet: {0}. Confirm to include it on your document anyway.
+Finishing now writes it off under your name.,Finishing now writes it off under your name.
 Flow · {period} · moved to income at payout,Flow · {period} · moved to income at payout
+From Warehouse,From Warehouse
 From {date},From {date}
 Frozen at registration,Frozen at registration
 Hand over the cash?,Hand over the cash?
@@ -272,6 +279,7 @@ No cash desk is mapped. A desk cannot take cash in or pay it out until it has an
 No company is selected,No company is selected
 No desk is carrying an open obligation,No desk is carrying an open obligation
 No desk is mapped yet. Add one for every desk and currency that takes or pays out cash.,No desk is mapped yet. Add one for every desk and currency that takes or pays out cash.
+No items to transfer. Click 'Add Material' to add items manually.,No items to transfer. Click 'Add Material' to add items manually.
 No journal entry is linked to this transfer.,No journal entry is linked to this transfer.
 No longer exists,No longer exists
 No note given.,No note given.
@@ -367,6 +375,7 @@ Principal,Principal
 "Principal {0} plus commission {1} must equal {2}, not {3}.","Principal {0} plus commission {1} must equal {2}, not {3}."
 Production operator,Production operator
 Purchase Receipt {0} already has a draft invoice: {1}. Submit or delete that draft instead of raising a second bill for the same goods.,Purchase Receipt {0} already has a draft invoice: {1}. Submit or delete that draft instead of raising a second bill for the same goods.
+Put it on my document anyway,Put it on my document anyway
 Quote,Quote
 Quote updated — switching how the fee is charged recalculates the amounts.,Quote updated — switching how the fee is charged recalculates the amounts.
 Rate quoted to the sender,Rate quoted to the sender
@@ -437,6 +446,7 @@ Select a company to pay out a transfer.,Select a company to pay out a transfer.
 Select a desk…,Select a desk…
 Select at least one Work Order.,Select at least one Work Order.
 Select desk…,Select desk…
+Select Warehouse,Select Warehouse
 Selected work orders: {0},Selected work orders: {0}
 Sender,Sender
 Sender handed over,Sender handed over
@@ -453,6 +463,8 @@ Terminated by {0}: {1},Terminated by {0}: {1}
 That is not the name this transfer was registered under.,That is not the name this transfer was registered under.
 That screen is not available yet.,That screen is not available yet.
 The destination desk ({branch}) has no {currency} cash account — add it in Remittance Settings before registering.,The destination desk ({branch}) has no {currency} cash account — add it in Remittance Settings before registering.
+The order cannot be finished until both operator roles are assigned. Missing: {0},The order cannot be finished until both operator roles are assigned. Missing: {0}
+The other operator has not written this off yet,The other operator has not written this off yet
 The pickup code was refused.,The pickup code was refused.
 The posting could not be previewed.,The posting could not be previewed.
 The V1 engine reads every cash account from the desk table. Add at least one desk before switching to V1.,The V1 engine reads every cash account from the desk table. Add at least one desk before switching to V1.
@@ -488,6 +500,7 @@ This company runs the {engine} remittance engine. The Transfer V1 screens stay u
 "This compares each transfer against the journal entries it names. The ledger-side balances are not read here, so agreement means the master is self-consistent, not that the trial balance was checked.","This compares each transfer against the journal entries it names. The ledger-side balances are not read here, so agreement means the master is self-consistent, not that the trial balance was checked."
 This entry does not balance. Do not hand over cash — report it.,This entry does not balance. Do not hand over cash — report it.
 This is the step that moves cash.,This is the step that moves cash.
+This order is {0} — its plan can no longer be changed.,This order is {0} — its plan can no longer be changed.
 This pickup code is locked.,This pickup code is locked.
 This posts the reversal and hands {amount} back to {sender} at the origin desk. The pickup code stops working and the transfer can no longer be paid out.,This posts the reversal and hands {amount} back to {sender} at the origin desk. The pickup code stops working and the transfer can no longer be paid out.
 This reason is written to the transfer's permanent event trail and is what the approving manager reads.,This reason is written to the transfer's permanent event trail and is what the approving manager reads.
@@ -500,6 +513,7 @@ This transfer could not be loaded.,This transfer could not be loaded.
 This transfer pays out at,This transfer pays out at
 This transfer was saved without its pickup-code digest. The field is ,This transfer was saved without its pickup-code digest. The field is 
 This will post,This will post
+To Warehouse (WIP),To Warehouse (WIP)
 To {date},To {date}
 Too many wrong attempts — only a manager can reopen it,Too many wrong attempts — only a manager can reopen it
 Too many wrong codes were entered. Ask a manager to unlock it — there is no timer.,Too many wrong codes were entered. Ask a manager to unlock it — there is no timer.

@@ -118,3 +118,86 @@ describe("kiosk Start button", () => {
 		).toBe(true);
 	});
 });
+
+/**
+ * D1 (P0), part 2. The Finish button used to carry no halfAssigned gate at all,
+ * and `canFinish` counted "Not Started" as finishable — so a half-assigned order
+ * that could never be legitimately Started (the Start button already refuses it)
+ * could still be Finished directly, straight into the sweep Part 1's backend
+ * guard now refuses server-side. Gating the button here is the difference between
+ * that refusal being a dead end an operator hits by clicking around, versus one
+ * they never see because the button was never live.
+ */
+function finishDisabled({ busy = "", row }) {
+	const click = kiosk.indexOf('@click="openFinish(r)"');
+	expect(click, "no button bound to openFinish(r)").toBeGreaterThan(-1);
+	const marker = ':disabled="';
+	const start = kiosk.lastIndexOf(marker, click);
+	const bodyStart = start + marker.length;
+	const expr = kiosk.slice(bodyStart, kiosk.indexOf('"', bodyStart));
+	const fn = new Function("isBusy", "halfAssigned", "r", `return (${expr});`);
+	return !!fn((name) => busy === name, halfAssigned, row);
+}
+
+describe("kiosk Finish button", () => {
+	it("is live on a fully assigned order", () => {
+		expect(
+			finishDisabled({ row: { name: "WO-9", operator: "a@x.uz", packaging_operator: "b@x.uz" } })
+		).toBe(false);
+	});
+
+	it("is live on an order that names neither operator", () => {
+		expect(finishDisabled({ row: { name: "WO-9" } })).toBe(false);
+	});
+
+	it("is dead on a half-assigned order", () => {
+		// The never-named role never wrote anything off. Finishing now would let
+		// ERPNext sweep their material onto the document of whoever is clicking.
+		expect(finishDisabled({ row: { name: "WO-9", operator: "a@x.uz" } })).toBe(true);
+	});
+
+	it("is dead while a post for this order is in flight", () => {
+		expect(
+			finishDisabled({
+				busy: "WO-9",
+				row: { name: "WO-9", operator: "a@x.uz", packaging_operator: "b@x.uz" },
+			})
+		).toBe(true);
+	});
+});
+
+/**
+ * `canFinish` decides whether the button is offered at all (`v-if`), separately
+ * from whether it is clickable (`:disabled`, above). A Not-Started order has had
+ * nothing transferred into WIP by either role — there is nothing yet to finish —
+ * and it was also the status a half-assigned order was stuck in, since the Start
+ * button already refuses it. Offering Finish there was a second, v-if-level route
+ * to the same premature-finish gap the :disabled change above closes.
+ */
+function canFinishFor(row) {
+	const m = kiosk.match(/const canFinish = \(r\) => ([^;]+);/);
+	expect(m, "no canFinish definition found").toBeTruthy();
+	const fn = new Function("r", `return (${m[1]});`);
+	return !!fn(row);
+}
+
+describe("kiosk canFinish", () => {
+	it("no longer offers Finish on a Not Started order", () => {
+		expect(canFinishFor({ docstatus: 1, status: "Not Started" })).toBe(false);
+	});
+
+	it("still offers Finish once the order has actually progressed", () => {
+		for (const status of [
+			"In Process",
+			"Stock Partially Reserved",
+			"Material Transferred",
+			"Submitted",
+		]) {
+			expect(canFinishFor({ docstatus: 1, status })).toBe(true);
+		}
+	});
+
+	it("never offers Finish on an unsubmitted document regardless of status", () => {
+		expect(canFinishFor({ docstatus: 0, status: "In Process" })).toBe(false);
+	});
+});

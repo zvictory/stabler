@@ -21,9 +21,12 @@ consumption setting off the real Manufacturing Settings single.
 
 from __future__ import annotations
 
+import json
 import unittest
+from pathlib import Path
 
 import frappe
+from frappe.utils import add_days, flt, today
 
 try:
 	from frappe.tests.utils import FrappeTestCase
@@ -31,13 +34,18 @@ except Exception:  # pragma: no cover - older/newer frappe
 	FrappeTestCase = unittest.TestCase
 
 from stabler.api.manufacturing import (
+	_assert_consumption_setting_still_holds,
 	_assert_may_consume,
+	_assert_sweep_is_acknowledged,
 	_clear_finish_draft,
 	_material_consumption_enabled,
+	_unconsumed_material_rows,
 	assign_work_order_operators_bulk,
+	create_material_request_for_tomorrow_wo,
 	discard_finish_draft,
 	list_work_orders,
 	save_finish_draft,
+	update_work_order_materials,
 	wo_consumption_preview,
 	work_order_detail,
 )
@@ -66,11 +74,33 @@ def _ensure_user(email: str) -> None:
 
 
 def _a_submitted_work_order() -> str | None:
-	"""Any submitted WO carrying at least two required items, or None."""
-	for name in frappe.get_all("Work Order", filters={"docstatus": 1}, pluck="name"):
-		if frappe.db.count("Work Order Item", {"parent": name}) >= 2:
-			return name
-	return None
+	"""A submitted WO carrying at least two required items, preferring one with
+	production still to do.
+
+	The preference is not cosmetic. ERPNext builds its consumption and Manufacture
+	stubs off `fg_completed_qty`, which is zero once `produced_qty` reaches `qty` —
+	on a finished order `make_stock_entry` raises "For Quantity (Manufactured Qty)
+	is mandatory" and every "what is still unconsumed" question in this file
+	answers empty. Measured on genesis-test 2026-08-26: the first submitted order
+	on the site is `MFG-WO-2026-00001`, Completed at 100/100, and picking it
+	self-skipped the sweep-guard tests and hollowed out the preview one — green,
+	proving nothing, in the file whose entire job is to run against real columns.
+	Thirteen orders with room left were sitting behind it.
+
+	Falls back to any submitted order so a site with only finished ones still runs
+	the checks that do not need pending material.
+	"""
+	fallback = None
+	for row in frappe.get_all(
+		"Work Order", filters={"docstatus": 1}, fields=["name", "qty", "produced_qty"], order_by="name"
+	):
+		if frappe.db.count("Work Order Item", {"parent": row["name"]}) < 2:
+			continue
+		if flt(row["produced_qty"]) < flt(row["qty"]):
+			return row["name"]
+		if fallback is None:
+			fallback = row["name"]
+	return fallback
 
 
 @unittest.skipUnless(
@@ -120,6 +150,41 @@ class TestRoleScopingOnRealColumns(FrappeTestCase):
 		self.assertEqual(out["my_role"], "Packaging")
 		self.assertEqual([r["item_code"] for r in out["required_items"]], [self.codes[0]])
 
+	def test_the_board_gives_the_pourer_only_their_own_material(self):
+		"""`list_work_orders` is the only endpoint the kiosk board calls to fill its
+		rows. Until now it never sent a `required_items` key at all, so the
+		Required Materials block on every card rendered its empty state no matter
+		who was looking or what the order actually needed."""
+		frappe.set_user(POURER)
+		company = frappe.db.get_value("Work Order", self.wo, "company")
+		row = next(r for r in list_work_orders(company=company, limit=100) if r["name"] == self.wo)
+		self.assertEqual([r["item_code"] for r in row["required_items"]], [self.codes[1]])
+
+	def test_the_board_gives_the_packer_only_their_own_material(self):
+		frappe.set_user(PACKER)
+		company = frappe.db.get_value("Work Order", self.wo, "company")
+		row = next(r for r in list_work_orders(company=company, limit=100) if r["name"] == self.wo)
+		self.assertEqual([r["item_code"] for r in row["required_items"]], [self.codes[0]])
+
+	def test_the_board_never_shows_an_operator_a_price(self):
+		"""Same reason `work_order_detail` withholds it: the rows are the operator's,
+		the BOM cost behind them is the manager's."""
+		frappe.set_user(POURER)
+		company = frappe.db.get_value("Work Order", self.wo, "company")
+		row = next(r for r in list_work_orders(company=company, limit=100) if r["name"] == self.wo)
+		self.assertTrue(row["required_items"], "fixture produced no rows to check")
+		for item in row["required_items"]:
+			self.assertNotIn("rate", item, "an operator was shown BOM cost on the board")
+			self.assertNotIn("amount", item, "an operator was shown BOM cost on the board")
+
+	def test_the_manager_sees_every_material_line_on_the_board(self):
+		"""Managers stage the whole transfer, so they keep the whole list — same
+		rule `work_order_detail` applies, now proven on the list endpoint too."""
+		frappe.set_user("Administrator")
+		company = frappe.db.get_value("Work Order", self.wo, "company")
+		row = next(r for r in list_work_orders(company=company, limit=100) if r["name"] == self.wo)
+		self.assertEqual(sorted(r["item_code"] for r in row["required_items"]), sorted(self.codes))
+
 	def test_neither_operator_is_shown_a_price(self):
 		"""The reason operators were handed no material list at all until now. The
 		rows are theirs; the BOM cost behind them is not."""
@@ -161,10 +226,16 @@ class TestRoleScopingOnRealColumns(FrappeTestCase):
 		`_material_consumption_enabled` then reads back. FrappeTestCase rolls the
 		transaction back afterwards, and the site is off again.
 		"""
-		frappe.db.set_single_value("Manufacturing Settings", "material_consumption", 1)
+		self._set_consumption(1)
+
+	def _set_consumption(self, value):
+		"""Either way round — D2 needs the off state written just as literally as
+		the on state, and reading it back is the only thing that proves the single
+		and its cache actually moved."""
+		frappe.db.set_single_value("Manufacturing Settings", "material_consumption", value)
 		frappe.clear_document_cache("Manufacturing Settings", "Manufacturing Settings")
 		self.addCleanup(frappe.clear_document_cache, "Manufacturing Settings", "Manufacturing Settings")
-		self.assertTrue(_material_consumption_enabled(), "the setting did not take")
+		self.assertEqual(_material_consumption_enabled(), bool(value), "the setting did not take")
 
 	def test_the_pourer_cannot_write_off_the_packers_material(self):
 		"""No stubs anywhere: `_assert_may_consume` reads the roles straight off the
@@ -221,20 +292,27 @@ class TestRoleScopingOnRealColumns(FrappeTestCase):
 
 	def test_the_preview_never_offers_the_other_operators_material(self):
 		"""End to end on the real thing: the setting on, ERPNext building the list,
-		roles read from the Item column."""
+		roles read from the Item column.
+
+		BOTH lines are forced pending, and both directions are asserted. With only
+		the pourer's line pending the `assertNotIn` passes without proving
+		anything — the packer's material was never in ERPNext's list to be scoped
+		out of it, so a preview with no role filter at all would be just as green.
+		"""
 		self._enable_consumption()
+		self._force_pending(self.codes[0])  # the packer's line
+		self._force_pending(self.codes[1])  # the pourer's own
 		frappe.set_user(POURER)
 		out = wo_consumption_preview(self.wo)
 		if not out["items"]:
-			# Said out loud rather than passing quietly. Every Work Order on this site
-			# is fully produced, so ERPNext refuses the stub and there is no list to
-			# scope — a green tick here would claim coverage this run did not have.
+			# Said out loud rather than passing quietly. ERPNext refuses the stub
+			# outright once an order is fully produced (fg_completed_qty falls to 0)
+			# no matter what consumed_qty says — a green tick here would claim
+			# coverage this run did not have.
 			self.skipTest(f"{self.wo} has nothing pending to consume, so no list was built to scope")
-		self.assertNotIn(
-			self.codes[0],
-			[r["item_code"] for r in out["items"]],
-			"the pourer was offered the packer's material",
-		)
+		offered = [r["item_code"] for r in out["items"]]
+		self.assertIn(self.codes[1], offered, "the pourer was not offered their own material")
+		self.assertNotIn(self.codes[0], offered, "the pourer was offered the packer's material")
 
 	def test_the_preview_reports_the_sites_actual_consumption_setting(self):
 		"""Reads the real Manufacturing Settings single. With it off the preview must
@@ -245,6 +323,332 @@ class TestRoleScopingOnRealColumns(FrappeTestCase):
 		self.assertEqual(out["enabled"], _material_consumption_enabled())
 		if not out["enabled"]:
 			self.assertEqual(out["items"], [])
+
+	def _required(self, item_code):
+		return flt(
+			frappe.db.get_value(
+				"Work Order Item", {"parent": self.wo, "item_code": item_code}, "required_qty"
+			)
+		)
+
+	def _save_materials(self, item_code, qty):
+		"""Restores what it wrote. `FrappeTestCase` rolls this file back once per
+		CLASS, not per test — measured 2026-08-26, when a status forced to
+		Completed by one test was still Completed two tests later and refused a
+		manager who should have been let through. Every test below writes real
+		rows, so each puts its own back and none of them depends on the order the
+		loader happens to pick."""
+		before = self._required(item_code)
+		self.addCleanup(
+			frappe.db.set_value,
+			"Work Order Item",
+			{"parent": self.wo, "item_code": item_code},
+			"required_qty",
+			before,
+		)
+		return update_work_order_materials(
+			self.wo, json.dumps([{"item_code": item_code, "required_qty": qty}])
+		)
+
+	def _force_status(self, status):
+		before = frappe.db.get_value("Work Order", self.wo, "status")
+		self.addCleanup(frappe.db.set_value, "Work Order", self.wo, "status", before)
+		frappe.db.set_value("Work Order", self.wo, "status", status)
+
+	def test_the_pourer_cannot_rewrite_the_packers_planned_quantity(self):
+		"""D7 (P0). `required_qty` is the denominator the deviation panel scores
+		people against, and this endpoint writes it with raw SQL that deliberately
+		bypasses the docstatus lock. Unscoped, one operator can move the other
+		one's bar: raise the packer's plan and the packer looks efficient, lower
+		it and the packer looks wasteful, and the packer is never told.
+
+		The kiosk only ever sends the caller's own lines — `list_work_orders` has
+		been role-scoped since 238592a — so this closes the hand-made request, not
+		the screen. Which is the point: the screen was never the guard."""
+		before = self._required(self.codes[0])  # the packer's line
+		frappe.set_user(POURER)
+		with self.assertRaises(frappe.ValidationError):
+			self._save_materials(self.codes[0], before + 99)
+		frappe.set_user("Administrator")
+		self.assertEqual(self._required(self.codes[0]), before, "the packer's plan moved")
+
+	def test_the_pourer_can_still_correct_their_own_line(self):
+		"""The other half, and the one that proves the guard is scoping rather
+		than simply refusing everything — a test suite where the endpoint had been
+		disabled outright would pass the test above just as well."""
+		frappe.set_user(POURER)
+		self._save_materials(self.codes[1], 77)
+		frappe.set_user("Administrator")
+		self.assertEqual(self._required(self.codes[1]), 77)
+
+	def test_the_manager_may_still_plan_both_roles(self):
+		frappe.set_user("Administrator")
+		self._save_materials(self.codes[0], 55)
+		self.assertEqual(self._required(self.codes[0]), 55)
+
+	def test_a_finished_order_no_longer_accepts_a_new_plan(self):
+		"""Rewriting the plan for a shift that has already been scored rewrites
+		the score. The raw SQL goes through docstatus on purpose, so nothing else
+		stops this."""
+		before = self._required(self.codes[1])
+		self._force_status("Completed")
+		frappe.set_user(POURER)
+		with self.assertRaises(frappe.ValidationError):
+			self._save_materials(self.codes[1], before + 5)
+		frappe.set_user("Administrator")
+		self.assertEqual(self._required(self.codes[1]), before)
+
+	def test_the_change_is_recorded_with_the_number_it_replaced(self):
+		"""An adjustment nobody can reconstruct is indistinguishable from the
+		fraud it enables. "Raw materials manually adjusted by X" — the whole audit
+		trail before this — says a number moved without saying which, from what,
+		or to what, so a plan quietly raised 20% reads exactly like a typo
+		corrected back."""
+		before = self._required(self.codes[1])
+		frappe.set_user(POURER)
+		self._save_materials(self.codes[1], before + 3)
+		frappe.set_user("Administrator")
+		note = frappe.get_all(
+			"Comment",
+			filters={"reference_doctype": "Work Order", "reference_name": self.wo},
+			fields=["content"],
+			order_by="creation desc",
+			limit=1,
+		)
+		self.assertTrue(note, "no event was logged at all")
+		content = note[0]["content"]
+		self.assertIn(self.codes[1], content)
+		self.assertIn(str(before), content)
+		self.assertIn(str(before + 3), content)
+
+	def _force_pending(self, item_code):
+		"""Zero this line's consumed_qty so ERPNext's own stub still lists it as
+		unconsumed regardless of whatever this real Work Order already had —
+		FrappeTestCase rolls the write back with everything else."""
+		frappe.db.set_value("Work Order Item", {"parent": self.wo, "item_code": item_code}, "consumed_qty", 0)
+
+	def test_a_role_is_refused_finish_while_the_other_has_unwritten_off_material(self):
+		"""Failure B, end to end on the real columns: measured live on genesis-test
+		2026-08-25 against a fully assigned order where the packer never wrote off
+		his material — the pourer pressed Finish and it succeeded onto his own
+		document (MAT-STE-2026-00037, PROBE-LABEL consumed_qty 0.0 -> 10.0).
+		`_assert_sweep_is_acknowledged` is asked the same question ERPNext itself
+		answers when it builds the Manufacture stub, off the real child table.
+		"""
+		self._enable_consumption()
+		self._force_pending(self.codes[0])  # the packer's (Packaging) line
+		frappe.set_user(POURER)
+		if not any(r["item_code"] == self.codes[0] for r in _unconsumed_material_rows(self.wo) or []):
+			# ERPNext refuses the stub once the order is fully produced regardless
+			# of consumed_qty (fg_completed_qty falls to 0) — said out loud rather
+			# than passing quietly, the same escape hatch this file already uses
+			# for the preview above.
+			self.skipTest(f"{self.wo} has nothing pending even after clearing consumed_qty")
+		item_name = frappe.db.get_value("Item", self.codes[0], "item_name") or self.codes[0]
+		with self.assertRaises(frappe.ValidationError) as cm:
+			_assert_sweep_is_acknowledged(self.wo, "Production", False)
+		self.assertIn(item_name, str(cm.exception))
+
+	def test_a_written_off_order_is_refused_while_the_setting_is_off(self):
+		"""D2 against the real Stock Entry table, which is the half mocks cannot
+		reach: the guard's whole decision rests on a filter over `work_order`,
+		`purpose` and `docstatus`, and a mocked `frappe.db.exists` proves those
+		field names spelled right exactly as well as it proves them spelled wrong.
+
+		Picks a real order that genuinely carries submitted per-role write-offs
+		rather than manufacturing one, so what is asserted is the state the shop
+		floor actually leaves behind."""
+		wo = frappe.db.get_value(
+			"Stock Entry",
+			{"purpose": "Material Consumption for Manufacture", "docstatus": 1},
+			"work_order",
+		)
+		if not wo:
+			self.skipTest("no submitted per-role consumption entry on this site to guard against")
+		self._set_consumption(0)
+		with self.assertRaises(frappe.ValidationError) as cm:
+			_assert_consumption_setting_still_holds(wo)
+		self.assertIn("Manufacturing Settings", str(cm.exception))
+		self._set_consumption(1)
+		_assert_consumption_setting_still_holds(wo)  # must not raise
+
+	def test_acknowledging_the_sweep_lets_the_real_finish_through(self):
+		"""The other half of the same guard, against the same real state — proving
+		`acknowledge_sweep` genuinely reaches and overrides it, not just that the
+		refusal fires."""
+		self._enable_consumption()
+		self._force_pending(self.codes[0])
+		frappe.set_user(POURER)
+		if not any(r["item_code"] == self.codes[0] for r in _unconsumed_material_rows(self.wo) or []):
+			self.skipTest(f"{self.wo} has nothing pending even after clearing consumed_qty")
+		_assert_sweep_is_acknowledged(self.wo, "Production", True)  # must not raise
+
+
+@unittest.skipUnless(frappe.db.table_exists("Work Order"), "no Work Order table on this site")
+class TestErpnextAcceptsTheShapeWeBuildForRejects(FrappeTestCase):
+	"""D4 (P0), against ERPNext's own validation rather than a mock of it.
+
+	`validate_fg_completed_qty` (stock_entry.py:747) requires
+	`fg_completed_qty == fg row qty + process_loss_qty`. Setting process_loss_qty
+	and leaving the finished-goods row whole therefore does not miscount — it
+	throws, in front of an operator who typed a reject count on a tablet, and the
+	only way through was to lie about the rejects.
+
+	Both shapes are built and INSERTED AS DRAFTS. Validation is what is being
+	tested and it runs on insert; submitting would move real stock and rewrite
+	`produced_qty` on a real order for nothing. The mocked tests in
+	test_manufacturing_kiosk.py hold our side of the arithmetic; this holds
+	ERPNext's, which is the half that can change under us on an upgrade.
+	"""
+
+	@classmethod
+	def setUpClass(cls):
+		super().setUpClass()
+		cls.wo = None
+		for row in frappe.get_all(
+			"Work Order", filters={"docstatus": 1}, fields=["name", "qty", "produced_qty"], order_by="name"
+		):
+			if flt(row["qty"]) - flt(row["produced_qty"]) >= 2:
+				cls.wo = row["name"]
+				break
+
+	def setUp(self):
+		if not self.wo:
+			self.skipTest("no submitted Work Order with at least 2 units left to produce")
+		frappe.set_user("Administrator")
+
+	def _draft(self, attempted, fg_qty, loss):
+		from erpnext.manufacturing.doctype.work_order.work_order import make_stock_entry
+
+		stub = make_stock_entry(self.wo, "Manufacture", qty=attempted)
+		se = frappe.get_doc(stub if isinstance(stub, dict) else stub.as_dict())
+		se.process_loss_qty = loss
+		for r in se.items:
+			r.allow_zero_valuation_rate = 1
+			if r.is_finished_item:
+				r.qty = fg_qty
+		se.insert(ignore_permissions=True)
+		self.addCleanup(frappe.delete_doc, "Stock Entry", se.name, force=True)
+		return se
+
+	def test_the_old_shape_is_refused_by_erpnext_itself(self):
+		"""One good unit, one rejected, and the finished-goods row left whole —
+		exactly what the endpoint built before. If this ever stops raising, the
+		arithmetic we now do is no longer needed and should go."""
+		with self.assertRaises(frappe.ValidationError) as cm:
+			self._draft(attempted=1, fg_qty=1, loss=1)
+		self.assertIn("process loss", str(cm.exception).lower())
+
+	def test_the_shape_we_build_now_validates(self):
+		se = self._draft(attempted=2, fg_qty=1, loss=1)
+		self.assertEqual(flt(se.fg_completed_qty), 2.0)
+		self.assertEqual([flt(r.qty) for r in se.items if r.is_finished_item], [1.0])
+
+
+@unittest.skipUnless(frappe.db.table_exists("Work Order"), "no Work Order table on this site")
+class TestAForwardDatedOrderCanActuallyBeSubmitted(FrappeTestCase):
+	"""D8 (P0) — nothing to do with the two-operator split, but on the ground it
+	was built on: `create_material_request_for_tomorrow_wo` is wired to Work Order
+	`on_submit` in hooks.py, and it set `material_request_type = "Transfer"`,
+	which is not one of the six values the doctype offers. Measured
+	genesis-test 2026-08-26:
+
+	    Purpose cannot be "Transfer". It should be one of "Purchase",
+	    "Material Transfer", "Material Issue", "Manufacture", "Subcontracting",
+	    "Customer Provided"
+
+	So the module did not support ordinary planning. The manager hits the wall on
+	SUBMIT, not on save — the cost is the whole form they filled in, not a click.
+
+	The hook has a `if not doc.wip_warehouse: return` branch that looks like an
+	escape, and is unreachable: ERPNext calls `validate_warehouse()` from
+	`on_submit` and makes `wip_warehouse` mandatory (work_order.py:786-793) unless
+	`skip_transfer` or `track_semi_finished_goods`, and Stabler sets neither
+	anywhere. That branch is dead by our configuration, not by ERPNext's design.
+	"""
+
+	@classmethod
+	def setUpClass(cls):
+		super().setUpClass()
+		cls.wo = _a_submitted_work_order()
+
+	def setUp(self):
+		if not self.wo:
+			self.skipTest("no submitted Work Order on this site")
+		frappe.set_user("Administrator")
+
+	def test_the_type_is_one_the_doctype_actually_offers(self):
+		"""The cheap forever-guard. Read off the live meta rather than hardcoded,
+		so it keeps holding when ERPNext changes the list — and it is the check
+		whose absence let a value that matches nothing sit in two places for
+		months, on a path no test ever reached."""
+		import re
+
+		from stabler.api import manufacturing
+
+		options = (
+			frappe.get_meta("Material Request").get_field("material_request_type").options or ""
+		).split("\n")
+
+		# Scoped to a local function so the 2000-line source never becomes a frame
+		# variable — unittest prints every local on failure, and the whole module
+		# in the traceback buries the one line that matters.
+		def _literals():
+			return set(
+				re.findall(
+					r'material_request_type = "([^"]+)"',
+					Path(manufacturing.__file__).read_text(encoding="utf-8"),
+				)
+			)
+
+		used = _literals()
+		self.assertTrue(used, "no material_request_type literal found to check")
+		for value in used:
+			self.assertIn(value, options, f'"{value}" is not a Material Request purpose')
+
+	def test_a_forward_dated_order_produces_a_request_the_warehouse_can_act_on(self):
+		"""End to end through the hook itself, on a real order, with a shortage
+		forced so the request is guaranteed to have a line. Before the fix this
+		raised on `insert` and the Work Order could not be submitted at all."""
+		doc = frappe.get_doc("Work Order", self.wo)
+		if frappe.db.exists("Material Request", {"work_order": doc.name, "docstatus": ["!=", 2]}):
+			self.skipTest(f"{doc.name} already carries a Material Request; the hook returns early")
+
+		before_date = doc.planned_start_date
+		self.addCleanup(frappe.db.set_value, "Work Order", doc.name, "planned_start_date", before_date)
+		doc.planned_start_date = add_days(today(), 3)
+
+		# A shortage no warehouse can already hold, so `mr.items` is never empty and
+		# the test cannot pass by quietly creating nothing.
+		item = doc.required_items[0]
+		before_qty = flt(item.required_qty)
+		self.addCleanup(
+			frappe.db.set_value,
+			"Work Order Item",
+			{"parent": doc.name, "item_code": item.item_code},
+			"required_qty",
+			before_qty,
+		)
+		item.required_qty = before_qty + 999_999
+
+		create_material_request_for_tomorrow_wo(doc)
+
+		mr = frappe.db.get_value(
+			"Material Request",
+			{"work_order": doc.name, "docstatus": 1},
+			["name", "material_request_type"],
+			as_dict=True,
+		)
+		self.assertTrue(mr, "the hook created no submitted Material Request")
+		self.addCleanup(self._drop_mr, mr["name"])
+		self.assertEqual(mr["material_request_type"], "Material Transfer")
+
+	def _drop_mr(self, name):
+		frappe.set_user("Administrator")
+		doc = frappe.get_doc("Material Request", name)
+		if doc.docstatus == 1:
+			doc.cancel()
+		frappe.delete_doc("Material Request", name, force=True, ignore_permissions=True)
 
 
 @unittest.skipUnless(
@@ -413,25 +817,33 @@ class TestBulkAssignAgainstRealOrders(FrappeTestCase):
 		self.assertEqual(self._pair(), {"operator": POURER, "packaging_operator": PACKER})
 
 	def test_a_finished_order_is_left_alone(self):
-		"""The refusal the class otherwise forces open, tested on purpose."""
+		"""The refusal the class otherwise forces open, tested on purpose.
+
+		"Left alone" is asserted as UNCHANGED, not as empty. Empty was true only
+		of the one order this file used to pick — a fresh Work Order nobody had
+		assigned — and a bulk assign that wiped an existing pair while reporting
+		`assigned: []` would have passed it. That is the exact failure the bulk
+		write rule exists to prevent, and the shift lead sees no sign of it."""
+		before = self._pair()
 		frappe.db.set_value("Work Order", self.wo, "status", "Completed")
 		out = assign_work_order_operators_bulk(self.company, [self.wo], operator=POURER)
 		self.assertEqual(out["assigned"], [])
 		self.assertIn("Completed", out["skipped"][0]["reason"])
-		self.assertIsNone(self._pair()["operator"])
+		self.assertEqual(self._pair(), before)
 
 	def test_a_company_that_is_not_the_orders_company_writes_nothing(self):
 		"""Tenant isolation, checked at the endpoint rather than in the partition.
 		Either the company guard throws before the query or the partition refuses
 		the id — both are correct, and the invariant either way is that the order
-		is not written."""
+		is not written. Unchanged rather than empty, for the reason above."""
+		before = self._pair()
 		try:
 			out = assign_work_order_operators_bulk("Not A Real Company", [self.wo], operator=POURER)
 		except Exception:
 			pass
 		else:
 			self.assertEqual(out["assigned"], [])
-		self.assertIsNone(self._pair()["operator"])
+		self.assertEqual(self._pair(), before)
 
 	def test_an_empty_selection_is_refused_rather_than_reported_as_success(self):
 		with self.assertRaises(frappe.ValidationError):

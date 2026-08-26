@@ -69,3 +69,35 @@ describe("roleLabel", () => {
 		});
 	}
 });
+
+/**
+ * The materials list's WIP Stock line. No backend endpoint — not
+ * `list_work_orders`, not `work_order_detail` — has ever set `wip_stock`, so
+ * `it.wip_stock >= it.required_qty` was always `undefined >= n` (false) and
+ * `it.wip_stock || 0` always printed 0: every line read red and empty the
+ * instant the panel had any rows to show at all, which is worse than the blank
+ * panel it replaced. `transferred_qty` is real, is already on the payload, and
+ * answers what the operator actually wants to know standing at the machine —
+ * "has this been moved to me yet".
+ */
+describe("kiosk required-materials WIP line", () => {
+	it("no longer reads the never-populated wip_stock field", () => {
+		expect(kiosk).not.toMatch(/\bwip_stock\b/);
+	});
+
+	it("labels the quantity with the key Work Orders.vue already uses for it", () => {
+		// Reusing "Transferred" (already shipped in ru/uz/uzc/tr for the manager's
+		// list column, detail and materials table) means the operator's card and
+		// the manager's screen name this number the same way, at zero new-string cost.
+		expect(kiosk).toContain('t("Transferred")');
+		expect(kiosk).toContain("it.transferred_qty");
+	});
+
+	it("reads green once a line is fully transferred and red while it is short", () => {
+		const m = kiosk.match(/:class="(it\.transferred_qty[^"]+)"/);
+		expect(m, "no class binding keyed on it.transferred_qty").toBeTruthy();
+		const fn = new Function("it", `return (${m[1]});`);
+		expect(fn({ transferred_qty: 10, required_qty: 10 })).toBe("text-success");
+		expect(fn({ transferred_qty: 4, required_qty: 10 })).toBe("text-danger");
+	});
+});

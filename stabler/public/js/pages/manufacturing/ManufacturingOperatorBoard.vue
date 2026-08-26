@@ -41,9 +41,15 @@ function humanizeError(err) {
 	let msg = err && err.message ? String(err.message) : "";
 	if (!msg) return "";
 	if (msg.indexOf("<") !== -1) {
-		const tmp = document.createElement("div");
-		tmp.innerHTML = msg;
-		msg = tmp.textContent || tmp.innerText || "";
+		// DOMParser, not a detached <div>. An element from document.createElement
+		// belongs to a document WITH a browsing context, so `innerHTML = msg`
+		// fires <img src=x onerror=...> the moment it parses — attached or not.
+		// DOMParser's document is inert: nothing loads, nothing runs. The path is
+		// not theoretical, because these messages are assembled from data:
+		// `_assert_sweep_is_acknowledged` interpolates item_name straight off the
+		// Item master, so whoever can name an Item can put markup into a string
+		// every operator's kiosk renders.
+		msg = new DOMParser().parseFromString(msg, "text/html").body.textContent || "";
 	}
 	return msg.replace(/\s+/g, " ").trim();
 }
@@ -272,7 +278,7 @@ function isBusy(name) {
 }
 
 const canStart = (r) => r.docstatus === 1 && ["Not Started", "Stock Partially Reserved", "Submitted"].includes(r.status);
-const canFinish = (r) => r.docstatus === 1 && ["Not Started", "In Process", "Stock Partially Reserved", "Material Transferred", "Submitted"].includes(r.status);
+const canFinish = (r) => r.docstatus === 1 && ["In Process", "Stock Partially Reserved", "Material Transferred", "Submitted"].includes(r.status);
 const canPause = (r) => r.docstatus === 1 && ["Not Started", "In Process", "Stock Partially Reserved", "Material Transferred", "Submitted"].includes(r.status);
 const canResume = (r) => r.docstatus === 1 && r.status === "Stopped";
 
@@ -568,6 +574,19 @@ const batchExpiry = ref("");
 
 const draftBusy = ref(false);
 
+// What finishing right now would drag onto this operator's document: the lines
+// the OTHER role owns and has not written off yet. `wo_consumption_preview`
+// answers it on open, so the operator meets it as a warning they can still act
+// on -- go find the packer, wait ten minutes -- rather than as the server's
+// refusal after the pallet is already counted.
+const finishSweep = ref([]);
+const sweepAck = ref(false);
+// The preview and the Finish are two round trips. If only the first one failed
+// the operator would meet `SweepNotAcknowledged` with no checkbox to tick and
+// nothing to do about it. This is that refusal, caught on the way back.
+const sweepBlocked = ref(false);
+const sweepPending = computed(() => finishSweep.value.length > 0 || sweepBlocked.value);
+
 async function openFinish(row) {
 	finishTarget.value = row;
 	producedQty.value = remainingQty(row);
@@ -576,7 +595,22 @@ async function openFinish(row) {
 	batchMfg.value = "";
 	batchExpiry.value = "";
 	actionError.value = "";
+	// Cleared per order, not per session: a kiosk is one screen for a whole
+	// shift, and a tick left over from the last order would wave the next one
+	// straight through the guard.
+	finishSweep.value = [];
+	sweepAck.value = false;
+	sweepBlocked.value = false;
 	resetIdleTimer();
+	try {
+		const pv = await call("stabler.api.manufacturing.wo_consumption_preview", { work_order: row.name });
+		finishSweep.value = pv?.sweep_risk || [];
+	} catch (err) {
+		// Non-fatal on purpose. The server refuses the sweep either way, and
+		// `confirmFinish` catches that refusal and offers the same checkbox -- a
+		// failed preview costs the operator the early warning, not the exit.
+		console.error("Failed to check the sweep risk", err);
+	}
 	try {
 		const s = await call("stabler.api.manufacturing.suggest_wo_batch", { work_order: row.name });
 		batchNo.value = s?.batch_no || "";
@@ -663,9 +697,16 @@ async function confirmFinish() {
 			batch_no: batchNo.value || undefined,
 			mfg_date: batchNo.value && batchMfg.value ? batchMfg.value : undefined,
 			expiry_date: batchNo.value && batchExpiry.value ? batchExpiry.value : undefined,
+			acknowledge_sweep: sweepAck.value,
 		});
 		await load();
 	} catch (err) {
+		// Matched on the exception class, never on the message: that string ships
+		// in five languages and matching its text would strand four of them.
+		if (err?.response?.exc_type === "SweepNotAcknowledged") {
+			sweepBlocked.value = true;
+			finishTarget.value = row;
+		}
 		actionError.value = humanizeError(err) || t("Finish failed.");
 	} finally {
 		busyName.value = "";
@@ -971,7 +1012,7 @@ const sortedRows = computed(() => {
 											<div class="fw-semibold text-dark text-truncate small">{{ it.item_name || it.item_code }}</div>
 											<div class="small text-muted font-monospace" style="font-size: 0.75rem;">{{ it.item_code }}</div>
 											<div class="text-secondary small mt-0.5">
-												{{ t("WIP Stock") }}: <span class="fw-semibold" :class="it.wip_stock >= it.required_qty ? 'text-success' : 'text-danger'">{{ it.wip_stock || 0 }}</span>
+												{{ t("Transferred") }}: <span class="fw-semibold" :class="it.transferred_qty >= it.required_qty ? 'text-success' : 'text-danger'">{{ it.transferred_qty || 0 }}</span>
 											</div>
 										</div>
 										<div style="width: 100px;">
@@ -1039,7 +1080,7 @@ const sortedRows = computed(() => {
 								v-if="canFinish(r)"
 								type="button"
 								class="btn btn-primary btn-lg flex-grow-1 py-3 fw-bold shadow-sm d-flex align-items-center justify-content-center gap-2"
-								:disabled="isBusy(r.name)"
+								:disabled="isBusy(r.name) || halfAssigned(r)"
 								@click="openFinish(r)"
 							>
 								<i class="ti ti-square-rounded-check-filled"></i>
@@ -1319,6 +1360,33 @@ const sortedRows = computed(() => {
 								<span class="small text-muted font-monospace">{{ finishTarget.name }}</span>
 							</div>
 
+							<!-- The names, not a count. "2 items" tells the operator nothing they
+								 can act on; the names tell them which colleague to go and find. -->
+							<div v-if="sweepPending" class="alert alert-warning border-0 shadow-sm mb-4">
+								<div class="fw-bold mb-2">
+									<i class="ti ti-alert-triangle me-1"></i>{{ t("The other operator has not written this off yet") }}
+								</div>
+								<ul v-if="finishSweep.length" class="mb-2 ps-4">
+									<li v-for="s in finishSweep" :key="s.item_code" class="fw-semibold">
+										{{ s.item_name || s.item_code }}
+										<span class="text-secondary fw-normal">{{ s.qty }} {{ s.uom }}</span>
+									</li>
+								</ul>
+								<p class="mb-3">{{ t("Finishing now writes it off under your name.") }}</p>
+								<div class="form-check">
+									<input
+										id="sweep-ack"
+										v-model="sweepAck"
+										class="form-check-input"
+										type="checkbox"
+										style="width: 1.6rem; height: 1.6rem; margin-top: 0.1rem;"
+									/>
+									<label class="form-check-label fw-semibold ps-2 fs-5" for="sweep-ack">
+										{{ t("Put it on my document anyway") }}
+									</label>
+								</div>
+							</div>
+
 							<div class="mb-4">
 								<label class="form-label fw-bold text-dark fs-4 mb-2">{{ t("Good Produced Qty") }}</label>
 								<input
@@ -1398,7 +1466,7 @@ const sortedRows = computed(() => {
 							<button
 								type="button"
 								class="btn btn-primary btn-lg px-4 fw-bold shadow-sm"
-								:disabled="!producedQty || producedQty <= 0"
+								:disabled="!producedQty || producedQty <= 0 || (sweepPending && !sweepAck)"
 								@click="confirmFinish"
 							>
 								<i class="ti ti-check me-1"></i>{{ t("Confirm Submit") }}

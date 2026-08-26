@@ -1,3 +1,6 @@
+"The existing material request {0} could not be withdrawn, so the plan was not saved. Sort that request out first.","Mevcut {0} malzeme talebi geri çekilemedi, bu yüzden plan kaydedilmedi. Önce o talebi çözün."
+"These materials are the other operator's to plan, not yours: {0}","Bu malzemeleri diğer operatör planlar, siz değil: {0}"
+"This order's material has already been written off per operator, but 'Allow Continuous Material Consumption' is switched off in Manufacturing Settings — finishing now would count that material a second time. Ask a manager to switch it back on.","Bu emrin malzemesi operatör bazında zaten düşülmüş, ama Üretim Ayarları'nda ""Allow Continuous Material Consumption"" kapalı — şimdi bitirmek o malzemeyi ikinci kez sayar. Bir yöneticiden tekrar açmasını isteyin."
 #,#
 % of total,Toplam %
 (empty),(boş)
@@ -76,6 +79,7 @@ A valid veterinary certificate is required.,Geçerli bir veteriner sertifikası 
 "A ≤ {0}%, B ≤ {1}%, C rest — by revenue.","A ≤ {0}%, B ≤ {1}%, C diğer — gelir bazında."
 "A ≤ {0}%, B ≤ {1}%, C rest — by spend.","A ≤ {0}%, B ≤ {1}%, C diğer — harcama bazında."
 "A ≤ {0}%, B ≤ {1}%, C rest — by {2}. Submitted; returns netted.","A ≤ {0}%, B ≤ {1}%, C diğer — {2} bazında. Onaylanmış; iadeler netleştirilmiş."
+Add Material,Malzeme ekle
 Already {0},Zaten {0}
 AR balance per customer as of the selected date — click a row to see the ledger behind the balance.,"Seçilen tarih itibarıyla müşteri başına alacak — satıra tıklayın, bakiyenin ardındaki defteri görün."
 Abbr,Kısaltma
@@ -101,12 +105,16 @@ Design view,Tasarım görünümü
 Direct Sales Invoicing is not enabled for company {0}. Sales Invoices must be created from a submitted Sales Order.,Doğrudan Satış Faturalama {0} şirketi için etkin değil. Satış Faturaları gönderilmiş bir Satış Siparişinden oluşturulmalıdır.
 Every user of {company} moves to the {engine} screens when this is saved.,Kaydedildiğinde {company} şirketinin tüm kullanıcıları {engine} ekranlarına geçer.
 Exchange rates,Döviz kurları
+Finishing now will also write off material the other operator has not consumed yet: {0}. Confirm to include it on your document anyway.,Şimdi bitirirseniz diğer operatörün henüz tüketmediği malzeme de düşülür: {0}. Yine de kendi belgenize yazmak için onaylayın.
+Finishing now writes it off under your name.,Şimdi bitirirseniz sizin adınıza düşülür.
+From Warehouse,Kaynak depo
 I have checked {receiver}'s identity document.,{receiver} kişisinin kimlik belgesini kontrol ettim.
 I have counted {amount} and am handing it back to {sender}.,{amount} tutarını saydım ve {sender} kişisine geri veriyorum.
 I have written it down,Yazdım
 Journal entry,Yevmiye kaydı
 Legacy — journal entry screens,Legacy — yevmiye kaydı ekranları
 Lines disagree,Satırlar farklı
+No items to transfer. Click 'Add Material' to add items manually.,Aktarılacak kalem yok. Elle eklemek için «Malzeme ekle»ye tıklayın.
 No longer exists,Artık mevcut değil
 Not changed:,Değiştirilmedi:
 Not ready — this desk cannot take or hand over a transfer.,Hazır değil — bu kasa transferi ne alabilir ne verebilir.
@@ -123,15 +131,19 @@ Pay refund cash,İade nakdini öde
 Pickup code,Teslim kodu
 Production operator,Üretim operatörü
 Purchase Receipt {0} already has a draft invoice: {1}. Submit or delete that draft instead of raising a second bill for the same goods.,{0} mal kabul fişinin zaten bir taslak faturası var: {1}. Aynı mal için ikinci bir fatura kesmek yerine o taslağı onaylayın veya silin.
+Put it on my document anyway,Yine de benim belgeme yazılsın
 Quote updated — switching how the fee is charged recalculates the amounts.,Fiyat güncellendi — komisyonun alınma şeklini değiştirmek tutarları yeniden hesaplar.
 Receivable as of {0},{0} itibarıyla alacak
 Refresh the rate for this date,Bu tarih için kuru yenile
 Remittance engine,Transfer motoru
 Same as your last transfer,Son transferinizdeki gibi
 Select at least one Work Order.,En az bir iş emri seçin.
+Select Warehouse,Depo seçin
 Selected work orders: {0},Seçilen iş emri: {0}
 Terminated by {0}: {1},{0} tarafından kapatıldı: {1}
 The destination desk ({branch}) has no {currency} cash account — add it in Remittance Settings before registering.,Hedef kasada ({branch}) {currency} hesabı yok — kaydetmeden önce Havale Ayarları'ndan ekleyin.
+The order cannot be finished until both operator roles are assigned. Missing: {0},Her iki operatör rolü atanmadan iş emri bitirilemez. Eksik: {0}
+The other operator has not written this off yet,Diğer operatör bunu henüz düşmedi
 The pickup code was refused.,Teslim kodu reddedildi.
 The posting could not be previewed.,Muhasebe kaydı önizlenemedi.
 The V1 engine reads every cash account from the desk table. Add at least one desk before switching to V1.,V1 motoru tüm kasa hesaplarını kasa tablosundan okur. V1'e geçmeden önce en az bir kasa ekleyin.
@@ -140,8 +152,10 @@ The strip at the top says which parts are built and which are still drawings,"Ü
 This clears the form without saving. The lines you entered will be lost.,Form kaydedilmeden temizlenir. Girdiğiniz satırlar kaybolur.
 This company runs the {engine} remittance engine. The Transfer V1 screens stay unavailable until it is switched to V1 below.,Bu şirket {engine} transfer motorunu çalıştırıyor. Aşağıdan V1'e geçirilene kadar Transfer V1 ekranları kullanılamaz.
 This entry does not balance. Do not hand over cash — report it.,Bu kayıt denkleşmiyor. Nakit vermeyin — bildirin.
+This order is {0} — its plan can no longer be changed.,Bu emir {0} — planı artık değiştirilemez.
 This site is not migrated for packaging operators yet.,Bu sitede paketleme operatörleri için geçiş henüz yapılmadı.
 This will post,Şu kayıt işlenecek
+To Warehouse (WIP),Depoya (yarı mamul)
 Transfer registered,Havale kaydedildi
 Transfers registered on the legacy engine stay on the legacy list and are not shown by the V1 screens: they have no Remittance Transfer record behind them.,Legacy motorunda kaydedilen transferler eski listede kalır ve V1 ekranlarında görünmez: arkalarında Remittance Transfer kaydı yoktur.
 "Unknown tender intake field(s): {0}","Bilinmeyen ihale giriş alanı: {0}"
@@ -201,7 +215,7 @@ Actions,İşlemler
 Activation rate,Dönüşüm oranı
 Active,Aktif
 active,
-Active Company,
+Active Company,Aktif şirket
 active contracts,aktif sözleşme
 Active contracts — serving,Aktif sözleşme — hizmet veriyoruz
 Active from,
@@ -598,7 +612,7 @@ Backup created.,Yedek oluşturuldu.
 Backup file not found: {0},
 Backup set,Yedek seti
 Badge,Rozet
-Badge Timeline,
+Badge Timeline,Olay geçmişi
 Badge UID is required.,
 Bal,Bakiye
 Balance,Bakiye
@@ -817,7 +831,7 @@ Capitalize,Maliyetleştir
 Captured At,Kaydedilme Tarihi
 Car / Item,Araç / Kalem
 Car item is required.,Araç kalemi gereklidir.
-Card not recognized,
+Card not recognized,Kart tanınmadı
 Cargo,Kargo
 Cargo Insurance,Kargo Sigortası
 Carrier,Taşıyıcı
@@ -954,7 +968,7 @@ Click a line to see suggested matches.,Önerilen eşleşmeleri görmek için bir
 Click a status to open exactly those records.,Tam o kayıtları açmak için duruma tıkla.
 Click an installment chip to view the contract.,Sözleşmeyi görüntülemek için bir taksit etiketine tıklayın.
 Click New Revaluation to preview unrealised FX deltas and post an Exchange Rate Revaluation.,
-Click to Activate Scanner,
+Click to Activate Scanner,Tarayıcıyı etkinleştirmek için tıklayın
 Clock drift tolerance (min),
 Close,Kapat
 Close & release,
@@ -964,7 +978,7 @@ Close Sales Order,
 Close this Work Order? This finalizes it.,Bu İş Emri kapatılsın mı? Bu işlem sonlandırır.
 Close Visit,Ziyareti kapat
 Close visit,Ziyareti kapat
-Close Work Order,
+Close Work Order,İş emrini kapat
 Closing,Kapanış
 Closing Balance,Kapanış Bakiyesi
 Closing balance,Kapanış bakiyesi
@@ -1060,7 +1074,7 @@ Confirm (submit) this import order? It can no longer be edited here afterwards.,
 Confirm finish,Bitişi onayla
 Confirm import order,İthalat siparişini onayla
 Confirm restore test,Geri yükleme testini onaylayın
-Confirm Submit,
+Confirm Submit,Onayla ve gönder
 Confirm waiver,Muafiyeti onayla
 Confirmed,Onaylandı
 CONFIRMED,Onaylı
@@ -1790,7 +1804,7 @@ Employee carries additional responsibilities.,
 Employee Device Mapping,
 Employee Device Mapping {0} not found.,
 Employee has no linked user account.,
-Employee ID,
+Employee ID,Personel numarası
 Employee ID and PIN are required.,
 Employee ID is required.,
 Employee is required.,
@@ -1834,7 +1848,7 @@ Enter cost and term to see the payment schedule.,Ödeme planını görmek için 
 enter password,şifre girin
 Enter protocol / authorization reason…,Protokol no veya yetki nedenini girin…
 Enter the quantity to return for each line. Leave 0 to exclude a line.,Her satır için iade miktarını girin. Satırı dışarıda bırakmak için 0 bırakın.
-Enter your Employee ID and secure PIN,
+Enter your Employee ID and secure PIN,Personel numaranızı ve PIN kodunuzu girin
 Entered rate deviates by {pct}% from CBU rate.,"Girilen kur, CBU kurundan %{pct} sapıyor."
 entries,kayıt
 Entries on/before this date are frozen.,
@@ -2126,7 +2140,7 @@ Failed to load vendor categories.,Kategoriler yüklenemedi.
 Failed to load veterinary certificates.,Veteriner sertifikaları yüklenemedi.
 Failed to load visit.,Ziyaret yüklenemedi.
 Failed to load warehouses.,Depolar yüklenemedi.
-Failed to load work orders.,
+Failed to load work orders.,İş emirleri yüklenemedi.
 Failed to load your materials.,Malzemeleriniz yüklenemedi.
 Failed to load.,Yüklenemedi.
 Failed to move deal.,Fırsat taşınamadı.
@@ -2177,7 +2191,7 @@ FCL,FCL
 Female,Kadın
 Fetch,Getir
 Fetched,Çekildi
-FG Whse,
+FG Whse,Mamul deposu
 Field Receivables,
 Field Sales,Saha Satışı
 Field User,Saha Kullanıcısı
@@ -2206,8 +2220,8 @@ Fines,Cezalar
 Finish,Bitir
 Finish failed.,Bitirme başarısız.
 Finish Google Drive setup,Google Drive kurulumunu tamamlayın
-Finish Order,
-Finish Production Run,
+Finish Order,Emri bitir
+Finish Production Run,Üretim turunu bitir
 Finish setup,Kurulumu bitir
 Finished Good,
 Finished good,Mamul ürün
@@ -2316,7 +2330,7 @@ GO Decision,GO Kararı
 Go to Sales Orders,Satış Siparişlerine Git
 GO — awaiting sourcing,GO — sourcing bekliyor
 Good kg,Sağlam kg
-Good Produced Qty,
+Good Produced Qty,Sağlam üretim miktarı
 Goods,Mal bedeli
 Goods (PO),Mal bedeli (PO)
 Goods receipt,Mal kabulü
@@ -2380,7 +2394,7 @@ Heavy-conditions allowance,Ağır koşul ek ödemesi
 Height,Yükseklik
 Hello {name},Merhaba {name}
 Hidden for your role,Rolünüz için gizli
-Hide,
+Hide,Gizle
 Hide password,Şifreyi gizle
 high,yüksek
 High conflicts,Yüksek çakışmalar
@@ -2712,7 +2726,7 @@ Lifetime sales,Toplam satış
 Light,
 line,satır
 Line details,
-Line Operator Kiosk,
+Line Operator Kiosk,Hat operatörü kiosku
 Line total,Satır toplamı
 Line total (UZS),Satır toplamı (UZS)
 Line-level (pre-tax) — item-filtered,Satır düzeyinde (vergi öncesi) — ürüne göre filtrelenmiş
@@ -2788,11 +2802,11 @@ Lock {0}? No further changes will be allowed once locked.,
 Locked,
 Locked at,
 Locked on/before,Şu tarihe kadar kilitli
-Log Out,
+Log Out,Çıkış
 Log out,Çıkış yap
 Login required,Giriş gerekli
 Login required.,
-Login with PIN,
+Login with PIN,PIN ile giriş
 Logistics,Lojistik
 Logistics & duties,Lojistik ve gümrük
 Logistics readiness,Lojistik hazırlık
@@ -2800,7 +2814,7 @@ Longitude,Boylam
 Look up rates,Oranları getir
 Lost,Kaybedildi
 lost,kaybedildi
-Lost Badge? Login with PIN,
+Lost Badge? Login with PIN,Kartınızı mı kaybettiniz? PIN ile girin
 Lot,Lot
 Lot loaded from UZEX,Lot UZEX'ten yüklendi
 Lot Name,Lot Adı
@@ -2949,7 +2963,7 @@ must close today,bugün kapanmalı
 My requests,Taleplerim
 My tenders,Tenderlerim
 My work orders,İş emirlerim
-My Work Orders Queue,
+My Work Orders Queue,İş emri kuyruğum
 N/A,—
 Name,Ad
 Name is required.,
@@ -3108,7 +3122,7 @@ no action from you,senden aksiyon yok
 No active customs declarations or won lots in the pipeline.,Süreçte aktif gümrük beyannamesi veya kazanılmış lot yok.
 No active shipments or won lots in the pipeline.,Süreçte aktif sevkiyat veya kazanılmış lot yok.
 No active tenders found for {0}.,{0} için aktif ihale bulunamadı.
-No activity recorded yet.,
+No activity recorded yet.,Henüz kayıtlı olay yok.
 No advance ledger movements yet.,Henüz avans hareketi yok.
 No advance payments yet.,Henüz avans ödemesi yok.
 No advances yet.,Henüz avans yok.
@@ -3248,7 +3262,7 @@ No low-stock items,Düşük stoklu ürün yok
 No matches found,Eşleşme bulunamadı
 No matching items,
 "No matching vouchers found. Create a payment, or widen the date/amount window.",Eşleşen belge bulunamadı. Bir ödeme oluşturun veya tarih/tutar aralığını genişletin.
-No materials required.,
+No materials required.,Malzeme gerekmiyor.
 No materials to stage,
 No movements yet.,Henüz hareket yok.
 No new Version rows since the last seal.,
@@ -3621,7 +3635,7 @@ Operations,Operasyonlar
 Operations desk,Operasyon masası
 Operations desk →,Operasyon masası →
 Operator,Operatör
-Operator Kiosk,
+Operator Kiosk,Operatör kiosku
 Optional,İsteğe bağlı
 optional,isteğe bağlı
 Optional note (leave blank to skip):,
@@ -3777,12 +3791,12 @@ Paste access token JWT…,
 Paste new token to replace…,
 Paste refresh token JWT…,
 Paste UZEX lot URL,UZEX lot URL'sini yapıştırın
-Pause,
+Pause,Duraklat
 Pause failed.,Duraklama başarısız.
-Pause this Work Order?,
+Pause this Work Order?,Bu iş emri duraklatılsın mı?
 Pause this Work Order? You can resume it later.,Bu iş emri duraklatılsın mı? Daha sonra devam ettirebilirsiniz.
-Pause Work,
-Pause Work Order,
+Pause Work,İşi duraklat
+Pause Work Order,İş emrini duraklat
 Pay,Öde
 Pay advance,Avans öde
 "Pay an advance, or turn off the balance filter to see everyone.",Avans ödeyin veya herkesi görmek için bakiye filtresini kapatın.
@@ -3978,13 +3992,13 @@ Pickup date,Alım tarihi
 Pickup Location,Alım Yeri
 Pickup location,Alım yeri
 Pieces,Adet
-PIN,
+PIN,PIN kodu
 Pipeline,Süreç
 Pipeline Value,Pipeline Değeri
 PIs,PI
 Pistachio,
 Place branded freezer at {0} (deal {1}),
-Place your RFID badge on the reader to log in,
+Place your RFID badge on the reader to log in,Giriş için kartınızı okuyucuya okutun
 Placed Freezer,Yerleştirilen Dondurucu
 Placing,Yerleştiriliyor
 Plan Type,Plan Türü
@@ -3996,10 +4010,10 @@ Planned date,Planlanan tarih
 Planned FCL,Planlı FCL
 Planned Qty,
 Planned service,Planlı servis
-Planned Start,
+Planned Start,Planlanan başlangıç
 Planned start,Planlanan başlangıç
 Planned Time,Planlanan Saat
-Planned Total,
+Planned Total,Planlanan toplam
 Planning,Planlama
 Planogram name is required.,Planogram adı zorunludur.
 Planograms,Planogramlar
@@ -4207,7 +4221,7 @@ Quantity (KG),Miktar (kg)
 Quantity must be greater than zero.,Miktar sıfırdan büyük olmalı.
 Quantity must be positive.,Miktar pozitif olmalıdır.
 Queue is clear. Nothing pending.,Kuyruk temiz. Bekleyen yok.
-Queue is empty,
+Queue is empty,Kuyruk boş
 Quick view,Hızlı görünüm
 Quotation,Teklif
 Quotation #,Teklif #
@@ -4403,7 +4417,7 @@ Remove holiday?,Tatil kaldırılsın mı?
 Remove Lane,Şeridi Kaldır
 Remove Lane?,
 Remove line,Satırı kaldır
-Remove operator,
+Remove operator,Operatörü kaldır
 Remove row,Satırı kaldır
 Remove Telegram access for {0}? This cannot be undone.,{0} için Telegram erişimi kaldırılsın mı? Bu geri alınamaz.
 Remove the link between {0} and device user {1}? This will not affect attendance records already generated.,
@@ -4487,9 +4501,9 @@ Result date,Sonuç tarihi
 Result?,Sonuç?
 Resume,Devam et
 Resume failed.,Devam etme başarısız.
-Resume this Work Order?,
-Resume Work,
-Resume Work Order,
+Resume this Work Order?,Bu iş emrine devam edilsin mi?
+Resume Work,İşe devam et
+Resume Work Order,İş emrine devam et
 Retail,
 Retired,Kullanım dışı
 Retries,Yeniden denemeler
@@ -4661,7 +4675,7 @@ Scan to pay,Ödemek için tarayın
 Scanned,Tarandı
 Scanned / Required,Taranan / Gereken
 Scanned declaration,Taranmış beyanname
-Scanner Ready,
+Scanner Ready,Tarayıcı hazır
 Scanning…,Taranıyor…
 Schedule,Program
 Schedule date,Program tarihi
@@ -4673,7 +4687,7 @@ Scheme Name,Plan Adı
 Scheme Type,Plan Türü
 Score cards above show this selection only,Yukarıdaki kartlar yalnızca bu seçimi gösterir
 Scrap / rejects,Hurda / ret
-Scrap / Rejects Qty,
+Scrap / Rejects Qty,Fire / ıskarta miktarı
 SE In,SE giriş
 Seal broken,Mühür kırık
 Seal intact,Mühür sağlam
@@ -4883,7 +4897,7 @@ Shop,Mağaza
 Short code,Kısa kod
 short stock,stok az
 Should We Bid?,Teklif verelim mi?
-Show,
+Show,Göster
 Show all allocations,Tüm tahsisleri göster
 Show all items,
 Show discounts,İndirimleri göster
@@ -5047,7 +5061,7 @@ Stock UOM,Stok Birimi
 Stock value,Stok değeri
 Stop,Durdur
 Stop this Work Order? You can resume it later.,Bu İş Emri durdurulsun mu? Daha sonra devam edebilirsiniz.
-Stop Work Order,
+Stop Work Order,İş emrini durdur
 Storage,Depolama
 Storefront,Mağaza Vitrini
 Stream,Akış
@@ -5080,7 +5094,7 @@ Submit the GRN Checklist before adding a Landed Cost Voucher.,Bir Navlun Maliyet
 Submit this BOM? You won't be able to edit it after.,Bu ürün reçetesi onaylansın mı? Onayladıktan sonra düzenleyemezsiniz.
 Submit this GRN checklist? This closes receiving and drafts a landed cost voucher.,Bu GRN kontrol listesi gönderilsin mi? Teslim alma kapanır ve bir varış maliyeti fişi taslağı oluşturulur.
 Submit transfer,Transferi onayla
-Submit Work Order,
+Submit Work Order,İş emrini gönder
 Submitted,Onaylandı
 "Submitted and lost — the bid was in, the result went the other way.","Gönderildi ve kaybedildi — teklif verilmişti, sonuç ters çıktı."
 Submitted and waiting on the result. Nothing to do but track it.,"Teklif verildi, sonuç bekleniyor. Yapılacak bir şey yok, takip var."
@@ -5144,7 +5158,7 @@ Taken from the cash desk — never chosen by hand.,Kasadan alınır — elle se�
 Target,Hedef
 Target margin (profit ÷ net revenue),Hedef marj (kâr ÷ net gelir)
 Target rate,Hedef birim fiyat
-Target Remaining,
+Target Remaining,Kalan hedef
 Target Temp Max,Hedef Maks. Sıcaklık
 Target temp max (°C),Maks. sıcaklık (°C)
 Target Temp Min,Hedef Min. Sıcaklık
@@ -5259,7 +5273,7 @@ The selected quotation was NOT the cheapest bid.,Seçilen teklif en ucuz teklif 
 "The server returned a capped page; this total covers the rows loaded, not the whole book.","Sunucu sınırlı bir sayfa döndürdü; bu toplam yüklenen satırları kapsıyor, kitabın tamamını değil."
 The top-level category cannot be deleted.,Üst düzey kategori silinemez.
 The voucher is created as a draft; an accountant reviews and submits it in the books.,Fiş taslak olarak oluşturulur; bir muhasebeci inceleyip defterlerde onaylar.
-There are currently no work orders assigned to you.,
+There are currently no work orders assigned to you.,Şu anda size atanmış iş emri yok.
 There are no proformas available to link yet.,Bağlanacak proforma henüz yok.
 These are ERPNext's back-dating guards — the reason it blocks creating or editing transactions older than a set window. They protect closed periods; relax them only deliberately.,
 "These are the toxic role combinations Stabler checks for. Findings are advisory — accept them with a compensating control, or split the duties.",Bunlar Stabler'ın kontrol ettiği toksik rol kombinasyonlarıdır. Bulgular tavsiye niteliğindedir — telafi edici bir kontrolle kabul edin veya görevleri ayırın.
@@ -5849,10 +5863,10 @@ Win-rate,Kazanma oranı
 Win-rate — {won}W / {lost}L in {days} days,Kazanma — {days} günde {won}K / {lost}M
 Win/Loss Reason,Kazanma/Kaybetme nedeni
 Winner,Kazanan
-WIP Stock,
+WIP Stock,Yarı mamul stoğu
 WIP Warehouse,
 WIP warehouse,Yarı mamul deposu
-WIP Whse,
+WIP Whse,Yarı mamul deposu
 Withdrawal,Çekim
 Withheld,Tevkif edildi
 Within,İçinde
@@ -5870,10 +5884,10 @@ Work done is required.,
 Work From Home,Uzaktan Çalışma
 Work mode,
 Work Order,İş Emri
-Work Order closed.,
-Work Order resumed.,
-Work Order stopped.,
-Work Order submitted and released.,
+Work Order closed.,İş emri kapatıldı.
+Work Order resumed.,İş emrine devam edildi.
+Work Order stopped.,İş emri durduruldu.
+Work Order submitted and released.,İş emri gönderildi ve serbest bırakıldı.
 Work Orders,İş Emirleri
 Worked,
 Workers with advances,Avanslı çalışanlar

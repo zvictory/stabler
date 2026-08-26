@@ -7,14 +7,19 @@ from unittest.mock import MagicMock, patch
 
 import frappe
 from frappe import PermissionError
+from frappe.utils import add_days, today
 
 from stabler.api.manufacturing import (
 	_SE_CONSUMPTION,
+	SweepNotAcknowledged,
 	_assert_may_consume,
 	_assert_roles_are_both_or_neither,
 	_clear_finish_draft,
 	_require_wo_draft_columns,
+	_sweep_risk_rows,
 	make_work_order_stock_entry,
+	update_work_order_materials,
+	wo_consumption_preview,
 	work_order_detail,
 )
 
@@ -346,7 +351,13 @@ class TestManufacturingKiosk(unittest.TestCase):
 
 		# Assert MR was created and submitted
 		mock_new_doc.assert_called_with("Material Request")
-		self.assertEqual(mock_mr.material_request_type, "Transfer")
+		# Was "Transfer" here until 2026-08-26, and that is how D8 survived: the
+		# Material Request is a MagicMock, so the assignment is never validated
+		# against the doctype and this line asserted the broken value was correct.
+		# A test can only lock in what it was told. The check that actually bites
+		# is in test_wo_role_scoping_integration.py, where a real insert either
+		# happens or raises.
+		self.assertEqual(mock_mr.material_request_type, "Material Transfer")
 		self.assertEqual(mock_mr.work_order, "WO-TOMORROW")
 		self.assertTrue(mock_mr.append.called)
 		# Assert shortage quantity (100.0 - 40.0 = 60.0) is appended
@@ -925,7 +936,7 @@ class TestAHalfAssignedOrderCannotStart(unittest.TestCase):
 	def _wo(production, packaging):
 		return {"operator": production, "packaging_operator": packaging}
 
-	def _assert(self, production, packaging):
+	def _assert(self, production, packaging, purpose="Material Transfer for Manufacture"):
 		with (
 			patch(
 				"stabler.api.manufacturing._wo_operator_columns",
@@ -936,7 +947,35 @@ class TestAHalfAssignedOrderCannotStart(unittest.TestCase):
 				return_value=self._wo(production, packaging),
 			),
 		):
-			_assert_roles_are_both_or_neither("WO-00009")
+			_assert_roles_are_both_or_neither("WO-00009", purpose)
+
+	def _refusal(self, purpose):
+		"""The message an operator would read, or "" if the call was allowed."""
+		try:
+			self._assert("pourer@x.uz", "", purpose)
+		except frappe.ValidationError as exc:
+			return str(exc)
+		return ""
+
+	def test_the_refusal_names_the_gesture_the_operator_actually_performed(self):
+		"""One guard now serves two buttons, and the first version of that reused
+		one sentence for both — so an operator who pressed Finish was told that
+		materials "cannot be transferred", naming a gesture they had not performed.
+		On a kiosk with no Desk access that sends them hunting for a transfer screen
+		that is not the problem.
+
+		The half that must survive verbatim in both is "Missing: <role>". Naming the
+		absent role is what turns a refusal into an instruction.
+		"""
+		finish = self._refusal("Manufacture")
+		transfer = self._refusal("Material Transfer for Manufacture")
+
+		self.assertNotEqual(finish, transfer, "both buttons still read the same sentence")
+		self.assertNotIn("transferred", finish.lower(), "Finish still talks about transferring")
+		self.assertIn("finish", finish.lower(), "Finish's refusal does not name finishing")
+		self.assertIn("transferred", transfer.lower())
+		for message in (finish, transfer):
+			self.assertIn("Packaging", message, "the refusal stopped naming the missing role")
 
 	def test_both_roles_assigned_passes(self):
 		self._assert("pourer@x.uz", "packer@x.uz")
@@ -990,6 +1029,557 @@ class TestAHalfAssignedOrderCannotStart(unittest.TestCase):
 				)
 		guard.assert_called_once()
 		build.assert_not_called()
+
+	def test_the_manufacture_endpoint_also_refuses_before_it_builds_anything(self):
+		"""D1 (P0): until now `_assert_roles_are_both_or_neither` ran only on the
+		transfer branch. A half-assigned order that skipped straight to Finish (the
+		packer never wrote anything off because they could never open the order)
+		reached ERPNext's Manufacture entry unchecked, which sweeps the packer's
+		unconsumed lines onto the pourer's document — the exact misattribution the
+		split exists to prevent, at the one moment (order close) it can no longer be
+		corrected. Same ordering requirement as the transfer branch: refused before
+		`make_stock_entry` builds anything, not after.
+
+		The downstream Manufacture machinery (`frappe.get_doc`, valuation, event log)
+		is mocked well enough to run to completion so that, without the fix, this
+		fails on `assertRaises` itself ("ValidationError not raised") rather than on
+		an unrelated mock-shape crash — red for the right reason, not an artifact of
+		under-mocking.
+		"""
+		with (
+			patch("stabler.api.manufacturing._require_mfg"),
+			patch("stabler.api.manufacturing._is_mfg_manager", return_value=True),
+			patch(
+				"stabler.api.manufacturing._assert_roles_are_both_or_neither",
+				side_effect=frappe.ValidationError("half-assigned"),
+			) as guard,
+			patch("stabler.api.manufacturing.assert_stock_entry_valuation_sane"),
+			patch("stabler.api.manufacturing._log_wo_event"),
+			patch("stabler.api.manufacturing._clear_finish_draft"),
+			patch("stabler.api.manufacturing.frappe.session"),
+			patch("stabler.api.manufacturing.frappe.get_doc", side_effect=lambda stub: _FakeStockEntry(stub)),
+			patch(
+				"erpnext.manufacturing.doctype.work_order.work_order.make_stock_entry",
+				return_value={"purpose": "Manufacture", "work_order": "WO-00009"},
+			) as build,
+		):
+			with self.assertRaises(frappe.ValidationError):
+				make_work_order_stock_entry("WO-00009", "Manufacture", qty=5)
+		guard.assert_called_once()
+		build.assert_not_called()
+
+
+class TestFinishingDoesNotSweepTheOtherRole(unittest.TestCase):
+	"""Failure B (P0, Part 3) — not the half-assigned order
+	`_assert_roles_are_both_or_neither` already refuses. Both roles are
+	legitimately on this order; one of them simply has not written their
+	material off yet, which is the ordinary state of an order mid-shift, not a
+	misconfiguration. ERPNext's Manufacture entry cannot tell the difference —
+	`Work Order Item.consumed_qty` accumulates whatever entry names it, so it
+	sweeps every line nobody has written off onto whoever posts the document.
+
+	Measured live, genesis-test 2026-08-25: a fully assigned order, consumption
+	on, the pourer wrote off his milk and the packer wrote off nothing. The
+	pourer pressed Finish. It succeeded — MAT-STE-2026-00037 carries
+	PROBE-LABEL, consumed_qty 0.0 -> 10.0, on the pourer's document. The
+	deviation panel then scored the packer a clean on-plan shift for an order he
+	never touched, and nothing in the timeline says any of this happened.
+	"""
+
+	ROWS: ClassVar = [
+		{
+			"item_code": "RAW-MLK",
+			"item_name": "Milk",
+			"qty": 20.0,
+			"uom": "Litre",
+			"s_warehouse": "WIP - X",
+			"is_finished_item": 0,
+		},
+		{
+			"item_code": "PKG-LBL",
+			"item_name": "Label",
+			"qty": 10.0,
+			"uom": "Nos",
+			"s_warehouse": "WIP - X",
+			"is_finished_item": 0,
+		},
+	]
+	ROLES: ClassVar = {"RAW-MLK": "Production", "PKG-LBL": "Packaging"}
+
+	def _sweep(self, my_role, acknowledge_sweep=False, enabled=True, stub=None):
+		from stabler.api.manufacturing import _assert_sweep_is_acknowledged
+
+		with (
+			patch("stabler.api.manufacturing._material_consumption_enabled", return_value=enabled),
+			patch("stabler.api.manufacturing._item_roles", return_value=self.ROLES),
+			patch(
+				"erpnext.manufacturing.doctype.work_order.work_order.make_stock_entry",
+				return_value={"items": self.ROWS if stub is None else stub},
+			),
+		):
+			_assert_sweep_is_acknowledged("WO-00009", my_role, acknowledge_sweep)
+
+	def test_the_pourer_is_refused_while_the_packer_has_not_written_off(self):
+		"""The name, not the code: this reaches an operator on the kiosk, where
+		item_name is the label they actually read (item_code is the small
+		reference underneath). A deliberate divergence from `_assert_may_consume`,
+		whose refusals name item_code instead — noted where the message is built."""
+		with self.assertRaises(frappe.ValidationError) as cm:
+			self._sweep(my_role="Production")
+		self.assertIn("Label", str(cm.exception))
+
+	def test_acknowledging_lets_the_pourer_finish_anyway(self):
+		self._sweep(my_role="Production", acknowledge_sweep=True)  # must not raise
+
+	def test_the_refusal_carries_a_class_the_kiosk_can_match_on(self):
+		"""This is the one refusal with an exit, and the kiosk has to recognise it
+		to offer that exit — the preview and the Finish are two round trips, and
+		an operator who met the refusal without having been previewed would
+		otherwise have a wall and no checkbox.
+
+		It cannot be recognised by its message: that string is translated into
+		five languages, so matching its text works for the Turkish shift and
+		strands the other four. Frappe returns the exception CLASS name on V1
+		(`utils/response.py:52`), which is why this one has its own.
+
+		Asserted as a strict subclass, not `frappe.ValidationError`: raising the
+		plain parent again would keep every other test in this class green while
+		the kiosk silently lost its exit."""
+		with self.assertRaises(SweepNotAcknowledged):
+			self._sweep(my_role="Production")
+		self.assertTrue(issubclass(SweepNotAcknowledged, frappe.ValidationError))
+
+	def test_a_role_is_never_refused_for_its_own_unwritten_off_material(self):
+		"""Only the OTHER role's leftovers are a sweep risk. Your own shortfall is
+		something you could still fix yourself before posting — it is not a
+		cross-attribution, so it must not block you the way the other role's
+		does."""
+		self._sweep(my_role="Production", stub=[self.ROWS[0]])  # only their own line pending
+
+	def test_a_manager_is_refused_too_because_they_hold_no_role_of_their_own(self):
+		"""`my_role=None` is how `make_work_order_stock_entry` calls this for a
+		manager. Every role-owned row is "someone else's" to a person who is not
+		claiming a role — the sweep is exactly as invisible to them as to the
+		other operator."""
+		with self.assertRaises(frappe.ValidationError) as cm:
+			self._sweep(my_role=None)
+		message = str(cm.exception)
+		self.assertIn("Milk", message)
+		self.assertIn("Label", message)
+
+	def test_an_unassigned_line_is_not_named_as_someone_elses_sweep(self):
+		"""An item with no role belongs to nobody in particular — the shift lead's
+		open question (`_unassigned_rows`'s territory), not a cross-role sweep."""
+		self._sweep(my_role="Production", stub=[{**self.ROWS[1], "item_code": "RAW-NEW"}])
+
+	def test_the_setting_being_off_is_not_treated_as_a_sweep_risk(self):
+		"""Same reasoning as `_assert_may_consume`: with the setting off there is no
+		reliable "what is left" answer to give (`_material_consumption_enabled`),
+		so there is nothing here to warn about either — D2 is the guard for that
+		state, not this one."""
+		self._sweep(my_role="Production", enabled=False)  # must not raise
+
+	def test_the_endpoint_wires_the_guard_on_the_manufacture_branch(self):
+		"""Same ordering requirement as D1: the sweep question has to be asked
+		before `make_stock_entry` builds anything, and `acknowledge_sweep` has to
+		actually reach the guard, not just exist as an unused parameter."""
+		with (
+			patch("stabler.api.manufacturing._require_mfg"),
+			patch("stabler.api.manufacturing._is_mfg_manager", return_value=True),
+			patch("stabler.api.manufacturing._assert_consumption_setting_still_holds"),
+			patch("stabler.api.manufacturing._assert_roles_are_both_or_neither"),
+			patch(
+				"stabler.api.manufacturing._assert_sweep_is_acknowledged",
+				side_effect=frappe.ValidationError("sweep"),
+			) as guard,
+			patch("erpnext.manufacturing.doctype.work_order.work_order.make_stock_entry") as build,
+		):
+			with self.assertRaises(frappe.ValidationError):
+				make_work_order_stock_entry("WO-00009", "Manufacture", qty=5, acknowledge_sweep=False)
+		guard.assert_called_once_with("WO-00009", None, False)
+		build.assert_not_called()
+
+
+class TestFinishingAfterTheSettingWasSwitchedOff(unittest.TestCase):
+	"""D2 (P0) — the failure that needs nobody to do anything wrong.
+
+	`Manufacturing Settings.material_consumption` decides which list ERPNext
+	builds a Manufacture entry from: with it ON, `get_unconsumed_raw_materials`,
+	which is empty once the operators have written their material off; with it
+	OFF, `get_bom_raw_materials`, which is the whole BOM again. Nothing raises,
+	and `Work Order Item.consumed_qty` just accumulates the second helping.
+
+	Measured on genesis-test 2026-08-26, MFG-WO-2026-00009 — two submitted
+	consumption entries against it, both lines already fully consumed:
+
+	    material_consumption=1 -> Manufacture stub raw rows: []
+	    material_consumption=0 -> Manufacture stub raw rows: [MILK 2.0, LABEL 1.0]
+
+	The setting ships OFF. It is the one thing a new tenant has to switch on, and
+	the shape of this failure — right answer, then a config change, then silently
+	wrong answers — is exactly what nobody goes looking for.
+
+	Refused rather than repaired: a site-level setting is wrong for every order
+	on the site, so stripping the duplicate rows from this one document would
+	hide it and leave the rest to rot. Turning the setting back on is one action
+	and fixes all of them.
+	"""
+
+	def _finish(self, enabled, prior_entries):
+		with (
+			patch("stabler.api.manufacturing._material_consumption_enabled", return_value=enabled),
+			patch(
+				"stabler.api.manufacturing.frappe.db.exists",
+				return_value="MAT-STE-2026-00031" if prior_entries else None,
+			),
+		):
+			from stabler.api.manufacturing import _assert_consumption_setting_still_holds
+
+			_assert_consumption_setting_still_holds("WO-00009")
+
+	def test_an_order_already_written_off_per_role_is_refused_while_the_setting_is_off(self):
+		with self.assertRaises(frappe.ValidationError) as cm:
+			self._finish(enabled=False, prior_entries=True)
+		# The message has to send somebody to the right switch. An operator on the
+		# kiosk cannot act on "double counting"; they can act on "tell your manager
+		# the setting is off", and the manager can act on the setting's own name.
+		self.assertIn("Manufacturing Settings", str(cm.exception))
+
+	def test_the_ordinary_case_is_not_touched(self):
+		self._finish(enabled=True, prior_entries=True)  # must not raise
+
+	def test_the_endpoint_asks_before_erpnext_builds_anything(self):
+		"""A guard nothing calls is a comment. And it has to be asked before
+		`make_stock_entry`: the duplicate rows are put there by the stub itself,
+		so a check after the build is checking a document that is already wrong.
+		"""
+		with (
+			patch("stabler.api.manufacturing._require_mfg"),
+			patch("stabler.api.manufacturing._is_mfg_manager", return_value=True),
+			patch(
+				"stabler.api.manufacturing._assert_consumption_setting_still_holds",
+				side_effect=frappe.ValidationError("setting"),
+			) as guard,
+			patch("erpnext.manufacturing.doctype.work_order.work_order.make_stock_entry") as build,
+		):
+			with self.assertRaises(frappe.ValidationError):
+				make_work_order_stock_entry("WO-00009", "Manufacture", qty=5)
+		guard.assert_called_once_with("WO-00009")
+		build.assert_not_called()
+
+	def test_a_site_that_never_used_the_split_still_finishes(self):
+		"""The setting being off is not itself the failure. With no per-role
+		write-offs behind it, ERPNext lists the BOM once and counts it once —
+		which is simply the single-document flow, and the way every tenant that
+		has not adopted the split still works. Refusing here would take
+		manufacturing away from all of them to fix a bug they cannot have."""
+		self._finish(enabled=False, prior_entries=False)  # must not raise
+
+
+class TestAShiftWithRejectsCanBeFinished(unittest.TestCase):
+	"""D4 (P0) — the kiosk's "Scrap / Rejects Qty" box made Finish fail outright.
+
+	It set `process_loss_qty` on the Stock Entry and left the finished-goods row
+	at the full quantity. ERPNext checks `fg_completed_qty == fg row qty +
+	process_loss_qty` and throws otherwise. Measured genesis-test 2026-08-26,
+	MFG-WO-2026-00009:
+
+	    loss=0   -> OK, fg row 1.0
+	    loss=0.2 -> Since there is a process loss of 0.2 units for the finished
+	                good PROBE-ICE, you should reduce the quantity by 0.2 units
+	                ... in the Items Table.
+
+	Not a silent miscount — a wall, in ERPNext's words, in front of an operator
+	who typed a reject count on a tablet. Nothing wrong lands; the shift simply
+	cannot be closed, and the only way through is to lie about the rejects.
+
+	The kiosk counts `qty` as GOOD units (its label says so, and its default is
+	the target remaining), so the attempt is good+scrap and the finished-goods
+	row stays at good. Measured with that shape: fg_completed_qty 10, fg row 8,
+	process_loss_qty 2, and `Work Order.produced_qty` 0 -> 8 — only the good units
+	count toward the plan, which is the whole reason the two numbers are separate.
+	"""
+
+	class Row:
+		"""A real object, not a MagicMock: an untouched MagicMock attribute is a
+		MagicMock, which is truthy and compares unequal to everything, so "this row
+		was left alone" cannot be asserted on one without reaching into its
+		internals."""
+
+		def __init__(self, is_finished_item, qty):
+			self.is_finished_item = is_finished_item
+			self.qty = qty
+
+	def _post(self, qty, scrap_qty=None):
+		fg, raw = self.Row(1, 999.0), self.Row(0, 20.0)
+		se = MagicMock()
+		se.company, se.items = "Test Company", [fg, raw]
+		with (
+			patch("stabler.api.manufacturing._require_mfg"),
+			patch("stabler.api.manufacturing._is_mfg_manager", return_value=True),
+			patch("stabler.api.manufacturing._assert_consumption_setting_still_holds"),
+			patch("stabler.api.manufacturing._assert_roles_are_both_or_neither"),
+			patch("stabler.api.manufacturing._assert_sweep_is_acknowledged"),
+			patch(
+				"erpnext.manufacturing.doctype.work_order.work_order.make_stock_entry",
+				return_value=se,
+			) as build,
+			patch("stabler.api.manufacturing.frappe.get_doc", return_value=se),
+		):
+			make_work_order_stock_entry("WO-00009", "Manufacture", qty=qty, scrap_qty=scrap_qty)
+		return build, se, fg
+
+	def test_the_attempt_is_asked_for_as_good_plus_scrap(self):
+		"""`fg_completed_qty` is what was attempted, not what came out good. Ask
+		ERPNext for the good figure and the arithmetic it validates cannot close —
+		that is the throw, and it is also why raising the attempt is right rather
+		than a trick: the milk for the rejected units was really used."""
+		build, _, _ = self._post(qty=8, scrap_qty=2)
+		self.assertEqual(build.call_args.kwargs["qty"], 10.0)
+
+	def test_the_finished_goods_row_carries_only_the_good_units(self):
+		_, se, fg = self._post(qty=8, scrap_qty=2)
+		self.assertEqual(fg.qty, 8.0)
+		self.assertEqual(se.process_loss_qty, 2.0)
+
+	def test_the_raw_material_rows_are_left_where_erpnext_put_them(self):
+		"""Only the finished-goods row moves. Reducing a raw line here would
+		unpick the consumption the operators already recorded, and raising the
+		attempt is exactly what puts the rejected units' milk back in."""
+		_, se, _ = self._post(qty=8, scrap_qty=2)
+		raw = next(r for r in se.items if not r.is_finished_item)
+		self.assertEqual(raw.qty, 20.0)
+
+	def test_a_run_with_no_rejects_asks_for_exactly_what_was_made(self):
+		build, se, fg = self._post(qty=8)
+		self.assertEqual(build.call_args.kwargs["qty"], 8.0)
+		self.assertNotIsInstance(se.process_loss_qty, float)
+		self.assertEqual(fg.qty, 999.0, "the finished-goods row was rewritten for no reason")
+
+
+class TestPlanChangesDoNotWithdrawSubmittedRequests(unittest.TestCase):
+	"""D9 (P0) — `update_work_order_materials` cancels SUBMITTED Material Requests
+	as a side effect of somebody correcting a quantity, and swallowed every
+	failure while doing it.
+
+	Both halves matter and they fail differently. An approved order to a
+	warehouse is not an operator's to withdraw, so the cancel path is a
+	manager's. And `except Exception: pass` around the cancel meant a request
+	that would not cancel stayed live while a fresh one was created beside it —
+	the same material ordered twice, from one edit, with nothing said anywhere.
+
+	Until D8 was fixed, the invalid `material_request_type` literal further down
+	was the only thing stopping this loop from ever completing. Fixing that
+	literal alone would have armed it, which is why the three went together.
+	"""
+
+	def _edit(self, is_manager, mrs=(), cancel_raises=False):
+		doc = SimpleNamespace(
+			name="WO-00009",
+			docstatus=1,
+			status="In Process",
+			company="X",
+			wip_warehouse="WIP - X",
+			planned_start_date=add_days(today(), 3),
+			required_items=[],
+			reload=lambda: None,
+		)
+		mr = MagicMock()
+		mr.docstatus = 1
+		mr.cancel.side_effect = Exception("linked entries") if cancel_raises else None
+		with (
+			patch("stabler.api.manufacturing._require_mfg"),
+			patch("stabler.api.manufacturing._is_mfg_manager", return_value=is_manager),
+			patch("stabler.api.manufacturing._require_own_work_order"),
+			patch("stabler.api.manufacturing._lines_not_yours", return_value=([], [])),
+			patch("stabler.api.manufacturing.frappe.get_doc", return_value=doc) as get_doc,
+			patch("stabler.api.manufacturing.frappe.db.sql"),
+			patch("stabler.api.manufacturing.frappe.db.get_value", return_value=1.0),
+			patch("stabler.api.manufacturing.frappe.db.exists", return_value=bool(mrs)),
+			patch("stabler.api.manufacturing.frappe.get_all", return_value=list(mrs)),
+			patch("stabler.api.manufacturing.frappe.log_error"),
+			patch("stabler.api.manufacturing.frappe.new_doc", return_value=MagicMock()),
+			patch("stabler.api.manufacturing._log_wo_event") as log,
+		):
+			get_doc.side_effect = lambda dt, *a, **k: mr if dt == "Material Request" else doc
+			out = update_work_order_materials("WO-00009", '[{"item_code": "RAW-MLK", "required_qty": 5}]')
+			return out, mr, log
+
+	def test_an_operator_does_not_withdraw_the_warehouses_approved_order(self):
+		out, mr, _ = self._edit(is_manager=False, mrs=["MAT-MR-0001"])
+		mr.cancel.assert_not_called()
+		self.assertEqual(out, {"ok": True})
+
+	def test_the_operator_is_told_the_request_was_left_standing(self):
+		"""A stale request nobody is told about is its own quiet failure — the
+		plan says one thing and the order to the warehouse says another, and the
+		person who caused it walked away believing they had fixed it."""
+		_, _, log = self._edit(is_manager=False, mrs=["MAT-MR-0001"])
+		notes = [str(c) for c in log.call_args_list]
+		left = [n for n in notes if "left as it stands" in n]
+		self.assertTrue(left, f"nothing said the request was untouched: {notes}")
+		self.assertIn("manager", left[0].lower(), "the note does not say who can fix it")
+
+	def test_a_manager_still_refreshes_it(self):
+		"""The gate is about who, not about switching the behaviour off."""
+		_, mr, _ = self._edit(is_manager=True, mrs=["MAT-MR-0001"])
+		mr.cancel.assert_called_once()
+
+	def test_a_request_that_will_not_cancel_stops_the_edit_instead_of_doubling_it(self):
+		"""The `pass` this replaces let the loop continue, leaving the old request
+		live and creating a second one for the same material."""
+		with self.assertRaises(frappe.ValidationError) as cm:
+			self._edit(is_manager=True, mrs=["MAT-MR-0001"], cancel_raises=True)
+		self.assertIn("MAT-MR-0001", str(cm.exception))
+
+
+class TestConsumptionPreviewNarrowsToOwnRole(unittest.TestCase):
+	"""`wo_consumption_preview` and `_assert_sweep_is_acknowledged` both read
+	`_unconsumed_material_rows`, but must not read it the same way: the preview
+	narrows to the caller's OWN role (an operator must not be offered the other
+	role's material to write off), while the sweep guard narrows to every OTHER
+	role. Mocking `_unconsumed_material_rows` directly isolates that per-role
+	filter — added because the extraction that created the shared helper moved
+	this exact filter, and the one test that already covered it end to end
+	(`test_wo_role_scoping_integration.py`) self-skips whenever the site's real
+	fixture Work Order has nothing left pending, which it does right now."""
+
+	ROWS: ClassVar = [
+		{
+			"item_code": "RAW-MLK",
+			"item_name": "Milk",
+			"qty": 20.0,
+			"s_warehouse": "WIP - X",
+			"operator_role": "Production",
+		},
+		{
+			"item_code": "PKG-LBL",
+			"item_name": "Label",
+			"qty": 10.0,
+			"s_warehouse": "WIP - X",
+			"operator_role": "Packaging",
+		},
+		# Nobody has said whose this is. Present in the fixture because it is the
+		# row the two filters disagree about: it belongs to neither operator, so
+		# a naive "not mine" reads it as the other operator's and a sweep warning
+		# tells the pourer to go wait for a colleague who does not exist. It is
+		# `unassigned_item_count`'s problem — the shift lead fills the role in —
+		# and the manager, who holds no role, still has to be able to write it off.
+		{
+			"item_code": "MISC-XX",
+			"item_name": "Unfiled thing",
+			"qty": 1.0,
+			"s_warehouse": "WIP - X",
+			"operator_role": None,
+		},
+	]
+	WO: ClassVar = {"operator": "pourer@x.uz", "packaging_operator": "packer@x.uz"}
+
+	def _preview(self, user, is_manager=False):
+		with (
+			patch("stabler.api.manufacturing._assert_can_read"),
+			patch("stabler.api.manufacturing._require_mfg"),
+			patch("stabler.api.manufacturing.frappe.db.exists", return_value=True),
+			patch("stabler.api.manufacturing._is_mfg_manager", return_value=is_manager),
+			patch("stabler.api.manufacturing._require_own_work_order"),
+			patch("stabler.api.manufacturing._wo_operator_columns", return_value=tuple(self.WO)),
+			patch("stabler.api.manufacturing.frappe.db.get_value", return_value=dict(self.WO)),
+			patch(
+				"stabler.api.manufacturing._unconsumed_material_rows",
+				return_value=[dict(r) for r in self.ROWS],
+			),
+			patch("stabler.api.manufacturing.frappe.session") as session,
+		):
+			session.user = user
+			return wo_consumption_preview("WO-00009")
+
+	def test_the_pourer_sees_only_the_production_line(self):
+		out = self._preview("pourer@x.uz")
+		self.assertEqual([r["item_code"] for r in out["items"]], ["RAW-MLK"])
+
+	def test_the_packer_sees_only_the_packaging_line(self):
+		out = self._preview("packer@x.uz")
+		self.assertEqual([r["item_code"] for r in out["items"]], ["PKG-LBL"])
+
+	def test_the_manager_sees_both(self):
+		out = self._preview("boss@x.uz", is_manager=True)
+		self.assertEqual([r["item_code"] for r in out["items"]], ["RAW-MLK", "PKG-LBL", "MISC-XX"])
+		self.assertEqual(out["unassigned_item_count"], 1)
+
+	# --- the same payload, read the other way ------------------------------
+	#
+	# `sweep_risk` is the complement of `items` and rides the same response on
+	# purpose. The operator must be shown what finishing would drag onto their
+	# document BEFORE they type a count — `_assert_sweep_is_acknowledged` names
+	# the same rows, but only on the way out, after the walk of the pallet is
+	# already done. A refusal at that point is a wall, not a warning.
+
+	def test_the_pourer_is_warned_about_the_packers_untouched_lines(self):
+		out = self._preview("pourer@x.uz")
+		self.assertEqual([r["item_code"] for r in out["sweep_risk"]], ["PKG-LBL"])
+
+	def test_the_warning_stays_silent_about_lines_nobody_owns(self):
+		"""An unfiled row is not the other operator's — it is nobody's. Named in
+		the sweep warning it reads as "wait for your colleague to write this
+		off", and the colleague it points at does not exist: the row is waiting
+		on the shift lead, and the operator can wait out the whole shift for it.
+		The two are counted separately on this very payload for that reason."""
+		out = self._preview("pourer@x.uz")
+		self.assertNotIn("MISC-XX", [r["item_code"] for r in out["sweep_risk"]])
+		self.assertEqual(out["unassigned_item_count"], 1)
+
+	def test_the_packer_is_warned_about_the_pourers_untouched_lines(self):
+		out = self._preview("packer@x.uz")
+		self.assertEqual([r["item_code"] for r in out["sweep_risk"]], ["RAW-MLK"])
+
+	def test_the_manager_is_warned_about_both_because_neither_line_is_theirs(self):
+		"""A manager holds no role of their own, so every role-owned row is
+		somebody else's. Posting on the floor's behalf sweeps exactly as
+		invisibly as the other operator posting first would."""
+		out = self._preview("boss@x.uz", is_manager=True)
+		self.assertEqual([r["item_code"] for r in out["sweep_risk"]], ["RAW-MLK", "PKG-LBL"])
+		self.assertNotIn("MISC-XX", [r["item_code"] for r in out["sweep_risk"]])
+
+	def test_what_the_kiosk_warns_about_is_what_the_server_refuses_over(self):
+		"""The one that matters. Two filters over the same rows, written in two
+		places, drift: the kiosk lists the label rolls, the server refuses over
+		the milk, and the operator ticks a box that does not unblock them. Tie
+		them together here so the drift fails a test instead of a shift."""
+		for user, is_manager, role in (
+			("pourer@x.uz", False, "Production"),
+			("packer@x.uz", False, "Packaging"),
+			("boss@x.uz", True, None),
+		):
+			with self.subTest(user=user):
+				previewed = self._preview(user, is_manager=is_manager)["sweep_risk"]
+				with patch(
+					"stabler.api.manufacturing._unconsumed_material_rows",
+					return_value=[dict(r) for r in self.ROWS],
+				):
+					refused = _sweep_risk_rows("WO-00009", role)
+				self.assertEqual(previewed, refused)
+
+	def test_an_unset_up_site_still_answers_the_question_it_was_asked(self):
+		"""`enabled: False` is the site without continuous consumption, where
+		ERPNext hands back the whole BOM and "what is left" has no trustworthy
+		answer. The key must still be present and empty: a kiosk reading
+		`undefined.length` on the one payload that says "not applicable" would
+		break the finish dialog on exactly the sites that never had the split."""
+		with (
+			patch("stabler.api.manufacturing._assert_can_read"),
+			patch("stabler.api.manufacturing._require_mfg"),
+			patch("stabler.api.manufacturing.frappe.db.exists", return_value=True),
+			patch("stabler.api.manufacturing._is_mfg_manager", return_value=False),
+			patch("stabler.api.manufacturing._require_own_work_order"),
+			patch("stabler.api.manufacturing._wo_operator_columns", return_value=tuple(self.WO)),
+			patch("stabler.api.manufacturing.frappe.db.get_value", return_value=dict(self.WO)),
+			patch("stabler.api.manufacturing._unconsumed_material_rows", return_value=None),
+			patch("stabler.api.manufacturing.frappe.session") as session,
+		):
+			session.user = "pourer@x.uz"
+			out = wo_consumption_preview("WO-00009")
+		self.assertEqual(out["enabled"], False)
+		self.assertEqual(out["sweep_risk"], [])
 
 
 class TestTheDraftIsClearedWhenTheOrderCloses(unittest.TestCase):
