@@ -2880,6 +2880,7 @@ in accounting,in accounting
 In Accounting,In Accounting
 In execution,In execution
 In person,In person
+In Process,In Process
 In process,In process
 In progress,In progress
 in the pipeline,in the pipeline
@@ -5483,6 +5484,7 @@ Stock Status,Stock Status
 Stock transactions,Stock transactions
 Stock UOM,Stock UOM
 Stock value,Stock value
+Stopped,Stopped
 Stop,Stop
 Stop this Work Order? You can resume it later.,Stop this Work Order? You can resume it later.
 Stop Work Order,Stop Work Order
