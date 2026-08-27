@@ -2464,6 +2464,7 @@ in accounting,hisobda
 In Accounting,Hisobda
 In execution,Ijroda
 In person,Shaxsan / Qo'ldan
+In Process,Ishlanmoqda
 In process,Jarayonda
 In progress,Jarayonda
 in the pipeline,jarayonda
@@ -5067,6 +5068,7 @@ Stock Status,Ombor holati
 Stock transactions,
 Stock UOM,Zaxira o'lchov birligi
 Stock value,Zaxira qiymati
+Stopped,To‘xtatilgan
 Stop,To'xtatish
 Stop this Work Order? You can resume it later.,Bu buyurtmani to'xtatasizmi? Keyin davom ettirsa bo'ladi.
 Stop Work Order,Buyurtmani to'xtatish

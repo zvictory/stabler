@@ -2462,6 +2462,7 @@ in accounting,muhasebede
 In Accounting,Muhasebede
 In execution,Yürütmede
 In person,Elden / Yüz yüze
+In Process,Devam ediyor
 In process,Süreçte
 In progress,Devam ediyor
 in the pipeline,hatta
@@ -5063,6 +5064,7 @@ Stock Status,Stok durumu
 Stock transactions,
 Stock UOM,Stok Birimi
 Stock value,Stok değeri
+Stopped,Durduruldu
 Stop,Durdur
 Stop this Work Order? You can resume it later.,Bu İş Emri durdurulsun mu? Daha sonra devam edebilirsiniz.
 Stop Work Order,İş emrini durdur

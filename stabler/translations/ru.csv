@@ -2469,6 +2469,7 @@ in accounting,в учёте
 In Accounting,В учёте
 In execution,В исполнении
 In person,Лично / Нарочно
+In Process,В работе
 In process,В процессе
 In progress,В процессе
 in the pipeline,в работе
@@ -5072,6 +5073,7 @@ Stock Status,Наличие
 Stock transactions,
 Stock UOM,Ед. изм. складского учёта
 Stock value,Стоимость складских остатков
+Stopped,Остановлен
 Stop,Остановить
 Stop this Work Order? You can resume it later.,Остановить этот производственный заказ? Можно будет возобновить позже.
 Stop Work Order,Остановить заказ

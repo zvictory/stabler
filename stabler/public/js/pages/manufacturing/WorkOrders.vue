@@ -28,8 +28,27 @@ const statusFilter = ref("");
 
 const STATUSES = ["", "Draft", "Not Started", "In Process", "Completed", "Stopped", "Closed", "Cancelled"];
 
+// ERPNext stores the status in English and the screen used to print it
+// straight through, so the one word that tells a supervisor what to do next
+// was the one word left untranslated in a fully translated table. The map is
+// literal `t("...")` calls on purpose — the harvester scans for those, and a
+// `t(row.status)` on a stored value would leave the keys invisible to it.
+// Same shape as remittance/RemittanceRefund.vue:138.
+const statusLabels = computed(() => ({
+	Draft: t("Draft"),
+	"Not Started": t("Not Started"),
+	"In Process": t("In Process"),
+	Completed: t("Completed"),
+	Stopped: t("Stopped"),
+	Closed: t("Closed"),
+	Cancelled: t("Cancelled"),
+}));
+
+/** A stored status as the operator should read it; unknown values pass through. */
+const statusLabel = (s) => statusLabels.value[s] || s || "";
+
 const statusOptions = computed(() =>
-	STATUSES.map((s) => ({ value: s, label: s || t("All statuses") }))
+	STATUSES.map((s) => ({ value: s, label: statusLabel(s) || t("All statuses") }))
 );
 
 const formatQty = (n, uom) => {
@@ -660,7 +679,7 @@ async function saveWO(submitAfter) {
 							<td class="text-end font-monospace">{{ formatQty(r.qty) }}</td>
 							<td class="text-end font-monospace text-secondary">{{ formatQty(r.transferred_qty) }}</td>
 							<td class="text-end font-monospace text-blue">{{ formatQty(r.produced_qty) }}</td>
-							<td><span class="badge" :class="statusBadge(r.status)">{{ r.status }}</span></td>
+							<td><span class="badge" :class="statusBadge(r.status)">{{ statusLabel(r.status) }}</span></td>
 						</tr>
 					</tbody>
 				</table>
