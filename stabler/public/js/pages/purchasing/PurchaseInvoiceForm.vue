@@ -8,6 +8,7 @@ import { importsApi } from "../../api/imports.js";
 import { t } from "../../composables/i18n.js";
 import { itemSearcher } from "../../composables/items.js";
 import { formatMoney } from "../../composables/money.js";
+import { grossRate } from "../../composables/pricing.js";
 import { formatDate, formatDateTime, todayIso } from "../../composables/date.js";
 import MoneyInput from "../../components/MoneyInput.vue";
 import DateInput from "../../components/DateInput.vue";
@@ -235,6 +236,10 @@ function fromDetail(d) {
 			const rate = Number(it.rate || 0);
 			const plr = Number(it.price_list_rate || 0);
 			const isArtifact = cr > 0 && plr > 0 && Math.abs(plr * cr - rate) < 1;
+			// The rate column is the PRE-discount price; the document's `rate` is
+			// the post-discount one (api/_pricing.py). Loading one into the other
+			// discounts the line again on every reopen.
+			const listRate = isArtifact ? 0 : plr;
 			return {
 				item_code: it.item_code,
 				item_name: it.item_name,
@@ -246,8 +251,8 @@ function fromDetail(d) {
 				custom_width: it.custom_width ?? null,
 				custom_height: it.custom_height ?? null,
 				custom_pieces: it.custom_pieces ?? null,
-				rate,
-				price_list_rate: isArtifact ? 0 : plr,
+				rate: grossRate({ rate, price_list_rate: listRate }),
+				price_list_rate: listRate,
 				discount_percentage: isArtifact ? 0 : Number(it.discount_percentage || 0),
 				discount_amount: isArtifact ? 0 : Number(it.discount_amount || 0),
 				amount: Number(it.amount || 0),

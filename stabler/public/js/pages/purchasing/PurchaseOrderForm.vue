@@ -5,6 +5,7 @@ import { useRoute, useRouter } from "vue-router";
 import { useSession } from "../../stores/session.js";
 import { call } from "../../api/client.js";
 import { formatMoney } from "../../composables/money.js";
+import { grossRate } from "../../composables/pricing.js";
 import { formatDate, formatDateTime, todayIso} from "../../composables/date.js";
 import { t } from "../../composables/i18n.js";
 import { itemSearcher } from "../../composables/items.js";
@@ -108,6 +109,18 @@ function blankForm() {
 
 // Map detail to our internal form model
 function fromDetail(d) {
+	// Same two traps as the invoice form, and for the same reasons.
+	//
+	// A buying price list quoted in the company's base currency arrives on a
+	// foreign-currency order converted into the document currency, and ERPNext
+	// books the whole gap as a discount — three of the three discounted purchase
+	// order lines on anjan read 99.992 % this way. `plr × conversion_rate ≈ rate`
+	// is that signature, and nothing else produces it.
+	//
+	// And the rate column is the PRE-discount price, while the document's `rate`
+	// is the post-discount one (api/_pricing.py). Loading one into the other
+	// discounts the line a second time on every reopen.
+	const cr = d.currency !== d.base_currency ? Number(d.conversion_rate || 0) : 0;
 	return {
 		supplier: d.supplier,
 		supplier_name: d.supplier_name || d.supplier,
@@ -117,22 +130,29 @@ function fromDetail(d) {
 		transaction_date: d.transaction_date || "",
 		schedule_date: d.schedule_date || "",
 		remarks: d.remarks || d.terms || "",
-		items: (d.items || []).map((it) => ({
-			item_code: it.item_code,
-			item_name: it.item_name,
-			custom_line_note: it.custom_line_note || "",
-			uom: it.uom || "",
-			qty: Number(it.qty || 0),
-			dimension_mode: it.custom_dimension_mode || "",
-			custom_length: it.custom_length ?? null,
-			custom_width: it.custom_width ?? null,
-			custom_height: it.custom_height ?? null,
-			custom_pieces: it.custom_pieces ?? null,
-			rate: Number(it.rate || 0),
-			discount_percentage: Number(it.discount_percentage || 0),
-			discount_amount: Number(it.discount_amount || 0),
-			amount: Number(it.amount || 0),
-		})),
+		items: (d.items || []).map((it) => {
+			const rate = Number(it.rate || 0);
+			const plr = Number(it.price_list_rate || 0);
+			const isArtifact = cr > 0 && plr > 0 && Math.abs(plr * cr - rate) < 1;
+			const listRate = isArtifact ? 0 : plr;
+			return {
+				item_code: it.item_code,
+				item_name: it.item_name,
+				custom_line_note: it.custom_line_note || "",
+				uom: it.uom || "",
+				qty: Number(it.qty || 0),
+				dimension_mode: it.custom_dimension_mode || "",
+				custom_length: it.custom_length ?? null,
+				custom_width: it.custom_width ?? null,
+				custom_height: it.custom_height ?? null,
+				custom_pieces: it.custom_pieces ?? null,
+				rate: grossRate({ rate, price_list_rate: listRate }),
+				price_list_rate: listRate,
+				discount_percentage: isArtifact ? 0 : Number(it.discount_percentage || 0),
+				discount_amount: isArtifact ? 0 : Number(it.discount_amount || 0),
+				amount: Number(it.amount || 0),
+			};
+		}),
 	};
 }
 

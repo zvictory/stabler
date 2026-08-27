@@ -19,7 +19,7 @@ from stabler.api._common import (
 	check_concurrency,
 )
 from stabler.api._money import money_epsilon
-from stabler.api._pricing import net_rate
+from stabler.api._pricing import gross_rate, net_rate
 from stabler.api._sales_margin import attach_margins
 from stabler.api.approvals import _assert_company_scope
 from stabler.api.organization import module_map_for
@@ -2317,12 +2317,33 @@ def create_sales_invoice(
 				if qty <= 0:
 					frappe.throw(_("Override qty must be greater than zero"))
 				line.qty = qty
-			if patch.get("rate") not in (None, ""):
-				line.rate = flt(patch["rate"])
 			if patch.get("discount_percentage") not in (None, ""):
 				line.discount_percentage = flt(patch["discount_percentage"])
 			if patch.get("discount_amount") not in (None, ""):
 				line.discount_amount = flt(patch["discount_amount"])
+			# These lines arrive from make_sales_invoice already carrying a rate,
+			# which is precisely the condition under which ERPNext skips its own
+			# discount step — so a patched discount has to be applied here or it
+			# changes nothing at all. Only reprice when the patch actually moved
+			# the price: recomputing an untouched line would restate the price of
+			# orders written before this fix, where the stored list rate is not
+			# the line's gross. See api/_pricing.py.
+			if any(
+				patch.get(k) not in (None, "") for k in ("rate", "discount_percentage", "discount_amount")
+			):
+				gross = (
+					flt(patch["rate"])
+					if patch.get("rate") not in (None, "")
+					else gross_rate(line.rate, line.price_list_rate)
+				)
+				if flt(line.discount_amount) and flt(line.discount_amount) >= gross:
+					frappe.throw(
+						_("{0}: discount_amount must be less than the rate").format(
+							line.item_code or line.so_detail or "?"
+						)
+					)
+				line.price_list_rate = gross
+				line.rate = net_rate(gross, line.discount_percentage, line.discount_amount)
 
 	# update_stock=1 needs a warehouse on every stock line, else submit throws an
 	# opaque core error. Surface a clear, item-named message up front instead.
