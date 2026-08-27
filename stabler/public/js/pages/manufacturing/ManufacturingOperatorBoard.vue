@@ -7,9 +7,11 @@ import { t } from "../../composables/i18n.js";
 import { halfAssigned, roleLabel } from "../../composables/workOrderRoles.js";
 import { useConfirm } from "../../composables/useConfirm.js";
 import { formatDate } from "../../composables/date.js";
+import { sanitizeNumeric } from "../../composables/numpad.js";
 import EmptyState from "../../components/EmptyState.vue";
 import Typeahead from "../../components/Typeahead.vue";
 import DateInput from "../../components/DateInput.vue";
+import NumPad from "../../components/NumPad.vue";
 
 const session = useSession();
 const { activeCompany } = storeToRefs(session);
@@ -566,8 +568,21 @@ async function confirmConsume() {
 
 // ----- Finish dialog -----
 const finishTarget = ref(null); // the WO row currently finishing
-const producedQty = ref(0);
-const scrapQty = ref(0);
+// Strings, not numbers: the numpad hands over "1." mid-decimal and no number
+// can hold that. Converted once, at the two call sites that send them.
+const producedQty = ref("");
+const scrapQty = ref("");
+
+// Which of the two fields the numpad is driving. The operator taps a field to
+// aim it; production is what the dialog opens on, so that is the default.
+const numTarget = ref("produced");
+const numBuffer = computed({
+	get: () => (numTarget.value === "scrap" ? scrapQty.value : producedQty.value),
+	set: (v) => {
+		if (numTarget.value === "scrap") scrapQty.value = v;
+		else producedQty.value = v;
+	},
+});
 const batchNo = ref("");
 const batchMfg = ref("");
 const batchExpiry = ref("");
@@ -589,8 +604,9 @@ const sweepPending = computed(() => finishSweep.value.length > 0 || sweepBlocked
 
 async function openFinish(row) {
 	finishTarget.value = row;
-	producedQty.value = remainingQty(row);
-	scrapQty.value = 0;
+	producedQty.value = String(remainingQty(row) ?? "");
+	scrapQty.value = "";
+	numTarget.value = "produced";
 	batchNo.value = "";
 	batchMfg.value = "";
 	batchExpiry.value = "";
@@ -625,8 +641,8 @@ async function openFinish(row) {
 	// be made to count twice.
 	const d = row.finish_draft;
 	if (d) {
-		producedQty.value = d.produced_qty ?? producedQty.value;
-		scrapQty.value = d.scrap_qty ?? 0;
+		producedQty.value = String(d.produced_qty ?? producedQty.value);
+		scrapQty.value = d.scrap_qty != null ? String(d.scrap_qty) : "";
 		if (d.batch_no) batchNo.value = d.batch_no;
 		if (d.mfg_date) batchMfg.value = d.mfg_date;
 		if (d.expiry_date) batchExpiry.value = d.expiry_date;
@@ -642,8 +658,8 @@ async function saveDraft() {
 	try {
 		await call("stabler.api.manufacturing.save_finish_draft", {
 			work_order: row.name,
-			produced_qty: producedQty.value,
-			scrap_qty: scrapQty.value,
+			produced_qty: Number(producedQty.value) || 0,
+			scrap_qty: Number(scrapQty.value) || 0,
 			batch_no: batchNo.value || undefined,
 			mfg_date: batchNo.value && batchMfg.value ? batchMfg.value : undefined,
 			expiry_date: batchNo.value && batchExpiry.value ? batchExpiry.value : undefined,
@@ -692,8 +708,8 @@ async function confirmFinish() {
 		await call("stabler.api.manufacturing.make_work_order_stock_entry", {
 			work_order: row.name,
 			purpose: "Manufacture",
-			qty: producedQty.value,
-			scrap_qty: scrapQty.value > 0 ? scrapQty.value : undefined,
+			qty: Number(producedQty.value),
+			scrap_qty: Number(scrapQty.value) > 0 ? Number(scrapQty.value) : undefined,
 			batch_no: batchNo.value || undefined,
 			mfg_date: batchNo.value && batchMfg.value ? batchMfg.value : undefined,
 			expiry_date: batchNo.value && batchExpiry.value ? batchExpiry.value : undefined,
@@ -1390,14 +1406,15 @@ const sortedRows = computed(() => {
 							<div class="mb-4">
 								<label class="form-label fw-bold text-dark fs-4 mb-2">{{ t("Good Produced Qty") }}</label>
 								<input
-									v-model.number="producedQty"
-									type="number"
-									min="0.001"
-									step="0.001"
+									:value="producedQty"
+									type="text"
 									inputmode="decimal"
 									class="form-control form-control-lg text-center fs-2 fw-bold font-monospace"
+									:class="numTarget === 'produced' ? 'border-primary border-2' : ''"
 									style="height: 60px;"
 									autofocus
+									@focus="numTarget = 'produced'"
+									@input="producedQty = sanitizeNumeric($event.target.value)"
 								/>
 								<div class="form-hint mt-2 text-secondary d-flex justify-content-between">
 									<span>{{ t("Target Remaining") }}: <strong>{{ remainingQty(finishTarget) }}</strong></span>
@@ -1411,15 +1428,24 @@ const sortedRows = computed(() => {
 									<span class="text-secondary small fw-normal">({{ t("optional") }})</span>
 								</label>
 								<input
-									v-model.number="scrapQty"
-									type="number"
-									min="0"
-									step="0.001"
+									:value="scrapQty"
+									type="text"
 									inputmode="decimal"
 									class="form-control form-control-lg text-center fs-3 font-monospace"
+									:class="numTarget === 'scrap' ? 'border-primary border-2' : ''"
 									style="height: 50px;"
 									placeholder="0"
+									@focus="numTarget = 'scrap'"
+									@input="scrapQty = sanitizeNumeric($event.target.value)"
 								/>
+							</div>
+
+							<!-- The terminal is wall-mounted and worked with gloves. Native
+								 spinners put two 12-pixel arrows on that wall, and on a
+								 locked-down kiosk it is a coin toss whether the OS offers a
+								 keyboard at all. Tapping a field above aims the pad at it. -->
+							<div class="mb-2">
+								<NumPad v-model="numBuffer" />
 							</div>
 
 							<div class="border-top pt-3 mt-3">
@@ -1466,7 +1492,7 @@ const sortedRows = computed(() => {
 							<button
 								type="button"
 								class="btn btn-primary btn-lg px-4 fw-bold shadow-sm"
-								:disabled="!producedQty || producedQty <= 0 || (sweepPending && !sweepAck)"
+								:disabled="!(Number(producedQty) > 0) || (sweepPending && !sweepAck)"
 								@click="confirmFinish"
 							>
 								<i class="ti ti-check me-1"></i>{{ t("Confirm Submit") }}
