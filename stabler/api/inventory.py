@@ -56,6 +56,7 @@ def list_items(
 	context: str | None = None,
 	include_descendants: int = 0,
 	price_list: str | None = None,
+	ever_stocked: int = 0,
 ):
 	"""Return items matching *search* (code or name), optionally scoped to a warehouse.
 
@@ -66,9 +67,17 @@ def list_items(
 	``all`` disables the type filter. When ``context`` is given it wins over the
 	legacy ``stock_only`` flag.
 
-	warehouse — when provided, only items that have a Bin row in that warehouse are
-	returned (i.e. items ever stocked there, regardless of current qty). This prevents
-	raw-material items from appearing in a finished-goods warehouse picker.
+	warehouse — when provided, only items with stock in that warehouse are returned.
+	This keeps a picker from offering what cannot be shipped, and keeps raw materials
+	out of a finished-goods warehouse picker.
+
+	ever_stocked — opt-in relaxation of that scope to "has a Bin row here", stock or
+	none. For an INCOMING document the in-stock filter is backwards: a sales return
+	is about goods that are not in the warehouse yet, and on anjan it hid 106 of the
+	243 returnable items in `Tayyor mahsulot - A`. The warehouse scope itself must
+	stay — ERPNext values an incoming line from the last ledger entry in that same
+	warehouse and never looks elsewhere, so an item that has never been here would
+	fail at submit on a missing valuation rate.
 
 	stock_only — legacy flag (is_stock_item). Kept for back-compat; ``context``
 	supersedes it. Callers that omit both keep the historical is_sales_item default.
@@ -108,7 +117,9 @@ def list_items(
 		# only show gross stock, which reads as "plenty" for an item that is fully
 		# committed to other orders. Free-to-promise is actual − reserved.
 		res_sel = "b.reserved_qty"
-		conds.append("b.actual_qty > 0")
+		# An incoming document asks for the opposite: see `ever_stocked` above.
+		if not cint(ever_stocked):
+			conds.append("b.actual_qty > 0")
 		params["warehouse"] = warehouse
 	else:
 		# No warehouse scope — there is no single quantity to report. NULL (not 0) so

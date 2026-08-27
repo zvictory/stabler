@@ -22,8 +22,13 @@ import { call } from "../api/client.js";
  * picker can quote a price without a second round trip per item. Pickers that don't
  * ask for it pay nothing.
  *
+ * `everStocked` only means anything alongside `warehouse`, and only an INCOMING
+ * document should ask for it: it keeps the warehouse scope but drops the in-stock
+ * condition, so items the warehouse currently has none of stay visible. That is
+ * exactly wrong for a sales order and exactly right for a return.
+ *
  * @param {"sales"|"purchase"|"stock"|"all"} context
- * @param {{ warehouse?: string|(() => string), priceList?: string|(() => string), limit?: number, itemGroup?: string }} [opts]
+ * @param {{ warehouse?: string|(() => string), priceList?: string|(() => string), limit?: number, itemGroup?: string, everStocked?: boolean }} [opts]
  * @returns {(q: string) => Promise<Array>}
  */
 export function itemSearcher(context, opts = {}) {
@@ -37,6 +42,7 @@ export function itemSearcher(context, opts = {}) {
 			warehouse: resolveWarehouse() || undefined,
 			price_list: resolvePriceList() || undefined,
 			item_group: opts.itemGroup || undefined,
+			ever_stocked: opts.everStocked ? 1 : undefined,
 			limit: opts.limit || 30,
 		});
 }
