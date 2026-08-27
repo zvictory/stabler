@@ -59,3 +59,41 @@ export function materialReadiness(row, stock) {
 
 	return { state: shortCount ? "short" : "ready", shortCount, unitsCovered };
 }
+
+/**
+ * The same arithmetic at one order's granularity: for `units` finished goods,
+ * what does each material line cost and does its shelf carry it?
+ *
+ * The list chip answers "can this order run at all". The transfer dialog asks a
+ * narrower question — the operator types a number, and the screen has to say
+ * what that number takes off the shelves before they commit to it. The bare
+ * `prompt()` this replaces asked for that number and showed nothing.
+ *
+ * @param {{qty: number, required_items: Array}} row a `list_work_orders` row
+ * @param {Record<string, number>} stock `stockKey()` → quantity on hand
+ * @param {number} units how many finished units are about to be issued for
+ * @returns {Array<{item_code, item_name, needed, available, short}>}
+ *          `available` is null when that shelf was never measured, and `short`
+ *          stays false there — see the same rule in `materialReadiness`.
+ */
+export function materialsForUnits(row, stock, units) {
+	const total = Number(row?.qty) || 0;
+	const wanted = Math.max(0, Number(units) || 0);
+
+	return (row?.required_items || []).map((line) => {
+		const key = stockKey(line.source_warehouse, line.item_code);
+		const measured = key in stock;
+		const available = measured ? Number(stock[key]) || 0 : null;
+		const perUnit = total > 0 ? (Number(line.required_qty) || 0) / total : 0;
+		const needed = perUnit * wanted;
+
+		return {
+			item_code: line.item_code,
+			item_name: line.item_name || line.item_code,
+			warehouse: line.source_warehouse,
+			needed,
+			available,
+			short: measured && available < needed,
+		};
+	});
+}

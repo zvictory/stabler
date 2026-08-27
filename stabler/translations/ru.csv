@@ -2476,6 +2476,7 @@ In process,В процессе
 In progress,В процессе
 in the pipeline,в работе
 in this invoice,в этом инвойсе
+In store,На складе
 In time,Время входа
 In Transit,В пути
 In transit,В пути
@@ -4416,6 +4417,7 @@ Remaining Balance,Остаток
 Remaining bx,Остаток кор.
 Remaining PI Cost,Остаток стоимости PI
 Remaining quantities could not be calculated. Loaded the original Proforma quantities. Please check them.,Не удалось рассчитать остатки. Загружены исходные количества проформы. Проверьте их.
+Remaining: {0},Осталось: {0}
 Remaining Staging,
 Remaining to Pay,Остаток к оплате
 remaining {count} boxes,остаток {count} кор.
