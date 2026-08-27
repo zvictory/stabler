@@ -4335,6 +4335,7 @@ Reconcile,Сверка
 Reconcile / revalue stock,Сверка / переоценка запасов
 Reconciled,Согласовано
 Reconciled {0} item(s).,Сверено {0} позиции(й).
+Reconciled {0} item(s). Posted to the ledger: {1}.,Сверено {0} позиции(й). Проведено в учёте: {1}.
 Reconciled.,Сверено.
 Reconciliation: expenses {exp} − bills {bills} = {unbilled} unbilled,Сверка: расходы {exp} − счета на логистику {bills} = {unbilled} без счёта
 Record & clear,Записать и очистить

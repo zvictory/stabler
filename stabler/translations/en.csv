@@ -4746,6 +4746,7 @@ Reconcile,Reconcile
 Reconcile / revalue stock,Reconcile / revalue stock
 Reconciled,Reconciled
 Reconciled {0} item(s).,Reconciled {0} item(s).
+Reconciled {0} item(s). Posted to the ledger: {1}.,Reconciled {0} item(s). Posted to the ledger: {1}.
 Reconciled.,Reconciled.
 Reconciliation: expenses {exp} − bills {bills} = {unbilled} unbilled,Reconciliation: expenses {exp} − bills {bills} = {unbilled} unbilled
 Record & clear,Record & clear

@@ -4325,6 +4325,7 @@ Reconcile,Mutabakat
 Reconcile / revalue stock,Stok mutabakatı / yeniden değerleme
 Reconciled,Mutabık
 Reconciled {0} item(s).,{0} kalem mutabık kılındı.
+Reconciled {0} item(s). Posted to the ledger: {1}.,{0} kalem mutabık kılındı. Deftere işlenen: {1}.
 Reconciled.,Mutabık kılındı.
 Reconciliation: expenses {exp} − bills {bills} = {unbilled} unbilled,Mutabakat: giderler {exp} − faturalar {bills} = {unbilled} faturasız
 Record & clear,Kaydet ve temizle

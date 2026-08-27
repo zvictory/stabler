@@ -4329,6 +4329,7 @@ Reconcile,Solishtirish
 Reconcile / revalue stock,Zaxirani solishtirish / qayta baholash
 Reconciled,Tekshirilgan
 Reconciled {0} item(s).,{0} ta tovar solishtirildi.
+Reconciled {0} item(s). Posted to the ledger: {1}.,{0} ta tovar solishtirildi. Hisobga o'tkazilgan: {1}.
 Reconciled.,Solishtirildi.
 Reconciliation: expenses {exp} − bills {bills} = {unbilled} unbilled,Taqoslash: xarajatlar {exp} − hisoblar {bills} = {unbilled} hisobsiz
 Record & clear,Yozib tozalash

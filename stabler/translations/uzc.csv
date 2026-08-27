@@ -4329,6 +4329,7 @@ Reconcile,Солиштириш
 Reconcile / revalue stock,Захирани солиштириш / қайта баҳолаш
 Reconciled,Мос келтирилган
 Reconciled {0} item(s).,{0} та товар солиштирилди.
+Reconciled {0} item(s). Posted to the ledger: {1}.,{0} та товар солиштирилди. Ҳисобга ўтказилган: {1}.
 Reconciled.,Солиштирилди.
 Reconciliation: expenses {exp} − bills {bills} = {unbilled} unbilled,Таққослаш: харажатлар {exp} − ҳисоблар {bills} = {unbilled} ҳисобсиз
 Record & clear,Ёзиб тозалаш
