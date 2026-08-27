@@ -25,6 +25,7 @@ const { confirm } = useConfirm();
 const moduleOptions = computed(() => [
 	{ key: "money", label: t("Money") },
 	{ key: "sales", label: t("Sales") },
+	{ key: "pos", label: t("POS") },
 	{ key: "purchasing", label: t("Purchasing") },
 	{ key: "inventory", label: t("Inventory") },
 	{ key: "manufacturing", label: t("Manufacturing") },

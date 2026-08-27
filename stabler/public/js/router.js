@@ -284,7 +284,7 @@ const routes = [
 	{ path: "/reports/sales-detail", name: "report-sales-detail", component: ReportSalesDetail, meta: { title: t("Sales Detail"), module: "sales" } },
 	{ path: "/reports/payments-register", name: "report-payments-register", component: ReportPaymentsRegister, meta: { title: t("Payments Register"), module: "money" } },
 	{ path: "/profile", name: "profile", component: Profile, meta: { title: t("Profile") } },
-	{ path: "/pos", name: "pos", component: POS, meta: { title: t("POS"), module: "sales" } },
+	{ path: "/pos", name: "pos", component: POS, meta: { title: t("POS"), module: "pos" } },
 	{ path: "/tender/desk", name: "tender-desk", component: OperationsDesk, meta: { title: t("Operations desk"), module: "tender" } },
 	{ path: "/manufacturing/line", name: "manufacturing-line", component: ManufacturingOperatorBoard, meta: { title: t("Operator Kiosk") } },
 	{ path: "/tender/overview", name: "tender-overview", component: TenderOverview, meta: { title: t("Where the pipeline stands"), module: "tender" } },

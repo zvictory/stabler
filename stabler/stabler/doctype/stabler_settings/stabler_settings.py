@@ -18,6 +18,11 @@ class StablerSettings(Document):
 DEFAULT_MODULE_ENABLED = {
 	"money": True,
 	"sales": True,
+	# POS ekranı. Varsayılan AÇIK: yeni bir modül değil, yedi kiracıda
+	# hâlihazırda çalışan bir ekran — bayrağın gelişi kimseden onu almamalı.
+	# POS kullanmayan kiracı (tender/kassa) bunu kendi kapatır; kapatılabilir
+	# olması bu bayrağın tek varlık sebebi (v100_enable_pos).
+	"pos": True,
 	"purchasing": True,
 	"inventory": True,
 	"manufacturing": False,

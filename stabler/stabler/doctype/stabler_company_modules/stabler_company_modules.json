@@ -8,6 +8,7 @@
   "company",
   "enable_money",
   "enable_sales",
+  "enable_pos",
   "enable_purchasing",
   "enable_inventory",
   "enable_manufacturing",
@@ -55,6 +56,13 @@
    "fieldtype": "Check",
    "in_list_view": 1,
    "label": "Sales"
+  },
+  {
+   "default": "1",
+   "fieldname": "enable_pos",
+   "fieldtype": "Check",
+   "in_list_view": 1,
+   "label": "POS"
   },
   {
    "default": "1",

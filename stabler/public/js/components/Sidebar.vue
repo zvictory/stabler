@@ -66,7 +66,7 @@ onMounted(() => session.ensureTenderViews());
 const items = computed(() => {
 	const list = [
 		{ name: "dashboard", path: "/dashboard", label: t("Dashboard"), icon: "ti-home", show: session.canAccessModule("dashboard") },
-		{ name: "pos", path: "/pos", label: t("POS"), icon: "ti-building-store", show: session.canAccessModule("sales") },
+		{ name: "pos", path: "/pos", label: t("POS"), icon: "ti-building-store", show: session.canAccessModule("pos") },
 		{ name: "money", path: "/money", label: t("Money"), icon: "ti-coin", show: session.canAccessModule("money") },
 		{ name: "sales", path: "/sales", label: t("Sales"), icon: "ti-trending-up", show: session.canAccessModule("sales") },
 		{ name: "purchasing", path: "/purchasing", label: t("Purchasing"), icon: "ti-shopping-cart", show: session.canAccessModule("purchasing") },
