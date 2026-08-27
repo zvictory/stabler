@@ -74,6 +74,7 @@ def stabler_logout() -> dict:
 _MODULE_FIELDS = {
 	"money": "enable_money",
 	"sales": "enable_sales",
+	"pos": "enable_pos",
 	"purchasing": "enable_purchasing",
 	"inventory": "enable_inventory",
 	"manufacturing": "enable_manufacturing",
@@ -118,6 +119,9 @@ _MODULE_ROLES: dict[str, list[str]] = {
 	"dashboard": ["All"],
 	"money": ["Accounts User", "Accounts Manager"],
 	"sales": ["Sales User", "Sales Manager"],
+	# POS, sales ile aynı rolleri paylaşır: ayrı olmasının sebebi rol değil,
+	# kiracı — sales açıkken POS kapatılabilsin diye ayrıldı.
+	"pos": ["Sales User", "Sales Manager"],
 	"purchasing": ["Purchase User", "Purchase Manager"],
 	"inventory": ["Stock User", "Stock Manager"],
 	"stock_reservation": ["Stock User", "Stock Manager"],
@@ -372,6 +376,7 @@ def update_company_modules(
 	company: str,
 	money=None,
 	sales=None,
+	pos=None,
 	purchasing=None,
 	inventory=None,
 	manufacturing=None,
@@ -417,6 +422,7 @@ def update_company_modules(
 	updates = {
 		"enable_money": money,
 		"enable_sales": sales,
+		"enable_pos": pos,
 		"enable_purchasing": purchasing,
 		"enable_inventory": inventory,
 		"enable_manufacturing": manufacturing,

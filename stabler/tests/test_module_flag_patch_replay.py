@@ -1,8 +1,10 @@
 """A module-flag patch must be safe to run a second time.
 
-The three patches under test seed `Stabler Company Modules` feature flags. All
-three claim in their own docstrings to be re-runnable; two of them were not, and
-the third's safety came from a statement order rather than from a WHERE clause.
+The patches under test seed `Stabler Company Modules` feature flags. They all
+claim in their own docstrings to be re-runnable; some were not, and one's safety
+came from a statement order rather than from a WHERE clause. (No count here: the
+PATCHES dict below is the list, and a number in this sentence goes stale the next
+time somebody adds a flag — as it had, silently, before v100.)
 
 Why this matters more than it sounds. A patch normally runs once per site,
 because Frappe records a Patch Log row. The second run in this repo has never
@@ -39,12 +41,14 @@ PATCHES = {
 	"v63": "stabler.patches.v63_enable_dimensional_lines",
 	"v64": "stabler.patches.v64_enable_sales_box_uom",
 	"v65": "stabler.patches.v65_enable_modern_sales_order",
+	"v100": "stabler.patches.v100_enable_pos",
 }
 FLAGS = {
 	"v62": "enable_direct_invoicing",
 	"v63": "enable_dimensional_lines",
 	"v64": "enable_sales_box_uom",
 	"v65": "enable_modern_sales_order",
+	"v100": "enable_pos",
 }
 
 
@@ -57,18 +61,25 @@ class FakeModulesTable:
 	catch, so it is modelled faithfully rather than guarded against.
 	"""
 
-	def __init__(self, rows, companies=None):
+	def __init__(self, rows, companies=None, sales=None):
 		self.rows = list(rows)
 		# Only v62 decides per company; the others write one value for everybody.
 		self.companies = list(companies) if companies else [f"Co {i}" for i in range(len(self.rows))]
+		# v100 copies a sibling column instead of writing a literal, so the double
+		# has to carry that column too. Default 1: `enable_sales` is one of the
+		# four modules that ship on, which is the state v100 was written against.
+		self.sales = list(sales) if sales is not None else [1] * len(self.rows)
 
 	def _value_for(self, sql: str, index: int, flag: str, params=None):
 		"""What this UPDATE writes into row `index`.
 
-		Three shapes appear across the four patches, and the double has to read
+		Several shapes appear across these patches, and the double has to read
 		the value out of the statement rather than assume one — a double that
 		only recognised the inlined literal scored a parameterised UPDATE as
-		"sets 0" and passed the replay tests for the wrong reason.
+		"sets 0" and passed the replay tests for the wrong reason. The
+		column-copy shape below is the same trap: without its branch the
+		fallthrough would score `SET enable_pos = enable_sales` as "sets 0",
+		and every v100 test would pass while asserting the opposite.
 		"""
 		case = re.search(
 			rf"SET {flag} = CASE WHEN UPPER\(company\) LIKE %\((\w+)\)s THEN (\d) ELSE (\d) END", sql
@@ -77,6 +88,8 @@ class FakeModulesTable:
 			key, hit, miss = case.group(1), int(case.group(2)), int(case.group(3))
 			pattern = str(params.get(key, "")).strip("%").upper() if isinstance(params, dict) else ""
 			return hit if pattern in self.companies[index].upper() else miss
+		if f"SET {flag} = enable_sales" in sql:
+			return self.sales[index]
 		if f"SET {flag} = %s" in sql:
 			return int((params or (0,))[0])
 		return 1 if f"SET {flag} = 1" in sql else 0
@@ -116,11 +129,18 @@ class FakeModulesTable:
 
 
 def _run_patch(
-	key: str, *, rows, companies=None, has_flag_column=True, has_item_column=True, dimensional_items=True
+	key: str,
+	*,
+	rows,
+	companies=None,
+	sales=None,
+	has_flag_column=True,
+	has_item_column=True,
+	dimensional_items=True,
 ):
 	"""Execute one patch against a hand-built `frappe`. Returns the rows after."""
 	flag = FLAGS[key]
-	table = FakeModulesTable(rows, companies)
+	table = FakeModulesTable(rows, companies, sales)
 
 	frappe = types.ModuleType("frappe")
 
@@ -190,6 +210,16 @@ class ReplayKeepsTheOperatorsDecision(unittest.TestCase):
 		after = _run_patch("v65", rows=[0, 1, 0])
 		self.assertEqual(after, [0, 1, 0])
 
+	def test_v100_does_not_reopen_pos_for_the_tenant_who_switched_it_off(self):
+		"""v100 exists so one tenant can close POS from the Companies screen
+		after deploy. Its source column `enable_sales` stays 1 for that tenant —
+		POS was split off `sales` precisely because that tenant needs sales —
+		so a replay without the IS NULL clause copies the 1 straight back over
+		the operator's 0 and POS reappears in their sidebar. The row that must
+		survive is exactly the row this patch was written to make possible."""
+		after = _run_patch("v100", rows=[0, 1, None], sales=[1, 1, 1])
+		self.assertEqual(after, [0, 1, 1])
+
 
 class FirstRunStillDecides(unittest.TestCase):
 	"""Idempotency must not be bought by making the patch do nothing.
@@ -236,6 +266,13 @@ class FirstRunStillDecides(unittest.TestCase):
 
 	def test_v65_closes_a_fresh_tenant(self):
 		self.assertEqual(_run_patch("v65", rows=[None, None]), [0, 0])
+
+	def test_v100_hands_pos_to_exactly_whoever_had_it_before(self):
+		"""The rule v100 replaces is "POS shows wherever sales is on". A literal
+		1 would hand POS to a sales-off tenant that never had it; a literal 0
+		would take it from the six that do. Only the copy is a translation
+		rather than a new decision, so both halves have to survive one pass."""
+		self.assertEqual(_run_patch("v100", rows=[None, None], sales=[1, 0]), [1, 0])
 
 	def test_a_mixed_table_gets_both_halves_right_in_one_pass(self):
 		"""The realistic shape on a repaired site: some tenants decided, one

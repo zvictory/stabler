@@ -101,3 +101,4 @@ stabler.patches.v96_money_idempotency_key
 stabler.patches.v97_work_order_packaging_operator
 stabler.patches.v98_item_operator_role
 stabler.patches.v99_work_order_finish_draft
+stabler.patches.v100_enable_pos
