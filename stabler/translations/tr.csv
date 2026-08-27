@@ -4055,6 +4055,7 @@ POS Profile is disabled.,
 POS Profile must define a shop warehouse.,
 POS Profile must define a walk-in customer.,
 POS Profile must define at least one payment mode.,
+POS is not enabled for {0}.,{0} şirketi için POS etkin değil.
 Position,
 Positions,Pozisyonlar
 Positions hierarchy,Pozisyon hiyerarşisi
