@@ -3692,6 +3692,7 @@ No low-stock items,No low-stock items
 No matches found,No matches found
 No matching items,No matching items
 "No matching vouchers found. Create a payment, or widen the date/amount window.","No matching vouchers found. Create a payment, or widen the date/amount window."
+No materials assigned to this stage.,No materials assigned to this stage.
 No materials required.,No materials required.
 No materials to stage,No materials to stage
 No movements yet.,No movements yet.
@@ -6384,6 +6385,7 @@ Yuk xati,Yuk xati
 Yutilgan,Won
 not assigned,not assigned
 undecided,undecided
+{0} / {1} line(s) transferred,{0} / {1} line(s) transferred
 {0} ({1}),{0} ({1})
 {0} can only be created or changed through the Stabler app.,{0} can only be created or changed through the Stabler app.
 {0} has invoices in more than one currency — record those payments separately.,{0} has invoices in more than one currency — record those payments separately.

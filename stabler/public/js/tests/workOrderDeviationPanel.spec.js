@@ -7,7 +7,7 @@ vi.mock("../composables/i18n.js", () => ({ t: (s) => s }));
 const { roleLabel } = await import("../composables/workOrderRoles.js");
 
 const here = dirname(fileURLToPath(import.meta.url));
-const list = readFileSync(resolve(here, "../pages/manufacturing/WorkOrders.vue"), "utf8");
+const list = readFileSync(resolve(here, "../pages/manufacturing/WorkOrderDetail.vue"), "utf8");
 const kiosk = readFileSync(
 	resolve(here, "../pages/manufacturing/ManufacturingOperatorBoard.vue"),
 	"utf8"
