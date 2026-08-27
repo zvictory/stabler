@@ -1055,6 +1055,41 @@ def list_item_prices_for_item(item_code: str):
 	)
 
 
+def _plain_price_filters(item_code: str, price_list: str, uom: str | None = None) -> dict:
+	"""Filters that match the standing list price of an item — and nothing else.
+
+	ERPNext does not identify a price by item and list alone: `check_duplicates`
+	(erpnext/stock/doctype/item_price/item_price.py) discriminates on uom,
+	customer, supplier, batch, packing unit and the validity window. A lookup on
+	the pair therefore matches a customer's negotiated rate or a dated promotion
+	just as readily, and `frappe.db.get_value` returns whichever row was modified
+	last — so an update aimed at the list price landed on the newest row of any
+	kind. Measured on genesis-test 2026-08-27: list 100 + customer 111, setting
+	the list price to 250 left the 100 and rewrote the 111.
+
+	Two of these fields cannot be tested for emptiness, which is why this is
+	written from a measurement rather than from the field list. ERPNext fills
+	`uom` from the item's stock UOM and defaults `valid_from` to today on every
+	row, so a "nothing is set" filter matches no real row at all. What separates
+	the standing price is that it is in effect and does not expire:
+	  * uom must be the one being priced (stock UOM unless the caller names one);
+	  * `valid_upto` unset — a price that ends is not the standing one;
+	  * `valid_from` already reached — a scheduled change is not today's price;
+	  * no customer, supplier, batch or packing unit.
+	"""
+	return {
+		"item_code": item_code,
+		"price_list": price_list,
+		"uom": uom or frappe.db.get_value("Item", item_code, "stock_uom"),
+		"customer": ["is", "not set"],
+		"supplier": ["is", "not set"],
+		"batch_no": ["is", "not set"],
+		"packing_unit": ["in", [0, None]],
+		"valid_upto": ["is", "not set"],
+		"valid_from": ["<=", today()],
+	}
+
+
 @frappe.whitelist()
 def save_item_price(
 	item_code: str,
@@ -1079,7 +1114,7 @@ def save_item_price(
 	curr = (currency or pl_doc.currency or "USD").strip()
 
 	if not name:
-		existing = frappe.db.get_value("Item Price", {"item_code": item_code, "price_list": price_list})
+		existing = frappe.db.get_value("Item Price", _plain_price_filters(item_code, price_list, uom))
 		if existing:
 			name = existing
 
@@ -1142,12 +1177,26 @@ def get_price_list_matrix(
 		       ip.name AS item_price_name, ip.price_list_rate,
 		       COALESCE(ip.currency, %(pl_curr)s) AS currency
 		FROM `tabItem` i
-		LEFT JOIN `tabItem Price` ip ON ip.item_code = i.name AND ip.price_list = %(price_list)s
+		-- Only the standing list price, by the rule in `_plain_price_filters`:
+		-- joining on item + list alone showed a customer's negotiated rate in the
+		-- column the operator reads as the list price, and produced one grid row
+		-- per price, which PriceLists.vue cannot even express (it collects edits
+		-- keyed by item code) and which eats the row LIMIT.
+		LEFT JOIN `tabItem Price` ip
+		       ON ip.item_code = i.name
+		      AND ip.price_list = %(price_list)s
+		      AND IFNULL(ip.uom, '') = IFNULL(i.stock_uom, '')
+		      AND IFNULL(ip.customer, '') = ''
+		      AND IFNULL(ip.supplier, '') = ''
+		      AND IFNULL(ip.batch_no, '') = ''
+		      AND IFNULL(ip.packing_unit, 0) = 0
+		      AND COALESCE(ip.valid_upto, '') = ''
+		      AND COALESCE(ip.valid_from, '') <= %(today)s
 		WHERE {where}
 		ORDER BY i.item_name ASC
 		LIMIT %(limit)s
 		""",
-		{**params, "pl_curr": pl.currency or "USD"},
+		{**params, "pl_curr": pl.currency or "USD", "today": today()},
 		as_dict=True,
 	)
 	return {"price_list": pl.name, "currency": pl.currency, "items": rows}
