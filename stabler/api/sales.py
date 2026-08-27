@@ -19,6 +19,7 @@ from stabler.api._common import (
 	check_concurrency,
 )
 from stabler.api._money import money_epsilon
+from stabler.api._pricing import net_rate
 from stabler.api._sales_margin import attach_margins
 from stabler.api.approvals import _assert_company_scope
 from stabler.api.organization import module_map_for
@@ -3572,8 +3573,14 @@ def create_sales_order(
 		rate_val = row.get("rate")
 		if rate_val not in (None, "") and flt(rate_val) < 0:
 			frappe.throw(f"Row {idx}: rate cannot be negative.")
-		if flt(row.get("discount_amount")) < 0:
+		disc_amt = flt(row.get("discount_amount"))
+		if disc_amt < 0:
 			frappe.throw(f"Row {idx}: discount_amount cannot be negative.")
+		# A per-unit discount equal to the rate leaves a net rate of zero, and a
+		# falsy `rate` sends ERPNext back to deriving it from the price list —
+		# quietly restoring full price. A give-away is 100 %, not an amount.
+		if disc_amt and rate_val not in (None, "") and disc_amt >= flt(rate_val):
+			frappe.throw(f"Row {idx}: discount_amount must be less than the rate.")
 		cleaned.append(
 			{
 				"item_code": code,
@@ -3632,7 +3639,12 @@ def create_sales_order(
 			if hit:
 				rate = hit["price_list_rate"]
 		if rate:
-			line.rate = rate
+			# The rate we were handed is the line's GROSS price. ERPNext bills
+			# `rate` and refuses to apply a discount to a rate that is already
+			# set, so the net price is computed here and the gross is kept as
+			# the list rate — see api/_pricing.py for the whole story.
+			line.price_list_rate = rate
+			line.rate = net_rate(rate, row["discount_percentage"], row["discount_amount"])
 		if row["uom"]:
 			line.uom = row["uom"]
 		if row.get("conversion_factor"):
@@ -3812,8 +3824,14 @@ def update_sales_order(
 		rate_val = row.get("rate")
 		if rate_val not in (None, "") and flt(rate_val) < 0:
 			frappe.throw(f"Row {idx}: rate cannot be negative.")
-		if flt(row.get("discount_amount")) < 0:
+		disc_amt = flt(row.get("discount_amount"))
+		if disc_amt < 0:
 			frappe.throw(f"Row {idx}: discount_amount cannot be negative.")
+		# A per-unit discount equal to the rate leaves a net rate of zero, and a
+		# falsy `rate` sends ERPNext back to deriving it from the price list —
+		# quietly restoring full price. A give-away is 100 %, not an amount.
+		if disc_amt and rate_val not in (None, "") and disc_amt >= flt(rate_val):
+			frappe.throw(f"Row {idx}: discount_amount must be less than the rate.")
 		cleaned.append(
 			{
 				"item_code": code,
@@ -3860,7 +3878,12 @@ def update_sales_order(
 			if hit:
 				rate = hit["price_list_rate"]
 		if rate:
-			line.rate = rate
+			# The rate we were handed is the line's GROSS price. ERPNext bills
+			# `rate` and refuses to apply a discount to a rate that is already
+			# set, so the net price is computed here and the gross is kept as
+			# the list rate — see api/_pricing.py for the whole story.
+			line.price_list_rate = rate
+			line.rate = net_rate(rate, row["discount_percentage"], row["discount_amount"])
 		if row["uom"]:
 			line.uom = row["uom"]
 		if row.get("conversion_factor"):

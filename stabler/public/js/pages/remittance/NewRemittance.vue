@@ -38,6 +38,9 @@ import MoneyInput from "../../components/MoneyInput.vue";
 import Select from "../../components/Select.vue";
 import EmptyState from "../../components/EmptyState.vue";
 import PickupCodeReceipt from "./PickupCodeReceipt.vue";
+import { useBackdateGuard } from "../../composables/backdate.js";
+
+const { canBackdate, minPostingDate } = useBackdateGuard();
 
 const session = useSession();
 
@@ -747,7 +750,10 @@ function finish() {
 
 						<div class="col-md-5">
 							<label class="form-label">{{ t("Posting date") }}</label>
-							<DateInput v-model="form.posting_date" />
+							<DateInput v-model="form.posting_date" :min="minPostingDate" />
+							<div v-if="!canBackdate" class="form-hint">
+								{{ t("Only an administrator can post to an earlier date.") }}
+							</div>
 						</div>
 					</div>
 				</div>

@@ -5,7 +5,7 @@ import { useRouter } from "vue-router";
 import { useSession } from "../../stores/session.js";
 import { call } from "../../api/client.js";
 import { formatMoney } from "../../composables/money.js";
-import { formatDate, todayIso} from "../../composables/date.js";
+import { todayIso } from "../../composables/date.js";
 import { t } from "../../composables/i18n.js";
 import { itemSearcher } from "../../composables/items.js";
 import DateInput from "../../components/DateInput.vue";
@@ -14,6 +14,9 @@ import Typeahead from "../../components/Typeahead.vue";
 import FormPage from "../../components/form/FormPage.vue";
 import LineItemsEditor from "../../components/LineItemsEditor.vue";
 import { useDocumentForm } from "../../composables/useDocumentForm.js";
+import { useBackdateGuard } from "../../composables/backdate.js";
+
+const { canBackdate, minPostingDate } = useBackdateGuard();
 
 const session = useSession();
 const { activeCompany, user } = storeToRefs(session);
@@ -73,7 +76,6 @@ const {
 	saving: actionRunning,
 	loadError,
 	error: actionError,
-	isFormValid,
 	save,
 } = useDocumentForm({
 	doctype: "Sales Invoice",
@@ -161,7 +163,7 @@ async function pickItem(line, item) {
 	}
 }
 
-async function handlePickItem({ line, item, index, field }) {
+async function handlePickItem({ line, item, field }) {
 	if (field === "item") {
 		await pickItem(line, item);
 	}
@@ -250,7 +252,10 @@ onMounted(async () => {
 			</div>
 			<div class="col-md-3">
 				<label class="form-label">{{ t("Posting date") }}</label>
-				<DateInput v-model="form.posting_date" />
+				<DateInput v-model="form.posting_date" :min="minPostingDate" />
+				<div v-if="!canBackdate" class="form-hint">
+					{{ t("Only an administrator can post to an earlier date.") }}
+				</div>
 			</div>
 		</div>
 

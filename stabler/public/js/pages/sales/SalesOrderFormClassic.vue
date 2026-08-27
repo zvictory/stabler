@@ -5,6 +5,7 @@ import { useRoute, useRouter } from "vue-router";
 import { useSession } from "../../stores/session.js";
 import { call } from "../../api/client.js";
 import { formatMoney } from "../../composables/money.js";
+import { grossRate } from "../../composables/pricing.js";
 import { readableRate, toLineRate, formatRate, priceListRateForOrder } from "../../composables/fx.js";
 import { formatDate, formatDateTime, todayIso} from "../../composables/date.js";
 import { t } from "../../composables/i18n.js";
@@ -19,6 +20,9 @@ import FormPage from "../../components/form/FormPage.vue";
 import LineItemsEditor from "../../components/LineItemsEditor.vue";
 import MoneyInput from "../../components/MoneyInput.vue";
 import { useDocumentForm } from "../../composables/useDocumentForm.js";
+import { useBackdateGuard } from "../../composables/backdate.js";
+
+const { canBackdate, minPostingDate } = useBackdateGuard();
 
 const session = useSession();
 const { activeCompany, user } = storeToRefs(session);
@@ -175,7 +179,8 @@ function fromDetail(d) {
 			custom_width: it.custom_width ?? null,
 			custom_height: it.custom_height ?? null,
 			custom_pieces: it.custom_pieces ?? null,
-			rate: it.rate,
+			// Sütun iskonto ÖNCESI fiyatı gösterir; belgedeki `rate` iskonto SONRASI.
+			rate: grossRate(it),
 			rateTouched: false,
 			discount_percentage: it.discount_percentage || 0,
 			discount_amount: it.discount_amount || 0,
@@ -993,8 +998,11 @@ async function closeSalesOrder() {
 			</div>
 			<div class="col-md-3">
 				<label class="form-label">{{ t("Order date") }}</label>
-				<DateInput v-if="editable" v-model="form.transaction_date" />
+				<DateInput v-if="editable" v-model="form.transaction_date" :min="minPostingDate" />
 				<div v-else class="form-control-plaintext py-1">{{ formatDateTime(form.transaction_date) || "—" }}</div>
+				<div v-if="editable && !canBackdate" class="form-hint">
+					{{ t("Only an administrator can post to an earlier date.") }}
+				</div>
 			</div>
 			<div class="col-md-3">
 				<label class="form-label">{{ t("Price list") }}</label>

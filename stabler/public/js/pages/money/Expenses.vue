@@ -21,6 +21,9 @@ import Typeahead from "../../components/Typeahead.vue";
 import SkeletonRows from "../../components/SkeletonRows.vue";
 import { useFocusTrap } from "../../composables/useFocusTrap.js";
 import { useEscapeBack } from "../../composables/useEscapeBack.js";
+import { useBackdateGuard } from "../../composables/backdate.js";
+
+const { canBackdate, minPostingDate } = useBackdateGuard();
 
 const session = useSession();
 const { activeCompany, user } = storeToRefs(session);
@@ -1200,7 +1203,10 @@ watch(activeCompany, () => {
 						</div>
 						<div class="col-md-3">
 							<label class="form-label small">{{ t("Posting date") }}</label>
-							<DateInput v-model="form.posting_date" required />
+							<DateInput v-model="form.posting_date" required :min="minPostingDate" />
+							<div v-if="!canBackdate" class="form-hint">
+								{{ t("Only an administrator can post to an earlier date.") }}
+							</div>
 						</div>
 						<div class="col-md-3">
 							<label class="form-label small mb-1 d-flex justify-content-between align-items-baseline">

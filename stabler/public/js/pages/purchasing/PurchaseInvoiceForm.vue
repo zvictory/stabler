@@ -19,6 +19,9 @@ import FormPage from "../../components/form/FormPage.vue";
 import LineItemsEditor from "../../components/LineItemsEditor.vue";
 import { useDocumentForm } from "../../composables/useDocumentForm.js";
 import { planRateRefresh } from "../../composables/exchangeRatePolicy.js";
+import { useBackdateGuard } from "../../composables/backdate.js";
+
+const { canBackdate, minPostingDate } = useBackdateGuard();
 
 const session = useSession();
 const { activeCompany, user } = storeToRefs(session);
@@ -786,8 +789,11 @@ async function submitDoc() {
 			</div>
 			<div class="col-md-3">
 				<label class="form-label">{{ t("Posting date") }}</label>
-				<DateInput v-if="editable" v-model="form.posting_date" />
+				<DateInput v-if="editable" v-model="form.posting_date" :min="minPostingDate" />
 				<div v-else class="form-control-plaintext py-1">{{ formatDateTime(form.posting_date) || "—" }}</div>
+				<div v-if="editable && !canBackdate" class="form-hint">
+					{{ t("Only an administrator can post to an earlier date.") }}
+				</div>
 			</div>
 			<div class="col-md-3">
 				<label class="form-label">{{ t("Due date") }}</label>

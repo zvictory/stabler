@@ -24,7 +24,7 @@ import EmptyState from "../../components/EmptyState.vue";
 import ListToolbar from "../../components/ListToolbar.vue";
 import SkeletonRows from "../../components/SkeletonRows.vue";
 import { useEscapeBack } from "../../composables/useEscapeBack.js";
-import { earliestPostingDate, useCanBackdate } from "../../composables/backdate.js";
+import { useBackdateGuard } from "../../composables/backdate.js";
 
 const session = useSession();
 useEscapeBack(() => { if (createOpen.value) { closeCreate(); return true; } if (detailOpen.value) { closeDetail(); return true; } return false; }, "/inventory"); // ESC → close open pane, else back
@@ -38,8 +38,7 @@ const today = todayIso();
 // Manager. Since the posting date started reaching the server intact
 // (set_posting_time, inventory.py), that refusal is real, so the picker
 // stops offering the dates it will hit.
-const canBackdate = useCanBackdate();
-const minPostingDate = computed(() => earliestPostingDate(canBackdate.value, today));
+const { canBackdate, minPostingDate } = useBackdateGuard();
 
 const PURPOSES = computed(() => [
 	{ key: "", label: t("All") },
