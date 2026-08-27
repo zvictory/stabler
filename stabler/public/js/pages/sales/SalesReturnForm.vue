@@ -5,7 +5,7 @@ import { useRouter } from "vue-router";
 import { useSession } from "../../stores/session.js";
 import { call } from "../../api/client.js";
 import { formatMoney } from "../../composables/money.js";
-import { formatDate, todayIso} from "../../composables/date.js";
+import { todayIso } from "../../composables/date.js";
 import { t } from "../../composables/i18n.js";
 import { itemSearcher } from "../../composables/items.js";
 import DateInput from "../../components/DateInput.vue";
@@ -73,7 +73,6 @@ const {
 	saving: actionRunning,
 	loadError,
 	error: actionError,
-	isFormValid,
 	save,
 } = useDocumentForm({
 	doctype: "Sales Invoice",
@@ -161,7 +160,7 @@ async function pickItem(line, item) {
 	}
 }
 
-async function handlePickItem({ line, item, index, field }) {
+async function handlePickItem({ line, item, field }) {
 	if (field === "item") {
 		await pickItem(line, item);
 	}
