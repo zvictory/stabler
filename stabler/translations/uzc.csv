@@ -2471,6 +2471,7 @@ In process,Жараёнда
 In progress,Кўл остидан
 in the pipeline,жараёнда
 in this invoice,ушбу ҳисобда
+In store,Омборда
 In time,Кириш вақти
 In Transit,Йўлда
 In transit,Йўлда
@@ -4410,6 +4411,7 @@ Remaining Balance,Қолдиқ
 Remaining bx,Қолдиқ қут.
 Remaining PI Cost,PI қолдиқ қиймати
 Remaining quantities could not be calculated. Loaded the original Proforma quantities. Please check them.,Қолдиқ миқдорларни ҳисоблаб бўлмади. Проформанинг асл миқдорлари юкланди. Илтимос текширинг.
+Remaining: {0},Қолдиқ: {0}
 Remaining Staging,
 Remaining to Pay,Тўланиши керак бўлган қолдиқ
 remaining {count} boxes,қолган {count} қути

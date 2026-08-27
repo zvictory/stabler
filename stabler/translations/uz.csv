@@ -2471,6 +2471,7 @@ In process,Jarayonda
 In progress,Jarayonda
 in the pipeline,jarayonda
 in this invoice,ushbu hisobda
+In store,Omborda
 In time,Kirish vaqti
 In Transit,Yo'lda
 In transit,Yo‘lda
@@ -4410,6 +4411,7 @@ Remaining Balance,Qoldiq
 Remaining bx,Qoldiq qut.
 Remaining PI Cost,PI qoldiq qiymati
 Remaining quantities could not be calculated. Loaded the original Proforma quantities. Please check them.,Qoldiq miqdorlarni hisoblab bo‘lmadi. Proformaning asl miqdorlari yuklandi. Iltimos tekshiring.
+Remaining: {0},Qoldiq: {0}
 Remaining Staging,
 Remaining to Pay,To'lanishi kerak bo'lgan qoldiq
 remaining {count} boxes,qolgan {count} quti

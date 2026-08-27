@@ -5,7 +5,7 @@ import { useSession } from "../../stores/session.js";
 import { call } from "../../api/client.js";
 import { t } from "../../composables/i18n.js";
 import { workOrderProgress } from "../../composables/workOrderProgress.js";
-import { materialReadiness, stockKey } from "../../composables/materialReadiness.js";
+import { materialReadiness, materialsForUnits, stockKey } from "../../composables/materialReadiness.js";
 import { halfAssigned, roleLabel } from "../../composables/workOrderRoles.js";
 import { formatMoney } from "../../composables/money.js";
 import { formatDate, formatDateTime, todayIso} from "../../composables/date.js";
@@ -209,41 +209,67 @@ async function doSubmit(name) {
 	}
 }
 
-async function transferMaterials(name) {
-	const qty = prompt(t("Transfer how many units of materials? Leave blank for full."));
-	if (qty === null) return;
-	actionBusy.value = true;
+// Both actions ask the same question — how many units — and the browser's bare
+// one-line box was the wrong place to ask it: the operator typed a number
+// without seeing which materials it consumes or whether the store carries
+// them; the shortage surfaced only as a failed stock entry.
+// The stock figures the list column already loads answer that before the fact.
+const qtyDialog = ref(null); // { mode: "transfer" | "produce", name }
+const qtyValue = ref("");
+
+function openQtyDialog(mode, name) {
+	qtyDialog.value = { mode, name };
 	actionError.value = "";
-	try {
-		await call("stabler.api.manufacturing.make_work_order_stock_entry", {
-			work_order: name,
-			purpose: "Material Transfer for Manufacture",
-			qty: qty || undefined,
-		});
-		await refreshDetail();
-		await load();
-	} catch (err) {
-		actionError.value = err?.message || "Transfer failed.";
-	} finally {
-		actionBusy.value = false;
-	}
+	qtyValue.value = String(dialogBalance.value || "");
 }
 
-async function recordProduction(name) {
-	const qty = prompt(t("Produce how many units? Leave blank for full balance."));
-	if (qty === null) return;
+// Transfer counts against what has been issued, production against what has
+// been finished. One shared "remaining" would offer to re-transfer material
+// already sitting in WIP.
+const dialogBalance = computed(() => {
+	const d = detail.value || {};
+	const done =
+		qtyDialog.value?.mode === "produce"
+			? Number(d.produced_qty) || 0
+			: Number(d.transferred_qty) || 0;
+	return Math.max(0, (Number(d.qty) || 0) - done);
+});
+
+// Reads the box, not the value it opened with: retyping 4 000 as 500 has to
+// move the material figures with it, or the list describes a transfer that is
+// not the one about to happen — worse than no list, because it looks checked.
+const dialogUnits = computed(() => {
+	const n = Number(qtyValue.value);
+	return Number.isFinite(n) && n > 0 ? n : dialogBalance.value;
+});
+
+const dialogMaterials = computed(() =>
+	qtyDialog.value?.mode === "transfer"
+		? materialsForUnits(detail.value, stock.value, dialogUnits.value)
+		: [],
+);
+
+const dialogShort = computed(() => dialogMaterials.value.filter((m) => m.short).length);
+
+async function confirmQtyDialog() {
+	const { mode, name } = qtyDialog.value || {};
+	if (!name) return;
+	const typed = Number(qtyValue.value);
+	const qty = Number.isFinite(typed) && typed > 0 ? typed : undefined;
+	qtyDialog.value = null;
 	actionBusy.value = true;
 	actionError.value = "";
 	try {
 		await call("stabler.api.manufacturing.make_work_order_stock_entry", {
 			work_order: name,
-			purpose: "Manufacture",
-			qty: qty || undefined,
+			purpose: mode === "produce" ? "Manufacture" : "Material Transfer for Manufacture",
+			qty,
 		});
 		await refreshDetail();
 		await load();
 	} catch (err) {
-		actionError.value = err?.message || "Production failed.";
+		actionError.value =
+			err?.message || (mode === "produce" ? "Production failed." : "Transfer failed.");
 	} finally {
 		actionBusy.value = false;
 	}
@@ -995,7 +1021,7 @@ async function saveWO(submitAfter) {
 								type="button"
 								class="btn btn-outline-primary"
 								:disabled="actionBusy"
-								@click="transferMaterials(detail.name)"
+								@click="openQtyDialog('transfer', detail.name)"
 							>
 								<i class="ti ti-transfer me-1"></i>{{ t("Transfer materials") }}
 							</button>
@@ -1004,7 +1030,7 @@ async function saveWO(submitAfter) {
 								type="button"
 								class="btn btn-primary"
 								:disabled="actionBusy"
-								@click="recordProduction(detail.name)"
+								@click="openQtyDialog('produce', detail.name)"
 							>
 								<i class="ti ti-package me-1"></i>{{ t("Record production") }}
 							</button>
@@ -1065,6 +1091,72 @@ async function saveWO(submitAfter) {
 		</div>
 
 		<!-- Bulk assign modal -->
+		<div v-if="qtyDialog" class="modal-backdrop fade show" @click="qtyDialog = null"></div>
+		<div v-if="qtyDialog" class="modal fade show d-block" tabindex="-1" style="background: transparent">
+			<div class="modal-dialog">
+				<div class="modal-content">
+					<div class="modal-header">
+						<h5 class="modal-title">
+							{{ qtyDialog.mode === "produce" ? t("Record production") : t("Transfer materials") }}
+						</h5>
+						<button type="button" class="btn-close" @click="qtyDialog = null"></button>
+					</div>
+					<div class="modal-body">
+						<div class="mb-3">
+							<label class="form-label small mb-1">{{ t("Quantity") }}</label>
+							<input v-model="qtyValue" type="number" min="0" step="any" class="form-control font-monospace" />
+							<div class="form-hint">
+								{{ t("Remaining: {0}", [formatQty(dialogBalance, detail?.uom)]) }}
+							</div>
+						</div>
+
+						<!-- The list is the reason this dialog exists. Producing does not draw
+							 from the store — the material is already in WIP by then — so it is
+							 shown for the transfer only, where it can still change the answer. -->
+						<div v-if="dialogMaterials.length" class="table-responsive">
+							<table class="table table-sm mb-0">
+								<thead>
+									<tr>
+										<th>{{ t("Item") }}</th>
+										<th class="text-end">{{ t("Required") }}</th>
+										<th class="text-end">{{ t("In store") }}</th>
+									</tr>
+								</thead>
+								<tbody>
+									<tr v-for="m in dialogMaterials" :key="m.item_code">
+										<td>
+											<div>{{ m.item_name }}</div>
+											<div class="small text-secondary font-monospace">{{ m.item_code }}</div>
+										</td>
+										<td class="text-end font-monospace">{{ formatQty(m.needed) }}</td>
+										<td class="text-end font-monospace" :class="m.short ? 'text-danger fw-semibold' : 'text-secondary'">
+											<template v-if="m.available !== null">{{ formatQty(m.available) }}</template>
+											<span v-else class="text-secondary">—</span>
+										</td>
+									</tr>
+								</tbody>
+							</table>
+						</div>
+
+						<!-- A warning, not a block. The store figure is a Bin snapshot and the
+							 shelf is the authority; refusing the transfer would leave an
+							 operator standing in front of material the screen says is not there. -->
+						<div v-if="dialogShort" class="alert alert-warning mt-3 mb-0">
+							{{ t("short {0} item(s)", [dialogShort]) }}
+						</div>
+					</div>
+					<div class="modal-footer">
+						<button type="button" class="btn btn-outline-secondary" @click="qtyDialog = null">
+							{{ t("Cancel") }}
+						</button>
+						<button type="button" class="btn btn-primary" :disabled="actionBusy" @click="confirmQtyDialog">
+							{{ qtyDialog.mode === "produce" ? t("Record production") : t("Transfer materials") }}
+						</button>
+					</div>
+				</div>
+			</div>
+		</div>
+
 		<div v-if="bulkOpen" class="modal-backdrop fade show" @click="bulkOpen = false"></div>
 		<div v-if="bulkOpen" class="modal fade show d-block" tabindex="-1" style="background: transparent">
 			<div class="modal-dialog">

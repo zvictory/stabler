@@ -2469,6 +2469,7 @@ In process,Süreçte
 In progress,Devam ediyor
 in the pipeline,hatta
 in this invoice,bu faturada
+In store,Depoda
 In time,Zamanında
 In Transit,Yolda
 In transit,Yolda
@@ -4406,6 +4407,7 @@ Remaining Balance,Kalan bakiye
 Remaining bx,Kalan kt.
 Remaining PI Cost,Kalan PI maliyeti
 Remaining quantities could not be calculated. Loaded the original Proforma quantities. Please check them.,Kalan miktarlar hesaplanamadı. Proformanın orijinal miktarları yüklendi. Lütfen kontrol edin.
+Remaining: {0},Kalan: {0}
 Remaining Staging,
 Remaining to Pay,Ödenecek kalan
 remaining {count} boxes,kalan {count} kutu
