@@ -3275,6 +3275,7 @@ No low-stock items,Kam ombordagi tovarlar yo'q
 No matches found,Mos keluvchilar topilmadi
 No matching items,
 "No matching vouchers found. Create a payment, or widen the date/amount window.",Mos hujjatlar topilmadi. To'lov yarating yoki sana/summa oynasini kengaytiring.
+No materials assigned to this stage.,Bu bosqichga birorta ham material biriktirilmagan.
 No materials required.,Material talab qilinmaydi.
 No materials to stage,
 No movements yet.,Hozircha harakatlar yo'q.
@@ -5969,6 +5970,7 @@ Yuk xati,Yuk xati
 Yutilgan,Yutilgan
 not assigned,tayinlanmagan
 undecided,hal qilinmagan
+{0} / {1} line(s) transferred,{1} tadan {0} pozitsiya berildi
 {0} ({1}),
 {0} can only be created or changed through the Stabler app.,{0} faqat Stabler ilovasi orqali yaratilishi yoki o'zgartirilishi mumkin.
 {0} has invoices in more than one currency — record those payments separately.,«{0}» da bir nechta valyutadagi hisob-fakturalar bor — bu to‘lovlarni alohida ro‘yxatga oling.

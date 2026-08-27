@@ -3273,6 +3273,7 @@ No low-stock items,Düşük stoklu ürün yok
 No matches found,Eşleşme bulunamadı
 No matching items,
 "No matching vouchers found. Create a payment, or widen the date/amount window.",Eşleşen belge bulunamadı. Bir ödeme oluşturun veya tarih/tutar aralığını genişletin.
+No materials assigned to this stage.,Bu aşamaya hiçbir malzeme atanmamış.
 No materials required.,Malzeme gerekmiyor.
 No materials to stage,
 No movements yet.,Henüz hareket yok.
@@ -5963,6 +5964,7 @@ Yuk xati,Yuk xati
 Yutilgan,Kazanıldı
 not assigned,atanmadı
 undecided,karara bağlanmadı
+{0} / {1} line(s) transferred,{1} kalemin {0} tanesi devredildi
 {0} ({1}),
 {0} can only be created or changed through the Stabler app.,{0} yalnızca Stabler uygulaması üzerinden oluşturulabilir veya değiştirilebilir.
 {0} has invoices in more than one currency — record those payments separately.,«{0}» birden fazla para biriminde faturalara sahip — bu ödemeleri ayrı ayrı kaydedin.

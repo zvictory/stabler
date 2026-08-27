@@ -6,7 +6,7 @@ import { fileURLToPath } from "url";
 vi.mock("../composables/i18n.js", () => ({ t: (s) => s }));
 
 const here = dirname(fileURLToPath(import.meta.url));
-const src = readFileSync(resolve(here, "../pages/manufacturing/WorkOrders.vue"), "utf8");
+const src = readFileSync(resolve(here, "../pages/manufacturing/WorkOrderDetail.vue"), "utf8");
 
 // Issuing materials and booking production were the last two actions in the SPA
 // that asked for a number through the browser's bare `prompt()`. That box can

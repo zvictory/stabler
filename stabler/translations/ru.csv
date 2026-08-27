@@ -3280,6 +3280,7 @@ No low-stock items,Товаров с низким уровнем запасов 
 No matches found,Совпадений не найдено
 No matching items,
 "No matching vouchers found. Create a payment, or widen the date/amount window.",Совпадающие документы не найдены. Создайте платёж или расширьте окно даты/суммы.
+No materials assigned to this stage.,На этот этап не назначено ни одного материала.
 No materials required.,Материалы не требуются.
 No materials to stage,
 No movements yet.,Движений пока нет.
@@ -5974,6 +5975,7 @@ Yuk xati,Юк хати
 Yutilgan,Выиграно
 not assigned,не назначен
 undecided,не решено
+{0} / {1} line(s) transferred,Передано позиций: {0} из {1}
 {0} ({1}),
 {0} can only be created or changed through the Stabler app.,{0} можно создавать и изменять только через приложение Stabler.
 {0} has invoices in more than one currency — record those payments separately.,У «{0}» есть счета в нескольких валютах — регистрируйте эти платежи отдельно.

@@ -91,6 +91,7 @@ import StockReconciliation from "./pages/inventory/StockReconciliation.vue";
 import ManufacturingHome from "./pages/manufacturing/ManufacturingHome.vue";
 import BOMs from "./pages/manufacturing/BOMs.vue";
 import WorkOrders from "./pages/manufacturing/WorkOrders.vue";
+import WorkOrderDetail from "./pages/manufacturing/WorkOrderDetail.vue";
 import ManufacturingOperatorBoard from "./pages/manufacturing/ManufacturingOperatorBoard.vue";
 import HRHome from "./pages/hr/HRHome.vue";
 import HROverview from "./pages/hr/Overview.vue";
@@ -403,6 +404,7 @@ const routes = [
 			{ path: "", redirect: "/manufacturing/boms" },
 			{ path: "boms", name: "manufacturing-boms", component: BOMs, meta: { title: t("BOMs") } },
 			{ path: "work-orders", name: "manufacturing-work-orders", component: WorkOrders, meta: { title: t("Work Orders") } },
+			{ path: "work-orders/:name", name: "manufacturing-work-order", component: WorkOrderDetail, meta: { title: t("Work Order") } },
 		],
 	},
 	{
