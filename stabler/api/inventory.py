@@ -1451,6 +1451,15 @@ def create_stock_entry(
 	doc.purpose = purpose
 	doc.stock_entry_type = purpose  # default Stock Entry Type names match purposes
 	if posting_date:
+		# `set_posting_time` is ERPNext's "this date is deliberate" flag. Without
+		# it the controller resets posting_date to now, so the parameter was
+		# accepted, assigned and discarded in silence — a receipt entered the
+		# morning after the goods arrived was dated the morning after, and its
+		# ledger entry with it. Valuation is computed in date order, so that is
+		# not a wrong label but a wrong sequence. Setting it hands the decision
+		# to ERPNext's own controls (`stock_frozen_upto`, the role allowed to
+		# make back-dated entries), which refuse with a message.
+		doc.set_posting_time = 1
 		doc.posting_date = getdate(posting_date)
 	if from_warehouse:
 		doc.from_warehouse = from_warehouse
@@ -1623,6 +1632,15 @@ def create_stock_reconciliation(
 	doc.company = company
 	doc.purpose = "Stock Reconciliation"
 	if posting_date:
+		# `set_posting_time` is ERPNext's "this date is deliberate" flag. Without
+		# it the controller resets posting_date to now, so the parameter was
+		# accepted, assigned and discarded in silence — a receipt entered the
+		# morning after the goods arrived was dated the morning after, and its
+		# ledger entry with it. Valuation is computed in date order, so that is
+		# not a wrong label but a wrong sequence. Setting it hands the decision
+		# to ERPNext's own controls (`stock_frozen_upto`, the role allowed to
+		# make back-dated entries), which refuse with a message.
+		doc.set_posting_time = 1
 		doc.posting_date = getdate(posting_date)
 	if remarks:
 		doc.remarks = remarks.strip()
