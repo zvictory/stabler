@@ -9,6 +9,9 @@ import DateInput from "../../components/DateInput.vue";
 import EmptyState from "../../components/EmptyState.vue";
 import MoneyInput from "../../components/MoneyInput.vue";
 import Typeahead from "../../components/Typeahead.vue";
+import { useBackdateGuard } from "../../composables/backdate.js";
+
+const { canBackdate, minPostingDate } = useBackdateGuard();
 
 const session = useSession();
 const loading = ref(false);
@@ -268,7 +271,10 @@ onMounted(refreshAll);
 					<div class="row g-3 mb-3">
 						<div class="col-md-3">
 							<label class="form-label">{{ t("Posting date") }}</label>
-							<DateInput v-model="form.posting_date" :disabled="saving" />
+							<DateInput v-model="form.posting_date" :disabled="saving" :min="minPostingDate" />
+							<div v-if="!canBackdate" class="form-hint">
+								{{ t("Only an administrator can post to an earlier date.") }}
+							</div>
 						</div>
 						<div v-if="action === 'stock_issue'" class="col-md-5">
 							<label class="form-label required">{{ t("Source warehouse") }}</label>

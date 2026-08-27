@@ -14,6 +14,9 @@ import Typeahead from "../../components/Typeahead.vue";
 import FormPage from "../../components/form/FormPage.vue";
 import LineItemsEditor from "../../components/LineItemsEditor.vue";
 import { useDocumentForm } from "../../composables/useDocumentForm.js";
+import { useBackdateGuard } from "../../composables/backdate.js";
+
+const { canBackdate, minPostingDate } = useBackdateGuard();
 
 const session = useSession();
 const { activeCompany, user } = storeToRefs(session);
@@ -249,7 +252,10 @@ onMounted(async () => {
 			</div>
 			<div class="col-md-3">
 				<label class="form-label">{{ t("Posting date") }}</label>
-				<DateInput v-model="form.posting_date" />
+				<DateInput v-model="form.posting_date" :min="minPostingDate" />
+				<div v-if="!canBackdate" class="form-hint">
+					{{ t("Only an administrator can post to an earlier date.") }}
+				</div>
 			</div>
 		</div>
 

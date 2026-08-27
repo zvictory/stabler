@@ -1,5 +1,6 @@
-import { ref } from "vue";
+import { computed, ref } from "vue";
 import { call } from "../api/client.js";
+import { todayIso } from "./date.js";
 
 // Whether the signed-in user may post a document dated before today.
 //
@@ -71,4 +72,25 @@ export function useCanBackdate() {
  */
 export function earliestPostingDate(canBackdate, today) {
 	return canBackdate ? "" : today;
+}
+
+/**
+ * Both halves a date field needs: the bound it may not cross, and the flag that
+ * explains the bound to the person looking at it.
+ *
+ * Twelve fields across eleven screens reach a guarded doctype, so this exists
+ * to keep them from carrying twelve copies of the same two lines — and, more
+ * to the point, from drifting apart later. A picker that silently stops
+ * agreeing with the rule is the failure this whole file is about.
+ *
+ * @returns {{canBackdate: import("vue").Ref<boolean>, minPostingDate: import("vue").ComputedRef<string>}}
+ */
+export function useBackdateGuard() {
+	const canBackdate = useCanBackdate();
+	return {
+		canBackdate,
+		// `todayIso()` is read on recompute rather than captured at setup, so a
+		// tab left open overnight does not go on offering yesterday.
+		minPostingDate: computed(() => earliestPostingDate(canBackdate.value, todayIso())),
+	};
 }

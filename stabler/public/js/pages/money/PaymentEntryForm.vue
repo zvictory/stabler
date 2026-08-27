@@ -17,6 +17,9 @@ import Select from "../../components/Select.vue";
 import RelatedDocuments from "../../components/RelatedDocuments.vue";
 import FormPage from "../../components/form/FormPage.vue";
 import { useDocumentForm } from "../../composables/useDocumentForm.js";
+import { useBackdateGuard } from "../../composables/backdate.js";
+
+const { canBackdate, minPostingDate } = useBackdateGuard();
 
 const session = useSession();
 const router = useRouter();
@@ -396,8 +399,11 @@ const typeBadge = (t) => {
 		<div class="row g-3 mb-3">
 			<div class="col-md-4">
 				<label class="form-label">{{ t("Posting date") }}</label>
-				<DateInput v-if="editable" v-model="form.posting_date" />
+				<DateInput v-if="editable" v-model="form.posting_date" :min="minPostingDate" />
 				<div v-else class="form-control-plaintext py-1">{{ formatDate(form.posting_date) || "—" }}</div>
+				<div v-if="editable && !canBackdate" class="form-hint">
+					{{ t("Only an administrator can post to an earlier date.") }}
+				</div>
 			</div>
 			<div class="col-md-4">
 				<label class="form-label">{{ t("Payment type") }}</label>

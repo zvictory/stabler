@@ -19,6 +19,9 @@ import EmptyState from "../../components/EmptyState.vue";
 import Select from "../../components/Select.vue";
 import { useFocusTrap } from "../../composables/useFocusTrap.js";
 import { useEscapeBack } from "../../composables/useEscapeBack.js";
+import { useBackdateGuard } from "../../composables/backdate.js";
+
+const { canBackdate, minPostingDate } = useBackdateGuard();
 
 const session = useSession();
 const { activeCompany, user } = storeToRefs(session);
@@ -1071,7 +1074,10 @@ watch(activeCompany, () => {
 					<div class="row g-2 mb-2">
 						<div class="col-sm-3">
 							<label class="form-label small required">{{ t("Posting date") }}</label>
-							<DateInput v-model="form.posting_date" />
+							<DateInput v-model="form.posting_date" :min="minPostingDate" />
+							<div v-if="!canBackdate" class="form-hint">
+								{{ t("Only an administrator can post to an earlier date.") }}
+							</div>
 						</div>
 						<div class="col-sm-9">
 							<label class="form-label small">{{ t("Memo") }}</label>

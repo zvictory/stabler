@@ -18,6 +18,9 @@ import Select from "../../components/Select.vue";
 import Typeahead from "../../components/Typeahead.vue";
 import MoneyInput from "../../components/MoneyInput.vue";
 import StatusBadge from "../../components/StatusBadge.vue";
+import { useBackdateGuard } from "../../composables/backdate.js";
+
+const { canBackdate, minPostingDate } = useBackdateGuard();
 
 const session = useSession();
 const { activeCompany, user } = storeToRefs(session);
@@ -664,7 +667,10 @@ watch(activeCompany, loadRefData);
 								</div>
 								<div class="col-md-6">
 									<label class="form-label small">{{ t("Payment date") }}</label>
-									<DateInput v-model="advDate" />
+									<DateInput v-model="advDate" :min="minPostingDate" />
+									<div v-if="!canBackdate" class="form-hint">
+										{{ t("Only an administrator can post to an earlier date.") }}
+									</div>
 								</div>
 								<div class="col-md-6">
 									<label class="form-label small">{{ t("Reference no") }}</label>

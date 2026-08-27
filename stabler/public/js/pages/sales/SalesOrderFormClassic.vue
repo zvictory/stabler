@@ -19,6 +19,9 @@ import FormPage from "../../components/form/FormPage.vue";
 import LineItemsEditor from "../../components/LineItemsEditor.vue";
 import MoneyInput from "../../components/MoneyInput.vue";
 import { useDocumentForm } from "../../composables/useDocumentForm.js";
+import { useBackdateGuard } from "../../composables/backdate.js";
+
+const { canBackdate, minPostingDate } = useBackdateGuard();
 
 const session = useSession();
 const { activeCompany, user } = storeToRefs(session);
@@ -993,8 +996,11 @@ async function closeSalesOrder() {
 			</div>
 			<div class="col-md-3">
 				<label class="form-label">{{ t("Order date") }}</label>
-				<DateInput v-if="editable" v-model="form.transaction_date" />
+				<DateInput v-if="editable" v-model="form.transaction_date" :min="minPostingDate" />
 				<div v-else class="form-control-plaintext py-1">{{ formatDateTime(form.transaction_date) || "—" }}</div>
+				<div v-if="editable && !canBackdate" class="form-hint">
+					{{ t("Only an administrator can post to an earlier date.") }}
+				</div>
 			</div>
 			<div class="col-md-3">
 				<label class="form-label">{{ t("Price list") }}</label>
