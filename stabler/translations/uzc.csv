@@ -118,6 +118,7 @@ No items to transfer. Click 'Add Material' to add items manually.,Ўтказил
 No longer exists,Энди мавжуд эмас
 Not changed:,Ўзгартирилмади:
 Not ready — this desk cannot take or hand over a transfer.,"Тайёр эмас — бу касса ўтказмани на қабул қила олади, на бера олади."
+Not saved — a price cannot be negative: {0},Сақланмади — нарх манфий бўлиши мумкин эмас: {0}
 Nothing on this page is read from a record,Бу саҳифадаги ҳеч бир қиймат ёзувдан ўқилмайди
 One person cannot hold both operator roles on the same Work Order.,Бир киши битта ишлаб чиқариш буюртмасида иккала оператор ролини эгаллай олмайди.
 Only an open agreement can be terminated. {0} is {1}.,Фақат очиқ шартномани ёпиш мумкин. {0} ҳолати: {1}.

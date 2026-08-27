@@ -109,7 +109,14 @@ async function saveChanges() {
 			price_list: selectedPriceList.value,
 			price_updates: priceUpdates,
 		});
-		saveSuccess.value = t("{0} price(s) updated successfully.", [res.updated_count || priceUpdates.length]);
+		// Not `res.updated_count || priceUpdates.length` — `0 || N` announced the
+		// number of lines SENT as the number saved whenever the server saved none.
+		const saved = Number(res?.updated_count || 0);
+		const rejected = res?.rejected || [];
+		saveSuccess.value = saved ? t("{0} price(s) updated successfully.", [saved]) : "";
+		if (rejected.length) {
+			error.value = t("Not saved — a price cannot be negative: {0}", [rejected.join(", ")]);
+		}
 		dirtyMap.value = {};
 		await loadMatrix();
 	} catch (err) {

@@ -1214,10 +1214,20 @@ def bulk_update_item_prices(price_list: str, price_updates: list | str):
 		frappe.throw(_("Invalid price updates format."))
 
 	updated_count = 0
+	rejected: list[str] = []
 	for item_upd in price_updates:
 		code = item_upd.get("item_code")
 		rate = flt(item_upd.get("price_list_rate"))
-		if not code or rate < 0:
+		if not code:
+			continue  # nothing to name; the grid keys its edits by item code
+		if rate < 0:
+			# `save_item_price` refuses this by name. Here it was a bare
+			# `continue`, and the caller reported the batch as fully saved: the
+			# grid renders `updated_count || <lines sent>`, so zero saved became
+			# "N price(s) updated successfully." The grid then reloads and the
+			# old price reappears under that message. Partial application is
+			# right for a two-hundred-row screen; silence about it is not.
+			rejected.append(code)
 			continue
 		save_item_price(
 			item_code=code,
@@ -1227,7 +1237,7 @@ def bulk_update_item_prices(price_list: str, price_updates: list | str):
 		)
 		updated_count += 1
 
-	return {"status": "ok", "updated_count": updated_count}
+	return {"status": "ok", "updated_count": updated_count, "rejected": rejected}
 
 
 @frappe.whitelist()

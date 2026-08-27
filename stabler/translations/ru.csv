@@ -119,6 +119,7 @@ No items to transfer. Click 'Add Material' to add items manually.,"Нет поз
 No longer exists,Больше не существует
 Not changed:,Не изменены:
 Not ready — this desk cannot take or hand over a transfer.,"Не готова — эта касса не может ни принять, ни выдать перевод."
+Not saved — a price cannot be negative: {0},Не сохранено — цена не может быть отрицательной: {0}
 Nothing on this page is read from a record,Ни одно значение на этой странице не читается из записи
 One person cannot hold both operator roles on the same Work Order.,Один человек не может занимать обе роли оператора в одном производственном заказе.
 Only an open agreement can be terminated. {0} is {1}.,Закрыть можно только открытый договор. {0} находится в статусе {1}.

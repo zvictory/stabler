@@ -305,6 +305,7 @@ Not Issued,Not Issued
 Not configured yet,Not configured yet
 Not locked,Not locked
 Not ready — this desk cannot take or hand over a transfer.,Not ready — this desk cannot take or hand over a transfer.
+Not saved — a price cannot be negative: {0},Not saved — a price cannot be negative: {0}
 Not yet,Not yet
 Nothing has expired,Nothing has expired
 Nothing in this list matches. Try another search or another queue.,Nothing in this list matches. Try another search or another queue.
