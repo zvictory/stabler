@@ -4475,6 +4475,7 @@ POS Profile is disabled.,POS Profile is disabled.
 POS Profile must define a shop warehouse.,POS Profile must define a shop warehouse.
 POS Profile must define a walk-in customer.,POS Profile must define a walk-in customer.
 POS Profile must define at least one payment mode.,POS Profile must define at least one payment mode.
+POS is not enabled for {0}.,POS is not enabled for {0}.
 Position,Position
 Positions,Positions
 Positions hierarchy,Positions hierarchy

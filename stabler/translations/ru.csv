@@ -4063,6 +4063,7 @@ POS Profile is disabled.,
 POS Profile must define a shop warehouse.,
 POS Profile must define a walk-in customer.,
 POS Profile must define at least one payment mode.,
+POS is not enabled for {0}.,POS не включён для компании {0}.
 Position,
 Positions,Позиции
 Positions hierarchy,Иерархия позиций

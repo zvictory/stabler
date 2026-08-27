@@ -15,6 +15,43 @@ def _validation_error(message: str) -> None:
 	raise frappe.ValidationError(message)
 
 
+def _require_pos(company: str | None = None) -> None:
+	"""Gate by role (module map) AND, when a company is given, by that company's
+	enable_pos flag — so a tenant that switched POS off cannot reach it by API.
+
+	Mirrors tender.py:_require_tender. The role half asks the same question the
+	SPA already asks (boot's allowed_modules is derived from the same
+	_MODULE_ROLES entry), so nobody who reaches POS through the UI today is
+	newly refused; what it adds is that the answer now also holds for a caller
+	who never loaded the UI.
+	"""
+	from stabler.api.organization import _can_access_module
+
+	if not _can_access_module(frappe.session.user, "pos"):
+		frappe.throw(_("Not permitted"), frappe.PermissionError)
+	if company:
+		_require_pos_enabled(company)
+
+
+def _require_pos_enabled(company: str) -> None:
+	"""Company module gate, shared by the company-taking and session-taking paths."""
+	from stabler.stabler.doctype.stabler_settings.stabler_settings import module_map_for
+
+	if not module_map_for(company).get("pos"):
+		frappe.throw(_("POS is not enabled for {0}.").format(company), frappe.PermissionError)
+
+
+def _require_pos_for_session(session_doc) -> None:
+	"""Gate a payment-session endpoint, which is handed a session name and no company.
+
+	The company has to come off the document, and that is not only how the flag
+	is found — it is also the tenant-isolation check these two endpoints never
+	had: before this, any authenticated user who knew a session name could poll
+	or cancel it, including one belonging to another company.
+	"""
+	_require_pos(session_doc.company)
+
+
 def _normalize_cart_items(items) -> list[dict]:
 	if isinstance(items, str):
 		items = frappe.parse_json(items) or []
@@ -147,6 +184,7 @@ def _rate_for_item(
 @frappe.whitelist()
 def list_pos_profiles(company: str):
 	_assert_company_scope(company)  # tenant isolation: reject a foreign company arg
+	_require_pos(company)
 	_require_company(company)
 	user = frappe.session.user
 	return frappe.db.sql(
@@ -175,12 +213,14 @@ def list_pos_profiles(company: str):
 @frappe.whitelist()
 def pos_bootstrap(company: str, pos_profile: str):
 	_assert_company_scope(company)  # tenant isolation: reject a foreign company arg
+	_require_pos(company)
 	return _profile_payload(_pos_profile_doc(company, pos_profile))
 
 
 @frappe.whitelist()
 def search_pos_items(company: str, pos_profile: str, search: str = "", limit: int = 20):
 	_assert_company_scope(company)  # tenant isolation: reject a foreign company arg
+	_require_pos(company)
 	profile = _pos_profile_doc(company, pos_profile)
 	price_list = profile.selling_price_list or _resolve_price_list(profile.customer)
 	params = {
@@ -335,6 +375,7 @@ def create_pos_invoice(
 	posting_date: str | None = None,
 ):
 	_assert_company_scope(company)  # tenant isolation: reject a foreign company arg
+	_require_pos(company)
 	doc = build_paid_pos_invoice(company, pos_profile, items, payment_mode, posting_date)
 	return {
 		"name": doc.name,
@@ -372,6 +413,7 @@ def pos_gateway_start(
 	hand them back to the SPA. No invoice is created until the provider
 	confirms payment via its webhook."""
 	_assert_company_scope(company)  # tenant isolation: reject a foreign company arg
+	_require_pos(company)
 	from stabler.integrations.uzpay import common as C
 
 	profile = _pos_profile_doc(company, pos_profile)
@@ -428,6 +470,7 @@ def pos_gateway_status(session: str):
 	if not frappe.db.exists(C.SESSION_DT, session):
 		frappe.throw(_("Unknown payment session."), frappe.DoesNotExistError)
 	doc = frappe.get_doc(C.SESSION_DT, session)
+	_require_pos_for_session(doc)
 
 	if doc.status == "Pending" and C.is_expired(doc):
 		doc.status = "Expired"
@@ -453,6 +496,7 @@ def pos_gateway_cancel(session: str):
 	if not frappe.db.exists(C.SESSION_DT, session):
 		frappe.throw(_("Unknown payment session."), frappe.DoesNotExistError)
 	doc = frappe.get_doc(C.SESSION_DT, session)
+	_require_pos_for_session(doc)
 	if doc.status == "Pending":
 		doc.status = "Cancelled"
 		doc.cancel_time_ms = C.epoch_ms()
