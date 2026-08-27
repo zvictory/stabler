@@ -121,6 +121,7 @@ Not ready — this desk cannot take or hand over a transfer.,Hazır değil — b
 Not saved — a price cannot be negative: {0},Kaydedilmedi — fiyat negatif olamaz: {0}
 Nothing on this page is read from a record,Bu sayfadaki hiçbir değer bir kayıttan okunmuyor
 One person cannot hold both operator roles on the same Work Order.,Bir kişi aynı iş emrinde her iki operatör rolünü birden üstlenemez.
+Only an administrator can post to an earlier date.,Geçmiş bir tarihe yalnızca yönetici kayıt girebilir.
 Only an open agreement can be terminated. {0} is {1}.,Yalnızca açık bir sözleşme kapatılabilir. {0} şu durumda: {1}.
 Only the remittance desk can verify a pickup code.,Teslim kodunu yalnızca havale gişesi doğrulayabilir.
 Open draft {name},{name} taslağını aç

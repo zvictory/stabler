@@ -24,6 +24,7 @@ import EmptyState from "../../components/EmptyState.vue";
 import ListToolbar from "../../components/ListToolbar.vue";
 import SkeletonRows from "../../components/SkeletonRows.vue";
 import { useEscapeBack } from "../../composables/useEscapeBack.js";
+import { earliestPostingDate, useCanBackdate } from "../../composables/backdate.js";
 
 const session = useSession();
 useEscapeBack(() => { if (createOpen.value) { closeCreate(); return true; } if (detailOpen.value) { closeDetail(); return true; } return false; }, "/inventory"); // ESC → close open pane, else back
@@ -32,6 +33,13 @@ const { activeCompany, user } = storeToRefs(session);
 const { confirm } = useConfirm();
 
 const today = todayIso();
+
+// stable_app refuses a back-dated Stock Entry for anyone below System
+// Manager. Since the posting date started reaching the server intact
+// (set_posting_time, inventory.py), that refusal is real, so the picker
+// stops offering the dates it will hit.
+const canBackdate = useCanBackdate();
+const minPostingDate = computed(() => earliestPostingDate(canBackdate.value, today));
 
 const PURPOSES = computed(() => [
 	{ key: "", label: t("All") },
@@ -759,7 +767,10 @@ watch([fwhFilter, twhFilter, statusFilter, fromDate, toDate], load);
 						</div>
 						<div class="col-md-3">
 							<label class="form-label">{{ t("Date") }}</label>
-							<DateInput v-model="form.posting_date" />
+							<DateInput v-model="form.posting_date" :min="minPostingDate" />
+							<div v-if="!canBackdate" class="form-hint">
+								{{ t("Only an administrator can post to an earlier date.") }}
+							</div>
 						</div>
 						<div class="col-md-3 d-flex align-items-end">
 							<div class="text-end w-100">
