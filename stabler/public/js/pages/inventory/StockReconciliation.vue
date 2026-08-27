@@ -122,7 +122,19 @@ async function postReconciliation() {
 			posting_date: todayIso(),
 			submit: 1,
 		});
-		toast.success(t("Reconciled {0} item(s).").replace("{0}", res.changed_lines));
+		// The receipt is the server's figure, read off the posted document, not the
+		// `Value delta` above — that one prices the count at the valuation this page
+		// loaded before the operator started walking the warehouse. Anything
+		// received in the meantime moves the real one, and it is the real one that
+		// reaches Stock Adjustment.
+		const posted = res?.summary?.total_value_delta;
+		toast.success(
+			posted === undefined || posted === null
+				? t("Reconciled {0} item(s).").replace("{0}", res.changed_lines)
+				: t("Reconciled {0} item(s). Posted to the ledger: {1}.")
+						.replace("{0}", res.changed_lines)
+						.replace("{1}", money(posted)),
+		);
 		await Promise.all([loadBalances(), loadRecents()]);
 	} catch (e) {
 		toast.error(e?.message || String(e));

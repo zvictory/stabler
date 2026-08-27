@@ -1572,8 +1572,24 @@ def create_stock_reconciliation(
 		row.item_code = ln["item_code"]
 		row.warehouse = ln["warehouse"]
 		row.qty = ln["qty"]  # the counted (target) quantity
-		if ln.get("valuation_rate"):
-			row.valuation_rate = ln["valuation_rate"]
+		# D-INV-1 (P0): `valuation_rate` is NOT written. The SPA sends it back on
+		# every line — it is the copy the count screen loaded when the warehouse
+		# was picked — and ERPNext applies whatever it is given, so a count
+		# restated the cost basis of everything it touched. Nobody has to do
+		# anything wrong: the operator then walks the warehouse, which takes as
+		# long as counting a warehouse takes, and any receipt landing in that
+		# window moves valuation that the count posts the older copy back over.
+		#
+		# Measured genesis-test 2026-08-27, PROBE-MILK / Stores - _TC, ONE extra
+		# unit counted with a rate of 0.5 against a real 1.0: Bin rate 1.0 -> 0.5,
+		# GL Stock Adjustment Dr 729.5, and the endpoint reported 0.5.
+		#
+		# Left out entirely rather than validated, and that breaks nothing that
+		# works today: the old line only wrote a rate it considered truthy, so
+		# zero — what the page sends for a line with no valuation — was already
+		# dropped, and ERPNext already refuses those by name ("Valuation Rate
+		# required for Item X at row 1"). That refusal is correct and stays: a
+		# blind warehouse count is not where an item's cost basis is invented.
 	doc.set_missing_values()
 	doc.insert(ignore_permissions=False)
 	if int(submit or 0):
@@ -1581,11 +1597,25 @@ def create_stock_reconciliation(
 	frappe.logger("stabler.stockrecon").info(
 		f"stock reconciliation {doc.name} ({len(lines)} lines) by {frappe.session.user}"
 	)
+	# D-INV-2 (P0): the summary is `prepare_reconciliation`'s arithmetic over the
+	# REQUEST — the caller's own `current_qty` and `valuation_rate` — so it never
+	# had to agree with what was posted, and did not. Measured the same day, both
+	# directions on the same one-unit count: with a stale rate it reported 0.5
+	# against a real 729.5; with no rate, 0.0 against a real 1.0.
+	#
+	# ERPNext reads the real figures itself and puts them on the document, so
+	# there is nothing to recompute: `difference_amount` matched the GL exactly in
+	# both measurements, and each row carries the `current_qty` the ledger
+	# actually held. Honest as an estimate in `preview_reconciliation`, which has
+	# nothing else to go on; not honest as a receipt.
+	summary = dict(prepared["summary"])
+	summary["total_value_delta"] = flt(doc.difference_amount)
+	summary["total_qty_delta"] = sum(flt(r.qty) - flt(r.current_qty) for r in doc.items)
 	return {
 		"name": doc.name,
 		"docstatus": doc.docstatus,
 		"changed_lines": len(lines),
-		"summary": prepared["summary"],
+		"summary": summary,
 	}
 
 
