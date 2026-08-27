@@ -239,6 +239,19 @@ function openEdit() {
 	editOpen.value = true;
 }
 
+// The row's Edit button called this and nothing ever defined it: clicking it
+// threw `openEditRow is not a function` and the row stayed as it was. Landed in
+// 3000476 and invisible until the SFC gate compiled the template.
+//
+// `openEdit` builds its form out of `detail`, so the row has to be fetched
+// first; the drawer that fetch opens is closed again, or it sits underneath the
+// modal the click actually asked for.
+async function openEditRow(row) {
+	await openDetail(row.name);
+	detailOpen.value = false;
+	if (detail.value && !detail.value.error) openEdit();
+}
+
 function closeEdit() {
 	if (editSubmitting.value) return;
 	editOpen.value = false;
@@ -450,7 +463,7 @@ watch(includeDescendants, () => {
 							<button type="button" class="btn btn-icon btn-ghost-primary btn-sm me-1" :title="t('View Item Details')" @click="openDetail(r.name)">
 								<i class="ti ti-eye"></i>
 							</button>
-							<button type="button" class="btn btn-icon btn-ghost-secondary btn-sm" :title="t('Edit Item')" @click="openEditRow(r, $event)">
+							<button type="button" class="btn btn-icon btn-ghost-secondary btn-sm" :title="t('Edit Item')" @click="openEditRow(r)">
 								<i class="ti ti-edit"></i>
 							</button>
 						</td>

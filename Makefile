@@ -81,7 +81,7 @@ help:
 
 # ---------------------------------------------------------------- the gate ---
 
-check: lint-changed lint-js-changed compile guards test test-js
+check: lint-changed lint-js-changed compile compile-js guards test test-js
 	@echo "OK — pre-push gate passed."
 
 # `ruff format --check` BLOCKS as of 2026-07-27. It was advisory for one reason:
@@ -148,6 +148,17 @@ endif
 
 compile:
 	@$(PY) -m compileall -q stabler
+
+# `compile` above is Python only, so until 2026-08-27 nothing in this gate ever
+# compiled a .vue file: an unbalanced tag, or a template calling a function that
+# was never defined, passed lint, passed the source-scraping specs and shipped.
+# The first run of this target found one — Items.vue's row Edit button had been
+# calling `openEditRow`, which did not exist, since 3000476.
+#
+# Runs over every component, not only changed ones: the tree is clean today, and
+# a gate with an exception list is how debt becomes permanent.
+compile-js:
+	@node scripts/compile_sfc.mjs
 
 # -n1 = one module per process. This used to be load-bearing: several modules
 # installed a fake `frappe` into sys.modules and never restored it, so a combined
