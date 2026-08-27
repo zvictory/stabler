@@ -80,6 +80,7 @@ A valid veterinary certificate is required.,Амалдаги ветеринар�
 "A ≤ {0}%, B ≤ {1}%, C rest — by spend.","А ≤ {0}%, B ≤ {1}%, C қолган — харажат бўйича."
 "A ≤ {0}%, B ≤ {1}%, C rest — by {2}. Submitted; returns netted.","А ≤ {0}%, B ≤ {1}%, C қолган — {2} бўйича. Тасдиқланган; қайтаришлар нетто."
 Add Material,Материал қўшиш
+All materials are already in WIP.,Барча материаллар сехга берилган.
 Already {0},Аллақачон {0}
 AR balance per customer as of the selected date — click a row to see the ledger behind the balance.,Танланган санадаги мижозлар бўйича дебиторлик қарзи — қатор устига босинг ва унинг ортидаги дафтарни кўринг.
 Abbr,Қисқартма
@@ -1849,6 +1850,7 @@ Enter at least one received line.,Камида битта қабул қилин�
 Enter at least one return qty.,Камида бир қайтариш миқдорини киритинг.
 Enter at least one transfer amount.,Камида битта ўтказма суммасини киритинг.
 Enter cost and term to see the payment schedule.,Тўлов жадвалини кўриш учун таннарх ва муддатни киритинг.
+enough for {0},{0} учун етади
 enter password,паролни киритинг
 Enter protocol / authorization reason…,Баённома рақами ёки сабабни киритинг…
 Enter the quantity to return for each line. Leave 0 to exclude a line.,Ҳар бир сатр учун қайтарилиши керак бўлган миқдорни киритинг. Сатрни чиқариб юбориш учун 0 қўйинг.
@@ -2490,6 +2492,7 @@ Incremental Units,Қўшимча ўлчов бирлиги
 Indicative only — shipments are tracked per category,Фақат маълумот учун — жўнатмалар категория бўйича ҳисобланади
 Industry,Соҳа
 Inflow,Кириш оқими
+in workshop,сехда
 info,маълумот
 inherited,мерос
 Inherited from the invoice header,Инвойс сарлавҳасидан олинган
@@ -2876,6 +2879,7 @@ Marketing claim settlement for {0},{0} учун маркетинг даъвол�
 Marketing Claims,Маркетинг даъволари
 Markup on cost,Таннархга устама
 Match & reconcile,Мослаштириш ва солиштириш
+Materials,Материаллар
 matched,мос келди
 Matched employee,
 Material,Материал
@@ -2888,6 +2892,7 @@ Materials to Transfer,Кўчириладиган материаллар
 Materials transferred successfully!,
 Max CI Value (USD),Максимал CI қиймати (USD)
 Maximum late deduction per day (0 = unlimited).,
+materials available,материаллар бор
 materials not transferred,материаллар берилмаган
 measure unit · fixed,ўлчов бирлиги · қатъий
 Measurement columns,Ўлчам устунлари
@@ -4943,6 +4948,7 @@ Size,
 Skip Reason,Сабабини қолдириш
 Skip reason is required when status is Skipped.,"Ҳолат ""Қолдирилган"" бўлганда сабабини қолдириш талаб қилинади."
 Skipped,Қолдирилган
+short {0} item(s),{0} та позиция етмайди
 skipped,ўтказиб юборилди
 SLA,SLA
 Slip,Ҳисоб варақаси

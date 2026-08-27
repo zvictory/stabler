@@ -80,6 +80,7 @@ A valid veterinary certificate is required.,Amaldagi veterinariya sertifikati ta
 "A ≤ {0}%, B ≤ {1}%, C rest — by spend.","A ≤ {0}%, B ≤ {1}%, C qolgan — xarajat bo'yicha."
 "A ≤ {0}%, B ≤ {1}%, C rest — by {2}. Submitted; returns netted.","A ≤ {0}%, B ≤ {1}%, C qolgan — {2} bo'yicha. Tasdiqlangan; qaytarishlar netto."
 Add Material,Material qo'shish
+All materials are already in WIP.,Barcha materiallar sexga berilgan.
 Already {0},Allaqachon {0}
 AR balance per customer as of the selected date — click a row to see the ledger behind the balance.,Tanlangan sanadagi mijozlar bo‘yicha debitorlik qarzi — qator ustiga bosing va uning ortidagi daftarni ko‘ring.
 Abbr,Qisqartma
@@ -1849,6 +1850,7 @@ Enter at least one received line.,Kamida bitta qabul qilingan qatorni kiriting.
 Enter at least one return qty.,Kamida bitta qaytarish miqdorini kiriting.
 Enter at least one transfer amount.,Kamida bitta o‘tkazma summasini kiriting.
 Enter cost and term to see the payment schedule.,To'lov jadvalini ko'rish uchun tannarx va muddatni kiriting.
+enough for {0},{0} uchun yetadi
 enter password,parolni kiriting
 Enter protocol / authorization reason…,Bayonnoma raqami yoki sababni kiriting…
 Enter the quantity to return for each line. Leave 0 to exclude a line.,Har bir qator uchun qaytarish miqdorini kiriting. Qatorni istisno qilish uchun 0 ni qoldiring.
@@ -2490,6 +2492,7 @@ Incremental Units,Ortuvchi birliklar
 Indicative only — shipments are tracked per category,Faqat ma'lumot uchun — jo'natmalar kategoriya bo'yicha hisoblanadi
 Industry,Soha
 Inflow,Kirish oqimi
+in workshop,sexda
 info,ma'lumot
 inherited,meros
 Inherited from the invoice header,Invoys sarlavhasidan olingan
@@ -2876,6 +2879,7 @@ Marketing claim settlement for {0},{0} uchun marketing shikoyati hisoblash
 Marketing Claims,Marketing shikoyatlari
 Markup on cost,Tannarxga ustama
 Match & reconcile,Moslashtirish va solishtirish
+Materials,Materiallar
 matched,mos keldi
 Matched employee,
 Material,Material
@@ -2888,6 +2892,7 @@ Materials to Transfer,Ko'chiriladigan materiallar
 Materials transferred successfully!,
 Max CI Value (USD),Maksimal CI qiymati (USD)
 Maximum late deduction per day (0 = unlimited).,
+materials available,materiallar bor
 materials not transferred,materiallar berilmagan
 measure unit · fixed,o'lchov birligi · qat'iy
 Measurement columns,O'lcham ustunlari
@@ -4943,6 +4948,7 @@ Size,
 Skip Reason,O'tkazib yuborish sababi
 Skip reason is required when status is Skipped.,Status O'tkazib yuborilgan bo'lganda o'tkazib yuborish sababi talab qilinadi.
 Skipped,O'tkazib yuborilgan
+short {0} item(s),{0} ta pozitsiya yetmaydi
 skipped,o'tkazib yuborildi
 SLA,SLA
 Slip,Hisob varaqasi
