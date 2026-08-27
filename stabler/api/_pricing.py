@@ -41,3 +41,21 @@ def net_rate(rate, discount_percentage=0.0, discount_amount=0.0) -> float:
 	if amount > 0:
 		return max(gross - amount, 0.0)
 	return gross
+
+
+def gross_rate(rate, price_list_rate=0.0) -> float:
+	"""The line's pre-discount unit price — the inverse of `net_rate`.
+
+	`price_list_rate` is only the gross while it is the higher of the two. It is
+	zero on a line that never had a list price, and it sits BELOW `rate` on every
+	document written before this fix (rate = full price, list rate = the
+	FX-converted catalogue price a few units under it). In both cases `rate` is
+	the only honest gross, and trusting the lower number would quietly restate
+	the price of work already done.
+
+	The form states the same rule in public/js/composables/pricing.js. If the two
+	drift, the operator edits one price and the document bills another.
+	"""
+	net = float(rate or 0.0)
+	listed = float(price_list_rate or 0.0)
+	return listed if listed >= net else net

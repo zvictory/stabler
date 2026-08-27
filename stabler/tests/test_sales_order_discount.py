@@ -90,7 +90,7 @@ class TestTheWritePathAppliesTheDiscount(unittest.TestCase):
 	ENDPOINTS = ("create_sales_order", "update_sales_order")
 
 	def test_the_endpoints_use_the_shared_arithmetic(self):
-		self.assertIn("from stabler.api._pricing import net_rate", SALES_API)
+		self.assertRegex(SALES_API, r"from stabler\.api\._pricing import [\w, ]*\bnet_rate\b")
 		for name in self.ENDPOINTS:
 			with self.subTest(endpoint=name):
 				self.assertIn("net_rate(", _endpoint(name))
