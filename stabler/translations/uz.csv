@@ -2888,6 +2888,7 @@ Materials to Transfer,Ko'chiriladigan materiallar
 Materials transferred successfully!,
 Max CI Value (USD),Maksimal CI qiymati (USD)
 Maximum late deduction per day (0 = unlimited).,
+materials not transferred,materiallar berilmagan
 measure unit · fixed,o'lchov birligi · qat'iy
 Measurement columns,O'lcham ustunlari
 Measurements,O'lchamlar
@@ -5482,6 +5483,7 @@ Transit,Yo'lda
 Transit ETA,Tranzit ETA
 Transit ETA (Iran),Tranzit ETA (Eron)
 Transport,Transport
+transferred,berildi
 transport,transport
 Transport / day — City,Transport / kun — Shahar
 Transport / day — District,Transport / kun — Tuman

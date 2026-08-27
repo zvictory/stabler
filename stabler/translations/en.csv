@@ -3305,6 +3305,7 @@ Materials to Transfer,Materials to Transfer
 Materials transferred successfully!,Materials transferred successfully!
 Max CI Value (USD),Max CI Value (USD)
 Maximum late deduction per day (0 = unlimited).,Maximum late deduction per day (0 = unlimited).
+materials not transferred,materials not transferred
 measure unit · fixed,measure unit · fixed
 Measurement columns,Measurement columns
 Measurements,Measurements
@@ -5898,6 +5899,7 @@ Transit,Transit
 Transit ETA,Transit ETA
 Transit ETA (Iran),Transit ETA (Iran)
 Transport,Transport
+transferred,transferred
 transfers,transfers
 transport,transport
 Transport / day — City,Transport / day — City
