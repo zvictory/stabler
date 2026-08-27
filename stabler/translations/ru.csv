@@ -81,6 +81,7 @@ A valid veterinary certificate is required.,Требуется действую�
 "A ≤ {0}%, B ≤ {1}%, C rest — by spend.","A ≤ {0}%, B ≤ {1}%, C прочее — по расходам."
 "A ≤ {0}%, B ≤ {1}%, C rest — by {2}. Submitted; returns netted.","A ≤ {0}%, B ≤ {1}%, C прочее — по {2}. Проведённые; возвраты нетто."
 Add Material,Добавить материал
+All materials are already in WIP.,Все материалы уже переданы в цех.
 Already {0},Уже {0}
 AR balance per customer as of the selected date — click a row to see the ledger behind the balance.,"Дебиторская задолженность по каждому клиенту на выбранную дату — нажмите на строку, чтобы увидеть лежащий за ней регистр."
 Abbr,Сокр.
@@ -1855,6 +1856,7 @@ Enter at least one received line.,Введите хотя бы одну прин
 Enter at least one return qty.,Введите хотя бы одно количество возврата.
 Enter at least one transfer amount.,Введите хотя бы одну сумму перевода.
 Enter cost and term to see the payment schedule.,Введите себестоимость и срок для просмотра графика платежей.
+enough for {0},хватает на {0}
 enter password,введите пароль
 Enter protocol / authorization reason…,Введите номер протокола или причину…
 Enter the quantity to return for each line. Leave 0 to exclude a line.,"Введите количество возврата для каждой строки. Укажите 0, чтобы исключить строку."
@@ -2495,6 +2497,7 @@ Incremental Units,Дополнительные единицы
 Indicative only — shipments are tracked per category,Только справочно — отгрузки учитываются по категории
 Industry,Отрасль
 Inflow,Поступление
+in workshop,в цеху
 info,инфо
 inherited,унаследовано
 Inherited from the invoice header,Унаследовано из шапки инвойса
@@ -2881,6 +2884,7 @@ Marketing claim settlement for {0},Расчёт маркетинговой пр�
 Marketing Claims,Маркетинговые претензии
 Markup on cost,Наценка к себестоимости
 Match & reconcile,Сопоставить и сверить
+Materials,Материалы
 Materials cannot be transferred until both operator roles are assigned.,"Материалы нельзя передать, пока не назначены оба оператора."
 Materials cannot be written off per operator on this site yet. Switch on 'Allow Continuous Material Consumption' in Manufacturing Settings.,Списание материалов по операторам на этом сайте пока недоступно. Включите «Allow Continuous Material Consumption» в настройках производства.
 matched,совпало
@@ -2893,6 +2897,7 @@ Materials to Transfer,Материалы для перемещения
 Materials transferred successfully!,
 Max CI Value (USD),Макс. стоимость CI (USD)
 Maximum late deduction per day (0 = unlimited).,
+materials available,материалы есть
 materials not transferred,материалы не переданы
 measure unit · fixed,единица измерения · фиксирована
 Measurement columns,Колонки размеров
@@ -4948,6 +4953,7 @@ Size,
 Skip Reason,Причина пропуска
 Skip reason is required when status is Skipped.,"Причина пропуска требуется, когда статус — Пропущено."
 Skipped,Пропущено
+short {0} item(s),не хватает {0} позиций
 skipped,пропущено
 SLA,SLA
 Slip,Расчётный листок

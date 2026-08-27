@@ -5,6 +5,7 @@ import { useSession } from "../../stores/session.js";
 import { call } from "../../api/client.js";
 import { t } from "../../composables/i18n.js";
 import { workOrderProgress } from "../../composables/workOrderProgress.js";
+import { materialReadiness, stockKey } from "../../composables/materialReadiness.js";
 import { halfAssigned, roleLabel } from "../../composables/workOrderRoles.js";
 import { formatMoney } from "../../composables/money.js";
 import { formatDate, formatDateTime, todayIso} from "../../composables/date.js";
@@ -89,12 +90,52 @@ async function load() {
 			status: statusFilter.value || undefined,
 			limit: 100,
 		});
+		await loadStock();
 	} catch (err) {
 		error.value = err?.message || "Failed to load work orders.";
 	} finally {
 		loading.value = false;
 	}
 }
+
+// Shelf stock for every source warehouse the page's materials draw from, keyed
+// by `stockKey()`. One call per distinct warehouse rather than per row: a
+// hundred orders on an ice-cream floor draw from a handful of stores, so this
+// is two or three requests, not a hundred.
+const stock = ref({});
+
+async function loadStock() {
+	const byWarehouse = new Map();
+	for (const row of rows.value) {
+		for (const line of row.required_items || []) {
+			if (!line.source_warehouse || !line.item_code) continue;
+			if (!byWarehouse.has(line.source_warehouse)) byWarehouse.set(line.source_warehouse, new Set());
+			byWarehouse.get(line.source_warehouse).add(line.item_code);
+		}
+	}
+	const next = {};
+	await Promise.all(
+		[...byWarehouse].map(async ([warehouse, codes]) => {
+			try {
+				const levels = await call("stabler.api.inventory.get_items_stock", {
+					warehouse,
+					item_codes: JSON.stringify([...codes]),
+				});
+				for (const [item, qty] of Object.entries(levels || {})) {
+					next[stockKey(warehouse, item)] = qty;
+				}
+			} catch {
+				// A warehouse that would not answer leaves its items absent, and
+				// `materialReadiness` reports "unknown" for them rather than
+				// inventing a level. Failing the whole list over one store would
+				// hide the nineteen rows that are fine.
+			}
+		}),
+	);
+	stock.value = next;
+}
+
+const readiness = (r) => materialReadiness(r, stock.value);
 
 let searchTimer = null;
 function onSearchInput() {
@@ -633,6 +674,7 @@ async function saveWO(submitAfter) {
 							<th>{{ t("Finished good") }}</th>
 							<th>{{ t("Operators") }}</th>
 							<th style="width: 230px">{{ t("Progress") }}</th>
+							<th style="width: 180px">{{ t("Materials") }}</th>
 							<th>{{ t("Status") }}</th>
 						</tr>
 					</thead>
@@ -703,6 +745,25 @@ async function saveWO(submitAfter) {
 										{{ t("transferred") }} {{ progress(r).transferredPct }}%
 									</template>
 								</div>
+							</td>
+							<td>
+								<span
+									v-if="readiness(r).state === 'in_place'"
+									class="badge bg-green-lt"
+									:title="t('All materials are already in WIP.')"
+								>
+									{{ t("in workshop") }}
+								</span>
+								<span v-else-if="readiness(r).state === 'ready'" class="badge bg-green-lt">
+									<template v-if="readiness(r).unitsCovered !== null">
+										{{ t("enough for {0}", [formatQty(readiness(r).unitsCovered)]) }}
+									</template>
+									<template v-else>{{ t("materials available") }}</template>
+								</span>
+								<span v-else-if="readiness(r).state === 'short'" class="badge bg-orange-lt">
+									{{ t("short {0} item(s)", [readiness(r).shortCount]) }}
+								</span>
+								<span v-else class="text-secondary small">—</span>
 							</td>
 							<td><span class="badge" :class="statusBadge(r.status)">{{ statusLabel(r.status) }}</span></td>
 						</tr>

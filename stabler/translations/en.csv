@@ -99,6 +99,7 @@ A wrong code costs an attempt and eventually locks the transfer.,A wrong code co
 "A ≤ {0}%, B ≤ {1}%, C rest — by spend.","A ≤ {0}%, B ≤ {1}%, C rest — by spend."
 "A ≤ {0}%, B ≤ {1}%, C rest — by {2}. Submitted; returns netted.","A ≤ {0}%, B ≤ {1}%, C rest — by {2}. Submitted; returns netted."
 Add Material,Add Material
+All materials are already in WIP.,All materials are already in WIP.
 Already {0},Already {0}
 AR balance per customer as of the selected date — click a row to see the ledger behind the balance.,AR balance per customer as of the selected date — click a row to see the ledger behind the balance.
 Abbr,Abbr
@@ -272,6 +273,7 @@ Manager Cockpit,Manager Cockpit
 "Marked refunded, but the transfer names no refund journal entry.","Marked refunded, but the transfer names no refund journal entry."
 Master record and journal entries disagree,Master record and journal entries disagree
 Master ↔ journal entry difference,Master ↔ journal entry difference
+Materials,Materials
 Max pickup code attempts,Max pickup code attempts
 New Direct Sales Invoice,New Direct Sales Invoice
 Next step,Next step
@@ -2264,6 +2266,7 @@ Enter at least one received line.,Enter at least one received line.
 Enter at least one return qty.,Enter at least one return qty.
 Enter at least one transfer amount.,Enter at least one transfer amount.
 Enter cost and term to see the payment schedule.,Enter cost and term to see the payment schedule.
+enough for {0},enough for {0}
 enter password,enter password
 Enter protocol / authorization reason…,Enter protocol / authorization reason…
 Enter the quantity to return for each line. Leave 0 to exclude a line.,Enter the quantity to return for each line. Leave 0 to exclude a line.
@@ -2906,6 +2909,7 @@ Incremental Units,Incremental Units
 Indicative only — shipments are tracked per category,Indicative only — shipments are tracked per category
 Industry,Industry
 Inflow,Inflow
+in workshop,in workshop
 info,info
 inherited,inherited
 Inherited from the invoice header,Inherited from the invoice header
@@ -3305,6 +3309,7 @@ Materials to Transfer,Materials to Transfer
 Materials transferred successfully!,Materials transferred successfully!
 Max CI Value (USD),Max CI Value (USD)
 Maximum late deduction per day (0 = unlimited).,Maximum late deduction per day (0 = unlimited).
+materials available,materials available
 materials not transferred,materials not transferred
 measure unit · fixed,measure unit · fixed
 Measurement columns,Measurement columns
@@ -5359,6 +5364,7 @@ Size,Size
 Skip Reason,Skip Reason
 Skip reason is required when status is Skipped.,Skip reason is required when status is Skipped.
 Skipped,Skipped
+short {0} item(s),short {0} item(s)
 skipped,skipped
 SLA,SLA
 Slip,Slip

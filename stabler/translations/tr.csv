@@ -80,6 +80,7 @@ A valid veterinary certificate is required.,Geçerli bir veteriner sertifikası 
 "A ≤ {0}%, B ≤ {1}%, C rest — by spend.","A ≤ {0}%, B ≤ {1}%, C diğer — harcama bazında."
 "A ≤ {0}%, B ≤ {1}%, C rest — by {2}. Submitted; returns netted.","A ≤ {0}%, B ≤ {1}%, C diğer — {2} bazında. Onaylanmış; iadeler netleştirilmiş."
 Add Material,Malzeme ekle
+All materials are already in WIP.,Bütün malzemeler zaten cehte.
 Already {0},Zaten {0}
 AR balance per customer as of the selected date — click a row to see the ledger behind the balance.,"Seçilen tarih itibarıyla müşteri başına alacak — satıra tıklayın, bakiyenin ardındaki defteri görün."
 Abbr,Kısaltma
@@ -1847,6 +1848,7 @@ Enter at least one received line.,En az bir teslim alınan satır girin.
 Enter at least one return qty.,En az bir iade miktarı girin.
 Enter at least one transfer amount.,En az bir transfer tutarı girin.
 Enter cost and term to see the payment schedule.,Ödeme planını görmek için maliyet ve vadeyi girin.
+enough for {0},{0} adete yeter
 enter password,şifre girin
 Enter protocol / authorization reason…,Protokol no veya yetki nedenini girin…
 Enter the quantity to return for each line. Leave 0 to exclude a line.,Her satır için iade miktarını girin. Satırı dışarıda bırakmak için 0 bırakın.
@@ -2488,6 +2490,7 @@ Incremental Units,Artımlı Birimler
 Indicative only — shipments are tracked per category,Yalnızca bilgi amaçlı — sevkiyatlar kategori bazında izlenir
 Industry,Sektör
 Inflow,Giriş
+in workshop,cehte
 info,bilgi
 inherited,başlıktan
 Inherited from the invoice header,Fatura başlığından devralındı
@@ -2874,6 +2877,7 @@ Marketing claim settlement for {0},{0} için pazarlama talebi ödemesi
 Marketing Claims,Pazarlama Talepleri
 Markup on cost,Maliyete markup
 Match & reconcile,Eşleştir ve mutabık kıl
+Materials,Malzemeler
 matched,eşleşti
 Matched employee,
 Material,Malzeme
@@ -2886,6 +2890,7 @@ Materials to Transfer,Transfer Edilecek Malzemeler
 Materials transferred successfully!,
 Max CI Value (USD),Maks CI Değeri (USD)
 Maximum late deduction per day (0 = unlimited).,
+materials available,malzeme var
 materials not transferred,malzeme verilmedi
 measure unit · fixed,ölçü birimi · sabit
 Measurement columns,Ölçü sütunları
@@ -4939,6 +4944,7 @@ Size,
 Skip Reason,Atlama Nedeni
 Skip reason is required when status is Skipped.,Durum Atlandı olduğunda atlama nedeni zorunludur.
 Skipped,Atlandı
+short {0} item(s),{0} kalem eksik
 skipped,atlandı
 SLA,SLA
 Slip,Fiş
