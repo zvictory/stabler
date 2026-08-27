@@ -4,6 +4,7 @@ import { storeToRefs } from "pinia";
 import { useSession } from "../../stores/session.js";
 import { call } from "../../api/client.js";
 import { t } from "../../composables/i18n.js";
+import { workOrderProgress } from "../../composables/workOrderProgress.js";
 import { halfAssigned, roleLabel } from "../../composables/workOrderRoles.js";
 import { formatMoney } from "../../composables/money.js";
 import { formatDate, formatDateTime, todayIso} from "../../composables/date.js";
@@ -50,6 +51,8 @@ const statusLabel = (s) => statusLabels.value[s] || s || "";
 const statusOptions = computed(() =>
 	STATUSES.map((s) => ({ value: s, label: statusLabel(s) || t("All statuses") }))
 );
+
+const progress = (r) => workOrderProgress(r);
 
 const formatQty = (n, uom) => {
 	const v = Number(n || 0);
@@ -629,9 +632,7 @@ async function saveWO(submitAfter) {
 							<th>{{ t("Work Order") }}</th>
 							<th>{{ t("Finished good") }}</th>
 							<th>{{ t("Operators") }}</th>
-							<th class="text-end">{{ t("Planned") }}</th>
-							<th class="text-end">{{ t("Transferred") }}</th>
-							<th class="text-end">{{ t("Produced") }}</th>
+							<th style="width: 230px">{{ t("Progress") }}</th>
 							<th>{{ t("Status") }}</th>
 						</tr>
 					</thead>
@@ -676,9 +677,33 @@ async function saveWO(submitAfter) {
 									</span>
 								</div>
 							</td>
-							<td class="text-end font-monospace">{{ formatQty(r.qty) }}</td>
-							<td class="text-end font-monospace text-secondary">{{ formatQty(r.transferred_qty) }}</td>
-							<td class="text-end font-monospace text-blue">{{ formatQty(r.produced_qty) }}</td>
+							<td>
+								<div class="d-flex align-items-baseline gap-2">
+									<span class="font-monospace fw-semibold">{{ formatQty(r.produced_qty) }}</span>
+									<span class="text-secondary small font-monospace">/ {{ formatQty(r.qty) }}</span>
+									<span
+										class="ms-auto small fw-semibold"
+										:class="progress(r).donePct > 100 ? 'text-orange' : 'text-blue'"
+									>
+										{{ progress(r).donePct }}%
+									</span>
+								</div>
+								<div class="progress progress-sm mt-1">
+									<div
+										class="progress-bar"
+										:class="progress(r).donePct > 100 ? 'bg-orange' : 'bg-primary'"
+										:style="{ width: progress(r).barPct + '%' }"
+									></div>
+								</div>
+								<div class="text-secondary mt-1" style="font-size: 11px">
+									<template v-if="progress(r).nothingTransferred">
+										{{ t("materials not transferred") }}
+									</template>
+									<template v-else>
+										{{ t("transferred") }} {{ progress(r).transferredPct }}%
+									</template>
+								</div>
+							</td>
 							<td><span class="badge" :class="statusBadge(r.status)">{{ statusLabel(r.status) }}</span></td>
 						</tr>
 					</tbody>

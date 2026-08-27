@@ -2886,6 +2886,7 @@ Materials to Transfer,Transfer Edilecek Malzemeler
 Materials transferred successfully!,
 Max CI Value (USD),Maks CI Değeri (USD)
 Maximum late deduction per day (0 = unlimited).,
+materials not transferred,malzeme verilmedi
 measure unit · fixed,ölçü birimi · sabit
 Measurement columns,Ölçü sütunları
 Measurements,Ölçüler
@@ -5477,6 +5478,7 @@ Transit,Transit
 Transit ETA,Transit ETA
 Transit ETA (Iran),Transit ETA (İran)
 Transport,Ulaşım
+transferred,verildi
 transport,nakliye
 Transport / day — City,Ulaşım / gün — Şehir
 Transport / day — District,Ulaşım / gün — İlçe
