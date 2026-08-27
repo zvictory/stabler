@@ -1284,8 +1284,22 @@ def create_warehouse(
 	if not name:
 		frappe.throw("Warehouse name is required.")
 
-	if parent_warehouse and not frappe.db.exists("Warehouse", parent_warehouse):
-		frappe.throw(f"Unknown parent warehouse: {parent_warehouse}")
+	if parent_warehouse:
+		parent_company = frappe.db.get_value("Warehouse", parent_warehouse, "company")
+		if not parent_company:
+			frappe.throw(f"Unknown parent warehouse: {parent_warehouse}")
+		if parent_company != company:
+			# Existence was the only thing checked here, and ERPNext checks
+			# nothing at all — `Warehouse.validate()` just warns about multiple
+			# warehouse accounts. The nested-set update then files the node under
+			# whatever parent it was given, so a warehouse could carry one
+			# company while sitting in another's tree. Rollups walk the tree by
+			# lft/rgt, so its own company's group totals would never reach it.
+			frappe.throw(
+				_("Parent warehouse {0} belongs to {1}, not {2}.").format(
+					parent_warehouse, parent_company, company
+				)
+			)
 
 	if warehouse_type and not frappe.db.exists("Warehouse Type", warehouse_type):
 		frappe.throw(f"Unknown warehouse type: {warehouse_type}")
