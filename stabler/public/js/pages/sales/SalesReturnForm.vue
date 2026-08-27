@@ -133,7 +133,20 @@ function clearCustomer() {
 	form.value.price_list = "";
 }
 
-const searchItems = itemSearcher("sales", { warehouse: () => form.value.warehouse });
+/* `everStocked` is what makes this picker usable. Scoped to a warehouse,
+ * `list_items` normally keeps only items with stock in it — right when shipping,
+ * backwards here, because the goods are coming back INTO that warehouse and are
+ * not in it yet. On anjan's `Tayyor mahsulot - A`, where all 229 direct returns
+ * are booked, that hid 106 of the 243 returnable items: anything sold out could
+ * not be returned, and the search simply came up empty with nothing to explain
+ * why. Dropping the warehouse altogether would be worse — ERPNext values an
+ * incoming line from the last ledger entry in that same warehouse, so an item
+ * never stocked here would fail at submit on a missing valuation rate, after the
+ * whole credit note has been typed. */
+const searchItems = itemSearcher("sales", {
+	warehouse: () => form.value.warehouse,
+	everStocked: true,
+});
 
 function preferredSalesUom(meta) {
 	const preferred = meta.sales_uom || meta.default_uom || meta.stock_uom;
