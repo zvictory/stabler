@@ -324,6 +324,7 @@ One person cannot hold both operator roles on the same Work Order.,One person ca
 Only a Remittance Finance Manager can approve or reject a refund.,Only a Remittance Finance Manager can approve or reject a refund.
 Only a Remittance Finance Manager can set the GL accounts and desk mapping for a company.,Only a Remittance Finance Manager can set the GL accounts and desk mapping for a company.
 Only a manager can unlock a pickup code.,Only a manager can unlock a pickup code.
+Only an administrator can post to an earlier date.,Only an administrator can post to an earlier date.
 Only an open agreement can be terminated. {0} is {1}.,Only an open agreement can be terminated. {0} is {1}.
 Only the remittance desk can pay out a transfer.,Only the remittance desk can pay out a transfer.
 Only the remittance desk can request or complete a refund.,Only the remittance desk can request or complete a refund.
