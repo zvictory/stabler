@@ -5985,6 +5985,7 @@ undecided,не решено
 {0} would hold both roles here,{0} занял бы обе роли здесь
 "{0} · {1}: {2} boxes / {3} kg allocated, {4} boxes / {5} kg remaining","{0} · {1}: распределено {2} кор. / {3} кг, остаток {4} кор. / {5} кг"
 {0}: discount_amount cannot be negative,{0}: discount_amount не может быть отрицательным
+{0}: discount_amount must be less than the rate,{0}: discount_amount должен быть меньше rate
 {0}: discount_percentage must be between 0 and 100,{0}: discount_percentage должен быть между 0 и 100
 {0}: rate cannot be negative,{0}: rate не может быть отрицательным
 {amount} outstanding,{amount} к оплате

@@ -5980,6 +5980,7 @@ undecided,hal qilinmagan
 {0} would hold both roles here,{0} bu yerda ikkala rolni ham egallardi
 "{0} · {1}: {2} boxes / {3} kg allocated, {4} boxes / {5} kg remaining","{0} · {1}: {2} quti / {3} kg ajratilgan, qoldiq {4} quti / {5} kg"
 {0}: discount_amount cannot be negative,{0}: chegirma miqdori manfiy bo'lishi mumkin emas
+{0}: discount_amount must be less than the rate,{0}: discount_amount narxdan kichik bo'lishi kerak
 {0}: discount_percentage must be between 0 and 100,{0}: chegirma foizi 0 dan 100 gacha bo'lishi kerak
 {0}: rate cannot be negative,{0}: narx manfiy bo'lishi mumkin emas
 {amount} outstanding,{amount} qoldiq

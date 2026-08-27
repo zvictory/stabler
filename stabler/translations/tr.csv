@@ -5974,6 +5974,7 @@ undecided,karara bağlanmadı
 {0} would hold both roles here,{0} burada her iki rolü de üstlenirdi
 "{0} · {1}: {2} boxes / {3} kg allocated, {4} boxes / {5} kg remaining","{0} · {1}: {2} kutu / {3} kg tahsis edildi, kalan {4} kutu / {5} kg"
 {0}: discount_amount cannot be negative,{0}: discount_amount negatif olamaz
+{0}: discount_amount must be less than the rate,{0}: discount_amount rate'ten küçük olmalıdır
 {0}: discount_percentage must be between 0 and 100,{0}: discount_percentage 0 ile 100 arasında olmalıdır
 {0}: rate cannot be negative,{0}: rate negatif olamaz
 {amount} outstanding,{amount} bakiye

@@ -5980,6 +5980,7 @@ undecided,ҳал қилинмаган
 {0} would hold both roles here,{0} бу ерда иккала ролни ҳам эгалларди
 "{0} · {1}: {2} boxes / {3} kg allocated, {4} boxes / {5} kg remaining","{0} · {1}: {2} қути / {3} кг ажратилган, қолдиқ {4} қути / {5} кг"
 {0}: discount_amount cannot be negative,{0}: чегирма миқдори манфий бўла олмайди
+{0}: discount_amount must be less than the rate,{0}: discount_amount нархдан кичик бўлиши керак
 {0}: discount_percentage must be between 0 and 100,{0}: чегирма фоизи 0 ва 100 орасида бўлиши керак
 {0}: rate cannot be negative,{0}: нарх манфий бўла олмайди
 {amount} outstanding,{amount} қолдиқ
