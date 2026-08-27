@@ -12,9 +12,13 @@
 
 **Operatör:** Zafar. Prodüksiyon deploy'u her zaman açık onay gerektirir.
 
+**Geçiş kararı (2026-08-27, Zafar):** geçmiş iş emirlerine operatör atanmayacak.
+Özellik kesim tarihinden sonra açılan emirlerde başlar. Bu karar üç ön koşulun
+kapsamını da değiştirdi — ölçülmüş yeni kapsam her birinin başında.
+
 ---
 
-## Durum — kod tarafı hazır, deploy onayı bekliyor
+## Durum — kod deploy edildi, özellik uykuda
 
 2026-08-26 uçtan uca doğrulaması dört P0 bulmuştu; sonraki turlarda üç tane daha
 çıktı. 2026-08-27 itibarıyla aşağıdakilerin hepsi düzeltildi ve her biri
@@ -71,17 +75,51 @@ tamamlanmış olanı — ve ERPNext bitmiş emir için stub kurmayı reddettiği
 "ne tüketilmemiş kaldı" sorusu hep boş dönüyordu. Üç test yeşil tik verip hiçbir
 şey kanıtlamıyordu; arkasında payı kalan 13 emir duruyordu.
 
-### Hâlâ yapılmadı
+### Nerede duruyoruz — 2026-08-27
 
-- **Hiçbir şey push edilmedi.** Dal: `fix/wo-finish-posts-around-the-guard`.
-- Yalnız `genesis-test.local` üzerinde doğrulandı. Diğer siteler koşulmadı.
-- **Prodüksiyon deploy'u Zafar'ın açık onayını bekliyor.** Bir `bench restart`
-  tüm stabler tenant'larını aynı anda etkiler.
-- Aşağıdaki dört ön koşul **hâlâ geçerli** — hiçbiri kodla çözülmedi. Özellikle
-  Ön koşul 2: D2 guard'ı bozulmayı engelliyor, ayarı gereksiz kılmıyor. Ayar
-  kapalıyken rol bazlı düşüm zaten tümüyle reddediliyor, yani özellik çalışmıyor.
+- Dal `main`'e girdi (`4d2ff67`) ve **prodüksiyona deploy edildi.** v97/v98/v99
+  `patches.txt:101-103`.
+- **Ön koşul 1 kapandı** (site site ölçüldü). **Ön koşul 4 anjan'da zaten
+  sağlanmış** çıktı. **Ön koşul 2 ve 3 açık.**
+- Özellik anjan'da **hiç çalışmıyor, ve bu güvenli hâl:** `material_consumption`
+  kapalı olduğu sürece D2 guard'ı rol bazlı düşümü olan Finish'i tümüyle
+  reddediyor. Deploy edilmiş olmak kullanılıyor olmak değildir — bu dosyanın
+  baştaki uyarısı tam olarak buydu.
+- Duman testinin 11 adımının **hiçbiri canlıda koşulmadı**; hepsi `genesis-test`
+  verisi üzerinde ölçüldü.
 
-## Ön koşul 1 — Migrate
+## Geçiş kararı — yalnız yeni emirler
+
+**2026-08-27, Zafar.** Geçmiş iş emirlerine operatör atanmayacak.
+
+Sonuçları:
+
+- **Geriye dönük doldurma yok.** 3741 tamamlanmış emir operatörsüz kalır ve öyle
+  kalmalı. Sapma paneli onlar için anlamlı değil; okunmamalı.
+- **Sapma paneli kesim tarihinden itibaren okunur.** Panelin iki-operatör ekseni
+  ancak iki rolün de atandığı emirlerde vardır.
+- **Ön koşul 3'ün kapsamı 866'dan 81'e indi** (aşağıda ölçüm).
+- **Arada kalan 31 emir: eski sayılmıyor.** *(Karar 2026-08-27, Zafar.)* anjan'da
+  31 adet gönderilmiş ama başlanmamış emir var; hepsi boş kabuk (transfer 0,
+  üretim 0). Bunlar **başlatıldıkları anda operatör alacak** — toplu geriye dönük
+  doldurma yok, iptal edip yeniden açma da yok. Atama `frappe.db.set_value` ile
+  yazıldığı için (`manufacturing.py:1616-1619`) gönderilmiş emre de yapılabilir;
+  `docstatus` kontrolü yok, o yüzden bu teknik olarak mümkün.
+
+  Sınır burada net olmalı: **"eski" = başlamış veya bitmiş emir**, "yeni" =
+  malzemesi henüz cehe verilmemiş emir. Kesim tarihi değil, emrin durumu
+  belirliyor. Sebebi: bir emre operatör atamak ancak o operatörün yazacağı bir
+  malzeme kaldıysa anlamlı; transferi çoktan yapılmış bir emirde atama, kimsenin
+  yazmadığı bir role isim yazmaktır ve sapma panelini yalancı yapar.
+
+## Ön koşul 1 — Migrate  ·  **kapandı (2026-08-27, ölçüldü)**
+
+Prod'daki 21 sitenin stabler kurulu olan 8'inde — `anjan, dts, horeca, laminor,
+mikas, msa, smartbox, zuma` — üç patch de Patch Log'da ve üç kolon da yerinde
+(`Work Order.packaging_operator`, `Work Order.custom_finish_draft`,
+`Item.custom_operator_role`). Kalan 13 sitede stabler kurulu değil; doğrulanacak
+bir şey yok. Aşağıdaki prosedür **yeni açılan siteler** için geçerliliğini
+koruyor.
 
 ```bash
 bench --site <site> migrate
@@ -105,6 +143,8 @@ bu doctype'ı taşımıyor ve doğrulanacak bir şey yok — bu bir başarısız
 ## Ön koşul 2 — `material_consumption` AÇIK olmalı
 
 `Manufacturing Settings` → **Allow Continuous Material Consumption**.
+anjan'daki güncel değer: **kapalı** (`material_consumption = 0`,
+`backflush_raw_materials_based_on = "BOM"`).
 
 **Bu opsiyonel bir tercih değil, doğruluk şartı.** ERPNext bu ayar kapalıyken
 `stock_entry.py` içinde `get_unconsumed_raw_materials` yerine
@@ -117,11 +157,113 @@ kapatıldı, finish edildi → `consumed_qty 40 / 20`, `required_qty 20 / 10`. S
 paneli iki operatörü de yapmadıkları %100 aşımla suçladı. Ayar açık bırakılan
 kontrol grubu temiz çıktı.
 
+### 2026-08-27 — anjan'ın verisiyle runbook'un çeliştiği yer çözüldü
+
+Çelişki şuydu: genesis-test'te anjan ile birebir ayarlarla, ayar kapalıyken
+kısmi transfer tam BOM tüketimi üretiyordu (150 transfer → 200 tüketim), ama
+anjan'ın canlı verisinde tüketim transfere eşitti — üstelik Finish fişlerinde
+BOM'da hiç olmayan malzemeler vardı.
+
+Popülasyon ölçümü — anjan, son 90 gün, Manufacture fişi olan **2010** iş emri:
+
+| Ölçüm | Sonuç |
+|---|---|
+| Finish'ten önce transfer yapılmayan emir | **0 / 2010** |
+| Tüketim = transfer (kalem kalem, miktar miktar) | **1919** (%95,5) |
+| Tüketim ≠ transfer | **91** (%4,5) |
+| Transfer edilmemiş bir kalemin Finish'te görünmesi | **hiç** |
+| Transfer edilenden **fazla** tüketim | **hiç** |
+
+91 farkın hepsi aynı yönde: kalem kümeleri birebir aynı, yalnızca daha **az**
+tüketilmiş (45 → 40, 191 → 190, 1250 → 125). Yani artan malzeme, BOM'a tırmanma
+değil.
+
+Açıklama: anjan **her zaman önce transfer ediyor**, ve Finish fişi BOM'u değil
+**transferi** yansıtıyor — operatörün yaptığı ikameler dahil. `MFG-WO-2026-04161`
+bunun temiz örneği: BOM'daki R043/R049/R097 yerine R013/R251/r256/"masla Axirin"
+transfer edilmiş, Finish tam o dördünü tüketmiş. `consumed_qty`'yi ikiye katlayan
+BOM'dan-listeleme yolu, anjan'ın bugün kullandığı akışta **hiç uğranmıyor.**
+
+**Geriye kalan gerçek bilinmeyen:** o 2010 emrin hiçbirinde rol bazlı tüketim
+fişi yok — o fişler özelliğin kendisiyle geliyor. Ayar kapalıyken "rol bazlı
+düşüm + Finish" kombinasyonunun anjan'da ne yapacağı hâlâ ölçülmedi. Ama bu
+kombinasyonu D2 guard'ı zaten reddediyor, yani sessizce bozulamaz.
+
+### Nasıl kapatılır — artık veritabanı kopyası gerekmiyor
+
+Önceki plan "anjan DB'sinin bir kopyası üzerinde A/B" idi ve bu yüzden bloke
+duruyordu. "Yalnız yeni emirler" kararı testi ucuzlattı, çünkü ayarı açmanın
+çarpma alanı ölçülebilir hâle geldi:
+
+| anjan iş emri durumu | Adet | Ayardan etkilenir mi |
+|---|---|---|
+| Completed / Cancelled / Closed | 4171 | hayır — kapalı |
+| Not Started (transfer 0, üretim 0) | 31 | hayır — boş kabuk |
+| Draft | 6 | hayır — gönderilmemiş |
+| **In Process, malzeme cehte** | **1** | **evet** |
+
+Havadaki tek emir: `MFG-WO-2026-01168` (`Smes NONLI STAKAN`, 2500 transfer
+edilmiş, 2026-04-27'den beri `produced_qty = 0`). Dört aydır hareketsiz.
+
+### Ne yapıldı — 2026-08-27 17:53
+
+Ayar **açıldı** (`material_consumption 0 → 1`, anjan; `Manufacturing Settings`
+`modified = 2026-08-27 17:53:25`). Zafar'ın açık onayıyla ve komutu Zafar
+çalıştırarak — prod'a yazma ajana kapalı.
+
+Planın iki adımı **bilerek atlandı**, ikisi de yazmayı azaltmak için:
+
+- **Sentetik test emri oluşturulmadı.** İlk plan "tek bir yeni emri baştan sona
+  koştur" diyordu. Bu, canlı stok defterine sahte hareket yazmak demek; iptal
+  edilse bile iptal edilmiş belge ve değerleme izi kalır. Gerek de yok: anjan
+  günde ~18 emir açıyor ve 7 günlük ortalamayla **saatte 0,69 Manufacture fişi**
+  gönderiyor — yani ~1,5 saatte bir. **Bir sonraki gerçek emir testin kendisi.**
+- **`MFG-WO-2026-01168` kapatılmadı.** Kapatmak 2500 birimi yarı mamulde asılı
+  bırakır; bu muhasebe sonucu olan bir iş kararı, teknik bir adım değil. Ölçüm de
+  gerektirmiyor: transfer = BOM olduğu için o emir bir gün bitirilirse ayar açık
+  da kapalı da olsa aynı miktarı tüketir.
+
+### Doğrulama — açık uç
+
+Ayar açıldıktan sonra **biten ilk emirler** şu üç ölçüte karşı okunacak; taban
+çizgisi yukarıdaki 2010 emirlik tablo:
+
+| Ölçüt | Taban (ayar kapalıyken) | Bozulursa |
+|---|---|---|
+| Tüketim = transfer | 1919 / 2010 | ayarı geri kapat |
+| Finish'te transfer edilmemiş kalem | **hiç** | ayarı geri kapat |
+| Transfer edilenden fazla tüketim | **hiç** | ayarı geri kapat |
+
+Geri alma tek komut — aynı `set_value` çağrısında `1` yerine `0`, ardından
+`bench --site anjan.erpstable.com clear-cache`.
+
+Üçü de bozulmazsa Ön koşul 2 kapanır ve sıra Ön koşul 3'e geçer.
+
 Ayar **kapalı olarak geliyor.** Yeni bir tenant'ta ilk yapılacak iş bu.
 
 ## Ön koşul 3 — Item rolleri doldurulmalı
 
 `Item.custom_operator_role` → `Production` (döküm) veya `Packaging` (paketleme).
+
+**Durum 2026-08-27: 866 aktif kalemin 0'ında dolu.**
+
+"Yalnız yeni emirler" kararı kapsamı küçültüyor — geçmişte kullanılıp artık
+üretilmeyen kalemin rolüne gerek yok. Ölçülmüş kümeler (anjan):
+
+| Küme | Adet |
+|---|---|
+| Aktif kalem kataloğu | 866 |
+| Tüm zamanlarda WO'da tüketilmiş ayrık kalem | 394 |
+| Son 90 günde tüketilmiş ayrık kalem | 324 |
+| Son 30 günde üretilen 132 ürünün BOM'larındaki ayrık kalem | 230 |
+| **Şu an açık 32 emrin BOM'larındaki ayrık kalem** | **81** |
+
+Yani "başlamak için 866 satır" değil, **81 satır** — tek bir ürün hattıyla
+başlanacaksa daha da az. 31 emrin eski sayılmaması kararı (yukarıda) bu 81'i
+**başlangıç kümesi olarak sabitliyor**: rolü doldurulması gereken ilk şey, o
+emirler başlatıldığında karşılaşılacak kalemler. Rol alanı `frappe.db.set_value` ile yazıldığı için
+gönderilmiş emirlerde de doldurulabilir; hepsini önden doldurmak şart değil,
+ürün ürün genişletilebilir.
 
 v98 bilerek **hiçbir varsayılan atamadı ve hiçbir şey doldurmadı.** Sebebi
 patch'in kendi docstring'inde yazılı: bu bilgi veritabanında yok, sahadaki
@@ -138,6 +280,29 @@ sessiz bir hata değil, görünür bir eksik.
 **Karar (2026-08-26, Zafar):** vardiya amiri hem `Manufacturing Manager` hem
 `Manufacturing User` rolünü alır.
 
+**Durum 2026-08-27: kapandı — sekiz tenant'ın hepsi ölçüldü, hepsi temiz.**
+`Manufacturing Manager` rolü taşıyıp `Manufacturing User` taşımayan **aktif
+kullanıcı hiçbir sitede yok.**
+
+| Site | Mfg Manager | Eksik rol | Work Order |
+|---|---|---|---|
+| anjan | 15 | 0 | 4181 |
+| dts | 4 | 0 | 0 |
+| horeca | 2 | 0 | 0 |
+| laminor | 2 | 0 | 0 |
+| mikas | 5 | 0 | 0 |
+| msa | 6 | 0 | 0 |
+| smartbox | 4 | 0 | 0 |
+| zuma | 3 | 0 | 0 |
+
+Sağ kolon ayrıca şunu söylüyor: **üretim modülünü bugün fiilen yalnız anjan
+kullanıyor** — diğer yedi tenant'ta tek bir iş emri bile yok. Bu özelliğin
+risk yüzeyi tek tenant. `Manufacturing Settings` zaten site başına ayrı olduğu
+için Ön koşul 2'deki ayar denemesi de yalnız anjan'ı etkiler.
+
+Yeni açılan tenant'ta bu kontrol yine yapılmalı — rol dağılımı devralınan bir
+şey değil.
+
 Sebep: `_is_mfg_manager()` `Manufacturing Manager` rolünü kabul ediyor, ama
 ERPNext'in Work Order DocPerm'inde o rol için write yetkisi **yok** — write
 `Manufacturing User`'a verilmiş. Sadece `Manufacturing Manager` taşıyan biri
@@ -151,6 +316,11 @@ tenant'ı birden etkileyeceği için reddedildi.
 ---
 
 ## Deploy sonrası duman testi
+
+**Sıra bağımlılığı — bozmayın.** Adım 1–4 Ön koşul 3 doldurulmadan koşulamaz:
+hiçbir kalemin rolü yokken 4. adım kesin başarısız olur, çünkü her satır
+operatörün değil vardiya amirinin listesine düşer. Adım 5–11 ayrıca Ön koşul
+2'yi bekler. Duman testinin tamamı bu iki ön koşula bağlı.
 
 Onay geldiğinde, canlıda şu sırayla:
 
@@ -191,7 +361,8 @@ ham süt mamul deposuna giriyor demektir.
 ## Bloke — bunlar anjan'dan veri bekliyor
 
 Kod tarafı değil. `docs/uat/2026-08-24-wo-two-operators/faz0-anjan-anketa.md`
-anketi **henüz gönderilmedi** (2026-08-26).
+anketi **2026-08-27 itibarıyla hâlâ gönderilmedi.** Блок 1 (цеха/линии) cevapsız,
+цех/линия/смена kolonları boş.
 
 - **Duruş sebepleri kataloğu** — mockup'taki 16 kod uydurma. Gerçek liste anketle
   gelecek.
