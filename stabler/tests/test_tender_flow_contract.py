@@ -179,8 +179,33 @@ class TestWhatTheDecisionStillNeeds(unittest.TestCase):
 		self.assertIsNotNone(item_search, "çekmece itemSearcher kullanmalı")
 		self.assertNotIn("warehouse", item_search.group(1))
 
-		# 3) Çekmece bağlama: Tender CRM yeni ihale için :deal="null" geçer.
-		self.assertIn(':deal="null"', CRM)
+		# 3) Çekmece bağlama: tek çekmece hem "yeni" hem "düzenle" yolunu
+		#    karşılıyor (adb69d3), o yüzden `:deal="null"` literali artık yok —
+		#    bağlama bir ref üzerinden geçiyor. Pinlenen şey yazım değil kural:
+		#    YENİ ihale düğmesi çekmeceyi açmadan ÖNCE o ref'i null'a çekmeli.
+		#    Çekmediği an, bir ihaleyi düzenleyip kapatan kullanıcı "Yeni ihale"ye
+		#    bastığında formu dolu buluyor ve düzenlediği ihalenin üstüne yazıyor.
+		#    f32561e aynı hatayı iptal yolundan kapatmıştı; düzenleme yolu onu
+		#    geri getirebilecek ikinci kapı.
+		#
+		#    Bu iddia 2026-08-15'ten 2026-08-28'e kadar kırmızıydı ve kimse
+		#    görmedi: bu modül `.github/frappe-free-tests.txt` içinde değil,
+		#    yani `make check` onu hiç çalıştırmıyor.
+		bind = re.search(r"<TenderMasterDrawer\b(.*?)/>", CRM, re.S)
+		self.assertIsNotNone(bind, "Tender CRM TenderMasterDrawer'ı render etmeli")
+		deal_prop = re.search(r':deal="([A-Za-z_$][\w$]*)"', bind.group(1))
+		self.assertIsNotNone(deal_prop, "çekmeceye :deal bağlanmalı")
+		source = deal_prop.group(1)
+		self.assertIn(
+			"const %s = ref(null)" % source,
+			CRM,
+			"%s null ile başlamalı — ilk açılış yeni ihaledir" % source,
+		)
+		self.assertRegex(
+			CRM,
+			r"%s\s*=\s*null\s*;[^\"]*masterDrawerOpen\s*=\s*true" % re.escape(source),
+			"'Yeni ihale' çekmeceyi açmadan önce %s'i null'a çekmeli" % source,
+		)
 
 		# 4) Seçim görünmeli. Typeahead düzenlenebilir kutu ile seçili değeri
 		#    `modelValue` üzerinden ayırır (`hasSelection`), ve `display`
