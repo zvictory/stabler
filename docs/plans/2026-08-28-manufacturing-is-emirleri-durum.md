@@ -16,7 +16,7 @@ gerektiriyordu. Buradaki her satır 27–28 Ağustos'ta ya kodda ya prod'da öl�
 |---|---|---|
 | **1a** Yoğun vardiya defteri | KISMEN | `WorkOrders.vue:361` — tek filtre: durum. Tarih / hat / operatör filtresi yok, yoğunlaştırma uygulanmadı. |
 | **1b** Kanban panosu | YOK | `pages/manufacturing/` altında kanban dosyası yok. |
-| **1c** Hat × zaman planlama | KISMEN | Backend canlı: `hooks.py:429` → `manufacturing.create_material_request_for_tomorrow_wo`; anjan'da **488 malzeme talebi** üretmiş. **Planlama ekranı yok.** |
+| **1c** Hat × zaman planlama | **YOK** | Backend kayıtlı (`hooks.py:429` → `manufacturing.create_material_request_for_tomorrow_wo`) ama **hiç kayıt üretmemiş** — aşağıya bakınız. Planlama ekranı da yok. |
 | **1d** Tam sayfa sipariş detayı | KISMEN | `WorkOrderDetail.vue` var (`4bc87d6`). Soyağacı tek blok: `:462-484` parti no + tüketilen malzeme listesi — **ağaç görünümü yok**. `suggest_wo_batch` bu sayfada değil, yalnız kioskta (`ManufacturingOperatorBoard.vue:644`). |
 | **1e** Operatör kiosk 2.0 | VAR | `ManufacturingOperatorBoard.vue` (1 652 satır), numpad `292574a`. |
 | — **Operasyon kartları** | **ÖLÜ** | Ölçümle iptal, aşağıya bakınız. |
@@ -32,6 +32,37 @@ Bunun yerine kartlar, bu atölyenin gerçekten sahip olduğu ayrıştırmayı g�
 iki farklı iş yapan iki kişi (döküm ve paketleme), BOM rolle bölünmüş, rol başına bir
 sapma kovası. Gerekçe kodda da duruyor: `composables/workOrderStages.js:1-12`.
 
+## 1c düzeltmesi — "488 malzeme talebi" yanlıştı
+
+Bu dokümanın ilk sürümü 1c'yi KISMEN sayıyordu, gerekçesi "backend canlı, anjan'da
+488 malzeme talebi üretmiş"ti. **Yanlış.** 488, anjan'daki *toplam* Material Request
+sayısı; hook'un ürettiği sayı değil.
+
+Doğru ölçüm hook'un kendi imzasından okunur. `manufacturing.py`'de hook, oluşturduğu
+her talebe `mr.work_order = doc.name` yazar — mükerrer üretimi o alandan engelliyor.
+28.08, anjan, salt-okunur:
+
+| Ölçüm | Değer |
+|---|---|
+| Material Request toplam | 488 |
+| …`work_order` alanı dolu (**hook imzası**) | **0** |
+| Tipe göre: Material Transfer / Purchase / Manufacture | 475 / 12 / 1 |
+| 475 Material Transfer'ın sahipleri | 6 gerçek kullanıcı hesabı, `Administrator` **0** |
+
+Yani **hook anjan'da tek bir malzeme talebi üretmemiş.** 488'in tamamı elle girilmiş
+(en eskisi 2026-03-14, en yenisi bugün 09:07). İki sebep birlikte çalışıyor: hook
+yalnız `planned_start_date >= yarın` ise ateşliyor (`manufacturing.py:2117-2118`) ve
+emirlerin çoğu aynı gün açılıyor; ayrıca `mr.material_request_type` 2026-08-26'ya
+kadar geçersiz bir değer (`"Transfer"`) taşıyordu, yani `insert` patlıyordu — D8'in
+kendi yorumu bunu anlatıyor (`manufacturing.py:2128-2133`). Düzeltme iki gün önce
+girdi ve o günden bu yana da tek kayıt üretmedi.
+
+Bu, 1c'nin durumunu KISMEN'den **YOK**'a taşır: ne ekran var, ne de backend'in
+ürettiği bir şey.
+
+Ara ölçüm olarak "hook'un gerçek payı 475" de yanlıştı — 475 sayısı MR *tipini*
+sayıyor, hook imzasını değil.
+
 ## Prod ölçümleri (anjan, salt-okunur, 27–28.08)
 
 | Ölçüm | Değer | Ne söylüyor |
@@ -40,9 +71,12 @@ sapma kovası. Gerekçe kodda da duruyor: `composables/workOrderStages.js:1-12`.
 | …`process_loss_qty > 0` | **0** | fire hiç kaydedilmiyor |
 | Downtime Entry | **0** | duruş hiç kaydedilmiyor |
 | Workstation / WO Op / BOM Op / Job Card | **0 / 0 / 0 / 0** | rota katmanı hiç kullanılmıyor |
-| Gönderilmiş iş emri | 3 787 | |
+| Gönderilmiş iş emri | 3 789 | 28.08 öğleden sonra; sabah 3 787'ydi — sayı akıyor |
 | …`operator` atanmış | 13 | |
 | …`packaging_operator` atanmış | **0** | rol ataması pratikte kullanılmıyor |
+| `Material Consumption for Manufacture` fişi | **0** | rol bazlı tüketim yolu hiç kullanılmamış (her docstatus) |
+| Aktif kalem / `custom_operator_role` dolu | 866 / **0** | iki-operatör ön koşulu 3 hâlâ açık |
+| Hook'un ürettiği Material Request | **0** | yukarıdaki 1c düzeltmesi |
 | Girişleri yapan ilk iki hesap | 3 688 / 3 725 | iş, operatör ekranından değil **Desk'ten yönetici eliyle** giriliyor |
 
 ## Bu turda kapanan iş
