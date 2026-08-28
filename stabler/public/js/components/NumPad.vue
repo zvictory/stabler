@@ -14,11 +14,15 @@
  *     buffer parseable (one decimal point, no bare ".", no leading zero) hold
  *     wherever this component is used.
  */
-import { applyNumpadKey } from "../composables/numpad.js";
+import { applyNumpadKey, sanitizeNumeric } from "../composables/numpad.js";
 import { t } from "../composables/i18n.js";
 
 const props = defineProps({
 	modelValue: { type: String, default: "" },
+	// The whole quantity this pad can be filled with in one tap — the caller's
+	// knowledge, not the pad's. Empty means there is nothing to fill and no key
+	// is drawn: a key that does nothing teaches operators to distrust the pad.
+	fill: { type: String, default: "" },
 });
 const emit = defineEmits(["update:modelValue"]);
 
@@ -27,6 +31,12 @@ const emit = defineEmits(["update:modelValue"]);
 const KEYS = ["7", "8", "9", "4", "5", "6", "1", "2", "3", ".", "0", "back"];
 
 const press = (key) => emit("update:modelValue", applyNumpadKey(props.modelValue, key));
+
+// Replaces the buffer rather than extending it. Routed through applyNumpadKey a
+// half-typed "500" plus a 1 360 balance would post 5001360.
+function fillAll() {
+	emit("update:modelValue", sanitizeNumeric(props.fill));
+}
 </script>
 
 <template>
@@ -41,6 +51,15 @@ const press = (key) => emit("update:modelValue", applyNumpadKey(props.modelValue
 		>
 			<i v-if="key === 'back'" class="ti ti-backspace"></i>
 			<template v-else>{{ key }}</template>
+		</button>
+		<button
+			v-if="fill"
+			type="button"
+			class="btn btn-outline-primary fw-semibold numpad-fill"
+			@click="fillAll"
+		>
+			{{ t("All") }}
+			<span class="d-block small fw-normal font-monospace">{{ fill }}</span>
 		</button>
 		<button
 			type="button"
@@ -62,6 +81,7 @@ const press = (key) => emit("update:modelValue", applyNumpadKey(props.modelValue
 .numpad .btn {
 	height: 64px;
 }
+.numpad-fill,
 .numpad-clear {
 	grid-column: 1 / -1;
 	height: 48px;

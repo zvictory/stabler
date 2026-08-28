@@ -1445,7 +1445,14 @@ const sortedRows = computed(() => {
 								 locked-down kiosk it is a coin toss whether the OS offers a
 								 keyboard at all. Tapping a field above aims the pad at it. -->
 							<div class="mb-2">
-								<NumPad v-model="numBuffer" />
+								<!-- "All" fills the planned remainder, the end-of-shift case, in one
+									 tap instead of four gloved digits. Good output only: "all of it
+									 was scrap" is not a sensible default, and offering it there
+									 invites a mis-tap that writes off a whole order. -->
+								<NumPad
+									v-model="numBuffer"
+									:fill="numTarget === 'produced' ? String(remainingQty(finishTarget) || '') : ''"
+								/>
 							</div>
 
 							<div class="border-top pt-3 mt-3">

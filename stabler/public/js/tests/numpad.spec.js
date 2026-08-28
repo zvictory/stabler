@@ -67,6 +67,7 @@ const board = readFileSync(
 	resolve(here, "../pages/manufacturing/ManufacturingOperatorBoard.vue"),
 	"utf8",
 );
+const pad = readFileSync(resolve(here, "../components/NumPad.vue"), "utf8");
 
 describe("operator board quantity entry", () => {
 	// The terminal is wall-mounted and operated with gloves. A native number
@@ -92,5 +93,37 @@ describe("operator board quantity entry", () => {
 
 	it("routes the numpad to whichever quantity the operator tapped", () => {
 		expect(board).toMatch(/numTarget/);
+	});
+});
+
+// Finishing the planned remainder is the most common thing an operator does at
+// the end of a shift, and it is a four-digit number typed with a gloved finger.
+// The source design puts a "Всё" key in the pad for exactly this and captions it
+// "остаток по заказу: 1 360 · нажмите «Всё»".
+describe("the fill key", () => {
+	it("offers one tap for the whole remaining balance", () => {
+		expect(pad).toMatch(/props\.fill/);
+		expect(board).toMatch(/<NumPad[^>]*:fill=/s);
+	});
+
+	// It REPLACES the buffer. Routed through applyNumpadKey it would concatenate,
+	// so a half-typed "500" plus the balance would post 5001360.
+	it("replaces what was typed instead of appending to it", () => {
+		const fillHandler = pad.match(/function fill[\s\S]{0,200}?\n}/) || [""];
+		expect(pad).toMatch(/sanitizeNumeric\(/);
+		expect(fillHandler[0]).not.toMatch(/applyNumpadKey/);
+	});
+
+	// A key that does nothing teaches operators to distrust the whole pad, and
+	// the pad itself cannot know a balance — the caller supplies it or there is
+	// no key.
+	it("does not render a dead key when there is nothing to fill", () => {
+		expect(pad).toMatch(/v-if="fill"/);
+	});
+
+	// "All of it was scrap" is not a sensible one-tap default; offering it there
+	// invites a mis-tap that writes off a whole order.
+	it("is offered for good output only, never for scrap", () => {
+		expect(board).toMatch(/numTarget === 'produced' \\?/);
 	});
 });
