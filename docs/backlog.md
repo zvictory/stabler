@@ -48,6 +48,37 @@ bazlı etkinlik bayrağını okusun (`push()`'un içindeki `onec_mode` okumasın
 aynısı, bir kat yukarıda). Önce kırmızı test: kapalı entegrasyonda gönderilen bir
 faturanın `frappe.enqueue`'yu hiç çağırmadığını pinle.
 
+#### Güncelleme 2026-08-28 akşamı — prod'da ölçüldü, ve sanılandan kötü
+
+İlk kayıt bunu bir test kapısı sorunu gibi okuyordu. **Prod'da ölçüldü ve bir
+üretim arızası:**
+
+| Ölçüm (prod, salt-okunur, 28.08) | Değer |
+|---|---|
+| anjan · `EHF Submission` satırı | **8 576** |
+| …durumu `Error` olan | **8 576** (yani hepsi) |
+| …bugüne kadar başarılı olan | **0** |
+| hepsinin hata metni | `build/sign failed: EIMZO endpoint not configured. Set eimzo_endpoint in site_config.json or enable ehf_stub_signature` |
+| zaman aralığı | 2026-05-30 17:35 → **28.08 19:28** (bugün) |
+| son 7 gün | **481** |
+| msa / mikas / dts | 790 / 1 / 0 — üçünde de **hepsi `Error`** |
+| `1C Sync Log` tablosu | dört sitenin **hiçbirinde yok** |
+
+Yani hiç yapılandırılmamış bir entegrasyon, üç aydır, her fatura gönderiminde bir
+arka plan işi üretiyor, bir belge yazıyor, başarısız oluyor ve hatayı saklıyor —
+anjan'da günde ~70 satır, ve hâlâ akıyor. Kimse fark etmedi çünkü arıza sessiz:
+`submit_for_invoice` istisnayı yakalayıp belgeye yazıyor, log'a değil.
+
+**Anahtar yok.** `onec_mode` bir `file|rest` seçimi (varsayılan `file`), açma/kapama
+değil; EHF'te hiçbir bayrak yok. Yani iki entegrasyon da sekiz kiracının hepsinde
+koşulsuz açık.
+
+Ayrıca: `make test-bench` bir koşuda `long` kuyruğuna **75 iş** ekliyor (ilk
+kayıttaki ~150 fazlaydı; 28.08'de boş kuyruktan tek koşu ölçüldü). 650 sınırına
+dokuz koşuda varılıyor, ve o noktada kapı altı ilgisiz modülle birlikte kırılıyor.
+28.08'de bu ikinci kez oldu; kuyruk yine elle boşaltıldı (650 → 0, hepsi
+`genesis-test.local` test işi).
+
 
 ### UZEX poller sekiz kiracıda saatlik koşuyor ve yapısal olarak hiçbir şey üretemiyor
 `hata` · ölçüldü 2026-08-28, prod, salt-okunur
