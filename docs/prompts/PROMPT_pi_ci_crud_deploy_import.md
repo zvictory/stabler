@@ -164,8 +164,9 @@ GÖSTER; silme listesinde kardeş dizin ya da `stable-erp-website/` görürsen D
 ```bash
 ssh ice-production 'chown -R frappe:frappe /home/frappe/frappe-bench/apps/stabler'
 ssh ice-production 'cd /home/frappe/frappe-bench && bench build --app stabler'
-ssh ice-production 'cd /home/frappe/frappe-bench && for s in anjan dts horeca laminor mikas msa smartbox; do
-  echo "=== $s ==="; bench --site "$s.erpstable.com" migrate 2>&1 | tail -3; done'
+ssh ice-production 'cd /home/frappe/frappe-bench && for s in $(ls sites | grep "\."); do
+  bench --site "$s" list-apps 2>/dev/null | grep -q "^stabler" || continue
+  echo "=== $s ==="; bench --site "$s" migrate 2>&1 | tail -3; done'
 ssh ice-production 'cd /home/frappe/frappe-bench && bench restart'
 ```
 

@@ -282,7 +282,7 @@ Push'tan sonra **durulur ve Zafar'dan açık onay istenir.** Onay geldikten sonr
    `frappe.db.table_exists`, çünkü doctype'ı olmayan sitede `has_column` istisna
    fırlatır ve eksik tablo "migrate atlandı" değil **"bu sitede geçerli değil"**
    demektir.
-5. Çeviri katalogları değiştiyse: yedi sitede `bench --site <s> clear-cache` ve
+5. Çeviri katalogları değiştiyse: her stabler sitesinde `bench --site <s> clear-cache` ve
    `_load_translations` üzerinden yeni bir anahtar geri okunur (Redis cache
    `stabler:translations:<lang>`, 3600 s — `bench restart` bunu temizlemez).
 6. Dokunulan her modülden bir kayıt formunda doğrudan URL yenileme smoke'u.

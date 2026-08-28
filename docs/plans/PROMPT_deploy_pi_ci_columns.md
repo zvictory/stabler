@@ -65,7 +65,7 @@ ssh ice-production 'cd /home/frappe/frappe-bench && bench build --app stabler'
 
 ## Adım 5 — restart
 
-`.py` değişti, bu yüzden restart **zorunlu**. 7 tenant'ta kısa kesinti olur —
+`.py` değişti, bu yüzden restart **zorunlu**. Her kiracıda kısa kesinti olur —
 düşük trafikli bir an seç.
 
 ```bash

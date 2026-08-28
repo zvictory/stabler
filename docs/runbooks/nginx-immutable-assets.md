@@ -66,10 +66,11 @@ yönlendirmesi çalışan yol.
 
 ```bash
 # 1. Hash'li bundle -> immutable GORUNMELI
-ssh ice-production 'for s in anjan dts horeca laminor mikas msa smartbox; do
-  printf "%-10s " $s
-  curl -skI --resolve $s.erpstable.com:443:173.212.195.32 \
-    https://$s.erpstable.com/assets/stabler/dist/js/stabler.bundle.TSCFYWAN.js \
+ssh ice-production 'cd /home/frappe/frappe-bench && for s in $(ls sites | grep "\."); do
+  bench --site "$s" list-apps 2>/dev/null | grep -q "^stabler" || continue
+  printf "%-28s " "$s"
+  curl -skI --resolve "$s:443:173.212.195.32" \
+    "https://$s/assets/stabler/dist/js/stabler.bundle.TSCFYWAN.js" \
     | grep -i "^cache-control" || echo "(YOK - HATA)"
 done'
 
@@ -78,10 +79,11 @@ ssh ice-production 'curl -skI --resolve anjan.erpstable.com:443:173.212.195.32 \
   https://anjan.erpstable.com/assets/stabler/js/vendor/apexcharts.min.js | grep -i "^cache-control"'
 # cikti bos olmali
 
-# 3. 7 kiracinin hepsi ayakta
-ssh ice-production 'for s in anjan dts horeca laminor mikas msa smartbox; do
-  curl -sko /dev/null -w "%{http_code} $s\n" --resolve $s.erpstable.com:443:173.212.195.32 \
-    https://$s.erpstable.com/api/method/ping; done'
+# 3. stabler kiracilarinin hepsi ayakta
+ssh ice-production 'cd /home/frappe/frappe-bench && for s in $(ls sites | grep "\."); do
+  bench --site "$s" list-apps 2>/dev/null | grep -q "^stabler" || continue
+  curl -sko /dev/null -w "%{http_code} $s\n" --resolve "$s:443:173.212.195.32" \
+    "https://$s/api/method/ping"; done'
 ```
 
 **`--resolve` IP'si `127.0.0.1` DEĞİL.** Conf'lar `listen 173.212.195.32:443`

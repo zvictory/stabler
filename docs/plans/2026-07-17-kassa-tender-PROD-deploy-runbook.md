@@ -2,7 +2,7 @@
 
 **You run this. I cannot SSH.** Prod is **not a git repo** — deploy is rsync of
 `apps/stabler/` from your local bench to `ice-production`. Shared app code → a
-change + restart takes effect on **all 6 stabler tenants at once** (anjan, dts,
+change + restart takes effect on **every stabler tenant at once** (anjan, dts,
 horeca, laminor, mikas, smartbox). The new behavior is gated (`enable_tender` +
 kassa bot `site_config`), so only Mikas actually lights up; the other 5 get the
 code, not the behavior.
@@ -94,13 +94,14 @@ ssh ice-production 'chown -R frappe:frappe /home/frappe/frappe-bench/apps/stable
 ssh ice-production 'cd /home/frappe/frappe-bench && bench build --app stabler'
 ```
 
-## 6. Migrate ALL 6 stabler tenants (patch v52 + doctype sync)
+## 6. Migrate EVERY stabler tenant (patch v52 + doctype sync)
 
 ```bash
-for S in anjan dts horeca laminor mikas smartbox; do
+ssh ice-production 'cd /home/frappe/frappe-bench && for S in $(ls sites | grep "\."); do
+  bench --site "$S" list-apps 2>/dev/null | grep -q "^stabler" || continue
   echo "=== migrate $S ==="
-  ssh ice-production "cd /home/frappe/frappe-bench && bench --site ${S}.erpstable.com migrate"
-done
+  bench --site "$S" migrate
+done'
 ```
 
 Spot-check on a secondary + on Mikas:

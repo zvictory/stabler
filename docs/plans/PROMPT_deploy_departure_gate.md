@@ -88,7 +88,7 @@ Ayrıca karar kaydı belgesi (`docs/plans/2026-07-23-msa-open-decisions.md`) ve
 - `Import Truck.departure_override` (Check)
 - `Import Truck.departure_override_reason` (Small Text)
 
-→ **`bench migrate` GEREKLİ ve 7 sitenin hepsinde çalıştırılmalı.** Patch
+→ **`bench migrate` GEREKLİ ve her stabler sitesinde çalıştırılmalı.** Patch
 idempotent; kolon eklemekten başka bir şey yapmıyor, veri yazmıyor.
 
 **Varsayılanın 1 olması bilinçli:** var olan bir beyanname önemli sayılır.
@@ -136,7 +136,7 @@ ssh ice-production 'chown -R frappe:frappe /home/frappe/frappe-bench/apps/stable
 ssh ice-production 'cd /home/frappe/frappe-bench && bench build --app stabler'
 ```
 
-## Adım 5 — migrate, 7 sitenin HEPSİ
+## Adım 5 — migrate, stabler sitelerinin HEPSİ
 
 `migrate` site bazlıdır; rsync ve restart bench genelinde. Atlanan sitede
 `required_for_departure` kolonu olmaz. Kod bunu tolere ediyor (o durumda **her**
@@ -144,8 +144,9 @@ beyannameyi zorunlu sayar, yani kapı daha sıkı çalışır, açılmaz) — am
 hepsini migrate et.
 
 ```bash
-ssh ice-production 'cd /home/frappe/frappe-bench && for s in anjan dts horeca laminor mikas msa smartbox; do
-  echo "=== $s ==="; bench --site "$s.erpstable.com" migrate 2>&1 | tail -4; done'
+ssh ice-production 'cd /home/frappe/frappe-bench && for s in $(ls sites | grep "\."); do
+  bench --site "$s" list-apps 2>/dev/null | grep -q "^stabler" || continue
+  echo "=== $s ==="; bench --site "$s" migrate 2>&1 | tail -4; done'
 ```
 
 Her site için sonucu göster.
@@ -156,17 +157,18 @@ Her site için sonucu göster.
 ssh ice-production 'cd /home/frappe/frappe-bench && bench restart'
 ```
 
-7 tenant'ta kısa kesinti — düşük trafikli bir an seç.
+Her kiracıda kısa kesinti — düşük trafikli bir an seç.
 
 ## Adım 7 — alanlar yerinde mi
 
 ```bash
-ssh ice-production 'cd /home/frappe/frappe-bench && for s in anjan dts horeca laminor mikas msa smartbox; do
-  printf "%-10s " "$s"; bench --site "$s.erpstable.com" execute frappe.db.has_column \
+ssh ice-production 'cd /home/frappe/frappe-bench && for s in $(ls sites | grep "\."); do
+  bench --site "$s" list-apps 2>/dev/null | grep -q "^stabler" || continue
+  printf "%-28s " "$s"; bench --site "$s" execute frappe.db.has_column \
     --kwargs "{\"doctype\":\"Customs Declaration\",\"column\":\"required_for_departure\"}" 2>&1 | tail -1; done'
 ```
 
-Yedisi de `True` dönmeli.
+Listelenen her site `True` dönmeli.
 
 ## Adım 8 — kapıyı canlıda doğrula (msa)
 

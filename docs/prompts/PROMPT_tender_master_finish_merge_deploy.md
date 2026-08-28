@@ -294,8 +294,9 @@ ssh ice-production 'cd /home/frappe/frappe-bench && bench build --app stabler'
 ## 5.3 Migrate — 7 SİTENİN HEPSİ (yeni doctype + v61 patch var)
 
 ```bash
-ssh ice-production 'cd /home/frappe/frappe-bench && for s in anjan dts horeca laminor mikas msa smartbox; do
-  echo "=== $s ==="; bench --site "$s.erpstable.com" migrate 2>&1 | tail -4; done'
+ssh ice-production 'cd /home/frappe/frappe-bench && for s in $(ls sites | grep "\."); do
+  bench --site "$s" list-apps 2>/dev/null | grep -q "^stabler" || continue
+  echo "=== $s ==="; bench --site "$s" migrate 2>&1 | tail -4; done'
 ssh ice-production 'cd /home/frappe/frappe-bench && bench restart'
 ```
 
@@ -342,5 +343,5 @@ step 5.1'deki tar'ı geri yükle → `chown` → `bench build` → `bench restar
 - Rebase deneme (K3) — merge.
 - Çeviri CSV'lerini toptan yeniden yazma (CRLF!).
 - Frappe v16'da string SELECT içinde SQL fonksiyonu kullanma.
-- Dry-run çıktısını göstermeden gerçek rsync yok; 7 siteden birini migrate atlama.
+- Dry-run çıktısını göstermeden gerçek rsync yok; hiçbir stabler sitesini migrate atlama.
 - Duman testinde gerçek veri silme.

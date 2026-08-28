@@ -146,13 +146,15 @@ ssh ice-production 'apt-get remove --purge -y phpmyadmin phppgadmin 2>&1 | tail 
 ```bash
 ssh ice-production 'set -e
 curl -sS -o /dev/null -w "phpmyadmin -> %{http_code}\n" http://127.0.0.1/phpmyadmin/ || true
-for s in anjan dts horeca laminor mikas msa smartbox; do
-  curl -sS -o /dev/null -w "$s.erpstable.com -> %{http_code}\n" "https://$s.erpstable.com/stabler" || true
+cd /home/frappe/frappe-bench
+for s in $(ls sites | grep "\."); do
+  bench --site "$s" list-apps 2>/dev/null | grep -q "^stabler" || continue
+  curl -sS -o /dev/null -w "$s -> %{http_code}\n" "https://$s/stabler" || true
 done
 '
 ```
 
-Beklenen: phpMyAdmin **404/403**, yedi site **200**. Bir site düştüyse **DUR**,
+Beklenen: phpMyAdmin **404/403**, listelenen her stabler sitesi **200**. Bir site düştüyse **DUR**,
 `nginx-before.tgz`'i geri yükle, bana getir.
 
 **Sonucu bana göster. ONAY almadan FAZ 2'ye geçme.**
@@ -276,10 +278,11 @@ for s in $(ls sites/ | grep "\."); do
   sudo -u frappe bench --site "$s" execute frappe.db.get_single_value --args "[\"System Settings\",\"country\"]" >/dev/null 2>&1 \
     && echo OK || echo "FAIL <<<"
 done
-'
-for s in anjan dts horeca laminor mikas msa smartbox; do
-  curl -sS -o /dev/null -w "$s -> %{http_code}\n" "https://$s.erpstable.com/stabler"
+for s in $(ls sites/ | grep "\."); do
+  bench --site "$s" list-apps 2>/dev/null | grep -q "^stabler" || continue
+  curl -sS -o /dev/null -w "$s -> %{http_code}\n" "https://$s/stabler"
 done
+'
 ```
 
 Hepsi OK / 200 olmalı. **Sonucu bana göster.**
