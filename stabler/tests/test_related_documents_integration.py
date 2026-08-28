@@ -14,11 +14,20 @@ gelmişti; ekranda fark yoktu, ikisi de "—" çiziyordu.
 Testler bu yüzden "yardımcı fonksiyon duruyor mu" değil, "panel ödemenin
 faturasını gösteriyor mu" diye sorar: yardımcı silinirse de, Frappe ileride
 Dynamic Link'i tersine çevirebilir hâle gelirse de doğru cevabı verir.
+
+2026-08-28: fikstür artık kurulur, aranmaz. Ayrıntı `_seed_...`'in
+docstring'inde. Üçü de ilk kez gerçekten koştu ve üçü de mutasyonla kırmızı
+görüldü — her biri farklı bir satırla:
+
+    _add_payment_entry_references çağrısı silinince  -> ödediği belge testi
+    referans başına has_permission silinince         -> sızıntı testi
+    sonuç filtresinden Payment Entry düşünce         -> ters yön testi
 """
 
 from __future__ import annotations
 
 import unittest
+from unittest.mock import patch
 
 import frappe
 
@@ -27,30 +36,111 @@ try:
 except Exception:  # pragma: no cover - older/newer frappe
 	FrappeTestCase = unittest.TestCase
 
-from stabler.api.sales import _LINKED_DOCTYPES, get_linked_documents
+from erpnext.accounts.doctype.payment_entry.payment_entry import get_payment_entry
+
+from stabler.api.sales import get_linked_documents
 
 
-def _a_payment_entry_with_a_reference() -> tuple[str, str, str] | None:
-	"""(payment_entry, reference_doctype, reference_name) — SPA'nın çizdiği bir referans."""
-	rows = frappe.get_all(
-		"Payment Entry Reference",
-		filters={"parenttype": "Payment Entry", "reference_doctype": ["in", sorted(_LINKED_DOCTYPES)]},
-		fields=["parent", "reference_doctype", "reference_name"],
-		limit=1,
-	)
-	if not rows:
-		return None
-	r = rows[0]
-	if not frappe.db.exists(r.reference_doctype, r.reference_name):
-		return None
-	return r.parent, r.reference_doctype, r.reference_name
+def _seed_payment_entry_with_a_reference() -> tuple[str, str, str]:
+	"""Build the pair the panel has to link: a paid Sales Invoice, and the
+	Payment Entry that paid it. Returns (payment_entry, "Sales Invoice", invoice).
+
+	Built rather than looked up. Until 2026-08-28 this module hunted the site
+	for an existing `Payment Entry Reference` row and skipped when it found
+	none, which meant it reported OK while asserting nothing — the gate calls
+	that red, correctly. And "no reference exists" was never even true here:
+	the throwaway site holds 1503 such rows whose parents *and* target invoices
+	have all been rolled back out from under them, so the lookup gave up on the
+	first orphan it read. A test that only runs when someone else happened to
+	leave the right data behind is not a test of anything.
+
+	Everything it needs is created here, so the only site facts assumed are a
+	Company with its default accounts and an open Fiscal Year. `FrappeTestCase`
+	rolls the whole class back, so nothing is left behind for the next module
+	to trip over — which is exactly what produced those 1503 orphans.
+
+	Background enqueues are suppressed for the two submits. Submitting a Sales
+	Invoice fires stabler's own `on_submit` hooks — a 1C push and an EHF
+	submission — and `frappe.enqueue` reaches the real Redis queue even under
+	`frappe.in_test`, where `_check_queue_size` raises `QueueOverloaded`. Left
+	alone, this module would go red because an unrelated integration queue on
+	the bench happened to be backed up, and it would add two more jobs to that
+	backlog on every run. Neither integration is what is being tested here: the
+	subject is whether the panel can walk from a payment to the invoice it paid.
+	"""
+	company = frappe.get_doc("Company", frappe.db.get_value("Company", {}, "name"))
+
+	customer = frappe.db.get_value("Customer", {"customer_name": "_Stabler Linked Docs"}, "name")
+	if not customer:
+		customer = (
+			frappe.get_doc({"doctype": "Customer", "customer_name": "_Stabler Linked Docs"})
+			.insert(ignore_permissions=True)
+			.name
+		)
+
+	item_code = "_Stabler Linked Docs Item"
+	if not frappe.db.exists("Item", item_code):
+		frappe.get_doc(
+			{
+				"doctype": "Item",
+				"item_code": item_code,
+				"item_name": item_code,
+				# Non-stock on purpose: a stock item would drag warehouses,
+				# valuation and a Stock Ledger Entry into a test about links.
+				"is_stock_item": 0,
+				"item_group": frappe.db.get_value("Item Group", {"is_group": 0}, "name"),
+				"stock_uom": frappe.db.get_value("UOM", {}, "name"),
+			}
+		).insert(ignore_permissions=True)
+
+	# See the docstring: submit with the queue out of the picture.
+	with patch("frappe.enqueue"), patch("frappe.enqueue_doc"):
+		si, pe = _submit_invoice_and_payment(company, customer, item_code)
+	return pe.name, "Sales Invoice", si.name
+
+
+def _submit_invoice_and_payment(company, customer: str, item_code: str):
+	si = frappe.get_doc(
+		{
+			"doctype": "Sales Invoice",
+			"company": company.name,
+			"customer": customer,
+			"currency": company.default_currency,
+			"posting_date": frappe.utils.today(),
+			"due_date": frappe.utils.today(),
+			"debit_to": company.default_receivable_account,
+			"items": [
+				{
+					"item_code": item_code,
+					"qty": 1,
+					"rate": 100,
+					"income_account": company.default_income_account,
+					"cost_center": company.cost_center,
+				}
+			],
+		}
+	).insert(ignore_permissions=True)
+	si.submit()
+
+	pe = get_payment_entry("Sales Invoice", si.name)
+	# ERPNext demands a transfer reference as soon as either leg is a Bank
+	# account, and the company default may well be one.
+	pe.reference_no = "_STABLER-LINKED-DOCS"
+	pe.reference_date = frappe.utils.today()
+	pe.insert(ignore_permissions=True)
+	pe.submit()
+
+	return si, pe
 
 
 class RelatedDocumentsFromPaymentEntry(FrappeTestCase):
+	@classmethod
+	def setUpClass(cls):
+		super().setUpClass()
+		cls.found = _seed_payment_entry_with_a_reference()
+
 	def setUp(self):
-		self.found = _a_payment_entry_with_a_reference()
-		if not self.found:
-			self.skipTest("referanslı Payment Entry yok — çıplak site")
+		self.found = type(self).found
 
 	def test_payment_entry_shows_the_document_it_pays(self):
 		"""Panelin tek işi bu; Frappe tek başına bu yönü çözemiyor."""
