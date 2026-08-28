@@ -235,6 +235,30 @@ class TestTheRefusalsHoldOnTheDocumentAndNotJustTheEndpoint(FrappeTestCase):
 			log_line_stop(self.company, self.line, "Other", _STOP, _END, work_order=order)
 		self.assertEqual(frappe.db.count("Stabler Line Stop"), before, "reddedilen kayıt yazılmış")
 
+	def test_a_line_from_another_company_is_refused(self):
+		"""`line` is the second field on this row that points at another tenant's
+		data, and it arrives the same way `work_order` does: as a bare name, with
+		nothing in the pair saying it belongs to the company beside it.
+
+		The endpoint used to check only that the Warehouse existed. That is the
+		weaker half of the question — every tenant's warehouses exist. A stop
+		filed against a foreign line lands as this company's row carrying another
+		company's warehouse name, and because `list_line_stops` filters on
+		`company`, the tenant that owns the line never sees it and the tenant that
+		filed it cannot tell it apart from its own.
+
+		Same manufacturing trick as the Work Order case above: a real warehouse is
+		moved for the duration of the test rather than requiring a second company,
+		so this does not skip on the single-company sites where the guard is least
+		likely to have been thought about."""
+		frappe.db.set_value("Warehouse", self.line, "company", "Baska Bir Sirket A.S.")
+		self.addCleanup(frappe.db.set_value, "Warehouse", self.line, "company", self.company)
+
+		before = frappe.db.count("Stabler Line Stop")
+		with self.assertRaises(Exception):
+			log_line_stop(self.company, self.line, "Other", _STOP, _END)
+		self.assertEqual(frappe.db.count("Stabler Line Stop"), before, "reddedilen kayıt yazılmış")
+
 	def test_an_unknown_work_order_is_refused_rather_than_stored_as_a_dangling_name(self):
 		before = frappe.db.count("Stabler Line Stop")
 		with self.assertRaises(Exception):

@@ -6493,3 +6493,20 @@ Recorded: {0} minutes,Kaydedildi: {0} dakika
 Saving,Kaydediliyor
 {0} minutes,{0} dakika
 {0} stops,{0} duruş
+Unknown Work Order: {0},Bilinmeyen iş emri: {0}
+"Expected a date as YYYY-MM-DD, got: {0}","YYYY-AA-GG biçiminde bir tarih bekleniyordu, gelen: {0}"
+{0} is {1} — its planned date is the record of when it ran.,{0} — {1}: planlanan tarih artık ne zaman çalıştığının kaydı.
+Unknown kind: {0},Bilinmeyen tür: {0}
+Unknown reason: {0},Bilinmeyen sebep: {0}
+Unknown line: {0},Bilinmeyen hat: {0}
+That Work Order belongs to another company.,Bu iş emri başka bir şirkete ait.
+That line belongs to another company.,Bu hat başka bir şirkete ait.
+"Expected dates as YYYY-MM-DD, got: {0} – {1}","YYYY-AA-GG biçiminde tarihler bekleniyordu, gelen: {0} – {1}"
+The window ends before it starts: {0} – {1},Aralık başlamadan önce bitiyor: {0} – {1}
+A planning window may cover at most {0} days.,Bir planlama aralığı en fazla {0} gün kapsayabilir.
+A stop needs a start time.,Bir duruşun başlangıç saati olmalı.
+A stop needs an end time.,Bir duruşun bitiş saati olmalı.
+"A stop with no length is a double-tap, not an event.","Uzunluğu olmayan bir duruş, olay değil çift dokunuştur."
+The stop ends before it starts.,Duruş başlamadan önce bitiyor.
+"A stop longer than 12 hours is a forgotten timer. Split it, or correct the times.","12 saatten uzun bir duruş, unutulmuş bir sayaçtır. Bölün ya da saatleri düzeltin."
+These times cannot be recorded.,Bu saatler kaydedilemez.

@@ -6503,3 +6503,20 @@ Recorded: {0} minutes,Записано: {0} минут
 Saving,Сохранение
 {0} minutes,{0} минут
 {0} stops,{0} простоев
+Unknown Work Order: {0},Неизвестный производственный заказ: {0}
+"Expected a date as YYYY-MM-DD, got: {0}","Ожидается дата в формате ГГГГ-ММ-ДД, получено: {0}"
+{0} is {1} — its planned date is the record of when it ran.,"{0} — {1}: плановая дата это запись о том, когда он выполнялся."
+Unknown kind: {0},Неизвестный вид: {0}
+Unknown reason: {0},Неизвестная причина: {0}
+Unknown line: {0},Неизвестная линия: {0}
+That Work Order belongs to another company.,Этот производственный заказ принадлежит другой компании.
+That line belongs to another company.,Эта линия принадлежит другой компании.
+"Expected dates as YYYY-MM-DD, got: {0} – {1}","Ожидаются даты в формате ГГГГ-ММ-ДД, получено: {0} – {1}"
+The window ends before it starts: {0} – {1},"Окно заканчивается раньше, чем начинается: {0} – {1}"
+A planning window may cover at most {0} days.,Окно планирования может охватывать не более {0} дней.
+A stop needs a start time.,Для простоя нужно время начала.
+A stop needs an end time.,Для простоя нужно время окончания.
+"A stop with no length is a double-tap, not an event.","Простой нулевой длины — это двойное нажатие, а не событие."
+The stop ends before it starts.,"Простой заканчивается раньше, чем начинается."
+"A stop longer than 12 hours is a forgotten timer. Split it, or correct the times.",Простой дольше 12 часов — это забытый таймер. Разделите его или исправьте время.
+These times cannot be recorded.,Это время не может быть записано.

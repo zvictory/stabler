@@ -26,8 +26,8 @@ const tabs = computed(() => [
 		label: t("Work Orders"),
 		icon: "ti-tool",
 	},
-	// Manager-only, like BOMs: the board shows every line's orders, and an
-	// operator's own screen is the shift log.
+	// Manager-only, like BOMs: the board shows every line's orders and moves them
+	// between days, and an operator's own screen is the shift log.
 	...(session.isMfgManager
 		? [
 				{
@@ -36,14 +36,18 @@ const tabs = computed(() => [
 					label: t("Production plan"),
 					icon: "ti-calendar-event",
 				},
-				{
-					name: "manufacturing-stops",
-					path: "/manufacturing/stops",
-					label: t("Line stops"),
-					icon: "ti-player-pause",
-				},
 			]
 		: []),
+	// NOT manager-only, unlike the two above, and deliberately so: log_line_stop
+	// is _require_mfg(), because the person who watched the line stop is the
+	// operator. A log only a manager can write is one that gets filled in from
+	// memory at the end of the week, which is the same as not having one.
+	{
+		name: "manufacturing-stops",
+		path: "/manufacturing/stops",
+		label: t("Line stops"),
+		icon: "ti-player-pause",
+	},
 ]);
 const activeTab = computed(() => route.name);
 
@@ -51,7 +55,7 @@ const activeTab = computed(() => route.name);
 // but the redirect avoids a visible error flash.
 watchEffect(() => {
 	if (
-		["manufacturing-boms", "manufacturing-plan", "manufacturing-stops"].includes(route.name) &&
+		["manufacturing-boms", "manufacturing-plan"].includes(route.name) &&
 		!session.isMfgManager
 	) {
 		router.replace("/manufacturing/work-orders");
