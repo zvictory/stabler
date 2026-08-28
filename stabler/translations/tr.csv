@@ -6435,3 +6435,11 @@ Save checklist,Kontrol listesini kaydet
 file(s),dosya
 All lines,Tüm hatlar
 All operators,Tüm operatörler
+No batch recorded,Parti kaydı yok
+Record batch,Parti kaydet
+A batch number is required.,Parti numarası zorunlu.
+Batch recorded.,Parti kaydedildi.
+Could not record the batch.,Parti kaydedilemedi.
+Made in-house,İçeride üretildi
+candidate orders — no batch to tell which,aday emir — hangisi olduğunu söyleyecek parti yok
+Bought in,Dışarıdan alındı

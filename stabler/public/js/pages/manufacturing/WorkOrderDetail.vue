@@ -23,6 +23,7 @@ import { formatMoney } from "../../composables/money.js";
 import { formatDate, formatDateTime } from "../../composables/date.js";
 import { useConfirm } from "../../composables/useConfirm.js";
 import { useToast } from "../../composables/useToast.js";
+import DateInput from "../../components/DateInput.vue";
 import Select from "../../components/Select.vue";
 
 const route = useRoute();
@@ -100,6 +101,60 @@ async function openDetail(name) {
 		genealogy.value = null;
 	}
 }
+// ----- Batch capture (1d) -------------------------------------------------
+// `set_wo_batch` and `suggest_wo_batch` have existed since the kiosk shipped and
+// were reachable only from it. Measured on anjan 2026-08-28: 0 of 3 789
+// submitted orders carry a batch, and 0 of 23 851 consumed rows do — so the
+// genealogy below can say an input was made in-house but never which order made
+// it. This form is the only thing that changes that, and the manager who opens
+// this page is the person who was never offered it.
+const batchEditing = ref(false);
+const batchSaving = ref(false);
+const batchDraft = ref({ batch_no: "", mfg_date: "", expiry_date: "" });
+
+async function startBatchEdit() {
+	if (!detail.value?.name) return;
+	try {
+		const s = await call("stabler.api.manufacturing.suggest_wo_batch", {
+			work_order: detail.value.name,
+		});
+		batchDraft.value = {
+			batch_no: s.batch_no || "",
+			mfg_date: s.mfg_date || "",
+			expiry_date: s.expiry_date || "",
+		};
+	} catch {
+		// A suggestion that will not load must not block recording a batch by
+		// hand — an empty form is still better than the button doing nothing.
+		batchDraft.value = { batch_no: "", mfg_date: "", expiry_date: "" };
+	}
+	batchEditing.value = true;
+}
+
+async function saveBatch() {
+	const batchNo = (batchDraft.value.batch_no || "").trim();
+	if (!batchNo) {
+		toast.error(t("A batch number is required."));
+		return;
+	}
+	batchSaving.value = true;
+	try {
+		await call("stabler.api.manufacturing.set_wo_batch", {
+			work_order: detail.value.name,
+			batch_no: batchNo,
+			mfg_date: batchDraft.value.mfg_date || undefined,
+			expiry_date: batchDraft.value.expiry_date || undefined,
+		});
+		batchEditing.value = false;
+		await refreshDetail();
+		toast.success(t("Batch recorded."));
+	} catch (err) {
+		toast.error(err?.message || t("Could not record the batch."));
+	} finally {
+		batchSaving.value = false;
+	}
+}
+
 async function refreshDetail() {
 	if (detail.value?.name) {
 		await openDetail(detail.value.name);
@@ -459,11 +514,49 @@ watch(
 							</div>
 						</div>
 
-						<!-- Batch & genealogy (Faz 4a) -->
-						<div v-if="detail.batch_no || (genealogy && genealogy.consumed && genealogy.consumed.length)" class="mb-3 border rounded p-2">
-							<div class="d-flex align-items-center justify-content-between">
+						<!-- Batch & genealogy (Faz 4a · 1d) -->
+						<div class="mb-3 border rounded p-2">
+							<div class="d-flex align-items-center justify-content-between flex-wrap gap-1">
 								<div class="text-secondary small"><i class="ti ti-versions me-1"></i>{{ t("Batch / lot") }}</div>
-								<span v-if="detail.batch_no" class="badge bg-blue-lt text-blue font-monospace">{{ detail.batch_no }}</span>
+								<div class="d-flex align-items-center gap-2">
+									<span v-if="detail.batch_no" class="badge bg-blue-lt text-blue font-monospace">{{ detail.batch_no }}</span>
+									<span v-else class="badge bg-yellow-lt text-yellow">
+										<i class="ti ti-alert-triangle me-1"></i>{{ t("No batch recorded") }}
+									</span>
+									<button
+										v-if="!batchEditing"
+										type="button"
+										class="btn btn-ghost-secondary btn-sm"
+										@click="startBatchEdit"
+									>
+										<i class="ti ti-edit me-1"></i>{{ detail.batch_no ? t("Change") : t("Record batch") }}
+									</button>
+								</div>
+							</div>
+
+							<!-- Recording a batch is what makes the chain below resolvable. Until
+							     one exists the panel can only say an input was made in-house. -->
+							<div v-if="batchEditing" class="row g-2 align-items-end mt-1">
+								<div class="col-12 col-md-4">
+									<label class="form-label small mb-1">{{ t("Batch / lot") }}</label>
+									<input v-model="batchDraft.batch_no" type="text" class="form-control form-control-sm font-monospace">
+								</div>
+								<div class="col-6 col-md-3">
+									<label class="form-label small mb-1">{{ t("Batch manufacture date") }}</label>
+									<DateInput v-model="batchDraft.mfg_date" size="sm" />
+								</div>
+								<div class="col-6 col-md-3">
+									<label class="form-label small mb-1">{{ t("Batch expiry") }}</label>
+									<DateInput v-model="batchDraft.expiry_date" size="sm" />
+								</div>
+								<div class="col-12 col-md-2 d-flex gap-1 justify-content-md-end">
+									<button type="button" class="btn btn-outline-secondary btn-sm" :disabled="batchSaving" @click="batchEditing = false">
+										{{ t("Cancel") }}
+									</button>
+									<button type="button" class="btn btn-primary btn-sm" :disabled="batchSaving" @click="saveBatch">
+										<span v-if="batchSaving" class="spinner-border spinner-border-sm me-1"></span>{{ t("Save") }}
+									</button>
+								</div>
 							</div>
 							<div v-if="detail.batch_mfg_date || detail.batch_expiry" class="small text-secondary mt-1">
 								<span v-if="detail.batch_mfg_date">{{ t("Batch manufacture date") }}: {{ formatDate(detail.batch_mfg_date) }}</span>
@@ -478,6 +571,7 @@ watch(
 												<th>{{ t("Material") }}</th>
 												<th class="text-end">{{ t("Quantity") }}</th>
 												<th>{{ t("Source warehouse") }}</th>
+												<th>{{ t("Origin") }}</th>
 											</tr>
 										</thead>
 										<tbody>
@@ -485,6 +579,20 @@ watch(
 												<td>{{ c.item_name || c.item_code }}</td>
 												<td class="text-end font-monospace text-nowrap">{{ formatQty(c.qty) }} {{ c.uom }}</td>
 												<td class="small text-secondary">{{ c.warehouse }}</td>
+												<td class="small">
+													<!-- Never a parent order. Without a batch the producing order
+													     cannot be resolved — a mean of 14.9 candidates per item on
+													     anjan, max 171 — and a guessed chain is read during a recall. -->
+													<template v-if="c.from_production">
+														<span class="badge bg-azure-lt text-azure">
+															<i class="ti ti-recycle me-1"></i>{{ t("Made in-house") }}
+														</span>
+														<span v-if="c.producer_candidates" class="text-secondary ms-1">
+															{{ c.producer_candidates }} {{ t("candidate orders — no batch to tell which") }}
+														</span>
+													</template>
+													<span v-else class="text-secondary">{{ t("Bought in") }}</span>
+												</td>
 											</tr>
 										</tbody>
 									</table>

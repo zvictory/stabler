@@ -6440,3 +6440,11 @@ Save checklist,Назорат рўйхатини сақлаш
 file(s),файл
 All lines,Барча линиялар
 All operators,Барча операторлар
+No batch recorded,Партия қайд этилмаган
+Record batch,Партияни қайд этиш
+A batch number is required.,Партия рақами мажбурий.
+Batch recorded.,Партия қайд этилди.
+Could not record the batch.,Партияни қайд этиб бўлмади.
+Made in-house,Ичкарида ишлаб чиқарилган
+candidate orders — no batch to tell which,номзод буюртма — қайси бири эканини айтадиган партия йўқ
+Bought in,Сотиб олинган

@@ -266,6 +266,7 @@ stabler.tests.test_coa_load_source
 stabler.tests.test_money_list_currency
 stabler.tests.test_job_health
 stabler.tests.test_wo_operator_roles
+stabler.tests.test_wo_genealogy_origin
 stabler.tests.test_wo_shift_log_filters
 stabler.tests.test_wo_finish_draft
 stabler.tests.test_bulk_operator_assign
