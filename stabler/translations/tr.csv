@@ -6459,3 +6459,21 @@ Your work orders are on the shift log.,İş emirleriniz vardiya defterinde.
 {0} moved to {1},{0} {1} gününe taşındı
 {0} orders,{0} emir
 {0} orders on {1} lines,{1} hatta {0} emir
+Waiting for material,Hammadde bekleniyor
+Waiting for packaging material,Ambalaj bekleniyor
+Filling machine setup or changeover,Dolum makinesi ayarı veya geçiş
+Filling machine breakdown,Dolum makinesi arızası
+Freezer or compressor fault,Dondurucu veya kompresör arızası
+Cleaning or CIP,Temizlik veya CIP
+Power cut,Elektrik kesintisi
+Water or steam supply,Su veya buhar beslemesi
+Shift handover,Vardiya devri
+No operator available,Operatör yok
+Waiting for quality check,Kalite kontrolü bekleniyor
+Planned maintenance,Planlı bakım
+Off-spec batch,Şartname dışı parti
+Melted or thawed product,Erimiş ürün
+Weight out of tolerance,Ağırlık tolerans dışı
+Spillage,Dökülme
+Line start-up and flush,Hat devreye alma ve yıkama
+Expired or unusable raw material,Süresi geçmiş veya kullanılamaz hammadde

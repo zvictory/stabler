@@ -1019,6 +1019,7 @@ def cancel_bom(name: str):
 # ----- Work Orders ---------------------------------------------------------
 
 
+from stabler.api._downtime import stop_minutes
 from stabler.api._wo_filters import build_work_order_filters
 from stabler.api._wo_genealogy import annotate_consumed_origin
 from stabler.api._wo_material_request import should_request_materials
@@ -1159,6 +1160,140 @@ def list_work_orders(
 			wo_items if is_manager else _rows_for_role(wo_items, item_roles, _wo_role_of(row))
 		)
 	return rows
+
+
+@frappe.whitelist()
+def list_stop_reasons(company: str, kind: str = "Downtime"):
+	"""The stop/loss reason catalogue, active rows only, in its own order.
+
+	`kind` splits the two questions it answers: a line waiting on material is a
+	stop and never a loss, and putting the loss half in front of an operator
+	logging a stop is how a list of twenty becomes a list nobody reads past.
+	"Both" rows appear under either question.
+
+	Deactivated rows are withheld from the picker but never deleted, so an old
+	record keeps naming the reason it was filed under.
+	"""
+	_assert_company_scope(company)  # tenant isolation: reject a foreign company arg
+	_require_company(company)
+	_require_mfg()
+	if kind not in ("Downtime", "Loss"):
+		frappe.throw(_("Unknown kind: {0}").format(kind))
+	rows = frappe.get_all(
+		"Stabler Stop Reason",
+		filters={"is_active": 1, "kind": ["in", [kind, "Both"]]},
+		fields=["name", "reason", "kind", "sort_order"],
+		order_by="sort_order asc, reason asc",
+	)
+	return [dict(r) for r in rows]
+
+
+@frappe.whitelist()
+def log_line_stop(
+	company: str,
+	line: str,
+	reason: str,
+	from_time: str,
+	to_time: str,
+	work_order: str | None = None,
+	note: str | None = None,
+):
+	"""Record one stop on one line.
+
+	Open to any manufacturing user, not just managers: the person who watched the
+	line stop is the operator, and a log only a manager can write is one that gets
+	filled in from memory at the end of the week — which is the same as not having
+	one. `Stabler Line Stop.validate` is what refuses an impossible pair of times,
+	so the rule holds for a Desk write too.
+
+	`work_order` is optional on purpose: a line stops between orders as often as
+	during one, and forcing an order onto those rows would either lose them or
+	attach them to whichever order happened to be next.
+	"""
+	_assert_company_scope(company)  # tenant isolation: reject a foreign company arg
+	_require_company(company)
+	_require_mfg()
+
+	if not frappe.db.exists("Stabler Stop Reason", reason):
+		frappe.throw(_("Unknown reason: {0}").format(reason))
+	if not frappe.db.exists("Warehouse", line):
+		frappe.throw(_("Unknown line: {0}").format(line))
+	if work_order:
+		# Read the order's own company rather than trusting the argument: this is
+		# the one field on the row that points at another tenant's data.
+		owner_company = frappe.db.get_value("Work Order", work_order, "company")
+		if not owner_company:
+			frappe.throw(_("Unknown Work Order: {0}").format(work_order))
+		if owner_company != company:
+			frappe.throw(_("That Work Order belongs to another company."), frappe.PermissionError)
+
+	doc = frappe.get_doc(
+		{
+			"doctype": "Stabler Line Stop",
+			"company": company,
+			"line": line,
+			"work_order": work_order or None,
+			"reason": reason,
+			"from_time": from_time,
+			"to_time": to_time,
+			"reported_by": frappe.session.user,
+			"note": note or None,
+		}
+	)
+	doc.insert()
+	return {"name": doc.name, "minutes": doc.minutes}
+
+
+@frappe.whitelist()
+def list_line_stops(company: str, from_date: str, to_date: str, line: str | None = None):
+	"""The stops recorded in a window, newest first, with their minutes.
+
+	Grouped totals are deliberately not computed here. Until this log has been
+	kept for a while every total is a total of one shift's diligence, and a
+	"minutes lost per line" figure derived from three rows reads exactly like one
+	derived from three thousand.
+	"""
+	_assert_company_scope(company)  # tenant isolation: reject a foreign company arg
+	_require_company(company)
+	_require_mfg()
+
+	days = _plan_days(from_date, to_date)
+	# Two explicit bounds rather than `between`. Frappe expands a bare date on the
+	# upper side of `between` to that day's 23:59:59, so the exclusive next
+	# midnight this window is built from silently became "and the whole next day
+	# as well" — a stop on the 28th came back for a window asking about the 27th.
+	filters = [
+		["company", "=", company],
+		["from_time", ">=", f"{days[0]} 00:00:00"],
+		["from_time", "<", f"{_plan_day_after(days[-1])} 00:00:00"],
+	]
+	if line:
+		filters.append(["line", "=", line])
+	rows = frappe.get_all(
+		"Stabler Line Stop",
+		filters=filters,
+		fields=[
+			"name",
+			"line",
+			"work_order",
+			"reason",
+			"from_time",
+			"to_time",
+			"minutes",
+			"reported_by",
+			"note",
+		],
+		order_by="from_time desc",
+		limit=500,
+	)
+	out = []
+	for row in rows:
+		row = dict(row)
+		# Recomputed rather than read back, so a row whose stamps were corrected
+		# in Desk without triggering validate cannot show a stale duration.
+		row["minutes"] = stop_minutes(row["from_time"], row["to_time"])
+		out.append(row)
+	return out
 
 
 @frappe.whitelist()

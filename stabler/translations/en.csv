@@ -6858,3 +6858,21 @@ Your work orders are on the shift log.,Your work orders are on the shift log.
 {0} moved to {1},{0} moved to {1}
 {0} orders,{0} orders
 {0} orders on {1} lines,{0} orders on {1} lines
+Waiting for material,Waiting for material
+Waiting for packaging material,Waiting for packaging material
+Filling machine setup or changeover,Filling machine setup or changeover
+Filling machine breakdown,Filling machine breakdown
+Freezer or compressor fault,Freezer or compressor fault
+Cleaning or CIP,Cleaning or CIP
+Power cut,Power cut
+Water or steam supply,Water or steam supply
+Shift handover,Shift handover
+No operator available,No operator available
+Waiting for quality check,Waiting for quality check
+Planned maintenance,Planned maintenance
+Off-spec batch,Off-spec batch
+Melted or thawed product,Melted or thawed product
+Weight out of tolerance,Weight out of tolerance
+Spillage,Spillage
+Line start-up and flush,Line start-up and flush
+Expired or unusable raw material,Expired or unusable raw material
