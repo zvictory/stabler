@@ -77,7 +77,6 @@
 # --- genuine test failures
 test_approvals_integration           stabler-f74  errors=4; Reference No and Reference Date mandatory for Bank transaction
 test_supplier_quotations_api         stabler-cd1  errors=1; fake stabler_settings cannot provide imports_supplier_groups_for
-test_tender_flow_contract            stabler-vcq  failures=1; ':deal="null"' no longer present in the Vue source the contract greps
 
 # --- asserted nothing
 # stabler-56v (test_deploy_migrate_gate, collected-none) was paid off on 2026-08-20:
