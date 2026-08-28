@@ -14,7 +14,7 @@ ayrıca `make test-bench`.
 
 ## P1 — yüksek
 
-### `uzc` dili Language kaydı olarak sekiz kiracıda da yok — 6 hesap kaydedilemiyor
+### ~~`uzc` dili Language kaydı olarak sekiz kiracıda da yok — 6 hesap kaydedilemiyor~~ ÇÖZÜLDÜ 2026-08-28
 `hata` · ölçüldü 2026-08-28, prod, salt-okunur
 
 Stabler beş dil sunuyor (en, ru, uz, uzc, tr) ve kullanıcılar `uzc`'yi seçebiliyor —
@@ -40,6 +40,16 @@ Muhtemel düzeltme: her kiracıda `Language` kaydı oluşturmak
 Zafar'ın onayını bekliyor. Yamayla mı yoksa elle mi yapılacağı da karara bağlı;
 yama tercih edilirse `stabler/patches/` altına, sekiz kiracıda da idempotent çalışacak
 şekilde.
+
+**Çözüm (2026-08-28):** `Language` kaydı oluşturulmadı — Zafar `uzc`'yi seçenekten
+çıkarmayı seçti. Altı hesap `uz`'ye taşındı (anjan 4, smartbox 1, zuma 1), üç seçici
+temizlendi, katalog korundu. `User.save()` anjan'da yeniden denendi: **geçiyor**.
+Karar: `docs/plans/2026-08-28-uzc-secenekten-cikarildi.md`.
+
+**Not, kayıt için:** `stabler/__init__.py` zaten `frappe.get_doc`/`get_cached_doc`
+için `uzc → uz` yönlendiren bir monkey-patch taşıyordu. O yama okumaları kapsıyor,
+**link doğrulamasını kapsamıyor** — hatanın aylarca hayatta kalma sebebi bu. Yama
+yerinde duruyor ve `uzc` katalogu için hâlâ gerekli.
 
 ---
 

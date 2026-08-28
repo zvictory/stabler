@@ -52,7 +52,11 @@ this file is paid for in every session.
 - Mockups, drafts (e.g. `docs/uat/...`) and discussion may be Turkish or English.
   **Implementation code is English-first** — Vue components, Python backend, error
   messages, docstrings, UI labels, `t("...")` keys.
-- Five languages ship: **en, ru, uz, uzc, tr**. Full workflow: `stabler-i18n` skill.
+- **Four languages are offered: en, ru, uz, tr.** A fifth catalogue, `uzc`
+  (Ўзбекча, Uzbek Cyrillic), is still shipped and still translated — it was
+  removed from the pickers on 2026-08-28, not deleted. Keep staging it with the
+  others. Why, and how to undo it: `docs/plans/2026-08-28-uzc-secenekten-cikarildi.md`.
+  Full workflow: `stabler-i18n` skill.
 
 ### Production
 - **Production deploy always requires explicit approval from Zafar** — one
