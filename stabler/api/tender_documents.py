@@ -25,6 +25,7 @@ from stabler.api._tender_documents import (
 	DOC_ROLE_WRITER_VIEWS,
 	apply_ready_audit,
 	docs_summary,
+	merge_client_requirements,
 	parse_doc_requirements,
 )
 from stabler.api.tender import (
@@ -93,6 +94,23 @@ def list_tender_documents(deal: str, company: str | None = None) -> dict[str, An
 		"requirements": all_reqs,
 		"summary": summary,
 	}
+
+
+# Same ceiling `_clean_intake` applied to the checklist it used to accept. A
+# checklist is read by a human before a deadline; past a few dozen rows it stops
+# being a checklist, and the cap keeps one paste from writing an unbounded blob
+# into every read of the document centre.
+_REQUIREMENT_LIMIT = 40
+
+
+def _requirement_template(row: dict) -> tuple:
+	"""The part of a requirement the browser owns — what an edit can change."""
+	return (
+		str(row.get("label") or ""),
+		bool(row.get("required")),
+		str(row.get("date") or ""),
+		str(row.get("role") or "general"),
+	)
 
 
 def _normalize_key(requirement_key: str) -> str:
@@ -324,6 +342,76 @@ def remove_tender_document(
 		frappe.throw(_("Requirement {0} not found.").format(requirement_key), frappe.DoesNotExistError)
 	if changed:
 		_save_requirements(target_doc, fieldname, reqs, is_master_req)
+	return list_tender_documents(deal=deal, company=selected_company)
+
+
+@frappe.whitelist()
+def set_tender_document_requirements(
+	deal: str,
+	requirements,
+	company: str | None = None,
+) -> dict[str, Any]:
+	"""Author the lot's document checklist — the requirement rows themselves.
+
+	The other write endpoints act on a requirement that already exists: upload
+	attaches a file, waive records a justification, remove detaches. None of
+	them can create the row. Until 2026-08-28 the only thing that could was
+	`TenderIntake.vue`, writing the checklist through the intake JSON blob on
+	the PO control board — which is why ADR-201 could not retire that panel's
+	edit rights without making the checklist un-creatable. This is the writer
+	that closes it (ADR-201/205).
+
+	The browser owns ``label`` / ``required`` / ``date`` / ``role`` and nothing
+	else. Files, waivers and the derived ``done``/``unverified`` flags are
+	reconciled from the stored rows by ``merge_client_requirements``, so a
+	rename never costs an upload and no payload can mark a requirement
+	satisfied by claiming it is.
+
+	Master-level rows are refused rather than silently dropped (ADR-202/2):
+	they belong to the parent tender and are shared by every lot under it, and
+	writing a lot row with the same key would give one key two rows —
+	``_resolve_target`` would then send uploads to the master one.
+	"""
+	deal_doc, master_doc, selected_company = _get_deal_and_master(deal, company, "write")
+	rows = json.loads(requirements) if isinstance(requirements, str) else requirements
+	if not isinstance(rows, list):
+		frappe.throw(_("Requirements must be a list."), frappe.ValidationError)
+
+	master_keys = set()
+	if master_doc and hasattr(master_doc, "custom_tender_documents") and master_doc.custom_tender_documents:
+		master_keys = {r.get("key") for r in parse_doc_requirements(master_doc.custom_tender_documents)}
+	for r in rows:
+		if not isinstance(r, dict):
+			continue
+		if _normalize_key(r.get("key") or r.get("label") or "") in master_keys:
+			frappe.throw(
+				_("{0} is a tender-level requirement — edit it on the tender, not the lot.").format(
+					r.get("label") or r.get("key")
+				),
+				frappe.ValidationError,
+			)
+
+	prior = parse_doc_requirements(_intake_documents(deal_doc.get("custom_tender_intake")))
+	merged = merge_client_requirements(rows, prior)[:_REQUIREMENT_LIMIT]
+
+	# The row-role gate, applied per row that this call actually changes. A
+	# logist may not author — nor retire — a customs requirement, exactly as
+	# they may not upload to one. Removals are gated on the STORED role: taking
+	# the role from the payload would let the caller relabel a customs row as
+	# `general` in the same request that deletes it.
+	before = {r["key"]: r for r in prior}
+	after = {r["key"]: r for r in merged}
+	for key in set(before) | set(after):
+		old, new = before.get(key), after.get(key)
+		if old and not new:
+			_require_doc_role_write(old, selected_company)
+		elif new and not old:
+			_require_doc_role_write(new, selected_company)
+		elif old and new and _requirement_template(old) != _requirement_template(new):
+			_require_doc_role_write(old, selected_company)
+			_require_doc_role_write(new, selected_company)
+
+	_save_requirements(deal_doc, "custom_tender_intake", merged, False)
 	return list_tender_documents(deal=deal, company=selected_company)
 
 

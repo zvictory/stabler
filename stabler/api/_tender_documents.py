@@ -238,3 +238,53 @@ def default_doc_requirements() -> list[dict[str, Any]]:
 		{"key": "price_offer", "label": "Price Offer", "required": True, "scope": "lot", "role": "general"},
 	]
 	return parse_doc_requirements(raw)
+
+
+def merge_client_requirements(client_docs: list, prior_docs: list) -> list:
+	"""Reconcile client-edited checklist rows with server-owned file/waiver facts.
+
+	The requirement editor may only touch the human-facing fields (label,
+	required, date, role). File attachments, waiver justifications, and the derived
+	``done``/``unverified`` flags are never trusted from the browser — they are
+	preserved from the prior payload, matched by ``key`` (falling back to label).
+	Rows present only in the client are added (clean, nothing satisfied); rows
+	present only in the prior payload are dropped unless the client still lists
+	them, so deleting a row in the editor removes it. Outputs the full document
+	requirement shape produced by ``parse_doc_requirements``.
+
+	Lives here rather than in ``tender.py`` because since 2026-08-28 the sole
+	caller is the document centre's ``set_tender_document_requirements``: the
+	intake blob no longer carries a client-authored checklist at all.
+	"""
+	prior_by_key = {}
+	for d in prior_docs or []:
+		if not isinstance(d, dict):
+			continue
+		k = str(d.get("key") or d.get("label") or "").strip().lower().replace(" ", "_")
+		if k:
+			prior_by_key[k] = d
+
+	merged: list = []
+	seen = set()
+	for d in client_docs or []:
+		if not isinstance(d, dict):
+			continue
+		if not str(d.get("label") or d.get("key") or "").strip():
+			continue
+		k = str(d.get("key") or d.get("label") or "").strip().lower().replace(" ", "_")
+		if k in seen:
+			continue
+		seen.add(k)
+		prior_row = prior_by_key.get(k, {})
+		# Client owns: label/required/date/role. Server owns: files/waiver/*.
+		row = dict(prior_row)  # files + waiver + derived flags carried over
+		row["key"] = k
+		row["label"] = str(d.get("label") or prior_row.get("label") or "").strip()[:140]
+		row["required"] = bool(d.get("required") if "required" in d else prior_row.get("required", True))
+		row["date"] = str(d.get("date") or prior_row.get("date") or "").strip()[:20]
+		if "role" in d:
+			row["role"] = str(d.get("role") or "").strip().lower()[:40]
+		merged.append(row)
+	# Re-normalize so derived done/unverified/scope/role/file_count/latest_file are
+	# always consistent with the reconciled payload (parse_doc_requirements is pure).
+	return parse_doc_requirements(merged)

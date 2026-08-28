@@ -12,12 +12,16 @@ turned "the other screen wipes my work" into a *contract* question — who owns
 which key — and this module is where that answer lives.
 
 ADR-201 as written retires `TenderIntake.vue`'s edit rights entirely. Measured
-against the code, that strands thirteen keys: only this screen edits `lot_no`,
-`buyer`, `volume`, `unit`, `delivery_deadline`, `result`, `won_price`, `notes`,
-the four `fx_*` keys and the document checklist, and the drawer has no section
-for any of them (that is ADR-209's form-layer slice, not this one). So this
-slice delivers ADR-201's *purpose* — no key with two writers — and leaves the
-thirteen editable here until they have somewhere else to go.
+against the code, that stranded thirteen keys, so this slice delivered
+ADR-201's *purpose* — no key with two writers — and left them editable here
+until they had somewhere else to go.
+
+The document checklist was the thirteenth, and it left on 2026-08-28: the
+document centre grew a requirement writer
+(`tender_documents.set_tender_document_requirements`), the checklist stopped
+being editable here, and `documents` left the intake contract entirely — the
+backend now ignores the key rather than merging it. Twelve remain, waiting on
+ADR-209's form-layer slice.
 
 Pure source assertions: no bundle, no browser, no DB. What is being pinned is a
 division of ownership, and ownership is readable in the source.
@@ -41,8 +45,8 @@ _DRAWER_OWNED = (
 	"go_no_go",
 	"purchase_method",
 )
-# The thirteen with no other home. `documents` has no `v-model` of its own —
-# it is edited row by row through seedDocs/addDoc/rmDoc.
+# The twelve with no other home. `documents` was the thirteenth until the
+# document centre could author a requirement row (2026-08-28).
 _PO_BOARD_OWNED = (
 	"lot_no",
 	"buyer",
@@ -52,7 +56,6 @@ _PO_BOARD_OWNED = (
 	"result",
 	"won_price",
 	"notes",
-	"documents",
 	"fx_currency",
 	"fx_amount",
 	"fx_bid_rate",
@@ -125,68 +128,107 @@ class TestTheFieldsItStoppedSendingAreAlsoNoLongerEditable(unittest.TestCase):
 			with self.subTest(field=field):
 				self.assertIn(f"{field}:", payload)
 
-	def test_the_thirteen_with_no_other_home_stay_editable_here(self):
+	def test_the_twelve_with_no_other_home_stay_editable_here(self):
 		"""ADR-201 says this panel loses its edit rights. Applied literally
-		today it would leave these thirteen editable on no screen at all, so
+		today it would leave these twelve editable on no screen at all, so
 		they deliberately keep their inputs."""
 		for field in _PO_BOARD_OWNED:
-			if field == "documents":
-				continue  # edited row by row, not through a v-model
 			with self.subTest(field=field):
 				self.assertTrue(_bound(INTAKE, field))
 
-	def test_the_document_checklist_is_still_authored_here_by_decision(self):
-		"""Decided 2026-08-28 by Zafar, not conceded.
+	def test_the_checklist_is_no_longer_authored_here(self):
+		"""ADR-201's document half, closed 2026-08-28.
 
-		`tender_documents.py` can attach a file to a requirement but cannot
-		create one — seedDocs/addDoc are the only code anywhere that writes a
-		requirement row. Deleting them would not close ADR-201 either: the
-		file and waiver buttons on this screen call the same three endpoints
-		the document centre calls, so they are one writer reached from two
-		screens, not two writers. Closing the document half needs a
-		requirement writer in the document centre; that is the reopening
-		condition below, and it is not worth building for a tenant with zero
-		tenders."""
-		self.assertIn("function seedDocs()", INTAKE)
-		self.assertIn("function addDoc()", INTAKE)
+		It stayed open for one reason: `tender_documents.py` could attach a
+		file to a requirement but could not create one, so deleting these
+		functions would have left the checklist un-creatable anywhere in the
+		app. `set_tender_document_requirements` removed that reason.
+
+		What is pinned is the *writer count*, not the deletion. A checklist
+		row carries a role gate — a customs requirement may only be created,
+		renamed or dropped by a declarant — and a second authoring surface is
+		a second place for that gate to be forgotten."""
+		for fn in ("function seedDocs(", "function addDoc(", "function rmDoc("):
+			with self.subTest(fn=fn):
+				self.assertNotIn(fn, INTAKE)
+
+	def test_it_no_longer_calls_the_document_write_endpoints_either(self):
+		"""Upload and waiver were never a second *writer* — they called the
+		same endpoints the document centre calls. They go anyway: a screen
+		that can attach a file to a row it cannot name is a half-surface, and
+		the readiness badge here links to the centre that owns all of it."""
+		for endpoint in (
+			"upload_tender_document",
+			"remove_tender_document",
+			"waive_tender_document",
+			"set_tender_document_requirements",
+		):
+			with self.subTest(endpoint=endpoint):
+				# The dotted call path, not the bare name: the header comment
+				# names the new writer on purpose, and a screen that explains
+				# where its checklist went is the opposite of the defect here.
+				self.assertNotIn(f"stabler.api.tender_documents.{endpoint}", INTAKE)
+
+	def test_the_checklist_is_still_readable_here(self):
+		"""The other half of the decision, and the reason this is not simply
+		a deletion. A sourcing user on the PO board has to see that the ГТД is
+		still missing without leaving the board — they just no longer type it
+		here. Losing the summary would trade one defect for a worse one."""
+		self.assertIn("intake.documents.length", INTAKE)
+		self.assertIn("/tender/documents?deal=", INTAKE)
 
 
-class TestTheReopeningConditionIsExecutable(unittest.TestCase):
-	"""ADR-201's document half stays open on a condition, and a condition that
-	lives only in prose is the defect this repository keeps paying for — four
-	times in one session on 2026-08-28 alone. So the condition is a ratchet.
+class TestTheChecklistHasExactlyOneWriter(unittest.TestCase):
+	"""The ratchet that replaces ADR-201's reopening condition, now that the
+	condition has come true.
 
-	`tender_documents.py` ships exactly these six endpoints. The day it grows a
-	seventh, someone is extending the document centre, and that is precisely
-	when to ask whether it now authors requirement rows — because if it does,
-	`TenderIntake.vue` must stop, and `documents` leaves the intake contract.
-	This fails on the seventh endpoint whatever it turns out to be: a false
-	alarm costs one line here, and the alternative is the condition going
-	unnoticed exactly when it comes true.
+	The old ratchet counted the document centre's endpoints and failed on the
+	seventh, because a seventh endpoint was the signal that the centre might
+	have learned to author a requirement. It has, so counting endpoints now
+	only produces false alarms. What is worth failing on is the thing the move
+	bought: exactly one place in the app writes a checklist row, and it is
+	behind the per-row role gate.
+
+	Both directions matter. A second writer reappearing is the defect this
+	whole module exists for; the sole writer disappearing would leave the
+	checklist un-creatable again — the state that kept ADR-201 open for eleven
+	days.
 	"""
 
-	_KNOWN = (
-		"list_tender_documents",
-		"upload_tender_document",
-		"waive_tender_document",
-		"remove_tender_document",
-		"download_tender_document",
-		"tender_document_targets",
-	)
+	API = (_APP / "api/tender_documents.py").read_text(encoding="utf-8")
+	SPA = _APP / "public/js"
 
-	def test_the_document_centre_still_cannot_author_a_requirement(self):
-		src = (_APP / "api/tender_documents.py").read_text(encoding="utf-8")
-		found = re.findall(r"@frappe\.whitelist\([^)]*\)\s*\ndef (\w+)\(", src)
-		self.assertTrue(found, "desen tutmuyor: tender_documents.py'de hiç uç bulunamadı")
-		self.assertEqual(
-			sorted(found),
-			sorted(self._KNOWN),
-			"tender_documents.py'nin uç kümesi değişti. Yeni uç bir gereklilik "
-			"satırı yazıyorsa ADR-201'in belge yarısı artık kapatılabilir: "
-			"TenderIntake.vue'nun seedDocs/addDoc/rmDoc'u kaldırılmalı ve "
-			"`documents` intake sözleşmesinden çıkmalı. Yazmıyorsa yalnız "
-			"yukarıdaki listeyi güncelle.",
+	def test_the_document_centre_is_the_writer(self):
+		self.assertRegex(self.API, r"@frappe\.whitelist\(\)\s*\ndef set_tender_document_requirements\(")
+
+	def test_exactly_one_screen_calls_it(self):
+		"""Grepped over the whole SPA, not just the two screens this module
+		reads — a third screen embedding a checklist editor is exactly the
+		regression that would slip past a two-file assertion."""
+		wire = "stabler.api.tender_documents.set_tender_document_requirements"
+		callers = sorted(
+			f.relative_to(self.SPA).as_posix()
+			for f in self.SPA.rglob("*.vue")
+			if wire in f.read_text(encoding="utf-8")
 		)
+		self.assertEqual(callers, ["pages/tender/TenderDocuments.vue"], f"yazar kümesi: {callers}")
+
+	def test_the_intake_endpoint_refuses_to_be_a_second_writer(self):
+		"""The backend half. `save_deal_intake` used to merge a client
+		`documents` list, which is how a stale browser tab could delete a
+		checklist together with its uploads and waivers. It now carries the
+		stored value through whatever the payload says."""
+		tender = (_APP / "api/tender.py").read_text(encoding="utf-8")
+		clean = tender[tender.index("def _clean_intake(") :]
+		clean = clean[: clean.index("\ndef ", 1)]
+		# Read the code, not the prose. The comment above the line names
+		# `merge_client_requirements` to say where the reconciliation moved to,
+		# and an assertion that cannot tell a comment from a call would force
+		# that explanation out of the file.
+		code = "\n".join(ln for ln in clean.splitlines() if not ln.lstrip().startswith("#"))
+		self.assertIn('out["documents"] = parse_doc_requirements(prior.get("documents"))', code)
+		self.assertNotIn("merge_client_requirements", code)
+		self.assertNotIn('data.get("documents")', code)
 
 
 class TestTheDecisionIsStillVisibleWhereItIsNoLongerEditable(unittest.TestCase):

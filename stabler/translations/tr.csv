@@ -6419,3 +6419,17 @@ Currency this charge is quoted in,Masrafın belirtildiği para birimi
 Rate date,Kur tarihi
 Fetch the Central Bank rate,Merkez Bankası kurunu getir
 Enter an exchange rate,Bir kur girin
+Add requirement,Gereklilik ekle
+Add standard set,Standart seti ekle
+Checklist saved,Kontrol listesi kaydedildi
+Document name,Belge adı
+Edit checklist,Kontrol listesini düzenle
+Failed to save the checklist,Kontrol listesi kaydedilemedi
+No documents yet — add them in the Document Center.,Henüz belge yok — Belge Merkezi'nden ekleyin.
+Open Document Center,Belge Merkezi'ni aç
+Remove requirement,Gerekliliği kaldır
+Requirement,Gereklilik
+Responsible role,Sorumlu rol
+Save checklist,Kontrol listesini kaydet
+"Tender-level requirements are edited on the tender, not here.","İhale düzeyindeki gereklilikler burada değil, ihale üzerinde düzenlenir."
+file(s),dosya

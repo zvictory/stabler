@@ -41,11 +41,70 @@
 			<div class="card">
 				<div class="card-header py-2 fw-semibold d-flex justify-content-between align-items-center">
 					<span><i class="ti ti-files me-1"></i>{{ t("Required & Tender Documents") }}</span>
-					<span v-if="summary?.unverified" class="badge bg-warning-lt text-warning">
-						<i class="ti ti-alert-circle me-1"></i>{{ summary.unverified }} {{ t("unverified legacy items") }}
-					</span>
+					<div class="d-flex align-items-center gap-2">
+						<span v-if="summary?.unverified" class="badge bg-warning-lt text-warning">
+							<i class="ti ti-alert-circle me-1"></i>{{ summary.unverified }} {{ t("unverified legacy items") }}
+						</span>
+						<button v-if="deal && !editing" type="button" class="btn btn-ghost-secondary btn-sm" @click="startEditing">
+							<i class="ti ti-list-check me-1"></i>{{ t("Edit checklist") }}
+						</button>
+						<template v-if="editing">
+							<button type="button" class="btn btn-ghost-secondary btn-sm" :disabled="savingReqs" @click="cancelEditing">{{ t("Cancel") }}</button>
+							<button type="button" class="btn btn-primary btn-sm" :disabled="savingReqs" @click="saveRequirements">
+								<span v-if="savingReqs" class="spinner-border spinner-border-sm me-1"></span>{{ t("Save checklist") }}
+							</button>
+						</template>
+					</div>
 				</div>
-				<div class="card-body p-0">
+				<div v-if="editing" class="card-body p-0">
+					<table class="table card-table align-middle">
+						<thead>
+							<tr>
+								<th style="min-width: 220px">{{ t("Requirement") }}</th>
+								<th style="width: 110px">{{ t("Required") }}</th>
+								<th style="width: 160px">{{ t("Responsible role") }}</th>
+								<th style="width: 150px">{{ t("Due date") }}</th>
+								<th style="width: 120px">{{ t("Evidence") }}</th>
+								<th class="text-end" style="width: 60px"></th>
+							</tr>
+						</thead>
+						<tbody>
+							<tr v-for="(d, i) in draft" :key="i">
+								<td><input v-model="d.label" type="text" class="form-control form-control-sm" :placeholder="t('Document name')"></td>
+								<td><label class="form-check form-switch m-0"><input v-model="d.required" type="checkbox" class="form-check-input" :true-value="1" :false-value="0"></label></td>
+								<td>
+									<select v-model="d.role" class="form-select form-select-sm">
+										<option v-for="o in ROLE_OPTIONS" :key="o.value" :value="o.value">{{ o.label }}</option>
+									</select>
+								</td>
+								<td><DateInput v-model="d.date" size="sm" /></td>
+								<td>
+									<!-- Files and waivers are server facts: this editor cannot touch them,
+									     so the row says what it would keep rather than pretending to own it. -->
+									<span v-if="d.waiver_reason" class="badge bg-warning-lt text-warning">{{ t("Waived") }}</span>
+									<span v-else-if="d.file_count" class="badge bg-green-lt text-green">{{ d.file_count }} {{ t("file(s)") }}</span>
+									<span v-else class="text-secondary small">—</span>
+								</td>
+								<td class="text-end">
+									<button type="button" class="btn btn-ghost-danger btn-icon btn-sm" :title="t('Remove requirement')" @click="removeRequirement(i)"><i class="ti ti-x"></i></button>
+								</td>
+							</tr>
+						</tbody>
+					</table>
+					<div class="p-2 d-flex gap-2 border-top">
+						<button type="button" class="btn btn-ghost-primary btn-sm" @click="addRequirement">
+							<i class="ti ti-plus me-1"></i>{{ t("Add requirement") }}
+						</button>
+						<button type="button" class="btn btn-ghost-secondary btn-sm" @click="addStandardSet">
+							<i class="ti ti-template me-1"></i>{{ t("Add standard set") }}
+						</button>
+						<span class="text-secondary small ms-auto align-self-center">
+							{{ t("Tender-level requirements are edited on the tender, not here.") }}
+						</span>
+					</div>
+				</div>
+
+				<div v-else class="card-body p-0">
 					<table class="table card-table align-middle">
 						<thead>
 							<tr>
@@ -242,6 +301,7 @@ import { useToast } from "../../composables/useToast.js";
 import { useTenderContext } from "../../composables/useTenderContext.js";
 import EmptyState from "../../components/EmptyState.vue";
 import SkeletonRows from "../../components/SkeletonRows.vue";
+import DateInput from "../../components/DateInput.vue";
 import TenderPage from "./TenderPage.vue";
 import TenderWorkspaceTabs from "./TenderWorkspaceTabs.vue";
 
@@ -265,6 +325,88 @@ const uploadOpen = ref(false);
 const uploadSaving = ref(false);
 const targetReq = ref(null);
 const uploadForm = ref({ file_name: "", file_url: "" });
+
+// ── Requirement authoring (ADR-201/205) ─────────────────────────────────────
+// Until 2026-08-28 the only screen that could create a requirement row was
+// TenderIntake.vue on the PO control board — a post-win screen editing the
+// checklist through the intake JSON blob. That is why ADR-201 could not retire
+// its edit rights. The writer lives here now: one surface owns the checklist,
+// and `set_tender_document_requirements` reconciles files/waivers server-side
+// so a rename never costs an upload.
+const editing = ref(false);
+const savingReqs = ref(false);
+const draft = ref([]);
+
+const ROLE_OPTIONS = [
+	{ value: "general", label: t("General") },
+	{ value: "customs", label: t("Customs") },
+	{ value: "logistics", label: t("Logistics") },
+	{ value: "finance", label: t("Finance") },
+];
+
+// Mirrors the backend's default_doc_requirements() — keys and role assignments
+// drive who may upload to each row.
+const STD_DOCS = [
+	{ key: "gtd", label: t("Customs Declaration (GTD)"), required: 1, role: "customs" },
+	{ key: "origin_cert", label: t("Certificate of Origin"), required: 0, role: "customs" },
+	{ key: "cmr", label: t("CMR / Waybill"), required: 1, role: "logistics" },
+	{ key: "packing_list", label: t("Packing List"), required: 0, role: "logistics" },
+	{ key: "invoice", label: t("Commercial Invoice"), required: 1, role: "finance" },
+	{ key: "tech_spec", label: t("Technical Specification"), required: 1, role: "general" },
+	{ key: "price_offer", label: t("Price Offer"), required: 1, role: "general" },
+];
+
+// Only lot rows are editable here. A tender-level requirement is shared by every
+// lot under the master, so the server refuses one in this payload — the draft
+// must not carry them or every save would throw.
+function startEditing() {
+	draft.value = requirements.value
+		.filter((r) => r.scope !== "tender")
+		.map((r) => ({ key: r.key, label: r.label, required: r.required ? 1 : 0, role: r.role || "general", date: r.date || "", done: !!r.done, file_count: r.file_count || 0, waiver_reason: r.waiver_reason || "" }));
+	editing.value = true;
+}
+
+function cancelEditing() {
+	editing.value = false;
+	draft.value = [];
+}
+
+function addRequirement() {
+	draft.value.push({ key: "", label: "", required: 1, role: "general", date: "", done: false, file_count: 0, waiver_reason: "" });
+}
+
+function addStandardSet() {
+	const have = new Set(draft.value.map((d) => d.key || d.label));
+	for (const d of STD_DOCS) {
+		if (!have.has(d.key)) draft.value.push({ ...d, date: "", done: false, file_count: 0, waiver_reason: "" });
+	}
+}
+
+function removeRequirement(i) {
+	draft.value.splice(i, 1);
+}
+
+async function saveRequirements() {
+	savingReqs.value = true;
+	try {
+		const res = await call("stabler.api.tender_documents.set_tender_document_requirements", {
+			deal: deal.value,
+			requirements: JSON.stringify(
+				draft.value.map((d) => ({ key: d.key, label: d.label, required: d.required ? 1 : 0, role: d.role, date: d.date })),
+			),
+			company: activeCompany.value,
+		});
+		requirements.value = res.requirements || [];
+		summary.value = res.summary || null;
+		editing.value = false;
+		draft.value = [];
+		toast.success(t("Checklist saved"));
+	} catch (err) {
+		toast.error(err.message || t("Failed to save the checklist"));
+	} finally {
+		savingReqs.value = false;
+	}
+}
 
 const waiveOpen = ref(false);
 const waiveSaving = ref(false);

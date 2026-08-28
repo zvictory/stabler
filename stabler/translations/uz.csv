@@ -6424,3 +6424,17 @@ Currency this charge is quoted in,Xarajat ko'rsatilgan valyuta
 Rate date,Kurs sanasi
 Fetch the Central Bank rate,Markaziy bank kursini olish
 Enter an exchange rate,Kursni kiriting
+Add requirement,Talab qo'shish
+Add standard set,Standart to'plamni qo'shish
+Checklist saved,Nazorat ro'yxati saqlandi
+Document name,Hujjat nomi
+Edit checklist,Nazorat ro'yxatini tahrirlash
+Failed to save the checklist,Nazorat ro'yxatini saqlab bo'lmadi
+No documents yet — add them in the Document Center.,Hujjatlar hali yo'q — Hujjatlar markazida qo'shing.
+Open Document Center,Hujjatlar markazini ochish
+Remove requirement,Talabni olib tashlash
+Requirement,Talab
+Responsible role,Mas'ul rol
+Save checklist,Nazorat ro'yxatini saqlash
+"Tender-level requirements are edited on the tender, not here.","Tender darajasidagi talablar shu yerda emas, tenderda tahrirlanadi."
+file(s),fayl
