@@ -62,7 +62,15 @@ Tender board'u (MyTenders/DirectorBoard) aç → tarayıcı Network sekmesi: ~60
 
 Deploy prosedürü: **CLAUDE.md → "Deploy procedure (rsync + on-server build)"** ve `deploy_full.sh`. Aşağıdakiler UZEX'e özgü eklemeler.
 
-### B.1 site_config.json anahtarları (anjan.erpstable.com)
+### B.1 site_config.json anahtarları (**mikas**.erpstable.com)
+
+> Düzeltildi 2026-08-28. Burası 08.07'den beri `anjan.erpstable.com` yazıyordu ve
+> yanlıştı — büyük olasılıkla başka bir checklist'ten kopyalanmış varsayılan.
+> Ölçüldü, prod, salt-okunur: `module_map_for(c).get("tender")` sekiz kiracının
+> yalnız **mikas**'ında `True` (`Mikas`); anjan dahil diğer yedisinde `False`.
+> `2026-07-11-master-roadmap.md:43` de mikas diyor ve bu dosyadan 19 gün daha yeni.
+> Anahtarlar anjan'a yazılsaydı poller doğru kiracıda hiç açılmazdı ve yanlış
+> kiracıda ihale aramaya başlardı — iki hata birden, ikisi de sessiz.
 | Anahtar | Zorunlu | Değer |
 |---|---|---|
 | `uzex_endpoint` | hayır (varsayılan var) | `https://apietender.uzex.uz/api` |
