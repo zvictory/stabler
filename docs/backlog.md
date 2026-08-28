@@ -14,6 +14,71 @@ ayrıca `make test-bench`.
 
 ## P1 — yüksek
 
+### Gece taraması 496.684 dolarlık bir hatayı buluyor ve dört sayının içine gömüyor
+`hata` · ölçüldü 2026-08-28 gece, prod (anjan), salt-okunur
+
+`stabler/tasks/gl_integrity.py:14` her gece koşuyor ve **çalışıyor**. Çöken raporlama:
+son 30 günde 15 Error Log kaydı, hepsi aynı cümle — `Failed to send GL integrity
+alert email: outgoing email account not set up`. E-posta bu kutuda yapısal olarak
+çalışmıyor; `stabler-deploy` skill'i bunu zaten yazıyor ("burada 'hata olunca mail
+atar' diyen her şey tiyatro").
+
+Ama asıl bulgu, ulaşamayan e-postanın **içinde**:
+
+| Ölçüm (anjan, 28.08) | Değer |
+|---|---|
+| Taranan dövizli satır (SI+PI+PE+JE) | **84 968** |
+| İşaretlenen | **72** (%0,085 — kural fazla ateşlemiyor) |
+| 72'nin dağılımı | 69 JE satırı (13 belge) + 3 Payment Entry |
+| 69'un 52'si | tek belgede: `ACC-JV-2026-00023`, bir **açılış kaydı**, 754 satır |
+| O belgenin doğru satırı | **701 / 754** — kurlar 8,1e-05, yani gerçek |
+
+Ve tek bir satır:
+
+| | |
+|---|---|
+| Kayıttaki kur | **1.0** (UZS→USD) |
+| Gerçek kur 29.03.2026 | 0,00008107 |
+| Tutar | 496 724 UZS |
+| Deftere yazılan | **496 724,40 USD** |
+| Olması gereken | **40,27 USD** |
+| Şişme | **496 684,13 USD** — açılış kaydının %85'i |
+
+`party` boş, kur 1.0: "1 so'm = 1 dolar". Kalan 52 işaretli satır %5–20 sapıyor ve
+net etkileri ±300 dolar; sıradan kur farkı.
+
+Ayrıca `d2_postings: 1` → `ACC-PAY-2026-16644`, 225 UZS'yi 225 USD yazmış (aynı
+imza, küçük tutar). `wrong_account_type: 7` → tedarikçi tarafı gider hesaplarına
+yazılmış Journal Entry'ler (Elektr Energiya, Gaz, Suv), `account_type` boş — hata
+değil, süreç sorusu: o tedarikçilerin carisi Payable üzerinden mutabık kalmaz.
+
+**Dürüst sınır:** defter okundu, denetlenmedi. Açılış kaydı dengede (583 748 borç =
+alacak), yani 496 bin yanlışsa karşı tarafta bir şey emiyor — muhtemelen açılış
+özkaynağı. Karşı satırı bir muhasebecinin onaylaması gerekir.
+
+#### Düzeltme yönü — ve neden "kanalı değiştir" yanlış cevap
+
+Üç ayrı kusur, sırası önemli:
+
+1. **Rapor sayı yayınlıyor, tutar değil.** `off_cbu_docs: 72` formatında 496 bin
+   dolarlık bir hata ile 6 sentlik bir yuvarlama farkı aynı görünüyor. Kanal ne
+   olursa olsun bu format bilgi taşımıyor.
+2. **Sonuç hiçbir yerde kalıcı değil.** `gl_integrity_scan`
+   (`stabler/api/compliance.py:471-621`) saf SELECT — INSERT yok, doctype yok,
+   cache yok. `Compliance.vue:45` bile gece taramasının sonucunu okumuyor, kendi
+   canlı taramasını yapıyor. "Bu maddeyle ilgilenildi mi" sorusu cevaplanamaz.
+3. **Kanal.** En kolayı ve en az önemlisi.
+
+**Uyarı — transition-only bildirim burada ters teper.** Watchdog deseni ("yeni →
+uyar, değişmedi → sessiz") `stabler-watch` için doğru, çünkü o *anlık canlılık*
+izliyor. Bu tarama ise **tüm geçmişi** tarıyor, penceresi yok: 72 sayısı Mart'tan
+beri sabit. Transition-only mantığı altında "değişmedi = sessiz" olur ve
+496 bin dolarlık kalem **hiç haber verilmez** — çünkü değişmiyor, açık duruyor.
+Bu veri şeklinde "değişmedi" tam olarak sorunun kendisi.
+
+Yeniden üretim: `stabler/api/compliance.py:472` `gl_integrity_scan("ANJAN")`, sonra
+`ACC-JV-2026-00023` satırlarını `exchange_rate` ile CBU kurunu karşılaştırarak ayır.
+
 ### ~~Her fatura gönderimi, kapalı entegrasyonlara bile, iki arka plan işi kuyruğa atıyor~~
 **ÇÖZÜLDÜ 2026-08-28 — `ec98be6`.** Ölçüm kaydı aşağıda duruyor; kapanış notu bölümün sonunda.
 
