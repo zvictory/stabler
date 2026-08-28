@@ -18,6 +18,59 @@ canlı bench koşusuna işaretlidir. D-2 gereği hiçbir dosya veya endpoint ad�
 
 ---
 
+## DURUM — 2026-08-28 denetimi
+
+> **Bu doküman artık bir karar önerisi değil, kısmen uygulanmış bir kaydın
+> arşivi.** Aşağıdaki bölümler yazıldıkları hâlde bırakıldı; ne söyledikleri
+> değişmedi, ne oldukları değişti. Neyin geçerli olduğu burada, aşağıda değil.
+>
+> Bölüm 9'daki "Zafar'ın kararı gereken" maddelerin 1, 2 ve 3'ü **sorulmadan,
+> kod tarafından cevaplandı.** Doküman o commit'lerden sonra bir kez daha
+> düzenlendi (`f62105c`) ve yine güncellenmedi. Bu satırlar o boşluğu kapatıyor.
+
+### 7 kusurun bugünkü hâli
+
+| # | Kusur | Durum | Nerede |
+|---|---|---|---|
+| 1 | Düzenleme değerlendirme verisini siliyor | **kapandı** | `0edcba2` — PATCH semantiği, `tender.py` `_sent()` |
+| 2 | Düzenleme belge listesini siliyor | **kapandı** | `0edcba2`; çekmece artık `documents` göndermiyor |
+| 3 | B/C bölümünün yarısı yazmıyor | **kapandı** | `8abffa2` — 7 master alanı whitelist'te; `title` dahil |
+| 4 | İki isimli tek son tarih | **kapandı** | `bid_deadline` tek anahtar; `_intake_bid_deadline()` |
+| 5 | Kart değeri pratikte 0 | **kapandı** | `3d59283` — `estimated_total` okunuyor |
+| 6 | Karar formu yanlış ekranda | **kapandı** | `fcb212f`, `14887c7` — E bölümü çekmecede |
+| 7 | Hazırlık yüzdesi olmayan anahtarı sayıyor | **kapandı** | `3d59283` — tek kaynak `docs_summary` |
+
+Planın yazılmasından sonra bulunan, planda **olmayan** bir kusur: çekmecenin
+`title` tohumu müşteri adından besleniyordu ve `title` kalıcı hâle gelince o ad
+ihale başlığı olarak yazılıyordu — `a6d0521`.
+
+### Ölçüm (planın hiç yapmadığı)
+
+mikas prod, salt-okunur, 2026-08-28: **CRM Deal 0**, RFQ 0, Supplier Quotation
+0, PO 0, SO 0. Tender Master 6 — hepsi `Administrator`, 2026-08-15 19:58–20:10
+arası 12 dakikada yaratılmış ve o gün bugündür değiştirilmemiş (CRUD UAT
+koşusu). Silinmiş Deal: 83.
+
+Yani yukarıdaki kusurların hiçbiri canlı bir kaydı bozmadı; hepsi ilk gerçek
+ihaleden önce kapatıldı. Planın aciliyet dili ölçülmemiş bir korpusa dayanıyordu.
+
+### Hâlâ açık
+
+- **ADR-201 / ADR-205 birbirini iptal ediyor.** ADR-201 `TenderIntake.vue`'nun
+  düzenleme hakkını tümüyle alıyor; ADR-205'in uygulaması ise onu "gerçek bir
+  şablon editörü" sayan bir gerekçeyle yazıldı (`tender.py`, `documents` dalı).
+  İkisi aynı dokümanda. Biri geçersiz; hangisi olduğu karara bağlı.
+- **ADR-209'un sırası yanlış bir olguya dayanıyor.** "(1) giriş çekmecesi +
+  kanban (zaten `ds-*`)" diyor. Ölçüldü: `TenderMasterDrawer.vue` **0** adet
+  `ds-*`, **46** adet `tgm-*` taşıyor; `ds-*` olan yalnız `TenderCrm.vue` (106).
+  Yani ortada üçüncü bir tasarım dili var ve en yeni yazılan form göçten muaf
+  tutulmuş durumda.
+- **`/tender/mockup` prod'da**, `module: "tender"` dışında kapısı yok — tender
+  açık her kiracının her kullanıcısı bu iç tasarım belgesini görebiliyor. Diğer
+  tender rotalarıyla aynı kapı, yani tekil bir delik değil; yine de bir karar.
+
+---
+
 ## KARAR ÖZETİ
 
 > **İki kaynak planın da işi bitmiştir.** `belge_merkezi_draft.html`'in 7 bead'i ship;
