@@ -1,5 +1,16 @@
 # Deploy prompt — Stabler `8409dab` (funnel v2 + except onarımı + v56–58)
 
+> **ARŞİV — koşulmuş bir deploy'un kaydı, koşulacak bir talimat değil.**
+> Bu dosya belirli bir commit'e (`8409dab`) sabitli ve `docs/ops/archive/` altında
+> duruyor; olduğu gibi bırakıldı çünkü arşivin işi ne yapıldığını göstermek.
+>
+> **Buradaki hiçbir komutu kopyalama.** Özellikle Adım 5'teki `migrate` döngüsü:
+> kiracı listesini elle sayıyor ve **eksik**. O gün 7 site vardı; bugün 8
+> (`zuma` sonradan eklendi) ve `migrate` site başına koşar — bu döngü kopyalanırsa
+> en az bir kiracı DDL'siz kalır, üstelik orada bir şey kırılana kadar sessizce.
+> Güncel desen `.claude/skills/stabler-deploy/SKILL.md`'de; `make guards` bu
+> dizin dışındaki kopyalarını 2026-08-28'den beri reddediyor.
+
 Bu dosyanın tamamını Claude Code'a yapıştır, `~/frappe-bench-local/apps/stabler` içinden.
 Sıradan çıkma, her adımın çıktısını göster, ilk hatada dur.
 
@@ -84,6 +95,10 @@ ssh ice-production 'cd /home/frappe/frappe-bench && bench build --app stabler'
 ```
 
 ## Adım 5 — migrate, 7 sitenin HEPSİ
+
+> ⚠️ **ARŞİV — kopyalama.** Aşağıdaki döngü kiracı listesini elle sayıyor ve eksik
+> (o gün 7 site, bugün 8). Kayıt olduğu için düzeltilmedi; güncel desen
+> `.claude/skills/stabler-deploy/SKILL.md`'de.
 
 ```bash
 ssh ice-production 'cd /home/frappe/frappe-bench && for s in anjan dts horeca laminor mikas msa smartbox; do

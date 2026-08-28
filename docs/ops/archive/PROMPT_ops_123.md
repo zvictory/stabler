@@ -2,7 +2,16 @@
 
 > **✅ KOŞULDU — 2026-07-28.** İş 1 deploy edildi (yedek `/root/stabler-app-2026-07-28-1541.tgz`),
 > İş 2 audit hedefle birebir çıktı (uygulama gerekmedi), İş 3'te sapmalı CI 0'dı.
-> Dosya referans olarak duruyor; yeniden koşmak güvenli (idempotent) ama gereksiz.
+> Dosya referans olarak duruyor.
+>
+> **ARŞİV NOTU — 2026-08-28. "Yeniden koşmak güvenli" satırı burada duruyordu; geri
+> alındı.** Patch'ler hâlâ idempotent, ama bu dosyadaki iki döngü (1.3 migrate,
+> 2.1 audit) kiracı listesini elle sayıyor ve **eksik**: o gün 7 site vardı, bugün 8
+> (`zuma` sonradan eklendi). `migrate` site başına koşar, yani döngü kopyalanırsa en
+> az bir kiracı DDL'siz kalır ve bu, orada bir şey kırılana kadar tamamen sessizdir.
+> Metin kayıt olduğu için değiştirilmedi; **komutları kopyalama.** Güncel desen
+> `.claude/skills/stabler-deploy/SKILL.md`'de, ve `make guards` bu dizin dışındaki
+> elle yazılmış kopyaları artık reddediyor.
 
 Bu dosyanın tamamını Claude Code'a yapıştır, `~/frappe-bench-local/apps/stabler` içinden.
 Üç iş sırayla; her işin sonunda çıktıyı göster. **ONAY yazan yerde bana sor, cevapsız geçme.**
@@ -60,6 +69,10 @@ ssh ice-production 'cd /home/frappe/frappe-bench && bench build --app stabler'
 Önceki deploy'un v59'u migrate edip etmediği belirsiz; patch'ler guard'lı,
 7 sitede koşmak güvenli:
 
+> ⚠️ **ARŞİV — kopyalama.** Aşağıdaki döngü kiracı listesini elle sayıyor ve eksik
+> (o gün 7 site, bugün 8). Kayıt olduğu için düzeltilmedi; güncel desen
+> `.claude/skills/stabler-deploy/SKILL.md`'de.
+
 ```bash
 ssh ice-production 'cd /home/frappe/frappe-bench && for s in anjan dts horeca laminor mikas msa smartbox; do
   echo "=== $s ==="; bench --site "$s.erpstable.com" migrate 2>&1 | tail -3; done'
@@ -98,6 +111,10 @@ Kod yok, restart yok — sadece `Stabler Settings` verisi. Geri alınabilir
 (modül kapatmak veri silmez).
 
 ## 2.1 önce AUDIT (salt okuma, 7 site)
+
+> ⚠️ **ARŞİV — kopyalama.** Aşağıdaki döngü kiracı listesini elle sayıyor ve eksik
+> (o gün 7 site, bugün 8). Kayıt olduğu için düzeltilmedi; güncel desen
+> `.claude/skills/stabler-deploy/SKILL.md`'de.
 
 ```bash
 ssh ice-production 'cd /home/frappe/frappe-bench && for s in anjan dts horeca laminor mikas msa smartbox; do
