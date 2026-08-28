@@ -63,9 +63,15 @@ ihaleden önce kapatıldı. Planın aciliyet dili ölçülmemiş bir korpusa day
   `ds-*`, **46** adet `tgm-*` taşıyor; `ds-*` olan yalnız `TenderCrm.vue` (106).
   Yani ortada üçüncü bir tasarım dili var ve en yeni yazılan form göçten muaf
   tutulmuş durumda.
-- **`/tender/mockup` prod'da**, `module: "tender"` dışında kapısı yok — tender
+- ~~**`/tender/mockup` prod'da**, `module: "tender"` dışında kapısı yok — tender
   açık her kiracının her kullanıcısı bu iç tasarım belgesini görebiliyor. Diğer
-  tender rotalarıyla aynı kapı, yani tekil bir delik değil; yine de bir karar.
+  tender rotalarıyla aynı kapı, yani tekil bir delik değil; yine de bir karar.~~
+  **Karar verildi 2026-08-28: kaldırıldı.** Rota, `director` kapılı nav bağlantısı
+  ve bileşen silindi; çizim `docs/plans/assets/`'e taşındı — `docs` `.rsync-exclude`
+  içinde olduğu için oradan hiçbir sunucuya gitmez. Gerekçe, kaydın kendi
+  gerekçesinin tersine dönmesi: ürünün kendi çerçevesinde açılan bir çizim, üstünde
+  ne yazarsa yazsın ürünün tarifi gibi okunuyor — ve slice 1 indikten sonra çizimin
+  bir kısmı artık var olan hakkında yanlış.
 
 ---
 
@@ -356,7 +362,11 @@ yalnız kart rozetine yansır; hatırlatma/otomasyon ayrı bead.
 
 ## 6 · Mockuplar
 
-`stabler/public/mockups/mikas-tender-workflow.html` — tek dosya, beş sekme (uygulama içinden: `#/tender/mockup`; `docs/` prod'a rsync edilmediği için servis edilen varlık ağacına taşındı):
+`docs/plans/assets/mikas-tender-workflow.html` — tek dosya, beş sekme. **Yolu
+2026-08-28'de değişti**: uygulamadan kaldırılınca `stabler/public/mockups/`'tan geri
+taşındı, çünkü o ağaç `sites/assets/stabler`'a bağlı ve ham servis ediliyor — rotayı
+silmek dosyayı kendi URL'sinde erişilebilir bırakırdı. Artık uygulamadan açılmıyor;
+dosyayı doğrudan tarayıcıda aç.
 
 | Sekme | Ne gösteriyor | Hangi ADR |
 |---|---|---|
