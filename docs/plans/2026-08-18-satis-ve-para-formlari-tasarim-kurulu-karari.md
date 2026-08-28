@@ -52,6 +52,14 @@ en çok "P0" gibi gelen iddialardı. Sandbox'ta bench/DB yok; davranış teyidi
 > hiç yok. Bu dilimin işi yeni ekran çizmek değil, **bu altı sözleşmeyi tek yere
 > indirmek**.
 
+> **Üst not — 2026-08-28.** Bu özetin son cümlesi (*"bu altı sözleşmeyi tek yere
+> indirmek"*) **geri çekildi.** §4'ün on ADR'sinden sekizi geçersiz kılındı; ayakta
+> kalanlar ADR-405 ve ADR-406. Teşhis doğruluğunu koruyor — dört ekran hâlâ bir form
+> sözleşmesi paylaşmıyor — ama bu turda tedavi yapılmayacak. Gerekçe ve ölçümler:
+> `docs/plans/2026-08-28-satis-para-adr-budamasi.md`.
+>
+> Özetin geri kalanı ve §2/§5'teki P0 ile D maddeleri **aynen geçerlidir**.
+
 ---
 
 ## 1 · Bugün dört ekran kodda nasıl duruyor
@@ -380,6 +388,15 @@ uygulanmadı.
 ## 4 · Kararlar (ADR)
 
 ### ADR-401 — Tek kur bloğu bileşeni; dört kopya emekli edilir
+
+> **GEÇERSİZ — 2026-08-28.** Zafar bu ADR'yi iptal etti; gerekçe ve dayanak ölçümler:
+> `docs/plans/2026-08-28-satis-para-adr-budamasi.md`. Kısaca: on gün ve 51 düzeltme commit'i boyunca on ADR'nin hiçbiri
+> uygulanmadı, dolayısıyla mandanın kendisi geri çekildi.
+>
+> **Bu, aşağıdaki kusurun kabul edildiği anlamına gelmez.** §2'nin P0'ları ve §5'in D
+> maddeleri aynen geçerlidir; kalkan şey yalnızca "bu, tek bir mimari kararın parçası
+> olarak çözülecek" iddiasıdır. Aşağıdaki teşhis okunmaya değer.
+
 Yeni `components/ExchangeRateBlock.vue` (ya da `composables/fx.js`'in genişletilmiş
 sözleşmesi). Tek uygulamada dört değişmez:
 1. **Gösterim daima güçlü yönde** — `1 USD = 12 101,85 UZS`, asla `0,000082632`.
@@ -394,6 +411,15 @@ Beş ekran (SO ×2, SI, Gider, Transfer) bu tek bileşeni kullanır. `Expenses.v
 ve `Transfers.vue:262-297` silinir.
 
 ### ADR-402 — Aksiyon görünürlüğü sunucudan gelir: `allowed_actions`
+
+> **GEÇERSİZ — 2026-08-28.** Zafar bu ADR'yi iptal etti; gerekçe ve dayanak ölçümler:
+> `docs/plans/2026-08-28-satis-para-adr-budamasi.md`. Kısaca: on gün ve 51 düzeltme commit'i boyunca on ADR'nin hiçbiri
+> uygulanmadı, dolayısıyla mandanın kendisi geri çekildi.
+>
+> **Bu, aşağıdaki kusurun kabul edildiği anlamına gelmez.** §2'nin P0'ları ve §5'in D
+> maddeleri aynen geçerlidir; kalkan şey yalnızca "bu, tek bir mimari kararın parçası
+> olarak çözülecek" iddiasıdır. Aşağıdaki teşhis okunmaya değer.
+
 Belge detay uçları (`sales_order_detail`, `sales_invoice_detail`, `_load_bank_entry`)
 cevaba `allowed_actions: ["save","submit","cancel","amend","delete","create_invoice",…]`
 ekler; `useDocumentForm.can` bunu okur, docstatus'tan **türetmeyi bırakır**. İstemci
@@ -404,6 +430,15 @@ olduğunu zaten gösterdi.
 Kapsam: dört ekranın tamamı + Havale (kurulun D5'i böylece kapanır).
 
 ### ADR-403 — Tek aksiyon çubuğu grameri, dört durumun her biri için tasarlanır
+
+> **GEÇERSİZ — 2026-08-28.** Zafar bu ADR'yi iptal etti; gerekçe ve dayanak ölçümler:
+> `docs/plans/2026-08-28-satis-para-adr-budamasi.md`. Kısaca: on gün ve 51 düzeltme commit'i boyunca on ADR'nin hiçbiri
+> uygulanmadı, dolayısıyla mandanın kendisi geri çekildi.
+>
+> **Bu, aşağıdaki kusurun kabul edildiği anlamına gelmez.** §2'nin P0'ları ve §5'in D
+> maddeleri aynen geçerlidir; kalkan şey yalnızca "bu, tek bir mimari kararın parçası
+> olarak çözülecek" iddiasıdır. Aşağıdaki teşhis okunmaya değer.
+
 Kural, hepsi test edilebilir:
 - **Bölge başına tek dolgulu düğme.** Gönderilmiş SO'da `btn-success` "Create Invoice"
   tek dolgulu düğme olarak birincil rolü üstleniyor (`Modern:1579`, `Classic:1324`) —
@@ -419,18 +454,35 @@ Kural, hepsi test edilebilir:
   çizilir**; sıralama kaynak sırasına ve `ms-auto`'nun nereye düştüğüne bırakılmaz.
 
 ### ADR-404 — Tek kaydetme sözlüğü
+
+> **GEÇERSİZ — 2026-08-28.** Zafar bu ADR'yi iptal etti; gerekçe ve dayanak ölçümler:
+> `docs/plans/2026-08-28-satis-para-adr-budamasi.md`. Kısaca: on gün ve 51 düzeltme commit'i boyunca on ADR'nin hiçbiri
+> uygulanmadı, dolayısıyla mandanın kendisi geri çekildi.
+>
+> **Bu, aşağıdaki kusurun kabul edildiği anlamına gelmez.** §2'nin P0'ları ve §5'in D
+> maddeleri aynen geçerlidir; kalkan şey yalnızca "bu, tek bir mimari kararın parçası
+> olarak çözülecek" iddiasıdır. Aşağıdaki teşhis okunmaya değer.
+
 `Save & close` / `Save & new` / `Save & clear` — beş ekranda aynı. `Record & …` ve
 `Save Draft` emekli. **`Save & clear` ya gerçekten kaydeder ya da adı `Discard & new`
 olur** (P0-EXP-2); üçüncü seçenek yok. Ve `persistSaveMode` yalnız **başarılı bir
 kayıttan sonra** yazar.
 
 ### ADR-405 — Yükleme sırasında watcher'lar susar
+
+> **KALIYOR — 2026-08-28.** On ADR'den yalnız ikisi ayakta bırakıldı; bu onlardan biri.
+> Sebep ve ölçümler: `docs/plans/2026-08-28-satis-para-adr-budamasi.md`.
+
 `useDocumentForm` bir `hydrating` bayrağı yayınlar; `price_list`, `currency`,
 `customer` watcher'ları ondan geçer. Bugün üç ayrı çözüm var: Klasik `loadingDoc`
 (`:356-365`), Transfer `hydrating` (`:405-414`), SO Modern ve SI Modern **hiçbiri**.
 Tek yere iner. Bu, P0-SO-1, P0-SO-4 ve P0-SI-5'in ortak cevabıdır.
 
 ### ADR-406 — Para biçimlemesi tek yoldan: `formatMoney` / `formatRate`
+
+> **KALIYOR — 2026-08-28.** On ADR'den yalnız ikisi ayakta bırakıldı; bu onlardan biri.
+> Sebep ve ölçümler: `docs/plans/2026-08-28-satis-para-adr-budamasi.md`.
+
 `Expenses.vue` ve `Transfers.vue`'deki yerel `fmtAmt`/`fmtRate` silinir.
 
 > **Düzeltme 2026-08-28.** Bu madde paylaşılan `formatRate`'i `composables/money.js`'de
@@ -443,6 +495,15 @@ Tek yere iner. Bu, P0-SO-1, P0-SO-4 ve P0-SI-5'in ortak cevabıdır.
 biri bir buçuk **milyar** okunuyor.
 
 ### ADR-407 — Gider ve Transfer, kendi modülünün standardına döner
+
+> **GEÇERSİZ — 2026-08-28.** Zafar bu ADR'yi iptal etti; gerekçe ve dayanak ölçümler:
+> `docs/plans/2026-08-28-satis-para-adr-budamasi.md`. Kısaca: on gün ve 51 düzeltme commit'i boyunca on ADR'nin hiçbiri
+> uygulanmadı, dolayısıyla mandanın kendisi geri çekildi.
+>
+> **Bu, aşağıdaki kusurun kabul edildiği anlamına gelmez.** §2'nin P0'ları ve §5'in D
+> maddeleri aynen geçerlidir; kalkan şey yalnızca "bu, tek bir mimari kararın parçası
+> olarak çözülecek" iddiasıdır. Aşağıdaki teşhis okunmaya değer.
+
 `ListToolbar` + otomatik uygulanan filtre (Apply düğmesi silinir) + `SkeletonRows`.
 Referans: `PaymentEntries.vue`.
 
@@ -465,6 +526,9 @@ Referans: `PaymentEntries.vue`.
 
 ### ADR-408 — `modern_sales_order` bayrağı: düzeltilir ve tek varyanta inilir
 
+> **Ayrıca 2026-08-28 budamasının kapsamındadır** (`docs/plans/2026-08-28-satis-para-adr-budamasi.md`); aşağıdaki 21.08
+> kararı yürürlükte kalır.
+>
 > **GEÇERSİZ — 2026-08-21.** Bu ADR'nin bitişi (*"varsayılan olur ve Klasik
 > silinir"*) Zafar tarafından geri alındı: **Klasik kalıcıdır, Modern yalnız msa ve
 > mikas'ta açılacaktır.** Aşağıdaki gerekçe ve taşıma listeleri geçerliliğini
@@ -484,6 +548,15 @@ Modern'den Klasik'e **taşınacak** olan (bayrak açılmasa bile, çünkü Klasi
 `:459-476` `res.currency`'yi hiç okumuyor, UZS liste fiyatını USD siparişe ham yazıyor).
 
 ### ADR-409 — Satış Faturası: satır ızgarası faturaya özel kalır, klavye sözleşmesi paylaşılır
+
+> **GEÇERSİZ — 2026-08-28.** Zafar bu ADR'yi iptal etti; gerekçe ve dayanak ölçümler:
+> `docs/plans/2026-08-28-satis-para-adr-budamasi.md`. Kısaca: on gün ve 51 düzeltme commit'i boyunca on ADR'nin hiçbiri
+> uygulanmadı, dolayısıyla mandanın kendisi geri çekildi.
+>
+> **Bu, aşağıdaki kusurun kabul edildiği anlamına gelmez.** §2'nin P0'ları ve §5'in D
+> maddeleri aynen geçerlidir; kalkan şey yalnızca "bu, tek bir mimari kararın parçası
+> olarak çözülecek" iddiasıdır. Aşağıdaki teşhis okunmaya değer.
+
 Devir notu (`2026-08-18-HANDOFF-msa-direct-invoice.md`) `LineItemsEditor`'a koli
 öğretmenin altı kiracının SO ekranına dokunmak olacağını, ve bunu kilitleyen bir test
 olduğunu kaydediyor. **Bu sınır korunur.** Ama bugün SI ızgarasının **hiç `@keydown`'ı
@@ -492,6 +565,15 @@ yok**: SO'da öğrenilen ↑/↓ sütun gezinme, Esc, Tab-ile-yeni-satır, Enter
 doğrulama ortak bir composable'a çıkar; **sütunlar ayrı kalır, davranış ayrı kalmaz.**
 
 ### ADR-410 — Koli okuma yolu kapatılır; ürün adı regex'i silinir
+
+> **GEÇERSİZ — 2026-08-28.** Zafar bu ADR'yi iptal etti; gerekçe ve dayanak ölçümler:
+> `docs/plans/2026-08-28-satis-para-adr-budamasi.md`. Kısaca: on gün ve 51 düzeltme commit'i boyunca on ADR'nin hiçbiri
+> uygulanmadı, dolayısıyla mandanın kendisi geri çekildi.
+>
+> **Bu, aşağıdaki kusurun kabul edildiği anlamına gelmez.** §2'nin P0'ları ve §5'in D
+> maddeleri aynen geçerlidir; kalkan şey yalnızca "bu, tek bir mimari kararın parçası
+> olarak çözülecek" iddiasıdır. Aşağıdaki teşhis okunmaya değer.
+
 `custom_boxes` / `custom_box_kg` `SalesInvoiceForm.vue` görüntüleyicisine, `InvoicePrint.vue`'ya
 ve `Waybill.vue`'ya bağlanır; `/\((\d+)\)\s*$/` regex'i (`InvoicePrint.vue:23-33`,
 `Waybill.vue:27-40`) silinir. Bugün yazılan alan hiçbir ekranda okunmuyor ve baskı,
