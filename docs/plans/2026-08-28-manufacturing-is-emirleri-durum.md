@@ -220,8 +220,8 @@ burada yalnız kayıt yok.
 | 1a | **BİTTİ** (`f227f62`) | — |
 | 1d | **BİTTİ** — parti yakalama + dürüst köken | ağaç, parti kaydı birikene kadar |
 | 1c planlama | **BİTTİ** — hat × gün panosu | Zafar'ın hook kararı (aşağıya bakınız) |
-| 1b kanban | YAPILMADI | kararla açıldı, sırada |
-| Fire/duruş | YAPILMADI | kararla açıldı |
+| 1b kanban | **ÖLÜ** — ölçümle iptal | — |
+| Fire/duruş | **ENGELLİ** | Zafar: duruş sebep listesi + model seçimi |
 
 ### Uygulanan — malzeme talebi kapısı (`5bea879`)
 
@@ -301,3 +301,61 @@ de bu cevaptan sonra anlam kazanıyor. Cevap "yönetici" ise 1b ve 1c yazılmama
 
 Bu soru, `operator-dashboard` paketinin sorusuyla (bkz.
 `2026-08-28-operator-dashboard-durum.md`) **aynı sorudur** ve birlikte cevaplanmalıdır.
+
+
+## 1b kanban neden ölü — 2026-08-28
+
+Operasyon kartlarını öldüren ölçümün aynı sınıfı, bu kez dört ayrı eksende birden.
+Bir kanban'ın ihtiyacı olan her şey ya yazılamaz ya da yozlaşmış:
+
+| Kanban'ın ihtiyacı | anjan'da ölçülen |
+|---|---|
+| Sürüklenebilir bir durum | `Work Order.status` **`read_only = 1`, `allow_on_submit = 0`** — ERPNext türetiyor. Bir kart sürüklemek o kolonu yazamaz. |
+| Kolonlara dağılmış kartlar | 3 753 Completed · 31 Not Started · 2 In Process · 1 Closed · 6 Draft → **%99,1 tek kolonda** |
+| Kartların kolonda beklemesi | 3 753 tamamlanan emrin **3 629'u açılışından bir saat içinde** tamamlanmış. Emir açılıyor, koşuyor, kapanıyor — kolonlar arasında **akış yok** |
+| Kullanılan Stopped/Closed yolu | `Stopped` **hiç olmamış** (her docstatus), `Closed` **1** emir |
+| Alternatif eksen: rol/aşama | `custom_operator_role` dolu **0 / 866** kalem — `workOrderStages.js` ayrışması prod'da boş |
+
+Sürüklenerek yapılabilecek tek gerçek geçiş `stop_work_order` / `resume_work_order` /
+`close_work_order` üçlüsü; ikisi hiç, biri bir kez kullanılmış. Yani pano, 3 753 kartın
+tek kolonda yığıldığı, üç kolonun boş durduğu ve iki jestin hiç kullanılmadığı bir ekran
+olurdu.
+
+**Geriye kalan gerçek sinyal, ve zaten 1a'nın kapsamında:** açık kalıp yaşlanan 33 emir
+— 31 `Not Started`, ortalama **30,5 gün** (en fazla 49) ve 2 `In Process`, ortalama
+**61,5 gün** (en fazla 123). Dört ay "işleniyor" diyen bir emir koşmuyor, terk edilmiş.
+Bunlar 3 753 tamamlanmış satırın altında gömülü, ama 1a'nın durum + tarih filtresiyle
+bulunabiliyorlar. Eksik olan bir pano değil, **kimsenin o filtreyi çalıştırmayı akıl
+etmemesi** — yani bir bildirim sorusu, bir ekran sorusu değil.
+
+## Fire/duruş kataloğu — üç ön koşul, ölçüldü
+
+Karar bu işi açtı, ama ERPNext'in `Downtime Entry`'si bu sitede **kaydedilemez**:
+üç zorunlu alanının üçü de karşılıksız.
+
+| `Downtime Entry` alanı | Zorunlu | anjan'da |
+|---|---|---|
+| `workstation` (Link → Workstation) | **evet** | **0 Workstation kaydı** |
+| `operator` (Link → Employee) | **evet** | 439 Employee (168 aktif) — ama **`user_id` dolu olan 0**. Kiosk'taki operatör hiçbir Employee'ye bağlı değil. |
+| `stop_reason` (Select) | **evet** | 7 sabit İngilizce seçenek, hepsi metal işleme atölyesinden: *Excessive machine set up time · Unplanned machine maintenance · On-machine press checks · Machine operator errors · Machine malfunction · Electricity down · Other*. Dondurma hattına uymuyor ve özelleştirme olmadan genişletilemiyor. |
+
+Fire tarafı daha da boş — **hiçbir yerde olay bazlı kayıt yok**:
+
+| Ölçüm | Değer |
+|---|---|
+| `Work Order.process_loss_qty` dolu | **0** |
+| `Work Order.scrap_warehouse` dolu | **0** |
+| `BOM Scrap Item` satırı | **0** |
+| `is_scrap_item` taşıyan Stock Entry satırı | **0** |
+| `Stock Entry Detail`'de fire alanı | **yok** (`process_loss_qty` yalnız `Work Order`'da) |
+| Manufacture fişi | 3 757 |
+
+Yani 3 757 üretim fişinin hiçbirinde fire kaydı yok, ve kaydedecek alan da yalnız
+emir başlığında duruyor — parti başına değil.
+
+### Neden burada durdum
+
+Kalan iş kod değil, **bu fabrikanın gerçeği**: hattın Workstation olarak adları,
+ve bir dondurma hattının hangi sebeplerle durduğu. İkisini de ben uyduramam — uydurulmuş
+bir sebep listesi, katalog kılığında kurgudur, ve operatör "Other"ı seçmeye başladığı an
+katalog ölür. Zafar'a sorulan soru dokümanın sonunda.
