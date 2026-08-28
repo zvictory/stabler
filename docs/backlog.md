@@ -14,6 +14,60 @@ ayrıca `make test-bench`.
 
 ## P1 — yüksek
 
+### UZEX poller sekiz kiracıda saatlik koşuyor ve yapısal olarak hiçbir şey üretemiyor
+`hata` · ölçüldü 2026-08-28, prod, salt-okunur
+
+WP-300…309 kodda eksiksiz: `stabler/integrations/uzex/`, `stabler/tasks/uzex_poll.py`,
+patch `v39_deal_uzex_fields.py`, 5 test modülü. Saatlik iş kayıtlı ve açık —
+`stabler/hooks.py:120`; mikas'ta Scheduled Job Type `stopped=0`, `frequency=Hourly`.
+
+Ama `uzex_keywords` **ne anjan ne mikas** `site_config.json`'ında var, ve
+`matches_keywords` boş listede her zaman `False` döner
+(`stabler/integrations/uzex/_parse.py:99` — tasarım gereği, flood guard). Yeni bir lot
+hiçbir zaman Deal olmaz; izlenen Deal de 0 olduğu için güncellenecek bir şey de yok.
+mikas'ta CRM Deal sayısı 0.
+
+Yani entegrasyon canlı, ağa gidiyor ve boş dönüyor. Düzeltme tek config satırı — ama
+planlar hedefte çelişiyor: `docs/plans/2026-07-11-master-roadmap.md:43` "**Mikas**/UZEX
+go-live" diyor, `docs/plans/uzex-go-live-checklist.md:65` §B.1 başlığı
+"(**anjan**.erpstable.com)". Aynı roadmap satırı "resmi UZEX API başvurusu" da diyor;
+o kod işi değil. **Prod ayarı — Zafar kararı.**
+
+Yeniden ölçüm:
+```
+ssh ice-production 'python3 -c "import json;c=json.load(open(\"/home/frappe/frappe-bench/sites/mikas.erpstable.com/site_config.json\"));print([k for k in c if \"uzex\" in k])"'
+```
+
+### Modül bayrak matrisi — planların yazıldığı modüller kiracılarda kapalı
+`tespit` · ölçüldü 2026-08-28, prod, salt-okunur (`Stabler Company Modules`)
+
+| Site | crm | tender | money | modern SO | mfg | pos |
+|---|---|---|---|---|---|---|
+| anjan | 0 | 0 | 1 | 0 | 1 | 1 |
+| dts | 0 | 0 | 1 | 0 | 0 | 1 |
+| horeca | 0 | 0 | 1 | 0 | 0 | 1 |
+| laminor | 0 | 0 | 1 | 0 | 0 | 1 |
+| mikas | 0 | 1 | 1 | 0 | 0 | 0 |
+| msa | 0 | 0 | 1 | 0 | 0 | 1 |
+| smartbox | 1 | 0 | 1 | 0 | 0 | 1 |
+| zuma | 0 | 0 | 1 | 0 | 0 | 1 |
+
+Üç sonuç:
+
+- **`enable_crm` yalnız smartbox'ta 1.** Orada 14 CRM Deal var, hepsi `Administrator`,
+  hepsi 2026-06-07'de 2 saniye içinde yaratılmış — tohum verisi. Yani
+  `docs/plans/2026-07-29-crm-tender-to-cash.md`'nin 7 görevi (CrmHome, `Deal360View.vue`,
+  `ManagerCockpit.vue`, `api/crm_analytics.py`, `api/crm_email.py`) mikas için yazıldı,
+  mikas'ta kapalı, ve açık olduğu tek yerde kimse kullanmıyor.
+- **`enable_tender` yalnız mikas'ta 1** ve mikas boş (0 CRM Deal / RFQ / SQ / PO / SO,
+  0 Payment Entry, 0 fatura, 6 Journal Entry, 24 GL Entry). Tüm tender paketi tek bir
+  boş kiracıya bakıyor.
+- **`enable_modern_sales_order` sekizinde de 0.** `docs/plans/2026-08-21-so-si-modern-kapsam-karari.md`'nin
+  "Modern sadece msa ve mikas'ta" cümlesi bugün hiçbir yerde doğru değil.
+
+Yeniden ölçüm: `frappe.get_all("Stabler Company Modules", fields="*")` her sitede.
+
+
 ### ~~`uzc` dili Language kaydı olarak sekiz kiracıda da yok — 6 hesap kaydedilemiyor~~ ÇÖZÜLDÜ 2026-08-28
 `hata` · ölçüldü 2026-08-28, prod, salt-okunur
 
