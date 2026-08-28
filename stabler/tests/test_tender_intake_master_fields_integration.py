@@ -216,11 +216,18 @@ _PO_BOARD_INTAKE = {
 	"unit": "m3",
 	"delivery_deadline": "2026-11-01",
 	"notes": "call the buyer before the site visit",
-	"documents": [
-		{"key": "gtd", "label": "ГТД", "required": 1, "role": "customs"},
-		{"key": "contract", "label": "Shartnoma", "required": 1},
-	],
 }
+
+# What a browser that predates 2026-08-28 still sends. The PO board panel no
+# longer has a checklist editor, but a tab opened before the deploy holds the
+# old bundle — and the empty list is the dangerous half, because honouring it
+# would delete the rows together with their uploads and waivers.
+_STALE_PO_BOARD_INTAKE = dict(_PO_BOARD_INTAKE, documents=[])
+
+_CHECKLIST = [
+	{"key": "gtd", "label": "ГТД", "required": 1, "role": "customs"},
+	{"key": "contract", "label": "Shartnoma", "required": 1},
+]
 
 _DRAWER_INTAKE = {
 	"title": "Real Tender Title — ЁЖ 2026",
@@ -318,17 +325,32 @@ class TestAPartialSaveKeepsTheOtherScreensWork(_IntakeBenchFixture, FrappeTestCa
 		# and the PO board's own field did land
 		self.assertEqual(intake["lot_no"], "LOT-9")
 
-	def test_a_drawer_shaped_save_keeps_the_document_checklist(self):
-		"""ADR-205 / defect #2. The requirement rows are what carry the uploaded
-		files and the waiver justifications, so losing the rows loses those with
-		them — a document centre that calls itself the single source of truth
-		cannot have a second screen quietly emptying it."""
-		tender.save_deal_intake(deal=self.deal.name, intake=dict(_PO_BOARD_INTAKE))
+	def test_no_intake_save_can_touch_the_document_checklist(self):
+		"""ADR-205 / defect #2, closed on both sides.
+
+		The requirement rows carry the uploaded files and the waiver
+		justifications, so losing the rows loses those with them. The checklist
+		is seeded the way it is now actually created — through the document
+		centre's writer, against this real database — and then survives two
+		saves that used to be able to empty it: a drawer-shaped one that never
+		mentions the key, and a stale PO-board tab that sends an empty list.
+
+		The second is the one that only works here. `_clean_intake` alone can
+		be asked what it returns; only the endpoint can prove the stored column
+		still holds the rows afterwards."""
+		from stabler.api import tender_documents
+
+		tender_documents.set_tender_document_requirements(
+			deal=self.deal.name, requirements=_CHECKLIST, company=self.company
+		)
 
 		tender.save_deal_intake(deal=self.deal.name, intake=dict(_DRAWER_INTAKE))
-
 		docs = tender.deal_intake(deal=self.deal.name)["intake"]["documents"]
 		self.assertEqual([d["key"] for d in docs], ["gtd", "contract"])
+
+		tender.save_deal_intake(deal=self.deal.name, intake=dict(_STALE_PO_BOARD_INTAKE))
+		docs = tender.deal_intake(deal=self.deal.name)["intake"]["documents"]
+		self.assertEqual([d["key"] for d in docs], ["gtd", "contract"], "bayat sekme listeyi sildi")
 
 	def test_an_unrelated_save_does_not_reissue_the_go_no_go_stamp(self):
 		"""Preserving a decision must preserve when it was made. Re-stamping on
