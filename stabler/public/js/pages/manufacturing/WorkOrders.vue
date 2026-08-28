@@ -9,6 +9,7 @@ import { workOrderProgress } from "../../composables/workOrderProgress.js";
 import { materialReadiness, stockKey } from "../../composables/materialReadiness.js";
 import { halfAssigned, roleLabel } from "../../composables/workOrderRoles.js";
 import { useOperatorOptions } from "../../composables/workOrderOperators.js";
+import { useWorkOrderStatus } from "../../composables/workOrderStatus.js";
 import { formatDateTime, todayIso} from "../../composables/date.js";
 import EmptyState from "../../components/EmptyState.vue";
 import DateInput from "../../components/DateInput.vue";
@@ -27,30 +28,9 @@ const rows = ref([]);
 const search = ref("");
 const statusFilter = ref("");
 
-const STATUSES = ["", "Draft", "Not Started", "In Process", "Completed", "Stopped", "Closed", "Cancelled"];
-
-// ERPNext stores the status in English and the screen used to print it
-// straight through, so the one word that tells a supervisor what to do next
-// was the one word left untranslated in a fully translated table. The map is
-// literal `t("...")` calls on purpose — the harvester scans for those, and a
-// `t(row.status)` on a stored value would leave the keys invisible to it.
-// Same shape as remittance/RemittanceRefund.vue:138.
-const statusLabels = computed(() => ({
-	Draft: t("Draft"),
-	"Not Started": t("Not Started"),
-	"In Process": t("In Process"),
-	Completed: t("Completed"),
-	Stopped: t("Stopped"),
-	Closed: t("Closed"),
-	Cancelled: t("Cancelled"),
-}));
-
-/** A stored status as the operator should read it; unknown values pass through. */
-const statusLabel = (s) => statusLabels.value[s] || s || "";
-
-const statusOptions = computed(() =>
-	STATUSES.map((s) => ({ value: s, label: statusLabel(s) || t("All statuses") }))
-);
+// Labels and badge colours are shared with the detail page — the two screens
+// had drifted into disagreeing about what colour a Draft order is.
+const { statusLabel, statusBadge, statusOptions } = useWorkOrderStatus();
 
 const progress = (r) => workOrderProgress(r);
 
@@ -59,24 +39,6 @@ const formatQty = (n, uom) => {
 	return `${v.toLocaleString(user.value.language || "en", { maximumFractionDigits: 3 })} ${uom || ""}`.trim();
 };
 
-const statusBadge = (s) => {
-	switch (s) {
-		case "Completed":
-			return "bg-success-lt";
-		case "In Process":
-			return "bg-blue-lt";
-		case "Not Started":
-		case "Draft":
-			return "bg-yellow-lt";
-		case "Stopped":
-		case "Cancelled":
-			return "bg-secondary-lt";
-		case "Closed":
-			return "bg-purple-lt";
-		default:
-			return "bg-secondary-lt";
-	}
-};
 
 async function load() {
 	if (!activeCompany.value) return;

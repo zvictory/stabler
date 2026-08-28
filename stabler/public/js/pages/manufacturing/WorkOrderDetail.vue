@@ -18,6 +18,7 @@ import { materialsForUnits, stockKey } from "../../composables/materialReadiness
 import { halfAssigned, roleLabel } from "../../composables/workOrderRoles.js";
 import { workOrderStages } from "../../composables/workOrderStages.js";
 import { useOperatorOptions } from "../../composables/workOrderOperators.js";
+import { useWorkOrderStatus } from "../../composables/workOrderStatus.js";
 import { formatMoney } from "../../composables/money.js";
 import { formatDate, formatDateTime } from "../../composables/date.js";
 import { useConfirm } from "../../composables/useConfirm.js";
@@ -41,16 +42,7 @@ const formatQty = (n, uom) => {
 	return uom ? `${s} ${uom}` : s;
 };
 
-const statusBadge = (s) =>
-	({
-		Draft: "bg-secondary-lt",
-		"Not Started": "bg-azure-lt",
-		"In Process": "bg-blue-lt",
-		Completed: "bg-green-lt",
-		Stopped: "bg-orange-lt",
-		Closed: "bg-secondary-lt",
-		Cancelled: "bg-red-lt",
-	})[s] || "bg-secondary-lt";
+const { statusLabel, statusBadge } = useWorkOrderStatus();
 
 // Stock for the warehouses this order draws from, so the transfer dialog can
 // say what a quantity costs before it is committed. One call per warehouse.
@@ -321,7 +313,7 @@ watch(
 				</button>
 				<h2 class="page-title font-monospace mb-0">{{ route.params.name }}</h2>
 			</div>
-			<span v-if="detail?.status" class="badge" :class="statusBadge(detail.status)">{{ detail.status }}</span>
+			<span v-if="detail?.status" class="badge" :class="statusBadge(detail.status)">{{ statusLabel(detail.status) }}</span>
 		</div>
 
 		<div class="card">

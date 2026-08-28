@@ -8,6 +8,19 @@ export const STATUS_MAP = {
 		CANCELLED: "bg-red-lt",
 	},
 	"Advance Aging": { OK: "bg-green-lt", WARN: "bg-yellow-lt", BREACH: "bg-red-lt" },
+	// Stopped and Cancelled are deliberately not the same grey: one is a halted
+	// order somebody has to resume, the other is over. See `workOrderStatus.js`
+	// for why each colour was chosen when the list and the detail page were
+	// merged onto this entry.
+	"Work Order": {
+		Draft: "bg-secondary-lt",
+		"Not Started": "bg-yellow-lt",
+		"In Process": "bg-blue-lt",
+		Completed: "bg-green-lt",
+		Stopped: "bg-orange-lt",
+		Closed: "bg-purple-lt",
+		Cancelled: "bg-red-lt",
+	},
 	// How far a Commercial Invoice line drifts from the Proforma it ships
 	// against. `error` = the line's key is on no PI at all; `warn` = a column
 	// (price, quantity arithmetic) disagrees; `info` = a compensated bundle was
