@@ -271,5 +271,6 @@ stabler.tests.test_wo_shift_log_filters
 stabler.tests.test_wo_material_request_gate
 stabler.tests.test_wo_plan_board
 stabler.tests.test_downtime_catalogue
+stabler.tests.test_integration_enqueue_gates
 stabler.tests.test_wo_finish_draft
 stabler.tests.test_bulk_operator_assign
