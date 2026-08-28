@@ -14,6 +14,41 @@ ayrıca `make test-bench`.
 
 ## P1 — yüksek
 
+### Her fatura gönderimi, kapalı entegrasyonlara bile, iki arka plan işi kuyruğa atıyor
+`hata` · ölçüldü 2026-08-28, yerel bench (`genesis-test.local`), `make test-bench`
+
+`stabler/integrations/one_c/hooks.py:13` (`enqueue_push`) ve
+`stabler/integrations/ehf/hooks.py:14` (`enqueue_ehf_submit`) tek koşula bakıyor:
+`docstatus == 1`. **Entegrasyonun o şirkette açık olup olmadığına bakmıyorlar.**
+`onec_mode` okuması işin *içinde* — `one_c/outbound.py:34` — yani karar, iş zaten
+`long` kuyruğuna girdikten ve bir worker onu aldıktan sonra veriliyor.
+
+Ölçüm: tek bir `make test-bench` koşusu `long` kuyruğuna **~150 iş** ekliyor
+(304 `one_c.outbound.push` + 94 `ehf.submit.submit_for_invoice` birikmiş hâlde
+sayıldı). Frappe `_check_queue_size` ile **650**'de her yeni enqueue'yu
+`QueueOverloaded` ile reddediyor. Yani kapı kendini dört-beş koşuda kilitliyor ve
+arıza, altı ilgisiz modülün aynı anda kırmızıya dönmesi gibi görünüyor —
+`test_approvals_integration`, `test_customer_hierarchy_integration`,
+`test_payments_register`, `test_posting_date_is_honoured`,
+`test_vehicle_finance_accounting`, `test_vehicle_finance_read`. Hiçbiri bozuk
+değildi; hepsi fatura gönderiyor.
+
+Test yan etkisi değil, üretim davranışı: 1C'si ve EHF'i hiç yapılandırılmamış bir
+kiracıda da her fatura gönderimi bir `long` iş üretiyor, ve `long` kuyruğu
+bench genelinde tek. Bir kiracının fatura hacmi, worker'ların drenajını aşarsa
+**bench'teki her kiracıda** enqueue reddedilmeye başlar.
+
+Yeniden üretim:
+
+    make test-bench                       # ~150 iş ekler
+    # rq üzerinden say: Queue.all(...) -> ":long" kuyruğunun count'u
+
+Düzeltme yönü: her iki `enqueue_*` sarmalayıcısı, kuyruğa atmadan önce şirket
+bazlı etkinlik bayrağını okusun (`push()`'un içindeki `onec_mode` okumasının
+aynısı, bir kat yukarıda). Önce kırmızı test: kapalı entegrasyonda gönderilen bir
+faturanın `frappe.enqueue`'yu hiç çağırmadığını pinle.
+
+
 ### UZEX poller sekiz kiracıda saatlik koşuyor ve yapısal olarak hiçbir şey üretemiyor
 `hata` · ölçüldü 2026-08-28, prod, salt-okunur
 
