@@ -431,16 +431,37 @@ kayıttan sonra** yazar.
 Tek yere iner. Bu, P0-SO-1, P0-SO-4 ve P0-SI-5'in ortak cevabıdır.
 
 ### ADR-406 — Para biçimlemesi tek yoldan: `formatMoney` / `formatRate`
-`Expenses.vue:98-112` ve `Transfers.vue:186-201`'deki yerel `fmtAmt`/`fmtRate` silinir.
+`Expenses.vue` ve `Transfers.vue`'deki yerel `fmtAmt`/`fmtRate` silinir.
+
+> **Düzeltme 2026-08-28.** Bu madde paylaşılan `formatRate`'i `composables/money.js`'de
+> varsayıyordu; orada öyle bir export yok. Gerçek adres **`composables/fx.js:123`**.
+> `formatMoney` ise doğru — o `composables/money.js`'de. Ayrıca satır numaraları
+> kaymıştı; bugünkü hâli: `Expenses.vue:126` (`fmtAmt`), `:137` (`fmtRate`);
+> `Transfers.vue:229` (`fmtAmt`), `:238` (`fmtRate`). Toplam 15+ çağrı, hepsi duruyor.
 Ölçülmüş sebep: `tr` yerelinde aynı değer yan yana `1 234 567.50` (yerel) ve
 `1.234.567,50` (paylaşılan) olarak çiziliyor — Türkçe'de `.` binlik ayırıcı olduğu için
 biri bir buçuk **milyar** okunuyor.
 
 ### ADR-407 — Gider ve Transfer, kendi modülünün standardına döner
-`ListToolbar` + otomatik uygulanan filtre (Apply düğmesi silinir) + `SkeletonRows` +
-`Pagination` + `StatusBadge`. Referans dört satır: `PaymentEntries.vue:94` ve `:100-108`.
-Bunlar `/money` içinde **kendi modüllerinin tek aykırısı** — `Approvals`, `Budgets`,
-`BudgetVsActual`, `FxRevaluation`, `PaymentEntries` hepsi zaten uyumlu.
+`ListToolbar` + otomatik uygulanan filtre (Apply düğmesi silinir) + `SkeletonRows`.
+Referans: `PaymentEntries.vue`.
+
+> **Düzeltme 2026-08-28.** Bu madde beş alt kural sayıyordu; ikisi ölçümle düştü.
+>
+> **`Pagination` silindi.** `/money` altında `Pagination`'ı kullanan tek dosya
+> `AccountLedger.vue`. Referans gösterilen `PaymentEntries.vue` de kullanmıyor. Yani bu
+> alt kural var olmayan bir norma işaret ediyordu — Gider/Transfer'i ona göre ölçmek
+> onları karşılanmayan bir hedefe karşı ölçmek olurdu.
+>
+> **`StatusBadge` silindi — çünkü zaten yapılmış.** Gider ve Transfer paylaşılan
+> `StatusBadge`'i kullanıyor (`Expenses.vue:1070`, `Transfers.vue:943`), buna karşın
+> referans ilan edilen `PaymentEntries.vue` **kullanmıyor** (yerel `statusBadge()`,
+> `:42`). Bu alt kuralda iki ekran referanstan ileride.
+>
+> "Hepsi zaten uyumlu" cümlesi de bu yüzden fazla genişti: `ListToolbar` gerçekten
+> `/money`'nin beş ekranında var ve yalnız bu ikisinde yok — o kısım doğru. Kalan iş
+> üç madde: `ListToolbar`, otomatik filtre (`Apply` düğmesi `Expenses.vue:989`,
+> `Transfers.vue:885`'te duruyor), ve `SkeletonRows` (Gider'de kısmi, Transfer'de yok).
 
 ### ADR-408 — `modern_sales_order` bayrağı: düzeltilir ve tek varyanta inilir
 

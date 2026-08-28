@@ -1,3 +1,26 @@
+> **ARŞİV — 2026-08-28. Bu doküman yazıldığı gün zaten bayattı; okumadan önce şunu bil.**
+>
+> Gezinti bölümünün dayandığı kusurlar (G-02, G-03, G-08, G-09 ve D-01…D-05) tek bir
+> refactor'la kapanmıştı: `95b1ab2` — *"ten screens, ten hand-rolled shells — one bar,
+> one place"*. O commit **2 Ağustos 11:45**'te main'e girdi; bu doküman aynı gün
+> **16:21**'de eklendi — yani düzeltmeden dört buçuk saat sonra, düzeltmeden önceki
+> durumu anlatarak. `git merge-base --is-ancestor 95b1ab2 777a896` sırayı doğruluyor.
+>
+> Kendi kanıtı olarak gösterdiği grep de yanlıştı: "TenderNav repo genelinde yalnız 6
+> dosyada geçiyor" denmişti; bugün `TenderNav` yalnız **iki** yerde import ediliyor
+> (`TenderPage.vue`, `Sidebar.vue`) ve `TenderPage` kabuğu üzerinden **her** routed
+> tender ekranında render ediliyor — `OperationsDesk`, `LogistBoard`, `DeclarantQueue`,
+> `MyTenders`, `PoControlBoard` dahil.
+>
+> Ayakta kalan tek gerçek maddesi G-11: *Overview* bağlantısı `/dashboard`'a çıkıp
+> nav'ı düşürüyor — ve `TenderNav.vue:39-41`'deki yorum bunun kasıtlı olduğunu söylüyor.
+>
+> Arşivlenme sebebi: 2026-08-28'de bir kod taramasını yanlış yönlendirdi, kapanmış işi
+> açık kusur gibi gösterdi. Tender'ın bugünkü durumu için koda ve
+> `docs/plans/2026-08-17-mikas-tender-workflow-formlari-tasarim-kurulu-karari.md`'ye bak.
+
+---
+
 # UAT 01 — Tender operasyon panoları · UI/UX kabul testleri
 
 **Kapsam:** Tender modülünün yeni ekranları (Operasyon Masası, Tender CRM, Direktör
