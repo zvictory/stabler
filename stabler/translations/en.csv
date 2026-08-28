@@ -6892,3 +6892,20 @@ Recorded: {0} minutes,Recorded: {0} minutes
 Saving,Saving
 {0} minutes,{0} minutes
 {0} stops,{0} stops
+Unknown Work Order: {0},Unknown Work Order: {0}
+"Expected a date as YYYY-MM-DD, got: {0}","Expected a date as YYYY-MM-DD, got: {0}"
+{0} is {1} — its planned date is the record of when it ran.,{0} is {1} — its planned date is the record of when it ran.
+Unknown kind: {0},Unknown kind: {0}
+Unknown reason: {0},Unknown reason: {0}
+Unknown line: {0},Unknown line: {0}
+That Work Order belongs to another company.,That Work Order belongs to another company.
+That line belongs to another company.,That line belongs to another company.
+"Expected dates as YYYY-MM-DD, got: {0} – {1}","Expected dates as YYYY-MM-DD, got: {0} – {1}"
+The window ends before it starts: {0} – {1},The window ends before it starts: {0} – {1}
+A planning window may cover at most {0} days.,A planning window may cover at most {0} days.
+A stop needs a start time.,A stop needs a start time.
+A stop needs an end time.,A stop needs an end time.
+"A stop with no length is a double-tap, not an event.","A stop with no length is a double-tap, not an event."
+The stop ends before it starts.,The stop ends before it starts.
+"A stop longer than 12 hours is a forgotten timer. Split it, or correct the times.","A stop longer than 12 hours is a forgotten timer. Split it, or correct the times."
+These times cannot be recorded.,These times cannot be recorded.

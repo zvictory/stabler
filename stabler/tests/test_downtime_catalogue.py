@@ -165,3 +165,89 @@ class TestTheCatalogueIsUsableBeforeItIsCorrect(unittest.TestCase):
 
 if __name__ == "__main__":
 	unittest.main()
+
+
+class TestEveryRefusalTheUserCanSeeIsTranslated(unittest.TestCase):
+	"""The seeded reasons were translated; the refusals were not.
+
+	Measured 2026-08-28, after this feature had already been deployed: all 35
+	`t()` keys in the two new screens were present in all five catalogues, and
+	all 16 `_()` strings thrown by the endpoints behind them were present in
+	NONE — not even `en.csv`. They are the only strings on this feature a user
+	meets when something goes wrong: a bad date range, an unknown line, a stop
+	longer than a shift. So the half that was translated is the half nobody
+	reads, and the half that was missed is the half that only ever appears at
+	the worst moment, in English, inside an otherwise Russian or Uzbek screen.
+
+	Reading the source as text rather than importing it keeps this in `make
+	check`: `manufacturing.py` imports frappe, and a test that needed a bench
+	would not run on the gate that let the miss through in the first place.
+	"""
+
+	_SOURCES = (
+		Path(__file__).resolve().parents[1] / "api" / "manufacturing.py",
+		Path(__file__).resolve().parents[1]
+		/ "stabler"
+		/ "doctype"
+		/ "stabler_line_stop"
+		/ "stabler_line_stop.py",
+	)
+	# Only the ones this feature added. The rest of manufacturing.py predates it
+	# and is not this test's business — widening the net here would turn a
+	# regression guard into an unrelated backlog.
+	_OURS = (
+		"Unknown Work Order: {0}",
+		"Expected a date as YYYY-MM-DD, got: {0}",
+		"{0} is {1} — its planned date is the record of when it ran.",
+		"Unknown kind: {0}",
+		"Unknown reason: {0}",
+		"Unknown line: {0}",
+		"That Work Order belongs to another company.",
+		"That line belongs to another company.",
+		"Expected dates as YYYY-MM-DD, got: {0} – {1}",
+		"The window ends before it starts: {0} – {1}",
+		"A planning window may cover at most {0} days.",
+		"A stop needs a start time.",
+		"A stop needs an end time.",
+		"A stop with no length is a double-tap, not an event.",
+		"The stop ends before it starts.",
+		"A stop longer than 12 hours is a forgotten timer. Split it, or correct the times.",
+		"These times cannot be recorded.",
+	)
+
+	def test_each_refusal_is_still_thrown_by_the_code(self):
+		"""Guards the list above: a refusal that was reworded silently stops being
+		covered, and this test would keep passing on a string nobody throws.
+
+		The source spells its dashes as `\\u2014` / `\\u2013` escapes while the
+		catalogue key has to carry the character itself — `_()` looks up the value
+		Python built, not the bytes on disk. So the source is searched for either
+		spelling; comparing raw text against the runtime string reports three
+		perfectly correct rows as missing, which is how this comment got written.
+		"""
+		src = "".join(p.read_text(encoding="utf-8") for p in self._SOURCES)
+		for line in self._OURS:
+			with self.subTest(line=line):
+				escaped = "".join(ch if ord(ch) < 128 else f"\\u{ord(ch):04x}" for ch in line)
+				self.assertTrue(
+					line in src or escaped in src,
+					f"artık kodda geçmiyor, liste bayat: {line}",
+				)
+
+	def test_each_refusal_exists_in_all_five_catalogues(self):
+		for lang in ("en", "ru", "uz", "uzc", "tr"):
+			catalogue = _catalogue(lang)
+			for line in self._OURS:
+				with self.subTest(lang=lang, line=line):
+					# `assertIn` on a 6000-entry dict dumps the whole catalogue on
+					# failure; assertTrue keeps the message readable.
+					self.assertTrue(line in catalogue, f"{lang}.csv eksik: {line}")
+
+	def test_a_refusal_is_not_just_the_english_copied_over(self):
+		"""A harvested row carries the English across unchanged, which reads as
+		translated and is not. `en` is exempt: there it IS the source."""
+		for lang in ("ru", "uz", "uzc", "tr"):
+			catalogue = _catalogue(lang)
+			for line in self._OURS:
+				with self.subTest(lang=lang, line=line):
+					self.assertNotEqual(catalogue.get(line), line, f"{lang}.csv çevrilmemiş: {line}")

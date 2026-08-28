@@ -6498,3 +6498,20 @@ Recorded: {0} minutes,Ёзилди: {0} дақиқа
 Saving,Сақланмоқда
 {0} minutes,{0} дақиқа
 {0} stops,{0} та тўхташ
+Unknown Work Order: {0},Номаълум ишлаб чиқариш буйруғи: {0}
+"Expected a date as YYYY-MM-DD, got: {0}","YYYY-MM-DD кўринишида сана кутилган эди, келгани: {0}"
+{0} is {1} — its planned date is the record of when it ran.,{0} — {1}: режалаштирилган сана у қачон бажарилганининг ёзуви.
+Unknown kind: {0},Номаълум тур: {0}
+Unknown reason: {0},Номаълум сабаб: {0}
+Unknown line: {0},Номаълум линия: {0}
+That Work Order belongs to another company.,Бу ишлаб чиқариш буйруғи бошқа компанияга тегишли.
+That line belongs to another company.,Бу линия бошқа компанияга тегишли.
+"Expected dates as YYYY-MM-DD, got: {0} – {1}","YYYY-MM-DD кўринишида саналар кутилган эди, келгани: {0} – {1}"
+The window ends before it starts: {0} – {1},Ойна бошланишидан олдин тугайди: {0} – {1}
+A planning window may cover at most {0} days.,Режалаштириш ойнаси кўпи билан {0} кунни қамраб олиши мумкин.
+A stop needs a start time.,Тўхташ учун бошланиш вақти керак.
+A stop needs an end time.,Тўхташ учун тугаш вақти керак.
+"A stop with no length is a double-tap, not an event.","Узунлиги йўқ тўхташ — бу ҳодиса эмас, икки марта босиш."
+The stop ends before it starts.,Тўхташ бошланишидан олдин тугайди.
+"A stop longer than 12 hours is a forgotten timer. Split it, or correct the times.",12 соатдан узун тўхташ — бу унутилган таймер. Уни бўлинг ёки вақтларни тўғриланг.
+These times cannot be recorded.,Бу вақтларни ёзиб бўлмайди.

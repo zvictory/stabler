@@ -6498,3 +6498,20 @@ Recorded: {0} minutes,Yozildi: {0} daqiqa
 Saving,Saqlanmoqda
 {0} minutes,{0} daqiqa
 {0} stops,{0} ta to'xtash
+Unknown Work Order: {0},Noma'lum ishlab chiqarish buyrug'i: {0}
+"Expected a date as YYYY-MM-DD, got: {0}","YYYY-MM-DD ko'rinishida sana kutilgan edi, kelgani: {0}"
+{0} is {1} — its planned date is the record of when it ran.,{0} — {1}: rejalashtirilgan sana u qachon bajarilganining yozuvi.
+Unknown kind: {0},Noma'lum tur: {0}
+Unknown reason: {0},Noma'lum sabab: {0}
+Unknown line: {0},Noma'lum liniya: {0}
+That Work Order belongs to another company.,Bu ishlab chiqarish buyrug'i boshqa kompaniyaga tegishli.
+That line belongs to another company.,Bu liniya boshqa kompaniyaga tegishli.
+"Expected dates as YYYY-MM-DD, got: {0} – {1}","YYYY-MM-DD ko'rinishida sanalar kutilgan edi, kelgani: {0} – {1}"
+The window ends before it starts: {0} – {1},Oyna boshlanishidan oldin tugaydi: {0} – {1}
+A planning window may cover at most {0} days.,Rejalashtirish oynasi ko'pi bilan {0} kunni qamrab olishi mumkin.
+A stop needs a start time.,To'xtash uchun boshlanish vaqti kerak.
+A stop needs an end time.,To'xtash uchun tugash vaqti kerak.
+"A stop with no length is a double-tap, not an event.","Uzunligi yo'q to'xtash — bu hodisa emas, ikki marta bosish."
+The stop ends before it starts.,To'xtash boshlanishidan oldin tugaydi.
+"A stop longer than 12 hours is a forgotten timer. Split it, or correct the times.",12 soatdan uzun to'xtash — bu unutilgan taymer. Uni bo'ling yoki vaqtlarni to'g'rilang.
+These times cannot be recorded.,Bu vaqtlarni yozib bo'lmaydi.
