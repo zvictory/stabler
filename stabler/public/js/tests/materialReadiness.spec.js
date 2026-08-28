@@ -205,3 +205,41 @@ describe("materialsForUnits", () => {
 		expect(rows.every((r) => r.needed === 0)).toBe(true);
 	});
 });
+
+// A work order for 11 units needing 100 kg divides to 9.0909… per unit, and
+// multiplying that back by 11 lands on 100.00000000000001 — a hair above the
+// 100 actually on the shelf. Both chips then lie in the operator's face: the
+// dialog paints a red "short" line over a shelf that covers the order exactly,
+// and the list chip says "ready" while claiming the store carries one unit
+// fewer than the order needs. Neither number is wrong by a real quantity; they
+// are wrong by float noise, which is worse, because chasing the phantom
+// shortage once teaches the operator to ignore the warning that matters.
+describe("quantities that do not divide evenly", () => {
+	const row = {
+		qty: 11,
+		required_items: [
+			{ item_code: "MILK", required_qty: 100, transferred_qty: 0, source_warehouse: "Store" },
+		],
+	};
+	const shelf = stock([["Store", "MILK", 100]]);
+
+	it("does not call a shelf short when it covers the order exactly", () => {
+		const [line] = materialsForUnits(row, shelf, 11);
+
+		expect(line.short).toBe(false);
+		expect(line.needed).toBe(100);
+	});
+
+	it("counts the whole order as covered, not one unit less", () => {
+		expect(materialReadiness(row, shelf).unitsCovered).toBe(11);
+	});
+
+	it("still refuses a shelf that is genuinely one unit short", () => {
+		// The epsilon must absorb float noise and nothing else: 90 kg buys 9
+		// units of a 9.0909 kg/unit order, and the tenth is a real shortage.
+		const thin = stock([["Store", "MILK", 90]]);
+
+		expect(materialsForUnits(row, thin, 11)[0].short).toBe(true);
+		expect(materialReadiness(row, thin).unitsCovered).toBe(9);
+	});
+});

@@ -13,6 +13,16 @@
 /** Stock is keyed by warehouse AND item — the same item lives on several shelves. */
 export const stockKey = (warehouse, itemCode) => `${warehouse || ""}::${itemCode || ""}`;
 
+// A requirement is divided by the order quantity and multiplied back up, and
+// binary floats do not survive that round trip: 100 kg over 11 units comes back
+// as 100.00000000000001. Compared naively against 100 on the shelf, an order the
+// store covers exactly reads as short. So quantities are settled at six decimals
+// — finer than any unit of measure ERPNext prices here — and the comparisons
+// carry a tolerance smaller than that, wide enough for the noise and far too
+// narrow to swallow a real shortage.
+const EPSILON = 1e-9;
+const settle = (n) => Math.round(n * 1e6) / 1e6;
+
 /**
  * @param {{qty: number, required_items: Array}} row a `list_work_orders` row
  * @param {Record<string, number>} stock `stockKey()` → quantity on hand
@@ -52,7 +62,7 @@ export function materialReadiness(row, stock) {
 			// One missing ingredient stops the line, so the answer is the
 			// minimum across materials — never an average, never the most
 			// plentiful one.
-			const covered = Math.floor(available / perUnit);
+			const covered = Math.floor(available / perUnit + EPSILON);
 			unitsCovered = unitsCovered === null ? covered : Math.min(unitsCovered, covered);
 		}
 	}
@@ -85,7 +95,7 @@ export function materialsForUnits(row, stock, units) {
 		const measured = key in stock;
 		const available = measured ? Number(stock[key]) || 0 : null;
 		const perUnit = total > 0 ? (Number(line.required_qty) || 0) / total : 0;
-		const needed = perUnit * wanted;
+		const needed = settle(perUnit * wanted);
 
 		return {
 			item_code: line.item_code,
@@ -93,7 +103,7 @@ export function materialsForUnits(row, stock, units) {
 			warehouse: line.source_warehouse,
 			needed,
 			available,
-			short: measured && available < needed,
+			short: measured && available < needed - EPSILON,
 		};
 	});
 }

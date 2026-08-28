@@ -124,6 +124,16 @@ describe("the fill key", () => {
 	// "All of it was scrap" is not a sensible one-tap default; offering it there
 	// invites a mis-tap that writes off a whole order.
 	it("is offered for good output only, never for scrap", () => {
-		expect(board).toMatch(/numTarget === 'produced' \\?/);
+		// Scoped to the <NumPad> tag, not to the file. The bare substring
+		// "numTarget === 'produced'" also appears in the field's :class binding
+		// above, so a file-wide match stays green with the fill key wired to the
+		// scrap box or with :fill deleted outright.
+		const tag = board.match(/<NumPad[\s\S]*?\/>/);
+		expect(tag, "the pad should be mounted").toBeTruthy();
+		const fill = tag[0].match(/:fill="([^"]*)"/);
+		expect(fill, "the pad should be handed a balance to fill").toBeTruthy();
+		expect(fill[1]).toMatch(/numTarget === 'produced'/);
+		// …and the other branch hands it nothing, which is what suppresses the key.
+		expect(fill[1]).toMatch(/:\s*''/);
 	});
 });

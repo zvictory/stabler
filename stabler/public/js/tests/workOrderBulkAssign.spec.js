@@ -62,6 +62,28 @@ describe("bulk operator assignment", () => {
 		expect(body.slice(0, body.indexOf("\n}"))).not.toMatch(/selected\.value = new Set\(\)/);
 	});
 
+	it("shows the reason when the sweep fails outright", () => {
+		// `bulkSkipped` covers the partial case: the call went through and the
+		// backend named the orders it refused. It cannot cover the other one — the
+		// operator list never loaded, or the whole write threw — because then there
+		// is no per-order verdict to list and `bulkSkipped` stays empty. The code
+		// writes that case into `actionError`, and a1d7516 deleted the only element
+		// that rendered it along with the drawer it sat in: the dialog then stayed
+		// open and unchanged with the button live again, so "assigned 15 orders"
+		// and "assigned none of them" looked identical from the screen.
+		expect(list).toMatch(/v-if="actionError"/);
+		const body = list.match(/<div class="modal-body">[\s\S]*?<\/div>\s*<div class="modal-footer">/);
+		expect(body, "the bulk dialog body should exist").toBeTruthy();
+		expect(body[0]).toMatch(/actionError/);
+	});
+
+	it("does not greet the next attempt with the last one's error", () => {
+		// The ref outlives the dialog. Opening it again on a stale red banner
+		// reports a failure that did not happen this time.
+		const open = list.slice(list.indexOf("function openBulk"));
+		expect(open.slice(0, open.indexOf("\n}"))).toMatch(/actionError\.value = ""/);
+	});
+
 	it("sends only the roles the manager filled in", () => {
 		// Bulk must not read an untouched box as "remove that operator" — the
 		// backend defends this too, but a UI that posts "" for the empty half is

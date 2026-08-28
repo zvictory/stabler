@@ -182,6 +182,7 @@ function toggleAll() {
 async function openBulk() {
 	bulkOpen.value = true;
 	bulkSkipped.value = [];
+	actionError.value = "";
 	bulkOperator.value = "";
 	bulkPackagingOperator.value = "";
 	const err = await loadOperators(activeCompany.value);
@@ -549,8 +550,6 @@ async function saveWO(submitAfter) {
 			</div>
 		</div>
 
-		<!-- Detail drawer -->
-
 		<!-- Bulk assign modal -->
 
 		<div v-if="bulkOpen" class="modal-backdrop fade show" @click="bulkOpen = false"></div>
@@ -565,9 +564,10 @@ async function saveWO(submitAfter) {
 						<p class="text-secondary small">
 							{{ t("Selected work orders: {0}", [selected.size]) }}
 						</p>
-						<!-- Unlike the single-order panel, an empty box here means "leave this
-							 role as it is". Saying so is the whole difference between the two
-							 dialogs, so it is said in the dialog and not only in the code. -->
+						<!-- Unlike the detail page, where an empty box means "nobody is
+							 assigned", an empty box here means "leave this role as it is".
+							 That is the whole difference between the two screens, so it is
+							 said in the dialog and not only in the code. -->
 						<div class="mb-2">
 							<label class="form-label small mb-1">{{ roleLabel("Production") }}</label>
 							<Select v-model="bulkOperator" :options="operatorSelectOptions" />
@@ -577,6 +577,10 @@ async function saveWO(submitAfter) {
 							<Select v-model="bulkPackagingOperator" :options="operatorSelectOptions" />
 						</div>
 						<div class="form-hint">{{ t("A role left empty keeps the operator already assigned.") }}</div>
+
+						<!-- The refused-orders list below cannot carry this: a failed call
+							 returns no per-order verdict, so it would report nothing at all. -->
+						<div v-if="actionError" class="alert alert-danger mt-3 mb-0">{{ actionError }}</div>
 
 						<div v-if="bulkSkipped.length" class="alert alert-warning mt-3 mb-0">
 							<div class="fw-bold">{{ t("Not changed:") }}</div>
