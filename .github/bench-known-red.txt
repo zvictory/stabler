@@ -62,6 +62,29 @@
 # describes the tip. The measured sha is pinned, not the tip, because the tip
 # is not what ran.
 #
+# RE-MEASURED 2026-08-28, same site, same command, on main @ 923b99b. Four red,
+# then one. The trigger was a `make test-bench` run owed for a DB-touching change;
+# examining the four debts showed three were test-infrastructure faults, not
+# product ones, and all three closed:
+#
+#   test_approvals_integration     the PE fixture never inserted -- ERPNext wants
+#                                  reference_no/date once a leg is a Bank account,
+#                                  so four tests errored before reaching the gate
+#   test_supplier_quotations_api   the fake `frappe` was never restored to
+#                                  sys.modules; module_sandbox.py exists for this
+#   test_ci_transport_pi_link      a MagicMock left on `frappe.local.db` outlived
+#                                  the class and broke frappe's own teardown --
+#                                  every test passed, the module still exited 1
+#
+# The last two are one defect wearing two hats: process-global state faked and
+# not put back. `make check` cannot see it -- it runs one module per process, so
+# no leak ever crosses a module boundary there. Only the bench gate does.
+#
+# A stale line also went: test_tender_flow_contract moved to the frappe-free list
+# in d78d250 and its bead had been describing a module that no longer runs here.
+#
+# Read the entry count from this file, never from this prose.
+#
 # The site pin below is PARSED, not prose. `make test-bench` compares it to
 # $(TEST_SITE) and, when they differ, refuses to ratchet at all: it falls back to
 # "every red is red". A baseline measured on one site says nothing about another,
@@ -75,8 +98,6 @@
 # format: <module>  <bead>  <cause>
 
 # --- genuine test failures
-test_approvals_integration           stabler-f74  errors=4; Reference No and Reference Date mandatory for Bank transaction
-test_supplier_quotations_api         stabler-cd1  errors=1; fake stabler_settings cannot provide imports_supplier_groups_for
 
 # --- asserted nothing
 # stabler-56v (test_deploy_migrate_gate, collected-none) was paid off on 2026-08-20:
@@ -91,4 +112,3 @@ test_related_documents_integration   stabler-97o  ZERO COVERAGE, skipped-3/3; si
 # died on the fake. The ratchet is what surfaced them and would have demanded this
 # deletion anyway -- a listed module that starts passing is itself RED.
 # test_module_sandbox_hygiene now fails the build if a seventh one appears.
-test_ci_transport_pi_link            stabler-slaa Ran 4 OK; teardown orjson decode error on empty input

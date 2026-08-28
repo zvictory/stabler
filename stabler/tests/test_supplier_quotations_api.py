@@ -8,9 +8,22 @@ from __future__ import annotations
 import ast
 import importlib
 import os
-import sys
 import types
 import unittest
+
+from stabler.tests.module_sandbox import ModuleSandbox
+
+# This module builds a fake `frappe` and imports `stabler.api.purchasing`
+# against it. `sys.modules` is process-wide, so leaving the fake behind broke
+# whatever ran next in the same process — including frappe's own
+# `_cleanup_after_tests`, which is why the module printed a test failure and
+# then an `AttributeError: module 'frappe' has no attribute 'cache'`.
+# `module_sandbox` exists for exactly this; the module simply predated it.
+_SANDBOX = ModuleSandbox()
+
+
+def tearDownModule():
+	_SANDBOX.restore()
 
 
 class _FakeFrappe:
@@ -54,13 +67,12 @@ class _FakeFrappe:
 
 
 def _load_purchasing(fake: _FakeFrappe):
-	for name in (
+	_SANDBOX.evict(
 		"stabler.api.purchasing",
 		"frappe",
 		"frappe.utils",
 		"frappe.model.document",
-	):
-		sys.modules.pop(name, None)
+	)
 
 	frappe_model_doc = types.ModuleType("frappe.model.document")
 
@@ -68,7 +80,6 @@ def _load_purchasing(fake: _FakeFrappe):
 		pass
 
 	frappe_model_doc.Document = Document
-	sys.modules["frappe.model.document"] = frappe_model_doc
 
 	frappe = types.ModuleType("frappe")
 	frappe._ = lambda value: value
@@ -98,13 +109,19 @@ def _load_purchasing(fake: _FakeFrappe):
 
 	stabler_settings = types.ModuleType("stabler.stabler.doctype.stabler_settings.stabler_settings")
 	stabler_settings.module_map_for = lambda c: {"tender": True}
+	# `purchasing.py:23` imports this at module level, so a fake settings module
+	# without it makes the import itself fail — and the traceback names
+	# `purchasing`, not this file. Kept in step with `test_po_from_quotation.py`,
+	# which fakes the same pair.
+	stabler_settings.imports_supplier_groups_for = lambda c: []
 
-	sys.modules.update(
+	_SANDBOX.install(
 		{
 			"frappe": frappe,
 			"frappe.utils": utils,
 			"stabler.api.approvals": approvals,
 			"stabler.stabler.doctype.stabler_settings.stabler_settings": stabler_settings,
+			"frappe.model.document": frappe_model_doc,
 		}
 	)
 	return importlib.import_module("stabler.api.purchasing")

@@ -108,6 +108,12 @@ class ApprovalGateIntegrationTest(FrappeTestCase):
 		pe.source_exchange_rate = 1
 		pe.target_exchange_rate = 1
 		pe.posting_date = frappe.utils.today()
+		# ERPNext demands a cheque/transfer reference the moment either leg is a
+		# Bank account, and `_leaf_account(..., "Bank")` picks one whenever the
+		# site has one. Without these two fields the fixture never inserts, so
+		# every test in this class errors before it reaches the approval gate.
+		pe.reference_no = "TEST-TRANSFER-1"
+		pe.reference_date = frappe.utils.today()
 		pe.insert(ignore_permissions=True)
 		return pe
 
