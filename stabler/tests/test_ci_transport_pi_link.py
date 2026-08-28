@@ -16,9 +16,22 @@ class TestCiTransportPiLink(unittest.TestCase):
 	def setUp(self):
 		import frappe
 
+		# Remember what we are about to overwrite. `frappe.local` outlives this
+		# class: a MagicMock left on `frappe.local.db` is still there when
+		# frappe's own `_cleanup_after_tests` calls `db.get_global(...)`, and
+		# `orjson.loads` refuses a MagicMock — so every test passed and the
+		# module still exited non-zero. Same defect as the `sys.modules` fakes
+		# `stabler/tests/module_sandbox.py` was written for, one attribute over.
+		self._saved = {k: getattr(frappe.local, k, None) for k in ("db", "flags", "site")}
 		frappe.local.db = MagicMock()
 		frappe.local.flags = frappe._dict()
 		frappe.local.site = "test"
+
+	def tearDown(self):
+		import frappe
+
+		for key, value in self._saved.items():
+			setattr(frappe.local, key, value)
 
 	def test_get_ci_transport_invoices_calculation(self):
 		ci_doc = MagicMock()
