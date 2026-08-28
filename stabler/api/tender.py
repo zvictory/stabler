@@ -2728,6 +2728,7 @@ def crm_board(company: str) -> dict:
 	Returns: {"lanes": [...], "cards": [...]}
 	"""
 	from stabler.api import _funnel
+	from stabler.api._tender_documents import docs_summary, parse_doc_requirements
 
 	# Panoyu menüde direktör ve tedarik görüyor; kapı da aynısını söylemeli.
 	_require_any_tender_view(("director", "sourcing"), company)
@@ -2925,16 +2926,23 @@ def crm_board(company: str) -> dict:
 		deadline = deadline_info.get("deadline")
 		risk = deadline_info.get("risk", "good")
 
-		value = flt(intake.get("contract_value") or intake.get("budget"))
+		# `estimated_total` is the key the intake contract actually carries
+		# (`_INTAKE_KEYS_NUM`). This read used to ask for `contract_value` and
+		# `budget`, which `_clean_intake` cannot produce and now refuses to
+		# accept, so every card value, lane total and KPI strip was a permanent
+		# zero. `annual_revenue` stays as the fallback: no Stabler code writes it,
+		# but a person can fill it in the Desk and that is worth reading.
+		value = flt(intake.get("estimated_total"))
 		if not value and frappe.db.has_column("CRM Deal", "annual_revenue"):
 			value = flt(frappe.db.get_value("CRM Deal", deal, "annual_revenue"))
 
-		docs = intake.get("documents") or []
-		doc_progress = (
-			round((len([d for d in docs if d.get("status") == "ready"]) / max(1, len(docs))) * 100)
-			if docs
-			else 50
-		)
+		# Readiness is `docs_summary`'s answer and nobody else's. The card used to
+		# count `status == "ready"` on rows that carry no `status` at all — the
+		# normaliser records completion in `done` and deliberately routes a legacy
+		# `status: "ready"` to `unverified` instead. Every card with a checklist
+		# therefore read 0%, and one with no checklist read 50%, so an untouched
+		# tender looked better than a finished one.
+		doc_progress = docs_summary(parse_doc_requirements(intake.get("documents") or []))["readiness_pct"]
 
 		cards.append(
 			{
