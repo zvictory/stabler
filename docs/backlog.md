@@ -14,7 +14,9 @@ ayrıca `make test-bench`.
 
 ## P1 — yüksek
 
-### Her fatura gönderimi, kapalı entegrasyonlara bile, iki arka plan işi kuyruğa atıyor
+### ~~Her fatura gönderimi, kapalı entegrasyonlara bile, iki arka plan işi kuyruğa atıyor~~
+**ÇÖZÜLDÜ 2026-08-28 — `ec98be6`.** Ölçüm kaydı aşağıda duruyor; kapanış notu bölümün sonunda.
+
 `hata` · ölçüldü 2026-08-28, yerel bench (`genesis-test.local`), `make test-bench`
 
 `stabler/integrations/one_c/hooks.py:13` (`enqueue_push`) ve
@@ -78,6 +80,33 @@ kayıttaki ~150 fazlaydı; 28.08'de boş kuyruktan tek koşu ölçüldü). 650 s
 dokuz koşuda varılıyor, ve o noktada kapı altı ilgisiz modülle birlikte kırılıyor.
 28.08'de bu ikinci kez oldu; kuyruk yine elle boşaltıldı (650 → 0, hepsi
 `genesis-test.local` test işi).
+
+#### Kapanış 2026-08-28 — `ec98be6`
+
+`stabler/integrations/_gates.py`: `one_c_can_push(mode, outbox, rest_endpoint)` ve
+`ehf_can_submit(eimzo_endpoint, stub_signature)`. Her iki `enqueue_*` sarmalayıcısı
+kuyruğa atmadan **önce** bu kapıyı okuyor.
+
+Yeni bir anahtar değil — `_push_file`, `_push_rest` ve `sign()`'ın zaten sorduğu
+soru, bir worker işi aldıktan sonra değil, iş yapılmadan önce soruluyor. İki
+entegrasyondan biri yapılandırıldığı anda başka hiçbir değişiklik gerekmeden
+çalışmaya başlar. Kapı `onec_mode`'a `push()`'un daldığı gibi dallanıyor: yalnız
+outbox'a bakmak REST kurulumunda iş üretmeye devam ederdi, yalnız endpoint'e
+bakmak ise — asıl zararlı yön — çalışan bir dosya bırakımını sessizce kapatırdı.
+
+Ölçülen etki: `make test-bench`'in bıraktığı `long` işi **75 → 0**. Koşu öncesi
+kuyruktaki 75 iş açılıp sayıldı: 55 `one_c.outbound.push` + 20
+`ehf.submit.submit_for_invoice` — tam olarak bu kaydın hedefi.
+
+Testler: `stabler/tests/test_integration_enqueue_gates.py` (kapı mantığı,
+frappe-free, `make check` içinde) ve
+`stabler/tests/test_enqueue_hooks_integration.py` (kapının hook'a gerçekten bağlı
+olduğu — `frappe.enqueue` izlenerek). Dört mutasyonla kırmızı görüldü.
+
+**Prod'da henüz yürürlükte değil.** Kod `main`'de; etkili olması için deploy +
+`bench restart` gerekiyor, ve o Zafar'ın ayrı onayına bağlı. O ana kadar anjan
+günde ~70 `EHF Submission` hata satırı üretmeye devam ediyor. Geriye kalan 8 576
+satırın temizliği bu kaydın kapsamında değil — ayrı bir karar.
 
 
 ### UZEX poller sekiz kiracıda saatlik koşuyor ve yapısal olarak hiçbir şey üretemiyor
