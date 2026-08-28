@@ -6445,3 +6445,11 @@ Save checklist,Сохранить чек-лист
 file(s),файл(ов)
 All lines,Все линии
 All operators,Все операторы
+No batch recorded,Партия не записана
+Record batch,Записать партию
+A batch number is required.,Номер партии обязателен.
+Batch recorded.,Партия записана.
+Could not record the batch.,Не удалось записать партию.
+Made in-house,Произведено внутри
+candidate orders — no batch to tell which,"кандидатных заказов — партии, чтобы определить, нет"
+Bought in,Закуплено

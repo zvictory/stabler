@@ -1018,6 +1018,7 @@ def cancel_bom(name: str):
 
 
 from stabler.api._wo_filters import build_work_order_filters
+from stabler.api._wo_genealogy import annotate_consumed_origin
 
 _WO_STATUSES = ("Draft", "Not Started", "In Process", "Completed", "Stopped", "Closed", "Cancelled")
 
@@ -1832,6 +1833,32 @@ def wo_genealogy(work_order: str):
 	)
 	for c in consumed:
 		c["qty"] = flt(c["qty"])
+	# Where each input came from. Two grouped queries rather than one per row:
+	# an order with forty lines would otherwise cost forty round trips to answer
+	# a question that has the same answer for every line of the same item.
+	production_warehouses = {
+		r[0]
+		for r in frappe.db.sql(
+			"""SELECT DISTINCT fg_warehouse FROM `tabWork Order`
+			   WHERE company = %(company)s AND docstatus = 1 AND IFNULL(fg_warehouse,'') <> ''""",
+			{"company": doc.company},
+		)
+	}
+	item_codes = sorted({c["item_code"] for c in consumed if c.get("item_code")})
+	candidates: dict[str, int] = {}
+	if item_codes:
+		candidates = {
+			r["production_item"]: int(r["n"])
+			for r in frappe.db.sql(
+				"""SELECT production_item, COUNT(*) AS n FROM `tabWork Order`
+				   WHERE company = %(company)s AND docstatus = 1
+				     AND production_item IN %(items)s
+				   GROUP BY production_item""",
+				{"company": doc.company, "items": tuple(item_codes)},
+				as_dict=True,
+			)
+		}
+	consumed = annotate_consumed_origin(consumed, production_warehouses, candidates)
 	return {
 		"work_order": doc.name,
 		"produced": {
