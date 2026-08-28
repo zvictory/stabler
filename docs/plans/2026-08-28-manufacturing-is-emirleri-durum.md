@@ -153,7 +153,77 @@ dili sekiz kiracıda da `Language` kaydı olarak yok, bu yüzden `language="uzc"
 altı hesabın `User` belgesi hiçbir doğrulanmış yoldan kaydedilemiyor. Rol, bu yüzden
 `User.save()` yerine `Has Role` satırları doğrudan silinerek kaldırıldı.
 
-## Engel — ve bu bir kod engeli değil
+## KARAR — 2026-08-28 akşamı, Zafar
+
+Soru soruldu, cevap geldi: **sahada operatörler var, verilerini kâğıttan tek kişi
+giriyor.** Yani kiosk doğru darboğazı hedefliyor; eksik olan kod değil yayılım.
+İki paketin de sorusu buydu, ikisi de bu cevaba bağlanır.
+
+Bunun bağladığı şeyler:
+
+- **1b kanban ve 1c planlama meşru** — "tek kişi var" okuması geçerli olsaydı
+  yazılmamaları gerekiyordu.
+- **Fire/duruş kataloğu meşru** — 0 Downtime Entry bir organizasyon eksikliği
+  değil, kaydedecek ekranın olmaması.
+- **operator-dashboard'un backend sorusu açık kalır** ve artık gerçek bir soru.
+
+### Uygulanan — 1a (`f227f62`)
+
+Vardiya defterine üç filtre: **hat** (`wip_warehouse`), **operatör** (iki rol de),
+**tarih aralığı** (iki uçtan kapsayıcı). Üçü de ölçülerek seçildi:
+
+| Boyut | Neden bu kolon |
+|---|---|
+| hat | anjan'da 0 Workstation var; beş `WIP.n-Bo'lim` bölümü 557 emir taşıyor. Workstation'a bağlanan bir filtre hiçbir şeye bağlanmış olurdu. |
+| operatör | `operator` **OR** `packaging_operator` — ikisi aynı emirde çalışıyor; tek kolon okuyan filtre paketleme operatörüne "işin yok" derdi. |
+| tarih | `planned_start_date` datetime; bitiş `< ertesi gece yarısı` karşılaştırılıyor, yoksa "bugünü" soran vardiya sorumlusuna boş liste dönerdi. |
+
+Where-clause `_wo_filters.build_work_order_filters`'a çıktı — filtre listesinde
+asıl risk sorgunun *genişlemesi*: boş liste görünür bir hata, uzun liste yoğun bir
+ekranda iyi bir gün gibi okunur. Kendi-satırların guard'ı filtre olarak değil
+guard olarak geçiyor ve testler her kombinasyonda ayakta kaldığını pinliyor.
+
+### Uygulanan — 1d, ve neden ağaç çizilmedi (`a78c7ac`)
+
+Soyağacı ağacı **çizilmedi**, ve bu bir eksik değil karar. Ölçüm:
+
+| Ölçüm (anjan, salt-okunur) | Değer |
+|---|---|
+| Malzeme transfer satırı | 23 851 |
+| …`batch_no` taşıyan | **0** |
+| Gönderilmiş iş emri | 3 789 |
+| …`custom_batch_no` taşıyan | **0** |
+| Başka bir emrin mamul deposundan gelen tüketim satırı | **23 848** |
+| Kalem başına aday üretici emir | ort. **14,9** · en fazla **171** |
+
+Yapı gerçek — neredeyse her girdi içeride üretilmiş — ama hangi emrin ürettiğini
+söyleyecek bağ yok. En yakın önceki emri seçerek ağaç çizilebilirdi ve **çözülmüş
+bir zincirle birebir aynı görünürdü**. O ağacın okunduğu an geri çağırmadır, ve
+tahmin eden bir izlenebilirlik bilmediğini söyleyenden kötüdür: tahmin aramayı
+bitirir. Bu yüzden panel kökeni işaretliyor, adayları sayıyor, **ebeveyni asla
+adlandırmıyor** — aday sayısı 1 olduğunda bile, çünkü o "şimdilik 1"dir ve o kalem
+için ikinci emir açıldığı gün, etiket basıldıktan sonra yalan söylemeye başlar.
+
+Durumu değiştiren şey parti kaydetmek, ve `set_wo_batch` / `suggest_wo_batch`
+kiosk'tan beri **vardı** — yalnız kiosk'tan erişilebiliyordu. Bu sayfayı açan
+yönetici, formu hiç görmemiş olan kişiydi. Artık görüyor; eksik parti boş bir alan
+değil sarı bir uyarı rozeti olarak duruyor (`wo_genealogy` 3 789 emrin hepsinde boş
+olan bir kolonu döndürüyordu).
+
+Operasyon kartlarını öldüren ölçümün aynısı, ters sonuç: orada yapı da yoktu,
+burada yalnız kayıt yok.
+
+## Kalan iş ve neyi beklediği
+
+| Yön | Durum | Bekleyen |
+|---|---|---|
+| 1a | **BİTTİ** (`f227f62`) | — |
+| 1d | **BİTTİ** — parti yakalama + dürüst köken | ağaç, parti kaydı birikene kadar |
+| 1b kanban | YAPILMADI | kararla açıldı, sırada |
+| 1c planlama | YAPILMADI | **önce hook düzeltilmeli** — `work_order` dolu MR = 0/488 |
+| Fire/duruş | YAPILMADI | kararla açıldı |
+
+## Eski engel kaydı — kapandı
 
 Ekranların hepsi çalışıyor; kullanan yok. 3 725 üretim girişinin 3 688'i iki yönetici
 hesabından, fire ve duruş sıfır, paketleme operatörü hiç atanmamış.
