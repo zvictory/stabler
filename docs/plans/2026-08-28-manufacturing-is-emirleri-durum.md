@@ -57,6 +57,54 @@ sapma kovası. Gerekçe kodda da duruyor: `composables/workOrderStages.js:1-12`.
 - **Malzeme hazırlığı float düzeltmesi:** `composables/materialReadiness.js`, epsilon +
   `settle()`.
 
+## E1 ölçümü (28.08 akşamı) — soru sanıldığı gibi değil
+
+"Operatörler kiosk'u reddetti mi, yoksa hiç ulaşamadı mı?" diye ölçüldü. **İkisi de değil.**
+
+| Ölçüm | Sonuç |
+|---|---|
+| İş emrine `operator` olarak atanan hesap | 5 (`alikxan199225`, `qwerty00…03`) |
+| …hepsi var, etkin, giriş yapmış mı | **evet** — `qwerty00` ve `qwerty03` en son **27.08 19:39–19:40** |
+| …90 günlük aktivite kaydı | `qwerty03` 76 satır — gerçekten aktif |
+| Kiosk rotasında rol kapısı (`/manufacturing/line`) | **yok** — giriş yapan herkes erişebilir |
+| `Line A Operator` rolünü kod okuyor mu | **hayır** — depoda yalnız eski UAT kanıt JSON'larında geçiyor |
+| …bu rolü kim taşıyor | 5 hesap: Zafar, Odilbek ve iki geliştirici. **Sahada kimse yok.** |
+
+Yani erişim engeli yok, rol engeli yok, ret de yok. Asıl tablo üretim kaydını **kimin
+yazdığında**:
+
+| Hesap | Manufacture girişi | Son giriş | Rolleri |
+|---|---|---|---|
+| `ashuraliyevbegzod867` | **3 349** | **bugün 10:47** | Stock/Manufacturing/System Manager |
+| `alikxan199225` | 507 | 26.08 | Manufacturing Manager (+ 3 iş emrinde operatör) |
+| `xalilovodilbek01` | 32 | 26.04 | (geliştirici) |
+| `qwerty01` / `qwerty03` / `qwerty00` / `qwerty02` | 7 / 7 / 4 / 1 | 04–07.2026 | Manufacturing User |
+
+**3 856 girişin 3 856'sı iki Desk hesabından.** En büyük üretici
+(`ashuraliyevbegzod867`, tüm girişlerin %90'ı, bugün hâlâ yazıyor) **hiçbir iş emrinde
+operatör olarak atanmamış**. Atanmış olan `qwerty0X` hesapları Mart–Temmuz arasında
+toplam 19 giriş yapıp durmuş.
+
+### Bunun bıraktığı soru
+
+Tüm üretim verisi tek klavyeden giriyor. İki okuması var ve ikisi zıt iş gerektiriyor:
+
+1. **Sahada gerçekten tek kişi var** → kiosk, çoklu operatör, vardiya devri, operatör
+   başına KPI — hepsi olmayan bir organizasyonu varsayıyor. İki paket de küçültülmeli.
+2. **Sahada operatörler var ama verileri kâğıttan tek kişi giriyor** → bu tam olarak
+   kiosk'un çözdüğü darboğaz, ve iki paket de doğru işi hedefliyor; eksik olan yayılım.
+
+Ölçüm bu ikisini ayırt edemez — `ashuraliyevbegzod867`'un bir veri giriş görevlisi mi
+yoksa üretimi tek başına yürüten kişi mi olduğu **organizasyon bilgisi**, veri değil.
+Zafar'ın cevaplaması gereken tek soru budur; 1b, 1c, fire/duruş kataloğu ve
+operator-dashboard'un geleceği bu cevaba bağlı.
+
+### Yan bulgu: ölü rol
+
+`Line A Operator` prod'da duruyor, beş geliştirici/yönetici hesabında, ve **hiçbir kod
+onu okumuyor**. Ya bir kapıya bağlanmalı ya da silinmeli; şu hâliyle rol atamasının
+bir anlamı olduğu izlenimini veriyor.
+
 ## Engel — ve bu bir kod engeli değil
 
 Ekranların hepsi çalışıyor; kullanan yok. 3 725 üretim girişinin 3 688'i iki yönetici
