@@ -6482,3 +6482,19 @@ Weight out of tolerance,Вазн меъёрдан четда
 Spillage,Тўкилиш
 Line start-up and flush,Линияни ишга тушириш ва ювиш
 Expired or unusable raw material,Муддати ўтган ёки яроқсиз хомашё
+An end time earlier than the start means the stop ran past midnight.,"Тугаш вақти бошланишдан олдин бўлса, тўхташ ярим тундан ўтган демакдир."
+Fill in the day and both times.,Кунни ва иккала вақтни тўлдиринг.
+Line stops,Линия тўхташлари
+Minutes,Дақиқа
+No order — the line was between jobs,Буюртмасиз — линия ишлар орасида эди
+No stops recorded in this window,Бу оралиғда тўхташ ёзилмаган
+Nothing on this floor has ever been recorded as a stop. The first one goes in on the left.,Бу сехда ҳали биронта тўхташ ёзилмаган. Биринчисини чапдан киритинг.
+Pick a line,Линияни танланг
+Pick a reason,Сабабни танланг
+Pick the line and the reason.,Линия ва сабабни танланг.
+Record a stop,Тўхташни ёзиш
+Record the stop,Тўхташни ёзиш
+Recorded: {0} minutes,Ёзилди: {0} дақиқа
+Saving,Сақланмоқда
+{0} minutes,{0} дақиқа
+{0} stops,{0} та тўхташ

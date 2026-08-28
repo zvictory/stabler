@@ -6477,3 +6477,19 @@ Weight out of tolerance,Ağırlık tolerans dışı
 Spillage,Dökülme
 Line start-up and flush,Hat devreye alma ve yıkama
 Expired or unusable raw material,Süresi geçmiş veya kullanılamaz hammadde
+An end time earlier than the start means the stop ran past midnight.,Bitiş saati başlangıçtan erkense duruş gece yarısını geçmiş demektir.
+Fill in the day and both times.,Günü ve iki saati de doldurun.
+Line stops,Hat duruşları
+Minutes,Dakika
+No order — the line was between jobs,Emirsiz — hat işler arasındaydı
+No stops recorded in this window,Bu aralıkta kayıtlı duruş yok
+Nothing on this floor has ever been recorded as a stop. The first one goes in on the left.,Bu sahada bugüne kadar hiç duruş kaydedilmedi. İlkini soldan girin.
+Pick a line,Bir hat seçin
+Pick a reason,Bir sebep seçin
+Pick the line and the reason.,Hattı ve sebebi seçin.
+Record a stop,Duruş kaydet
+Record the stop,Duruşu kaydet
+Recorded: {0} minutes,Kaydedildi: {0} dakika
+Saving,Kaydediliyor
+{0} minutes,{0} dakika
+{0} stops,{0} duruş
