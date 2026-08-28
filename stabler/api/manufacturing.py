@@ -1216,11 +1216,17 @@ def log_line_stop(
 
 	if not frappe.db.exists("Stabler Stop Reason", reason):
 		frappe.throw(_("Unknown reason: {0}").format(reason))
-	if not frappe.db.exists("Warehouse", line):
+	# `line` and `work_order` are the two fields on this row that point at another
+	# tenant's data, and both arrive as bare names with nothing in the pair saying
+	# they belong to the company beside them. So neither is believed: each one's
+	# own company is read back and compared. Checking only that the Warehouse
+	# exists is the weaker half of the question — every tenant's warehouses exist.
+	line_company = frappe.db.get_value("Warehouse", line, "company")
+	if not line_company:
 		frappe.throw(_("Unknown line: {0}").format(line))
+	if line_company != company:
+		frappe.throw(_("That line belongs to another company."), frappe.PermissionError)
 	if work_order:
-		# Read the order's own company rather than trusting the argument: this is
-		# the one field on the row that points at another tenant's data.
 		owner_company = frappe.db.get_value("Work Order", work_order, "company")
 		if not owner_company:
 			frappe.throw(_("Unknown Work Order: {0}").format(work_order))
