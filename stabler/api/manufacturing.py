@@ -1017,7 +1017,36 @@ def cancel_bom(name: str):
 # ----- Work Orders ---------------------------------------------------------
 
 
+from stabler.api._wo_filters import build_work_order_filters
+
 _WO_STATUSES = ("Draft", "Not Started", "In Process", "Completed", "Stopped", "Closed", "Cancelled")
+
+
+@frappe.whitelist()
+def list_work_order_lines(company: str):
+	"""The lines the shift-log filter offers, read from the orders themselves.
+
+	Not from `tabWarehouse`: a factory's warehouse tree carries stores, transit
+	and finished-goods bins that no order is ever poured on, and a dropdown of
+	forty entries where five are real is a filter nobody opens. Read this way the
+	list is exactly the sections that have work, ordered by how much — anjan's
+	five `WIP.n-Bo'lim` sections plus the generic pool, measured 2026-08-28.
+	"""
+	_assert_company_scope(company)
+	_require_company(company)
+	_require_mfg()
+	rows = frappe.db.sql(
+		"""
+		SELECT wip_warehouse AS name, COUNT(*) AS n
+		FROM `tabWork Order`
+		WHERE company = %(company)s AND docstatus < 2 AND IFNULL(wip_warehouse, '') <> ''
+		GROUP BY wip_warehouse
+		ORDER BY n DESC
+		""",
+		{"company": company},
+		as_dict=True,
+	)
+	return [{"name": r["name"], "count": int(r["n"])} for r in rows]
 
 
 @frappe.whitelist()
@@ -1025,26 +1054,33 @@ def list_work_orders(
 	company: str,
 	status: str | None = None,
 	search: str = "",
+	line: str | None = None,
+	operator: str | None = None,
+	from_date: str | None = None,
+	to_date: str | None = None,
 	limit: int = 100,
 ):
 	_assert_company_scope(company)  # tenant isolation: reject a foreign company arg
 	_require_company(company)
 	_require_mfg()
-	conds = ["company = %(company)s"]
-	params: dict = {"company": company, "limit": int(limit)}
-	if status and status in _WO_STATUSES:
-		conds.append("status = %(status)s")
-		params["status"] = status
-	if search:
-		conds.append("(name LIKE %(s)s OR production_item LIKE %(s)s OR item_name LIKE %(s)s)")
-		params["s"] = f"%{search}%"
 	assignee_cols = _wo_operator_columns()
 	is_manager = _is_mfg_manager()
 	# Operators see only WOs assigned to themselves; managers see all. Assigned in
-	# EITHER role — the packer has to reach the same order as the pourer.
-	if not is_manager:
-		conds.append("(" + " OR ".join(f"`{col}` = %(user)s" for col in assignee_cols) + ")")
-		params["user"] = frappe.session.user
+	# EITHER role — the packer has to reach the same order as the pourer. Passed
+	# as the own-rows guard rather than as a filter: `build_work_order_filters`
+	# ANDs it with everything else, so no filter can widen past it.
+	conds, params = build_work_order_filters(
+		company=company,
+		status=status,
+		search=search,
+		line=line,
+		operator=operator,
+		from_date=from_date,
+		to_date=to_date,
+		assignee_user=None if is_manager else frappe.session.user,
+		assignee_columns=tuple(assignee_cols),
+	)
+	params["limit"] = int(limit)
 	where = " AND ".join(conds)
 	assignee_select = "".join(f"{col}, " for col in assignee_cols)
 	# The kiosk reads its whole board from here, so the draft banner has to arrive

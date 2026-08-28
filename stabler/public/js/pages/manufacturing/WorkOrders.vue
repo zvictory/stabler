@@ -27,6 +27,30 @@ const error = ref("");
 const rows = ref([]);
 const search = ref("");
 const statusFilter = ref("");
+// The shift log's three added dimensions. Measured on anjan 2026-08-28: 3 795
+// open orders over five and a half months, so search + status alone still
+// returns more rows than a screen holds.
+const lineFilter = ref("");
+const operatorFilter = ref("");
+const fromDate = ref("");
+const toDate = ref("");
+const lineOptions = ref([]);
+const activeFilterCount = computed(
+	() => [statusFilter.value, lineFilter.value, operatorFilter.value, fromDate.value, toDate.value].filter(Boolean).length,
+);
+function clearFilters() {
+	statusFilter.value = "";
+	lineFilter.value = "";
+	operatorFilter.value = "";
+	fromDate.value = "";
+	toDate.value = "";
+}
+// Today, both ends — the shift lead's most common question, and the one the
+// inclusive-end rule in `_wo_filters.py` exists for.
+function filterToday() {
+	fromDate.value = todayIso();
+	toDate.value = todayIso();
+}
 
 // Labels and badge colours are shared with the detail page — the two screens
 // had drifted into disagreeing about what colour a Draft order is.
@@ -49,6 +73,10 @@ async function load() {
 			company: activeCompany.value,
 			search: search.value,
 			status: statusFilter.value || undefined,
+			line: lineFilter.value || undefined,
+			operator: operatorFilter.value || undefined,
+			from_date: fromDate.value || undefined,
+			to_date: toDate.value || undefined,
 			limit: 100,
 		});
 		await loadStock();
@@ -107,6 +135,31 @@ function onSearchInput() {
 onMounted(load);
 watch(activeCompany, load);
 watch(statusFilter, load);
+watch([lineFilter, operatorFilter, fromDate, toDate], load);
+watch(activeCompany, loadLines, { immediate: true });
+
+async function loadLines() {
+	if (!activeCompany.value) return;
+	try {
+		lineOptions.value = await call("stabler.api.manufacturing.list_work_order_lines", {
+			company: activeCompany.value,
+		});
+	} catch {
+		// A line list that will not load leaves the dropdown empty; the rest of
+		// the filters still work. Failing the page over the dropdown would hide
+		// the orders it exists to help find.
+		lineOptions.value = [];
+	}
+}
+
+const lineSelectOptions = computed(() => [
+	{ value: "", label: t("All lines") },
+	...lineOptions.value.map((l) => ({ value: l.name, label: `${l.name} (${l.count})` })),
+]);
+const operatorFilterOptions = computed(() => [
+	{ value: "", label: t("All operators") },
+	...operatorSelectOptions.value.filter((o) => o.value),
+]);
 
 // ----- Assign operators to a whole selection (manager only) -----
 // A shift lead sets one pouring/packing pair per line per shift, so the gesture
@@ -376,6 +429,38 @@ async function saveWO(submitAfter) {
 						<button type="button" class="btn btn-primary" @click="openCreate">
 							<i class="ti ti-plus me-1"></i>{{ t("New Work Order") }}
 						</button>
+					</div>
+					<!-- Shift-log filters. Second row on purpose: search and status
+					     are what an operator uses, these four are what a shift lead
+					     uses, and mixing them made the first row unreadable. -->
+					<div class="col-12">
+						<div class="row g-2 align-items-center pt-2 border-top mt-1">
+							<div class="col-6 col-md-3">
+								<Select v-model="lineFilter" :options="lineSelectOptions" />
+							</div>
+							<div class="col-6 col-md-3">
+								<Select v-model="operatorFilter" :options="operatorFilterOptions" />
+							</div>
+							<div class="col-6 col-md-2">
+								<DateInput v-model="fromDate" :placeholder="t('From')" />
+							</div>
+							<div class="col-6 col-md-2">
+								<DateInput v-model="toDate" :placeholder="t('To')" />
+							</div>
+							<div class="col-12 col-md-2 d-flex gap-1 justify-content-md-end">
+								<button type="button" class="btn btn-outline-secondary btn-sm" @click="filterToday">
+									{{ t("Today") }}
+								</button>
+								<button
+									type="button"
+									class="btn btn-ghost-secondary btn-sm"
+									:disabled="!activeFilterCount"
+									@click="clearFilters"
+								>
+									{{ t("Clear") }}<span v-if="activeFilterCount" class="badge bg-secondary ms-1">{{ activeFilterCount }}</span>
+								</button>
+							</div>
+						</div>
 					</div>
 				</div>
 			</div>

@@ -777,6 +777,75 @@ class TestTheDraftSurvivesTheOperator(FrappeTestCase):
 	frappe.db.table_exists("Work Order") and frappe.db.has_column("Work Order", "packaging_operator"),
 	"v97 has not run on this site — nothing to assign",
 )
+class TestTheShiftLogFiltersNarrowRealRows(FrappeTestCase):
+	"""`build_work_order_filters` is proved pure in `test_wo_shift_log_filters`;
+	what that cannot see is whether the columns it names exist and hold what the
+	screen thinks. `wip_warehouse` is the whole line dimension — there are 0
+	Workstation records on anjan — so a typo in that column name would leave a
+	filter that silently returns nothing, and an empty shift log reads as a quiet
+	day rather than as a bug.
+
+	Each test asserts both directions against one real order: the filter that
+	should find it does, and the filter that should exclude it does.
+	"""
+
+	@classmethod
+	def setUpClass(cls):
+		super().setUpClass()
+		frappe.set_user("Administrator")
+		cls.wo = _a_submitted_work_order()
+
+	def setUp(self):
+		if not self.wo:
+			self.skipTest("no submitted Work Order on this site")
+		frappe.set_user("Administrator")
+		self.row = frappe.db.get_value(
+			"Work Order", self.wo, ["company", "wip_warehouse", "planned_start_date"], as_dict=True
+		)
+
+	def _names(self, **kwargs):
+		return [r["name"] for r in list_work_orders(company=self.row.company, limit=100, **kwargs)]
+
+	def test_the_line_filter_reads_a_column_that_exists_and_matches(self):
+		if not self.row.wip_warehouse:
+			self.skipTest("order carries no wip_warehouse")
+		self.assertIn(self.wo, self._names(line=self.row.wip_warehouse))
+		self.assertNotIn(self.wo, self._names(line="Hicbir Yerde - ZZ"))
+
+	def test_the_date_range_includes_the_day_the_order_is_planned_for(self):
+		"""The inclusive-end rule, against a real datetime column. An order
+		planned at 09:00 must fall inside a range whose end is that same day —
+		the case a `<=` comparison against midnight silently drops."""
+		if not self.row.planned_start_date:
+			self.skipTest("order carries no planned_start_date")
+		day = str(self.row.planned_start_date)[:10]
+		self.assertIn(self.wo, self._names(from_date=day, to_date=day))
+
+	def test_a_range_that_ends_before_the_order_excludes_it(self):
+		if not self.row.planned_start_date:
+			self.skipTest("order carries no planned_start_date")
+		day = frappe.utils.add_days(str(self.row.planned_start_date)[:10], -1)
+		self.assertNotIn(self.wo, self._names(to_date=day))
+
+	def test_an_operator_filter_finds_the_order_under_either_role(self):
+		"""Both roles, because the packer and the pourer share the order. Written
+		against the real columns: `packaging_operator` arrived in v97 and a site
+		that has not migrated would fail here rather than quietly return nothing."""
+		before = frappe.db.get_value("Work Order", self.wo, ["operator", "packaging_operator"], as_dict=True)
+		try:
+			frappe.db.set_value("Work Order", self.wo, "operator", POURER)
+			frappe.db.set_value("Work Order", self.wo, "packaging_operator", None)
+			self.assertIn(self.wo, self._names(operator=POURER))
+
+			frappe.db.set_value("Work Order", self.wo, "operator", None)
+			frappe.db.set_value("Work Order", self.wo, "packaging_operator", PACKER)
+			self.assertIn(self.wo, self._names(operator=PACKER), "paketleme rolü filtreden düşüyor")
+			self.assertNotIn(self.wo, self._names(operator=STRANGER))
+		finally:
+			for field, value in (before or {}).items():
+				frappe.db.set_value("Work Order", self.wo, field, value)
+
+
 class TestBulkAssignAgainstRealOrders(FrappeTestCase):
 	"""The partition is proved pure elsewhere; this proves the endpoint writes what
 	the partition decided and does not go on to write what it refused.
