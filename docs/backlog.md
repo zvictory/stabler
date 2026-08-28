@@ -38,6 +38,48 @@ Yeniden ölçüm:
 ssh ice-production 'python3 -c "import json;c=json.load(open(\"/home/frappe/frappe-bench/sites/mikas.erpstable.com/site_config.json\"));print([k for k in c if \"uzex\" in k])"'
 ```
 
+### Dokümanlarda sabit kiracı listesi — dokuz döngü, üçü site atlıyor
+`hata` · ölçüldü 2026-08-28
+
+Prod'da 8 site stabler taşıyor (`.claude/skills/stabler-deploy/SKILL.md`, 2026-08-20).
+Ama `docs/` altındaki dokuz `for` döngüsü kiracı listesini **elle** yazıyor ve hiçbiri
+8 değil:
+
+| Dosya:satır | Liste | Atlanan |
+|---|---|---|
+| `docs/plans/2026-07-17-imports-PROD-deploy-runbook.md:107` | 6 site | **msa, zuma** |
+| `docs/plans/2026-07-17-kassa-tender-PROD-deploy-runbook.md:100` | 6 site | **msa, zuma** |
+| `docs/plans/PROMPT_deploy_departure_gate.md:147, :164` | 7 site | zuma |
+| `docs/runbooks/nginx-immutable-assets.md:69, :82` | 7 site | zuma |
+| `docs/runbooks/2026-08-07-credential-exposure-response.md:149, :280` | 7 site | zuma |
+| `docs/runbooks/mariadb-buffer-pool.md:113` | 7 site | zuma |
+
+`migrate` per-site olduğu için bu döngülerden biri kopyalanırsa en az bir kiracı
+patch'siz kalır — ve bu, orada bir şey kırılana kadar tamamen sessizdir. Kimlik
+rotasyon runbook'u da listede.
+
+Doğru desen aynı depoda zaten var — `docs/plans/PROMPT_deploy_ci_packing.md:53` listeyi
+sunucudan üretiyor: `ls sites | grep -v assets | grep "\."`. Aynı dosyanın `:57` satırı
+ise "Expect exactly 7" diye sabit yazıyor.
+
+Elle düzeltmek çözüm değil: kiracı sayısı ölçülen bir olgu, dokümana yazıldığı an
+bayatlamaya başlar. Dokuz yerin hepsi dinamik desenle **değiştirilmeli**.
+
+### anjan'da POS açık ama çalışamaz — `enable_pos=1`, 0 POS Profile, 0 İКПУ
+`hata` · ölçüldü 2026-08-28, prod, salt-okunur
+
+`v100_enable_pos.py` `enable_pos = enable_sales` yazdı, sonuç: 8 kiracının 7'sinde
+`enable_pos=1`. anjan'da POS Profile **0**, `ikpu` içeren Custom Field **0**. Yani
+menü açık, arkasında çalışabilir bir kurulum yok —
+`docs/plans/2026-08-05-ofd-fiskalizasyon-fizibilite.md` İКПУ + kayıtlı kassayı şart
+koşuyor.
+
+Aynı kusuru `docs/plans/2026-07-18-multitenant-governance.md` beş hafta önce teşhis
+etmişti: "gating çalışıyor ama yanlış tarafa ayarlı, yeni modül `default=1` geliyor".
+Teşhis edilip düzeltilmediği için v100'de birebir tekrarlandı.
+
+**Prod veri değişikliği — Zafar kararı.**
+
 ### Modül bayrak matrisi — planların yazıldığı modüller kiracılarda kapalı
 `tespit` · ölçüldü 2026-08-28, prod, salt-okunur (`Stabler Company Modules`)
 
