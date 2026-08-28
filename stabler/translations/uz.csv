@@ -6448,3 +6448,19 @@ Could not record the batch.,Partiyani qayd etib bo'lmadi.
 Made in-house,Ichkarida ishlab chiqarilgan
 candidate orders — no batch to tell which,nomzod buyurtma — qaysi biri ekanini aytadigan partiya yo'q
 Bought in,Sotib olingan
+A line cannot be changed after the order is submitted.,Buyurtma tasdiqlangandan keyin liniyani o'zgartirib bo'lmaydi.
+Line,Liniya
+Move here,Bu yerga ko'chirish
+Not on any line,Hech bir liniyada emas
+Nothing is planned for this week,Bu haftaga hech narsa rejalashtirilmagan
+Orders here are usually opened for the day they run. Move one forward to start planning.,Bu yerda buyurtmalar odatda bajariladigan kunga ochiladi. Rejalashtirishni boshlash uchun bittasini oldinga suring.
+Pick a day on the same line to move {0}.,{0} ni ko'chirish uchun o'sha liniyadagi kunni tanlang.
+Planning is a manager view,Rejalashtirish — menejer ekrani
+Production plan,Ishlab chiqarish rejasi
+This week,Shu hafta
+Week starting,Hafta boshi
+Your work orders are on the shift log.,Sizning ish buyurtmalaringiz smena jurnalida.
+{0} is {1}. Its planned date is the record of when it ran.,{0} — {1}. Uning reja sanasi qachon bajarilganining yozuvi.
+{0} moved to {1},{0} {1} kuniga ko'chirildi
+{0} orders,{0} ta buyurtma
+{0} orders on {1} lines,{1} ta liniyada {0} ta buyurtma

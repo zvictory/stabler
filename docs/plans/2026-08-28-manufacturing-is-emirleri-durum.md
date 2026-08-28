@@ -219,9 +219,76 @@ burada yalnız kayıt yok.
 |---|---|---|
 | 1a | **BİTTİ** (`f227f62`) | — |
 | 1d | **BİTTİ** — parti yakalama + dürüst köken | ağaç, parti kaydı birikene kadar |
+| 1c planlama | **BİTTİ** — hat × gün panosu | Zafar'ın hook kararı (aşağıya bakınız) |
 | 1b kanban | YAPILMADI | kararla açıldı, sırada |
-| 1c planlama | YAPILMADI | **önce hook düzeltilmeli** — `work_order` dolu MR = 0/488 |
 | Fire/duruş | YAPILMADI | kararla açıldı |
+
+### Uygulanan — malzeme talebi kapısı (`5bea879`)
+
+1c'nin önündeki engel buydu ve ölçüm engeli tersine çevirdi: hook bozuk değildi,
+**kapısı yanlış yöndeydi**. `planned_start_date >= yarın` bekliyordu; bu fabrika bir
+gün öteye hiç plan yapmıyor.
+
+| anjan, salt-okunur, 28.08 | Değer |
+|---|---|
+| Gönderilmiş iş emri | 3 789 |
+| …`planned_start_date` gelecekte | **0** |
+| …aynı gün | 3 619 |
+| …geçmişte | 170 |
+| …`wip_warehouse` boş (diğer erken dönüş) | 0 |
+| `work_order` taşıyan Material Request | **0 / 488** |
+
+`Material Request.work_order` bu sitede gerçek bir alan, dolayısıyla o sıfır
+"başarısız yazma" değil: **yazmadan önce dönen bir fonksiyon**, emir başına bir kez,
+beş buçuk ay boyunca.
+
+Kural artık `>= bugün`. Geçmişe tarihli 170 emir kasten dışarıda: yapılmış iş için
+transfer talebi gürültüdür, ve gürültüyle dolu bir kuyruk kimsenin okumadığı kuyruktur.
+Aynı sınır `update_work_order_materials` içinde ikinci kez yazılmıştı; yalnız hook'u
+düzeltmek iki çağrı yerini birbirine zıt hâle getirirdi. İkisi de artık
+`should_request_materials`'ı çağırıyor ve bir test üçüncü bir kopyayı reddediyor.
+
+> **Zafar'ın kararını bekliyor — deploy edilmeden okunmalı.** Kapıyı açmak, bugüne
+> kadar hiç görülmemiş bir hacmi açıyor: 3 619 aynı-gün emir artık kapsam içinde, ve
+> fonksiyon talebi yalnız oluşturmuyor, **`insert()` + `submit()`** yapıyor. anjan'daki
+> mevcut 488 talebin hepsi elle girilmiş. Ya hook açık bırakılır, ya `submit()`
+> kaldırılıp talepler taslak bırakılır (depo onaylasın). Bu bir üretim kararı.
+
+### Uygulanan — 1c hat × gün planlama panosu
+
+Ölçüm bu ekranı da küçülttü, ve küçülten şey 1d'dekiyle aynı cinsten:
+
+| Ölçüm (anjan, salt-okunur, 28.08) | Değer | Ekrana etkisi |
+|---|---|---|
+| Emrin açıldığı günden **sonraki** bir güne planlanması | **0 / 3 789** | Pano ilk gün boş açılır — eksiklik değil, var oluş sebebi |
+| `planned_end_date` dolu | **0 / 3 789** | Emrin **süresi yok** → gantt çubuğu çizilemez |
+| `operating_cost` taşıyan gönderilmiş BOM | **0** | **Kapasite/yük hesaplanamaz** → "%80 dolu" uydurma olurdu |
+| Sales Order'a bağlı emir | **0** | Talep sinyali yok → siparişe göre planlama yok |
+| `wip_warehouse`.allow_on_submit | **0** | Gönderilmiş emrin **hattı değişmez** |
+| `planned_start_date`.allow_on_submit | **1** | **Gün değişir** — panonun tek yazma yolu |
+| `planned_start_date`'e dokunan `Version` satırı | **38 / 8 906** | Yeniden planlama fiilen hiç yapılmamış |
+| Taslak emir | 6 | Hattı değiştirilebilecek havuz pratikte yok |
+
+Bu yüzden pano bir gantt değil, **hat × gün ızgarası**: satırlar hatlar, sütunlar
+günler, hücrede emirler ve **girilmiş** miktar toplamı. Yük yüzdesi yok — bir yüzde
+planlama ekranında ölçüm gibi okunur ve ona göre vardiya kurulur.
+
+Tek yazma **günü değiştirmek**. Bir emri seçince hedef kareler yalnız **kendi
+hattında** yanıyor; başka hatta bırakma teklif bile edilmiyor, çünkü ERPNext o kolonu
+gönderimden sonra yazmaz — teklif edip sonra kırmızı kutu göstermek, panoya güveni
+bir kerede bitiren sürüm. Bitmiş emir (Completed/Closed/Cancelled) taşınmıyor: planlanan
+tarihi, işin **ne zaman koştuğunun tek kaydı**, ve vardiya defterinin tarih filtresi
+o kolonu okuyor.
+
+Saat korunuyor. `planned_start_date` bir datetime ve emirler 05:00–23:00 arasında
+açılıyor; çıplak tarih yazmak hepsini gece yarısına çekerdi ve **hiçbir ekran bunu
+bildirmezdi** — hepsi tarih yarısını karşılaştırıyor.
+
+Kanıt: `test_wo_plan_board` (15 test, frappe'siz, push kapısında),
+`TestThePlanBoardAgainstRealOrders` (9 test, canlı DB — yazmanın gerçekten indiğini
+okuma-geri ile kanıtlıyor, çünkü `db.set_value` yazılamayan bir alanda **sessizce**
+başarısız olur), `workOrderPlanBoard.spec.js` (8 test, guard'lar SFC'den çıkarılıp
+**çalıştırılıyor**).
 
 ## Eski engel kaydı — kapandı
 

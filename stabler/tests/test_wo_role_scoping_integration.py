@@ -44,10 +44,12 @@ from stabler.api.manufacturing import (
 	create_material_request_for_tomorrow_wo,
 	discard_finish_draft,
 	list_work_orders,
+	reschedule_work_order,
 	save_finish_draft,
 	update_work_order_materials,
 	wo_consumption_preview,
 	work_order_detail,
+	work_order_plan,
 )
 
 POURER = "stabler-pourer@test.local"
@@ -946,3 +948,116 @@ class TestBulkAssignAgainstRealOrders(FrappeTestCase):
 	def test_choosing_nobody_is_refused_rather_than_clearing_the_selection(self):
 		with self.assertRaises(frappe.ValidationError):
 			assign_work_order_operators_bulk(self.company, [self.wo])
+
+
+class TestThePlanBoardAgainstRealOrders(FrappeTestCase):
+	"""`build_plan_grid` is proved pure in `test_wo_plan_board`; what that cannot
+	see is whether the board's one write actually lands, and whether the columns
+	it reads exist.
+
+	The write is the reason this class exists. `planned_start_date` is writable
+	after submit and `wip_warehouse` is not — the whole screen is built on that
+	asymmetry, and it is a property of this site's doctype meta, not of our code.
+	If a future ERPNext or a customisation flipped `allow_on_submit` on
+	`planned_start_date`, the board would keep rendering, keep accepting drags,
+	and keep writing nothing. `db.set_value` does not raise on a non-writable
+	field; it just does not appear on the next read, which is the failure mode
+	this class is here to catch.
+	"""
+
+	@classmethod
+	def setUpClass(cls):
+		super().setUpClass()
+		frappe.set_user("Administrator")
+		cls.wo = _a_submitted_work_order()
+
+	def setUp(self):
+		if not self.wo:
+			self.skipTest("no submitted Work Order on this site")
+		frappe.set_user("Administrator")
+		self.row = frappe.db.get_value(
+			"Work Order", self.wo, ["company", "status", "planned_start_date"], as_dict=True
+		)
+		self.addCleanup(
+			frappe.db.set_value,
+			"Work Order",
+			self.wo,
+			"planned_start_date",
+			self.row.planned_start_date,
+		)
+		self.addCleanup(frappe.db.set_value, "Work Order", self.wo, "status", self.row.status)
+
+	def _planned(self):
+		return str(frappe.db.get_value("Work Order", self.wo, "planned_start_date"))
+
+	def test_the_move_reaches_the_database(self):
+		"""The assertion is a read-back, not the endpoint's return value. A write
+		to a field ERPNext refuses after submit fails silently here."""
+		target = add_days(str(self.row.planned_start_date or today())[:10], 3)
+		reschedule_work_order(self.wo, target)
+		self.assertEqual(self._planned()[:10], target)
+
+	def test_the_hour_the_order_starts_at_survives_the_move(self):
+		"""Proved against the real column because this is where it would be lost:
+		a Datetime field written with a bare date stores midnight, and every
+		screen compares the date half, so nothing would report it."""
+		frappe.db.set_value("Work Order", self.wo, "planned_start_date", f"{today()} 09:30:00")
+		reschedule_work_order(self.wo, add_days(today(), 2))
+		self.assertEqual(self._planned()[11:16], "09:30")
+
+	def test_a_completed_order_is_refused_and_left_where_it_was(self):
+		"""Unchanged, not merely refused. Rewriting the planned date of finished
+		work edits the only record of when it ran."""
+		frappe.db.set_value("Work Order", self.wo, "status", "Completed")
+		before = self._planned()
+		with self.assertRaises(frappe.ValidationError):
+			reschedule_work_order(self.wo, add_days(today(), 4))
+		self.assertEqual(self._planned(), before)
+
+	def test_a_day_that_is_not_a_day_is_refused(self):
+		before = self._planned()
+		with self.assertRaises(frappe.ValidationError):
+			reschedule_work_order(self.wo, "yarin")
+		self.assertEqual(self._planned(), before)
+
+	def test_the_order_appears_in_the_square_it_was_moved_to(self):
+		"""End to end on real columns: move it, then find it on the board. This
+		is what proves `wip_warehouse` and `planned_start_date` are the columns
+		the grid is actually keyed on."""
+		target = add_days(today(), 5)
+		reschedule_work_order(self.wo, target)
+		grid = work_order_plan(self.row.company, target, target)
+		placed = [cell for cell in grid["cells"] if any(o["name"] == self.wo for o in cell["orders"])]
+		unscheduled = [o["name"] for o in grid["unscheduled"]]
+		line = frappe.db.get_value("Work Order", self.wo, "wip_warehouse")
+		if not line:
+			self.assertIn(self.wo, unscheduled, "hatsız emir sessizce düşmüş")
+			return
+		self.assertEqual(len(placed), 1, f"emir {len(placed)} karede; unscheduled={unscheduled}")
+		self.assertEqual(placed[0]["day"], target)
+		self.assertEqual(placed[0]["line"], line)
+
+	def test_the_board_never_returns_a_load_figure(self):
+		"""The same refusal `test_wo_plan_board` pins, asserted on what the
+		endpoint actually serialises — a capacity number added downstream would
+		pass the pure test and still reach the screen."""
+		grid = work_order_plan(self.row.company, today(), today())
+		for cell in grid["cells"]:
+			for invented in ("load", "capacity", "utilisation", "utilization", "hours"):
+				self.assertNotIn(invented, cell, f"uydurulmus alan: {invented}")
+
+	def test_a_window_wider_than_the_cap_is_refused(self):
+		with self.assertRaises(frappe.ValidationError):
+			work_order_plan(self.row.company, today(), add_days(today(), 60))
+
+	def test_a_backwards_window_is_refused_rather_than_returning_nothing(self):
+		"""An empty board reads as "no work planned". A window that ends before it
+		starts is a bug in the caller and has to say so."""
+		with self.assertRaises(frappe.ValidationError):
+			work_order_plan(self.row.company, today(), add_days(today(), -3))
+
+	def test_a_foreign_company_is_refused(self):
+		before = self._planned()
+		with self.assertRaises(Exception):
+			work_order_plan("Not A Real Company", today(), today())
+		self.assertEqual(self._planned(), before)

@@ -6842,3 +6842,19 @@ Could not record the batch.,Could not record the batch.
 Made in-house,Made in-house
 candidate orders — no batch to tell which,candidate orders — no batch to tell which
 Bought in,Bought in
+A line cannot be changed after the order is submitted.,A line cannot be changed after the order is submitted.
+Line,Line
+Move here,Move here
+Not on any line,Not on any line
+Nothing is planned for this week,Nothing is planned for this week
+Orders here are usually opened for the day they run. Move one forward to start planning.,Orders here are usually opened for the day they run. Move one forward to start planning.
+Pick a day on the same line to move {0}.,Pick a day on the same line to move {0}.
+Planning is a manager view,Planning is a manager view
+Production plan,Production plan
+This week,This week
+Week starting,Week starting
+Your work orders are on the shift log.,Your work orders are on the shift log.
+{0} is {1}. Its planned date is the record of when it ran.,{0} is {1}. Its planned date is the record of when it ran.
+{0} moved to {1},{0} moved to {1}
+{0} orders,{0} orders
+{0} orders on {1} lines,{0} orders on {1} lines
