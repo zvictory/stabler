@@ -209,3 +209,27 @@ The other half of the same outage, added 2026-08-24: `startsecs` makes the failu
   `*Form.vue` `onMounted`.)
 - **Money/GL log is flowing.** After recording one payment, confirm a line lands
   in `sites/anjan.erpstable.com/logs/stabler.payments.log`.
+
+### Timestamp trap when verifying "did it stop happening after the restart?"
+
+**A doctype's `creation` is NOT in the server's clock.** Frappe writes it with the
+site's `System Settings.time_zone` — `Asia/Tashkent` (UTC+5) on these tenants —
+while `ps`, `supervisorctl`, `stat`, `logs/worker.log` and
+`frappe.db.sql("select now()")` all read the box's local time (CEST, UTC+2).
+Three hours apart, in the direction that makes an old row look new.
+
+Measured 2026-08-28 during the enqueue-gate deploy: two `EHF Submission` rows read
+as `19:27:37` / `19:28:01` against a `19:24:49` restart and looked like the fix had
+failed in production. They were 16:27 / 16:28 CEST — three hours *before* the
+restart. `frappe.utils.now()` said `22:44`, `select now()` said `19:44`; that pair
+is the tell.
+
+So when a check is "nothing of this kind since the restart", convert first, and
+corroborate with a source that shares one clock:
+
+    frappe.utils.now()            # site tz  -> what `creation` is written in
+    frappe.db.sql("select now()") # box tz   -> what ps/supervisorctl/logs use
+    awk '$0 >= "<restart, box tz>"' logs/worker.log | grep -c '<the job path>'
+
+The worker log settles it on its own: it timestamps in box time and names the job,
+so "0 matches since the restart" is a claim in one clock with no conversion in it.
