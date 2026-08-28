@@ -583,6 +583,19 @@ const numBuffer = computed({
 		else producedQty.value = v;
 	},
 });
+
+// `:value` binds the model and Vue patches the DOM only when that value changes.
+// A character the sanitiser rejects leaves the model exactly as it was, so there
+// is nothing to patch and the box keeps showing what was typed — "12a" on the
+// wall while the order will be finished with 12. Writing the clean value back
+// onto the element forces the two into agreement on the same keystroke.
+function onQtyInput(event, target) {
+	const clean = sanitizeNumeric(event.target.value);
+	if (target === "scrap") scrapQty.value = clean;
+	else producedQty.value = clean;
+	event.target.value = clean;
+}
+
 const batchNo = ref("");
 const batchMfg = ref("");
 const batchExpiry = ref("");
@@ -1414,7 +1427,7 @@ const sortedRows = computed(() => {
 									style="height: 60px;"
 									autofocus
 									@focus="numTarget = 'produced'"
-									@input="producedQty = sanitizeNumeric($event.target.value)"
+									@input="onQtyInput($event, 'produced')"
 								/>
 								<div class="form-hint mt-2 text-secondary d-flex justify-content-between">
 									<span>{{ t("Target Remaining") }}: <strong>{{ remainingQty(finishTarget) }}</strong></span>
@@ -1436,7 +1449,7 @@ const sortedRows = computed(() => {
 									style="height: 50px;"
 									placeholder="0"
 									@focus="numTarget = 'scrap'"
-									@input="scrapQty = sanitizeNumeric($event.target.value)"
+									@input="onQtyInput($event, 'scrap')"
 								/>
 							</div>
 

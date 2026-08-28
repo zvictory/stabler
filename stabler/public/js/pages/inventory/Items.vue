@@ -13,6 +13,7 @@ import SkeletonRows from "../../components/SkeletonRows.vue";
 import { useTelemetry } from "../../composables/useTelemetry.js";
 import { useEscapeBack } from "../../composables/useEscapeBack.js";
 import { itemGroupOptions } from "../../composables/itemGroupTree.js";
+import { useToast } from "../../composables/useToast.js";
 
 const session = useSession();
 useEscapeBack(() => {
@@ -24,6 +25,7 @@ useEscapeBack(() => {
 }, "/inventory");
 
 const { trackOnce, trackCta, FUNNEL } = useTelemetry();
+const toast = useToast();
 const { activeCompany, user } = storeToRefs(session);
 
 const loading = ref(false);
@@ -103,8 +105,11 @@ async function loadItemPrices(itemCode) {
 	}
 }
 
-async function openDetail(name) {
-	detailOpen.value = true;
+// `showDrawer` is false for the one caller that needs the record but not the
+// panel — the row's Edit button, which would otherwise put the detail drawer on
+// screen for the length of the fetch and take it away again.
+async function openDetail(name, showDrawer = true) {
+	detailOpen.value = showDrawer;
 	detailLoading.value = true;
 	detail.value = null;
 	try {
@@ -247,9 +252,15 @@ function openEdit() {
 // first; the drawer that fetch opens is closed again, or it sits underneath the
 // modal the click actually asked for.
 async function openEditRow(row) {
-	await openDetail(row.name);
-	detailOpen.value = false;
-	if (detail.value && !detail.value.error) openEdit();
+	await openDetail(row.name, false);
+	// Saying nothing here is the same thing the user saw before bb88b16: a
+	// button that swallows the click. The modal cannot open without the record,
+	// so the reason it cannot has to reach the screen.
+	if (detail.value?.error) {
+		toast.error(detail.value.error);
+		return;
+	}
+	if (detail.value) openEdit();
 }
 
 function closeEdit() {

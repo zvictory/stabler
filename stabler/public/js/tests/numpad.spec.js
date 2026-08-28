@@ -91,6 +91,30 @@ describe("operator board quantity entry", () => {
 		}
 	});
 
+	// `:value` binds the model, and Vue patches the DOM only when that bound
+	// value actually changes. A character the sanitiser throws away leaves the
+	// model identical to what it already was, so there is nothing to patch and
+	// the box keeps displaying what was typed: "12a" on a wall-mounted screen
+	// while the order will be finished with 12. The next valid key repairs it and
+	// the submitted number is always the clean one — but a terminal that shows a
+	// quantity different from the one it is about to write is exactly the thing
+	// an operator has no way to catch.
+	it("does not leave a rejected character sitting on the screen", () => {
+		const fields = (board.match(/<input\b[\s\S]*?\/>/g) || []).filter((tag) =>
+			/producedQty|scrapQty/.test(tag),
+		);
+		expect(fields.length).toBe(2);
+		for (const f of fields) {
+			expect(f).toMatch(/@input="onQtyInput\(/);
+		}
+
+		const fn = board.match(/function onQtyInput[\s\S]*?\n}/);
+		expect(fn, "the shared input handler should exist").toBeTruthy();
+		// The half that matters: the element is forced back into agreement with
+		// the model even when the model did not move.
+		expect(fn[0]).toMatch(/event\.target\.value = /);
+	});
+
 	it("routes the numpad to whichever quantity the operator tapped", () => {
 		expect(board).toMatch(/numTarget/);
 	});
