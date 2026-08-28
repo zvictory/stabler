@@ -1019,6 +1019,7 @@ def cancel_bom(name: str):
 
 from stabler.api._wo_filters import build_work_order_filters
 from stabler.api._wo_genealogy import annotate_consumed_origin
+from stabler.api._wo_material_request import should_request_materials
 
 _WO_STATUSES = ("Draft", "Not Started", "In Process", "Completed", "Stopped", "Closed", "Cancelled")
 
@@ -2171,16 +2172,25 @@ def badge_logout():
 
 
 def create_material_request_for_tomorrow_wo(doc, method=None):
-	"""Hook function triggered on Work Order submit (doc_events).
-	If planned_start_date is tomorrow or later, creates a Material Request for any shortages in wip_warehouse.
+	"""Hook on Work Order submit: raise a Material Request for what the line is short of.
+
+	The name is kept because `hooks.py` names it and a rename is a separate,
+	riskier change; the "tomorrow" in it is no longer the rule. Measured on
+	anjan 2026-08-28: the gate was `planned_start_date >= tomorrow`, 0 of 3 789
+	submitted orders are ever planned for tomorrow, and so this function had
+	returned before writing once per order for five and a half months —
+	`Material Request.work_order` set on 0 of 488 requests, on a site where that
+	field exists. It has never run in production.
+
+	The rule is now `>= today` (`should_request_materials`). Backdated orders
+	stay excluded on purpose; the reasoning is in that function.
 	"""
-	from frappe.utils import add_days, getdate, today
+	from frappe.utils import today
 
 	if not doc.wip_warehouse:
 		return
 
-	tomorrow = getdate(add_days(today(), 1))
-	if getdate(doc.planned_start_date) < tomorrow:
+	if not should_request_materials(doc.planned_start_date, today()):
 		return
 
 	# Check if a Material Request already exists for this Work Order to avoid duplicate creation
@@ -2230,7 +2240,7 @@ def update_work_order_materials(work_order: str, materials: str):
 	"""Update required quantities of raw materials for a Work Order.
 	`materials` is a JSON string containing a list of dicts: [{'item_code': '...', 'required_qty': 12.3}]
 
-	Also triggers/re-runs Material Request creation for any updated shortages if the WO is scheduled for tomorrow/future.
+	Also triggers/re-runs Material Request creation for any updated shortages if the WO runs today or later (`should_request_materials`).
 	"""
 	import json
 
@@ -2318,11 +2328,14 @@ def update_work_order_materials(work_order: str, materials: str):
 	# Reload document to reflect database changes
 	doc.reload()
 
-	# If it's a tomorrow or future WO, create/update Material Request for any new shortages
-	from frappe.utils import add_days, getdate, today
+	# Create/update the Material Request for any new shortages, on the same rule
+	# the submit hook uses. It was written out a second time here, with the same
+	# `>= tomorrow` bound — so correcting the hook alone would have left this copy
+	# excluding every order on the floor while the other one included it, and the
+	# two would have disagreed about whether a request exists.
+	from frappe.utils import today
 
-	tomorrow = getdate(add_days(today(), 1))
-	forward_dated = doc.wip_warehouse and getdate(doc.planned_start_date) >= tomorrow
+	forward_dated = bool(doc.wip_warehouse) and should_request_materials(doc.planned_start_date, today())
 
 	# D9 (P0): this block cancels SUBMITTED Material Requests as a side effect of
 	# someone correcting a quantity. That is a manager's decision — an approved

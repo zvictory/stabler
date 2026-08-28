@@ -268,5 +268,6 @@ stabler.tests.test_job_health
 stabler.tests.test_wo_operator_roles
 stabler.tests.test_wo_genealogy_origin
 stabler.tests.test_wo_shift_log_filters
+stabler.tests.test_wo_material_request_gate
 stabler.tests.test_wo_finish_draft
 stabler.tests.test_bulk_operator_assign
