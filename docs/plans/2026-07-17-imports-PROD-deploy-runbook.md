@@ -2,8 +2,8 @@
 
 **You run this. I cannot SSH.** Prod is **not a git repo** — deploy is rsync of
 `apps/stabler/` from your local bench to `ice-production`. A code change under
-`apps/stabler/` + restart takes effect on **all 6 stabler tenants at once**
-(anjan, dts, horeca, laminor, mikas, smartbox), but the imports UI/endpoints are
+`apps/stabler/` + restart takes effect on **every stabler tenant at once**
+(enumerate them, never hand-write the list), but the imports UI/endpoints are
 gated on `enable_imports`, so only companies with the module on will see them.
 
 **This release needs BOTH `migrate` AND `restart`:**
@@ -104,10 +104,11 @@ Migrate **every** stabler tenant, not just anjan — the doctypes/patches are
 shared app code and each site needs its own DDL sync:
 
 ```bash
-for S in anjan dts horeca laminor mikas smartbox; do
+ssh ice-production 'cd /home/frappe/frappe-bench && for S in $(ls sites | grep "\."); do
+  bench --site "$S" list-apps 2>/dev/null | grep -q "^stabler" || continue
   echo "== migrating $S =="
-  ssh ice-production "cd /home/frappe/frappe-bench && bench --site ${S}.erpstable.com migrate"
-done
+  bench --site "$S" migrate
+done'
 ```
 
 Watch each run: v50/v51 are under `[post_model_sync]` so they run **after** the

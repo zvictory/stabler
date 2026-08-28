@@ -9,7 +9,7 @@
 >
 > İdempotentlik kurulu 2026-08-20'de bu sınıfı ölçtü. Kalıcı çözüm, dokümanın
 > payload'dan türeyen benzersiz bir anahtar taşımasıdır (`custom_idempotency_key`,
-> doctype değişikliği + yedi sitede migrate). Bu runbook, o gelene kadar geçerli
+> doctype değişikliği + her stabler sitesinde migrate). Bu runbook, o gelene kadar geçerli
 > olan operatör davranışını yazar.
 
 ## Gider ve transfer (`/money/expenses`, `/money/transfers`)

@@ -38,32 +38,37 @@ Yeniden ölçüm:
 ssh ice-production 'python3 -c "import json;c=json.load(open(\"/home/frappe/frappe-bench/sites/mikas.erpstable.com/site_config.json\"));print([k for k in c if \"uzex\" in k])"'
 ```
 
-### Dokümanlarda sabit kiracı listesi — dokuz döngü, üçü site atlıyor
-`hata` · ölçüldü 2026-08-28
+### ~~Dokümanlarda sabit kiracı listesi — döngüler site atlıyor~~ ÇÖZÜLDÜ 2026-08-28
+`hata` · ölçüldü ve düzeltildi 2026-08-28
 
-Prod'da 8 site stabler taşıyor (`.claude/skills/stabler-deploy/SKILL.md`, 2026-08-20).
-Ama `docs/` altındaki dokuz `for` döngüsü kiracı listesini **elle** yazıyor ve hiçbiri
-8 değil:
+Prod'da 8 site stabler taşıyor. `docs/` altında **16** `for` döngüsü kiracı listesini
+elle yazıyordu ve hiçbiri 8 değildi — ikisi **6** site (msa ve zuma atlanır), on dördü
+7 (zuma atlanır). `migrate` per-site olduğu için bu döngülerden biri kopyalandığında
+en az bir kiracı patch'siz kalıyordu, ve bu orada bir şey kırılana kadar tamamen
+sessizdi. Kimlik rotasyon runbook'u da listedeydi.
 
-| Dosya:satır | Liste | Atlanan |
-|---|---|---|
-| `docs/plans/2026-07-17-imports-PROD-deploy-runbook.md:107` | 6 site | **msa, zuma** |
-| `docs/plans/2026-07-17-kassa-tender-PROD-deploy-runbook.md:100` | 6 site | **msa, zuma** |
-| `docs/plans/PROMPT_deploy_departure_gate.md:147, :164` | 7 site | zuma |
-| `docs/runbooks/nginx-immutable-assets.md:69, :82` | 7 site | zuma |
-| `docs/runbooks/2026-08-07-credential-exposure-response.md:149, :280` | 7 site | zuma |
-| `docs/runbooks/mariadb-buffer-pool.md:113` | 7 site | zuma |
+**Yapılan:** 13 döngü (9 dosyada) sunucudan enumerate eden desene çevrildi:
 
-`migrate` per-site olduğu için bu döngülerden biri kopyalanırsa en az bir kiracı
-patch'siz kalır — ve bu, orada bir şey kırılana kadar tamamen sessizdir. Kimlik
-rotasyon runbook'u da listede.
+```
+for s in $(ls sites | grep "\."); do
+  bench --site "$s" list-apps 2>/dev/null | grep -q "^stabler" || continue
+  ...
+done
+```
 
-Doğru desen aynı depoda zaten var — `docs/plans/PROMPT_deploy_ci_packing.md:53` listeyi
-sunucudan üretiyor: `ls sites | grep -v assets | grep "\."`. Aynı dosyanın `:57` satırı
-ise "Expect exactly 7" diye sabit yazıyor.
+Desen prod'da olduğu gibi koşuldu ve 8 sitenin hepsini döndürdü (hepsi 200).
+`docs/ops/archive/` altındaki 3 döngü **bilerek** bırakıldı — arşiv, koşulacak
+talimat değil, koşulmuş olanın kaydı; kural o dizini dışlıyor.
 
-Elle düzeltmek çözüm değil: kiracı sayısı ölçülen bir olgu, dokümana yazıldığı an
-bayatlamaya başlar. Dokuz yerin hepsi dinamik desenle **değiştirilmeli**.
+Ayrıca döngülere eşlik eden sabit sayılar sayısızlaştırıldı ("all 6 stabler
+tenants", "Expect exactly 7", "7 tenant'ta kısa kesinti", "yedi site 200"…) —
+`bench restart`'ın etki alanını olduğundan dar gösterenler dahil.
+
+**Pinlendi:** `make guards` artık `docs/` altında elle yazılmış kiracı listesi
+taşıyan bir `for` döngüsü görürse kırmızı oluyor. Kural, bugün doğru olan sekizli
+bir listeyi de reddediyor — mesele listenin bugün doğru olması değil, yarın
+bayatlaması. Aynı turda mevcut "kiracı adına dallanma" kuralındaki eksik `zuma`
+da eklendi (kural sekiz kiracıdan yedisini tanıyordu).
 
 ### anjan'da POS açık ama çalışamaz — `enable_pos=1`, 0 POS Profile, 0 İКПУ
 `hata` · ölçüldü 2026-08-28, prod, salt-okunur

@@ -70,7 +70,7 @@ kırılırsa burada kırılır.
 ## Adım 5 — restart
 
 `.py` değişmedi, yani teknik olarak gerekmez; ama asset hash'inin
-oturmasi için yine de yap. **7 tenant'ta kısa bir kesinti olur** —
+oturmasi için yine de yap. **her kiracıda kısa bir kesinti olur** —
 düşük trafikli bir an seç.
 
 ```bash
@@ -106,6 +106,6 @@ geri dönüş temizdir.
 
 ## Yapma
 
-- `bench migrate` çalıştırma — gereksiz ve 7 siteyi boşuna riske atar.
+- `bench migrate` çalıştırma — gereksiz ve her siteyi boşuna riske atar.
 - Adım 2 çıktısını bana göstermeden Adım 3'e geçme.
 - Build hatasını "muhtemelen önemsiz" diye geçme.

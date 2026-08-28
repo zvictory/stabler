@@ -114,4 +114,4 @@ curl -s "https://api.telegram.org/bot<TOKEN>/setWebhook" \
 - v52 alanı veri taşımaz-sa zararsızdır; gerekirse Custom Field
   `Journal Entry.custom_crm_deal` silinebilir (etiketler kaybolur).
 - Prod deploy: CLAUDE.md prosedürü (backup tar → rsync → build → migrate →
-  restart; restart 6 tenant'ı bliplet — düşük trafikte).
+  restart; restart her kiracıyı bliplet — düşük trafikte).

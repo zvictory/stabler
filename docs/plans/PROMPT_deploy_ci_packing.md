@@ -43,7 +43,7 @@ carries **50 commits**. Highlights:
   `expected_snapshot_locked_at` (Datetime). Plain `ALTER TABLE ADD COLUMN`,
   no backfill, no unique constraint added (`commercial_invoice` was already
   unique on main).
-- **`migrate` is therefore required on all 7 stabler sites**, not just anjan.
+- **`migrate` is therefore required on every stabler site**, not just anjan.
 
 ---
 
@@ -54,9 +54,10 @@ ssh ice-production 'cd /home/frappe/frappe-bench && for s in $(ls sites | grep -
   bench --site "$s" list-apps 2>/dev/null | grep -q stabler && echo "STABLER: $s"; done'
 ```
 
-Expect exactly 7: anjan, dts, horeca, laminor, mikas, msa, smartbox (as
-`*.erpstable.com`). **Record the exact names** — you will migrate every one.
-If the count is not 7, stop and report.
+**Record the exact names and the count** — you will migrate every one. The
+number is measured, not known: it was 7 until `zuma` was added and every
+hand-written copy of the list silently skipped it. If the count differs from
+what the last deploy recorded, say so before continuing.
 
 ## Step 2 — backup (mandatory, this is the only rollback path)
 
@@ -98,14 +99,15 @@ ssh ice-production 'chown -R frappe:frappe /home/frappe/frappe-bench/apps/stable
 ssh ice-production 'cd /home/frappe/frappe-bench && bench build --app stabler'
 ```
 
-## Step 6 — migrate ALL 7 sites
+## Step 6 — migrate EVERY stabler site
 
 `migrate` is per-site; rsync and restart are bench-wide. Skipping a site leaves
 its `expected_snapshot_locked` columns missing and the GRN snapshot freeze will
 throw at runtime. Run them one at a time and report each result:
 
 ```bash
-ssh ice-production 'cd /home/frappe/frappe-bench && for s in anjan.erpstable.com dts.erpstable.com horeca.erpstable.com laminor.erpstable.com mikas.erpstable.com msa.erpstable.com smartbox.erpstable.com; do
+ssh ice-production 'cd /home/frappe/frappe-bench && for s in $(ls sites | grep "\."); do
+  bench --site "$s" list-apps 2>/dev/null | grep -q "^stabler" || continue
   echo "=== $s ==="; bench --site "$s" migrate 2>&1 | tail -5; done'
 ```
 
@@ -113,7 +115,7 @@ Adjust the site list to whatever Step 1 actually returned.
 
 ## Step 7 — restart
 
-`bench restart` restarts the whole bench, so **all 7 tenants get a brief blip**.
+`bench restart` restarts the whole bench, so **every tenant gets a brief blip**.
 Confirm the timing is acceptable, then:
 
 ```bash
@@ -123,7 +125,8 @@ ssh ice-production 'cd /home/frappe/frappe-bench && bench restart'
 ## Step 8 — verify the new columns landed everywhere
 
 ```bash
-ssh ice-production 'cd /home/frappe/frappe-bench && for s in anjan.erpstable.com dts.erpstable.com horeca.erpstable.com laminor.erpstable.com mikas.erpstable.com msa.erpstable.com smartbox.erpstable.com; do
+ssh ice-production 'cd /home/frappe/frappe-bench && for s in $(ls sites | grep "\."); do
+  bench --site "$s" list-apps 2>/dev/null | grep -q "^stabler" || continue
   printf "%-28s " "$s"; bench --site "$s" execute frappe.db.has_column --kwargs "{\"doctype\":\"GRN Checklist\",\"column\":\"expected_snapshot_locked\"}" 2>&1 | tail -1; done'
 ```
 

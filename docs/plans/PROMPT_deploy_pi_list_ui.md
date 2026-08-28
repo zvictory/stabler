@@ -74,7 +74,7 @@ Hata verirse dur ve çıktıyı göster — Vue derleme değişikliği, kırıl�
 ssh ice-production 'cd /home/frappe/frappe-bench && bench restart'
 ```
 
-7 tenant'ta kısa kesinti — düşük trafikli bir an seç.
+Her kiracıda kısa kesinti — düşük trafikli bir an seç.
 
 ## Adım 6 — göz kontrolü
 

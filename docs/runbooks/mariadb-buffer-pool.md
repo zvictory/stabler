@@ -86,7 +86,7 @@ ssh ice-production 'systemctl restart mariadb'
 
 **`bench restart` DEĞİL.** Bu bir MariaDB restart'ı; gunicorn/RQ tarafına
 dokunulmaz, Frappe bağlantıları kendiliğinden yeniden kurulur. Ama kesinti
-bench-genelinden de geniştir: bu makinedeki **22 sitenin tamamı** (yalnız 7 stabler
+bench-genelinden de geniştir: bu makinedeki **her site** (yalnız stabler
 kiracısı değil) etkilenir. Düşük trafik saati tercih edilir.
 
 ## Doğrulama
@@ -109,10 +109,11 @@ ssh ice-production 'awk "/^VmRSS|^VmSwap/{print \$1, int(\$2/1024) \" MB\"}" \
   /proc/$(pgrep -x mariadbd)/status'
 # VmSwap: 0 MB beklenir
 
-# 4. 7 stabler kiracisi ayakta
-ssh ice-production 'for s in anjan dts horeca laminor mikas msa smartbox; do
-  curl -sko /dev/null -w "%{http_code} $s\n" --resolve $s.erpstable.com:443:127.0.0.1 \
-    https://$s.erpstable.com/api/method/ping; done'
+# 4. stabler kiracilarinin hepsi ayakta
+ssh ice-production 'cd /home/frappe/frappe-bench && for s in $(ls sites | grep "\."); do
+  bench --site "$s" list-apps 2>/dev/null | grep -q "^stabler" || continue
+  curl -sko /dev/null -w "%{http_code} $s\n" --resolve "$s:443:127.0.0.1" \
+    "https://$s/api/method/ping"; done'
 ```
 
 2026-08-07'de restart'tan 161 sn sonra ölçülen:

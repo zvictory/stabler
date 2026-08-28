@@ -480,11 +480,22 @@ guards:
 	if [ -n "$$hits" ]; then \
 	  echo "ERROR: raw date interpolation -- wrap in formatDate()/formatDateTime()/formatTime()"; \
 	  echo "$$hits"; fail=1; fi; \
-	hits=$$(grep -rnE '(==|!=|===|!==)[[:space:]]*["'"'"'](anjan|msa|mikas|dts|horeca|laminor|smartbox)' \
+	hits=$$(grep -rnE '(==|!=|===|!==)[[:space:]]*["'"'"'](anjan|msa|mikas|dts|horeca|laminor|smartbox|zuma)' \
 	         stabler --include='*.py' --include='*.vue' --include='*.js' \
 	         | grep -v node_modules || true); \
 	if [ -n "$$hits" ]; then \
 	  echo "ERROR: branching on tenant name -- gate on a module/company setting instead"; \
+	  echo "$$hits"; fail=1; fi; \
+	hits=$$(grep -rnE 'for +[A-Za-z_]+ +in +[^;|]*\b(anjan|dts|horeca|laminor|mikas|msa|smartbox|zuma)\b[^;|]*\b(anjan|dts|horeca|laminor|mikas|msa|smartbox|zuma)\b' \
+	         docs | grep -v '/archive/' || true); \
+	if [ -n "$$hits" ]; then \
+	  echo "ERROR: hand-written tenant list in a docs loop -- enumerate the sites instead."; \
+	  echo "       The count is measured, not authored: it was 7 until zuma arrived and every"; \
+	  echo "       copy silently skipped a tenant. migrate is per-site, so a skipped tenant is"; \
+	  echo "       missing DDL, and it stays silent until something breaks there. Use:"; \
+	  echo "         for s in \$$(ls sites | grep \"\\\\.\"); do"; \
+	  echo "           bench --site \"\$$s\" list-apps 2>/dev/null | grep -q \"^stabler\" || continue"; \
+	  echo "         done"; \
 	  echo "$$hits"; fail=1; fi; \
 	miss=$$(awk '/children:[[:space:]]*\[/ {w=""; for(i=NR-6;i<=NR;i++) w=w " " L[i]; \
 	          if (w !~ /module:/) print NR": "L[NR-3]} {L[NR]=$$0}' \
