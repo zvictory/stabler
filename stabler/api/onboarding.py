@@ -41,11 +41,14 @@ _POS_ROUTE = "/pos"  # SPA route (never the Frappe Desk)
 # Server-driven wizard schema (the 7 frictionless questions)
 # --------------------------------------------------------------------------- #
 def _languages() -> list[dict]:
+	# `uzc` (Ўзбек, Uzbek Cyrillic) removed 2026-08-28 by Zafar's decision:
+	# no longer offered, catalogue kept. `translations/uzc.csv` and
+	# `SUPPORTED_LANGUAGES` still carry it so an account already set to uzc
+	# keeps rendering in Cyrillic. Pinned by `test_uzc_retired_from_pickers`.
 	return [
 		{"value": "en", "label": "English"},
 		{"value": "ru", "label": "Русский"},
 		{"value": "uz", "label": "O'zbek"},
-		{"value": "uzc", "label": "Ўзбек"},
 		{"value": "tr", "label": "Türkçe"},
 	]
 

@@ -1,6 +1,6 @@
 ---
 name: stabler-i18n
-description: Stabler translation workflow across the five languages (en, ru, uz, uzc, tr) — when to translate, how to harvest new keys, what reviewers reject. Use when adding user-facing strings, landing a feature that introduced t()/__() keys, before make check and git push on a string-bearing change, or when translations look stale in production.
+description: Stabler translation workflow across four offered languages (en, ru, uz, tr) plus the still-shipped uzc catalogue — when to translate, how to harvest new keys, what reviewers reject. Use when adding user-facing strings, landing a feature that introduced t()/__() keys, before make check and git push on a string-bearing change, or when translations look stale in production.
 ---
 
 # i18n workflow
@@ -14,7 +14,12 @@ Original: `docs/archive/CLAUDE.md.2026-08-15.bak`.
 > list ended up with four divergent copies.
 
 - **Prototypes vs. Code**: Mockups, drafts (e.g. `docs/uat/...`), and discussions can be in Turkish or English. Real implementation code (Vue components, Python backend, error messages, docstrings, UI labels, `t("...")` keys) MUST be English-first.
-- **Five languages**: **en, ru, uz, uzc, tr**. Source strings live in `t()` (Vue) / `__()` (py).
+- **Four offered, five catalogues**: users can pick **en, ru, uz, tr**; `uzc`
+  (Uzbek Cyrillic) was pulled from the pickers on 2026-08-28 but is still shipped,
+  still translated and still staged with the rest. Translate into it as before —
+  the decision was to stop offering it, not to let it rot. Reversal is three list
+  entries: `docs/plans/2026-08-28-uzc-secenekten-cikarildi.md`.
+  Source strings live in `t()` (Vue) / `__()` (py).
 - **Translation Timing**:
   1. During active feature development, only update `en.csv` if needed to keep English tests green. Do not translate into `tr/ru/uz/uzc` while code is still changing.
   2. Once the feature is finished and unit/feature tests pass, backfill the other 4 language catalogs (`tr.csv`, `ru.csv`, `uz.csv`, `uzc.csv`) before `make check` and `git push`.

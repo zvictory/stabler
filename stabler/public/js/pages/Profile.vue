@@ -6,11 +6,15 @@ import { useSession } from "../stores/session.js";
 
 const session = useSession();
 
+// `uzc` (Ўзбекча, Uzbek Cyrillic) was removed from this list on 2026-08-28 by
+// Zafar's decision: no longer offered, catalogue kept. `translations/uzc.csv`
+// and `SUPPORTED_LANGUAGES` still carry it on purpose, so an account that was
+// already set to uzc keeps rendering in Cyrillic. Putting the line back is the
+// whole of the undo. Pinned by `tests/test_uzc_retired_from_pickers.py`.
 const LANGUAGES = [
 	{ code: "en", label: "English" },
 	{ code: "ru", label: "Русский" },
 	{ code: "uz", label: "O‘zbekcha" },
-	{ code: "uzc", label: "Ўзбекча" },
 	{ code: "tr", label: "Türkçe" },
 ];
 
