@@ -377,7 +377,7 @@ async function saveWO(submitAfter) {
 	<!-- Operator view: simplified board (server already filters to own WOs) -->
 	<ManufacturingOperatorBoard v-if="!session.isMfgManager" />
 
-	<!-- Manager view: full table + create + detail drawer -->
+	<!-- Manager view: full table + create. The detail is its own page. -->
 	<template v-else>
 		<div class="card mb-3">
 			<div class="card-body">
@@ -457,7 +457,7 @@ async function saveWO(submitAfter) {
 					</thead>
 					<tbody>
 						<tr v-for="r in rows" :key="r.name" class="cursor-pointer" @click="router.push({ name: 'manufacturing-work-order', params: { name: r.name } })">
-							<!-- The row opens the detail panel, so the checkbox has to stop the
+							<!-- The row opens the detail page, so the checkbox has to stop the
 								 click it sits inside: without this, ticking five orders opens
 								 five panels and the last one covers the toolbar. -->
 							<td class="wo-select w-1" @click.stop>

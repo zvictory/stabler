@@ -8,6 +8,7 @@ import { formatDate, todayIso} from "../../composables/date.js";
 import DateInput from "../../components/DateInput.vue";
 import EmptyState from "../../components/EmptyState.vue";
 import MoneyInput from "../../components/MoneyInput.vue";
+import StatusBadge from "../../components/StatusBadge.vue";
 
 const session = useSession();
 const company = computed(() => session.activeCompany);

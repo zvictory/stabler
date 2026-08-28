@@ -10,11 +10,32 @@
 //   2. every identifier the template uses resolves to a <script setup> binding.
 //      Vue silently falls back to `_ctx.foo` for unknown names, so a rename that
 //      misses one call site is invisible at build time and blank at runtime.
+//   3. every component tag resolves to an import. A tag Vue cannot bind becomes a
+//      runtime `resolveComponent("Foo")` lookup, which is a warning in the console
+//      and an empty hole on the page -- and it is NOT a `_ctx.` reference, so
+//      check 2 misses it entirely. Measured: a bogus <GhostWidget/> passed this
+//      script clean until this check existed.
 import { readFileSync, readdirSync, statSync } from "node:fs";
 import { join } from "node:path";
 import { parse, compileScript, compileTemplate } from "@vue/compiler-sfc";
 
 const ROOT = "stabler/public/js";
+
+// Resolved by the runtime rather than by an import: Vue's own built-ins and the
+// two vue-router registers globally. Nothing else is app-registered -- there is
+// no `.component(` call anywhere in the SPA -- so any other name is a mistake.
+const GLOBAL_COMPONENTS = new Set([
+	"Transition",
+	"TransitionGroup",
+	"KeepAlive",
+	"Teleport",
+	"Suspense",
+	"RouterLink",
+	"RouterView",
+	// Vue reports the tag as written, so both spellings have to be listed.
+	"router-link",
+	"router-view",
+]);
 
 function* vueFiles(dir) {
 	for (const entry of readdirSync(dir)) {
@@ -65,6 +86,17 @@ for (const file of vueFiles(ROOT)) {
 	].map((s) => s.slice(5));
 	if (unresolved.length) {
 		console.error(`${file}: template uses undefined binding(s): ${unresolved.join(", ")}`);
+		failed += 1;
+		continue;
+	}
+
+	const unimported = [
+		...new Set(
+			[...compiled.content.matchAll(/_resolveComponent\("([^"]+)"\)/g)].map((m) => m[1]),
+		),
+	].filter((name) => !GLOBAL_COMPONENTS.has(name));
+	if (unimported.length) {
+		console.error(`${file}: template uses unimported component(s): ${unimported.join(", ")}`);
 		failed += 1;
 	}
 }
