@@ -111,4 +111,24 @@ describe("workOrderStages", () => {
 	it("says nothing about an order it was handed nothing for", () => {
 		expect(workOrderStages(null)).toEqual([]);
 	});
+
+	// The guard that decides whether a card exists has two halves, and every
+	// other test here exercises only one of them: it drops a role that has
+	// neither work nor an operator. Remove the `!own.length` half and this is
+	// the case that breaks — packaging work is on the BOM, nobody was assigned
+	// to it, and the whole card vanishes. The unassigned-operator warning the
+	// detail page renders is then never drawn on the one order it exists for,
+	// so the accountability gap the split was built to expose disappears
+	// silently at exactly the moment it is real.
+	it("still draws a stage that has work on it but nobody assigned", () => {
+		const stages = workOrderStages({
+			operator: "Ali",
+			packaging_operator: "",
+			required_items: [item("MILK", "Production", 2000), item("BOX", "Packaging", 1000)],
+		});
+
+		expect(stages.map((s) => s.role)).toEqual(["Production", "Packaging"]);
+		expect(stages[1].operator).toBe("");
+		expect(stages[1].lines).toBe(1);
+	});
 });

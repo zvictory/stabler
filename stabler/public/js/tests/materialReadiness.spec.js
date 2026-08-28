@@ -243,3 +243,42 @@ describe("quantities that do not divide evenly", () => {
 		expect(materialReadiness(row, thin).unitsCovered).toBe(9);
 	});
 });
+
+// Every other test here puts its materials on one shelf, which means none of
+// them can tell whether the warehouse half of the key is doing anything: drop
+// it entirely and they all stay green, because the map is built and read by the
+// same function. The composable's own line says why that matters — the same
+// item lives on several shelves. If the warehouse falls out of the key, an
+// order drawing on a store that has the material reads the level of a different
+// store that does not, and the chip is confidently wrong in whichever direction
+// the last-written shelf happened to hold.
+describe("the same item on two shelves", () => {
+	const row = {
+		qty: 10,
+		required_items: [
+			{ item_code: "MILK", required_qty: 100, transferred_qty: 0, source_warehouse: "Store A" },
+		],
+	};
+
+	it("gives two warehouses holding one item two different keys", () => {
+		expect(stockKey("Store A", "MILK")).not.toBe(stockKey("Store B", "MILK"));
+	});
+
+	it("reads the shelf the order draws from, not the other one", () => {
+		// Store A can fill this order outright; Store B is empty. Only the
+		// warehouse in the key keeps them apart.
+		const shelves = stock([["Store A", "MILK", 100], ["Store B", "MILK", 0]]);
+
+		expect(materialReadiness(row, shelves).state).toBe("ready");
+		expect(materialsForUnits(row, shelves, 10)[0].short).toBe(false);
+	});
+
+	it("does not borrow a full shelf to cover an empty one", () => {
+		// The mirror image, and the more dangerous direction: the order draws on
+		// an empty Store A while Store B is stocked. A key that lost the
+		// warehouse would call this ready and send someone to an empty store.
+		const shelves = stock([["Store A", "MILK", 0], ["Store B", "MILK", 500]]);
+
+		expect(materialReadiness(row, shelves).state).toBe("short");
+	});
+});
