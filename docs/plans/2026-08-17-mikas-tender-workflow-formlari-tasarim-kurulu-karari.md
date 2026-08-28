@@ -212,16 +212,35 @@ tutma maliyeti kalıcıdır ve kusur #1 ile #2 tekrar üretilebilir hale gelir.
 > **belge merkeziyle aynı üç ucu** çağırıyor — yani ikinci yazar değil, aynı yazarın
 > ikinci ekrandan çağrılması. Kaldırmak kolaylık kaybettirir, kusur kapatmaz.
 >
-> **Yeniden açılma koşulu:** belge merkezi bir gereklilik yazarı kazandığında.
-> O gün `TenderIntake.vue`'nun `seedDocs`/`addDoc`/`rmDoc`'u kalkar ve `documents`
-> intake sözleşmesinden çıkar. Koşul kâğıtta değil, **testte**:
-> `TestTheReopeningConditionIsExecutable` `tender_documents.py`'nin uç kümesini
-> pinliyor ve yedinci uç eklendiği an kırmızı oluyor — koşulun gerçekleşebileceği
-> tam o anda. Bu tur bunu inşa etmeme sebebi: mikas'ta 0 ihale kaydı var, ve sıfır
-> kullanıcılı bir uç yazmak 2026-08-28'de verilen diğer her kararla çelişir.
+> **Yeniden açılma koşulu (yazıldı ve aynı gün gerçekleşti):** belge merkezi bir
+> gereklilik yazarı kazandığında. Koşul kâğıtta değil testte duruyordu —
+> `TestTheReopeningConditionIsExecutable`, `tender_documents.py`'nin uç kümesini
+> pinliyor ve yedinci uç eklendiği an kırmızı oluyordu.
 >
-> Bu turda **kod değişmedi** — değişen şey, hangi durumun kasıtlı olduğunun yazılı
-> olması ve koşulun kendini hatırlatması.
+> **KAPANDI — 2026-08-28, aynı gün, Zafar'ın talimatıyla ("gereklilik yazarını
+> belge merkezine ekle").** Yedinci uç geldi:
+> `tender_documents.set_tender_document_requirements`. Şablonu artık belge
+> merkezi yazıyor (`TenderDocuments.vue`'nun "Edit checklist" kipi), aynı satır
+> bazlı rol kapısı altında (`_require_doc_role_write`, satır silmede *eski*
+> rolle, eklemede *yeni* rolle) ve aynı sunucu tarafı uzlaştırmayla
+> (`merge_client_requirements`, artık frappe'siz `_tender_documents.py`'de):
+> tarayıcı yalnız **etiket / zorunlu / tarih / rol** sahibi, dosyalar ile
+> muafiyetler sunucu gerçeği.
+>
+> Bunun üzerine ADR-201'in ikinci yarısı da uygulandı: `TenderIntake.vue`'dan
+> `seedDocs`/`addDoc`/`rmDoc` **ve** dosya/muafiyet düğmeleri kalktı, kontrol
+> listesi orada salt-okunur bir özet oldu (rozet + belge merkezine köprü), ve
+> `documents` intake sözleşmesinden çıktı — `_clean_intake` artık istemcinin
+> listesini hiç okumuyor.
+>
+> Uç kümesini sayan mandal yerini kalıcı olana bıraktı:
+> `TestTheChecklistHasExactlyOneWriter` — SPA'nın tamamında gereklilik yazan tek
+> ekranın belge merkezi olduğunu ve `_clean_intake`'in ikinci yazar olamayacağını
+> pinliyor. İki yön de kırmızı veriyor: ikinci yazar belirirse de, tek yazar
+> kaybolursa da.
+>
+> Bir turda inşa etmeme gerekçesi ("mikas'ta 0 ihale kaydı var") Zafar tarafından
+> geçersiz kılındı; ölçüm doğruydu, öncelik kararı onun.
 
 ### ADR-202 — Intake sözleşmesi görünür olur; sunucu sessizce düşürmez
 
@@ -268,13 +287,24 @@ yalnız belge uçları yazar (`tender_documents.upload_/waive_/remove_tender_doc
 şablonu yalnız açık bir "requirement düzenle" eylemi değiştirir. Bu tek karar kusur #2'yi
 kapatır ve belge merkezinin tek-kaynak iddiasını gerçekten tek kaynak yapar.
 
-> **2026-08-28 — kısmen uygulandı, gerisi ADR-201'in koşuluna bağlı.**
-> Kusur #2'yi kapatan yarı canlı: çekmece artık `documents` göndermiyor, ve anahtarı
-> hiç göndermeyen bir kayıt listeye dokunmuyor (`tender.py`, `if "documents" in data`
-> dalının `else`'i). Kapanmayan yarı: "şablonu yalnız açık bir *requirement düzenle*
-> eylemi değiştirir" — öyle bir eylem **yok**; `TenderIntake.vue`'nun `addDoc`'u
-> gereklilik satırının tek yazarı, ve bu yüzden `documents` hâlâ intake payload'ında.
-> Gerekçe ve yeniden açılma koşulu ADR-201'in altında.
+> **2026-08-28 — tamamen uygulandı.**
+> Kusur #2'nin iki yarısı da kapandı. Birinci yarı: çekmece artık `documents`
+> göndermiyor. İkinci yarı: `_clean_intake` `documents`'ı istemciden hiç
+> okumuyor — `out["documents"] = list(prior…)`, koşulsuz. Bu, ADR-205'in
+> metnine ("`_clean_intake` `documents`'a **dokunmaz**") birebir uyan ilk hâl.
+>
+> "Şablonu yalnız açık bir *requirement düzenle* eylemi değiştirir" cümlesinin
+> beklediği eylem de var artık:
+> `tender_documents.set_tender_document_requirements`, belge merkezinden.
+>
+> Ters yöne dikkat: **boş liste artık listeyi temizlemiyor.** Şablonun tek
+> yazarı bu ekranken boş liste "kullanıcı bütün satırları sildi" demek
+> zorundaydı; değilken yalnız bayat bir sekme ya da sahte bir payload olabilir,
+> ve ona uymak kontrol listesini yüklemeleri ve muafiyetleriyle birlikte
+> silerdi. `documents` anahtarı yine de reddedilmiyor, sessizce yok sayılıyor:
+> deploy'dan önce açılmış bir sekme hâlâ eski bundle'ı taşıyor
+> (`submission_deadline` ile aynı bir sürümlük tolerans). Pinlendi:
+> `TestTheChecklistIsNotWrittenThroughTheIntakeAtAll`.
 
 ### ADR-206 — Değerlendirme formu kararın verildiği yere taşınır
 

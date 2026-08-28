@@ -217,36 +217,71 @@ class TestTheContractIsVisible(unittest.TestCase):
 # --------------------------------------------------------------------------- #
 # ADR-205 — the checklist is not collateral damage of an intake save
 # --------------------------------------------------------------------------- #
-class TestTheDocumentChecklistSurvivesASaveThatNeverMentionedIt(_PatchedNow):
+class TestTheChecklistIsNotWrittenThroughTheIntakeAtAll(_PatchedNow):
+	"""ADR-205 in full, as of 2026-08-28.
+
+	Half of it shipped earlier: a save that never mentions the checklist leaves
+	it alone. The other half — "only the document endpoints write the
+	checklist" — could not, because no endpoint could *create* a requirement
+	row; `TenderIntake.vue` was the only author in the app, so `_clean_intake`
+	had to keep accepting a list from the browser. `tender_documents.
+	set_tender_document_requirements` is now that author, and this contract
+	closes: whatever a browser sends under `documents`, the stored checklist is
+	what the document centre last wrote.
+	"""
+
 	def _with_documents(self) -> dict:
-		return _clean(
-			{
-				"lot_no": "LOT-7",
-				"documents": [
+		from stabler.api._tender_documents import parse_doc_requirements
+
+		return {
+			"documents": parse_doc_requirements(
+				[
 					{"key": "gtd", "label": "ГТД", "required": 1, "role": "customs"},
 					{"key": "contract", "label": "Shartnoma", "required": 1},
-				],
-			}
-		)
+				]
+			)
+		}
 
 	def test_an_absent_documents_key_preserves_the_checklist(self):
 		"""Defect #2, exactly: the drawer sent `documents: []` on every save, and
 		an empty list rebuilt the checklist as empty — deleting the requirement
-		rows, their uploaded files and their waiver justifications. The document
-		centre calls itself the single source of truth; this is what makes that
-		claim true."""
+		rows, their uploaded files and their waiver justifications."""
 		prior = self._with_documents()
 		self.assertEqual(len(prior["documents"]), 2)
 		out = _clean({"lot_no": "LOT-7"}, prior=prior)
 		self.assertEqual([d["key"] for d in out["documents"]], ["gtd", "contract"])
 
-	def test_an_explicit_empty_list_still_clears_the_checklist(self):
-		"""`TenderIntake.vue` is a real template editor (`rmDoc()` at :125), so
-		"the client sent an empty list" has to keep meaning "the user removed
-		every row" — the same present-replaces/absent-preserves rule the item
-		lines already follow."""
+	def test_an_explicit_empty_list_no_longer_clears_the_checklist(self):
+		"""This assertion is the inverse of the one it replaces, and the inversion
+		is the decision. While the PO board panel was the only author, an empty
+		list had to mean "the user removed every row". It no longer is one, so an
+		empty list can only be a stale bundle or a forged payload — and honouring
+		it would delete a checklist together with its uploads and waivers."""
 		out = _clean({"documents": []}, prior=self._with_documents())
-		self.assertEqual(out["documents"], [])
+		self.assertEqual([d["key"] for d in out["documents"]], ["gtd", "contract"])
+
+	def test_a_forged_list_cannot_add_rewrite_or_satisfy_a_requirement(self):
+		out = _clean(
+			{
+				"documents": [
+					{"key": "gtd", "label": "renamed", "required": 0, "done": 1},
+					{"key": "invented", "label": "Invented", "required": 1, "done": 1},
+				]
+			},
+			prior=self._with_documents(),
+		)
+		self.assertEqual([d["key"] for d in out["documents"]], ["gtd", "contract"])
+		self.assertEqual(out["documents"][0]["label"], "ГТД")
+		self.assertFalse(out["documents"][0]["done"])
+
+	def test_documents_is_still_an_accepted_key_so_a_stale_tab_does_not_break(self):
+		"""Ignored, not rejected — the same one-release tolerance
+		`submission_deadline` gets. A tab opened before the deploy still holds
+		the old bundle and would otherwise fail every save until reloaded, and
+		the key is now inert, so accepting it costs nothing."""
+		from stabler.api.tender import _INTAKE_CLIENT_KEYS
+
+		self.assertIn("documents", _INTAKE_CLIENT_KEYS)
 
 
 # --------------------------------------------------------------------------- #

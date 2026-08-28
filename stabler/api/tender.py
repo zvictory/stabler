@@ -1453,54 +1453,6 @@ def _intake_bid_deadline(intake: dict) -> str:
 	return str(intake.get("bid_deadline") or intake.get("submission_deadline") or "")
 
 
-def _merge_client_documents(client_docs: list, prior_docs: list) -> list:
-	"""Reconcile client-edited checklist rows with server-owned file/waiver facts.
-
-	The intake editor may only touch the human-facing fields (label, required,
-	date, role). File attachments, waiver justifications, and the derived
-	``done``/``unverified`` flags are never trusted from the browser — they are
-	preserved from the prior payload, matched by ``key`` (falling back to label).
-	Rows present only in the client are added (clean, nothing satisfied); rows
-	present only in the prior payload are dropped unless the client still lists
-	them, so deleting a row in the editor removes it. Outputs the full document
-	requirement shape produced by ``parse_doc_requirements``.
-	"""
-	from stabler.api._tender_documents import parse_doc_requirements
-
-	prior_by_key = {}
-	for d in prior_docs or []:
-		if not isinstance(d, dict):
-			continue
-		k = str(d.get("key") or d.get("label") or "").strip().lower().replace(" ", "_")
-		if k:
-			prior_by_key[k] = d
-
-	merged: list = []
-	seen = set()
-	for d in client_docs or []:
-		if not isinstance(d, dict):
-			continue
-		if not str(d.get("label") or d.get("key") or "").strip():
-			continue
-		k = str(d.get("key") or d.get("label") or "").strip().lower().replace(" ", "_")
-		if k in seen:
-			continue
-		seen.add(k)
-		prior_row = prior_by_key.get(k, {})
-		# Client owns: label/required/date/role. Server owns: files/waiver/*.
-		row = dict(prior_row)  # files + waiver + derived flags carried over
-		row["key"] = k
-		row["label"] = str(d.get("label") or prior_row.get("label") or "").strip()[:140]
-		row["required"] = bool(d.get("required") if "required" in d else prior_row.get("required", True))
-		row["date"] = str(d.get("date") or prior_row.get("date") or "").strip()[:20]
-		if "role" in d:
-			row["role"] = str(d.get("role") or "").strip().lower()[:40]
-		merged.append(row)
-	# Re-normalize so derived done/unverified/scope/role/file_count/latest_file are
-	# always consistent with the reconciled payload (parse_doc_requirements is pure).
-	return parse_doc_requirements(merged)
-
-
 def _clean_intake(data: dict, prior: dict | None = None, audit_actor: str | None = None) -> dict:
 	"""Normalize client-editable intake fields and preserve server audit facts.
 
@@ -1508,7 +1460,7 @@ def _clean_intake(data: dict, prior: dict | None = None, audit_actor: str | None
 	never read from ``data``.  Existing facts survive an unchanged decision;
 	changing a decision records a fresh server timestamp and actor instead.
 	"""
-	from stabler.api._tender_documents import apply_ready_audit
+	from stabler.api._tender_documents import apply_ready_audit, parse_doc_requirements
 	from stabler.api._tender_intake_items import clean_intake_items
 
 	prior = prior or {}
@@ -1558,23 +1510,29 @@ def _clean_intake(data: dict, prior: dict | None = None, audit_actor: str | None
 	):
 		out[key] = str(prior.get(key) or "")[:limit]
 	# document requirements (ГТД, certificate, acceptance act, contract, invoice …).
-	# Normalized through the document-center parser so file attachments and waivers
-	# survive an intake edit: the browser can change label/required/date/role, but
-	# files / waiver facts are reconciled back from the prior payload and never
-	# trusted from the client. This keeps _clean_intake and the dedicated document
-	# endpoints (upload/waive) over the same single source of truth.
-	# ADR-205: an intake save that never mentions the checklist leaves it alone.
-	# The drawer used to send `documents: []` on every save and the empty list
-	# rebuilt the checklist as empty, deleting the requirement rows, their uploaded
-	# files and their waiver justifications (defect #2). A present list still
-	# replaces — `TenderIntake.vue` is a real template editor and its `rmDoc()` has
-	# to keep meaning "the user removed every row".
-	if "documents" in data:
-		out["documents"] = _merge_client_documents(data.get("documents") or [], prior.get("documents") or [])[
-			:40
-		]
-	else:
-		out["documents"] = list(prior.get("documents") or [])[:40]
+	# ADR-205, complete since 2026-08-28: the checklist is NOT part of this
+	# contract. It is carried through untouched, whatever the payload says.
+	#
+	# This branch used to honour a present list, because `TenderIntake.vue` was
+	# the only author of a requirement row in the whole app and its `rmDoc()`
+	# had to keep meaning "the user removed every row" — the document endpoints
+	# could attach a file to a requirement but could not create one. That gap is
+	# closed: `tender_documents.set_tender_document_requirements` authors the
+	# checklist, with the same server-side reconciliation
+	# (`merge_client_requirements`, now in `_tender_documents`).
+	#
+	# So an intake payload can no longer reach the checklist at all. The key is
+	# still accepted rather than rejected — a tab opened before the deploy still
+	# holds the old bundle — but it is inert, and honouring an empty list from
+	# such a tab would delete a checklist along with its uploads and waivers
+	# (defect #2, whose last route this closes).
+	#
+	# Carried through the parser, not raw: `done` / `unverified` are *derived*
+	# at read time from files and waivers (K2/K3), and the ready gate below
+	# reads them. Passing the stored rows through untouched silently un-readies
+	# every lot whose blob predates those flags — caught by
+	# `test_ready_transition_occurs_when_required_documents_complete`.
+	out["documents"] = parse_doc_requirements(prior.get("documents"))[:40]
 	# Item lines follow the same reconciliation idea as documents, but simpler:
 	# they carry no server-owned facts, so an absent key preserves and a present
 	# list replaces. They are the scope the RFQ step later copies line by line.
