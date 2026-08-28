@@ -6464,3 +6464,21 @@ Your work orders are on the shift log.,Sizning ish buyurtmalaringiz smena jurnal
 {0} moved to {1},{0} {1} kuniga ko'chirildi
 {0} orders,{0} ta buyurtma
 {0} orders on {1} lines,{1} ta liniyada {0} ta buyurtma
+Waiting for material,Xomashyo kutilmoqda
+Waiting for packaging material,Qadoqlash materiali kutilmoqda
+Filling machine setup or changeover,Quyish mashinasini sozlash yoki almashtirish
+Filling machine breakdown,Quyish mashinasi buzildi
+Freezer or compressor fault,Muzlatgich yoki kompressor nosozligi
+Cleaning or CIP,Tozalash yoki CIP
+Power cut,Elektr o'chdi
+Water or steam supply,Suv yoki bug' ta'minoti
+Shift handover,Smena topshirig'i
+No operator available,Operator yo'q
+Waiting for quality check,Sifat nazorati kutilmoqda
+Planned maintenance,Rejali texnik xizmat
+Off-spec batch,Talabga javob bermagan partiya
+Melted or thawed product,Erib ketgan mahsulot
+Weight out of tolerance,Vazn me'yordan chetda
+Spillage,To'kilish
+Line start-up and flush,Liniyani ishga tushirish va yuvish
+Expired or unusable raw material,Muddati o'tgan yoki yaroqsiz xomashyo

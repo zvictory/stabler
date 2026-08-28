@@ -6464,3 +6464,21 @@ Your work orders are on the shift log.,Сизнинг иш буюртмалар�
 {0} moved to {1},{0} {1} кунига кўчирилди
 {0} orders,{0} та буюртма
 {0} orders on {1} lines,{1} та линияда {0} та буюртма
+Waiting for material,Хомашё кутилмоқда
+Waiting for packaging material,Қадоқлаш материали кутилмоқда
+Filling machine setup or changeover,Қуйиш машинасини созлаш ёки алмаштириш
+Filling machine breakdown,Қуйиш машинаси бузилди
+Freezer or compressor fault,Музлатгич ёки компрессор носозлиги
+Cleaning or CIP,Тозалаш ёки CIP
+Power cut,Электр ўчди
+Water or steam supply,Сув ёки буғ таъминоти
+Shift handover,Смена топшириғи
+No operator available,Оператор йўқ
+Waiting for quality check,Сифат назорати кутилмоқда
+Planned maintenance,Режали техник хизмат
+Off-spec batch,Талабга жавоб бермаган партия
+Melted or thawed product,Эриб кетган маҳсулот
+Weight out of tolerance,Вазн меъёрдан четда
+Spillage,Тўкилиш
+Line start-up and flush,Линияни ишга тушириш ва ювиш
+Expired or unusable raw material,Муддати ўтган ёки яроқсиз хомашё

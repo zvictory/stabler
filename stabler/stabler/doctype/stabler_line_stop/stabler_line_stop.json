@@ -1,0 +1,38 @@
+{
+ "actions": [],
+ "autoname": "format:LSTOP-{YYYY}-{#####}",
+ "creation": "2026-08-28 20:00:00.000000",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": ["company", "line", "work_order", "reason", "from_time", "to_time", "minutes", "reported_by", "note"],
+ "fields": [
+  {"fieldname": "company", "fieldtype": "Link", "label": "Company", "options": "Company", "reqd": 1},
+  {"fieldname": "line", "fieldtype": "Link", "label": "Line", "options": "Warehouse", "reqd": 1, "in_list_view": 1,
+   "description": "The WIP warehouse the order is poured on. There are 0 Workstation records on this floor, so this is the only line dimension the data has."},
+  {"fieldname": "work_order", "fieldtype": "Link", "label": "Work Order", "options": "Work Order",
+   "description": "Optional: a line can stop between orders."},
+  {"fieldname": "reason", "fieldtype": "Link", "label": "Reason", "options": "Stabler Stop Reason", "reqd": 1, "in_list_view": 1},
+  {"fieldname": "from_time", "fieldtype": "Datetime", "label": "From", "reqd": 1, "in_list_view": 1},
+  {"fieldname": "to_time", "fieldtype": "Datetime", "label": "To", "reqd": 1},
+  {"fieldname": "minutes", "fieldtype": "Float", "label": "Minutes", "read_only": 1, "precision": "1", "in_list_view": 1},
+  {"fieldname": "reported_by", "fieldtype": "Link", "label": "Reported by", "options": "User", "reqd": 1},
+  {"fieldname": "note", "fieldtype": "Small Text", "label": "Note"}
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-08-28 20:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Stabler",
+ "name": "Stabler Line Stop",
+ "owner": "Administrator",
+ "permissions": [
+  {"create": 1, "delete": 1, "email": 1, "export": 1, "print": 1, "read": 1, "report": 1, "role": "System Manager", "share": 1, "write": 1},
+  {"create": 1, "delete": 1, "email": 1, "export": 1, "print": 1, "read": 1, "report": 1, "role": "Manufacturing Manager", "share": 1, "write": 1},
+  {"create": 1, "email": 1, "export": 1, "print": 1, "read": 1, "report": 1, "role": "Manufacturing User", "share": 1, "write": 1}
+ ],
+ "sort_field": "from_time",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}
