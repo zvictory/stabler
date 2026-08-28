@@ -157,7 +157,7 @@ watch(
 			form.name = val.name || "";
 			form.organization = val.organization || "";
 			form.tender_no = val.tender_no || "";
-			form.title = val.title || val.organization || "";
+			form.title = val.title || "";
 			form.source = val.source || "UZEX";
 			form.publication_date = val.publication_date || "";
 			form.submission_deadline = val.submission_deadline || "";
@@ -176,7 +176,12 @@ watch(
 				.then((res) => {
 					if (form.name !== val.name) return; // kullanıcı başka kayda geçti
 					const intake = res?.intake || {};
-					if (intake.title) form.title = intake.title;
+					// Unconditional: the intake JSON is `title`'s only home — `crm.save_deal`
+					// does not accept it — so the stored value is the only truth there is.
+					// A guard that skipped an empty one left the caller's seed sitting in a
+					// required field, and since 8abffa2 made `title` persistent that seed
+					// was saved over the real title with no error at any layer.
+					form.title = intake.title || "";
 					if (intake.tender_no) form.tender_no = intake.tender_no;
 					if (intake.source) form.source = intake.source;
 					if (intake.publication_date) form.publication_date = intake.publication_date;

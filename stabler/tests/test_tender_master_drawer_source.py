@@ -33,6 +33,10 @@ import unittest
 from pathlib import Path
 
 SOURCE = Path(__file__).parents[1] / "public" / "js" / "components" / "TenderMasterDrawer.vue"
+# The caller is half of the same causal chain, so it is pinned here rather than
+# in the kanban's own source test: the corruption needs both ends to line up,
+# and a guard split across two files is a guard nobody reads as one rule.
+CALLER = Path(__file__).parents[1] / "public" / "js" / "pages" / "tender" / "TenderCrm.vue"
 
 _MASTER_FIELDS = (
 	"title",
@@ -48,8 +52,8 @@ _MASTER_FIELDS = (
 	"estimated_total",
 )
 
-_TITLE_SEED = 'form.title = val.title || val.organization || ""'
-_TITLE_RESTORE = "if (intake.title) form.title = intake.title;"
+_TITLE_SEED = 'form.title = val.title || ""'
+_TITLE_RESTORE = 'form.title = intake.title || ""'
 
 
 class TestTenderMasterDrawerIntakeContract(unittest.TestCase):
@@ -109,6 +113,57 @@ class TestTenderMasterDrawerIntakeContract(unittest.TestCase):
 		"""The specific defect: `title` has a customer-name placeholder that
 		must be overwritten, not merely a blank one that fails loudly."""
 		self.assertIn(_TITLE_RESTORE, self.body)
+
+	def test_a_stored_intake_with_no_title_clears_the_seed_rather_than_keeping_it(self):
+		"""The half the conditional restore never covered.
+
+		`if (intake.title) …` corrects the seed only when the record already has
+		a stored title. On a record saved before 8abffa2 put `title` in the
+		whitelist, the intake comes back without one, the guard does not fire,
+		and the customer name stays sitting in a required field looking like
+		data somebody typed. Since 8abffa2 that field is persisted — so the next
+		save writes the customer's name over the tender's title permanently,
+		with no error at any layer. Before the whitelist the value was silently
+		dropped; after it, it is silently wrong, which is worse.
+
+		The intake JSON is `title`'s only home — `crm.save_deal` does not accept
+		it — so the stored value is the only truth there is, and the restore has
+		to be unconditional for exactly the reason the six evaluation fields
+		below are: a guard that skips an empty value makes "no title yet"
+		indistinguishable from "this title".
+		"""
+		self.assertIn('form.title = intake.title || ""', self.body)
+		self.assertNotIn("if (intake.title)", self.body)
+
+	def test_the_seed_does_not_borrow_the_customer_name(self):
+		"""`title` is a required field with its own validation and its own
+		placeholder text. Pre-filling it from a different concept — the
+		customer's organization — is not a default, it is an answer the user
+		never gave, and the required-field check it satisfies is the only thing
+		that would otherwise have asked them.
+
+		Scoped to the title line: `form.organization = val.organization || ""`
+		on the line above is the same expression doing an entirely correct job,
+		so a file-wide search reports the wrong one.
+		"""
+		seed = [ln for ln in self.body.splitlines() if "form.title = val." in ln]
+		self.assertEqual(len(seed), 1, "expected exactly one title seed line")
+		self.assertNotIn("organization", seed[0])
+
+	def test_the_caller_does_not_pass_the_cards_display_label_as_a_title(self):
+		"""The other end of the chain.
+
+		`crm_board` sets each card's `label` from `_deal_label()`, which returns
+		the organization, or the lead name, or — when both are empty — the deal
+		ID itself. `openEditDrawer` mapped that straight onto `title`, so the
+		drawer's seed was not even reaching its own organization fallback: the
+		caller was handing it a wrong title as though it were a real one.
+		"""
+		caller = CALLER.read_text(encoding="utf-8")
+		start = caller.index("function openEditDrawer")
+		block = caller[start : caller.index("\n}", start)]
+		self.assertIn("editingTender.value", block, "the test is reading the wrong function")
+		self.assertNotIn("title: c.label", block)
 
 	def test_the_placeholder_seed_runs_before_the_restore_can_correct_it(self):
 		"""If the ordering were reversed, the intake restore would run and

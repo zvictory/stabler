@@ -301,7 +301,9 @@ function openEditDrawer() {
 	editingTender.value = {
 		name: c.name,
 		organization: c.organization || c.lead_name || "",
-		title: c.label || "",
+		// No `title` here on purpose: the card's `label` is `_deal_label()`, which
+		// is the organization — or the lead name, or the deal ID. The drawer reads
+		// the real title back from the intake, which is where it lives.
 		currency: c.currency || "",
 		deal_value: c.contract_value || 0,
 		deadline: c.deadline || "",
