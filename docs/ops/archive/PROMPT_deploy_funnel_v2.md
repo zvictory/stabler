@@ -4,12 +4,20 @@
 > Bu dosya belirli bir commit'e (`8409dab`) sabitli ve `docs/ops/archive/` altında
 > duruyor; olduğu gibi bırakıldı çünkü arşivin işi ne yapıldığını göstermek.
 >
-> **Buradaki hiçbir komutu kopyalama.** Özellikle Adım 5'teki `migrate` döngüsü:
-> kiracı listesini elle sayıyor ve **eksik**. O gün 7 site vardı; bugün 8
-> (`zuma` sonradan eklendi) ve `migrate` site başına koşar — bu döngü kopyalanırsa
-> en az bir kiracı DDL'siz kalır, üstelik orada bir şey kırılana kadar sessizce.
-> Güncel desen `.claude/skills/stabler-deploy/SKILL.md`'de; `make guards` bu
-> dizin dışındaki kopyalarını 2026-08-28'den beri reddediyor.
+> **Buradaki hiçbir komutu kopyalama.** İki ayrı sebep, ikisi de ölçüldü:
+>
+> 1. **Adım 5'teki `migrate` döngüsü** kiracı listesini elle sayıyor ve **eksik**.
+>    O gün 7 site vardı; bugün 8 (`zuma` sonradan eklendi) ve `migrate` site başına
+>    koşar — bu döngü kopyalanırsa en az bir kiracı DDL'siz kalır, üstelik orada bir
+>    şey kırılana kadar sessizce. `make guards` bu dizin dışındaki kopyalarını
+>    2026-08-28'den beri reddediyor.
+> 2. **Adım 2/3'teki rsync** exclude listesini satır satır içine yazıyor ve
+>    `.rsync-exclude`'a göre **27 girdi eksik** — `docs`, `Makefile`, `deploy_*.sh`,
+>    `.github`, `recon`, `agent-os` ve diğerleri. Deploy `--delete` olmadan koştuğu
+>    için bir kez prod'a düşen dosya orada kalıcı olarak kalır. CLAUDE.md'nin kuralı:
+>    exclude listesi tek yerde durur, `apps/stabler/.rsync-exclude`.
+>
+> Güncel prosedür: `.claude/skills/stabler-deploy/SKILL.md`.
 
 Bu dosyanın tamamını Claude Code'a yapıştır, `~/frappe-bench-local/apps/stabler` içinden.
 Sıradan çıkma, her adımın çıktısını göster, ilk hatada dur.

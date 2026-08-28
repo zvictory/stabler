@@ -1,5 +1,23 @@
 # Deploy prompt — Stabler `c12530e` (MSA imports workflow panosu)
 
+> **ARŞİV — koşulmuş bir deploy'un kaydı, koşulacak bir talimat değil.**
+> Bu dosya git'e zaten `docs/ops/` altında girdi (`b16b1a9`, 2026-07-30,
+> *"move scratch prompts … under docs/ops"*) — hiçbir zaman canlı bir talimat
+> olarak izlenmedi. Anlattığı iş **gitti**: `c12530e` main'in atası (2026-07-28),
+> `imports_flow` ucu `stabler/api/imports.py:8295`'te, `/imports/dashboard`
+> rotası `router.js:225`'te, ve uç prod'da msa üzerinde canlı (2026-08-28'de
+> `hasattr` ile doğrulandı).
+>
+> **Adım 2/3'teki rsync komutunu kopyalama.** Exclude listesini satır satır
+> içine yazıyor ve `.rsync-exclude`'a göre **28 girdi eksik** — `docs`,
+> `Makefile`, `deploy_*.sh`, `.github`, `.gitlab-ci.yml`, `recon`, `agent-os`
+> ve diğerleri. Deploy `--delete` olmadan koştuğu için bir kez prod'a düşen
+> dosya orada **kalıcı olarak** kalır. CLAUDE.md'nin kuralı: exclude listesi tek
+> yerde durur, `apps/stabler/.rsync-exclude`. Aynı tuzak `PROMPT_ops_123.md`'de
+> de not düşülmüş ("buradaki kopya eksik çıktı").
+>
+> Güncel prosedür: `.claude/skills/stabler-deploy/SKILL.md`.
+
 Bu dosyanın tamamını Claude Code'a yapıştır, `~/frappe-bench-local/apps/stabler` içinden.
 Sıradan çıkma, her adımın çıktısını göster, ilk hatada dur.
 
