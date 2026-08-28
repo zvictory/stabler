@@ -6482,3 +6482,19 @@ Weight out of tolerance,Vazn me'yordan chetda
 Spillage,To'kilish
 Line start-up and flush,Liniyani ishga tushirish va yuvish
 Expired or unusable raw material,Muddati o'tgan yoki yaroqsiz xomashyo
+An end time earlier than the start means the stop ran past midnight.,"Tugash vaqti boshlanishdan oldin bo'lsa, to'xtash yarim tundan o'tgan demakdir."
+Fill in the day and both times.,Kunni va ikkala vaqtni to'ldiring.
+Line stops,Liniya to'xtashlari
+Minutes,Daqiqa
+No order — the line was between jobs,Buyurtmasiz — liniya ishlar orasida edi
+No stops recorded in this window,Bu oralig'da to'xtash yozilmagan
+Nothing on this floor has ever been recorded as a stop. The first one goes in on the left.,Bu sexda hali birorta to'xtash yozilmagan. Birinchisini chapdan kiriting.
+Pick a line,Liniyani tanlang
+Pick a reason,Sababni tanlang
+Pick the line and the reason.,Liniya va sababni tanlang.
+Record a stop,To'xtashni yozish
+Record the stop,To'xtashni yozish
+Recorded: {0} minutes,Yozildi: {0} daqiqa
+Saving,Saqlanmoqda
+{0} minutes,{0} daqiqa
+{0} stops,{0} ta to'xtash

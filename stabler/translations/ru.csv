@@ -6487,3 +6487,19 @@ Weight out of tolerance,Вес вне допуска
 Spillage,Пролив
 Line start-up and flush,Запуск и промывка линии
 Expired or unusable raw material,Просроченное или непригодное сырьё
+An end time earlier than the start means the stop ran past midnight.,"Время окончания раньше начала означает, что простой перешёл за полночь."
+Fill in the day and both times.,Заполните день и оба времени.
+Line stops,Простои линии
+Minutes,Минуты
+No order — the line was between jobs,Без заказа — линия была между заданиями
+No stops recorded in this window,В этом окне простоев не записано
+Nothing on this floor has ever been recorded as a stop. The first one goes in on the left.,На этом производстве ещё ни один простой не записан. Первый вводится слева.
+Pick a line,Выберите линию
+Pick a reason,Выберите причину
+Pick the line and the reason.,Выберите линию и причину.
+Record a stop,Записать простой
+Record the stop,Записать простой
+Recorded: {0} minutes,Записано: {0} минут
+Saving,Сохранение
+{0} minutes,{0} минут
+{0} stops,{0} простоев

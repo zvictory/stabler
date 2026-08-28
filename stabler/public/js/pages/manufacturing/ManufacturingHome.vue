@@ -36,6 +36,12 @@ const tabs = computed(() => [
 					label: t("Production plan"),
 					icon: "ti-calendar-event",
 				},
+				{
+					name: "manufacturing-stops",
+					path: "/manufacturing/stops",
+					label: t("Line stops"),
+					icon: "ti-player-pause",
+				},
 			]
 		: []),
 ]);
@@ -44,7 +50,10 @@ const activeTab = computed(() => route.name);
 // Redirect operators away from the BOMs route — the server guards it too,
 // but the redirect avoids a visible error flash.
 watchEffect(() => {
-	if (["manufacturing-boms", "manufacturing-plan"].includes(route.name) && !session.isMfgManager) {
+	if (
+		["manufacturing-boms", "manufacturing-plan", "manufacturing-stops"].includes(route.name) &&
+		!session.isMfgManager
+	) {
 		router.replace("/manufacturing/work-orders");
 	}
 });

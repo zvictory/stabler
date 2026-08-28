@@ -6876,3 +6876,19 @@ Weight out of tolerance,Weight out of tolerance
 Spillage,Spillage
 Line start-up and flush,Line start-up and flush
 Expired or unusable raw material,Expired or unusable raw material
+An end time earlier than the start means the stop ran past midnight.,An end time earlier than the start means the stop ran past midnight.
+Fill in the day and both times.,Fill in the day and both times.
+Line stops,Line stops
+Minutes,Minutes
+No order — the line was between jobs,No order — the line was between jobs
+No stops recorded in this window,No stops recorded in this window
+Nothing on this floor has ever been recorded as a stop. The first one goes in on the left.,Nothing on this floor has ever been recorded as a stop. The first one goes in on the left.
+Pick a line,Pick a line
+Pick a reason,Pick a reason
+Pick the line and the reason.,Pick the line and the reason.
+Record a stop,Record a stop
+Record the stop,Record the stop
+Recorded: {0} minutes,Recorded: {0} minutes
+Saving,Saving
+{0} minutes,{0} minutes
+{0} stops,{0} stops
