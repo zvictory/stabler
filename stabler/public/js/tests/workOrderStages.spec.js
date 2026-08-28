@@ -131,4 +131,52 @@ describe("workOrderStages", () => {
 		expect(stages[1].operator).toBe("");
 		expect(stages[1].lines).toBe(1);
 	});
+
+	// `work_order_detail` hands a manager or a warehouse user the whole bill of
+	// materials, but an operator gets only the lines their own role writes off —
+	// hand a pourer the label rows and that loss lands on the wrong person's KPI.
+	// The operator names are not filtered with them, so from this composable's
+	// side the other role looks like a stage that somebody is assigned to and
+	// that has no work on it: exactly the mis-set-BOM shape the warning exists
+	// to shout about. It then shouts on every order every operator opens, which
+	// is the fastest way to teach people that the one high-signal warning on the
+	// page means nothing.
+	it("does not call a stage empty when the server only hid its items", () => {
+		const stages = workOrderStages({
+			items_scoped_to_role: "Production",
+			operator: "Ali",
+			packaging_operator: "Vera",
+			required_items: [item("MILK", "Production", 2000)],
+		});
+
+		const packaging = stages.find((s) => s.role === "Packaging");
+		expect(packaging, "the other role should still be visible").toBeTruthy();
+		expect(packaging.itemsHidden).toBe(true);
+		expect(packaging.operator).toBe("Vera");
+	});
+
+	it("still calls a genuinely empty stage empty for whoever can see everything", () => {
+		// The manager's payload carries no scope flag, so the warning has to keep
+		// firing for them — they are the one who can actually fix the BOM.
+		const stages = workOrderStages({
+			operator: "Ali",
+			packaging_operator: "Vera",
+			required_items: [item("MILK", "Production", 2000)],
+		});
+
+		const packaging = stages.find((s) => s.role === "Packaging");
+		expect(packaging.itemsHidden).toBe(false);
+		expect(packaging.lines).toBe(0);
+	});
+
+	it("does not hide the viewer's own stage from them", () => {
+		const stages = workOrderStages({
+			items_scoped_to_role: "Packaging",
+			operator: "Ali",
+			packaging_operator: "Vera",
+			required_items: [item("BOX", "Packaging", 1000)],
+		});
+
+		expect(stages.find((s) => s.role === "Packaging").itemsHidden).toBe(false);
+	});
 });

@@ -323,6 +323,7 @@ Nothing registered is still waiting to be collected.,Nothing registered is still
 "Oldest first · no overdue threshold is defined, so none is applied","Oldest first · no overdue threshold is defined, so none is applied"
 "One cash account per desk per currency, so a desk's book balance equals the count in that drawer.","One cash account per desk per currency, so a desk's book balance equals the count in that drawer."
 One person cannot hold both operator roles on the same Work Order.,One person cannot hold both operator roles on the same Work Order.
+Only the materials for your own stage are shown.,Only the materials for your own stage are shown.
 Only a Remittance Finance Manager can approve or reject a refund.,Only a Remittance Finance Manager can approve or reject a refund.
 Only a Remittance Finance Manager can set the GL accounts and desk mapping for a company.,Only a Remittance Finance Manager can set the GL accounts and desk mapping for a company.
 Only a manager can unlock a pickup code.,Only a manager can unlock a pickup code.

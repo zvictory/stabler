@@ -16,11 +16,15 @@ export const STAGE_ROLES = ["Production", "Packaging"];
 
 const fullyMoved = (i) => (Number(i.transferred_qty) || 0) >= (Number(i.required_qty) || 0);
 
-function buildStage(role, operator, items, deviation) {
+function buildStage(role, operator, items, deviation, itemsHidden = false) {
 	return {
 		role,
 		operator: operator || "",
 		items,
+		// The server filtered this role's lines out of the payload rather than
+		// the order not having any. Without the distinction an empty list reads
+		// as a mis-set BOM, which is a different and much louder claim.
+		itemsHidden,
 		// Line counts, never summed quantities: these rows are litres, kilograms
 		// and pieces at once, and one total across them is wrong without looking
 		// wrong. Same rule the deviation footer follows.
@@ -37,6 +41,11 @@ function buildStage(role, operator, items, deviation) {
  */
 export function workOrderStages(detail) {
 	const items = detail?.required_items || [];
+	// `work_order_detail` gives an operator only the lines their own role writes
+	// off, but hands over both operator names unfiltered. So from here the other
+	// role looks like somebody assigned to a stage with no work on it — the exact
+	// mis-set-BOM shape the card warns about — on every order they open.
+	const scopedTo = detail?.items_scoped_to_role || "";
 	const deviation = new Map((detail?.role_deviation || []).map((b) => [b.role || "", b]));
 	const operators = {
 		Production: detail?.operator || "",
@@ -50,7 +59,9 @@ export function workOrderStages(detail) {
 		// that has an operator but no work, though, is a mis-set BOM role and is
 		// invisible anywhere else.
 		if (!own.length && !operators[role]) continue;
-		stages.push(buildStage(role, operators[role], own, deviation.get(role)));
+		stages.push(
+			buildStage(role, operators[role], own, deviation.get(role), Boolean(scopedTo) && role !== scopedTo),
+		);
 	}
 
 	// The items nobody owns are the ones that need saying out loud. Folding them

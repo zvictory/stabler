@@ -122,6 +122,7 @@ Not ready — this desk cannot take or hand over a transfer.,"Tayyor emas — bu
 Not saved — a price cannot be negative: {0},Saqlanmadi — narx manfiy bo'lishi mumkin emas: {0}
 Nothing on this page is read from a record,Bu sahifadagi hech bir qiymat yozuvdan o‘qilmaydi
 One person cannot hold both operator roles on the same Work Order.,Bir kishi bitta ishlab chiqarish buyurtmasida ikkala operator rolini egallay olmaydi.
+Only the materials for your own stage are shown.,Faqat o‘z bosqichingizdagi materiallar ko‘rsatilgan.
 Only an administrator can post to an earlier date.,Bugungidan oldingi sanaga faqat administrator kirita oladi.
 Only an open agreement can be terminated. {0} is {1}.,Faqat ochiq shartnomani yopish mumkin. {0} holati: {1}.
 Only the remittance desk can verify a pickup code.,Olib ketish kodini faqat pul o‘tkazmalari kassasi tekshira oladi.

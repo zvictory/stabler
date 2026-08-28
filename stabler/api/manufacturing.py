@@ -1208,6 +1208,11 @@ def work_order_detail(name: str):
 		payload["required_items"] = required
 	elif my_role:
 		payload["required_items"] = _rows_for_role(required, item_roles, my_role)
+		# The operator names are not filtered along with the lines, so without
+		# this the detail page reads the other role as somebody assigned to a
+		# stage with no work on it — the mis-set-BOM warning, fired falsely on
+		# every order this user opens.
+		payload["items_scoped_to_role"] = my_role
 	return payload
 
 

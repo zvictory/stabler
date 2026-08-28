@@ -371,9 +371,15 @@ watch(
 										{{ s.operator || t("not assigned") }}
 									</div>
 
+									<!-- Said plainly rather than left blank: an operator sees only the
+										 lines their own role writes off, and an empty card with no
+										 explanation reads as an order with nothing on it. -->
+									<div v-if="s.itemsHidden" class="small text-secondary">
+										{{ t("Only the materials for your own stage are shown.") }}
+									</div>
 									<!-- A packer on an order whose BOM gives packing nothing to do is
 										 a mis-set role, and it is invisible anywhere else on this page. -->
-									<div v-if="!s.lines" class="small text-warning">
+									<div v-else-if="!s.lines" class="small text-warning">
 										{{ t("No materials assigned to this stage.") }}
 									</div>
 									<ul v-else class="list-unstyled small mb-0">

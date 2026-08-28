@@ -123,6 +123,7 @@ Not ready — this desk cannot take or hand over a transfer.,"Не готова 
 Not saved — a price cannot be negative: {0},Не сохранено — цена не может быть отрицательной: {0}
 Nothing on this page is read from a record,Ни одно значение на этой странице не читается из записи
 One person cannot hold both operator roles on the same Work Order.,Один человек не может занимать обе роли оператора в одном производственном заказе.
+Only the materials for your own stage are shown.,Показаны только материалы вашего этапа.
 Only an administrator can post to an earlier date.,Дату раньше сегодняшней может проставить только администратор.
 Only an open agreement can be terminated. {0} is {1}.,Закрыть можно только открытый договор. {0} находится в статусе {1}.
 Only the remittance desk can verify a pickup code.,Проверить код получения может только касса переводов.

@@ -150,6 +150,31 @@ class TestRoleScopingOnRealColumns(FrappeTestCase):
 		self.assertEqual(out["my_role"], "Packaging")
 		self.assertEqual([r["item_code"] for r in out["required_items"]], [self.codes[0]])
 
+	def test_a_scoped_payload_says_so_instead_of_looking_like_an_empty_order(self):
+		"""The filtering is invisible to whoever receives it, and that is the bug.
+
+		The lines are cut down to the viewer's own role; the two operator names
+		are not cut with them. So the detail page sees the other role as somebody
+		assigned to a stage that has no work on it — which is precisely the
+		mis-set-BOM shape its one high-signal warning exists to shout about. It
+		then shouts on every order every operator opens, and a warning that is
+		wrong most of the time is a warning nobody reads the one time it is right.
+
+		The flag is the only thing that lets the screen tell "this stage is empty"
+		apart from "this stage is not yours to see", so it has to travel with the
+		filtering, not beside it.
+		"""
+		frappe.set_user(POURER)
+		out = work_order_detail(self.wo)
+		self.assertEqual(out["items_scoped_to_role"], "Production")
+
+	def test_a_full_payload_carries_no_scope_flag_to_explain_away_a_real_gap(self):
+		"""A manager sees every line, so an empty stage really is an empty stage —
+		and they are the one who can go and fix the BOM."""
+		frappe.set_user("Administrator")
+		out = work_order_detail(self.wo)
+		self.assertNotIn("items_scoped_to_role", out)
+
 	def test_the_board_gives_the_pourer_only_their_own_material(self):
 		"""`list_work_orders` is the only endpoint the kiosk board calls to fill its
 		rows. Until now it never sent a `required_items` key at all, so the
