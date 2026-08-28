@@ -6448,3 +6448,19 @@ Could not record the batch.,Партияни қайд этиб бўлмади.
 Made in-house,Ичкарида ишлаб чиқарилган
 candidate orders — no batch to tell which,номзод буюртма — қайси бири эканини айтадиган партия йўқ
 Bought in,Сотиб олинган
+A line cannot be changed after the order is submitted.,Буюртма тасдиқлангандан кейин линияни ўзгартириб бўлмайди.
+Line,Линия
+Move here,Бу ерга кўчириш
+Not on any line,Ҳеч бир линияда эмас
+Nothing is planned for this week,Бу ҳафтага ҳеч нарса режалаштирилмаган
+Orders here are usually opened for the day they run. Move one forward to start planning.,Бу ерда буюртмалар одатда бажариладиган кунга очилади. Режалаштиришни бошлаш учун биттасини олдинга суринг.
+Pick a day on the same line to move {0}.,{0} ни кўчириш учун ўша линиядаги кунни танланг.
+Planning is a manager view,Режалаштириш — менежер экрани
+Production plan,Ишлаб чиқариш режаси
+This week,Шу ҳафта
+Week starting,Ҳафта боши
+Your work orders are on the shift log.,Сизнинг иш буюртмаларингиз смена журналида.
+{0} is {1}. Its planned date is the record of when it ran.,{0} — {1}. Унинг режа санаси қачон бажарилганининг ёзуви.
+{0} moved to {1},{0} {1} кунига кўчирилди
+{0} orders,{0} та буюртма
+{0} orders on {1} lines,{1} та линияда {0} та буюртма

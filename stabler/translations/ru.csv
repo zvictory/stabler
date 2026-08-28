@@ -6453,3 +6453,19 @@ Could not record the batch.,Не удалось записать партию.
 Made in-house,Произведено внутри
 candidate orders — no batch to tell which,"кандидатных заказов — партии, чтобы определить, нет"
 Bought in,Закуплено
+A line cannot be changed after the order is submitted.,Линию нельзя изменить после проведения заказа.
+Line,Линия
+Move here,Переместить сюда
+Not on any line,Без линии
+Nothing is planned for this week,На эту неделю ничего не запланировано
+Orders here are usually opened for the day they run. Move one forward to start planning.,"Здесь заказы обычно открывают на тот же день, когда они выполняются. Перенесите один вперёд, чтобы начать планировать."
+Pick a day on the same line to move {0}.,"Выберите день на той же линии, чтобы перенести {0}."
+Planning is a manager view,Планирование — экран руководителя
+Production plan,План производства
+This week,Эта неделя
+Week starting,Неделя с
+Your work orders are on the shift log.,Ваши заказы — в журнале смены.
+{0} is {1}. Its planned date is the record of when it ran.,"{0} — {1}. Его плановая дата — запись о том, когда он выполнялся."
+{0} moved to {1},{0} перенесён на {1}
+{0} orders,{0} заказов
+{0} orders on {1} lines,{0} заказов на {1} линиях

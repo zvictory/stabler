@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import json
+import re
+from datetime import datetime, timedelta
 
 import frappe
 from frappe import _
@@ -1020,6 +1022,7 @@ def cancel_bom(name: str):
 from stabler.api._wo_filters import build_work_order_filters
 from stabler.api._wo_genealogy import annotate_consumed_origin
 from stabler.api._wo_material_request import should_request_materials
+from stabler.api._wo_plan import build_plan_grid, may_reschedule, reschedule_target
 
 _WO_STATUSES = ("Draft", "Not Started", "In Process", "Completed", "Stopped", "Closed", "Cancelled")
 
@@ -1156,6 +1159,120 @@ def list_work_orders(
 			wo_items if is_manager else _rows_for_role(wo_items, item_roles, _wo_role_of(row))
 		)
 	return rows
+
+
+@frappe.whitelist()
+def work_order_plan(company: str, from_date: str, to_date: str):
+	"""The line \u00d7 day planning board for a window of days. Manager-only.
+
+	Deliberately thinner than it looks like it should be. Measured on anjan
+	2026-08-28: 0 of 3 789 orders carry a `planned_end_date` and 0 submitted BOMs
+	carry an `operating_cost`, so an order has no recorded duration and a line has
+	no recorded capacity. A board drawn from those absences would have to invent a
+	bar width and a load percentage, and both would be read as measurements. What
+	comes back per square is the count and the summed quantity, which somebody
+	typed.
+
+	The columns come from `list_work_order_lines` rather than from the window, so
+	paging into a week with no work still shows the factory's lines instead of an
+	empty screen \u2014 and the columns do not move as you page.
+	"""
+	_assert_company_scope(company)  # tenant isolation: reject a foreign company arg
+	_require_company(company)
+	_require_mfg_manager()
+
+	days = _plan_days(from_date, to_date)
+	lines = [row["name"] for row in list_work_order_lines(company)]
+	orders = frappe.db.sql(
+		"""
+		SELECT name, production_item, item_name, qty, status, wip_warehouse,
+		       planned_start_date, operator, packaging_operator
+		FROM `tabWork Order`
+		WHERE company = %(company)s AND docstatus < 2
+		  AND planned_start_date >= %(from_date)s AND planned_start_date < %(to_date_end)s
+		ORDER BY planned_start_date, name
+		""",
+		{
+			"company": company,
+			"from_date": days[0],
+			"to_date_end": _plan_day_after(days[-1]),
+		},
+		as_dict=True,
+	)
+	grid = build_plan_grid(orders, days, lines)
+	grid["counts"] = {"orders": len(orders), "lines": len(lines), "days": len(days)}
+	return grid
+
+
+@frappe.whitelist()
+def reschedule_work_order(name: str, planned_start_date: str):
+	"""Move one order to another day. Manager-only.
+
+	`planned_start_date` is the only column on this screen that is writable after
+	submit \u2014 `wip_warehouse` is not \u2014 so the day is the only thing the board
+	can change, and the line is presented as fixed rather than as a drag that
+	throws.
+
+	The clock is carried over by `reschedule_target`: orders here are opened
+	between 05:00 and 23:00 and the hour is the only record of which shift the
+	work belongs to. Nothing would report its loss \u2014 every screen that shows a
+	planned date compares the date half.
+	"""
+	_assert_can_write("Work Order", name, "write")
+	_require_mfg_manager()
+	row = frappe.db.get_value("Work Order", name, ["status", "planned_start_date", "company"], as_dict=True)
+	if not row:
+		frappe.throw(_("Unknown Work Order: {0}").format(name))
+	_assert_company_scope(row["company"])
+
+	day = str(planned_start_date or "").strip()[:10]
+	if not _PLAN_DAY.match(day):
+		frappe.throw(_("Expected a date as YYYY-MM-DD, got: {0}").format(planned_start_date))
+
+	allowed, reason = may_reschedule(row["status"])
+	if not allowed:
+		# Named, not thrown blindly: the board moves one order out of a screenful,
+		# and the planner needs to see which row refused and why.
+		frappe.throw(
+			_("{0} is {1} \u2014 its planned date is the record of when it ran.").format(name, row["status"]),
+			exc=frappe.ValidationError,
+		)
+
+	target = reschedule_target(row["planned_start_date"], day)
+	frappe.db.set_value("Work Order", name, "planned_start_date", target)
+	return {"name": name, "planned_start_date": target, "reason": reason}
+
+
+_PLAN_DAY = re.compile(r"^\d{4}-\d{2}-\d{2}$")
+
+#: A planning window wider than this is not a plan, it is a export. The board
+#: renders one column per line per day, so the payload and the screen both grow
+#: with it; five weeks covers the longest window anyone has asked for.
+_PLAN_MAX_DAYS = 35
+
+
+def _plan_day_after(day: str) -> str:
+	"""The exclusive upper bound for an inclusive last day.
+
+	Same trap as the shift log's date filter: `planned_start_date` is a datetime,
+	so `<= '2026-08-30'` compares against midnight and drops every order planned
+	for a working hour of that day.
+	"""
+	return str(datetime.strptime(day, "%Y-%m-%d").date() + timedelta(days=1))
+
+
+def _plan_days(from_date: str, to_date: str) -> list[str]:
+	first, last = str(from_date or "").strip()[:10], str(to_date or "").strip()[:10]
+	if not (_PLAN_DAY.match(first) and _PLAN_DAY.match(last)):
+		frappe.throw(_("Expected dates as YYYY-MM-DD, got: {0} \u2013 {1}").format(from_date, to_date))
+	start = datetime.strptime(first, "%Y-%m-%d").date()
+	end = datetime.strptime(last, "%Y-%m-%d").date()
+	if end < start:
+		frappe.throw(_("The window ends before it starts: {0} \u2013 {1}").format(first, last))
+	span = (end - start).days + 1
+	if span > _PLAN_MAX_DAYS:
+		frappe.throw(_("A planning window may cover at most {0} days.").format(_PLAN_MAX_DAYS))
+	return [str(start + timedelta(days=n)) for n in range(span)]
 
 
 @frappe.whitelist()

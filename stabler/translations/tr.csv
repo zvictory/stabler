@@ -6443,3 +6443,19 @@ Could not record the batch.,Parti kaydedilemedi.
 Made in-house,İçeride üretildi
 candidate orders — no batch to tell which,aday emir — hangisi olduğunu söyleyecek parti yok
 Bought in,Dışarıdan alındı
+A line cannot be changed after the order is submitted.,Emir onaylandıktan sonra hat değiştirilemez.
+Line,Hat
+Move here,Buraya taşı
+Not on any line,Hiçbir hatta değil
+Nothing is planned for this week,Bu hafta için planlanmış iş yok
+Orders here are usually opened for the day they run. Move one forward to start planning.,Buradaki emirler genellikle koştukları gün açılıyor. Planlamaya başlamak için birini ileri taşıyın.
+Pick a day on the same line to move {0}.,{0} emrini taşımak için aynı hatta bir gün seçin.
+Planning is a manager view,Planlama yönetici ekranıdır
+Production plan,Üretim planı
+This week,Bu hafta
+Week starting,Hafta başlangıcı
+Your work orders are on the shift log.,İş emirleriniz vardiya defterinde.
+{0} is {1}. Its planned date is the record of when it ran.,"{0} — {1}. Planlanan tarihi, ne zaman koştuğunun kaydıdır."
+{0} moved to {1},{0} {1} gününe taşındı
+{0} orders,{0} emir
+{0} orders on {1} lines,{1} hatta {0} emir
