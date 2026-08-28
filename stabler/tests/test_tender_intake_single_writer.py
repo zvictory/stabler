@@ -135,14 +135,58 @@ class TestTheFieldsItStoppedSendingAreAlsoNoLongerEditable(unittest.TestCase):
 			with self.subTest(field=field):
 				self.assertTrue(_bound(INTAKE, field))
 
-	def test_the_document_checklist_can_still_be_authored_here(self):
-		"""`tender_documents.py` exposes list / upload / waive / remove /
-		download / targets — it can attach a file to a requirement but cannot
-		create one. seedDocs/addDoc are the only code anywhere that writes a
-		requirement row, so they stay until the document centre grows a
-		writer of its own."""
+	def test_the_document_checklist_is_still_authored_here_by_decision(self):
+		"""Decided 2026-08-28 by Zafar, not conceded.
+
+		`tender_documents.py` can attach a file to a requirement but cannot
+		create one — seedDocs/addDoc are the only code anywhere that writes a
+		requirement row. Deleting them would not close ADR-201 either: the
+		file and waiver buttons on this screen call the same three endpoints
+		the document centre calls, so they are one writer reached from two
+		screens, not two writers. Closing the document half needs a
+		requirement writer in the document centre; that is the reopening
+		condition below, and it is not worth building for a tenant with zero
+		tenders."""
 		self.assertIn("function seedDocs()", INTAKE)
 		self.assertIn("function addDoc()", INTAKE)
+
+
+class TestTheReopeningConditionIsExecutable(unittest.TestCase):
+	"""ADR-201's document half stays open on a condition, and a condition that
+	lives only in prose is the defect this repository keeps paying for — four
+	times in one session on 2026-08-28 alone. So the condition is a ratchet.
+
+	`tender_documents.py` ships exactly these six endpoints. The day it grows a
+	seventh, someone is extending the document centre, and that is precisely
+	when to ask whether it now authors requirement rows — because if it does,
+	`TenderIntake.vue` must stop, and `documents` leaves the intake contract.
+	This fails on the seventh endpoint whatever it turns out to be: a false
+	alarm costs one line here, and the alternative is the condition going
+	unnoticed exactly when it comes true.
+	"""
+
+	_KNOWN = (
+		"list_tender_documents",
+		"upload_tender_document",
+		"waive_tender_document",
+		"remove_tender_document",
+		"download_tender_document",
+		"tender_document_targets",
+	)
+
+	def test_the_document_centre_still_cannot_author_a_requirement(self):
+		src = (_APP / "api/tender_documents.py").read_text(encoding="utf-8")
+		found = re.findall(r"@frappe\.whitelist\([^)]*\)\s*\ndef (\w+)\(", src)
+		self.assertTrue(found, "desen tutmuyor: tender_documents.py'de hiç uç bulunamadı")
+		self.assertEqual(
+			sorted(found),
+			sorted(self._KNOWN),
+			"tender_documents.py'nin uç kümesi değişti. Yeni uç bir gereklilik "
+			"satırı yazıyorsa ADR-201'in belge yarısı artık kapatılabilir: "
+			"TenderIntake.vue'nun seedDocs/addDoc/rmDoc'u kaldırılmalı ve "
+			"`documents` intake sözleşmesinden çıkmalı. Yazmıyorsa yalnız "
+			"yukarıdaki listeyi güncelle.",
+		)
 
 
 class TestTheDecisionIsStillVisibleWhereItIsNoLongerEditable(unittest.TestCase):

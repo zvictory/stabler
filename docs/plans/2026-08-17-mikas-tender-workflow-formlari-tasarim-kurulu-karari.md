@@ -56,10 +56,8 @@ ihaleden önce kapatıldı. Planın aciliyet dili ölçülmemiş bir korpusa day
 
 ### Hâlâ açık
 
-- **ADR-201 / ADR-205 birbirini iptal ediyor.** ADR-201 `TenderIntake.vue`'nun
-  düzenleme hakkını tümüyle alıyor; ADR-205'in uygulaması ise onu "gerçek bir
-  şablon editörü" sayan bir gerekçeyle yazıldı (`tender.py`, `documents` dalı).
-  İkisi aynı dokümanda. Biri geçersiz; hangisi olduğu karara bağlı.
+- ~~**ADR-201 / ADR-205 birbirini iptal ediyor.**~~ **KARARA BAĞLANDI — 2026-08-28,
+  Zafar. ADR-201 geçerli.** Ayrıntı aşağıda, ADR-201'in altında.
 - **ADR-209'un sırası yanlış bir olguya dayanıyor.** "(1) giriş çekmecesi +
   kanban (zaten `ds-*`)" diyor. Ölçüldü: `TenderMasterDrawer.vue` **0** adet
   `ds-*`, **46** adet `tgm-*` taşıyor; `ds-*` olan yalnız `TenderCrm.vue` (106).
@@ -189,6 +187,42 @@ dönüşür: son tarih/garanti/FX/GO kaydını gösterir, düzenleme kontrolü t
 *Reddedilen alternatif:* iki formu da bırakıp payload'ları birleştirmek. İki formu senkron
 tutma maliyeti kalıcıdır ve kusur #1 ile #2 tekrar üretilebilir hale gelir.
 
+> **KARAR — 2026-08-28, Zafar. ADR-201 geçerli; ADR-205 ile çelişki yok.**
+>
+> Çelişki ADR-205'in *metniyle* değil, uygulamasıyla ydi: `tender.py`'nin `documents`
+> dalı "`TenderIntake.vue` gerçek bir şablon editörüdür" gerekçesini taşıyor, ADR-201
+> ise onun düzenleme hakkını alıyor. ADR-201 kazandı.
+>
+> **Ama ADR-201 iki yarıdan oluşuyor ve bugün yalnız biri kapatılabilir.**
+>
+> *Kapanan yarı — alan sahipliği.* Yedi alan (`bid_deadline`, `guarantee_amount`,
+> `guarantee_return`, `cert_required`, `penalty_pct_per_day`, `go_no_go`,
+> `purchase_method`) çekmeceye geçti ve bu panelde salt-okuma. Pinlendi:
+> `stabler/tests/test_tender_intake_single_writer.py`.
+>
+> *Kapanmayan yarı — belge kontrol listesi.* Ölçüldü 2026-08-28:
+> `api/tender_documents.py` altı uç sunuyor (`list_ / upload_ / waive_ / remove_ /
+> download_ / *_targets`) ve hiçbiri **gereklilik satırı yaratamaz** — bir gerekliliğe
+> yalnız dosya iliştirir. `TenderIntake.vue`'nun `seedDocs()` ve `addDoc()`'u
+> uygulamadaki tek gereklilik yazarı; `TenderDocuments.vue` boş listede yalnız
+> *"No document requirements set."* gösteriyor. Onları silmek listeyi hiç
+> yaratılamaz hâle getirirdi.
+>
+> Silmek zaten ADR-201'i kapatmazdı: bu ekranın dosya ekle/sil/muafiyet düğmeleri
+> **belge merkeziyle aynı üç ucu** çağırıyor — yani ikinci yazar değil, aynı yazarın
+> ikinci ekrandan çağrılması. Kaldırmak kolaylık kaybettirir, kusur kapatmaz.
+>
+> **Yeniden açılma koşulu:** belge merkezi bir gereklilik yazarı kazandığında.
+> O gün `TenderIntake.vue`'nun `seedDocs`/`addDoc`/`rmDoc`'u kalkar ve `documents`
+> intake sözleşmesinden çıkar. Koşul kâğıtta değil, **testte**:
+> `TestTheReopeningConditionIsExecutable` `tender_documents.py`'nin uç kümesini
+> pinliyor ve yedinci uç eklendiği an kırmızı oluyor — koşulun gerçekleşebileceği
+> tam o anda. Bu tur bunu inşa etmeme sebebi: mikas'ta 0 ihale kaydı var, ve sıfır
+> kullanıcılı bir uç yazmak 2026-08-28'de verilen diğer her kararla çelişir.
+>
+> Bu turda **kod değişmedi** — değişen şey, hangi durumun kasıtlı olduğunun yazılı
+> olması ve koşulun kendini hatırlatması.
+
 ### ADR-202 — Intake sözleşmesi görünür olur; sunucu sessizce düşürmez
 
 Üç değişiklik, birlikte:
@@ -233,6 +267,14 @@ yanlış hem de dolu listeden iyi görünüyor.
 yalnız belge uçları yazar (`tender_documents.upload_/waive_/remove_tender_document`) ve
 şablonu yalnız açık bir "requirement düzenle" eylemi değiştirir. Bu tek karar kusur #2'yi
 kapatır ve belge merkezinin tek-kaynak iddiasını gerçekten tek kaynak yapar.
+
+> **2026-08-28 — kısmen uygulandı, gerisi ADR-201'in koşuluna bağlı.**
+> Kusur #2'yi kapatan yarı canlı: çekmece artık `documents` göndermiyor, ve anahtarı
+> hiç göndermeyen bir kayıt listeye dokunmuyor (`tender.py`, `if "documents" in data`
+> dalının `else`'i). Kapanmayan yarı: "şablonu yalnız açık bir *requirement düzenle*
+> eylemi değiştirir" — öyle bir eylem **yok**; `TenderIntake.vue`'nun `addDoc`'u
+> gereklilik satırının tek yazarı, ve bu yüzden `documents` hâlâ intake payload'ında.
+> Gerekçe ve yeniden açılma koşulu ADR-201'in altında.
 
 ### ADR-206 — Değerlendirme formu kararın verildiği yere taşınır
 
