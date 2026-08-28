@@ -99,11 +99,25 @@ yoksa üretimi tek başına yürüten kişi mi olduğu **organizasyon bilgisi**,
 Zafar'ın cevaplaması gereken tek soru budur; 1b, 1c, fire/duruş kataloğu ve
 operator-dashboard'un geleceği bu cevaba bağlı.
 
-### Yan bulgu: ölü rol
+### Yan bulgu: ölü rol — **silindi 2026-08-28**
 
-`Line A Operator` prod'da duruyor, beş geliştirici/yönetici hesabında, ve **hiçbir kod
-onu okumuyor**. Ya bir kapıya bağlanmalı ya da silinmeli; şu hâliyle rol atamasının
-bir anlamı olduğu izlenimini veriyor.
+`Line A Operator` prod'da duruyordu, beş geliştirici/yönetici hesabında, ve hiçbir kod
+onu okumuyordu. Zafar'ın talimatıyla silindi.
+
+Silmeden önce ölçüldü: rol sekiz kiracıdan **yalnız anjan'da** vardı, **0 DocPerm**,
+**0 Custom DocPerm**, 0 workflow referansı, ve `Has Role` satırlarının hepsi `User`
+ebeveynliydi (Role Profile yok). Yani hiçbir yere izin vermiyordu; kaldırılması
+kimsenin erişimini değiştirmedi. Depoda fixture olarak tanımlı olmadığı için `migrate`
+geri getirmez.
+
+Rol kaldırılan beş hesap — geri almak gerekirse: `zvictory2001@gmail.com`,
+`brightik1@gmail.com`, `hikmatulloh@mail.com`, `xalilovodilbek01@gmail.com`,
+`zafar@stable.uz`.
+
+Silme sırasında ilgisiz bir hata ortaya çıktı ve `docs/backlog.md`'ye yazıldı: `uzc`
+dili sekiz kiracıda da `Language` kaydı olarak yok, bu yüzden `language="uzc"` taşıyan
+altı hesabın `User` belgesi hiçbir doğrulanmış yoldan kaydedilemiyor. Rol, bu yüzden
+`User.save()` yerine `Has Role` satırları doğrudan silinerek kaldırıldı.
 
 ## Engel — ve bu bir kod engeli değil
 

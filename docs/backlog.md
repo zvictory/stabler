@@ -14,6 +14,35 @@ ayrıca `make test-bench`.
 
 ## P1 — yüksek
 
+### `uzc` dili Language kaydı olarak sekiz kiracıda da yok — 6 hesap kaydedilemiyor
+`hata` · ölçüldü 2026-08-28, prod, salt-okunur
+
+Stabler beş dil sunuyor (en, ru, uz, uzc, tr) ve kullanıcılar `uzc`'yi seçebiliyor —
+ama Frappe'nin `Language` doctype'ında **`uzc` kaydı sekiz kiracının hiçbirinde yok**
+(`uz`, `ru`, `tr` hepsinde var).
+
+Sonuç: `language = "uzc"` taşıyan hesapların `User` belgesi **hiçbir doğrulanmış yoldan
+kaydedilemiyor** — Desk'ten, API'den, `user.save()` çağıran her koddan
+`LinkValidationError: Could not find Language: uzc` alınıyor.
+
+| Kiracı | Etkilenen hesap |
+|---|---|
+| anjan | 4 — `abdulazizmuminov107`, `davrondarmanov`, `qudratulloh`, **`zafar@stable.uz`** |
+| smartbox | 1 |
+| zuma | 1 |
+
+Nasıl bulundu: `Line A Operator` rolünü silmek için beş kullanıcıdan rol ataması
+kaldırılmaya çalışıldı; `User.save()` bu doğrulamada patladı. Rol sonunda `Has Role`
+satırları doğrudan silinerek kaldırıldı, yani bu hata **hâlâ açık**.
+
+Muhtemel düzeltme: her kiracıda `Language` kaydı oluşturmak
+(`language_code="uzc"`, `language_name="Oʻzbekcha (kiril)"`). Prod veri değişikliği —
+Zafar'ın onayını bekliyor. Yamayla mı yoksa elle mi yapılacağı da karara bağlı;
+yama tercih edilirse `stabler/patches/` altına, sekiz kiracıda da idempotent çalışacak
+şekilde.
+
+---
+
 ### Sourcing: RFQ↔SQ backfill + NULL-tolerant deal_type filter
 `stabler-18l` · hata *(devam ediyordu)*
 
