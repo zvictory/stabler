@@ -11,6 +11,7 @@ from stabler.stabler.doctype.stabler_settings.stabler_settings import (
 	get_company_module_row,
 	module_map_for,
 )
+from stabler.www.stabler import SUPPORTED_LANGUAGES
 
 
 @frappe.whitelist(allow_guest=True)
@@ -503,7 +504,13 @@ def set_user_allowed_modules(user: str, modules):
 	return {"ok": True, "allowed_modules": modules}
 
 
-_SUPPORTED_LANGUAGES = {"en", "ru", "uz", "uzc"}
+#: Derived, never copied. This used to be its own literal and it drifted: it
+#: read {"en", "ru", "uz", "uzc"} while all three pickers offered Türkçe, so
+#: `update_language("tr")` threw "Unsupported language: tr" on every tenant.
+#: The comment above SUPPORTED_LANGUAGES already said the lists must match
+#: exactly — an instruction is not a mechanism. Pinned by
+#: `tests/test_language_picker_contract.py`.
+_SUPPORTED_LANGUAGES = frozenset(SUPPORTED_LANGUAGES)
 
 
 @frappe.whitelist()
