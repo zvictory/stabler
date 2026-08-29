@@ -6560,3 +6560,12 @@ Just a count,Фақат сон
 Recorded. Stock transfer {0} is waiting for accounting.,Ёзилди. Омбор ўтказмаси {0} бухгалтерияни кутмоқда.
 Recorded.,Ёзилди.
 Could not record the scrap.,Бракни ёзиб бўлмади.
+Downtime,Тўхталиш
+Losses,Йўқотишлар
+Short of materials,Хомашё етишмайди
+Ready to start,Бошлашга тайёр
+"all lines, this window","барча линиялар, шу оралиқда"
+on {0} order(s),{0} та буюртмада
+{0} item(s) missing,{0} та позиция етишмайди
+{0} order(s) not measured,{0} та буюртманинг қолдиғи ўлчанмаган
+Nothing in this view — {0} order(s) in the register.,Бу кўринишда ҳеч нима йўқ — реестрда {0} та буюртма бор.

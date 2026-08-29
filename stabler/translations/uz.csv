@@ -6560,3 +6560,12 @@ Just a count,Faqat son
 Recorded. Stock transfer {0} is waiting for accounting.,Yozildi. Ombor o'tkazmasi {0} buxgalteriyani kutmoqda.
 Recorded.,Yozildi.
 Could not record the scrap.,Brakni yozib bo'lmadi.
+Downtime,To'xtalish
+Losses,Yo'qotishlar
+Short of materials,Xomashyo yetishmaydi
+Ready to start,Boshlashga tayyor
+"all lines, this window","barcha liniyalar, shu oraliqda"
+on {0} order(s),{0} ta buyurtmada
+{0} item(s) missing,{0} ta pozitsiya yetishmaydi
+{0} order(s) not measured,{0} ta buyurtmaning qoldig'i o'lchanmagan
+Nothing in this view — {0} order(s) in the register.,Bu ko'rinishda hech nima yo'q — reyestrda {0} ta buyurtma bor.
