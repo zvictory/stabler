@@ -6524,3 +6524,21 @@ The stop ends before it starts.,"Простой заканчивается ра�
 These times cannot be recorded.,Это время не может быть записано.
 "Re-award this lot","Переприсудить этот лот"
 "This decision is already approved. Start a new one to re-award the lot.","Это решение уже утверждено. Создайте новое, чтобы переприсудить лот."
+A scrap record needs a quantity.,Для записи о браке нужно количество.
+"A scrap record with no quantity is a double-tap, not a loss.","Запись о браке без количества — это двойное нажатие, а не потеря."
+A negative quantity would move stock back onto the line. Record what was lost.,"Отрицательное количество вернёт запас обратно на линию. Укажите, что было потеряно."
+{0} has nothing in WIP on this order to scrap.,{0}: по этому заказу в незавершённом производстве нечего списывать в брак.
+{0} holds only {1} of {2} in WIP on this order.,{0}: в незавершённом производстве по этому заказу есть только {1} {2}.
+{0} is not one of this order's materials.,{0} не входит в материалы этого заказа.
+Scrap is not configured for {0}. Name the scrap warehouse in Stabler Manufacturing Settings.,Брак не настроен для {0}. Укажите склад брака в Stabler Manufacturing Settings.
+{0} is not a warehouse of {1}.,{0} не является складом компании {1}.
+A scrap record needs a Work Order.,Для записи о браке нужен производственный заказ.
+{0} has no WIP warehouse to scrap from.,"У заказа {0} нет склада незавершённого производства, из которого можно списать брак."
+A scrap record cannot be changed once its stock transfer exists. Cancel that transfer and file a new record.,Запись о браке нельзя изменить после создания перемещения запасов. Отмените перемещение и создайте новую запись.
+"Rejects were already entered when this order was finished. Record the loss in one place, not two.","Брак уже был указан при завершении этого заказа. Записывайте потерю в одном месте, а не в двух."
+"This order already has a scrap record. Enter the rejects there, not here.","У этого заказа уже есть запись о браке. Указывайте брак там, а не здесь."
+That scrap record's stock transfer was already submitted. It cannot be deleted.,Перемещение запасов по этой записи о браке уже проведено. Её нельзя удалить.
+That quantity cannot be recorded.,Это количество нельзя записать.
+Unknown scrap reason: {0},Неизвестная причина брака: {0}
+{0} is not a loss reason.,{0} не является причиной потери.
+"Scrap {0}: {1} — {2}, reported by {3}","Брак {0}: {1} — {2}, записал {3}"

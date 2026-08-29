@@ -6913,3 +6913,21 @@ The stop ends before it starts.,The stop ends before it starts.
 These times cannot be recorded.,These times cannot be recorded.
 "Re-award this lot","Re-award this lot"
 "This decision is already approved. Start a new one to re-award the lot.","This decision is already approved. Start a new one to re-award the lot."
+A scrap record needs a quantity.,A scrap record needs a quantity.
+"A scrap record with no quantity is a double-tap, not a loss.","A scrap record with no quantity is a double-tap, not a loss."
+A negative quantity would move stock back onto the line. Record what was lost.,A negative quantity would move stock back onto the line. Record what was lost.
+{0} has nothing in WIP on this order to scrap.,{0} has nothing in WIP on this order to scrap.
+{0} holds only {1} of {2} in WIP on this order.,{0} holds only {1} of {2} in WIP on this order.
+{0} is not one of this order's materials.,{0} is not one of this order's materials.
+Scrap is not configured for {0}. Name the scrap warehouse in Stabler Manufacturing Settings.,Scrap is not configured for {0}. Name the scrap warehouse in Stabler Manufacturing Settings.
+{0} is not a warehouse of {1}.,{0} is not a warehouse of {1}.
+A scrap record needs a Work Order.,A scrap record needs a Work Order.
+{0} has no WIP warehouse to scrap from.,{0} has no WIP warehouse to scrap from.
+A scrap record cannot be changed once its stock transfer exists. Cancel that transfer and file a new record.,A scrap record cannot be changed once its stock transfer exists. Cancel that transfer and file a new record.
+"Rejects were already entered when this order was finished. Record the loss in one place, not two.","Rejects were already entered when this order was finished. Record the loss in one place, not two."
+"This order already has a scrap record. Enter the rejects there, not here.","This order already has a scrap record. Enter the rejects there, not here."
+That scrap record's stock transfer was already submitted. It cannot be deleted.,That scrap record's stock transfer was already submitted. It cannot be deleted.
+That quantity cannot be recorded.,That quantity cannot be recorded.
+Unknown scrap reason: {0},Unknown scrap reason: {0}
+{0} is not a loss reason.,{0} is not a loss reason.
+"Scrap {0}: {1} — {2}, reported by {3}","Scrap {0}: {1} — {2}, reported by {3}"

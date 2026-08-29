@@ -6519,3 +6519,21 @@ The stop ends before it starts.,To'xtash boshlanishidan oldin tugaydi.
 These times cannot be recorded.,Bu vaqtlarni yozib bo'lmaydi.
 "Re-award this lot","Bu lotni qayta taqdim etish"
 "This decision is already approved. Start a new one to re-award the lot.","Bu qaror allaqachon tasdiqlangan. Lotni qayta taqdim etish uchun yangisini boshlang."
+A scrap record needs a quantity.,Brak yozuvi uchun miqdor kerak.
+"A scrap record with no quantity is a double-tap, not a loss.","Miqdorsiz brak yozuvi — bu ikki marta bosish, yo'qotish emas."
+A negative quantity would move stock back onto the line. Record what was lost.,Manfiy miqdor zaxirani liniyaga qaytaradi. Nima yo'qolganini yozing.
+{0} has nothing in WIP on this order to scrap.,Bu buyurtma bo'yicha tugallanmagan ishlab chiqarishda {0} yo'q.
+{0} holds only {1} of {2} in WIP on this order.,{0} bo'yicha tugallanmagan ishlab chiqarishda faqat {1} {2} bor.
+{0} is not one of this order's materials.,{0} bu buyurtmaning materiallaridan emas.
+Scrap is not configured for {0}. Name the scrap warehouse in Stabler Manufacturing Settings.,{0} uchun brak sozlanmagan. Stabler Manufacturing Settings'da brak omborini ko'rsating.
+{0} is not a warehouse of {1}.,{0} — {1} kompaniyasining ombori emas.
+A scrap record needs a Work Order.,Brak yozuvi uchun ish buyurtmasi kerak.
+{0} has no WIP warehouse to scrap from.,{0} buyurtmasida brak chiqariladigan tugallanmagan ishlab chiqarish ombori yo'q.
+A scrap record cannot be changed once its stock transfer exists. Cancel that transfer and file a new record.,"Zaxira ko'chirmasi yaratilgach, brak yozuvini o'zgartirib bo'lmaydi. Ko'chirmani bekor qiling va yangi yozuv kiriting."
+"Rejects were already entered when this order was finished. Record the loss in one place, not two.","Bu buyurtma tugatilganda brak allaqachon kiritilgan. Yo'qotishni ikki joyda emas, bir joyda yozing."
+"This order already has a scrap record. Enter the rejects there, not here.","Bu buyurtmada brak yozuvi allaqachon bor. Brakni shu yerda emas, o'sha yerda kiriting."
+That scrap record's stock transfer was already submitted. It cannot be deleted.,Bu brak yozuvining zaxira ko'chirmasi allaqachon tasdiqlangan. Uni o'chirib bo'lmaydi.
+That quantity cannot be recorded.,Bu miqdorni yozib bo'lmaydi.
+Unknown scrap reason: {0},Noma'lum brak sababi: {0}
+{0} is not a loss reason.,{0} — yo'qotish sababi emas.
+"Scrap {0}: {1} — {2}, reported by {3}","Brak {0}: {1} — {2}, kiritdi {3}"
