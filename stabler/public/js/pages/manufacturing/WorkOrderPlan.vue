@@ -645,11 +645,16 @@ onMounted(() => {
    invisible and unclickable, on exactly the order that still needs hours. */
 .plan-block {
 	top: 0.25rem;
-	bottom: 1rem;
+	/* 2.75 − 1.25 = 1.5rem, which is exactly where `.plan-mark` starts. The bands
+	   touch and do not overlap; at `bottom: 1rem` they shared 0.25rem and the
+	   comment above still claimed they did not. */
+	bottom: 1.25rem;
 	border-radius: 0.25rem;
 	padding: 0 0.4rem;
 	font-size: 0.75rem;
-	line-height: 1.75rem;
+	/* Matches the band's own height (1.5 − 0.25), or the label overflows a bar
+	   that is now shorter than the line it carries. */
+	line-height: 1.25rem;
 	overflow: hidden;
 	cursor: pointer;
 }
