@@ -97,6 +97,20 @@ describe("the day grid draws only what somebody planned", () => {
 		expect(src.match(/@click="pick\(b\.order, row\.line\)"/g) || []).toHaveLength(2);
 	});
 
+	it("keeps a mark out from under the bars", () => {
+		// Measured on prod 2026-08-29, entering hours by hand: all four of the
+		// day's orders sit on one line, and the mark for MFG-WO-2026-04178 landed
+		// at 53.4% — inside MFG-WO-2026-04180's bar, which spans 43.8%–71.9%.
+		// Sharing the track's full height, the mark is drawn under the bar:
+		// invisible and unclickable, on exactly the order that still needs hours.
+		// The two live in separate vertical bands now, and the CSS is the only
+		// thing that keeps them apart.
+		const bar = /\.plan-block \{([\s\S]*?)\}/.exec(src)?.[1] ?? "";
+		const mark = /\.plan-mark \{([\s\S]*?)\}/.exec(src)?.[1] ?? "";
+		expect(bar).toMatch(/bottom:\s*1rem/);
+		expect(mark).toMatch(/top:\s*1\.5rem/);
+	});
+
 	it("names the orders it could not place instead of dropping them", () => {
 		expect(src).toMatch(/timeline\.offGrid\.length/);
 	});

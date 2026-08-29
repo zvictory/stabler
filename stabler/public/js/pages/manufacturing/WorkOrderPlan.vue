@@ -627,7 +627,7 @@ onMounted(() => {
 /* The track is the day. Height is fixed so an idle line keeps its row and the
    grid does not change shape as work is planned onto it. */
 .plan-track {
-	height: 2.25rem;
+	height: 2.75rem;
 }
 
 .plan-tick {
@@ -638,9 +638,14 @@ onMounted(() => {
 	opacity: 0.6;
 }
 
+/* Bars own the upper band, marks the lower one — they never share vertical
+   space. Measured on prod 2026-08-29 with real hours typed in: all four of the
+   day's orders sat on one line and a mark landed at 53.4%, inside a bar
+   spanning 43.8%–71.9%. On a single band the mark is drawn under the bar:
+   invisible and unclickable, on exactly the order that still needs hours. */
 .plan-block {
 	top: 0.25rem;
-	bottom: 0.25rem;
+	bottom: 1rem;
 	border-radius: 0.25rem;
 	padding: 0 0.4rem;
 	font-size: 0.75rem;
@@ -652,7 +657,7 @@ onMounted(() => {
 /* An order with a start and no end. Deliberately not a narrow bar: a bar of any
    width is read as a duration, and nobody has said one. */
 .plan-mark {
-	top: 0.25rem;
+	top: 1.5rem;
 	bottom: 0.25rem;
 	width: 3px;
 	border-radius: 1px;
@@ -660,6 +665,8 @@ onMounted(() => {
 	cursor: pointer;
 }
 
+/* Two marks 0.7% apart on a wide track are 3px bars almost touching. This grows
+   the hit area without growing the drawn width, which has to stay a mark. */
 .plan-mark::after {
 	content: "";
 	position: absolute;
