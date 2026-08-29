@@ -56,6 +56,9 @@ onMounted(() => session.ensureTenderViews());
 			<router-link v-if="can('sourcing')" to="/tender/rfq" active-class="active">
 				{{ t("RFQs") }}
 			</router-link>
+			<router-link v-if="can('sourcing')" to="/tender/sourcing" active-class="active">
+				{{ t("Sourcing workspace") }}
+			</router-link>
 			<router-link v-if="can('sourcing')" to="/tender/po-control" active-class="active">
 				{{ t("Tender PO control") }}
 			</router-link>
