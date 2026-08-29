@@ -6522,3 +6522,5 @@ A stop needs an end time.,Для простоя нужно время оконч
 The stop ends before it starts.,"Простой заканчивается раньше, чем начинается."
 "A stop longer than 12 hours is a forgotten timer. Split it, or correct the times.",Простой дольше 12 часов — это забытый таймер. Разделите его или исправьте время.
 These times cannot be recorded.,Это время не может быть записано.
+"Re-award this lot","Переприсудить этот лот"
+"This decision is already approved. Start a new one to re-award the lot.","Это решение уже утверждено. Создайте новое, чтобы переприсудить лот."

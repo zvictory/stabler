@@ -6512,3 +6512,5 @@ A stop needs an end time.,Bir duruşun bitiş saati olmalı.
 The stop ends before it starts.,Duruş başlamadan önce bitiyor.
 "A stop longer than 12 hours is a forgotten timer. Split it, or correct the times.","12 saatten uzun bir duruş, unutulmuş bir sayaçtır. Bölün ya da saatleri düzeltin."
 These times cannot be recorded.,Bu saatler kaydedilemez.
+"Re-award this lot","Bu lotu yeniden ihale et"
+"This decision is already approved. Start a new one to re-award the lot.","Bu karar zaten onaylandı. Lotu yeniden ihale etmek için yeni bir karar başlatın."

@@ -194,6 +194,24 @@ class _FakeFrappe:
 				selected_quotation="SQ-OTHER-LOT",
 				approved_by="dir@example.com",
 			),
+			# An APPROVED award on a lot that also still accepts new drafts.
+			# LOT-B carries no quotations at all, so it cannot stand in for the
+			# lot whose award has to be readable *and* re-awardable.
+			("Tender Sourcing Decision", "TSD-APPROVED-A"): _Doc(
+				name="TSD-APPROVED-A",
+				company="ACME",
+				deal="LOT-A",
+				status="Approved",
+				selected_quotation="SQ-SUBMITTED",
+				# Deliberately NOT naming SQ-DRAFT as the cheapest: an approved
+				# decision freezes both quotations out of `detach_quotation_from_deal`,
+				# and pinning SQ-DRAFT here would make an unrelated detach test
+				# fail for a reason that has nothing to do with detaching.
+				cheapest_quotation="SQ-SUBMITTED",
+				selection_reason="Delivery window fits the tender deadline.",
+				approved_by="dir@example.com",
+				approved_at="2026-08-01 09:00:00",
+			),
 			("Tender Sourcing Decision", "TSD-OTHER-COMPANY"): _Doc(
 				name="TSD-OTHER-COMPANY",
 				company="Other Co",
@@ -354,6 +372,24 @@ class _FakeFrappe:
 					self._matches(row, field, operator, operand) for field, operator, operand in or_filters
 				)
 			]
+		# `order_by` + `limit_page_length` are modelled because a tender lot can
+		# be awarded more than once: the LIVE award is the LATEST approval, and
+		# `purchasing._assert_awarded` accepts only that one. A double that
+		# ignored them would let the workspace name a superseded winner and
+		# still go green, while the server refuses the PO it offers.
+		order_by = kwargs.get("order_by")
+		if order_by:
+			for term in reversed([t.strip() for t in str(order_by).split(",") if t.strip()]):
+				field, _, direction = term.partition(" ")
+				rows = sorted(
+					rows,
+					key=lambda row, field=field: str(row.get(field) or ""),
+					reverse=direction.strip().lower() == "desc",
+				)
+		# Frappe reads `limit_page_length=0` as "no limit", not "no rows".
+		limit = kwargs.get("limit_page_length")
+		if limit:
+			rows = rows[: int(limit)]
 		return [dict(row) for row in rows]
 
 	def _matches(self, row, field, operator, operand):
@@ -1310,6 +1346,35 @@ class TestSavingTheAward(unittest.TestCase):
 				company="ACME",
 			)
 
+	def test_an_approved_award_is_never_edited_by_a_save(self):
+		"""Amending by `name` is how sourcing corrects its OWN draft. Pointed at
+		an approved decision it would rewrite the winner underneath the
+		director's stamp, and the record would keep reading as if the approval
+		had been given for the new supplier. Re-awarding is a new decision that
+		a director approves again — never an edit of the old one.
+		"""
+		with self.assertRaises(ValueError):
+			self._save(selected_quotation="SQ-DRAFT", name="TSD-APPROVED-A")
+		doc = self.fake.docs[("Tender Sourcing Decision", "TSD-APPROVED-A")]
+		self.assertEqual(doc["selected_quotation"], "SQ-SUBMITTED")
+		self.assertFalse(doc.get("saved"), "the approved decision must not have been written")
+
+	def test_a_draft_is_still_amendable_by_name(self):
+		"""The guard above must refuse APPROVED, not every named save — sourcing
+		correcting its own draft before approval is the normal path."""
+		self.api.save_sourcing_decision(
+			deal="LOT-C",
+			selected_quotation="SQ-SUBMITTED",
+			selection_reason="Reconsidered after the technical review.",
+			policy_exception=1,
+			exception_reason="Only two suppliers hold the certificate.",
+			name="TSD-DRAFT",
+			company="ACME",
+		)
+		doc = self.fake.docs[("Tender Sourcing Decision", "TSD-DRAFT")]
+		self.assertEqual(doc["selected_quotation"], "SQ-SUBMITTED")
+		self.assertTrue(doc.get("saved"))
+
 	def test_only_the_sourcing_window_may_write_one(self):
 		"""Separation of duties: the same person must not both pick and approve."""
 		api = _load_api(self.fake, views=("director",))
@@ -1393,6 +1458,56 @@ class TestReadingTheAward(unittest.TestCase):
 	def test_reading_is_gated_like_everything_else(self):
 		with self.assertRaises(PermissionError):
 			self.api.get_sourcing_decision("LOT-DENIED", company="ACME")
+
+	def test_the_approved_award_outlives_the_session_that_approved_it(self):
+		"""The screen builds the read-only award panel — and the ONLY route to a
+		Purchase Order — from what this endpoint returns.
+
+		If the answer for an awarded lot is "nothing", the workspace shows the
+		new-award form instead, while `purchasing._assert_awarded` refuses every
+		quotation that form can produce. The honest path would then exist only
+		inside the one browser tab that clicked approve, and vanish on reload.
+		"""
+		result = self.api.get_sourcing_decision("LOT-A", company="ACME")
+		self.assertEqual(result["award"]["name"], "TSD-APPROVED-A")
+		self.assertEqual(result["award"]["selected_quotation"], "SQ-SUBMITTED")
+		self.assertEqual(result["award"]["approved_by"], "dir@example.com")
+
+	def test_the_standing_award_and_the_open_draft_are_two_separate_answers(self):
+		"""Re-awarding a lot whose winner fell through means an open draft sitting
+		on top of a standing award — both are true at once.
+
+		Collapsing them into one field forces the screen to choose between
+		showing the award (and never being able to re-award) and showing the
+		draft (and losing the PO route to the award that is still in force).
+		"""
+		awarded = self.api.get_sourcing_decision("LOT-A", company="ACME")
+		self.assertIsNone(awarded["decision"], "LOT-A has an approved award and no open draft")
+		drafted = self.api.get_sourcing_decision("LOT-C", company="ACME")
+		self.assertEqual(drafted["decision"]["name"], "TSD-DRAFT")
+		self.assertIsNone(drafted["award"], "LOT-C was never approved")
+
+	def test_the_panel_names_the_award_the_po_gate_would_honour(self):
+		"""A lot re-awarded after its first winner fell through has two approved
+		decisions. `purchasing._assert_awarded` accepts only the latest approval;
+		a panel that named the superseded one would offer a PO button the server
+		refuses, with nothing on the screen explaining why."""
+		self.fake.docs[("Tender Sourcing Decision", "TSD-REAWARD-A")] = _Doc(
+			name="TSD-REAWARD-A",
+			company="ACME",
+			deal="LOT-A",
+			status="Approved",
+			selected_quotation="SQ-DRAFT",
+			approved_by="dir@example.com",
+			approved_at="2026-08-05 11:00:00",
+		)
+		result = self.api.get_sourcing_decision("LOT-A", company="ACME")
+		self.assertEqual(result["award"]["name"], "TSD-REAWARD-A")
+		self.assertEqual(result["award"]["selected_quotation"], "SQ-DRAFT")
+
+	def test_a_lot_that_was_never_awarded_reads_as_no_award(self):
+		result = self.api.get_sourcing_decision("LOT-C", company="ACME")
+		self.assertIsNone(result["award"])
 
 
 class TestGetSupplierQuotation(unittest.TestCase):

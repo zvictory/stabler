@@ -6911,3 +6911,5 @@ A stop needs an end time.,A stop needs an end time.
 The stop ends before it starts.,The stop ends before it starts.
 "A stop longer than 12 hours is a forgotten timer. Split it, or correct the times.","A stop longer than 12 hours is a forgotten timer. Split it, or correct the times."
 These times cannot be recorded.,These times cannot be recorded.
+"Re-award this lot","Re-award this lot"
+"This decision is already approved. Start a new one to re-award the lot.","This decision is already approved. Start a new one to re-award the lot."
