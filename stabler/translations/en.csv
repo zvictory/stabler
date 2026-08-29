@@ -6963,3 +6963,6 @@ on {0} order(s),on {0} order(s)
 {0} item(s) missing,{0} item(s) missing
 {0} order(s) not measured,{0} order(s) not measured
 Nothing in this view — {0} order(s) in the register.,Nothing in this view — {0} order(s) in the register.
+Materials issued,Materials issued
+Halted,Halted
+Finished,Finished

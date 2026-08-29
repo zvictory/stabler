@@ -12,6 +12,7 @@
 
 import { describe, it, expect } from "vitest";
 import { readFileSync } from "fs";
+import { BOARD_COLUMNS } from "../composables/shopFloorBoard.js";
 import { fileURLToPath } from "url";
 
 const src = readFileSync(
@@ -110,5 +111,73 @@ describe("a register left open across a shift keeps telling the time", () => {
 		// open on the shop floor would keep measuring against the hour it was
 		// opened and stop reporting anything as late.
 		expect(src).toMatch(/now\.value = new Date\(\)/);
+	});
+});
+
+// ---------------------------------------------------------------------------
+// Design 1b — «Канбан: состояние цеха».
+//
+// The state machine is pinned by `shopFloorBoard.spec.js`, which executes it.
+// What is left here is again the wiring, and the board adds a failure this page
+// did not have before: two renderings of one list. A board fed from `rows` while
+// the tabs filter `visibleRows` would show every order under a tab that says 2,
+// and both halves would still pass their own unit tests.
+
+describe("the board draws the same orders the tabs selected", () => {
+	it("groups the filtered view, not the raw row list", () => {
+		expect(src).toMatch(/boardGroups\(visibleRows\.value\)/);
+	});
+
+	it("derives the columns through the tested helper rather than inline", () => {
+		// A `rows.filter(r => r.docstatus === 0)` in the template would be a
+		// second implementation of a precedence order that already has one, and
+		// the two would disagree the first time a rule moved.
+		expect(src).toMatch(/from "\.\.\/\.\.\/composables\/shopFloorBoard\.js"/);
+		expect(src).not.toMatch(/docstatus === 0 \?/);
+	});
+});
+
+describe("the board keeps its shape", () => {
+	it("renders the columns the composable exports, in its order", () => {
+		// Iterating `Object.keys(columns)` would work today and would silently
+		// reorder the board the day the grouping object is built differently.
+		expect(src).toMatch(/v-for="key in BOARD_COLUMNS"/);
+	});
+
+	it("labels every column the composable exports", () => {
+		// Computed, not a literal list: a seventh column added to the composable
+		// with no label here renders `COLUMN_LABELS[key]()` on undefined and takes
+		// the whole page down with a TypeError. This test is the one place that
+		// notices, because the two files are edited apart.
+		const block = /const COLUMN_LABELS = \{([\s\S]*?)\n\};/.exec(src)?.[1] ?? "";
+		const labelled = [...block.matchAll(/^\t(\w+):/gm)].map((m) => m[1]);
+		expect(labelled).toEqual(BOARD_COLUMNS);
+	});
+
+	it("draws an empty column rather than dropping it", () => {
+		// Measured on anjan 2026-08-29: `partial`, `running` and `paused` hold 0.
+		// A board that hides empty bins becomes a three-bin board and hides
+		// exactly the steps nobody is recording — which is the reason to show it.
+		expect(src).toMatch(/v-if="!columns\[key\]\.length"/);
+	});
+});
+
+describe("list and board are one register, not two", () => {
+	it("shows exactly one of them", () => {
+		// Chained onto the same v-if that already handles loading and empty. Two
+		// independent `v-if`s would render the table under the board the moment
+		// somebody edited one of them.
+		const board = src.indexOf('v-else-if="layout === \'board\'"');
+		const table = src.indexOf("<table class=\"table table-vcenter card-table table-hover\">");
+		expect(board).toBeGreaterThan(-1);
+		expect(src.slice(board, table)).toMatch(/<div v-else class="card">/);
+	});
+
+	it("routes a card to the order instead of dragging it", () => {
+		// Nothing on this board is written by moving a card: `status` is read-only
+		// after submit and every column is derived. A drag handle would promise a
+		// state change the backend has no endpoint for.
+		expect(src).toMatch(/name: 'manufacturing-work-order', params: \{ name: r\.name \}/);
+		expect(src).not.toMatch(/draggable/);
 	});
 });

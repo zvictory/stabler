@@ -6569,3 +6569,6 @@ on {0} order(s),{0} ta buyurtmada
 {0} item(s) missing,{0} ta pozitsiya yetishmaydi
 {0} order(s) not measured,{0} ta buyurtmaning qoldig'i o'lchanmagan
 Nothing in this view — {0} order(s) in the register.,Bu ko'rinishda hech nima yo'q — reyestrda {0} ta buyurtma bor.
+Materials issued,Xomashyo berildi
+Halted,To'xtatilgan
+Finished,Yakunlandi
