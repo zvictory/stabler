@@ -819,8 +819,62 @@ class TestCrmCompanyScope(unittest.TestCase):
 			# The tender CRM kanban deletes through the same shared endpoint
 			self.assertEqual(self.crm.delete_deal("DEAL-MIKAS", "Mikas"), "ok")
 			self.assertIn(("CRM Deal", "DEAL-MIKAS"), self.db.deleted)
+		finally:
+			self.crm._can_access_module = original_can_access
 
-			# Other CRM endpoints requiring plain _require_crm must be rejected
+	def test_a_tender_only_tenant_can_read_back_a_deal_it_may_list_and_write(self):
+		"""`get_deal` sat on the plain `_require_crm()` gate between two siblings
+		that do not: `list_deals` and `save_deal` are both `_require_crm_or_tender`,
+		for the reason that gate's own docstring gives — a tender-only tenant
+		(enable_crm=0) would break its own intake.
+
+		Measured on prod 2026-08-27: mikas is the only tenant with `tender` on and
+		its `crm` flag is false, so `get_deal` threw PermissionError there. The PO
+		form's tender picker turns a deal id into a readable name through this
+		endpoint (`PurchaseOrderForm.loadDealLabel`), inside a try/catch — so it
+		did not crash, it silently degraded to printing the raw deal id on the one
+		tenant that has the feature. Money screens do not get to be cryptic.
+
+		A tenant that may LIST a deal and OVERWRITE it cannot coherently be denied
+		reading one back; the gate was an inconsistency, not a boundary.
+		"""
+		original_can_access = self.crm._can_access_module
+		try:
+			self.crm._can_access_module = lambda user, mod: mod == "tender"
+			deal = self.crm.get_deal("DEAL-MIKAS", "Mikas")
+			self.assertEqual(deal["name"], "DEAL-MIKAS")
+			self.assertEqual(deal["company"], "Mikas")
+		finally:
+			self.crm._can_access_module = original_can_access
+
+	def test_widening_the_get_deal_gate_did_not_widen_company_scope(self):
+		"""The module gate is a UX access layer (.claude/rules/30-tenant-modules.md);
+		the real boundary is `_require_crm_company` + `_assert_crm_record_company`
+		underneath it. Both must still refuse under the tender-only gate — otherwise
+		the fix above would have turned an inconsistency into a data leak."""
+		original_can_access = self.crm._can_access_module
+		try:
+			self.crm._can_access_module = lambda user, mod: mod == "tender"
+			# Another tenant's deal, asked for under this tenant's company.
+			with self.assertRaises(PermissionError):
+				self.crm.get_deal("DEAL-OTHER", "Mikas")
+			# No company selected at all: scope is never inferred.
+			with self.assertRaises(Exception):
+				self.crm.get_deal("DEAL-MIKAS")
+			# Frappe's own record permission still decides.
+			self.crm.frappe.has_permission = lambda doctype, ptype, name=None: (
+				not (doctype == "CRM Deal" and name == "DEAL-MIKAS" and ptype == "read")
+			)
+			with self.assertRaises(PermissionError):
+				self.crm.get_deal("DEAL-MIKAS", "Mikas")
+		finally:
+			self.crm._can_access_module = original_can_access
+
+	def test_get_deal_is_still_refused_when_neither_module_is_on(self):
+		"""Widening to `_require_crm_or_tender` must not become "no gate at all"."""
+		original_can_access = self.crm._can_access_module
+		try:
+			self.crm._can_access_module = lambda user, mod: False
 			with self.assertRaises(PermissionError):
 				self.crm.get_deal("DEAL-MIKAS", "Mikas")
 		finally:
