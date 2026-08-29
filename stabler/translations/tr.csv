@@ -6586,3 +6586,7 @@ Leave the end blank if it is not known yet — the block gets a start and no wid
 "The end could not be read. Enter it as a date and time, or leave it blank.",Bitiş okunamadı. Tarih ve saat olarak girin ya da boş bırakın.
 The end has to come after the start. An overnight job ends on the next date.,Bitiş başlangıçtan sonra olmalı. Gece boyu süren iş ertesi tarihte biter.
 {0} is {1} — its planned hours are the record of when it ran.,{0} durumu {1} — planlanan saatler emrin ne zaman çalıştığının kaydıdır.
+Week,Hafta
+no end planned,bitiş planlanmadı
+No lines to plan on.,Planlanacak hat yok.
+{0} order(s) have no planned hour yet,planlanan saati olmayan emir: {0}

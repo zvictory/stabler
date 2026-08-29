@@ -6985,3 +6985,7 @@ Leave the end blank if it is not known yet — the block gets a start and no wid
 "The end could not be read. Enter it as a date and time, or leave it blank.","The end could not be read. Enter it as a date and time, or leave it blank."
 The end has to come after the start. An overnight job ends on the next date.,The end has to come after the start. An overnight job ends on the next date.
 {0} is {1} — its planned hours are the record of when it ran.,{0} is {1} — its planned hours are the record of when it ran.
+Week,Week
+no end planned,no end planned
+No lines to plan on.,No lines to plan on.
+{0} order(s) have no planned hour yet,{0} order(s) have no planned hour yet

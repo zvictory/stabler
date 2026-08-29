@@ -6596,3 +6596,7 @@ Leave the end blank if it is not known yet — the block gets a start and no wid
 "The end could not be read. Enter it as a date and time, or leave it blank.",Конец не удалось прочитать. Укажите дату и время или оставьте пустым.
 The end has to come after the start. An overnight job ends on the next date.,Конец должен быть позже начала. Ночная работа заканчивается на следующую дату.
 {0} is {1} — its planned hours are the record of when it ran.,"{0} — {1}: плановые часы это запись о том, когда заказ шёл."
+Week,Неделя
+no end planned,конец не запланирован
+No lines to plan on.,Нет линий для планирования.
+{0} order(s) have no planned hour yet,заказов без планового часа: {0}

@@ -6591,3 +6591,7 @@ Leave the end blank if it is not known yet — the block gets a start and no wid
 "The end could not be read. Enter it as a date and time, or leave it blank.",Тугаш ўқилмади. Сана ва вақт сифатида киритинг ёки бўш қолдиринг.
 The end has to come after the start. An overnight job ends on the next date.,Тугаш бошланишдан кейин бўлиши керак. Тунги иш эртаси санада тугайди.
 {0} is {1} — its planned hours are the record of when it ran.,{0} ҳолати {1} — режалаштирилган соатлар буюртма қачон ишлаганининг ёзуви.
+Week,Ҳафта
+no end planned,тугаш режалаштирилмаган
+No lines to plan on.,Режалаштириш учун линия йўқ.
+{0} order(s) have no planned hour yet,режалаштирилган соати йўқ буюртмалар: {0}
