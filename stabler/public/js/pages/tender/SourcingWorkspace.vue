@@ -38,8 +38,44 @@ const data = ref(null); // { rows, base_currency, count, countries, has_min_5, h
 const rfqs = ref([]);
 const rfqsLoading = ref(false);
 
-const decisionData = ref(null); // { decision, comparison }
+const decisionData = ref(null); // { decision, award, comparison }
 const decisionLoading = ref(false);
+// Sourcing asked to re-award a lot that already carries a standing award. Local
+// to the screen: nothing is written until the new draft is saved.
+const reawardOpen = ref(false);
+
+/**
+ * Which of the two award panels the workspace shows.
+ *
+ * `decision` is the open DRAFT and `award` is the approval standing right now —
+ * two separate fields because both can be true at once. Kept as one named
+ * function rather than three template expressions because it is ONE decision:
+ * the reload bug was a `v-if` that could only be true inside the session that
+ * clicked approve, and a decision spread across the markup is a decision nobody
+ * can read back.
+ *
+ *   "approved" — award in force, nothing being drafted: read-only panel + PO button
+ *   "form"     — no award yet: the new/draft award form on its own
+ *   "both"     — award in force AND a re-award being drafted on top of it
+ */
+function awardPanelMode(decisionData, reawardOpen) {
+	const award = decisionData?.award || null;
+	if (!award) return "form";
+	const draft = decisionData?.decision || null;
+	return draft || reawardOpen ? "both" : "approved";
+}
+
+/**
+ * The comparison row of the quotation the award actually named.
+ *
+ * NOT `selectedRow`: that one follows `awardForm.selected_quotation`, which
+ * `loadDecision` seeds with the CHEAPEST bid whenever there is no open draft —
+ * which is exactly the reload case. Reading it in the approved panel would print
+ * the wrong supplier under "Selected winner" and nothing would error.
+ */
+function awardedRowOf(rows, award) {
+	return (rows || []).find((r) => r.name === award?.selected_quotation);
+}
 
 // Drawer state for Quotation entry/edit
 const entryOpen = ref(false);
@@ -128,6 +164,8 @@ async function loadDecision() {
 			company: activeCompany.value,
 		});
 		decisionData.value = res;
+		// The server has just answered; let it, not a stale click, decide the panel.
+		reawardOpen.value = false;
 		if (res?.decision) {
 			awardForm.value = {
 				selected_quotation: res.decision.selected_quotation || "",
@@ -269,6 +307,19 @@ const missingEstimateNames = computed(() =>
 const selectedRow = computed(() =>
 	rows.value.find((r) => r.name === awardForm.value.selected_quotation)
 );
+// The approval in force for this lot, as `purchasing._assert_awarded` reads it.
+const standingAward = computed(() => decisionData.value?.award || null);
+const awardedRow = computed(() => awardedRowOf(rows.value, standingAward.value));
+const panelMode = computed(() => awardPanelMode(decisionData.value, reawardOpen.value));
+// The winner marker in the comparison table: an open draft is the working
+// answer, otherwise the standing award. Without the fallback the highlight
+// disappeared on reload alongside the panel.
+const highlightedQuotation = computed(
+	() =>
+		decisionData.value?.decision?.selected_quotation ||
+		standingAward.value?.selected_quotation ||
+		""
+);
 
 const isSelectedDifferentFromCheapest = computed(() => {
 	if (!selectedRow.value || !cheapestRow.value) return false;
@@ -379,6 +430,7 @@ watch(
 							dealLabel = '';
 							data = null;
 							decisionData = null;
+							reawardOpen = false;
 							rfqs = [];
 						"
 					>
@@ -487,10 +539,8 @@ watch(
 								v-for="r in rows"
 								:key="r.name"
 								:class="{
-									'table-success':
-										r.cheapest && decisionData?.decision?.selected_quotation === r.name,
-									'table-primary':
-										decisionData?.decision?.selected_quotation === r.name && !r.cheapest,
+									'table-success': r.cheapest && highlightedQuotation === r.name,
+									'table-primary': highlightedQuotation === r.name && !r.cheapest,
 								}"
 							>
 								<td>
@@ -510,7 +560,7 @@ watch(
 										{{ t("Sticker Leader") }}
 									</span>
 									<span
-										v-if="decisionData?.decision?.selected_quotation === r.name"
+										v-if="highlightedQuotation === r.name"
 										class="badge bg-blue text-white ms-1"
 										>{{ t("Winner") }}</span
 									>
@@ -665,16 +715,15 @@ watch(
 					<span class="fw-bold text-primary"
 						><i class="ti ti-trophy me-1"></i>{{ t("Sourcing award decision") }}</span
 					>
+					<!-- An open draft is work in progress and outranks the standing award
+					     in the badge; without the award fallback the badge vanished on
+					     reload for exactly the lots that HAVE been awarded. -->
 					<span
-						v-if="decisionData?.decision"
+						v-if="decisionData?.decision || standingAward"
 						class="badge"
-						:class="
-							decisionData.decision.status === 'Approved'
-								? 'bg-green text-white'
-								: 'bg-yellow text-dark'
-						"
+						:class="decisionData?.decision ? 'bg-yellow text-dark' : 'bg-green text-white'"
 					>
-						{{ decisionData.decision.status }}
+						{{ decisionData?.decision ? decisionData.decision.status : standingAward.status }}
 					</span>
 				</div>
 
@@ -697,20 +746,17 @@ watch(
 					</div>
 
 					<!-- Case 1: Award is APPROVED (Read-only) -->
-					<div
-						v-if="decisionData?.decision?.status === 'Approved'"
-						class="d-flex flex-column gap-2"
-					>
+					<div v-if="panelMode !== 'form'" class="d-flex flex-column gap-2">
 						<div class="row align-items-center">
 							<div class="col-md-6">
 								<div class="text-secondary small text-uppercase">{{ t("Selected winner") }}</div>
 								<div class="h4 m-0 text-success fw-bold">
-									{{ selectedRow?.supplier_name || decisionData.decision.selected_quotation }}
+									{{ awardedRow?.supplier_name || standingAward.selected_quotation }}
 								</div>
 								<div class="text-secondary small">
 									{{
 										formatMoney(
-											selectedRow?.base_landed_total || selectedRow?.base_total,
+											awardedRow?.base_landed_total || awardedRow?.base_total,
 											baseCcy,
 											user.language
 										)
@@ -719,10 +765,10 @@ watch(
 							</div>
 							<div class="col-md-6 text-md-end">
 								<div class="text-secondary small">
-									{{ t("Approved by") }}: <b>{{ decisionData.decision.approved_by }}</b>
+									{{ t("Approved by") }}: <b>{{ standingAward.approved_by }}</b>
 								</div>
 								<div class="text-secondary small">
-									{{ t("Approved at") }}: {{ formatDate(decisionData.decision.approved_at) }}
+									{{ t("Approved at") }}: {{ formatDate(standingAward.approved_at) }}
 								</div>
 							</div>
 						</div>
@@ -730,10 +776,7 @@ watch(
 						<hr class="my-2" />
 
 						<div
-							v-if="
-								decisionData.decision.selected_quotation !==
-								decisionData.decision.cheapest_quotation
-							"
+							v-if="standingAward.selected_quotation !== standingAward.cheapest_quotation"
 							class="alert alert-warning py-2 mb-2"
 						>
 							<i class="ti ti-info-circle me-1"></i>
@@ -744,30 +787,43 @@ watch(
 							<span class="text-secondary small fw-bold d-block"
 								>{{ t("Reason for selection") }}:</span
 							>
-							<p class="mb-2 text-body">{{ decisionData.decision.selection_reason }}</p>
+							<p class="mb-2 text-body">{{ standingAward.selection_reason }}</p>
 						</div>
 
-						<div v-if="decisionData.decision.policy_exception" class="alert alert-danger py-2 mb-0">
+						<div v-if="standingAward.policy_exception" class="alert alert-danger py-2 mb-0">
 							<div class="fw-bold">
 								<i class="ti ti-shield-alert me-1"></i>{{ t("Policy exception approved") }}
 							</div>
-							<div class="small">{{ decisionData.decision.exception_reason }}</div>
+							<div class="small">{{ standingAward.exception_reason }}</div>
 						</div>
 
-						<div v-if="decisionData.decision.selected_quotation" class="pt-2">
+						<div v-if="standingAward.selected_quotation" class="pt-2 d-flex gap-2 flex-wrap">
 							<button
 								type="button"
 								class="btn btn-outline-secondary btn-sm"
 								:disabled="creatingPo"
-								@click="createPo(decisionData.decision.selected_quotation)"
+								@click="createPo(standingAward.selected_quotation)"
 							>
 								<i class="ti ti-shopping-cart me-1"></i>{{ creatingPo ? t("Creating…") : t("Create purchase order") }}
+							</button>
+							<!-- Re-awarding a lot whose winner fell through is a NEW decision a
+							     director approves again — never an edit of the approved one, which
+							     `save_sourcing_decision` now refuses outright. -->
+							<button
+								v-if="panelMode === 'approved'"
+								type="button"
+								class="btn btn-link btn-sm text-secondary"
+								@click="reawardOpen = true"
+							>
+								<i class="ti ti-rotate me-1"></i>{{ t("Re-award this lot") }}
 							</button>
 						</div>
 					</div>
 
+					<hr v-if="panelMode === 'both'" class="my-3" />
+
 					<!-- Case 2: Draft or New Award Form -->
-					<div v-else class="d-flex flex-column gap-3">
+					<div v-if="panelMode !== 'approved'" class="d-flex flex-column gap-3">
 						<div class="row g-3">
 							<div class="col-md-6">
 								<label class="form-label fw-semibold">{{ t("Select winning quotation") }}</label>

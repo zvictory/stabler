@@ -6517,3 +6517,5 @@ A stop needs an end time.,To'xtash uchun tugash vaqti kerak.
 The stop ends before it starts.,To'xtash boshlanishidan oldin tugaydi.
 "A stop longer than 12 hours is a forgotten timer. Split it, or correct the times.",12 soatdan uzun to'xtash — bu unutilgan taymer. Uni bo'ling yoki vaqtlarni to'g'rilang.
 These times cannot be recorded.,Bu vaqtlarni yozib bo'lmaydi.
+"Re-award this lot","Bu lotni qayta taqdim etish"
+"This decision is already approved. Start a new one to re-award the lot.","Bu qaror allaqachon tasdiqlangan. Lotni qayta taqdim etish uchun yangisini boshlang."

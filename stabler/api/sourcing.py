@@ -958,6 +958,13 @@ def _snapshot_rows(rows: list) -> list:
 
 
 def _open_decision(deal: str, company: str):
+	"""The one DRAFT award a lot may have open. Deliberately blind to approvals.
+
+	`save_sourcing_decision` uses this as its "there is already an open draft"
+	guard, so widening it to count approvals would refuse the re-award that
+	follows a winner falling through — the case `purchasing._assert_awarded`
+	orders by `approved_at desc` precisely to support.
+	"""
 	rows = frappe.get_list(
 		_DECISION,
 		filters={"deal": deal, "company": company, "status": "Draft"},
@@ -967,13 +974,47 @@ def _open_decision(deal: str, company: str):
 	return rows[0] if rows else None
 
 
+def _standing_award(deal: str, company: str):
+	"""The approved award currently in force for a lot, if there is one.
+
+	Same ordering as `purchasing._assert_awarded`: a lot can be awarded more
+	than once, and only the LATEST approval opens the PO route. Reading it any
+	other way would let the workspace name a superseded winner and offer a
+	button the server then refuses, with nothing on screen explaining why.
+
+	`get_list`, not `get_all`, matching `_open_decision` — this is a window onto
+	the record for a screen, not the yes/no the PO gate asks.
+	"""
+	rows = frappe.get_list(
+		_DECISION,
+		filters={"deal": deal, "company": company, "status": "Approved"},
+		fields=list(_DECISION_FIELDS),
+		order_by="approved_at desc, modified desc",
+		limit_page_length=1,
+	)
+	return rows[0] if rows else None
+
+
 @frappe.whitelist()
 def get_sourcing_decision(deal, company=None):
-	"""The open award for a lot, plus the comparison it would be made against."""
+	"""The award state of a lot, plus the comparison it would be judged against.
+
+	Two separate answers, because both can be true at once: `decision` is the
+	open DRAFT (what save and approve act on) and `award` is the approval
+	standing right now (what the PO gate honours). They were one field until
+	2026-08-29, and because that field only ever carried drafts, an approved lot
+	read back as "never awarded" the moment the page was reloaded — the
+	read-only award panel and the Create-purchase-order button inside it existed
+	only in the session that clicked approve.
+	"""
 	_require_tender(company)
 	selected_company = _assert_company_scope(company)
 	_deal_scope(deal, selected_company)
-	return {"decision": _open_decision(deal, selected_company), "comparison": _comparison(deal)}
+	return {
+		"decision": _open_decision(deal, selected_company),
+		"award": _standing_award(deal, selected_company),
+		"comparison": _comparison(deal),
+	}
 
 
 @frappe.whitelist()
@@ -1031,6 +1072,16 @@ def save_sourcing_decision(
 			frappe.throw(_("Not permitted."), frappe.PermissionError)
 		if doc.deal != deal:
 			frappe.throw(_("This decision belongs to another tender lot."), frappe.ValidationError)
+		if (doc.status or "Draft") != "Draft":
+			# Amending by name is how sourcing corrects its OWN draft. Pointed at
+			# an approved decision it would rewrite the winner underneath the
+			# director's stamp, and the record would keep reading as if the
+			# approval had been given for the new supplier. Re-awarding a lot is
+			# a NEW decision a director approves again, never an edit of the old.
+			frappe.throw(
+				_("This decision is already approved. Start a new one to re-award the lot."),
+				frappe.ValidationError,
+			)
 	else:
 		if _open_decision(deal, selected_company):
 			# One open award per lot. Two drafts mean two answers to "who won",

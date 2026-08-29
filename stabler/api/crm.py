@@ -447,7 +447,13 @@ def list_deals(
 
 @frappe.whitelist()
 def get_deal(name: str, company=""):
-	_require_crm()
+	# Same gate as `list_deals` and `save_deal` above and below it, for the reason
+	# in `_require_crm_or_tender`'s docstring: a tender-only tenant (enable_crm=0)
+	# that may list and overwrite a deal cannot coherently be denied reading one
+	# back. `get_deal` was the odd one out, and on mikas — the only tenant with
+	# tender on, crm off — it threw, leaving the PO form's tender picker showing a
+	# raw deal id instead of a name. Company scoping below the gate is unchanged.
+	_require_crm_or_tender()
 	company = _require_crm_company(company)
 	_assert_crm_record_company("CRM Deal", name, company, "read")
 	return frappe.get_doc("CRM Deal", name).as_dict()
