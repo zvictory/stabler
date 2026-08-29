@@ -6532,3 +6532,18 @@ That quantity cannot be recorded.,Bu miktar kaydedilemez.
 Unknown scrap reason: {0},Bilinmeyen fire sebebi: {0}
 {0} is not a loss reason.,{0} bir kayıp sebebi değil.
 "Scrap {0}: {1} — {2}, reported by {3}","Fire {0}: {1} — {2}, kaydeden {3}"
+Scrap log,Fire kaydı
+Record a loss,Kayıp kaydı
+Pick the order the material was on,Malzemenin bulunduğu iş emrini seçin
+Scrap is not set up on this site yet,Bu sitede fire henüz ayarlanmadı
+"Nothing can be recorded until a scrap warehouse is named in Stabler Manufacturing Settings. Ask a manufacturing manager to name one — the loss has to have somewhere to move to, or the record and the stock ledger would disagree.","Stabler Manufacturing Settings içinde bir fire deposu belirtilmeden hiçbir şey kaydedilemez. Bir üretim yöneticisinden bunu belirtmesini isteyin — kaybın gidecek bir yeri olmalı, yoksa kayıt ile stok defteri birbirini tutmaz."
+This order has nothing standing in WIP to scrap.,Bu iş emrinde fireye ayrılacak bir şey WIP'te kalmadı.
+Pick what was lost,Ne kaybedildiğini seçin
+Record the loss,Kaybı kaydet
+Pick a line and a Work Order to record a loss against.,Kaybın hangi hat ve iş emrine ait olduğunu seçin.
+{0} losses,{0} kayıp
+Stock transfer,Stok transferi
+No losses recorded in this window,Bu aralıkta kaydedilmiş kayıp yok
+"Scrap on this floor has only ever been filed by hand, with the reason buried in a stock entry remark. The first one with a reason code goes in on the left.","Bu atölyede fire hep elle işlendi, gerekçe ise bir stok fişinin açıklamasında kaldı. Gerekçe kodu taşıyan ilki soldan girilir."
+Loss recorded.,Kayıp kaydedildi.
+Loss recorded. Stock transfer {0} is now waiting for accounting to submit it.,Kayıp kaydedildi. {0} stok transferi şimdi muhasebenin onayını bekliyor.

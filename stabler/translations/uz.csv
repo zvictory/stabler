@@ -6537,3 +6537,18 @@ That quantity cannot be recorded.,Bu miqdorni yozib bo'lmaydi.
 Unknown scrap reason: {0},Noma'lum brak sababi: {0}
 {0} is not a loss reason.,{0} — yo'qotish sababi emas.
 "Scrap {0}: {1} — {2}, reported by {3}","Brak {0}: {1} — {2}, kiritdi {3}"
+Scrap log,Brak jurnali
+Record a loss,Yo'qotish yozuvi
+Pick the order the material was on,Material qaysi buyurtmada bo'lganini tanlang
+Scrap is not set up on this site yet,Bu saytda brak hali sozlanmagan
+"Nothing can be recorded until a scrap warehouse is named in Stabler Manufacturing Settings. Ask a manufacturing manager to name one — the loss has to have somewhere to move to, or the record and the stock ledger would disagree.","Stabler Manufacturing Settings'da brak ombori ko'rsatilmaguncha hech narsa yozib bo'lmaydi. Ishlab chiqarish rahbaridan uni ko'rsatishni so'rang — yo'qotish biror joyga ko'chishi kerak, aks holda yozuv va ombor hisobi bir-biriga zid bo'ladi."
+This order has nothing standing in WIP to scrap.,Bu buyurtmada brakka chiqariladigan hech narsa WIP'da qolmagan.
+Pick what was lost,Nima yo'qolganini tanlang
+Record the loss,Yo'qotishni yozish
+Pick a line and a Work Order to record a loss against.,Yo'qotish qaysi liniya va buyurtmaga tegishli ekanini tanlang.
+{0} losses,{0} ta yo'qotish
+Stock transfer,Ombor o'tkazmasi
+No losses recorded in this window,Bu oraliqda yo'qotish yozilmagan
+"Scrap on this floor has only ever been filed by hand, with the reason buried in a stock entry remark. The first one with a reason code goes in on the left.","Bu sexda brak har doim qo'lda rasmiylashtirilgan, sababi esa ombor hujjatining izohida qolib ketgan. Sabab kodi bilan birinchi yozuv chapda kiritiladi."
+Loss recorded.,Yo'qotish yozildi.
+Loss recorded. Stock transfer {0} is now waiting for accounting to submit it.,Yo'qotish yozildi. Ombor o'tkazmasi {0} endi buxgalteriya tomonidan tasdiqlanishini kutmoqda.

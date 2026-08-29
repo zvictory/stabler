@@ -93,6 +93,7 @@ import WorkOrders from "./pages/manufacturing/WorkOrders.vue";
 import WorkOrderDetail from "./pages/manufacturing/WorkOrderDetail.vue";
 import WorkOrderPlan from "./pages/manufacturing/WorkOrderPlan.vue";
 import LineStops from "./pages/manufacturing/LineStops.vue";
+import LineScrap from "./pages/manufacturing/LineScrap.vue";
 import ManufacturingOperatorBoard from "./pages/manufacturing/ManufacturingOperatorBoard.vue";
 import HRHome from "./pages/hr/HRHome.vue";
 import HROverview from "./pages/hr/Overview.vue";
@@ -406,6 +407,7 @@ const routes = [
 			{ path: "work-orders", name: "manufacturing-work-orders", component: WorkOrders, meta: { title: t("Work Orders") } },
 			{ path: "plan", name: "manufacturing-plan", component: WorkOrderPlan, meta: { title: t("Production plan") } },
 			{ path: "stops", name: "manufacturing-stops", component: LineStops, meta: { title: t("Line stops") } },
+			{ path: "scrap", name: "manufacturing-scrap", component: LineScrap, meta: { title: t("Scrap log") } },
 			{ path: "work-orders/:name", name: "manufacturing-work-order", component: WorkOrderDetail, meta: { title: t("Work Order") } },
 		],
 	},

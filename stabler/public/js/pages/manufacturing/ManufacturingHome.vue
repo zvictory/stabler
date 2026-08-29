@@ -48,6 +48,15 @@ const tabs = computed(() => [
 		label: t("Line stops"),
 		icon: "ti-player-pause",
 	},
+	// Open for the same reason and by the same rule: `log_line_scrap` is
+	// `_require_mfg()`, and its docstring repeats the stop log's argument — the
+	// person who watched the material go in the bin is the operator.
+	{
+		name: "manufacturing-scrap",
+		path: "/manufacturing/scrap",
+		label: t("Scrap log"),
+		icon: "ti-trash",
+	},
 ]);
 const activeTab = computed(() => route.name);
 

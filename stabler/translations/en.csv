@@ -6931,3 +6931,18 @@ That quantity cannot be recorded.,That quantity cannot be recorded.
 Unknown scrap reason: {0},Unknown scrap reason: {0}
 {0} is not a loss reason.,{0} is not a loss reason.
 "Scrap {0}: {1} — {2}, reported by {3}","Scrap {0}: {1} — {2}, reported by {3}"
+Scrap log,Scrap log
+Record a loss,Record a loss
+Pick the order the material was on,Pick the order the material was on
+Scrap is not set up on this site yet,Scrap is not set up on this site yet
+"Nothing can be recorded until a scrap warehouse is named in Stabler Manufacturing Settings. Ask a manufacturing manager to name one — the loss has to have somewhere to move to, or the record and the stock ledger would disagree.","Nothing can be recorded until a scrap warehouse is named in Stabler Manufacturing Settings. Ask a manufacturing manager to name one — the loss has to have somewhere to move to, or the record and the stock ledger would disagree."
+This order has nothing standing in WIP to scrap.,This order has nothing standing in WIP to scrap.
+Pick what was lost,Pick what was lost
+Record the loss,Record the loss
+Pick a line and a Work Order to record a loss against.,Pick a line and a Work Order to record a loss against.
+{0} losses,{0} losses
+Stock transfer,Stock transfer
+No losses recorded in this window,No losses recorded in this window
+"Scrap on this floor has only ever been filed by hand, with the reason buried in a stock entry remark. The first one with a reason code goes in on the left.","Scrap on this floor has only ever been filed by hand, with the reason buried in a stock entry remark. The first one with a reason code goes in on the left."
+Loss recorded.,Loss recorded.
+Loss recorded. Stock transfer {0} is now waiting for accounting to submit it.,Loss recorded. Stock transfer {0} is now waiting for accounting to submit it.

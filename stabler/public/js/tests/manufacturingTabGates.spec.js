@@ -88,6 +88,32 @@ describe("the line stop log is open to the operator who watched the stop", () =>
 	});
 });
 
+describe("the loss log is open to the same operator, for the same reason", () => {
+	/**
+	 * `log_line_scrap` is `_require_mfg()`, not `_require_mfg_manager()`, and its
+	 * docstring gives the stop log's reason verbatim: "the person who watched the
+	 * material go in the bin is the operator, and a log only a manager can write
+	 * is one that gets filled in from memory at the end of the week."
+	 *
+	 * `manufacturing-stops` was moved out of the manager-only branch on
+	 * 2026-08-29 (b32c8ea) after shipping behind it. The scrap tab is the same
+	 * mistake waiting to be made a second time, and it fails the same silent way:
+	 * nothing errors, the tab is simply absent for the one person it was built
+	 * for, and the endpoint would have accepted their write all along.
+	 */
+	it("is offered to an operator", () => {
+		expect(OPERATOR).toContain("manufacturing-scrap");
+	});
+
+	it("is still offered to a manager too", () => {
+		expect(MANAGER).toContain("manufacturing-scrap");
+	});
+
+	it("is not redirected away from an operator", () => {
+		expect(redirectList()).not.toContain("manufacturing-scrap");
+	});
+});
+
 describe("the rest of the tab bar is unchanged", () => {
 	it("keeps BOMs a manager screen and work orders everyone's", () => {
 		// Guards the extraction itself: if these two flipped, the helper above is
