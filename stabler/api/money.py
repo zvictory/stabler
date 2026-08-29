@@ -3693,6 +3693,18 @@ def get_exchange_rate_for_currencies(from_currency: str, to_currency: str, posti
 	try:
 		rate = get_exchange_rate(from_currency, to_currency, date)
 		if not rate or flt(rate) <= 0.0:
+			# ERPNext matches `from_currency`/`to_currency` exactly and never
+			# consults the mirror row, so a book that stores only USD->UZS
+			# answers nothing for UZS->USD and falls through to an external API
+			# call that returns 0 offline. The caller then has no rate, and the
+			# JE header used to invite the operator to type one under a
+			# direction it had guessed — see tests/test_je_rate_direction.py.
+			# The mirror is a fallback, never a second opinion: a stored direct
+			# rate always wins, because inverting a rounded rate loses precision.
+			mirror = get_exchange_rate(to_currency, from_currency, date)
+			if mirror and flt(mirror) > 0.0:
+				return flt(1.0 / flt(mirror))
+		if not rate or flt(rate) <= 0.0:
 			frappe.throw(
 				_("No exchange rate found for {0} to {1} on {2}").format(from_currency, to_currency, date),
 				frappe.ValidationError,
