@@ -9,6 +9,7 @@ import { useWorkOrderStatus } from "../../composables/workOrderStatus.js";
 import { todayIso } from "../../composables/date.js";
 import { launchBlockers } from "../../composables/launchBlockers.js";
 import { loadStockLevels } from "../../composables/stockLevels.js";
+import { scheduleLabel, splitStamp } from "../../composables/planSchedule.js";
 import EmptyState from "../../components/EmptyState.vue";
 import DateInput from "../../components/DateInput.vue";
 
@@ -97,6 +98,58 @@ function pick(order, line) {
 	error.value = "";
 	notice.value = "";
 	selected.value = selected.value?.name === order.name ? null : { ...order, line };
+	if (selected.value) openSchedule(selected.value);
+}
+
+// Design 1c's missing axis, and the reason it is a form rather than a drag: the
+// grid needs a position AND a width, and measured on anjan 2026-08-29 neither is
+// recorded — 3 464 of 3 799 orders carry a `planned_start_date` within 60s of
+// `creation` (ERPNext's default, not a plan) and 0 carry a `planned_end_date`.
+// A drag can move a block that already has a width. Nothing here has one yet, so
+// the first thing needed is somewhere to type the hours.
+const sched = ref({ day: "", start: "", end: "", nextDay: false });
+const schedSaving = ref(false);
+
+function openSchedule(order) {
+	const start = splitStamp(order.planned_start_date);
+	const end = splitStamp(order.planned_end_date);
+	sched.value = {
+		day: start.day,
+		start: start.time,
+		end: end.time,
+		// Reconstructed from the dates rather than remembered: an overnight
+		// window is the only case where the two days differ, and reading it back
+		// wrong would silently pull the end a day earlier on the next save.
+		nextDay: Boolean(end.day && start.day && end.day !== start.day),
+	};
+}
+
+async function saveSchedule() {
+	const order = selected.value;
+	if (!order || !sched.value.day || !sched.value.start) return;
+	schedSaving.value = true;
+	error.value = "";
+	notice.value = "";
+	try {
+		// Composed here, validated on the server. `schedule_window` refuses an end
+		// that is not after the start, so a planner who typed 06:00 meaning
+		// tomorrow and forgot the box below gets a sentence rather than a bar of
+		// negative width.
+		const endDay = sched.value.nextDay ? addDays(sched.value.day, 1) : sched.value.day;
+		await call("stabler.api.manufacturing.set_work_order_schedule", {
+			name: order.name,
+			planned_start_date: `${sched.value.day} ${sched.value.start}`,
+			// Blank clears it, which is the only way to take back a mistyped end.
+			planned_end_date: sched.value.end ? `${endDay} ${sched.value.end}` : "",
+		});
+		notice.value = t("Hours saved for {0}").replace("{0}", order.name);
+		selected.value = null;
+		await load();
+	} catch (e) {
+		error.value = e?.message || String(e);
+	} finally {
+		schedSaving.value = false;
+	}
 }
 
 // A target square only exists on the selected order's own line. The line is a
@@ -244,6 +297,47 @@ onMounted(() => {
 			</button>
 		</div>
 
+		<!-- The hours. A form and not a drag, because a drag moves a block that
+		     already has a width and nothing here has one yet: 0 orders on this
+		     site carry a planned end, and the planned start is ERPNext's default
+		     on 91% of them. This is where that stops being true. -->
+		<div v-if="selected" class="card mb-3">
+			<div class="card-body d-flex flex-wrap align-items-end gap-2">
+				<div>
+					<label class="form-label small mb-1">{{ t("Day") }}</label>
+					<div style="width: 10rem"><DateInput v-model="sched.day" /></div>
+				</div>
+				<div>
+					<label class="form-label small mb-1">{{ t("Starts") }}</label>
+					<input v-model="sched.start" type="time" class="form-control" style="width: 8rem" />
+				</div>
+				<div>
+					<label class="form-label small mb-1">{{ t("Ends") }}</label>
+					<input v-model="sched.end" type="time" class="form-control" style="width: 8rem" />
+				</div>
+				<!-- Asked, never guessed. An end earlier than the start is the same
+				     input a planner produces by typing 06:00 and meaning tomorrow,
+				     and rolling it forward on their behalf would silently schedule a
+				     night nobody agreed to. -->
+				<label class="form-check mb-2">
+					<input v-model="sched.nextDay" type="checkbox" class="form-check-input" />
+					<span class="form-check-label small">{{ t("ends the next day") }}</span>
+				</label>
+				<button
+					type="button"
+					class="btn btn-primary ms-auto"
+					:disabled="schedSaving || !sched.day || !sched.start"
+					@click="saveSchedule"
+				>
+					<span v-if="schedSaving" class="spinner-border spinner-border-sm me-1"></span>
+					{{ t("Save hours") }}
+				</button>
+			</div>
+			<div class="card-footer small text-secondary">
+				{{ t("Leave the end blank if it is not known yet — the block gets a start and no width.") }}
+			</div>
+		</div>
+
 		<div class="row g-3">
 			<div class="col-12 col-xl-8">
 				<div class="card">
@@ -284,6 +378,12 @@ onMounted(() => {
 											{{ order.item_name || order.production_item }}
 											<span class="d-block fw-normal">
 												{{ order.qty }} &middot; {{ statusLabel(order.status) }}
+											</span>
+											<!-- The payoff for typing the hours. Blank on an order nobody has
+											     scheduled, which is every order on this site until somebody uses
+											     the form above. -->
+											<span v-if="scheduleLabel(order)" class="d-block fw-normal font-monospace">
+												{{ scheduleLabel(order) }}
 											</span>
 										</div>
 										<div v-if="cell(line, day).orders.length" class="small text-secondary">

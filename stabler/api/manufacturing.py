@@ -1028,7 +1028,13 @@ from stabler.api._scrap import available_to_scrap
 from stabler.api._wo_filters import build_work_order_filters
 from stabler.api._wo_genealogy import annotate_consumed_origin
 from stabler.api._wo_material_request import should_request_materials
-from stabler.api._wo_plan import build_plan_grid, may_reschedule, reschedule_target
+from stabler.api._wo_plan import (
+	ScheduleRefused,
+	build_plan_grid,
+	may_reschedule,
+	reschedule_target,
+	schedule_window,
+)
 
 _WO_STATUSES = ("Draft", "Not Started", "In Process", "Completed", "Stopped", "Closed", "Cancelled")
 
@@ -1659,7 +1665,7 @@ def work_order_plan(company: str, from_date: str, to_date: str):
 	orders = frappe.db.sql(
 		"""
 		SELECT name, production_item, item_name, qty, status, wip_warehouse,
-		       planned_start_date, operator, packaging_operator
+		       planned_start_date, planned_end_date, operator, packaging_operator
 		FROM `tabWork Order`
 		WHERE company = %(company)s AND docstatus < 2
 		  AND planned_start_date >= %(from_date)s AND planned_start_date < %(to_date_end)s
@@ -1714,6 +1720,59 @@ def reschedule_work_order(name: str, planned_start_date: str):
 	target = reschedule_target(row["planned_start_date"], day)
 	frappe.db.set_value("Work Order", name, "planned_start_date", target)
 	return {"name": name, "planned_start_date": target, "reason": reason}
+
+
+@frappe.whitelist()
+def set_work_order_schedule(name: str, planned_start_date: str, planned_end_date: str | None = None):
+	"""Write the hours an order is planned to run. Manager-only.
+
+	Design 1c's grid needs a position and a width, and neither is recorded today
+	— measured on anjan 2026-08-29, 3 464 of 3 799 orders (91%) carry a
+	`planned_start_date` within 60 seconds of `creation`, which is ERPNext's
+	default rather than anybody's plan, and 0 carry a `planned_end_date`. Drawing
+	a grid from those defaults charts data entry while looking like a schedule.
+	This is the endpoint that lets the defaults be replaced by something typed.
+
+	Both columns are `allow_on_submit`, and ERPNext recomputes `planned_end_date`
+	only from an order's operations (`work_order.py:1045`); anjan holds 0 Work
+	Order Operations, so what is written here stays written.
+
+	`reschedule_work_order` stays as it is: it moves an order to another DAY and
+	carries its clock over, which is the drag gesture on the board. This one is
+	the form beside it, and the two guard the same way.
+	"""
+	_assert_can_write("Work Order", name, "write")
+	_require_mfg_manager()
+	row = frappe.db.get_value("Work Order", name, ["status", "company"], as_dict=True)
+	if not row:
+		frappe.throw(_("Unknown Work Order: {0}").format(name))
+	_assert_company_scope(row["company"])
+
+	allowed, _reason = may_reschedule(row["status"])
+	if not allowed:
+		frappe.throw(
+			_("{0} is {1} — its planned hours are the record of when it ran.").format(name, row["status"]),
+			exc=frappe.ValidationError,
+		)
+
+	try:
+		start, end = schedule_window(planned_start_date, planned_end_date)
+	except ScheduleRefused as refusal:
+		# Named per case rather than one "invalid input": the planner is looking
+		# at two boxes and has to know which one to fix.
+		frappe.throw(
+			{
+				"start": _("Enter a start date and time, for example 2026-08-30 08:00."),
+				"end": _("The end could not be read. Enter it as a date and time, or leave it blank."),
+				"order": _("The end has to come after the start. An overnight job ends on the next date."),
+			}[str(refusal)],
+			exc=frappe.ValidationError,
+		)
+
+	frappe.db.set_value(
+		"Work Order", name, {"planned_start_date": start, "planned_end_date": end}, update_modified=True
+	)
+	return {"name": name, "planned_start_date": start, "planned_end_date": end}
 
 
 _PLAN_DAY = re.compile(r"^\d{4}-\d{2}-\d{2}$")

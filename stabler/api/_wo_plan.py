@@ -66,6 +66,69 @@ def reschedule_target(current, new_date: str) -> str:
 	return f"{new_date} {time_part}"
 
 
+class ScheduleRefused(ValueError):
+	"""A typed start/end pair that must not be written.
+
+	A named exception rather than a `(ok, reason)` tuple like `may_reschedule`:
+	that one answers a question about an order the planner already dragged, and
+	the gesture has to survive the answer. This one is about what they just typed
+	into a form, where refusing IS the outcome and the message is the point.
+	"""
+
+
+def schedule_window(start, end):
+	"""The `(planned_start_date, planned_end_date)` to write, or a refusal.
+
+	This is design 1c's missing axis. Measured on anjan 2026-08-29: all 3 799
+	orders carry a `planned_start_date`, but 3 464 of them (91%) sit within 60
+	seconds of `creation` — ERPNext's default, the moment the form was opened,
+	not a plan — and 0 carry a `planned_end_date`. Without a real pair there is
+	no position and no width, and a grid drawn from the defaults charts data
+	entry while looking exactly like a schedule.
+
+	Both fields are `allow_on_submit`, and ERPNext recomputes `planned_end_date`
+	only from an order's operations (`work_order.py:1045`). anjan holds 0 Work
+	Order Operations, so a planner's hours are not overwritten behind their back.
+	Re-measure that if hours ever start disappearing.
+	"""
+	first = _as_datetime(start)
+	# Refused, never coerced to midnight: a bare date carries no hour, and the
+	# hour is the entire point of typing this — coerced, it would put a night job
+	# on the board that nobody planned.
+	#
+	# The test is the SHAPE of what was typed, not what it parsed to. The first
+	# version of this guard compared the parsed value against the same string
+	# truncated to ten characters, which made an explicitly typed `00:00`
+	# indistinguishable from a date with no hour at all — and so refused the one
+	# input the comment above promises to protect. A datetime handed in from the
+	# database is already unambiguous and skips the check.
+	typed = start if isinstance(start, (datetime, date)) else str(start or "")
+	if first is None or (isinstance(typed, str) and ":" not in typed):
+		raise ScheduleRefused("start")
+
+	text = str(end or "").strip()
+	if not text:
+		# Blank means blank. "Keep whatever was there" would make a mistyped end
+		# impossible to correct from the only screen that can set it.
+		return first.strftime("%Y-%m-%d %H:%M:%S"), None
+
+	last = _as_datetime(text)
+	# Unreadable is NOT "no end": a typed end that vanished silently is a planner
+	# watching their entry disappear with no idea why.
+	if last is None:
+		raise ScheduleRefused("end")
+	# Not a shorter job — a typo. Written through it draws a bar of negative
+	# width, and every duration computed from it is negative. Equal is refused
+	# for a measured reason: `actual_end == actual_start` on 354 of 434 orders
+	# finished in the last 30 days, and that zero is exactly what makes those
+	# timestamps unusable. The planned pair must not inherit it. An overnight job
+	# needs no special case — the end carries its own date.
+	if last <= first:
+		raise ScheduleRefused("order")
+
+	return first.strftime("%Y-%m-%d %H:%M:%S"), last.strftime("%Y-%m-%d %H:%M:%S")
+
+
 def build_plan_grid(orders, days, lines) -> dict:
 	"""Place `orders` into a line × day grid, and hand back whatever did not fit.
 

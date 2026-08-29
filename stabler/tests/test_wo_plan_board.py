@@ -41,7 +41,13 @@ from __future__ import annotations
 
 import unittest
 
-from stabler.api._wo_plan import build_plan_grid, may_reschedule, reschedule_target
+from stabler.api._wo_plan import (
+	ScheduleRefused,
+	build_plan_grid,
+	may_reschedule,
+	reschedule_target,
+	schedule_window,
+)
 
 _LINES = ["Work In Progress - A", "WIP.1-Bo'lim - A"]
 _DAYS = ["2026-08-28", "2026-08-29", "2026-08-30"]
@@ -175,6 +181,87 @@ class TestNothingIsDroppedWithoutSaying(unittest.TestCase):
 		grid = build_plan_grid([], _DAYS, _LINES)
 		self.assertEqual(grid["lines"], _LINES)
 		self.assertEqual(grid["days"], _DAYS)
+
+
+class TestTheHoursAPlannerTypes(unittest.TestCase):
+	"""Design 1c's grid needs a start AND an end, and the reason this exists is
+	that neither is recorded today. Measured on anjan 2026-08-29: every one of
+	3 799 orders carries a `planned_start_date`, but 3 464 of them (91%) sit
+	within 60 seconds of `creation` — it is the moment somebody opened the form,
+	not a plan — and 0 carry a `planned_end_date` at all.
+
+	Both fields are `allow_on_submit` in ERPNext, and `planned_end_date` is
+	recomputed only from an order's operations (`work_order.py:1045`). anjan
+	holds 0 Work Order Operations, so what a planner types here is not going to
+	be quietly overwritten. That is the fact this whole feature rests on, and it
+	is the one to re-measure if the grid ever starts losing hours."""
+
+	def test_a_start_alone_is_a_plan(self):
+		"""An end is optional: entering when a job starts is useful on its own,
+		and demanding both would leave the field empty for another five months."""
+		self.assertEqual(
+			schedule_window("2026-08-30 08:00:00", None),
+			("2026-08-30 08:00:00", None),
+		)
+
+	def test_a_start_and_an_end_are_carried_through_whole(self):
+		self.assertEqual(
+			schedule_window("2026-08-30 08:00", "2026-08-30 14:30"),
+			("2026-08-30 08:00:00", "2026-08-30 14:30:00"),
+		)
+
+	def test_an_end_can_be_cleared(self):
+		"""A planner who mistyped an end must be able to take it back. Blank
+		means blank — not "keep whatever was there", which would make the field
+		impossible to correct from this screen."""
+		self.assertEqual(schedule_window("2026-08-30 08:00", "")[1], None)
+
+	def test_an_end_before_the_start_is_refused(self):
+		"""Not a shorter job — a typo. Written through, it draws a bar with
+		negative width, and every duration computed from it is negative."""
+		with self.assertRaises(ScheduleRefused):
+			schedule_window("2026-08-30 14:00", "2026-08-30 08:00")
+
+	def test_an_end_equal_to_the_start_is_refused(self):
+		"""Zero minutes is what the ACTUAL timestamps already say on 82% of
+		finished orders (354 of 434 over 30 days), and it is exactly the value
+		that makes those unusable. The planned pair must not inherit it."""
+		with self.assertRaises(ScheduleRefused):
+			schedule_window("2026-08-30 08:00", "2026-08-30 08:00")
+
+	def test_midnight_is_an_hour_like_any_other(self):
+		"""The first version of the bare-date guard compared the parsed value
+		against the same string truncated to its date, which made an explicitly
+		typed 00:00 indistinguishable from a date with no hour — and refused the
+		one input the guard's own comment promised to protect. The guard reads
+		the SHAPE of what was typed, not what it parsed to."""
+		self.assertEqual(
+			schedule_window("2026-08-30 00:00", "2026-08-30 06:00"),
+			("2026-08-30 00:00:00", "2026-08-30 06:00:00"),
+		)
+
+	def test_a_start_that_is_not_a_time_is_refused(self):
+		"""Rejected rather than coerced to midnight: 00:00 is a legal hour, so a
+		silent fallback would put a night job on the board that nobody planned."""
+		for bad in ("", None, "tomorrow", "2026-13-01 08:00", "2026-08-30"):
+			with self.assertRaises(ScheduleRefused, msg=repr(bad)):
+				schedule_window(bad, None)
+
+	def test_an_end_that_is_not_a_time_is_refused(self):
+		"""Same rule, and NOT treated as "no end": a typed end that could not be
+		read must be reported, or the planner sees their entry silently vanish."""
+		with self.assertRaises(ScheduleRefused):
+			schedule_window("2026-08-30 08:00", "half past eight")
+
+	def test_an_overnight_job_is_written_when_the_dates_say_so(self):
+		"""Crossing midnight is legal and needs no special case — the end simply
+		carries its own date. What is refused is an end that is EARLIER, which is
+		the same input a planner would produce by typing 06:00 and meaning
+		tomorrow. The screen has to ask for the date rather than guess."""
+		self.assertEqual(
+			schedule_window("2026-08-30 22:00", "2026-08-31 06:00"),
+			("2026-08-30 22:00:00", "2026-08-31 06:00:00"),
+		)
 
 
 def _cell(grid, line, day):
