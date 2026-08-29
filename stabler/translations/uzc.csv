@@ -6538,3 +6538,25 @@ That quantity cannot be recorded.,Бу миқдорни ёзиб бўлмайд�
 Unknown scrap reason: {0},Номаълум брак сабаби: {0}
 {0} is not a loss reason.,{0} — йўқотиш сабаби эмас.
 "Scrap {0}: {1} — {2}, reported by {3}","Брак {0}: {1} — {2}, киритди {3}"
+Scrap log,Брак журнали
+Record a loss,Йўқотиш ёзуви
+Pick the order the material was on,Материал қайси буюртмада бўлганини танланг
+Scrap is not set up on this site yet,Бу сайтда брак ҳали созланмаган
+"Nothing can be recorded until a scrap warehouse is named in Stabler Manufacturing Settings. Ask a manufacturing manager to name one — the loss has to have somewhere to move to, or the record and the stock ledger would disagree.","Stabler Manufacturing Settings'да брак омбори кўрсатилмагунча ҳеч нарса ёзиб бўлмайди. Ишлаб чиқариш раҳбаридан уни кўрсатишни сўранг — йўқотиш бирор жойга кўчиши керак, акс ҳолда ёзув ва омбор ҳисоби бир-бирига зид бўлади."
+This order has nothing standing in WIP to scrap.,Бу буюртмада бракка чиқариладиган ҳеч нарса WIP'да қолмаган.
+Pick what was lost,Нима йўқолганини танланг
+Record the loss,Йўқотишни ёзиш
+Pick a line and a Work Order to record a loss against.,Йўқотиш қайси линия ва буюртмага тегишли эканини танланг.
+{0} losses,{0} та йўқотиш
+Stock transfer,Омбор ўтказмаси
+No losses recorded in this window,Бу оралиқда йўқотиш ёзилмаган
+"Scrap on this floor has only ever been filed by hand, with the reason buried in a stock entry remark. The first one with a reason code goes in on the left.","Бу сехда брак ҳар доим қўлда расмийлаштирилган, сабаби эса омбор ҳужжатининг изоҳида қолиб кетган. Сабаб коди билан биринчи ёзув чапда киритилади."
+Loss recorded.,Йўқотиш ёзилди.
+Loss recorded. Stock transfer {0} is now waiting for accounting to submit it.,Йўқотиш ёзилди. Омбор ўтказмаси {0} энди бухгалтерия томонидан тасдиқланишини кутмоқда.
+With a reason,Сабаб билан
+Just a count,Фақат сон
+"This order's losses are already recorded with a reason ({0} so far), so the plain count is closed for it.","Бу буюртма бўйича йўқотишлар сабаб билан ёзиб бўлинган (ҳозирча {0} та), шунинг учун оддий саноқ у учун ёпиқ."
+"Record this loss with its reason, or switch to a plain count, before finishing.",Тугатишдан олдин бу йўқотишни сабаби билан ёзинг ёки оддий саноққа ўтинг.
+Recorded. Stock transfer {0} is waiting for accounting.,Ёзилди. Омбор ўтказмаси {0} бухгалтерияни кутмоқда.
+Recorded.,Ёзилди.
+Could not record the scrap.,Бракни ёзиб бўлмади.

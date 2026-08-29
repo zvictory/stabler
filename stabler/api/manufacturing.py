@@ -14,6 +14,9 @@ from stabler.api._common import _assert_can_read, _assert_can_write, _require_co
 from stabler.api.approvals import _assert_company_scope
 from stabler.api.organization import _can_access_module
 from stabler.api.valuation_guard import assert_stock_entry_valuation_sane
+from stabler.stabler.doctype.stabler_manufacturing_settings.stabler_manufacturing_settings import (
+	get_settings as get_mfg_settings,
+)
 
 # ----- Role helpers ---------------------------------------------------------
 
@@ -1383,9 +1386,27 @@ def wo_scrap_options(work_order: str):
 		fields=["item_code", "item_name", "transferred_qty", "consumed_qty", "stock_uom"],
 		order_by="idx asc",
 	)
+	# Whether this tenant has anywhere to put scrap, answered before the operator
+	# types rather than as a refusal after. `get_scrap_warehouse` throws by design
+	# and no tenant has configured one, so without this every first attempt on
+	# every site reaches a shop-floor terminal as a server error. Read through
+	# `get_settings`, which returns None instead of throwing; the throwing reader
+	# still runs in `validate`, so nothing here weakens the guarantee.
+	# Same shape as `wo_consumption_preview.enabled`, for the same reason.
+	settings = get_mfg_settings(order.company)
 	return {
 		"work_order": work_order,
 		"line": order.wip_warehouse,
+		"scrap_warehouse": (settings.scrap_warehouse or None) if settings else None,
+		# How many records this order already carries — the exact question
+		# `_assert_no_scrap_record` asks, counted off the same unfiltered list, so
+		# the kiosk can retire its Finish-time reject box before the operator
+		# types into it instead of refusing them after they have counted the
+		# pallet. Cancelled drafts are included here on purpose: the guard uses
+		# `frappe.db.exists` with no docstatus filter, and a client-side count that
+		# disagreed with it would put the box back on exactly the orders the server
+		# still refuses.
+		"scrap_records": len(scrapped),
 		"items": [
 			{
 				"item_code": r["item_code"],

@@ -6543,3 +6543,25 @@ That quantity cannot be recorded.,Это количество нельзя за�
 Unknown scrap reason: {0},Неизвестная причина брака: {0}
 {0} is not a loss reason.,{0} не является причиной потери.
 "Scrap {0}: {1} — {2}, reported by {3}","Брак {0}: {1} — {2}, записал {3}"
+Scrap log,Журнал брака
+Record a loss,Запись потери
+Pick the order the material was on,"Выберите заказ, на котором был материал"
+Scrap is not set up on this site yet,Брак на этом сайте ещё не настроен
+"Nothing can be recorded until a scrap warehouse is named in Stabler Manufacturing Settings. Ask a manufacturing manager to name one — the loss has to have somewhere to move to, or the record and the stock ledger would disagree.","Ничего нельзя записать, пока в Stabler Manufacturing Settings не указан склад брака. Попросите руководителя производства указать его — потере нужно куда-то переместиться, иначе запись и складской учёт будут противоречить друг другу."
+This order has nothing standing in WIP to scrap.,На этом заказе в НЗП нечего списать в брак.
+Pick what was lost,"Выберите, что было потеряно"
+Record the loss,Записать потерю
+Pick a line and a Work Order to record a loss against.,"Выберите линию и заказ, к которым относится потеря."
+{0} losses,{0} потерь
+Stock transfer,Складской перевод
+No losses recorded in this window,За этот период потерь не записано
+"Scrap on this floor has only ever been filed by hand, with the reason buried in a stock entry remark. The first one with a reason code goes in on the left.","Брак в этом цехе всегда оформлялся вручную, а причина оставалась в примечании складского документа. Первая запись с кодом причины вносится слева."
+Loss recorded.,Потеря записана.
+Loss recorded. Stock transfer {0} is now waiting for accounting to submit it.,Потеря записана. Складской перевод {0} теперь ждёт проведения бухгалтерией.
+With a reason,С причиной
+Just a count,Только количество
+"This order's losses are already recorded with a reason ({0} so far), so the plain count is closed for it.","Потери по этому заказу уже записаны с причиной ({0} на данный момент), поэтому простой подсчёт для него закрыт."
+"Record this loss with its reason, or switch to a plain count, before finishing.","Запишите эту потерю с причиной или переключитесь на простой подсчёт, прежде чем завершать."
+Recorded. Stock transfer {0} is waiting for accounting.,Записано. Складской перевод {0} ждёт бухгалтерию.
+Recorded.,Записано.
+Could not record the scrap.,Не удалось записать брак.
