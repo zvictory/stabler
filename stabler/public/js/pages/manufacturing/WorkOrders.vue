@@ -6,11 +6,13 @@ import { useSession } from "../../stores/session.js";
 import { call } from "../../api/client.js";
 import { t } from "../../composables/i18n.js";
 import { workOrderProgress } from "../../composables/workOrderProgress.js";
-import { materialReadiness, stockKey } from "../../composables/materialReadiness.js";
+import { materialReadiness } from "../../composables/materialReadiness.js";
+import { loadStockLevels } from "../../composables/stockLevels.js";
 import { shiftSummary, ledgerView } from "../../composables/shiftLedger.js";
 import {
 	boardGroups,
 	cardAction,
+	doneEarlier,
 	transferredPct,
 	BOARD_COLUMNS,
 } from "../../composables/shopFloorBoard.js";
@@ -121,7 +123,17 @@ const view = ref("all");
 // question drift — which is the failure this file already carries a comment
 // about for the readiness rule.
 const layout = ref("list");
-const columns = computed(() => boardGroups(visibleRows.value));
+// «Завершён · смена», and the column is bounded for an arithmetic reason:
+// measured on anjan 2026-08-29, the register holds 3 756 finished orders against
+// 2 finished today. Unbounded, that column is a scroll that buries the handful
+// of cards anybody on the floor is working with, and its quantity total answers
+// a question about the year. One calendar day, because one shift runs here.
+const shiftDay = computed(() => todayIso());
+const columns = computed(() => boardGroups(visibleRows.value, shiftDay.value));
+// The cards are hidden; the fact is not. A header reading "2" over a factory
+// that has finished thousands is true and misleading, and this difference is
+// what tells a supervisor the window is on.
+const doneHidden = computed(() => doneEarlier(visibleRows.value, shiftDay.value));
 // The column heads carry a quantity as well as a count, because "4 orders" and
 // "4 400 units" are different facts and a shift lead is working to the second.
 const columnQty = (key) =>
@@ -234,34 +246,7 @@ async function loadActivity() {
 }
 
 async function loadStock() {
-	const byWarehouse = new Map();
-	for (const row of rows.value) {
-		for (const line of row.required_items || []) {
-			if (!line.source_warehouse || !line.item_code) continue;
-			if (!byWarehouse.has(line.source_warehouse)) byWarehouse.set(line.source_warehouse, new Set());
-			byWarehouse.get(line.source_warehouse).add(line.item_code);
-		}
-	}
-	const next = {};
-	await Promise.all(
-		[...byWarehouse].map(async ([warehouse, codes]) => {
-			try {
-				const levels = await call("stabler.api.inventory.get_items_stock", {
-					warehouse,
-					item_codes: JSON.stringify([...codes]),
-				});
-				for (const [item, qty] of Object.entries(levels || {})) {
-					next[stockKey(warehouse, item)] = qty;
-				}
-			} catch {
-				// A warehouse that would not answer leaves its items absent, and
-				// `materialReadiness` reports "unknown" for them rather than
-				// inventing a level. Failing the whole list over one store would
-				// hide the nineteen rows that are fine.
-			}
-		}),
-	);
-	stock.value = next;
+	stock.value = await loadStockLevels(rows.value);
 }
 
 const readiness = (r) => materialReadiness(r, stock.value);
@@ -742,10 +727,17 @@ async function saveWO(submitAfter) {
 			<div class="d-flex gap-2 align-items-start">
 				<div v-for="key in BOARD_COLUMNS" :key="key" class="board-col">
 					<div class="card h-100">
-						<div class="card-header py-2 d-flex align-items-baseline gap-2">
-							<span class="fw-bold">{{ COLUMN_LABELS[key]() }}</span>
-							<span class="badge bg-secondary-lt">{{ columns[key].length }}</span>
-							<span class="ms-auto small text-secondary font-monospace">{{ formatQty(columnQty(key)) }}</span>
+						<div class="card-header py-2 d-block">
+							<div class="d-flex align-items-baseline gap-2">
+								<span class="fw-bold">{{ COLUMN_LABELS[key]() }}</span>
+								<span class="badge bg-secondary-lt">{{ columns[key].length }}</span>
+								<span class="ms-auto small text-secondary font-monospace">{{ formatQty(columnQty(key)) }}</span>
+							</div>
+							<!-- Only ever under the finished column, and only when the window
+							     is actually holding something back. -->
+							<div v-if="key === 'done' && doneHidden" class="small text-secondary mt-1">
+								{{ t("{0} finished earlier", [doneHidden]) }}
+							</div>
 						</div>
 						<div class="card-body p-2 d-flex flex-column gap-2">
 							<!-- Every column is rendered even when empty. Measured on anjan

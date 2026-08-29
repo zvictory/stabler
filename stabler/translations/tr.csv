@@ -6569,3 +6569,10 @@ Finished,Tamamlandı
 Transfer and start,Aktar ve başlat
 Close order,Emri kapat
 issued {0}%,aktarılan {0}%
+"{0} finished earlier","daha önce tamamlanan: {0}"
+What blocks the launch,Başlatmayı ne engelliyor
+"Stock could not be read, so nothing here was checked.","Stok okunamadı, burada hiçbir şey kontrol edilmedi."
+Every waiting order has its materials.,Bekleyen her emrin malzemesi var.
+need {0} · in {1} there is {2},gereken {0} · {1} deposunda {2} var
+blocks,engellediği
+{0} material(s) could not be measured,ölçülemeyen malzeme: {0}

@@ -6579,3 +6579,10 @@ Finished,Завершён
 Transfer and start,Передать и старт
 Close order,Закрыть заказ
 issued {0}%,передано {0}%
+"{0} finished earlier","ранее завершено: {0}"
+What blocks the launch,Что мешает запуску
+"Stock could not be read, so nothing here was checked.",Остатки не прочитаны — здесь ничего не проверено.
+Every waiting order has its materials.,У всех ожидающих заказов сырьё есть.
+need {0} · in {1} there is {2},нужно {0} · на складе {1} есть {2}
+blocks,блокирует
+{0} material(s) could not be measured,не удалось измерить материалов: {0}

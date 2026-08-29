@@ -6574,3 +6574,10 @@ Finished,Yakunlandi
 Transfer and start,Berish va boshlash
 Close order,Buyurtmani yopish
 issued {0}%,berildi {0}%
+"{0} finished earlier","avval yakunlangan: {0}"
+What blocks the launch,Ishga tushirishga nima to'sqinlik qilmoqda
+"Stock could not be read, so nothing here was checked.","Qoldiq o'qilmadi, bu yerda hech narsa tekshirilmadi."
+Every waiting order has its materials.,Kutayotgan har bir buyurtmaning xomashyosi bor.
+need {0} · in {1} there is {2},kerak {0} · {1} omborida {2} bor
+blocks,to'sib turibdi
+{0} material(s) could not be measured,o'lchab bo'lmagan xomashyo: {0}

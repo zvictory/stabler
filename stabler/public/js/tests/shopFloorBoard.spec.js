@@ -25,6 +25,7 @@ import {
 	boardGroups,
 	transferredPct,
 	cardAction,
+	doneEarlier,
 	BOARD_COLUMNS,
 } from "../composables/shopFloorBoard.js";
 
@@ -237,6 +238,67 @@ describe("every card lands somewhere", () => {
 		for (const status of ["Stock Reserved", "Stock Partially Reserved", "Хлеб", "", null]) {
 			expect(BOARD_COLUMNS).toContain(boardColumn(wo({ status })));
 		}
+	});
+});
+
+describe("the finished column holds the shift, not the year", () => {
+	// «Завершён · смена» in the design, and the reason is arithmetic: anjan holds
+	// 3 756 finished orders against 2 finished today (measured 2026-08-29). An
+	// unbounded column is a 3 756-card scroll that buries the five cards anybody
+	// on the floor is working with, and it makes the column's quantity total a
+	// number about the year rather than about the shift.
+	//
+	// One calendar day, because one shift runs. A site running the design's three
+	// shifts (С · 22:00–06:00 crosses midnight) would need a window with an hour
+	// on both ends, and that is not this factory.
+	const day = "2026-08-29";
+	const finished = (name, at) =>
+		wo({ name, status: "Completed", produced_qty: 1000, actual_end_date: at });
+
+	it("keeps an order finished during the day", () => {
+		const groups = boardGroups([finished("A", "2026-08-29 06:12:00")], day);
+		expect(groups.done.map((r) => r.name)).toEqual(["A"]);
+	});
+
+	it("drops one finished on an earlier day", () => {
+		const groups = boardGroups([finished("B", "2026-08-28 23:59:00")], day);
+		expect(groups.done).toEqual([]);
+	});
+
+	it("drops one that never recorded finishing", () => {
+		// A Work Order closed by hand never ran, so it has no `actual_end_date`.
+		// It is finished, but it is not this shift's output — and counting it
+		// would put a card with no quantity into the shift's quantity total.
+		const groups = boardGroups([finished("C", null)], day);
+		expect(groups.done).toEqual([]);
+	});
+
+	it("leaves every other column alone", () => {
+		// The window is about output, not about when an order was created. A draft
+		// entered last month is still a draft that has to be released today.
+		const groups = boardGroups([wo({ name: "D", docstatus: 0 })], day);
+		expect(groups.draft.map((r) => r.name)).toEqual(["D"]);
+	});
+
+	it("shows the whole history when no shift is given", () => {
+		// The list view has date filters of its own and no such promise in its
+		// header. Passing nothing must not silently hide rows.
+		const groups = boardGroups([finished("E", "2019-01-01 08:00:00")]);
+		expect(groups.done.map((r) => r.name)).toEqual(["E"]);
+	});
+
+	it("counts what the window hid rather than losing it", () => {
+		// The cards are hidden, the fact is not: a column header reading "2" over
+		// a factory that finished 3 756 orders is true and misleading, and the
+		// difference is what tells a supervisor the filter is on.
+		const rows = [
+			finished("A", "2026-08-29 06:12:00"),
+			finished("B", "2026-08-28 10:00:00"),
+			finished("C", null),
+			wo({ name: "D", docstatus: 0 }),
+		];
+		expect(doneEarlier(rows, day)).toBe(2);
+		expect(doneEarlier(rows)).toBe(0);
 	});
 });
 

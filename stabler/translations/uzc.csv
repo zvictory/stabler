@@ -6574,3 +6574,10 @@ Finished,Якунланди
 Transfer and start,Бериш ва бошлаш
 Close order,Буюртмани ёпиш
 issued {0}%,берилди {0}%
+"{0} finished earlier","аввал якунланган: {0}"
+What blocks the launch,Ишга туширишга нима тўсқинлик қилмоқда
+"Stock could not be read, so nothing here was checked.","Қолдиқ ўқилмади, бу ерда ҳеч нарса текширилмади."
+Every waiting order has its materials.,Кутаётган ҳар бир буюртманинг хомашёси бор.
+need {0} · in {1} there is {2},керак {0} · {1} омборида {2} бор
+blocks,тўсиб турибди
+{0} material(s) could not be measured,ўлчаб бўлмаган хомашё: {0}

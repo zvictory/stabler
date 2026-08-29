@@ -102,17 +102,61 @@ export function cardAction(row) {
 }
 
 /**
+ * Did this order finish inside the shift the board is showing?
+ *
+ * One calendar day, because one shift runs here. A site running the design's
+ * three shifts — С is 22:00–06:00 — would need a window with an hour on both
+ * ends; this one does not, and inventing the general case would mean choosing
+ * shift boundaries nothing records.
+ */
+function finishedInShift(row, shiftDay) {
+	const at = row?.actual_end_date;
+	// No recorded finish: a Work Order closed by hand never ran. It is finished,
+	// but it is not this shift's output, and counting it would add a card with no
+	// production to the shift's quantity total.
+	if (!at) return false;
+	return String(at).slice(0, 10) === shiftDay;
+}
+
+/**
  * Group rows into the board's columns, in the board's order.
+ *
+ * @param rows the orders on screen
+ * @param shiftDay optional `YYYY-MM-DD`. When given, the `done` column holds
+ *        only what finished that day — the design's «Завершён · смена». anjan
+ *        carries 3 756 finished orders against 2 finished today (measured
+ *        2026-08-29), so an unbounded column buries the cards somebody is
+ *        actually working with and makes its quantity a figure about the year.
+ *        Omitted, nothing is hidden: a caller that promises nothing in its
+ *        header must not silently drop rows.
  *
  * @returns {Record<string, Array>} every column present, empty ones included —
  *          a column that disappears when it has no cards makes the board's
  *          shape change under the user, and hides the step they are skipping.
  */
-export function boardGroups(rows) {
+export function boardGroups(rows, shiftDay = null) {
 	const groups = Object.fromEntries(BOARD_COLUMNS.map((c) => [c, []]));
 	for (const row of Array.isArray(rows) ? rows : []) {
 		const column = boardColumn(row);
-		if (column) groups[column].push(row);
+		if (!column) continue;
+		if (column === "done" && shiftDay && !finishedInShift(row, shiftDay)) continue;
+		groups[column].push(row);
 	}
 	return groups;
+}
+
+/**
+ * How many finished orders the shift window is holding back.
+ *
+ * The cards are hidden; the fact is not. A header reading "2" over a factory
+ * that has finished 3 756 orders is true and misleading — the difference is
+ * what tells a supervisor the window is on, and roughly how much sits behind it.
+ */
+export function doneEarlier(rows, shiftDay = null) {
+	if (!shiftDay) return 0;
+	let n = 0;
+	for (const row of Array.isArray(rows) ? rows : []) {
+		if (boardColumn(row) === "done" && !finishedInShift(row, shiftDay)) n += 1;
+	}
+	return n;
 }

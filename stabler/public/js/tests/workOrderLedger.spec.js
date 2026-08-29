@@ -125,7 +125,16 @@ describe("a register left open across a shift keeps telling the time", () => {
 
 describe("the board draws the same orders the tabs selected", () => {
 	it("groups the filtered view, not the raw row list", () => {
-		expect(src).toMatch(/boardGroups\(visibleRows\.value\)/);
+		expect(src).toMatch(/boardGroups\(visibleRows\.value, shiftDay\.value\)/);
+	});
+
+	it("bounds the finished column to the shift, and says what it hid", () => {
+		// Measured on anjan 2026-08-29: 3 756 finished against 2 finished today.
+		// Unbounded, «Завершён · смена» is a 3 756-card scroll under a header that
+		// promises a shift. Hiding them silently is the other half of the bug —
+		// the count is what tells a supervisor the window is on.
+		expect(src).toMatch(/doneEarlier\(visibleRows\.value, shiftDay\.value\)/);
+		expect(src).toMatch(/key === 'done' && doneHidden/);
 	});
 
 	it("derives the columns through the tested helper rather than inline", () => {
