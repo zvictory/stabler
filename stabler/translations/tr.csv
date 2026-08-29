@@ -145,6 +145,7 @@ Select at least one Work Order.,En az bir iş emri seçin.
 Select Warehouse,Depo seçin
 Selected work orders: {0},Seçilen iş emri: {0}
 Terminated by {0}: {1},{0} tarafından kapatıldı: {1}
+The approved sourcing decision for this tender lot selected a different quotation.,Bu ihale lotu için onaylanmış tedarik kararı başka bir teklifi seçti.
 The destination desk ({branch}) has no {currency} cash account — add it in Remittance Settings before registering.,Hedef kasada ({branch}) {currency} hesabı yok — kaydetmeden önce Havale Ayarları'ndan ekleyin.
 The order cannot be finished until both operator roles are assigned. Missing: {0},Her iki operatör rolü atanmadan iş emri bitirilemez. Eksik: {0}
 The other operator has not written this off yet,Diğer operatör bunu henüz düşmedi
@@ -158,6 +159,7 @@ This company runs the {engine} remittance engine. The Transfer V1 screens stay u
 This entry does not balance. Do not hand over cash — report it.,Bu kayıt denkleşmiyor. Nakit vermeyin — bildirin.
 This order is {0} — its plan can no longer be changed.,Bu emir {0} — planı artık değiştirilemez.
 This site is not migrated for packaging operators yet.,Bu sitede paketleme operatörleri için geçiş henüz yapılmadı.
+"This tender lot has no approved sourcing decision, so no Purchase Order can be created.","Bu ihale lotunun onaylanmış bir tedarik kararı yok, bu yüzden satın alma siparişi oluşturulamaz."
 This will post,Şu kayıt işlenecek
 To Warehouse (WIP),Depoya (yarı mamul)
 Transfer registered,Havale kaydedildi

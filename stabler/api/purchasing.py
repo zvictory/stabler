@@ -3447,11 +3447,61 @@ def supplier_rfq_history(supplier, company=None):
 	return {"rows": rfqs, "count": len(rfqs)}
 
 
+_SOURCING_DECISION = "Tender Sourcing Decision"
+
+
+def _assert_awarded(deal: str, quotation: str, company: str) -> None:
+	"""Refuse any quotation the lot's current award did not select.
+
+	Who won a tender lot is not "whoever is tagged to the lot" — it is the
+	quotation an APPROVED `Tender Sourcing Decision` names, and only a director
+	can approve one (`sourcing.approve_sourcing_decision`). The SPA renders the
+	PO button inside its approved branch, but a whitelisted endpoint is not a
+	button: without this check anyone permitted to create a Purchase Order can
+	POST a losing quotation and get a real one, leaving the tender file naming
+	one supplier and the money going to another.
+
+	`get_all`, not `get_list`: the decision is readable by Sales roles only, so a
+	permission-filtered read would answer "no award" for an honest buyer and
+	break the legitimate path. Nothing from the record is returned to the caller
+	— this is a yes/no about the lot, not a window onto it.
+	"""
+	# `has_column` RAISES on a doctype whose table does not exist, so the probe
+	# has to start at the table (.claude/rules/20-backend-migrations.md). A site
+	# that has not migrated cannot produce an approved award, and an award that
+	# cannot be read is not a granted one: refuse rather than wave it through.
+	awarded = ""
+	if frappe.db.table_exists(_SOURCING_DECISION):
+		rows = frappe.get_all(
+			_SOURCING_DECISION,
+			filters={"deal": deal, "company": company, "status": "Approved"},
+			fields=["selected_quotation"],
+			# A lot can be awarded more than once — the first winner falls
+			# through and sourcing re-awards it. The live award is the latest
+			# approval; the superseded one must not keep its PO route open.
+			order_by="approved_at desc, modified desc",
+			limit_page_length=1,
+		)
+		awarded = (rows[0].get("selected_quotation") or "") if rows else ""
+
+	if not awarded:
+		frappe.throw(
+			_("This tender lot has no approved sourcing decision, so no Purchase Order can be created."),
+			frappe.ValidationError,
+		)
+	if awarded != quotation:
+		frappe.throw(
+			_("The approved sourcing decision for this tender lot selected a different quotation."),
+			frappe.ValidationError,
+		)
+
+
 @frappe.whitelist()
 def create_po_from_quotation(quotation: str, company: str | None = None) -> dict:
 	"""Bridge an approved tender award to a draft ERP Purchase Order.
 
-	Validates company scope, permissions, and SQ attachment to a tender lot.
+	Validates company scope, permissions, and that the lot's approved sourcing
+	decision actually selected this quotation.
 	Idempotent: returns existing draft PO if one already exists for this lot + supplier.
 	"""
 	_require_company(company)
@@ -3476,6 +3526,11 @@ def create_po_from_quotation(quotation: str, company: str | None = None) -> dict
 	deal = getattr(sq, "custom_crm_deal", None) or ""
 	if not deal:
 		frappe.throw(_("Quotation is not linked to a tender lot."), frappe.ValidationError)
+
+	# Before the idempotent branch below, not after: that branch answers by lot
+	# and supplier, never by quotation, so asked first it would hand a losing bid
+	# the winner's PO name and a success response.
+	_assert_awarded(deal, sq.name, selected_company)
 
 	# Idempotent guard: check for existing draft PO for this deal and supplier
 	has_deal_field = frappe.db.has_column("Purchase Order", "custom_crm_deal")
