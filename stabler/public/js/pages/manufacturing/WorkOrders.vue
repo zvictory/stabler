@@ -8,6 +8,7 @@ import { t } from "../../composables/i18n.js";
 import { workOrderProgress } from "../../composables/workOrderProgress.js";
 import { materialReadiness, stockKey } from "../../composables/materialReadiness.js";
 import { shiftSummary, ledgerView } from "../../composables/shiftLedger.js";
+import { boardGroups, BOARD_COLUMNS } from "../../composables/shopFloorBoard.js";
 import { halfAssigned, roleLabel } from "../../composables/workOrderRoles.js";
 import { useOperatorOptions } from "../../composables/workOrderOperators.js";
 import { useWorkOrderStatus } from "../../composables/workOrderStatus.js";
@@ -106,6 +107,28 @@ const stock = ref({});
 const now = ref(new Date());
 const ledger = computed(() => shiftSummary(rows.value, stock.value, now.value));
 const view = ref("all");
+
+// Design 1b — «Канбан: состояние цеха». A LAYOUT of the register, not a second
+// page: same rows, same filters, same strip above. A separate route would have
+// meant a second copy of `load()` and `loadStock()`, and two loaders for one
+// question drift — which is the failure this file already carries a comment
+// about for the readiness rule.
+const layout = ref("list");
+const columns = computed(() => boardGroups(visibleRows.value));
+// The column heads carry a quantity as well as a count, because "4 orders" and
+// "4 400 units" are different facts and a shift lead is working to the second.
+const columnQty = (key) =>
+	(columns.value[key] || []).reduce((sum, r) => sum + (Number(r.qty) || 0), 0);
+const COLUMN_LABELS = {
+	draft: () => t("Draft"),
+	ready: () => t("Ready to start"),
+	// Covers a fully issued order too: the material is at the machine and the
+	// machine has not started. That is still "issued", never "running".
+	partial: () => t("Materials issued"),
+	running: () => t("In process"),
+	paused: () => t("Halted"),
+	done: () => t("Finished"),
+};
 const visibleRows = computed(() => ledgerView(rows.value, view.value, stock.value, now.value));
 
 // The two figures the rows cannot answer. Downtime is window-wide on purpose —
@@ -590,6 +613,26 @@ async function saveWO(submitAfter) {
 							{{ t("Overdue") }} <span class="badge bg-orange-lt ms-1">{{ ledger.overdue }}</span>
 						</button>
 					</li>
+					<!-- Layout, not a filter: the queue tabs on the left decide WHICH
+					     orders, this decides how they are drawn. Kept on the same row
+					     because both answer "what am I looking at", and pushed right so
+					     it cannot be mistaken for a fourth queue. -->
+					<li class="nav-item ms-auto">
+						<div class="btn-group" role="group">
+							<button
+								type="button"
+								class="btn btn-sm btn-outline-secondary"
+								:class="layout === 'list' ? 'active' : ''"
+								@click="layout = 'list'"
+							><i class="ti ti-list me-1"></i>{{ t("List") }}</button>
+							<button
+								type="button"
+								class="btn btn-sm btn-outline-secondary"
+								:class="layout === 'board' ? 'active' : ''"
+								@click="layout = 'board'"
+							><i class="ti ti-layout-kanban me-1"></i>{{ t("Board") }}</button>
+						</div>
+					</li>
 				</ul>
 			</div>
 		</div>
@@ -605,6 +648,75 @@ async function saveWO(submitAfter) {
 
 		<div v-else-if="loading" class="card-body text-center py-5">
 			<div class="spinner-border text-primary"></div>
+		</div>
+
+		<!-- «Канбан: состояние цеха». Columns are a derived shop-floor state, never
+		     ERPNext's `status` — that field is read-only after submit and carries
+		     one value on 99.1% of anjan's orders, which is what got this design
+		     recorded as dead. Cards route to the order; they do not drag, because
+		     nothing here is written by moving a card. -->
+		<div v-else-if="layout === 'board'" class="board-scroll">
+			<div class="d-flex gap-2 align-items-start">
+				<div v-for="key in BOARD_COLUMNS" :key="key" class="board-col">
+					<div class="card h-100">
+						<div class="card-header py-2 d-flex align-items-baseline gap-2">
+							<span class="fw-bold">{{ COLUMN_LABELS[key]() }}</span>
+							<span class="badge bg-secondary-lt">{{ columns[key].length }}</span>
+							<span class="ms-auto small text-secondary font-monospace">{{ formatQty(columnQty(key)) }}</span>
+						</div>
+						<div class="card-body p-2 d-flex flex-column gap-2">
+							<!-- Every column is rendered even when empty. Measured on anjan
+							     2026-08-29: `partial`, `running` and `paused` all hold 0, and
+							     a board that hid them would quietly become a three-bin board
+							     — hiding exactly the steps nobody is recording. -->
+							<div v-if="!columns[key].length" class="text-secondary small text-center py-3">—</div>
+							<div
+								v-for="r in columns[key]"
+								:key="r.name"
+								class="card card-sm cursor-pointer board-card"
+								@click="router.push({ name: 'manufacturing-work-order', params: { name: r.name } })"
+							>
+								<div class="card-body p-2">
+									<div class="d-flex align-items-baseline gap-2">
+										<span class="font-monospace small text-secondary">{{ r.name }}</span>
+										<span class="ms-auto small font-monospace">{{ formatQty(r.qty) }}</span>
+									</div>
+									<div class="fw-semibold small mt-1">{{ r.item_name || r.production_item }}</div>
+									<div class="small text-secondary">{{ r.wip_warehouse || "—" }}</div>
+
+									<div v-if="key === 'running' || key === 'paused' || key === 'done'" class="mt-2">
+										<div class="d-flex align-items-baseline gap-1 small font-monospace">
+											<span>{{ formatQty(r.produced_qty) }}</span>
+											<span class="text-secondary">/ {{ formatQty(r.qty) }}</span>
+											<span class="ms-auto fw-semibold">{{ progress(r).donePct }}%</span>
+										</div>
+										<div class="progress progress-sm mt-1">
+											<div class="progress-bar" :style="{ width: Math.min(100, progress(r).donePct) + '%' }"></div>
+										</div>
+									</div>
+
+									<!-- The design puts shortage on the card, not in a column of
+									     its own: a short order is still waiting to start, and a
+									     separate bin would take it out of the list somebody is
+									     working down. -->
+									<div v-if="key === 'ready' || key === 'partial'" class="mt-2">
+										<span v-if="readiness(r).state === 'short'" class="badge bg-orange-lt">
+											{{ t("short {0} item(s)", [readiness(r).shortCount]) }}
+										</span>
+										<span v-else-if="readiness(r).state === 'in_place'" class="badge bg-green-lt">{{ t("in workshop") }}</span>
+										<span v-else-if="readiness(r).state === 'ready'" class="badge bg-green-lt">{{ t("materials available") }}</span>
+										<span v-else class="text-secondary small">—</span>
+									</div>
+
+									<div v-if="r.operator || r.packaging_operator" class="small text-secondary mt-2">
+										{{ [r.operator, r.packaging_operator].filter(Boolean).join(" · ") }}
+									</div>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
 		</div>
 
 		<div v-else class="card">
@@ -954,5 +1066,24 @@ async function saveWO(submitAfter) {
 <style scoped>
 .cursor-pointer {
 	cursor: pointer;
+}
+
+/* Six columns do not fit a laptop, so the board scrolls sideways inside its own
+   container — never the page body. Fixed column width rather than flex-grow: a
+   column that widens when it is empty makes the board's shape report how much
+   work there is, which is the strip's job and not the board's. */
+.board-scroll {
+	overflow-x: auto;
+	padding-bottom: 0.5rem;
+}
+.board-col {
+	flex: 0 0 15rem;
+	min-width: 15rem;
+}
+.board-card {
+	cursor: pointer;
+}
+.board-card:hover {
+	border-color: var(--tblr-primary);
 }
 </style>

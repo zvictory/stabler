@@ -6564,3 +6564,6 @@ on {0} order(s),{0} iş emrinde
 {0} item(s) missing,{0} kalem eksik
 {0} order(s) not measured,{0} iş emrinin stoğu ölçülmedi
 Nothing in this view — {0} order(s) in the register.,Bu görünümde bir şey yok — kayıtta {0} iş emri var.
+Materials issued,Malzeme aktarıldı
+Halted,Duraklatıldı
+Finished,Tamamlandı
