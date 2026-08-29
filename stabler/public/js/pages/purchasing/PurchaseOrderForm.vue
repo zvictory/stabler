@@ -44,6 +44,53 @@ const currencySymbol = computed(() => {
 	return (currencies.value.find((c) => c.name === code) || {}).symbol || "";
 });
 
+// Tender (Deal) picker — same idiom as Expenses.vue's kassa tagging: only
+// rendered/sent when the tender module is on for this company (KOP-07,
+// docs/uat/tender/02-tender-uzmani.md:1027 — no SPA screen wrote
+// Purchase Order.custom_crm_deal except the sourcing award bridge).
+const tenderOn = computed(() => session.canAccessModule("tender"));
+const dealLabel = ref("");
+
+async function searchDeals(q) {
+	const r = await call("stabler.api.crm.list_deals", {
+		company: activeCompany.value,
+		search: q,
+		page_length: 8,
+	});
+	return (r?.deals || []).map((d) => ({ name: d.name, label: d.organization || d.lead_name || d.name }));
+}
+
+function pickDeal(item) {
+	form.value.deal = item.name;
+	dealLabel.value = item.label;
+}
+
+function clearDeal() {
+	form.value.deal = "";
+	dealLabel.value = "";
+}
+
+async function loadDealLabel(dealName) {
+	if (!dealName) {
+		dealLabel.value = "";
+		return;
+	}
+	try {
+		const d = await call("stabler.api.crm.get_deal", { name: dealName });
+		dealLabel.value = d?.organization || d?.lead_name || dealName;
+	} catch {
+		dealLabel.value = dealName;
+	}
+}
+
+// A PO arriving from a tender screen (e.g. `?deal=<name>`) should prefill —
+// but only where the tender module is actually on, so a stray query param
+// never surfaces or ships on a tenant that doesn't have the module.
+function resolveDealFromQuery(queryDeal, tenderModuleOn) {
+	if (!tenderModuleOn || !queryDeal) return "";
+	return String(queryDeal);
+}
+
 async function loadWarehouses() {
 	if (!activeCompany.value) return;
 	warehousesLoading.value = true;
@@ -104,6 +151,7 @@ function blankForm() {
 		schedule_date: today,
 		remarks: "",
 		items: [blankLine()],
+		deal: "",
 	};
 }
 
@@ -183,6 +231,7 @@ function toPayload(m) {
 		auto_submit: autoSubmit.value,
 		currency: m.currency || undefined,
 		price_list: m.price_list || undefined,
+		deal: tenderOn.value && m.deal ? m.deal : undefined,
 	};
 }
 
@@ -277,6 +326,8 @@ onMounted(async () => {
 		await loadDoc();
 	} else {
 		form.value = blankForm();
+		form.value.deal = resolveDealFromQuery(route.query?.deal, tenderOn.value);
+		if (form.value.deal) await loadDealLabel(form.value.deal);
 	}
 });
 
@@ -504,6 +555,24 @@ function handleValidityChange(valid) {
 					{{ form.currency || currency }}
 					<span v-if="currencySymbol" class="text-secondary fw-normal">({{ currencySymbol }})</span>
 				</div>
+			</div>
+		</div>
+
+		<!-- Tender (Deal) picker — only where the tender module is on, and only at
+		     create time; the backend has no path to change the link afterwards. -->
+		<div v-if="isCreate && tenderOn" class="row g-3 mb-3">
+			<div class="col-md-6">
+				<label class="form-label">{{ t("Tender (Deal)") }} <span class="text-secondary small">({{ t("optional") }})</span></label>
+				<Typeahead
+					:model-value="form.deal"
+					:display="dealLabel"
+					:search="searchDeals"
+					:placeholder="t('Search a tender deal…')"
+					@pick="pickDeal"
+					@clear="clearDeal"
+				>
+					<template #option="{ item }">{{ item.label }}</template>
+				</Typeahead>
 			</div>
 		</div>
 
