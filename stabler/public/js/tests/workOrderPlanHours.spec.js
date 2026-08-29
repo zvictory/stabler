@@ -105,10 +105,25 @@ describe("the day grid draws only what somebody planned", () => {
 		// invisible and unclickable, on exactly the order that still needs hours.
 		// The two live in separate vertical bands now, and the CSS is the only
 		// thing that keeps them apart.
-		const bar = /\.plan-block \{([\s\S]*?)\}/.exec(src)?.[1] ?? "";
-		const mark = /\.plan-mark \{([\s\S]*?)\}/.exec(src)?.[1] ?? "";
-		expect(bar).toMatch(/bottom:\s*1rem/);
-		expect(mark).toMatch(/top:\s*1\.5rem/);
+		// Computed from the rules, not two pinned literals. The first version of
+		// this test asserted `bottom: 1rem` and `top: 1.5rem` and passed while the
+		// two bands still overlapped by 0.25rem — it pinned the numbers I happened
+		// to write instead of the property they were meant to produce.
+		// Comments stripped, and for the second time today: the rule this file
+		// already learned on the mount hook. The comment explaining these bands
+		// contains the words `bottom: 1rem`, so an un-stripped search read the
+		// prose instead of the declaration and reported the old value.
+		const css = src.replace(/\/\*[\s\S]*?\*\//g, "");
+		const rem = (block, prop) => {
+			const body = new RegExp(`\\.${block} \\{([\\s\\S]*?)\\}`).exec(css)?.[1] ?? "";
+			const found = new RegExp(`${prop}:\\s*([\\d.]+)rem`).exec(body);
+			return found ? Number(found[1]) : null;
+		};
+		const height = rem("plan-track", "height");
+		const barBottomEdge = height - rem("plan-block", "bottom");
+		const markTopEdge = rem("plan-mark", "top");
+		expect(height).toBeGreaterThan(0);
+		expect(markTopEdge).toBeGreaterThanOrEqual(barBottomEdge);
 	});
 
 	it("names the orders it could not place instead of dropping them", () => {
