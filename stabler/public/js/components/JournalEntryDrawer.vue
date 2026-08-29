@@ -133,6 +133,11 @@ const drawerTitle = computed(() => {
 // A line is "foreign" when its account currency differs from the company base.
 const isForeign = (r) => !!r.account_currency && r.account_currency !== currencyCode.value;
 const rateOf = (r) => (isForeign(r) ? Number(r.exchange_rate) || 0 : 1);
+// `1` is the value emptyRow() hands a new line, not a quote anyone made, and no
+// two different currencies in this book are pegged 1:1. Letting it through is
+// the quiet half of the rate-direction bug: the entry balances — every leg is
+// multiplied by the same 1 — and books сўм into a USD ledger one-for-one.
+const hasRealRate = (r) => { const v = Number(r.exchange_rate) || 0; return v > 0 && v !== 1; };
 // The entry as the server will see it. An amount on a line whose account is
 // still blank is dropped by submitForm and again by _clean_je_rows, so it must
 // not reach the totals either — see postableRows() for what that cost.
@@ -164,7 +169,7 @@ const balanceTol = computed(() => {
 	return Math.min(ledger, isMultiCurrency.value ? 1 : 0.01);
 });
 const balanced = computed(() => {
-	if (isMultiCurrency.value && !postable.value.every((r) => !isForeign(r) || rateOf(r) > 0)) return false;
+	if (isMultiCurrency.value && !postable.value.every((r) => !isForeign(r) || hasRealRate(r))) return false;
 	// +1e-9 as in within_tolerance(): two exactly equal sums can still land an
 	// ulp apart, and a form that calls that an imbalance cannot be satisfied.
 	return Math.abs(diff.value) <= balanceTol.value + 1e-9;
@@ -178,7 +183,7 @@ const fmtRate = (v) => formatRate(v, user.value.language);
 // Readable quote string for a view-pane line, e.g. "1 USD = 12 034 сўм".
 function viewQuote(a) {
 	const q = readableRate(a.exchange_rate, a.account_currency, detail.value?.base_currency || currency.value);
-	return q ? `1 ${q.strong} = ${fmtRate(q.value)} ${q.weak}` : "";
+	return q && !q.unknown ? `1 ${q.strong} = ${fmtRate(q.value)} ${q.weak}` : "";
 }
 // The entry's rates, one row per foreign currency. See ratesByCurrency(): the
 // rate is a fact about (posting date, currency pair), and putting an input on
@@ -204,7 +209,7 @@ function setEntryRate(entry, val) {
 	// fresh readableRate() call: which side is "strong" is decided by the
 	// current rate, so re-deriving it here would read the number the user typed
 	// against a direction they were never shown.
-	if (!entry?.quote) return;
+	if (!entry?.quote || entry.quote.unknown) return;
 	const rate = toLineRate(val, entry.quote.strong, entry.currency);
 	if (!applyRateToCurrency(form.value.accounts, entry.currency, rate)) return;
 	runAutoBalance(-1);
@@ -714,11 +719,21 @@ watch(() => form.value.posting_date, (d) => {
 							<span class="text-secondary je-hint">{{ formatDate(form.posting_date) }}</span>
 						</div>
 						<div v-for="r in entryRates" :key="r.currency" class="d-flex align-items-center flex-wrap gap-2 mb-1">
-							<span class="text-secondary small text-nowrap" style="min-width: 5.5rem">1 {{ r.quote?.strong || r.currency }} =</span>
-							<div style="width: 170px">
-								<MoneyInput :model-value="r.quote?.value || null" :language="user.language" :min="0" hide-currency size="sm" @update:model-value="(v) => setEntryRate(r, v)" />
-							</div>
-							<span class="badge bg-secondary-lt text-uppercase je-ccy">{{ r.quote?.weak || currencyCode }}</span>
+							<!-- Without a rate there is no direction to put on the label, and an
+							     input under a guessed direction is the whole defect: the operator
+							     types the rate they say out loud and it lands upside down. Ask for
+							     the rate instead of asking for a number nobody can interpret. -->
+							<template v-if="r.quote?.unknown">
+								<span class="text-secondary small text-nowrap" style="min-width: 5.5rem">{{ r.currency }}</span>
+								<span class="badge bg-orange-lt">{{ t("No rate for this date") }}</span>
+							</template>
+							<template v-else>
+								<span class="text-secondary small text-nowrap" style="min-width: 5.5rem">1 {{ r.quote?.strong }} =</span>
+								<div style="width: 170px">
+									<MoneyInput :model-value="r.quote?.value || null" :language="user.language" :min="0" hide-currency size="sm" @update:model-value="(v) => setEntryRate(r, v)" />
+								</div>
+								<span class="badge bg-secondary-lt text-uppercase je-ccy">{{ r.quote?.weak }}</span>
+							</template>
 							<button type="button" class="btn btn-sm btn-ghost-secondary" :title="t('Refresh the rate for this date')" @click="refreshEntryRate(r.currency)">
 								<i class="ti ti-refresh"></i>
 							</button>

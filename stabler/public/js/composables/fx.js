@@ -8,12 +8,26 @@
 
 // Given the ERPNext rate (base per 1 account) + the two currency codes, return
 // the readable quote { strong, weak, value } where value = N in "1 strong = N weak".
+//
+// With no usable rate the answer is `{ unknown: true }` and NO direction. Which
+// side is strong is a fact about the rate, so without one there is nothing to
+// state — and stating a guess is not free: the guess used to be "the account
+// currency is the strong one", which reads correctly for a USD account in a
+// UZS-base book and exactly backwards for a UZS account in a USD-base book.
+// Measured on a USD-base tenant 29.08.2026, the header offered
+// "1 UZS = [    ] USD", the operator typed the 11 850 they say out loud, and
+// `toLineRate` — trusting the direction on the label — stored 11 850 instead of
+// 1/11 850. 29 625 000 сўм previewed as $351 056 250 000. The entry could not
+// balance, so nothing reached the ledger, but no screen said why.
+//
+// `1` counts as no rate: it is what a fresh row is born with, and no two
+// different currencies in this book are pegged 1:1.
 export function readableRate(rate, accountCcy, baseCcy) {
 	const r = Number(rate) || 0;
 	if (!accountCcy || !baseCcy || accountCcy === baseCcy) return null;
-	if (r <= 0) return { strong: accountCcy, weak: baseCcy, value: 0 };
+	if (r <= 0 || r === 1) return { unknown: true, value: 0 };
 	// r = base per 1 account.
-	if (r >= 1) return { strong: accountCcy, weak: baseCcy, value: r };
+	if (r > 1) return { strong: accountCcy, weak: baseCcy, value: r };
 	return { strong: baseCcy, weak: accountCcy, value: 1 / r };
 }
 

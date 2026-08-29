@@ -77,15 +77,39 @@ describe("the rate an operator is shown is the rate the entry posts at", () => {
 	});
 
 	// The rate lookup throws for a pair the Central Bank has no row for, and the
-	// form then invites the operator to type the rate by hand. That invitation
-	// is only safe if the label still states a direction, and states it for the
-	// pair now on screen — a quote left over from the previous account is how a
-	// rate gets applied to a currency it was never quoted for.
-	it("still names a direction when no rate could be fetched", () => {
+	// form used to invite the operator to type the rate by hand under a label it
+	// had guessed the direction of. It guessed "the account currency is the
+	// strong one", which is right for the UZS-base book above and exactly
+	// backwards for a UZS account in a USD-base book — and the guess is
+	// unknowable, because the only thing that could settle it is the rate that
+	// is missing. So an unknown rate now says it is unknown and names no
+	// direction at all; the form must fetch a rate rather than invite a number
+	// it cannot interpret.
+	//
+	// Measured on a USD-base tenant, 29.08.2026: the header read
+	// "1 UZS = 11 850.00 USD", the operator typed the rate they say out loud,
+	// and 29 625 000 сўм previewed as $351 056 250 000 — the rate applied
+	// upside down, a factor of 11 850² ≈ 140 million.
+	it("refuses to guess a direction when no rate could be fetched", () => {
 		const quote = readableRate(0, "EUR", BASE);
-		expect(quote.strong).toBe("EUR");
-		expect(quote.weak).toBe("UZS");
+		expect(quote.unknown).toBe(true);
 		expect(quote.value).toBe(0);
+		expect(quote.strong).toBeFalsy();
+	});
+
+	// `1` is not a rate here, it is the blank the row is born with (emptyRow in
+	// JournalEntryDrawer). Two DIFFERENT currencies are never 1:1 in this book —
+	// none of UZS/USD/EUR/RUB/CNY/TRY is pegged to another — so treating it as a
+	// real quote is what produced the label the operator typed against.
+	it("treats the untouched default of 1 as no rate, not as parity", () => {
+		expect(readableRate(1, "UZS", "USD").unknown).toBe(true);
+		expect(readableRate(1, "USD", BASE).unknown).toBe(true);
+	});
+
+	// Same currency on both sides is not "unknown" — there is nothing to quote.
+	it("still returns nothing at all when the pair is one currency", () => {
+		expect(readableRate(1, "UZS", "UZS")).toBeNull();
+		expect(readableRate(0, "USD", "USD")).toBeNull();
 	});
 
 	// The direction the user typed against is the one they were shown, not one
