@@ -6519,3 +6519,21 @@ The stop ends before it starts.,Тўхташ бошланишидан олдин
 These times cannot be recorded.,Бу вақтларни ёзиб бўлмайди.
 "Re-award this lot","Бу лотни қайта тақдим этиш"
 "This decision is already approved. Start a new one to re-award the lot.","Бу қарор аллақачон тасдиқланган. Лотни қайта тақдим этиш учун янгисини бошланг."
+A scrap record needs a quantity.,Брак ёзуви учун миқдор керак.
+"A scrap record with no quantity is a double-tap, not a loss.","Миқдорсиз брак ёзуви — бу икки марта босиш, йўқотиш эмас."
+A negative quantity would move stock back onto the line. Record what was lost.,Манфий миқдор захирани линияга қайтаради. Нима йўқолганини ёзинг.
+{0} has nothing in WIP on this order to scrap.,Бу буюртма бўйича тугалланмаган ишлаб чиқаришда {0} йўқ.
+{0} holds only {1} of {2} in WIP on this order.,{0} бўйича тугалланмаган ишлаб чиқаришда фақат {1} {2} бор.
+{0} is not one of this order's materials.,{0} бу буюртманинг материалларидан эмас.
+Scrap is not configured for {0}. Name the scrap warehouse in Stabler Manufacturing Settings.,{0} учун брак созланмаган. Stabler Manufacturing Settings'да брак омборини кўрсатинг.
+{0} is not a warehouse of {1}.,{0} — {1} компаниясининг омбори эмас.
+A scrap record needs a Work Order.,Брак ёзуви учун иш буюртмаси керак.
+{0} has no WIP warehouse to scrap from.,{0} буюртмасида брак чиқариладиган тугалланмаган ишлаб чиқариш омбори йўқ.
+A scrap record cannot be changed once its stock transfer exists. Cancel that transfer and file a new record.,"Захира кўчирмаси яратилгач, брак ёзувини ўзгартириб бўлмайди. Кўчирмани бекор қилинг ва янги ёзув киритинг."
+"Rejects were already entered when this order was finished. Record the loss in one place, not two.","Бу буюртма тугатилганда брак аллақачон киритилган. Йўқотишни икки жойда эмас, бир жойда ёзинг."
+"This order already has a scrap record. Enter the rejects there, not here.","Бу буюртмада брак ёзуви аллақачон бор. Бракни шу ерда эмас, ўша ерда киритинг."
+That scrap record's stock transfer was already submitted. It cannot be deleted.,Бу брак ёзувининг захира кўчирмаси аллақачон тасдиқланган. Уни ўчириб бўлмайди.
+That quantity cannot be recorded.,Бу миқдорни ёзиб бўлмайди.
+Unknown scrap reason: {0},Номаълум брак сабаби: {0}
+{0} is not a loss reason.,{0} — йўқотиш сабаби эмас.
+"Scrap {0}: {1} — {2}, reported by {3}","Брак {0}: {1} — {2}, киритди {3}"

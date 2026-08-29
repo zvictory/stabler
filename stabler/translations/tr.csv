@@ -6514,3 +6514,21 @@ The stop ends before it starts.,Duruş başlamadan önce bitiyor.
 These times cannot be recorded.,Bu saatler kaydedilemez.
 "Re-award this lot","Bu lotu yeniden ihale et"
 "This decision is already approved. Start a new one to re-award the lot.","Bu karar zaten onaylandı. Lotu yeniden ihale etmek için yeni bir karar başlatın."
+A scrap record needs a quantity.,Bir fire kaydının miktarı olmalı.
+"A scrap record with no quantity is a double-tap, not a loss.","Miktarsız bir fire kaydı kayıp değil, çift dokunuştur."
+A negative quantity would move stock back onto the line. Record what was lost.,Negatif bir miktar stoğu hatta geri taşır. Kaybedileni yazın.
+{0} has nothing in WIP on this order to scrap.,Bu iş emrinde WIP'te {0} yok; fireye ayrılacak bir şey bulunmuyor.
+{0} holds only {1} of {2} in WIP on this order.,{0} iş emrinde WIP'te yalnızca {1} {2} var.
+{0} is not one of this order's materials.,{0} bu iş emrinin malzemelerinden biri değil.
+Scrap is not configured for {0}. Name the scrap warehouse in Stabler Manufacturing Settings.,{0} için fire yapılandırılmamış. Fire deposunu Stabler Manufacturing Settings'te belirtin.
+{0} is not a warehouse of {1}.,"{0}, {1} şirketinin bir deposu değil."
+A scrap record needs a Work Order.,Bir fire kaydının iş emri olmalı.
+{0} has no WIP warehouse to scrap from.,{0} iş emrinin fire çıkarılacak bir WIP deposu yok.
+A scrap record cannot be changed once its stock transfer exists. Cancel that transfer and file a new record.,Stok transferi oluştuktan sonra bir fire kaydı değiştirilemez. Transferi iptal edip yeni bir kayıt açın.
+"Rejects were already entered when this order was finished. Record the loss in one place, not two.","Bu iş emri bitirilirken fire zaten girilmiş. Kaybı iki yere değil, tek yere yazın."
+"This order already has a scrap record. Enter the rejects there, not here.","Bu iş emrinin zaten bir fire kaydı var. Fireyi burada değil, orada girin."
+That scrap record's stock transfer was already submitted. It cannot be deleted.,Bu fire kaydının stok transferi zaten onaylanmış. Kayıt silinemez.
+That quantity cannot be recorded.,Bu miktar kaydedilemez.
+Unknown scrap reason: {0},Bilinmeyen fire sebebi: {0}
+{0} is not a loss reason.,{0} bir kayıp sebebi değil.
+"Scrap {0}: {1} — {2}, reported by {3}","Fire {0}: {1} — {2}, kaydeden {3}"

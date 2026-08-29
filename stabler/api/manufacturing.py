@@ -1020,6 +1020,7 @@ def cancel_bom(name: str):
 
 
 from stabler.api._downtime import stop_minutes
+from stabler.api._scrap import available_to_scrap
 from stabler.api._wo_filters import build_work_order_filters
 from stabler.api._wo_genealogy import annotate_consumed_origin
 from stabler.api._wo_material_request import should_request_materials
@@ -1298,6 +1299,234 @@ def list_line_stops(company: str, from_date: str, to_date: str, line: str | None
 		# Recomputed rather than read back, so a row whose stamps were corrected
 		# in Desk without triggering validate cannot show a stale duration.
 		row["minutes"] = stop_minutes(row["from_time"], row["to_time"])
+		out.append(row)
+	return out
+
+
+def _assert_loss_reason(reason: str) -> None:
+	"""The reason must exist and must be one the loss half of the catalogue offers.
+
+	No second catalogue: `Stabler Stop Reason` already carries a `kind` of
+	Downtime / Loss / Both, seven of its seeded rows are Loss, and
+	`list_stop_reasons(company, "Loss")` already returns them. Filing a stop
+	reason against a loss is not a typo the record can survive — "Waiting for
+	material" as the reason 30 kg went in the bin is a row that reads as data and
+	is not.
+	"""
+	kind = frappe.db.get_value("Stabler Stop Reason", reason, "kind")
+	if not kind:
+		frappe.throw(_("Unknown scrap reason: {0}").format(reason))
+	if kind not in ("Loss", "Both"):
+		frappe.throw(_("{0} is not a loss reason.").format(reason))
+
+
+def _assert_no_scrap_record(work_order: str) -> None:
+	"""Refuse a Finish-time reject count on an order that already has scrap records.
+
+	The double count, closed from the Finish side; `Stabler Line
+	Scrap._assert_rejects_were_not_already_reported` closes the other direction.
+
+	`scrap_qty` here becomes the Stock Entry's `process_loss_qty`, which inflates
+	`fg_completed_qty` to good+loss so ERPNext's equality check passes. That draws
+	the raw material for the lost units and receives none of it anywhere: the cost
+	is absorbed into the good output's unit cost. A scrap record moves that same
+	material into the scrap warehouse instead, where it is visible and priced.
+	Both, for one order, charges it twice — and nothing throws, because each
+	number is individually correct.
+
+	Measured on anjan 2026-08-27: `process_loss_qty > 0` on 0 of 3757 Manufacture
+	entries, so this guard refuses nothing anybody does today. It exists for the
+	shift after the scrap screen ships, when the operator has two boxes for one
+	bucket.
+	"""
+	if frappe.db.exists("Stabler Line Scrap", {"work_order": work_order}):
+		frappe.throw(_("This order already has a scrap record. Enter the rejects there, not here."))
+
+
+@frappe.whitelist()
+def wo_scrap_options(work_order: str):
+	"""This order's materials and how much of each is still standing in WIP.
+
+	What the scrap screen needs before it can ask anything: the item list comes
+	from the order rather than from the item catalogue, and each row carries its
+	own ceiling, so the kiosk can refuse a number before the server has to.
+
+	`available` is recomputed here rather than read from a column, the same way
+	`list_line_stops` recomputes minutes: it depends on scrap filed since the last
+	time anybody looked, and a cached ceiling is a ceiling that is wrong exactly
+	when two people are working the same order.
+	"""
+	_require_mfg()
+	order = frappe.db.get_value(
+		"Work Order", work_order, ["name", "company", "wip_warehouse", "status"], as_dict=True
+	)
+	if not order:
+		frappe.throw(_("Unknown Work Order: {0}").format(work_order))
+	_assert_company_scope(order.company)
+	if not _is_mfg_manager():
+		_require_own_work_order(work_order)
+
+	scrapped = frappe.get_all(
+		"Stabler Line Scrap",
+		filters={"work_order": work_order},
+		fields=["item_code", "qty", "stock_entry"],
+	)
+	by_item: dict[str, float] = {}
+	for row in scrapped:
+		if row.stock_entry and frappe.db.get_value("Stock Entry", row.stock_entry, "docstatus") == 2:
+			continue
+		by_item[row.item_code] = by_item.get(row.item_code, 0.0) + flt(row.qty)
+
+	rows = frappe.get_all(
+		"Work Order Item",
+		filters={"parent": work_order},
+		fields=["item_code", "item_name", "transferred_qty", "consumed_qty", "stock_uom"],
+		order_by="idx asc",
+	)
+	return {
+		"work_order": work_order,
+		"line": order.wip_warehouse,
+		"items": [
+			{
+				"item_code": r["item_code"],
+				"item_name": r["item_name"],
+				"uom": r["stock_uom"],
+				"available": available_to_scrap(
+					r["transferred_qty"], r["consumed_qty"], by_item.get(r["item_code"], 0.0)
+				),
+			}
+			for r in rows
+		],
+	}
+
+
+@frappe.whitelist()
+def log_line_scrap(
+	company: str,
+	work_order: str,
+	item_code: str,
+	qty: float,
+	reason: str,
+	note: str | None = None,
+):
+	"""Record one loss, and draft the stock movement that makes it true.
+
+	Open to any manufacturing user, not just managers, for the same reason the
+	stop log is: the person who watched the material go in the bin is the
+	operator, and a log only a manager can write is one that gets filled in from
+	memory at the end of the week.
+
+	What comes back is the draft's name as well as the record's, because the
+	operator has to be told that a stock document now exists in somebody else's
+	queue. `Stabler Line Scrap.validate` and `.after_insert` do the actual work,
+	so a Desk write behaves identically — which matters here more than usual:
+	3856 of 3856 production entries on this site came from two Desk accounts.
+	"""
+	_assert_company_scope(company)  # tenant isolation: reject a foreign company arg
+	_require_company(company)
+	_require_mfg()
+	_assert_loss_reason(reason)
+
+	# The order's own company is read back rather than believed: `company` and
+	# `work_order` arrive as two independent arguments with nothing in the pair
+	# saying they belong together. Checked again in `validate` so the Desk is
+	# covered; checked here so the endpoint refuses before it builds anything.
+	owner_company = frappe.db.get_value("Work Order", work_order, "company")
+	if not owner_company:
+		frappe.throw(_("Unknown Work Order: {0}").format(work_order))
+	if owner_company != company:
+		frappe.throw(_("That Work Order belongs to another company."), frappe.PermissionError)
+	if not _is_mfg_manager():
+		_require_own_work_order(work_order)
+
+	doc = frappe.get_doc(
+		{
+			"doctype": "Stabler Line Scrap",
+			"company": company,
+			"work_order": work_order,
+			"item_code": item_code,
+			"qty": flt(qty),
+			"reason": reason,
+			"reported_by": frappe.session.user,
+			"note": note or None,
+		}
+	)
+	doc.insert()
+	_log_wo_event(work_order, f"Scrap recorded by {frappe.session.user}: {item_code} x {flt(qty)} — {reason}")
+	return {
+		"name": doc.name,
+		"line": doc.line,
+		"qty": flt(doc.qty),
+		"uom": doc.uom,
+		"stock_entry": doc.stock_entry,
+	}
+
+
+@frappe.whitelist()
+def list_line_scrap(
+	company: str,
+	from_date: str,
+	to_date: str,
+	line: str | None = None,
+	work_order: str | None = None,
+):
+	"""The losses recorded in a window, newest first, each with its draft's state.
+
+	`stock_entry_docstatus` is read live rather than mirrored onto a column. A
+	stored status is one that drifts the moment accounting submits or cancels the
+	transfer in the Desk — which is the entire life of these documents — and the
+	drifted value would say "awaiting accounting" about stock that moved last
+	week. Same reason `list_line_stops` recomputes its minutes instead of reading
+	them back.
+
+	Grouped totals are deliberately not computed here, for the reason the stop log
+	gives: until this log has been kept for a while, every total is a total of one
+	shift's diligence.
+	"""
+	_assert_company_scope(company)  # tenant isolation: reject a foreign company arg
+	_require_company(company)
+	_require_mfg()
+
+	days = _plan_days(from_date, to_date)
+	# Two explicit bounds rather than `between`, for the reason `list_line_stops`
+	# spells out: frappe expands a bare date on the upper side to 23:59:59, so an
+	# exclusive next-midnight window silently became "and the whole next day".
+	filters = [
+		["company", "=", company],
+		["creation", ">=", f"{days[0]} 00:00:00"],
+		["creation", "<", f"{_plan_day_after(days[-1])} 00:00:00"],
+	]
+	if line:
+		filters.append(["line", "=", line])
+	if work_order:
+		filters.append(["work_order", "=", work_order])
+	rows = frappe.get_all(
+		"Stabler Line Scrap",
+		filters=filters,
+		fields=[
+			"name",
+			"work_order",
+			"line",
+			"item_code",
+			"qty",
+			"uom",
+			"reason",
+			"reported_by",
+			"note",
+			"stock_entry",
+			"creation",
+		],
+		order_by="creation desc",
+		limit=500,
+	)
+	out = []
+	for row in rows:
+		row = dict(row)
+		row["stock_entry_docstatus"] = (
+			frappe.db.get_value("Stock Entry", row["stock_entry"], "docstatus")
+			if row["stock_entry"]
+			else None
+		)
 		out.append(row)
 	return out
 
@@ -1719,6 +1948,13 @@ def make_work_order_stock_entry(
 			)
 		)
 		_assert_sweep_is_acknowledged(work_order, my_role, acknowledge_sweep)
+		if flt(scrap_qty) > 0:
+			# The double count. `scrap_qty` below becomes `process_loss_qty`, which
+			# absorbs the lost units' material into the good output's cost; a scrap
+			# record moves that same material into the scrap warehouse instead.
+			# Recording both charges it twice, and nothing throws — each number is
+			# individually correct.
+			_assert_no_scrap_record(work_order)
 
 	# D4 (P0): a Manufacture entry with process loss has to be ASKED FOR as
 	# good+scrap. ERPNext validates `fg_completed_qty == fg row qty +

@@ -274,3 +274,4 @@ stabler.tests.test_downtime_catalogue
 stabler.tests.test_integration_enqueue_gates
 stabler.tests.test_wo_finish_draft
 stabler.tests.test_bulk_operator_assign
+stabler.tests.test_scrap_math
