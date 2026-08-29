@@ -6581,3 +6581,13 @@ Every waiting order has its materials.,Кутаётган ҳар бир буюр
 need {0} · in {1} there is {2},керак {0} · {1} омборида {2} бор
 blocks,тўсиб турибди
 {0} material(s) could not be measured,ўлчаб бўлмаган хомашё: {0}
+Starts,Бошланиш
+Ends,Тугаш
+ends the next day,эртаси куни тугайди
+Save hours,Соатларни сақлаш
+Hours saved for {0},{0} учун соатлар сақланди
+Leave the end blank if it is not known yet — the block gets a start and no width.,"Тугаш ҳали маълум бўлмаса, бўш қолдиринг — блокда бошланиш бўлади, кенглиги бўлмайди."
+"Enter a start date and time, for example 2026-08-30 08:00.","Бошланиш сана ва вақтини киритинг, масалан 2026-08-30 08:00."
+"The end could not be read. Enter it as a date and time, or leave it blank.",Тугаш ўқилмади. Сана ва вақт сифатида киритинг ёки бўш қолдиринг.
+The end has to come after the start. An overnight job ends on the next date.,Тугаш бошланишдан кейин бўлиши керак. Тунги иш эртаси санада тугайди.
+{0} is {1} — its planned hours are the record of when it ran.,{0} ҳолати {1} — режалаштирилган соатлар буюртма қачон ишлаганининг ёзуви.

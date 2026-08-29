@@ -37,6 +37,26 @@ def register_select() -> str:
 	return re.search(r"SELECT (.*?)\n\t\tFROM", body, re.S).group(1)
 
 
+def plan_select() -> str:
+	"""The SELECT inside `work_order_plan`, up to its WHERE."""
+	src = API.read_text(encoding="utf-8")
+	start = src.index("def work_order_plan(")
+	body = src[start : src.index("\ndef ", start + 1)]
+	return re.search(r"SELECT (.*?)\n\t\tWHERE", body, re.S).group(1)
+
+
+class TestThePlanHandsBackTheHoursItLetsAPlannerEdit(unittest.TestCase):
+	def test_both_ends_of_the_window_are_selected(self):
+		"""The planning screen writes both, so it has to be able to show both.
+		Without `planned_end_date` the editor opens with the end box empty on an
+		order that has one, and saving that box silently erases it — the field is
+		cleared by a blank, which is the behaviour the editor needs to correct a
+		typo."""
+		select = plan_select()
+		self.assertIn("planned_start_date", select)
+		self.assertIn("planned_end_date", select)
+
+
 class TestTheRegisterHandsBackWhatTheBoardReads(unittest.TestCase):
 	def test_the_finish_time_is_selected(self):
 		"""The board's shift window is built on it, and its absence is silent —

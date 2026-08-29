@@ -6581,3 +6581,13 @@ Every waiting order has its materials.,Kutayotgan har bir buyurtmaning xomashyos
 need {0} · in {1} there is {2},kerak {0} · {1} omborida {2} bor
 blocks,to'sib turibdi
 {0} material(s) could not be measured,o'lchab bo'lmagan xomashyo: {0}
+Starts,Boshlanish
+Ends,Tugash
+ends the next day,ertasi kuni tugaydi
+Save hours,Soatlarni saqlash
+Hours saved for {0},{0} uchun soatlar saqlandi
+Leave the end blank if it is not known yet — the block gets a start and no width.,"Tugash hali ma'lum bo'lmasa, bo'sh qoldiring — blokda boshlanish bo'ladi, kengligi bo'lmaydi."
+"Enter a start date and time, for example 2026-08-30 08:00.","Boshlanish sana va vaqtini kiriting, masalan 2026-08-30 08:00."
+"The end could not be read. Enter it as a date and time, or leave it blank.",Tugash o'qilmadi. Sana va vaqt sifatida kiriting yoki bo'sh qoldiring.
+The end has to come after the start. An overnight job ends on the next date.,Tugash boshlanishdan keyin bo'lishi kerak. Tungi ish ertasi sanada tugaydi.
+{0} is {1} — its planned hours are the record of when it ran.,{0} holati {1} — rejalashtirilgan soatlar buyurtma qachon ishlaganining yozuvi.

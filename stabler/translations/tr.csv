@@ -6576,3 +6576,13 @@ Every waiting order has its materials.,Bekleyen her emrin malzemesi var.
 need {0} · in {1} there is {2},gereken {0} · {1} deposunda {2} var
 blocks,engellediği
 {0} material(s) could not be measured,ölçülemeyen malzeme: {0}
+Starts,Başlangıç
+Ends,Bitiş
+ends the next day,ertesi gün bitiyor
+Save hours,Saatleri kaydet
+Hours saved for {0},{0} için saatler kaydedildi
+Leave the end blank if it is not known yet — the block gets a start and no width.,"Bitiş henüz bilinmiyorsa boş bırakın — blok başlangıcı olur, genişliği olmaz."
+"Enter a start date and time, for example 2026-08-30 08:00.","Başlangıç tarih ve saatini girin, örneğin 2026-08-30 08:00."
+"The end could not be read. Enter it as a date and time, or leave it blank.",Bitiş okunamadı. Tarih ve saat olarak girin ya da boş bırakın.
+The end has to come after the start. An overnight job ends on the next date.,Bitiş başlangıçtan sonra olmalı. Gece boyu süren iş ertesi tarihte biter.
+{0} is {1} — its planned hours are the record of when it ran.,{0} durumu {1} — planlanan saatler emrin ne zaman çalıştığının kaydıdır.
