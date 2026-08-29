@@ -60,3 +60,44 @@ describe("one home for the stamp rules", () => {
 		expect(src).toMatch(/scheduleLabel\(order\)/);
 	});
 });
+
+// ---------------------------------------------------------------------------
+// The day grid — design 1c's «линия × время».
+
+describe("the day grid draws only what somebody planned", () => {
+	it("gives a bar to an order with a typed end and a mark to one without", () => {
+		// The whole honesty rule, and the one thing a screenshot of this screen
+		// must not be able to lie about. A bar of any width where no end was typed
+		// is a duration nobody stated — and there are 3 799 of those today.
+		expect(src).toMatch(/v-if="b\.width !== null"/);
+		expect(src).toMatch(/class="position-absolute plan-mark"/);
+	});
+
+	it("derives the rows through the tested composable", () => {
+		expect(src).toMatch(/timelineRows\(dayOrders\.value, grid\.value\.lines \|\| \[\]\)/);
+	});
+
+	it("asks the server for one day when it is drawing one day", () => {
+		// A week's rows on a one-day ruler would stack every order on top of the
+		// same hours, and the grid would show collisions that do not exist.
+		expect(src).toMatch(/mode\.value === "day" \? startDate\.value : addDays\(/);
+	});
+
+	it("steps by a day in day mode and by a week in week mode", () => {
+		expect(src).toMatch(/n \* \(mode\.value === "day" \? 1 : WINDOW_DAYS\)/);
+	});
+
+	it("opens the hours form from a block", () => {
+		// The grid and the form are one loop: the grid shows what is missing, the
+		// form is how it gets filled. A block that only navigated away would break
+		// it in the middle.
+		// Both of them — the bar AND the mark. Asserting one occurrence let a
+		// mutation replace the bar's handler and stay green, and the mark is the
+		// half that matters most: it is the order that still needs hours.
+		expect(src.match(/@click="pick\(b\.order, row\.line\)"/g) || []).toHaveLength(2);
+	});
+
+	it("names the orders it could not place instead of dropping them", () => {
+		expect(src).toMatch(/timeline\.offGrid\.length/);
+	});
+});

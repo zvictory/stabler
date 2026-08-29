@@ -10,6 +10,7 @@ import { todayIso } from "../../composables/date.js";
 import { launchBlockers } from "../../composables/launchBlockers.js";
 import { loadStockLevels } from "../../composables/stockLevels.js";
 import { scheduleLabel, splitStamp } from "../../composables/planSchedule.js";
+import { timelineRows } from "../../composables/planTimeline.js";
 import EmptyState from "../../components/EmptyState.vue";
 import DateInput from "../../components/DateInput.vue";
 
@@ -38,7 +39,28 @@ const startDate = ref(todayIso());
 const grid = ref({ lines: [], days: [], cells: [], unscheduled: [], counts: null });
 const selected = ref(null);
 
-const endDate = computed(() => addDays(startDate.value, WINDOW_DAYS - 1));
+// Design 1c's grid is a DAY: rows are lines, the axis is the clock. The week
+// grid it sits beside answers a different question ("which day does this run")
+// and keeps answering it — a day view cannot show next Thursday, and a week
+// view cannot show that two orders collide at 14:00.
+const mode = ref("week");
+const endDate = computed(() =>
+	mode.value === "day" ? startDate.value : addDays(startDate.value, WINDOW_DAYS - 1),
+);
+
+// The day's orders, flattened back out of the grid the server already builds —
+// rather than a second endpoint returning the same rows in another shape.
+const dayOrders = computed(() => (grid.value.cells || []).flatMap((c) => c.orders || []));
+const timeline = computed(() => timelineRows(dayOrders.value, grid.value.lines || []));
+// Whole hours, so the ruler's labels line up with the block edges.
+const hourTicks = computed(() => {
+	const { from, to } = timeline.value.window;
+	return Array.from({ length: to - from + 1 }, (_, i) => from + i);
+});
+const tickLeft = (hour) => {
+	const { from, to } = timeline.value.window;
+	return ((hour - from) / (to - from)) * 100;
+};
 const isEmpty = computed(() => (grid.value.counts?.orders ?? 0) === 0);
 
 function addDays(iso, n) {
@@ -53,7 +75,7 @@ function toIso(d) {
 }
 
 function shiftWindow(n) {
-	startDate.value = addDays(startDate.value, n * WINDOW_DAYS);
+	startDate.value = addDays(startDate.value, n * (mode.value === "day" ? 1 : WINDOW_DAYS));
 }
 
 function thisWeek() {
@@ -232,7 +254,7 @@ async function load() {
 
 const openOrder = (name) => router.push(`/manufacturing/work-orders/${encodeURIComponent(name)}`);
 
-watch([activeCompany, startDate], load);
+watch([activeCompany, startDate, mode], load);
 // The panel does not move with the window, so it is reloaded on the company
 // only — and once at mount.
 watch(activeCompany, loadBlockers);
@@ -263,7 +285,21 @@ onMounted(() => {
 					<i class="ti ti-chevron-right"></i>
 				</button>
 				<div style="width: 12rem">
-					<DateInput v-model="startDate" :placeholder="t('Week starting')" />
+					<DateInput v-model="startDate" :placeholder="mode === 'day' ? t('Day') : t('Week starting')" />
+				</div>
+				<div class="btn-group" role="group">
+					<button
+						type="button"
+						class="btn btn-sm btn-outline-secondary"
+						:class="mode === 'day' ? 'active' : ''"
+						@click="mode = 'day'"
+					>{{ t("Day") }}</button>
+					<button
+						type="button"
+						class="btn btn-sm btn-outline-secondary"
+						:class="mode === 'week' ? 'active' : ''"
+						@click="mode = 'week'"
+					>{{ t("Week") }}</button>
 				</div>
 				<div class="ms-auto text-secondary small">
 					<span v-if="grid.counts">
@@ -340,7 +376,97 @@ onMounted(() => {
 
 		<div class="row g-3">
 			<div class="col-12 col-xl-8">
-				<div class="card">
+				<!-- «Планирование: линия × время». One row per line, the clock across
+				     the top, one block per order.
+				     The rule that lets this exist without inventing anything: a block
+				     is drawn WIDE only when an end was typed. An order with a start
+				     and no end — which is every order on this site until somebody
+				     uses the hours form — is a mark at its hour. No default duration,
+				     no shift length, no average. The grid starts nearly empty and
+				     fills as it is used, because it is the tool that makes the data
+				     it draws.
+				     Not drawn, each because nothing records the input: a load
+				     percentage per line, a rate in units per hour, and shift bands
+				     (this factory runs one shift). -->
+				<div v-if="mode === 'day'" class="card">
+					<div class="card-body">
+						<div v-if="loading" class="text-secondary small">{{ t("Loading") }}</div>
+						<div v-else>
+							<div class="d-flex">
+								<div class="text-secondary small" style="width: 11rem; flex: 0 0 11rem">
+									{{ t("Line") }}
+								</div>
+								<div class="position-relative flex-grow-1" style="height: 1.25rem">
+									<span
+										v-for="h in hourTicks"
+										:key="h"
+										class="position-absolute small text-secondary font-monospace"
+										:style="{ left: tickLeft(h) + '%', transform: 'translateX(-50%)' }"
+									>{{ String(h).padStart(2, "0") }}</span>
+								</div>
+							</div>
+
+							<div
+								v-for="row in timeline.rows"
+								:key="row.line"
+								class="d-flex align-items-center border-top py-2"
+							>
+								<div class="text-truncate small" style="width: 11rem; flex: 0 0 11rem">{{ row.line }}</div>
+								<div class="position-relative flex-grow-1 plan-track">
+									<span
+										v-for="h in hourTicks"
+										:key="h"
+										class="position-absolute plan-tick"
+										:style="{ left: tickLeft(h) + '%' }"
+									></span>
+
+									<template v-for="b in row.blocks" :key="b.order.name">
+										<!-- Typed hours: a bar of the width somebody planned. -->
+										<div
+											v-if="b.width !== null"
+											class="position-absolute plan-block"
+											:class="statusBadge(b.order.status)"
+											:style="{ left: b.left + '%', width: b.width + '%' }"
+											:title="`${b.order.name} · ${scheduleLabel(b.order)}`"
+											@click="pick(b.order, row.line)"
+										>
+											<span class="text-truncate d-block">{{ b.order.item_name || b.order.production_item }}</span>
+										</div>
+										<!-- No end typed. A mark, never a bar: the difference between
+										     "runs until 14:30" and "nobody has said" has to stay
+										     visible, and it is the difference this screen is for. -->
+										<div
+											v-else
+											class="position-absolute plan-mark"
+											:style="{ left: b.left + '%' }"
+											:title="`${b.order.name} · ${t('no end planned')}`"
+											@click="pick(b.order, row.line)"
+										></div>
+									</template>
+								</div>
+							</div>
+
+							<div v-if="!timeline.rows.length" class="text-secondary small py-3">
+								{{ t("No lines to plan on.") }}
+							</div>
+
+							<!-- Named, not swallowed: an order with no hour, or on a line
+							     this grid is not showing, is still work somebody scheduled. -->
+							<div v-if="timeline.offGrid.length" class="border-top pt-2 mt-2 small text-secondary">
+								{{ t("{0} order(s) have no planned hour yet", [timeline.offGrid.length]) }}
+								<a
+									v-for="o in timeline.offGrid"
+									:key="o.name"
+									href="#"
+									class="ms-2 font-monospace"
+									@click.prevent="pick(o, o.wip_warehouse)"
+								>{{ o.name }}</a>
+							</div>
+						</div>
+					</div>
+				</div>
+
+				<div v-else class="card">
 					<div class="table-responsive">
 						<table class="table table-vcenter card-table">
 							<thead>
@@ -496,3 +622,47 @@ onMounted(() => {
 		</div>
 	</template>
 </template>
+
+<style scoped>
+/* The track is the day. Height is fixed so an idle line keeps its row and the
+   grid does not change shape as work is planned onto it. */
+.plan-track {
+	height: 2.25rem;
+}
+
+.plan-tick {
+	top: 0;
+	bottom: 0;
+	width: 1px;
+	background: var(--tblr-border-color);
+	opacity: 0.6;
+}
+
+.plan-block {
+	top: 0.25rem;
+	bottom: 0.25rem;
+	border-radius: 0.25rem;
+	padding: 0 0.4rem;
+	font-size: 0.75rem;
+	line-height: 1.75rem;
+	overflow: hidden;
+	cursor: pointer;
+}
+
+/* An order with a start and no end. Deliberately not a narrow bar: a bar of any
+   width is read as a duration, and nobody has said one. */
+.plan-mark {
+	top: 0.25rem;
+	bottom: 0.25rem;
+	width: 3px;
+	border-radius: 1px;
+	background: var(--tblr-secondary);
+	cursor: pointer;
+}
+
+.plan-mark::after {
+	content: "";
+	position: absolute;
+	inset: -0.25rem -0.35rem;
+}
+</style>
