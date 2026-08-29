@@ -7,14 +7,17 @@
 // — its columns are draft / waiting / partly issued / running / halted / done,
 // and its cards carry buttons rather than drag handles.
 //
-// Material shortage is deliberately NOT a column. The design shows it as a badge
-// inside «Готов к запуску» ("Дефицит блокирует старт"), which is the right
-// shape: a short order is still waiting to start, and moving it to a bin of its
-// own would hide it from the column a supervisor is working down. The badge
-// comes from `materialReadiness`, which already answers it.
+// Neither material shortage nor a half-finished transfer is a column. The design
+// draws both inside «Готов к запуску» — shortage as a badge ("Дефицит блокирует
+// старт"), a part-issued order as a card carrying a «Частично» BUTTON and a
+// «передано 50%» line. That is the right shape: both orders are still waiting to
+// start, and a bin of their own takes them out of the column a supervisor is
+// working down. A sixth «Частично» column shipped on 2026-08-29 and is removed
+// here: it was mine rather than the design's, it held 0 rows on anjan, and it
+// pushed the five real columns off a laptop screen.
 
 /** Left to right, as the design lays them out. */
-export const BOARD_COLUMNS = ["draft", "ready", "partial", "running", "paused", "done"];
+export const BOARD_COLUMNS = ["draft", "ready", "running", "paused", "done"];
 
 const DONE = new Set(["Completed", "Closed"]);
 
@@ -44,18 +47,58 @@ export function boardColumn(row) {
 	if (status === "Stopped") return "paused";
 	if (status === "In Process" || (Number(row?.produced_qty) || 0) > 0) return "running";
 
-	// Nothing issued yet: the order is waiting for the store, which is the
-	// column a shift lead works down.
-	const transferred = Number(row?.transferred_qty) || 0;
-	if (transferred <= 0) return "ready";
+	// Submitted, not halted, nothing off the line yet: the order is waiting to
+	// start, whether or not its material has been issued. How much HAS been
+	// issued is a fact about the card, not about the column — `transferredPct`
+	// answers it and the card prints it.
+	return "ready";
+}
 
-	// Something has been issued. `>=` and not `===` because ERPNext allows
-	// transferring more than the order quantity, and an over-issued order must
-	// not fall out of every branch. Fully issued still counts as "partly on its
-	// way" rather than running: the material is at the machine and the machine
-	// has not started, and calling that running would show two orders on a line
-	// that is running one.
-	return "partial";
+/**
+ * How much of an order has been issued to the floor, as a whole percent.
+ *
+ * @returns {number|null} null when there is nothing to say — either nothing has
+ *          been issued, or the order has no quantity to take a share of.
+ *          Deliberately not 0: the card renders this line only when it exists,
+ *          and «передано 0%» on every waiting order is furniture.
+ */
+export function transferredPct(row) {
+	const qty = Number(row?.qty) || 0;
+	const transferred = Number(row?.transferred_qty) || 0;
+	if (qty <= 0 || transferred <= 0) return null;
+	// Capped, because ERPNext allows an over-issue and «передано 120%» reads as
+	// a bug in the card rather than as a fact about the store.
+	return Math.min(100, Math.round((transferred / qty) * 100));
+}
+
+/**
+ * The one action the card offers, or null when there is nothing left to do.
+ *
+ * One action, not the design's two: a card is 15rem wide and a second button
+ * halves both. The action below is the one that moves the order to the next
+ * column; everything else stays on the order's own page, which is one click away.
+ *
+ * `kind` is what the page dispatches on; `label` is a translation key, so this
+ * module stays free of `t()` and can be unit-tested without a locale.
+ */
+export function cardAction(row) {
+	switch (boardColumn(row)) {
+		case "draft":
+			return { kind: "submit", label: "Submit" };
+		case "ready":
+			return { kind: "transfer", label: "Transfer and start" };
+		case "running":
+			return { kind: "produce", label: "Finish" };
+		case "paused":
+			return { kind: "resume", label: "Resume" };
+		case "done":
+			// `done` holds Completed AND Closed. A Close button on an order that is
+			// already closed is a button whose only outcome is an error from the
+			// server, so the finished half of the column offers nothing.
+			return row?.status === "Closed" ? null : { kind: "close", label: "Close order" };
+		default:
+			return null;
+	}
 }
 
 /**

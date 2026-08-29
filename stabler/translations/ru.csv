@@ -6574,6 +6574,8 @@ on {0} order(s),по {0} заказам
 {0} item(s) missing,не хватает позиций: {0}
 {0} order(s) not measured,остаток не измерен: {0} заказов
 Nothing in this view — {0} order(s) in the register.,В этом разделе пусто — всего заказов в реестре: {0}.
-Materials issued,Сырьё передано
 Halted,Пауза
 Finished,Завершён
+Transfer and start,Передать и старт
+Close order,Закрыть заказ
+issued {0}%,передано {0}%

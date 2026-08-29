@@ -181,3 +181,79 @@ describe("list and board are one register, not two", () => {
 		expect(src).not.toMatch(/draggable/);
 	});
 });
+
+// ---------------------------------------------------------------------------
+// The board's action layer.
+//
+// The board shipped read-only on 2026-08-29 — six columns of cards that could
+// only be looked at — and the design it came from is explicit that the card is
+// where the work is done. These pin the wiring of the five actions, plus the one
+// contract that spans two files and would otherwise break in silence.
+
+const detailSrc = readFileSync(
+	fileURLToPath(new URL("../pages/manufacturing/WorkOrderDetail.vue", import.meta.url)),
+	"utf8",
+);
+
+describe("a board card carries the action that moves it on", () => {
+	it("asks the composable which action, rather than reading the column", () => {
+		// A `key === 'draft' ? 'Submit' : …` ladder in the template would be a
+		// second copy of a precedence order that already has one, and the button
+		// would keep offering Close on a closed order — the case the composable
+		// exists to rule out.
+		expect(src).toMatch(/v-if="cardAction\(r\)"/);
+		expect(src).toMatch(/\{\{ t\(cardAction\(r\)\.label\) \}\}/);
+	});
+
+	it("does not open the order underneath while acting on it", () => {
+		// The card itself routes on click. Without `.stop` every press of Submit
+		// would also navigate away, and the confirm box would be torn down with
+		// the page that raised it.
+		expect(src).toMatch(/@click\.stop="runCardAction\(r\)"/);
+	});
+
+	it("reloads the register instead of patching the row", () => {
+		// The action moves the card to another column and every count and quantity
+		// in the strip above moves with it. Editing one row in place would leave
+		// the board and the strip contradicting each other on screen.
+		expect(/async function runCardAction[\s\S]*?\n}/.exec(src)?.[0]).toMatch(/await load\(\)/);
+	});
+
+	it("runs only the three actions that take nothing but a name", () => {
+		// Transfer and Manufacture need a quantity, and Manufacture is guarded
+		// server-side on operator assignment and on sweeping the other role's
+		// unconsumed material. Firing those from a 15rem card would produce
+		// refusals the card cannot explain and the user cannot resolve there.
+		for (const m of ["submit_work_order", "resume_work_order", "close_work_order"]) {
+			expect(src).toContain(`stabler.api.manufacturing.${m}`);
+		}
+		expect(src).not.toContain("make_work_order_stock_entry");
+	});
+});
+
+describe("the two actions the board hands to the order page", () => {
+	it("sends the kind the order page is waiting for", () => {
+		// One contract across two files. Rename the query key on either side and
+		// the button still navigates, the dialog just never opens — a failure that
+		// looks exactly like a slow page.
+		expect(src).toMatch(/query: \{ act: action\.kind \}/);
+		expect(detailSrc).toMatch(/const act = route\.query\.act;/);
+		expect(detailSrc).toMatch(/act === "transfer" \|\| act === "produce"/);
+	});
+
+	it("opens the dialog only after the stock map is loaded", () => {
+		// The dialog lists the materials the typed quantity consumes and whether
+		// the store carries them. Opened over an empty stock map it shows a
+		// shortage-free list that has checked nothing — worse than no list.
+		// Comments stripped first, and that is not tidiness: the hook explains this
+		// very ordering in prose, so an un-stripped search finds `loadStock()` in
+		// the comment, before the call it is describing. Written the obvious way
+		// this assertion passed with the two lines swapped — measured, not feared.
+		const hook = (/onMounted\(async \(\) => \{[\s\S]*?\n\}\);/.exec(detailSrc)?.[0] ?? "").replace(
+			/^\s*\/\/.*$/gm,
+			"",
+		);
+		expect(hook).toContain("loadStock()");
+		expect(hook.indexOf("openQtyDialog")).toBeGreaterThan(hook.indexOf("loadStock()"));
+	});
+});
