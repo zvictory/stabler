@@ -6552,3 +6552,10 @@ No losses recorded in this window,Бу оралиқда йўқотиш ёзил�
 "Scrap on this floor has only ever been filed by hand, with the reason buried in a stock entry remark. The first one with a reason code goes in on the left.","Бу сехда брак ҳар доим қўлда расмийлаштирилган, сабаби эса омбор ҳужжатининг изоҳида қолиб кетган. Сабаб коди билан биринчи ёзув чапда киритилади."
 Loss recorded.,Йўқотиш ёзилди.
 Loss recorded. Stock transfer {0} is now waiting for accounting to submit it.,Йўқотиш ёзилди. Омбор ўтказмаси {0} энди бухгалтерия томонидан тасдиқланишини кутмоқда.
+With a reason,Сабаб билан
+Just a count,Фақат сон
+"This order's losses are already recorded with a reason ({0} so far), so the plain count is closed for it.","Бу буюртма бўйича йўқотишлар сабаб билан ёзиб бўлинган (ҳозирча {0} та), шунинг учун оддий саноқ у учун ёпиқ."
+"Record this loss with its reason, or switch to a plain count, before finishing.",Тугатишдан олдин бу йўқотишни сабаби билан ёзинг ёки оддий саноққа ўтинг.
+Recorded. Stock transfer {0} is waiting for accounting.,Ёзилди. Омбор ўтказмаси {0} бухгалтерияни кутмоқда.
+Recorded.,Ёзилди.
+Could not record the scrap.,Бракни ёзиб бўлмади.

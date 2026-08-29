@@ -6946,3 +6946,10 @@ No losses recorded in this window,No losses recorded in this window
 "Scrap on this floor has only ever been filed by hand, with the reason buried in a stock entry remark. The first one with a reason code goes in on the left.","Scrap on this floor has only ever been filed by hand, with the reason buried in a stock entry remark. The first one with a reason code goes in on the left."
 Loss recorded.,Loss recorded.
 Loss recorded. Stock transfer {0} is now waiting for accounting to submit it.,Loss recorded. Stock transfer {0} is now waiting for accounting to submit it.
+With a reason,With a reason
+Just a count,Just a count
+"This order's losses are already recorded with a reason ({0} so far), so the plain count is closed for it.","This order's losses are already recorded with a reason ({0} so far), so the plain count is closed for it."
+"Record this loss with its reason, or switch to a plain count, before finishing.","Record this loss with its reason, or switch to a plain count, before finishing."
+Recorded. Stock transfer {0} is waiting for accounting.,Recorded. Stock transfer {0} is waiting for accounting.
+Recorded.,Recorded.
+Could not record the scrap.,Could not record the scrap.

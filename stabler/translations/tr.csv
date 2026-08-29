@@ -6547,3 +6547,10 @@ No losses recorded in this window,Bu aralıkta kaydedilmiş kayıp yok
 "Scrap on this floor has only ever been filed by hand, with the reason buried in a stock entry remark. The first one with a reason code goes in on the left.","Bu atölyede fire hep elle işlendi, gerekçe ise bir stok fişinin açıklamasında kaldı. Gerekçe kodu taşıyan ilki soldan girilir."
 Loss recorded.,Kayıp kaydedildi.
 Loss recorded. Stock transfer {0} is now waiting for accounting to submit it.,Kayıp kaydedildi. {0} stok transferi şimdi muhasebenin onayını bekliyor.
+With a reason,Gerekçeli
+Just a count,Sadece adet
+"This order's losses are already recorded with a reason ({0} so far), so the plain count is closed for it.","Bu iş emrinin kayıpları zaten gerekçesiyle kaydedildi (şimdiye kadar {0} tane), bu yüzden düz adet girişi ona kapalı."
+"Record this loss with its reason, or switch to a plain count, before finishing.",Bitirmeden önce bu kaybı gerekçesiyle kaydedin ya da düz adet girişine geçin.
+Recorded. Stock transfer {0} is waiting for accounting.,Kaydedildi. {0} stok transferi muhasebeyi bekliyor.
+Recorded.,Kaydedildi.
+Could not record the scrap.,Fire kaydedilemedi.

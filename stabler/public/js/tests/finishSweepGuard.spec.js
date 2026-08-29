@@ -53,17 +53,15 @@ function functionBody(name) {
 
 const EXPR = disabledExpression("confirmFinish", "finish");
 
-const READY = { producedQty: 12, sweepPending: false, sweepAck: false };
+// `unfiledScrap` joined the guard when the reject box gained a reason
+// (kioskRejectPath.spec.js owns it, and pins what it does). It is held at false
+// here so these cases still describe the sweep and nothing else.
+const READY = { producedQty: 12, sweepPending: false, sweepAck: false, unfiledScrap: false };
 
 function isDisabled(overrides = {}) {
 	const scope = { ...READY, ...overrides };
-	const fn = new Function(
-		"producedQty",
-		"sweepPending",
-		"sweepAck",
-		`return (${EXPR});`
-	);
-	return !!fn(scope.producedQty, scope.sweepPending, scope.sweepAck);
+	const fn = new Function(...Object.keys(scope), `return (${EXPR});`);
+	return !!fn(...Object.values(scope));
 }
 
 describe("finish button, when the other operator has not written off yet", () => {

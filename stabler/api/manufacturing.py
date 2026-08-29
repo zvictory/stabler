@@ -1398,6 +1398,15 @@ def wo_scrap_options(work_order: str):
 		"work_order": work_order,
 		"line": order.wip_warehouse,
 		"scrap_warehouse": (settings.scrap_warehouse or None) if settings else None,
+		# How many records this order already carries — the exact question
+		# `_assert_no_scrap_record` asks, counted off the same unfiltered list, so
+		# the kiosk can retire its Finish-time reject box before the operator
+		# types into it instead of refusing them after they have counted the
+		# pallet. Cancelled drafts are included here on purpose: the guard uses
+		# `frappe.db.exists` with no docstatus filter, and a client-side count that
+		# disagreed with it would put the box back on exactly the orders the server
+		# still refuses.
+		"scrap_records": len(scrapped),
 		"items": [
 			{
 				"item_code": r["item_code"],

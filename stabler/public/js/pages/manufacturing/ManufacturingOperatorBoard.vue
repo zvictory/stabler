@@ -602,6 +602,137 @@ const batchExpiry = ref("");
 
 const draftBusy = ref(false);
 
+// ----- Rejects: one number, two destinations, never both ------------------
+//
+// "Киоск 2.0: очередь, крупные кнопки, брак с причиной" — defect WITH A REASON.
+// The number has been askable since 2026-06-08 and was used on 0 of 3757
+// Manufacture entries; the missing thing was the reason.
+//
+// Both destinations exist and the server refuses the combination in both
+// directions (`_assert_no_scrap_record`, `_assert_rejects_were_not_already_
+// reported`), because `scrap_qty` draws the lost units' raw material into the
+// good output's cost while a scrap record moves that same material into the
+// scrap warehouse — each number individually correct, their sum wrong, and
+// nothing throwing. So the modal does not offer two boxes. It offers ONE box and
+// a switch that says where the number goes, and switching empties it.
+const rejectMode = ref("reasoned");
+// How many scrap records this order already carries: from `wo_scrap_options` on
+// open, plus whatever is filed in this dialog. Non-zero retires the bare count
+// entirely — that is the server's refusal, met before the pallet is counted.
+const scrapRecords = ref(0);
+const scrapWarehouse = ref(null);
+const scrapItems = ref([]);
+const scrapReasons = ref([]);
+const scrapItem = ref("");
+const scrapReason = ref("");
+const scrapBusy = ref(false);
+const scrapNotice = ref("");
+
+/**
+ * Where this Finish's reject number goes, and what the Finish call may carry.
+ *
+ * `unfiled` is the one that is not about the server. In reasoned mode the number
+ * in the box belongs to a scrap record that has not been filed yet, and sending
+ * the Finish would drop it silently — the loss counted on the floor and recorded
+ * nowhere. It holds the Confirm button instead of quietly discarding it.
+ */
+function rejectPath(mode, typedQty, recordedCount) {
+	const typed = Number(typedQty) > 0 ? Number(typedQty) : 0;
+	if (recordedCount > 0) {
+		return { path: "record", scrap_qty: undefined, locked: true, unfiled: typed };
+	}
+	if (mode === "reasoned") {
+		return { path: "record", scrap_qty: undefined, locked: false, unfiled: typed };
+	}
+	return { path: "count", scrap_qty: typed > 0 ? typed : undefined, locked: false, unfiled: 0 };
+}
+
+const rejectDecision = computed(() =>
+	rejectPath(rejectMode.value, scrapQty.value, scrapRecords.value)
+);
+const unfiledScrap = computed(() => rejectDecision.value.unfiled > 0);
+const scrapReady = computed(
+	() => !!scrapWarehouse.value && scrapItems.value.some((i) => Number(i.available) > 0)
+);
+
+// Switching destinations empties the box. The two are mutually exclusive on the
+// server per Work Order, so a number carried across the switch is a number aimed
+// at the wrong one — and it would look identical to the operator either way.
+function setRejectMode(mode) {
+	if (rejectMode.value === mode) return;
+	rejectMode.value = mode;
+	// The NUMBER is what must not cross: it was typed for one destination and
+	// looks identical aimed at the other. A picked item or reason is inert on the
+	// count side and worth keeping if they switch back.
+	scrapQty.value = "";
+	if (numTarget.value === "scrap") numTarget.value = "produced";
+}
+
+async function recordScrap() {
+	const row = finishTarget.value;
+	if (!row) return;
+	scrapBusy.value = true;
+	actionError.value = "";
+	resetIdleTimer();
+	try {
+		const out = await call("stabler.api.manufacturing.log_line_scrap", {
+			company: activeCompany.value,
+			work_order: row.name,
+			item_code: scrapItem.value,
+			qty: Number(scrapQty.value),
+			reason: scrapReason.value,
+		});
+		// The draft's name, because the endpoint returns it for exactly this: a
+		// stock document now sits in accounting's queue and the operator is the
+		// only person who knows why it is there.
+		scrapNotice.value = out?.stock_entry
+			? t("Recorded. Stock transfer {0} is waiting for accounting.", [out.stock_entry])
+			: t("Recorded.");
+		scrapRecords.value += 1;
+		scrapQty.value = "";
+		scrapItem.value = "";
+		scrapReason.value = "";
+		numTarget.value = "produced";
+		await loadScrapOptions(row.name);
+	} catch (err) {
+		actionError.value = humanizeError(err) || t("Could not record the scrap.");
+	} finally {
+		scrapBusy.value = false;
+	}
+}
+
+async function loadScrapOptions(workOrder) {
+	try {
+		const opts = await call("stabler.api.manufacturing.wo_scrap_options", {
+			work_order: workOrder,
+		});
+		scrapWarehouse.value = opts?.scrap_warehouse || null;
+		scrapItems.value = opts?.items || [];
+		scrapRecords.value = Number(opts?.scrap_records) || 0;
+	} catch (err) {
+		// Non-fatal, like the sweep preview: a failed read costs the reasoned path,
+		// not the Finish. `scrapWarehouse` stays null, so the modal says scrap
+		// cannot be recorded here rather than offering a picker that would throw.
+		console.error("Failed to read the scrap options", err);
+	}
+}
+
+async function loadScrapReasons() {
+	if (scrapReasons.value.length || !activeCompany.value) return;
+	try {
+		// The Loss half of `Stabler Stop Reason`, seeded and translated into five
+		// languages. The four chips in the design package illustrate the SHAPE of
+		// this picker; the taxonomy is the catalogue's and is not yet reviewed, so
+		// nothing here may carry a second opinion about it.
+		scrapReasons.value = await call("stabler.api.manufacturing.list_stop_reasons", {
+			company: activeCompany.value,
+			kind: "Loss",
+		});
+	} catch (err) {
+		console.error("Failed to read the loss reasons", err);
+	}
+}
+
 // What finishing right now would drag onto this operator's document: the lines
 // the OTHER role owns and has not written off yet. `wo_consumption_preview`
 // answers it on open, so the operator meets it as a warning they can still act
@@ -630,7 +761,24 @@ async function openFinish(row) {
 	finishSweep.value = [];
 	sweepAck.value = false;
 	sweepBlocked.value = false;
+	// Cleared per order for the reason sweepAck is: a kiosk is one screen for a
+	// whole shift, and a record count left over from the last order would hide
+	// this one's count box, or offer it on an order the server has already
+	// closed to it.
+	rejectMode.value = "reasoned";
+	scrapRecords.value = 0;
+	scrapWarehouse.value = null;
+	scrapItems.value = [];
+	scrapItem.value = "";
+	scrapReason.value = "";
+	scrapNotice.value = "";
 	resetIdleTimer();
+	loadScrapReasons();
+	// Awaited, unlike the two previews below: whether this order already carries
+	// scrap records decides which box the operator is shown, and showing the
+	// wrong one for a frame is how a number gets typed into the path the server
+	// refuses.
+	await loadScrapOptions(row.name);
 	try {
 		const pv = await call("stabler.api.manufacturing.wo_consumption_preview", { work_order: row.name });
 		finishSweep.value = pv?.sweep_risk || [];
@@ -722,7 +870,7 @@ async function confirmFinish() {
 			work_order: row.name,
 			purpose: "Manufacture",
 			qty: Number(producedQty.value),
-			scrap_qty: Number(scrapQty.value) > 0 ? Number(scrapQty.value) : undefined,
+			scrap_qty: rejectDecision.value.scrap_qty,
 			batch_no: batchNo.value || undefined,
 			mfg_date: batchNo.value && batchMfg.value ? batchMfg.value : undefined,
 			expiry_date: batchNo.value && batchExpiry.value ? batchExpiry.value : undefined,
@@ -1435,11 +1583,40 @@ const sortedRows = computed(() => {
 								</div>
 							</div>
 
-							<div class="mb-2">
+							<!-- ONE reject box, and a switch that says where its number goes.
+								 Not two boxes: the server refuses the combination per Work
+								 Order in both directions, so two boxes an operator can fill
+								 both of is a double count that surfaces as a confusing
+								 refusal after the pallet has been counted. -->
+							<div class="mb-2 border rounded p-3">
 								<label class="form-label fw-bold text-dark fs-4 mb-2">
 									{{ t("Scrap / Rejects Qty") }}
 									<span class="text-secondary small fw-normal">({{ t("optional") }})</span>
 								</label>
+
+								<!-- The server's refusal, met here instead of there. -->
+								<div v-if="rejectDecision.locked" class="alert alert-info py-2 mb-3">
+									{{ t("This order's losses are already recorded with a reason ({0} so far), so the plain count is closed for it.", [scrapRecords]) }}
+								</div>
+								<div v-else class="btn-group w-100 mb-3" role="group">
+									<button
+										type="button"
+										class="btn btn-lg btn-outline-secondary fw-semibold"
+										:class="rejectMode === 'reasoned' ? 'active' : ''"
+										@click="setRejectMode('reasoned')"
+									>
+										<i class="ti ti-clipboard-text me-1"></i>{{ t("With a reason") }}
+									</button>
+									<button
+										type="button"
+										class="btn btn-lg btn-outline-secondary fw-semibold"
+										:class="rejectMode === 'count' ? 'active' : ''"
+										@click="setRejectMode('count')"
+									>
+										{{ t("Just a count") }}
+									</button>
+								</div>
+
 								<input
 									:value="scrapQty"
 									type="text"
@@ -1451,6 +1628,74 @@ const sortedRows = computed(() => {
 									@focus="numTarget = 'scrap'"
 									@input="onQtyInput($event, 'scrap')"
 								/>
+
+								<template v-if="rejectMode === 'reasoned' || rejectDecision.locked">
+									<!-- Not an error toast, and not a stack trace: no tenant has
+										 named a scrap warehouse yet, so this is the state this
+										 panel opens in on every site until a manager acts. It
+										 names the document and the role, and the plain count is
+										 still there above as the way out. -->
+									<div v-if="!scrapWarehouse" class="alert alert-warning py-2 mt-3 mb-0">
+										<div class="fw-bold mb-1">
+											<i class="ti ti-settings-exclamation me-1"></i>{{ t("Scrap is not set up on this site yet") }}
+										</div>
+										{{ t("Nothing can be recorded until a scrap warehouse is named in Stabler Manufacturing Settings. Ask a manufacturing manager to name one — the loss has to have somewhere to move to, or the record and the stock ledger would disagree.") }}
+									</div>
+									<div v-else-if="!scrapReady" class="alert alert-info py-2 mt-3 mb-0">
+										{{ t("This order has nothing standing in WIP to scrap.") }}
+									</div>
+									<template v-else>
+										<div class="mt-3">
+											<div class="form-label fw-semibold">{{ t("Pick what was lost") }}</div>
+											<div class="d-flex flex-wrap gap-2">
+												<button
+													v-for="it in scrapItems.filter((i) => Number(i.available) > 0)"
+													:key="it.item_code"
+													type="button"
+													class="btn btn-lg btn-outline-secondary text-start"
+													:class="scrapItem === it.item_code ? 'active' : ''"
+													@click="scrapItem = it.item_code"
+												>
+													{{ it.item_name || it.item_code }}
+													<span class="d-block small">{{ it.available }} {{ it.uom }}</span>
+												</button>
+											</div>
+										</div>
+										<div class="mt-3">
+											<div class="form-label fw-semibold">{{ t("Pick a reason") }}</div>
+											<div class="d-flex flex-wrap gap-2">
+												<button
+													v-for="r in scrapReasons"
+													:key="r.name"
+													type="button"
+													class="btn btn-lg btn-outline-secondary"
+													:class="scrapReason === r.name ? 'active' : ''"
+													@click="scrapReason = r.name"
+												>
+													{{ t(r.reason) }}
+												</button>
+											</div>
+										</div>
+										<div v-if="scrapNotice" class="alert alert-success py-2 mt-3 mb-0">
+											{{ scrapNotice }}
+										</div>
+										<button
+											type="button"
+											class="btn btn-lg btn-outline-secondary w-100 fw-semibold mt-3"
+											:disabled="scrapBusy || !scrapItem || !scrapReason || !(Number(scrapQty) > 0)"
+											@click="recordScrap"
+										>
+											<i class="ti ti-trash me-1"></i>{{ t("Record the loss") }}
+										</button>
+									</template>
+								</template>
+
+								<!-- The number is in the box, aimed at a record nobody filed.
+									 Sending the Finish would drop it silently; saying so costs
+									 one line and one tap. -->
+								<div v-if="unfiledScrap" class="text-danger small fw-semibold mt-2">
+									{{ t("Record this loss with its reason, or switch to a plain count, before finishing.") }}
+								</div>
 							</div>
 
 							<!-- The terminal is wall-mounted and worked with gloves. Native
@@ -1512,7 +1757,7 @@ const sortedRows = computed(() => {
 							<button
 								type="button"
 								class="btn btn-primary btn-lg px-4 fw-bold shadow-sm"
-								:disabled="!(Number(producedQty) > 0) || (sweepPending && !sweepAck)"
+								:disabled="!(Number(producedQty) > 0) || (sweepPending && !sweepAck) || unfiledScrap"
 								@click="confirmFinish"
 							>
 								<i class="ti ti-check me-1"></i>{{ t("Confirm Submit") }}
