@@ -11,6 +11,7 @@ from frappe import _
 from frappe.utils import cint, flt, getdate, today
 
 from stabler.api._common import _assert_can_read, _assert_can_write, _require_company
+from stabler.api._shift_ledger import top_stop_contributor
 from stabler.api.approvals import _assert_company_scope
 from stabler.api.organization import _can_access_module
 from stabler.api.valuation_guard import assert_stock_entry_valuation_sane
@@ -1164,6 +1165,86 @@ def list_work_orders(
 			wo_items if is_manager else _rows_for_role(wo_items, item_roles, _wo_role_of(row))
 		)
 	return rows
+
+
+@frappe.whitelist()
+def wo_ledger_activity(
+	company: str,
+	from_date: str | None = None,
+	to_date: str | None = None,
+	work_orders: list | str | None = None,
+):
+	"""The two figures in the register's header strip that the rows cannot answer.
+
+	Everything else in that strip — planned, produced, ready, short — is computed
+	in the SPA from the rows the table is showing, so the header can never
+	disagree with the list under it. These two cannot be:
+
+	`downtime` is company-and-window, NOT scoped to the orders on screen, because
+	`Stabler Line Stop.work_order` is optional. A line stopped with no order on it
+	is exactly the stop a shift lead needs to see, and scoping to the listed
+	orders would drop it. The tile says which window it covers rather than
+	implying it belongs to the filter.
+
+	`scrap` IS scoped to the listed orders, because `Stabler Line Scrap
+	.work_order` is required — so it can agree with the table, and it does.
+
+	Counted, never summed into one quantity: a scrap record measures raw material
+	out of WIP in that material's own UOM, so adding kilograms of cream to pieces
+	of cone would produce a number with no unit. The design's `Брак 1,2 %` is not
+	computable from what is recorded here; a count of records and of the orders
+	they touch is, and it is the honest version of the same tile.
+	"""
+	_assert_company_scope(company)  # tenant isolation: reject a foreign company arg
+	_require_company(company)
+	_require_mfg()
+
+	# Not named `today`: assigning to it would shadow the module-level import
+	# for the whole function body, and Python would raise UnboundLocalError on
+	# this very line.
+	day = today()
+	start = from_date or day
+	end = to_date or day
+
+	stops = []
+	if frappe.db.table_exists("Stabler Line Stop"):
+		stops = frappe.get_all(
+			"Stabler Line Stop",
+			filters={"company": company, "from_time": ["between", [f"{start} 00:00:00", f"{end} 23:59:59"]]},
+			fields=["line", "reason", "minutes"],
+		)
+
+	names = work_orders
+	if isinstance(names, str):
+		names = frappe.parse_json(names) or []
+	names = [n for n in (names or []) if n]
+
+	scrap = []
+	# The empty-list guard, and what it actually protects against. Measured on
+	# this frappe 2026-08-29: `["in", []]` compiles to
+	#     IFNULL(`work_order`,'') IN ('') OR IFNULL(`work_order`,'') IS NULL
+	# — not "everything" and not "nothing", but "every row whose work order is
+	# blank". `work_order` is required on the doctype, so today that set is
+	# empty and the guard changes no answer. It is kept because the correct
+	# answer for "no orders on screen" is zero for a reason that has nothing to
+	# do with whether a column happens to be mandatory this month: the moment
+	# that reqd flag is relaxed, or a row is written around validation, an
+	# unfiltered register would start reporting orphan scrap under a header that
+	# claims to describe the rows on screen.
+	if names and frappe.db.table_exists("Stabler Line Scrap"):
+		scrap = frappe.get_all(
+			"Stabler Line Scrap",
+			filters={"company": company, "work_order": ["in", names]},
+			fields=["work_order"],
+		)
+
+	return {
+		"window": {"from_date": start, "to_date": end},
+		"downtime_minutes": sum(flt(r.get("minutes")) for r in stops),
+		"downtime_top": top_stop_contributor(stops),
+		"scrap_records": len(scrap),
+		"scrap_orders": len({r["work_order"] for r in scrap}),
+	}
 
 
 @frappe.whitelist()

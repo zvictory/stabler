@@ -6565,3 +6565,12 @@ Just a count,Только количество
 Recorded. Stock transfer {0} is waiting for accounting.,Записано. Складской перевод {0} ждёт бухгалтерию.
 Recorded.,Записано.
 Could not record the scrap.,Не удалось записать брак.
+Downtime,Простой
+Losses,Потери
+Short of materials,Нехватка сырья
+Ready to start,Готовы к запуску
+"all lines, this window","все линии, за период"
+on {0} order(s),по {0} заказам
+{0} item(s) missing,не хватает позиций: {0}
+{0} order(s) not measured,остаток не измерен: {0} заказов
+Nothing in this view — {0} order(s) in the register.,В этом разделе пусто — всего заказов в реестре: {0}.

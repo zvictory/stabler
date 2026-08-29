@@ -7,6 +7,7 @@ import { call } from "../../api/client.js";
 import { t } from "../../composables/i18n.js";
 import { workOrderProgress } from "../../composables/workOrderProgress.js";
 import { materialReadiness, stockKey } from "../../composables/materialReadiness.js";
+import { shiftSummary, ledgerView } from "../../composables/shiftLedger.js";
 import { halfAssigned, roleLabel } from "../../composables/workOrderRoles.js";
 import { useOperatorOptions } from "../../composables/workOrderOperators.js";
 import { useWorkOrderStatus } from "../../composables/workOrderStatus.js";
@@ -80,6 +81,11 @@ async function load() {
 			limit: 100,
 		});
 		await loadStock();
+		// Re-read on every load rather than once at mount: a register left open
+		// across a shift would otherwise keep measuring "overdue" against the hour
+		// the page was opened.
+		now.value = new Date();
+		await loadActivity();
 	} catch (err) {
 		error.value = err?.message || "Failed to load work orders.";
 	} finally {
@@ -92,6 +98,34 @@ async function load() {
 // hundred orders on an ice-cream floor draw from a handful of stores, so this
 // is two or three requests, not a hundred.
 const stock = ref({});
+
+// The register's header strip — design 1a's ledger, the half that shipped as a
+// bare table. Derived from the rows already on screen and the shelf levels
+// already fetched, so it cannot disagree with the list beneath it; a filter
+// narrows both together.
+const now = ref(new Date());
+const ledger = computed(() => shiftSummary(rows.value, stock.value, now.value));
+const view = ref("all");
+const visibleRows = computed(() => ledgerView(rows.value, view.value, stock.value, now.value));
+
+// The two figures the rows cannot answer. Downtime is window-wide on purpose —
+// `Stabler Line Stop.work_order` is optional, so a line stopped with no order on
+// it would vanish if this were scoped to the list. The tile says so.
+const activity = ref(null);
+async function loadActivity() {
+	try {
+		activity.value = await call("stabler.api.manufacturing.wo_ledger_activity", {
+			company: activeCompany.value,
+			from_date: fromDate.value || undefined,
+			to_date: toDate.value || undefined,
+			work_orders: JSON.stringify(rows.value.map((r) => r.name)),
+		});
+	} catch {
+		// Two tiles out of five. A stop log that will not answer must not take the
+		// register down with it, so the strip renders without them.
+		activity.value = null;
+	}
+}
 
 async function loadStock() {
 	const byWarehouse = new Map();
@@ -468,6 +502,98 @@ async function saveWO(submitAfter) {
 
 		<div v-if="error" class="alert alert-danger">{{ error }}</div>
 
+		<!-- Design 1a's shift ledger. Every figure here is counted from the rows in
+		     the table below, so narrowing a filter narrows the strip with it and
+		     the two can never contradict each other. The one exception is the
+		     downtime tile, which says which window it covers because it cannot
+		     be scoped that way — see `wo_ledger_activity`. -->
+		<div v-if="!loading && !error && rows.length" class="card mb-2">
+			<div class="card-body py-3">
+				<div class="row g-3">
+					<div class="col-6 col-md">
+						<div class="text-secondary small">{{ t("Planned") }}</div>
+						<div class="fs-2 fw-bold font-monospace">{{ formatQty(ledger.planQty) }}</div>
+					</div>
+					<div class="col-6 col-md">
+						<div class="text-secondary small">{{ t("Produced") }}</div>
+						<div class="d-flex align-items-baseline gap-2">
+							<span class="fs-2 fw-bold font-monospace">{{ formatQty(ledger.producedQty) }}</span>
+							<span
+								v-if="ledger.donePct !== null"
+								class="small fw-semibold"
+								:class="ledger.donePct > 100 ? 'text-orange' : 'text-blue'"
+							>{{ ledger.donePct }}%</span>
+						</div>
+					</div>
+					<div class="col-6 col-md">
+						<div class="text-secondary small">{{ t("Downtime") }}</div>
+						<div class="fs-2 fw-bold font-monospace">
+							<template v-if="activity">{{ activity.downtime_minutes }} {{ t("min") }}</template>
+							<span v-else class="text-secondary fs-3">—</span>
+						</div>
+						<!-- Named because a number alone cannot be acted on, and grouped by
+						     line and reason because "Line 2 lost 50 minutes" is true and
+						     useless. -->
+						<div v-if="activity?.downtime_top" class="text-secondary" style="font-size: 11px">
+							{{ activity.downtime_top.line }}
+							<template v-if="activity.downtime_top.reason"> · {{ t(activity.downtime_top.reason) }}</template>
+						</div>
+						<div v-else-if="activity" class="text-secondary" style="font-size: 11px">
+							{{ t("all lines, this window") }}
+						</div>
+					</div>
+					<div class="col-6 col-md">
+						<div class="text-secondary small">{{ t("Losses") }}</div>
+						<!-- A count, never a summed quantity: a scrap record measures raw
+						     material in that material's own UOM, so kilograms of cream and
+						     pieces of cone cannot be added into one figure. -->
+						<div class="fs-2 fw-bold font-monospace">
+							<template v-if="activity">{{ activity.scrap_records }}</template>
+							<span v-else class="text-secondary fs-3">—</span>
+						</div>
+						<div v-if="activity?.scrap_records" class="text-secondary" style="font-size: 11px">
+							{{ t("on {0} order(s)", [activity.scrap_orders]) }}
+						</div>
+					</div>
+					<div class="col-6 col-md">
+						<div class="text-secondary small">{{ t("Short of materials") }}</div>
+						<div
+							class="fs-2 fw-bold font-monospace"
+							:class="ledger.shortOrders ? 'text-orange' : ''"
+						>{{ ledger.shortOrders }}</div>
+						<div v-if="ledger.shortItems" class="text-secondary" style="font-size: 11px">
+							{{ t("{0} item(s) missing", [ledger.shortItems]) }}
+						</div>
+						<!-- Never silently counted as "fine": a shelf nobody measured is not
+						     a shelf that is full. -->
+						<div v-else-if="ledger.unknown" class="text-secondary" style="font-size: 11px">
+							{{ t("{0} order(s) not measured", [ledger.unknown]) }}
+						</div>
+					</div>
+				</div>
+
+				<!-- Queues, not filters of a different set: each tab shows a subset of
+				     the rows already loaded, so a badge and its table always agree. -->
+				<ul class="nav nav-pills gap-1 mt-3">
+					<li class="nav-item">
+						<button type="button" class="nav-link" :class="view === 'all' ? 'active' : ''" @click="view = 'all'">
+							{{ t("All") }} <span class="badge bg-secondary-lt ms-1">{{ ledger.orders }}</span>
+						</button>
+					</li>
+					<li class="nav-item">
+						<button type="button" class="nav-link" :class="view === 'ready' ? 'active' : ''" @click="view = 'ready'">
+							{{ t("Ready to start") }} <span class="badge bg-green-lt ms-1">{{ ledger.ready }}</span>
+						</button>
+					</li>
+					<li class="nav-item">
+						<button type="button" class="nav-link" :class="view === 'overdue' ? 'active' : ''" @click="view = 'overdue'">
+							{{ t("Overdue") }} <span class="badge bg-orange-lt ms-1">{{ ledger.overdue }}</span>
+						</button>
+					</li>
+				</ul>
+			</div>
+		</div>
+
 		<EmptyState
 			v-if="!loading && !error && !rows.length"
 			icon="ti-tool"
@@ -497,6 +623,7 @@ async function saveWO(submitAfter) {
 							</th>
 							<th>{{ t("Work Order") }}</th>
 							<th>{{ t("Finished good") }}</th>
+							<th>{{ t("Line") }}</th>
 							<th>{{ t("Operators") }}</th>
 							<th style="width: 230px">{{ t("Progress") }}</th>
 							<th style="width: 180px">{{ t("Materials") }}</th>
@@ -504,7 +631,17 @@ async function saveWO(submitAfter) {
 						</tr>
 					</thead>
 					<tbody>
-						<tr v-for="r in rows" :key="r.name" class="cursor-pointer" @click="router.push({ name: 'manufacturing-work-order', params: { name: r.name } })">
+						<!-- A tab that filters to nothing must say so. Without this the
+						     table renders as an empty frame under a badge reading 0, which
+						     looks like a page that failed to load rather than a queue that
+						     is empty — and on this screen an empty "Overdue" is good news
+						     worth stating. -->
+						<tr v-if="!visibleRows.length">
+							<td colspan="8" class="text-center text-secondary py-4">
+								{{ t("Nothing in this view — {0} order(s) in the register.", [ledger.orders]) }}
+							</td>
+						</tr>
+						<tr v-for="r in visibleRows" :key="r.name" class="cursor-pointer" @click="router.push({ name: 'manufacturing-work-order', params: { name: r.name } })">
 							<!-- The row opens the detail page, so the checkbox has to stop the
 								 click it sits inside: without this, ticking five orders opens
 								 five panels and the last one covers the toolbar. -->
@@ -525,6 +662,11 @@ async function saveWO(submitAfter) {
 								<div class="fw-semibold">{{ r.item_name || r.production_item }}</div>
 								<div class="small text-secondary font-monospace">{{ r.production_item }}</div>
 							</td>
+							<!-- The line, as design 1a's third column. `wip_warehouse` and not a
+							     workstation: measured on anjan, this factory has 0 Workstation
+							     rows, so the shop floor is identified by the WIP store it draws
+							     from — the same column the line filter above already uses. -->
+							<td class="small text-secondary">{{ r.wip_warehouse || "—" }}</td>
 							<!-- Both roles, labelled. A half-assigned order stops at the transfer,
 								 so the empty half is red and says so: a grey "—" reads as "no data
 								 here", which is the one thing it is not. -->
