@@ -150,8 +150,19 @@ describe("the materials column", () => {
 	});
 
 	it("loads shelf stock once per warehouse, not once per row", () => {
-		expect(src).toMatch(/byWarehouse/);
-		expect(src).toMatch(/get_items_stock/);
+		// Moved out of this page on 2026-08-29, when the planning screen needed
+		// the same map: a second hand-written copy would have drifted on the one
+		// line that matters, the per-warehouse catch that makes an unanswerable
+		// store read `unknown` instead of `0`. The page must go through it rather
+		// than grow its own again.
+		const loader = readFileSync(
+			fileURLToPath(new URL("../composables/stockLevels.js", import.meta.url)),
+			"utf8",
+		);
+		expect(loader).toMatch(/byWarehouse/);
+		expect(loader).toMatch(/get_items_stock/);
+		expect(src).toMatch(/loadStockLevels\(rows\.value\)/);
+		expect(src).not.toMatch(/get_items_stock/);
 	});
 });
 

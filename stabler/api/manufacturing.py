@@ -1103,7 +1103,8 @@ def list_work_orders(
 		f"""
 		SELECT name, production_item, item_name, bom_no, qty, produced_qty,
 		       material_transferred_for_manufacturing AS transferred_qty,
-		       status, planned_start_date, planned_end_date, fg_warehouse,
+		       status, planned_start_date, planned_end_date, actual_end_date,
+		       fg_warehouse,
 		       wip_warehouse, {assignee_select}{draft_select}docstatus, modified
 		FROM `tabWork Order`
 		WHERE {where}

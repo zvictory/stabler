@@ -7,6 +7,8 @@ import { call } from "../../api/client.js";
 import { t } from "../../composables/i18n.js";
 import { useWorkOrderStatus } from "../../composables/workOrderStatus.js";
 import { todayIso } from "../../composables/date.js";
+import { launchBlockers } from "../../composables/launchBlockers.js";
+import { loadStockLevels } from "../../composables/stockLevels.js";
 import EmptyState from "../../components/EmptyState.vue";
 import DateInput from "../../components/DateInput.vue";
 
@@ -126,6 +128,38 @@ async function moveTo(line, day) {
 	}
 }
 
+// Design 1c's «ЧТО МЕШАЕТ ЗАПУСКУ». Not filtered by the window above, and that
+// is deliberate: a material missing today blocks the order that was supposed to
+// start today whichever week the planner happens to be looking at. Paging the
+// panel with the grid would make the shortages disappear when somebody scrolled
+// forward to plan next week — the moment they most need to see them.
+const blockers = ref({ blockers: [], unmeasured: 0 });
+const blockersLoading = ref(false);
+
+async function loadBlockers() {
+	if (!activeCompany.value) return;
+	blockersLoading.value = true;
+	try {
+		const rows = await call("stabler.api.manufacturing.list_work_orders", {
+			company: activeCompany.value,
+			// Waiting orders only — the panel's own question. Asking the server
+			// narrows the payload; `launchBlockers` still decides what counts, so
+			// a status this filter does not know about cannot slip through as a
+			// blocker.
+			status: "Not Started",
+			limit: 100,
+		});
+		blockers.value = launchBlockers(rows, await loadStockLevels(rows));
+	} catch {
+		// The grid is this screen's job; the panel is an aid beside it. A stock
+		// call that will not answer must not take the plan down with it — but it
+		// must not print "nothing is blocking" either.
+		blockers.value = null;
+	} finally {
+		blockersLoading.value = false;
+	}
+}
+
 async function load() {
 	if (!activeCompany.value) return;
 	loading.value = true;
@@ -146,7 +180,13 @@ async function load() {
 const openOrder = (name) => router.push(`/manufacturing/work-orders/${encodeURIComponent(name)}`);
 
 watch([activeCompany, startDate], load);
-onMounted(load);
+// The panel does not move with the window, so it is reloaded on the company
+// only — and once at mount.
+watch(activeCompany, loadBlockers);
+onMounted(() => {
+	load();
+	loadBlockers();
+});
 </script>
 
 <template>
@@ -204,70 +244,138 @@ onMounted(load);
 			</button>
 		</div>
 
-		<div class="card">
-			<div class="table-responsive">
-				<table class="table table-vcenter card-table">
-					<thead>
-						<tr>
-							<th style="min-width: 11rem">{{ t("Line") }}</th>
-							<th v-for="day in grid.days" :key="day" :class="{ 'bg-primary-lt': isToday(day) }">
-								{{ dayLabel(day) }}
-							</th>
-						</tr>
-					</thead>
-					<tbody>
-						<tr v-for="line in grid.lines" :key="line">
-							<td class="text-truncate">{{ line }}</td>
-							<td
-								v-for="day in grid.days"
-								:key="day"
-								class="align-top"
-								:class="{ 'bg-primary-lt': isTarget(line, day) }"
-								style="min-width: 9rem"
-								@click="moveTo(line, day)"
-							>
-								<div
-									v-for="order in cell(line, day).orders"
-									:key="order.name"
-									class="badge d-block text-start mb-1"
-									:class="[
-										statusBadge(order.status),
-										selected?.name === order.name ? 'border border-2 border-dark' : '',
-										moving === order.name ? 'opacity-50' : '',
-									]"
-									style="cursor: pointer; white-space: normal"
-									@click.stop="pick(order, line)"
-									@dblclick.stop="openOrder(order.name)"
-								>
-									{{ order.item_name || order.production_item }}
-									<span class="d-block fw-normal">
-										{{ order.qty }} &middot; {{ statusLabel(order.status) }}
-									</span>
-								</div>
-								<div v-if="cell(line, day).orders.length" class="small text-secondary">
-									{{ t("{0} orders").replace("{0}", cell(line, day).orders.length) }}
-									&middot; {{ cell(line, day).qty }}
-								</div>
-								<div v-else-if="isTarget(line, day)" class="small text-primary">
-									{{ t("Move here") }}
-								</div>
-							</td>
-						</tr>
-					</tbody>
-				</table>
+		<div class="row g-3">
+			<div class="col-12 col-xl-8">
+				<div class="card">
+					<div class="table-responsive">
+						<table class="table table-vcenter card-table">
+							<thead>
+								<tr>
+									<th style="min-width: 11rem">{{ t("Line") }}</th>
+									<th v-for="day in grid.days" :key="day" :class="{ 'bg-primary-lt': isToday(day) }">
+										{{ dayLabel(day) }}
+									</th>
+								</tr>
+							</thead>
+							<tbody>
+								<tr v-for="line in grid.lines" :key="line">
+									<td class="text-truncate">{{ line }}</td>
+									<td
+										v-for="day in grid.days"
+										:key="day"
+										class="align-top"
+										:class="{ 'bg-primary-lt': isTarget(line, day) }"
+										style="min-width: 9rem"
+										@click="moveTo(line, day)"
+									>
+										<div
+											v-for="order in cell(line, day).orders"
+											:key="order.name"
+											class="badge d-block text-start mb-1"
+											:class="[
+												statusBadge(order.status),
+												selected?.name === order.name ? 'border border-2 border-dark' : '',
+												moving === order.name ? 'opacity-50' : '',
+											]"
+											style="cursor: pointer; white-space: normal"
+											@click.stop="pick(order, line)"
+											@dblclick.stop="openOrder(order.name)"
+										>
+											{{ order.item_name || order.production_item }}
+											<span class="d-block fw-normal">
+												{{ order.qty }} &middot; {{ statusLabel(order.status) }}
+											</span>
+										</div>
+										<div v-if="cell(line, day).orders.length" class="small text-secondary">
+											{{ t("{0} orders").replace("{0}", cell(line, day).orders.length) }}
+											&middot; {{ cell(line, day).qty }}
+										</div>
+										<div v-else-if="isTarget(line, day)" class="small text-primary">
+											{{ t("Move here") }}
+										</div>
+									</td>
+								</tr>
+							</tbody>
+						</table>
+					</div>
+
+					<div v-if="loading" class="card-footer text-secondary small">{{ t("Loading") }}</div>
+					<div v-else-if="isEmpty" class="card-body">
+						<EmptyState
+							icon="ti ti-calendar-off"
+							:title="t('Nothing is planned for this week')"
+							:description="
+								t(
+									'Orders here are usually opened for the day they run. Move one forward to start planning.'
+								)
+							"
+						/>
+					</div>
+			</div>
 			</div>
 
-			<div v-if="loading" class="card-footer text-secondary small">{{ t("Loading") }}</div>
-			<div v-else-if="isEmpty" class="card-body">
-				<EmptyState
-					icon="ti ti-calendar-off"
-					:title="t('Nothing is planned for this week')"
-					:description="
-						t(
-							'Orders here are usually opened for the day they run. Move one forward to start planning.'
-						)
-					"
-				/>
+			<!-- Design 1c's «ЧТО МЕШАЕТ ЗАПУСКУ». The half of that screen that is
+			     backed by data — the line × time grid it sits beside is not, and
+			     `launchBlockers.js` carries the measurement that says why.
+			     Beside the plan rather than on the board, because it answers a
+			     planner's question: not "can this order run" (the board's card chip
+			     says that, per order) but "what do I have to chase before any of
+			     them can". -->
+			<div class="col-12 col-xl-4">
+				<div class="card">
+					<div class="card-header d-flex align-items-baseline gap-2">
+						<h3 class="card-title">{{ t("What blocks the launch") }}</h3>
+						<span
+							v-if="blockers && blockers.blockers.length"
+							class="badge bg-orange-lt ms-auto"
+						>{{ blockers.blockers.length }}</span>
+					</div>
+
+					<div v-if="blockersLoading" class="card-body text-secondary small">{{ t("Loading") }}</div>
+
+					<!-- Never "nothing is blocking" when nothing was read. The panel
+					     failing has to look different from the factory being ready. -->
+					<div v-else-if="!blockers" class="card-body text-secondary small">
+						{{ t("Stock could not be read, so nothing here was checked.") }}
+					</div>
+
+					<div v-else-if="!blockers.blockers.length" class="card-body text-secondary small">
+						{{ t("Every waiting order has its materials.") }}
+					</div>
+
+					<ul v-else class="list-group list-group-flush">
+						<li v-for="b in blockers.blockers" :key="b.warehouse + b.item_code" class="list-group-item">
+							<div class="d-flex align-items-baseline gap-2">
+								<span class="fw-semibold">{{ b.item_name }}</span>
+								<span class="ms-auto font-monospace text-danger">−{{ b.shortfall }}</span>
+							</div>
+							<div class="small text-secondary">
+								{{ t("need {0} · in {1} there is {2}", [b.needed, b.warehouse, b.available]) }}
+							</div>
+							<div class="small mt-1">
+								<span class="text-secondary me-1">{{ t("blocks") }}</span>
+								<a
+									v-for="name in b.blocks"
+									:key="name"
+									href="#"
+									class="me-2 font-monospace"
+									@click.prevent="openOrder(name)"
+								>{{ name }}</a>
+							</div>
+						</li>
+					</ul>
+
+					<!-- Counted, never folded in. A shelf `loadStockLevels` could not
+					     read is not a shelf that is full, and leaving it out in
+					     silence is how a blocker panel says "all clear" about
+					     materials nobody looked at. -->
+					<div
+						v-if="blockers && blockers.unmeasured"
+						class="card-footer small text-secondary"
+					>
+						{{ t("{0} material(s) could not be measured", [blockers.unmeasured]) }}
+					</div>
+				</div>
 			</div>
 		</div>
 

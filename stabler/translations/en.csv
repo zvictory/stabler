@@ -6968,3 +6968,10 @@ Finished,Finished
 Transfer and start,Transfer and start
 Close order,Close order
 issued {0}%,issued {0}%
+"{0} finished earlier","{0} finished earlier"
+What blocks the launch,What blocks the launch
+"Stock could not be read, so nothing here was checked.","Stock could not be read, so nothing here was checked."
+Every waiting order has its materials.,Every waiting order has its materials.
+need {0} · in {1} there is {2},need {0} · in {1} there is {2}
+blocks,blocks
+{0} material(s) could not be measured,{0} material(s) could not be measured
