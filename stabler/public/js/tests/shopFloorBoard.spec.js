@@ -20,7 +20,13 @@
 // see they are skipping.
 
 import { describe, it, expect } from "vitest";
-import { boardColumn, boardGroups, BOARD_COLUMNS } from "../composables/shopFloorBoard.js";
+import {
+	boardColumn,
+	boardGroups,
+	transferredPct,
+	cardAction,
+	BOARD_COLUMNS,
+} from "../composables/shopFloorBoard.js";
 
 function wo(over = {}) {
 	return {
@@ -38,11 +44,11 @@ function wo(over = {}) {
 }
 
 describe("the columns are the design's, in the design's order", () => {
-	it("names six states, left to right", () => {
+	it("names five states, left to right", () => {
 		// Pinned as a list because the board renders them in this order and an
 		// accidental reshuffle would move every card on the screen without
 		// changing a single order.
-		expect(BOARD_COLUMNS).toEqual(["draft", "ready", "partial", "running", "paused", "done"]);
+		expect(BOARD_COLUMNS).toEqual(["draft", "ready", "running", "paused", "done"]);
 	});
 });
 
@@ -106,24 +112,103 @@ describe("a card waiting on materials", () => {
 		expect(boardColumn(wo({ transferred_qty: 0 }))).toBe("ready");
 	});
 
-	it("is partial once some — but not all — of the order has been issued", () => {
-		// The design's «Частично» column. Measured 0 on anjan today, because
-		// material is transferred in one gesture; the column is what makes a
-		// half-transferred order visible on the day somebody does it.
-		expect(boardColumn(wo({ qty: 1000, transferred_qty: 400 }))).toBe("partial");
+	it("is still ready once material has been issued but nothing has run", () => {
+		// There is no «Частично» column, and the design is the reason: it draws a
+		// half-issued order as a card in «Готов к запуску» carrying a «Частично»
+		// BUTTON, and writes the share as a line on the card («передано 50%»).
+		// A column of its own was mine, not the design's, and it held 0 rows on
+		// anjan — a permanently empty bin that pushed the five real ones off a
+		// laptop screen.
+		expect(boardColumn(wo({ qty: 1000, transferred_qty: 400 }))).toBe("ready");
 	});
 
-	it("is still waiting, not running, when everything has been issued", () => {
+	it("is still ready, not running, when everything has been issued", () => {
 		// Fully transferred and nothing produced: the material is at the machine
 		// and the machine has not started. Calling that "running" would show two
 		// orders on a line that is running one.
-		expect(boardColumn(wo({ qty: 1000, transferred_qty: 1000 }))).toBe("partial");
+		expect(boardColumn(wo({ qty: 1000, transferred_qty: 1000 }))).toBe("ready");
+	});
+});
+
+describe("how much of an order has been issued", () => {
+	it("is the share of the ordered quantity", () => {
+		expect(transferredPct(wo({ qty: 1000, transferred_qty: 500 }))).toBe(50);
 	});
 
-	it("does not read an over-issue as unfinished", () => {
-		// ERPNext allows transferring more than the order quantity. `>= qty` and
-		// not `=== qty`, or an over-issued order falls out of every branch.
-		expect(boardColumn(wo({ qty: 1000, transferred_qty: 1200 }))).toBe("partial");
+	it("rounds to a whole percent, because the card has one line for it", () => {
+		expect(transferredPct(wo({ qty: 3000, transferred_qty: 901 }))).toBe(30);
+	});
+
+	it("is null when nothing has been issued", () => {
+		// Not 0: the card renders this line only when there is something to say,
+		// and «передано 0%» on every waiting order is furniture.
+		expect(transferredPct(wo({ qty: 1000, transferred_qty: 0 }))).toBeNull();
+	});
+
+	it("is null when the order has no quantity", () => {
+		// A share of nothing is not 0%, it is unanswerable — and dividing by it
+		// would put `Infinity%` on the card.
+		expect(transferredPct(wo({ qty: 0, transferred_qty: 5 }))).toBeNull();
+	});
+
+	it("does not report more than the whole order", () => {
+		// ERPNext allows an over-issue. «передано 120%» reads as a bug in the
+		// card rather than as a fact about the store.
+		expect(transferredPct(wo({ qty: 1000, transferred_qty: 1200 }))).toBe(100);
+	});
+});
+
+describe("the one action a card offers", () => {
+	it("releases a draft", () => {
+		expect(cardAction(wo({ docstatus: 0 }))).toEqual({ kind: "submit", label: "Submit" });
+	});
+
+	it("issues and starts an order that is waiting", () => {
+		expect(cardAction(wo({ transferred_qty: 0 }))).toEqual({
+			kind: "transfer",
+			label: "Transfer and start",
+		});
+	});
+
+	it("finishes an order that is running", () => {
+		expect(cardAction(wo({ status: "In Process" }))).toEqual({ kind: "produce", label: "Finish" });
+	});
+
+	it("resumes an order that is halted", () => {
+		expect(cardAction(wo({ status: "Stopped" }))).toEqual({ kind: "resume", label: "Resume" });
+	});
+
+	it("closes an order that finished producing", () => {
+		expect(cardAction(wo({ status: "Completed" }))).toEqual({
+			kind: "close",
+			label: "Close order",
+		});
+	});
+
+	it("offers nothing on an order that is already closed", () => {
+		// `done` holds both, and a Close button on a closed order is a button
+		// whose only outcome is an error message from the server.
+		expect(cardAction(wo({ status: "Closed" }))).toBeNull();
+	});
+
+	it("offers nothing on a cancelled order", () => {
+		expect(cardAction(wo({ docstatus: 2, status: "Cancelled" }))).toBeNull();
+	});
+
+	it("names an action for every column the board renders", () => {
+		// Except `done`, which is the one column whose cards can legitimately
+		// have nothing left to do. A column with no action at all would be a
+		// board somebody has to leave to get anything done.
+		const byColumn = {
+			draft: wo({ docstatus: 0 }),
+			ready: wo({}),
+			running: wo({ status: "In Process" }),
+			paused: wo({ status: "Stopped" }),
+			done: wo({ status: "Completed" }),
+		};
+		for (const key of BOARD_COLUMNS) {
+			expect(cardAction(byColumn[key])).not.toBeNull();
+		}
 	});
 });
 
@@ -157,9 +242,9 @@ describe("every card lands somewhere", () => {
 
 describe("the board keeps its shape when a column is empty", () => {
 	it("returns every column, including the ones with no cards", () => {
-		// Measured on anjan 2026-08-29: `partial`, `running` and `paused` are all
-		// 0. A board that drops empty columns would silently become a three-bin
-		// board — and the missing bins are exactly the steps nobody records.
+		// Measured on anjan 2026-08-29: `running` and `paused` are both 0. A board
+		// that drops empty columns would silently lose them — and they are exactly
+		// the steps nobody records.
 		const groups = boardGroups([wo({ status: "Completed" })]);
 		expect(Object.keys(groups)).toEqual(BOARD_COLUMNS);
 		expect(groups.done.length).toBe(1);

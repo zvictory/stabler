@@ -347,6 +347,18 @@ async function confirmAssign(name) {
 onMounted(async () => {
 	await openDetail(route.params.name);
 	await loadStock();
+	// Arriving from the shop-floor board's «Передать и старт» / «Финиш» button.
+	// The board deliberately does not run these two itself: they need a quantity,
+	// and Manufacture is guarded server-side on operator assignment and on
+	// sweeping the other role's unconsumed material — refusals a board card has
+	// no room to explain. Landing here with the dialog already open keeps the
+	// click count the same and keeps one implementation of the flow.
+	//
+	// After `loadStock()`, not before: the dialog lists the materials the typed
+	// quantity consumes and whether the store carries them, and opening it over
+	// an empty stock map would show a shortage-free list that has checked nothing.
+	const act = route.query.act;
+	if ((act === "transfer" || act === "produce") && detail.value) openQtyDialog(act, route.params.name);
 });
 watch(
 	() => route.params.name,

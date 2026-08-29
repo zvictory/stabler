@@ -8,11 +8,18 @@ import { t } from "../../composables/i18n.js";
 import { workOrderProgress } from "../../composables/workOrderProgress.js";
 import { materialReadiness, stockKey } from "../../composables/materialReadiness.js";
 import { shiftSummary, ledgerView } from "../../composables/shiftLedger.js";
-import { boardGroups, BOARD_COLUMNS } from "../../composables/shopFloorBoard.js";
+import {
+	boardGroups,
+	cardAction,
+	transferredPct,
+	BOARD_COLUMNS,
+} from "../../composables/shopFloorBoard.js";
 import { halfAssigned, roleLabel } from "../../composables/workOrderRoles.js";
 import { useOperatorOptions } from "../../composables/workOrderOperators.js";
 import { useWorkOrderStatus } from "../../composables/workOrderStatus.js";
 import { formatDateTime, todayIso} from "../../composables/date.js";
+import { useConfirm } from "../../composables/useConfirm.js";
+import { useToast } from "../../composables/useToast.js";
 import EmptyState from "../../components/EmptyState.vue";
 import DateInput from "../../components/DateInput.vue";
 import Select from "../../components/Select.vue";
@@ -121,14 +128,90 @@ const columnQty = (key) =>
 	(columns.value[key] || []).reduce((sum, r) => sum + (Number(r.qty) || 0), 0);
 const COLUMN_LABELS = {
 	draft: () => t("Draft"),
+	// Holds part-issued and fully-issued orders too: the material may be at the
+	// machine, but the machine has not started. How much was issued is printed on
+	// the card, which is where the design puts it.
 	ready: () => t("Ready to start"),
-	// Covers a fully issued order too: the material is at the machine and the
-	// machine has not started. That is still "issued", never "running".
-	partial: () => t("Materials issued"),
 	running: () => t("In process"),
 	paused: () => t("Halted"),
 	done: () => t("Finished"),
 };
+
+// The board's action layer. Every endpoint below already existed and is already
+// used by the order's own page — what was missing was a way to reach them from
+// the column a supervisor is actually looking at.
+//
+// Two of the five actions are NOT run from here, and the split is not arbitrary:
+// `submit`, `resume` and `close` take a work order name and nothing else, so a
+// confirm box states the whole action. Transfer and Manufacture take a quantity,
+// and Manufacture is additionally guarded server-side on operator assignment and
+// on sweeping the other role's unconsumed material — refusals a 15rem card has
+// no room to explain and no way to resolve. Those two open the order with the
+// quantity dialog already up, which is the same click count and keeps one
+// implementation of a flow that can go wrong in five documented ways.
+const { confirm } = useConfirm();
+const toast = useToast();
+const actionBusy = ref("");
+
+const ACTION_CALLS = {
+	submit: {
+		method: "stabler.api.manufacturing.submit_work_order",
+		title: () => t("Submit Work Order"),
+		body: () => t("Submit and release this Work Order?"),
+		done: () => t("Work Order submitted and released."),
+	},
+	resume: {
+		method: "stabler.api.manufacturing.resume_work_order",
+		title: () => t("Resume Work Order"),
+		body: () => t("Resume this Work Order?"),
+		done: () => t("Work Order resumed."),
+	},
+	close: {
+		method: "stabler.api.manufacturing.close_work_order",
+		title: () => t("Close Work Order"),
+		body: () => t("Close this Work Order? This finalizes it."),
+		done: () => t("Work Order closed."),
+		danger: true,
+	},
+};
+
+async function runCardAction(row) {
+	const action = cardAction(row);
+	if (!action || actionBusy.value) return;
+	if (action.kind === "transfer" || action.kind === "produce") {
+		router.push({
+			name: "manufacturing-work-order",
+			params: { name: row.name },
+			query: { act: action.kind },
+		});
+		return;
+	}
+	const spec = ACTION_CALLS[action.kind];
+	const ok = await confirm({
+		title: spec.title(),
+		body: `${row.name} — ${spec.body()}`,
+		confirmLabel: t(action.label),
+		cancelLabel: t("Cancel"),
+		danger: spec.danger || false,
+	});
+	if (!ok) return;
+	actionBusy.value = row.name;
+	try {
+		await call(spec.method, { name: row.name });
+		toast.success(spec.done());
+		// Reloaded, not patched in place: the action moves the card to another
+		// column and every count and quantity in the strip above moves with it.
+		// Editing the one row would leave the two disagreeing on screen.
+		await load();
+	} catch (err) {
+		// Surfaced through the page's own error line, which sits above the board.
+		// The server's refusals here are sentences a supervisor can act on
+		// ("assign both operators first"), so they are shown rather than replaced.
+		error.value = err?.message || t("Action failed.");
+	} finally {
+		actionBusy.value = "";
+	}
+}
 const visibleRows = computed(() => ledgerView(rows.value, view.value, stock.value, now.value));
 
 // The two figures the rows cannot answer. Downtime is window-wide on purpose —
@@ -699,7 +782,7 @@ async function saveWO(submitAfter) {
 									     its own: a short order is still waiting to start, and a
 									     separate bin would take it out of the list somebody is
 									     working down. -->
-									<div v-if="key === 'ready' || key === 'partial'" class="mt-2">
+									<div v-if="key === 'ready'" class="mt-2">
 										<span v-if="readiness(r).state === 'short'" class="badge bg-orange-lt">
 											{{ t("short {0} item(s)", [readiness(r).shortCount]) }}
 										</span>
@@ -708,9 +791,30 @@ async function saveWO(submitAfter) {
 										<span v-else class="text-secondary small">—</span>
 									</div>
 
+									<!-- «передано 50%». Printed only when something has been
+									     issued: the line answers "is the material already at the
+									     machine", and on an untouched order there is no answer to
+									     give. -->
+									<div v-if="transferredPct(r) !== null" class="small text-secondary mt-1">
+										{{ t("issued {0}%", [transferredPct(r)]) }}
+									</div>
+
 									<div v-if="r.operator || r.packaging_operator" class="small text-secondary mt-2">
 										{{ [r.operator, r.packaging_operator].filter(Boolean).join(" · ") }}
 									</div>
+
+									<!-- The action that moves this card to the next column. Stops
+									     the click from also opening the order underneath it. -->
+									<button
+										v-if="cardAction(r)"
+										type="button"
+										class="btn btn-sm btn-primary w-100 mt-2"
+										:disabled="actionBusy === r.name"
+										@click.stop="runCardAction(r)"
+									>
+										<span v-if="actionBusy === r.name" class="spinner-border spinner-border-sm me-1"></span>
+										{{ t(cardAction(r).label) }}
+									</button>
 								</div>
 							</div>
 						</div>
