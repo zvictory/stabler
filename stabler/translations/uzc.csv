@@ -145,6 +145,7 @@ Select at least one Work Order.,Камида битта ишлаб чиқари�
 Select Warehouse,Омборни танланг
 Selected work orders: {0},Танланган буюртмалар: {0}
 Terminated by {0}: {1},{0} томонидан ёпилди: {1}
+The approved sourcing decision for this tender lot selected a different quotation.,Бу тендер лоти учун тасдиқланган харид қарори бошқа таклифни танлаган.
 The destination desk ({branch}) has no {currency} cash account — add it in Remittance Settings before registering.,Манзил кассасида ({branch}) {currency} ҳисоби йўқ — рўйхатга олишдан олдин уни Ўтказма созламаларида қўшинг.
 The order cannot be finished until both operator roles are assigned. Missing: {0},Иккала оператор роли тайинланмагунча буюртмани якунлаб бўлмайди. Етишмаяпти: {0}
 The other operator has not written this off yet,Бошқа оператор буни ҳали ҳисобдан чиқармаган
@@ -158,6 +159,7 @@ This company runs the {engine} remittance engine. The Transfer V1 screens stay u
 This entry does not balance. Do not hand over cash — report it.,Бу проводка тенглашмаяпти. Нақд пул берманг — хабар беринг.
 This order is {0} — its plan can no longer be changed.,Бу буюртма {0} — унинг режасини энди ўзгартириб бўлмайди.
 This site is not migrated for packaging operators yet.,Бу сайтда қадоқлаш операторлари учун миграция ҳали бажарилмаган.
+"This tender lot has no approved sourcing decision, so no Purchase Order can be created.","Бу тендер лотида тасдиқланган харид қарори йўқ, шунинг учун харид буюртмаси яратиб бўлмайди."
 This will post,Қуйидагилар китобга ўтказилади
 To Warehouse (WIP),Омборга (жараёнда)
 Transfer registered,Пул ўтказмаси рўйхатга олинди

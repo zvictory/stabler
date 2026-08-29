@@ -145,6 +145,7 @@ Select at least one Work Order.,Kamida bitta ishlab chiqarish buyurtmasini tanla
 Select Warehouse,Omborni tanlang
 Selected work orders: {0},Tanlangan buyurtmalar: {0}
 Terminated by {0}: {1},{0} tomonidan yopildi: {1}
+The approved sourcing decision for this tender lot selected a different quotation.,Bu tender loti uchun tasdiqlangan xarid qarori boshqa taklifni tanlagan.
 The destination desk ({branch}) has no {currency} cash account — add it in Remittance Settings before registering.,Manzil kassasida ({branch}) {currency} hisobi yo'q — ro'yxatga olishdan oldin uni O'tkazma sozlamalarida qo'shing.
 The order cannot be finished until both operator roles are assigned. Missing: {0},Ikkala operator roli tayinlanmaguncha buyurtmani yakunlab bo'lmaydi. Yetishmayapti: {0}
 The other operator has not written this off yet,Boshqa operator buni hali hisobdan chiqarmagan
@@ -158,6 +159,7 @@ This company runs the {engine} remittance engine. The Transfer V1 screens stay u
 This entry does not balance. Do not hand over cash — report it.,Bu provodka tenglashmayapti. Naqd pul bermang — xabar bering.
 This order is {0} — its plan can no longer be changed.,Bu buyurtma {0} — uning rejasini endi o'zgartirib bo'lmaydi.
 This site is not migrated for packaging operators yet.,Bu saytda qadoqlash operatorlari uchun migratsiya hali bajarilmagan.
+"This tender lot has no approved sourcing decision, so no Purchase Order can be created.","Bu tender lotida tasdiqlangan xarid qarori yo'q, shuning uchun xarid buyurtmasi yaratib bo'lmaydi."
 This will post,Quyidagilar kitobga o'tkaziladi
 To Warehouse (WIP),Omborga (jarayonda)
 Transfer registered,Pul o'tkazmasi ro'yxatga olindi

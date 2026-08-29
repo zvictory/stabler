@@ -146,6 +146,7 @@ Select at least one Work Order.,Выберите хотя бы один прои
 Select Warehouse,Выберите склад
 Selected work orders: {0},Выбрано заказов: {0}
 Terminated by {0}: {1},Закрыт пользователем {0}: {1}
+The approved sourcing decision for this tender lot selected a different quotation.,Утверждённое решение по закупке для этого лота тендера выбрало другое предложение.
 The destination desk ({branch}) has no {currency} cash account — add it in Remittance Settings before registering.,У кассы назначения ({branch}) нет счёта в {currency} — добавьте его в настройках переводов до регистрации.
 The order cannot be finished until both operator roles are assigned. Missing: {0},"Заказ нельзя завершить, пока не назначены оба оператора. Не хватает: {0}"
 The other operator has not written this off yet,Другой оператор ещё не списал это
@@ -159,6 +160,7 @@ This company runs the {engine} remittance engine. The Transfer V1 screens stay u
 This entry does not balance. Do not hand over cash — report it.,Проводка не сходится. Не выдавайте наличные — сообщите об этом.
 This order is {0} — its plan can no longer be changed.,Этот заказ {0} — его план больше нельзя изменить.
 This site is not migrated for packaging operators yet.,На этом сайте ещё не выполнена миграция для операторов упаковки.
+"This tender lot has no approved sourcing decision, so no Purchase Order can be created.","По этому лоту тендера нет утверждённого решения по закупке, поэтому заказ на закупку создать нельзя."
 This will post,Будет проведено
 To Warehouse (WIP),На склад (НЗП)
 Transfer registered,Перевод зарегистрирован

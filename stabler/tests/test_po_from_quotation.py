@@ -3,6 +3,7 @@
 Verifies that create_po_from_quotation:
 - enforces company scope and reject foreign company
 - validates that Supplier Quotation exists and is tagged to a CRM Deal lot
+- refuses any quotation the lot's approved Tender Sourcing Decision did not select
 - returns existing draft PO when one already exists for the lot + supplier (idempotency)
 - creates a new draft Purchase Order copying supplier, currency, items, and crm_deal link
 - rejects cancelled quotations or quotations with no items
@@ -80,12 +81,15 @@ class _FakeDB:
 					)
 				],
 			),
+			# Its own lot, and the award names it — otherwise "no lines" would be
+			# reported by the award gate and this fixture would stop testing the
+			# empty-quotation guard at all.
 			("Supplier Quotation", "SQ-NO-ITEMS"): _Doc(
 				name="SQ-NO-ITEMS",
 				company="ACME",
 				supplier="SUP-ALFA",
 				currency="USD",
-				custom_crm_deal="LOT-1",
+				custom_crm_deal="LOT-NO-ITEMS",
 				docstatus=0,
 				items=[],
 			),
@@ -132,7 +136,124 @@ class _FakeDB:
 				docstatus=0,
 				items=[_Doc(item_code="RAIL-01", qty=1.0, rate=50.0)],
 			),
+			# Same lot and same supplier as SQ-EXISTING-LOT, but the losing bid:
+			# it must not ride the idempotent early return into somebody else's PO.
+			("Supplier Quotation", "SQ-EXISTING-LOT-LOSER"): _Doc(
+				name="SQ-EXISTING-LOT-LOSER",
+				company="ACME",
+				supplier="SUP-BETA",
+				currency="USD",
+				custom_crm_deal="LOT-EXISTING",
+				docstatus=0,
+				items=[_Doc(item_code="RAIL-01", qty=1.0, rate=90.0)],
+			),
+			# The losing bid on LOT-1 — the award named SQ-VALID, not this one.
+			("Supplier Quotation", "SQ-LOSER"): _Doc(
+				name="SQ-LOSER",
+				company="ACME",
+				supplier="SUP-BETA",
+				currency="USD",
+				custom_crm_deal="LOT-1",
+				docstatus=0,
+				items=[_Doc(item_code="RAIL-01", qty=5.0, rate=140.0)],
+			),
+			# A lot whose award is still a draft: written, not yet approved.
+			("Supplier Quotation", "SQ-DRAFT-AWARD"): _Doc(
+				name="SQ-DRAFT-AWARD",
+				company="ACME",
+				supplier="SUP-GAMMA",
+				currency="USD",
+				custom_crm_deal="LOT-DRAFT",
+				docstatus=0,
+				items=[_Doc(item_code="RAIL-01", qty=2.0, rate=60.0)],
+			),
+			# A lot nobody has decided on at all.
+			("Supplier Quotation", "SQ-NO-DECISION"): _Doc(
+				name="SQ-NO-DECISION",
+				company="ACME",
+				supplier="SUP-GAMMA",
+				currency="USD",
+				custom_crm_deal="LOT-UNDECIDED",
+				docstatus=0,
+				items=[_Doc(item_code="RAIL-01", qty=2.0, rate=60.0)],
+			),
+			# A lot awarded twice: the first winner fell through, the lot was
+			# re-awarded to somebody else.
+			("Supplier Quotation", "SQ-OLD-WINNER"): _Doc(
+				name="SQ-OLD-WINNER",
+				company="ACME",
+				supplier="SUP-DELTA",
+				currency="USD",
+				custom_crm_deal="LOT-REAWARD",
+				docstatus=0,
+				items=[_Doc(item_code="RAIL-01", qty=3.0, rate=70.0)],
+			),
+			("Supplier Quotation", "SQ-NEW-WINNER"): _Doc(
+				name="SQ-NEW-WINNER",
+				company="ACME",
+				supplier="SUP-EPSILON",
+				currency="USD",
+				custom_crm_deal="LOT-REAWARD",
+				docstatus=0,
+				items=[_Doc(item_code="RAIL-01", qty=3.0, rate=75.0)],
+			),
+			("Tender Sourcing Decision", "TSD-LOT-1"): _Doc(
+				name="TSD-LOT-1",
+				company="ACME",
+				deal="LOT-1",
+				status="Approved",
+				selected_quotation="SQ-VALID",
+				approved_by="director@acme.example",
+				approved_at="2026-08-10 09:00:00",
+			),
+			("Tender Sourcing Decision", "TSD-LOT-EXISTING"): _Doc(
+				name="TSD-LOT-EXISTING",
+				company="ACME",
+				deal="LOT-EXISTING",
+				status="Approved",
+				selected_quotation="SQ-EXISTING-LOT",
+				approved_by="director@acme.example",
+				approved_at="2026-08-10 09:00:00",
+			),
+			("Tender Sourcing Decision", "TSD-LOT-NO-ITEMS"): _Doc(
+				name="TSD-LOT-NO-ITEMS",
+				company="ACME",
+				deal="LOT-NO-ITEMS",
+				status="Approved",
+				selected_quotation="SQ-NO-ITEMS",
+				approved_by="director@acme.example",
+				approved_at="2026-08-10 09:00:00",
+			),
+			("Tender Sourcing Decision", "TSD-LOT-DRAFT"): _Doc(
+				name="TSD-LOT-DRAFT",
+				company="ACME",
+				deal="LOT-DRAFT",
+				status="Draft",
+				selected_quotation="SQ-DRAFT-AWARD",
+			),
+			("Tender Sourcing Decision", "TSD-REAWARD-OLD"): _Doc(
+				name="TSD-REAWARD-OLD",
+				company="ACME",
+				deal="LOT-REAWARD",
+				status="Approved",
+				selected_quotation="SQ-OLD-WINNER",
+				approved_by="director@acme.example",
+				approved_at="2026-08-10 09:00:00",
+			),
+			("Tender Sourcing Decision", "TSD-REAWARD-NEW"): _Doc(
+				name="TSD-REAWARD-NEW",
+				company="ACME",
+				deal="LOT-REAWARD",
+				status="Approved",
+				selected_quotation="SQ-NEW-WINNER",
+				approved_by="director@acme.example",
+				approved_at="2026-08-12 15:30:00",
+			),
 		}
+		# A site that has not migrated yet has no decision table at all. Modelled
+		# because `has_column` RAISES on a missing table instead of answering
+		# False, so the guard has to probe the table first.
+		self.tables_present = {doctype for (doctype, _name) in self.docs}
 		self.created: list[_Doc] = []
 
 	def exists(self, doctype, name):
@@ -146,7 +267,14 @@ class _FakeDB:
 			return None
 		return doc.get(fieldname)
 
+	def table_exists(self, doctype):
+		return doctype in self.tables_present
+
 	def has_column(self, doctype, column):
+		# The real one raises TableMissingError rather than answering False when
+		# the doctype has no table — see .claude/rules/20-backend-migrations.md.
+		if doctype not in self.tables_present:
+			raise RuntimeError(f"TableMissingError: tab{doctype}")
 		return True
 
 
@@ -217,6 +345,11 @@ def _new_doc(db: _FakeDB, doctype: str):
 
 
 def _get_list(db: _FakeDB, doctype: str, **kwargs):
+	# Querying a doctype whose table was never created is an error in the real
+	# framework, not an empty result — so a guard that skips the table probe
+	# blows up here instead of quietly reporting "no award".
+	if doctype not in db.tables_present:
+		raise RuntimeError(f"TableMissingError: tab{doctype}")
 	filters = kwargs.get("filters", {})
 	res = []
 	for (dt, _name), doc in db.docs.items():
@@ -233,6 +366,16 @@ def _get_list(db: _FakeDB, doctype: str, **kwargs):
 				break
 		if match:
 			res.append(doc)
+	# Only enough of `order_by` to model "newest award first"; a fake that ignored
+	# it would let a re-awarded lot pass on whichever row the dict happened to
+	# yield first, which is the bug the re-award test exists to catch.
+	order_by = kwargs.get("order_by") or ""
+	if order_by:
+		field, _, direction = order_by.split(",")[0].strip().partition(" ")
+		res.sort(key=lambda d: str(d.get(field) or ""), reverse=direction.strip().lower() == "desc")
+	limit = kwargs.get("limit_page_length")
+	if limit:
+		res = res[: int(limit)]
 	return res
 
 
@@ -277,6 +420,91 @@ class TestCreatePoFromQuotation(unittest.TestCase):
 	def test_rejects_quotation_with_no_lines(self):
 		with self.assertRaises(ValueError):
 			self.purchasing.create_po_from_quotation("SQ-NO-ITEMS", company="ACME")
+
+
+class TestOnlyTheAwardedQuotationBecomesAPurchaseOrder(unittest.TestCase):
+	"""Who won the lot is decided by an APPROVED Tender Sourcing Decision, and
+	only a director can approve one (`sourcing.approve_sourcing_decision`).
+
+	Until this gate existed the endpoint asked only "is this quotation tagged to
+	some lot?", and the award discipline lived exclusively in the SPA, which
+	renders the button inside the approved branch. A whitelisted endpoint is not
+	a button: anybody who may create a Purchase Order could POST a losing
+	quotation and get a real, spendable PO — the tender file would then say one
+	supplier won while the money went to another. That is the whole reason the
+	decision record exists, so the endpoint has to read it.
+	"""
+
+	def setUp(self):
+		self.db = _FakeDB()
+		self.purchasing = _load_purchasing(self.db)
+
+	def _po_names(self):
+		return {name for (dt, name) in self.db.docs if dt == "Purchase Order"}
+
+	def test_awarded_quotation_still_creates_the_purchase_order(self):
+		"""The gate must not cost the honest path: the winner still goes through."""
+		res = self.purchasing.create_po_from_quotation("SQ-VALID", company="ACME")
+		self.assertFalse(res["existing"])
+		self.assertEqual(self.db.docs[("Purchase Order", res["name"])]["custom_crm_deal"], "LOT-1")
+
+	def test_losing_quotation_is_refused_and_no_po_is_written(self):
+		"""The defect itself: SQ-LOSER sits on the same lot as the winner and was
+		never selected, so it must not turn into money."""
+		before = self._po_names()
+		with self.assertRaises(ValueError) as caught:
+			self.purchasing.create_po_from_quotation("SQ-LOSER", company="ACME")
+		self.assertIn("sourcing decision", str(caught.exception).lower())
+		self.assertEqual(self._po_names(), before)
+
+	def test_draft_decision_is_not_an_award(self):
+		"""A draft is sourcing's proposal; the approval is the director's act.
+		Honouring a draft would hand the buyer the director's signature."""
+		with self.assertRaises(ValueError):
+			self.purchasing.create_po_from_quotation("SQ-DRAFT-AWARD", company="ACME")
+
+	def test_lot_without_any_decision_is_refused(self):
+		"""No record of an award means no award — not "award not recorded yet"."""
+		with self.assertRaises(ValueError):
+			self.purchasing.create_po_from_quotation("SQ-NO-DECISION", company="ACME")
+
+	def test_superseded_award_no_longer_opens_the_po_route(self):
+		"""A re-awarded lot has two approved decisions. The current one is the
+		later approval; the supplier that lost the re-award must not still be
+		able to bill the company on the strength of the old one."""
+		with self.assertRaises(ValueError):
+			self.purchasing.create_po_from_quotation("SQ-OLD-WINNER", company="ACME")
+		res = self.purchasing.create_po_from_quotation("SQ-NEW-WINNER", company="ACME")
+		self.assertFalse(res["existing"])
+
+	def test_award_is_checked_before_the_idempotent_early_return(self):
+		"""The idempotent branch answers "a draft PO for this lot+supplier already
+		exists" — by lot and supplier, never by quotation. Asked before the award,
+		it hands a losing bid the winner's PO name and a success response, which
+		reads downstream as "this quotation produced that PO"."""
+		with self.assertRaises(ValueError):
+			self.purchasing.create_po_from_quotation("SQ-EXISTING-LOT-LOSER", company="ACME")
+
+	def test_site_without_the_decision_table_fails_closed(self):
+		"""On a site that has not migrated, the award cannot be read — and an
+		unreadable award is not a granted one. `has_column` would raise here
+		rather than answer False, so the guard probes the table first and the
+		endpoint refuses instead of exploding with a TableMissingError."""
+		self.db.tables_present.discard("Tender Sourcing Decision")
+		with self.assertRaises(ValueError):
+			self.purchasing.create_po_from_quotation("SQ-VALID", company="ACME")
+
+	def test_award_lookup_ignores_the_callers_read_rights_on_the_decision(self):
+		"""Tender Sourcing Decision is readable by Sales roles only, while the PO
+		is created by purchasing. A permission-filtered read would return nothing
+		for a legitimate buyer and break the honest path — so the gate reads the
+		record with `get_all`, and answers a yes/no without exposing it."""
+		calls: list[str] = []
+		self.purchasing.frappe.get_list = lambda doctype, **kwargs: (
+			calls.append(doctype) or _get_list(self.db, doctype, **kwargs)
+		)
+		self.purchasing.create_po_from_quotation("SQ-VALID", company="ACME")
+		self.assertNotIn("Tender Sourcing Decision", calls)
 
 
 if __name__ == "__main__":

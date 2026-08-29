@@ -467,6 +467,7 @@ Stage timeline,Stage timeline
 Terminated by {0}: {1},Terminated by {0}: {1}
 That is not the name this transfer was registered under.,That is not the name this transfer was registered under.
 That screen is not available yet.,That screen is not available yet.
+The approved sourcing decision for this tender lot selected a different quotation.,The approved sourcing decision for this tender lot selected a different quotation.
 The destination desk ({branch}) has no {currency} cash account — add it in Remittance Settings before registering.,The destination desk ({branch}) has no {currency} cash account — add it in Remittance Settings before registering.
 The order cannot be finished until both operator roles are assigned. Missing: {0},The order cannot be finished until both operator roles are assigned. Missing: {0}
 The other operator has not written this off yet,The other operator has not written this off yet
@@ -514,6 +515,7 @@ This request was already registered. The pickup code was shown once at that mome
 "This screen could not read your employee record, so it cannot tell which desk you are registering from. Ask a Finance Manager to grant the access or to link your desk.","This screen could not read your employee record, so it cannot tell which desk you are registering from. Ask a Finance Manager to grant the access or to link your desk."
 This site is not migrated for packaging operators yet.,This site is not migrated for packaging operators yet.
 This step was already recorded. Nothing was posted a second time.,This step was already recorded. Nothing was posted a second time.
+"This tender lot has no approved sourcing decision, so no Purchase Order can be created.","This tender lot has no approved sourcing decision, so no Purchase Order can be created."
 This transfer could not be loaded.,This transfer could not be loaded.
 This transfer pays out at,This transfer pays out at
 This transfer was saved without its pickup-code digest. The field is ,This transfer was saved without its pickup-code digest. The field is 
