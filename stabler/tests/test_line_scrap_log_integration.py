@@ -157,8 +157,14 @@ class ScrapCase(FrappeTestCase):
 		if entry and frappe.db.get_value("Stock Entry", entry, "docstatus") == 1:
 			frappe.get_doc("Stock Entry", entry).cancel()
 		frappe.delete_doc("Stabler Line Scrap", name, force=True)
-		if entry and frappe.db.exists("Stock Entry", entry):
-			frappe.delete_doc("Stock Entry", entry, force=True)
+		# A draft is already gone — `on_trash` took it. What is left here is a
+		# cancelled entry, and it is deliberately NOT deleted: `force=True` skips
+		# the link check but not the Stock Ledger Entries, so the rows survive the
+		# document. The test runner rolls the naming series back between tests, so
+		# the next Stock Entry is issued the same name and inherits those stale
+		# ledger rows — which is how deleting a *draft* three tests later failed
+		# with "MAT-STE-2026-00049 is linked with Stock Ledger Entry". A cancelled
+		# entry moved nothing; leaving it is what the product does too.
 
 
 class TestTheRecordWritesADraftAndOnlyADraft(ScrapCase):

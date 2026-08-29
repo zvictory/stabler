@@ -242,7 +242,16 @@ class StablerLineScrap(Document):
 		if docstatus == 1:
 			frappe.throw(_("That scrap record's stock transfer was already submitted. It cannot be deleted."))
 		if docstatus == 0:
-			frappe.delete_doc("Stock Entry", self.stock_entry, ignore_permissions=True)
+			# The link has to be cleared BEFORE the entry is deleted, and the reason
+			# is the guard described just above: Frappe refuses to delete a document
+			# while anything still points at it, and until this column is cleared
+			# this row is one of those things. Both halves are correct on their own
+			# and only this order lets them both run — written out because the
+			# obvious edit (delete first, it is being deleted anyway) restores a
+			# `LinkExistsError` that surfaces as a failed delete, not as a bug.
+			entry = self.stock_entry
+			self.db_set("stock_entry", None, update_modified=False)
+			frappe.delete_doc("Stock Entry", entry, ignore_permissions=True)
 
 	# ----- the draft --------------------------------------------------------
 
