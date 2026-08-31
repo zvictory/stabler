@@ -215,13 +215,63 @@ uzun kaydırma mı? Kısıt: yedi alanın sahibi bu form, ve belge listesi **bur
 
 ## 7 · Teslim edilecekler
 
-### 7.0 · Veri ön koşulu
-Uydurma veri yasak. İki dal var, Zafar hangisinin işlediğini söyler:
-- **(a) Gerçek kayıt varsa:** anonimleştirilmiş bir ihale lotu — intake'i, en az 5
-  teklifi (en az 2 ülkeden), bir ödül kararı, bir PO.
-- **(b) Yoksa:** `stabler/tests/` fixture'ları kullanılır ve **her ekran durumu "sentetik"
-  etiketiyle** teslim edilir. 2026-08-28 ölçümü mikas prod'da 0 CRM Deal / 0 RFQ / 0 teklif
-  diyordu; bugünkü durum doğrulanmadı.
+### 7.0 · Veri — karar verildi: sentetik, ve kaynağı belli
+
+**Gerçek tender kaydı yok** (Zafar, 2026-09-01). Yani tasarım sentetik veriyle çalışacak.
+Ama bu "istediğin sayıyı yaz" demek **değil**: repo'nun bu iş için yazılmış, testle
+korunan bir demo veri kümesi zaten var.
+
+**Tek kaynak: `stabler/maintenance/seed_tender_demo.py`** (832 satır). Ekranlarda görünen
+her isim, lot numarası, tutar ve tarih **oradan** gelecek. Kendi örneğini uydurma; oradaki
+sabitler zaten senin ihtiyacın olan ayrımları üretecek şekilde seçilmiş.
+
+Betiğin kendi docstring'i niyetini şöyle yazıyor — ve bu, tasarımın da ölçütü:
+
+> *"Amaç ekranları 'dolu göstermek' değil; yedi panonun yedisinin de kendi sorusuna gerçek
+> bir cevap verebilmesi."* … *"Üçüncü bir risk daha var ve o sessiz: demo veriyi 'güzel'
+> kurmak — her adımı eşiğin içinde, her damgayı dolu — ki o zaman ekranların dürüstlüğü
+> hiç sınanmamış olur."*
+
+**Kümenin ölçülmüş şekli** (2026-09-01, sabitlerden hesaplandı):
+
+| | |
+|---|---|
+| Lot | **13** — `UTY-2026-4301` … `UTY-2026-4316` |
+| Alıcı kurum | 5 (`O'zbekiston temir yo'llari AJ`, `Toshkent vagon ta'mirlash zavodi`, `Signal va aloqa boshqarmasi`, `Qurilish materiallari kombinati`, `Neft mahsulotlari bazasi`) |
+| Kulvar | 7'si de dolu: seen · go · sourcing · priced · submitted · won · lost |
+| Tedarikçi | 9, **3 ülkeye** dağılmış (Uzbekistan · China · Russian Federation) |
+| Sipariş | 5 Purchase Order, 2 Sales Order |
+| Kalem | tek: `Rels birikmasi` |
+| Tutar aralığı | 410.000.000 – 3.150.000.000 |
+| İşaret | her kaydın adında ` [DEMO]` |
+
+**Ve asıl kıymetli kısmı — küme bilerek "güzel" değil.** Tasarımın bu durumların
+hepsini göstermesi gerek, çünkü ekranlar bunlarla karşılaşacak:
+
+- **6 lot 5/2 politikasını geçemiyor** (4301, 4302: 0 teklif · 4305: 1 teklif/1 ülke ·
+  4306: 0 · 4309: 3 teklif/1 ülke · 4312: 4 teklif/2 ülke), 7'si geçiyor. Yani
+  "politika boşluğu" hâli sentetik veride **zaten var** — onu ayrıca kurgulamana gerek yok.
+- **2 lot damgasız** (4312, 4313) → süreç akışında **"ölçülemiyor"** satırını üretiyorlar.
+  Bu bir hata değil, bilinçli: *"boş bir ekran her zaman temiz görünür."* Tasarımın
+  "veri yok" ile "ölçülemiyor"u ayırt etmesi gerek.
+- **Son tarihler**: biri **geçmiş** (-1 gün), biri **bugün** (0), biri **48 saat içinde**
+  (+2), kalanı 6–32 gün ileride. Operasyon masasının severity dili bunlardan çıkıyor.
+- **Bir sevkiyat için iki ekran farklı şey söylüyor.** 4314'ün ilk PO satırında ETA altı
+  gün önce geçmiş ama teslim tarihi hâlâ ileride: lojistik panosu "yolda" diyor
+  (kuralı `eta > delivery`), gümrük kuyruğu aynı satıra "risk" diyor (kuralı `days < 0`).
+  Betik bunu **gizlememeyi** seçmiş. Tasarım da gizlemesin — iki ekranın aynı sevkiyat
+  için çelişmesi, çözülmesi gereken şeyin kendisidir. Bunu nasıl göstereceğin bir
+  tasarım kararı.
+
+**Etiketleme zorunlu.** Teslim ettiğin her ekran görselinde veri **"sentetik"** olarak
+işaretli olacak — köşede bir rozet, altyazı, ne uygunsa. Bir tasarım görselinin gerçek
+ekran görüntüsü sanılması, sonradan düzeltilmesi pahalı bir yanlış anlamadır.
+
+> **Betiği kimse çalıştırmıyor.** `seed()` **canlı** bir siteye yazıyor; prod'da
+> çalıştırmak Zafar'ın onayına bağlı ve bu işin kapsamında değil. Sana lazım olan
+> verinin **şekli**, ve o yukarıdaki tabloda + dosyanın sabitlerinde duruyor
+> (`DEMO_LOTS`, `DEMO_SUPPLIERS`, `DEMO_PURCHASE_ORDERS`, `DEMO_SALES_ORDERS`,
+> `DEADLINE_OFFSETS`, `LANDED_BASIS`).
 
 ### 7.1 · Aşama A — bileşen dili (önce bu, tek başına onaylanır)
 `stbl-ds`'i **genişlet**, yenisini icat etme. Teslim:
@@ -287,4 +337,13 @@ Ve bir nitel ölçüt: **sourcing kullanıcısı ödül kararını yanlışlıkl
 - **Belge gereksinimlerini ikinci bir ekrandan düzenletme.**
 - **Sabit genişlikli etiket, rozet veya nav maddesi tasarlama** — 3.75× uzuyorlar.
 - **ERPNext alanı, doctype'ı veya patch'i önerme.**
+- **Kendi örnek verini uydurma.** İsimler, lot numaraları ve tutarlar
+  `seed_tender_demo.py`'den gelir (§7.0). "Acme Corp / Lot-001 / $1.000" bir tasarımı
+  test etmez; `UTY-2026-4309`'un 3 teklif ve 1 ülkeyle politikayı geçemiyor olması eder.
+- **Ekranı "güzel" veriyle doldurma.** Her lotun teklif seti tam, her damga dolu bir
+  mockup, ekranların tam da göstermesi gereken şeyi göstermiyor. Politika boşluğu,
+  "ölçülemiyor" satırı ve geçmiş son tarih teslimatta bulunacak.
+- **İki ekranın çelişkisini düzeltiyormuş gibi çizme.** 4314'ün sevkiyatına lojistik
+  "yolda", gümrük "risk" diyor. Bu gerçek bir tutarsızlık; tasarımın işi onu
+  **göstermek**, sessizce tek bir cevaba indirmek değil.
 - **Kod yazma.** Bu oturumun çıktısı tasarım.

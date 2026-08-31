@@ -291,6 +291,9 @@ DECISIONS
   6. Brief her ekran için gözlemlenebilir kabul ölçütü üretir; uygulama onları mount eden
      testlere çevirir.
   7. ERPNext'e dokunulmaz; bu iş için yeni alan gerekmiyor ve eklenmeyecek.
+  8. Tasarım SENTETİK veriyle çalışır — gerçek tender kaydı yok (Zafar, 2026-09-01).
+     Kaynak serbest değil: `stabler/maintenance/seed_tender_demo.py`. Uydurma sayı yerine
+     testle korunan, bilerek "güzel olmayan" bir küme.
 
 ACCEPTANCE
   Her ölçüt "hiçbir şey yapmayan bir değişiklikle" sağlanamayacak biçimde YAZILDI —
@@ -313,12 +316,19 @@ ACCEPTANCE
      değişmedi  VE  yeni patch dosyası yok.
      (Bu bugün doğru; ölçüt olarak duruyor çünkü İHLAL EDİLEBİLİR — bir Custom Field
      patch'i eklenirse kırmızı verir.)
+  8. Teslim edilen her ekranda görünen her lot no, kurum adı, tedarikçi ve tutar
+     `seed_tender_demo.py`'nin sabitlerinde BULUNABİLİYOR  VE  her ekran görseli
+     "sentetik" işaretini taşıyor  VE  kümenin dürüstlük durumlarından en az üçü
+     çiziliyor: politika boşluğu (6 lot geçemiyor), "ölçülemiyor" satırı (2 damgasız lot),
+     ve geçmiş son tarih (-1 gün).
+     (Sadece "güzel" bir ekran çizmek bu ölçütü geçemez — kümenin çirkin tarafı
+     zorunlu.)
 
 NOT DECIDED
-  · Veri ön koşulu. Ev formatı gerçek anonimleştirilmiş kayıt şart koşuyor; 2026-08-28
-    ölçümü mikas prod'da CRM Deal 0 / RFQ 0 / Supplier Quotation 0 diyordu. Bugünkü durumu
-    ölçemiyorum (prod'a ssh izni bu oturumda bilerek silindi). Zafar'ın bir cümlesi
-    brief §7.0'ın hangi dalının işleyeceğini söyler.
+  · ~~Veri ön koşulu.~~ **KARARA BAĞLANDI** (Zafar, 2026-09-01): gerçek kayıt yok,
+    sentetik devam. Kaynak `seed_tender_demo.py`; brief §7.0 tek dala indirildi.
+    Betiğin kendisi PROD'da çalıştırılmıyor — canlı siteye yazıyor, bu işin kapsamı
+    değil ve ayrı onay ister. Tasarıma lazım olan verinin şekli, sabitlerde duruyor.
   · `ds-drawer`'ın z-index'i. 41, Bootstrap modal bandının (1040+) altında. Çekmece
     `LandedChargesEditor` gibi Bootstrap modallarıyla aynı sayfada yaşıyor. Bu bir tasarım
     kararı değil mimari karar; tasarımcı sorunu göstersin, çözümü mühendislik versin.
