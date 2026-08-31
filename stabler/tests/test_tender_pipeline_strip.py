@@ -87,8 +87,11 @@ class TestTheServerBuildsItInOnePass(unittest.TestCase):
 		precise case the 2-country rule exists to catch. A "complete" flag that
 		only counts quotations would mark it green."""
 		self.assertIn("def _quote_set_complete(", self.body)
-		self.assertIn("< 5", self.body)
-		self.assertIn(">= 2", self.body)
+		# Named, not spelled. These asserted `"< 5"` and `">= 2"` until the
+		# thresholds moved into `_procurement_policy`; pinning the digits made
+		# this guard fight the consolidation instead of guarding the rule.
+		self.assertIn("_policy.MIN_QUOTATIONS", self.body)
+		self.assertIn("_policy.MIN_COUNTRIES", self.body)
 		self.assertIn("country_by_supplier", self.body)
 
 	def test_supplier_countries_are_read_in_one_query_for_the_whole_board(self):

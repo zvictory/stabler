@@ -8,6 +8,8 @@ from __future__ import annotations
 
 import datetime
 
+from stabler.api import _procurement_policy as _policy
+
 SEVERITY = ["overdue", "today", "soon", "info"]
 _SEVERITY_WEIGHT = {s: idx for idx, s in enumerate(SEVERITY)}
 
@@ -83,7 +85,7 @@ def build_plan(facts: dict | None, today: str) -> dict:
 					{
 						"kind": "bid_due",
 						"title": f"Bid due: {label}",
-						"why": f"{sq_count}/5 quotes · deadline today",
+						"why": f"{sq_count}/{_policy.MIN_QUOTATIONS} quotes · deadline today",
 						"owner": assigned_to,
 						"due": bid_deadline_raw,
 						"severity": "today",
@@ -97,7 +99,7 @@ def build_plan(facts: dict | None, today: str) -> dict:
 					{
 						"kind": "bid_soon",
 						"title": f"Bid deadline soon: {label}",
-						"why": f"{sq_count}/5 quotes · deadline in {-diff_days} day{'s' if (-diff_days) > 1 else ''}",
+						"why": f"{sq_count}/{_policy.MIN_QUOTATIONS} quotes · deadline in {-diff_days} day{'s' if (-diff_days) > 1 else ''}",
 						"owner": assigned_to,
 						"due": bid_deadline_raw,
 						"severity": "soon",
@@ -108,12 +110,13 @@ def build_plan(facts: dict | None, today: str) -> dict:
 				)
 
 		# Check policy_gap
-		if stage == "sourcing" and sq_count < 5:
+		if stage == "sourcing" and sq_count < _policy.MIN_QUOTATIONS:
 			items.append(
 				{
 					"kind": "policy_gap",
 					"title": f"Missing supplier quotes: {label}",
-					"why": f"{sq_count}/5 quotes collected (minimum 5 required)",
+					"why": f"{sq_count}/{_policy.MIN_QUOTATIONS} quotes collected "
+					f"(minimum {_policy.MIN_QUOTATIONS} required)",
 					"owner": assigned_to,
 					"due": bid_deadline_raw or today_str,
 					"severity": "today",

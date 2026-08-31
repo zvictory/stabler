@@ -17,6 +17,7 @@ import frappe
 from frappe import _
 from frappe.utils import add_months, cint, flt, getdate, now, today
 
+from stabler.api import _procurement_policy as _policy
 from stabler.api._bid_package import assemble_bid_package, build_bid_docx
 from stabler.api._common import _require_company
 from stabler.api.approvals import _assert_company_scope
@@ -2558,10 +2559,10 @@ def tender_funnel(company: str, days: int = 90):
 			country_by_supplier[s["name"]] = s.get("country") or ""
 
 	def _quote_set_complete(deal_name: str) -> bool:
-		if sq_counts.get(deal_name, 0) < 5:
+		if sq_counts.get(deal_name, 0) < _policy.MIN_QUOTATIONS:
 			return False
 		countries = {country_by_supplier.get(s, "") for s in sq_suppliers.get(deal_name, set())}
-		return len(countries - {""}) >= 2
+		return len(countries - {""}) >= _policy.MIN_COUNTRIES
 
 	quote_ready: dict[str, int] = {}
 
@@ -2598,7 +2599,7 @@ def tender_funnel(company: str, days: int = 90):
 			urgent = _deal_deadlines(deal, company, intake)["risk"] == "risk"
 		if _quote_set_complete(deal):
 			quote_ready[stage] = quote_ready.get(stage, 0) + 1
-		if stage == "sourcing" and sq_counts.get(deal, 0) < 5:
+		if stage == "sourcing" and sq_counts.get(deal, 0) < _policy.MIN_QUOTATIONS:
 			policy_gap += 1
 		if stage == "submitted" and urgent:
 			submitted_urgent += 1
@@ -2914,8 +2915,8 @@ def crm_board(company: str) -> dict:
 				"currency": base_ccy,
 				"sq_count": sq_counts.get(deal, 0),
 				"country_count": country_counts.get(deal, 0),
-				"has_min_5": sq_counts.get(deal, 0) >= 5,
-				"has_2_countries": country_counts.get(deal, 0) >= 2,
+				"has_min_5": sq_counts.get(deal, 0) >= _policy.MIN_QUOTATIONS,
+				"has_2_countries": country_counts.get(deal, 0) >= _policy.MIN_COUNTRIES,
 				"deadline": str(deadline) if deadline else "",
 				"risk": risk,
 				"doc_progress": doc_progress,
