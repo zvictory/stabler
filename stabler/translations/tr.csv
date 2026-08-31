@@ -4059,7 +4059,6 @@ Policy exception required,Politika istisnası gerekli
 Policy gap,Teklif eksiği
 policy met,politika sağlandı
 Policy rule (5 quotes / 2 countries) not satisfied. Check policy exception and specify reason.,Politika kuralı (5 teklif / 2 ülke) karşılanamadı. Istisnayı işaretleyin ve gerekçe belirtin.
-Policy: at least 5 quotations from 2 countries.,Politika: en az 2 ülkeden en az 5 teklif.
 Port & Insurance,Liman & Sigorta
 Port of discharge,Boşaltma limanı
 Port of Discharge,Boşaltma limanı
@@ -6593,3 +6592,10 @@ Week,Hafta
 no end planned,bitiş planlanmadı
 No lines to plan on.,Planlanacak hat yok.
 {0} order(s) have no planned hour yet,planlanan saati olmayan emir: {0}
+Asking {count} vendor(s) from {countries} country(ies).,"{count} tedarikçiye, {countries} ülkeden soruluyor."
+The policy wants {min} quotations from {countries} countries.,Politika {min} teklif ve {countries} ülke istiyor.
+This invitation reaches {countries} country(ies). On its own it cannot satisfy the {min}-country rule — a quotation attached from elsewhere still can.,Bu davet {countries} ülkeye ulaşıyor. Tek başına {min} ülke kuralını karşılayamaz — başka yerden eklenen bir teklif hâlâ karşılayabilir.
+"{count} of the vendors has no country on file, so it counts toward no country. Fixing the supplier record is quicker now than after the answers arrive.","Tedarikçilerden {count} tanesinin ülkesi kayıtlı değil, bu yüzden hiçbir ülkeye sayılmıyor. Tedarikçi kaydını düzeltmek, cevaplar geldikten sonrasına göre şimdi daha hızlı."
+"Asked: {count} vendor(s), {countries} country(ies)","Soruldu: {count} tedarikçi, {countries} ülke"
+"Everyone asked so far is in {countries} country(ies). More rounds, or a quotation attached from elsewhere, are what change that.",Şu ana kadar sorulan herkes {countries} ülkede. Bunu ancak yeni turlar ya da başka yerden eklenen bir teklif değiştirir.
+{count} of the vendors asked has no country on file and counts toward no country.,Sorulan tedarikçilerden {count} tanesinin ülkesi kayıtlı değil ve hiçbir ülkeye sayılmıyor.

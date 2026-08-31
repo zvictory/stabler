@@ -4062,7 +4062,6 @@ Policy exception required,Qoidadan istisno sababi talab qilinadi
 Policy gap,Taklif yetishmovchiligi
 policy met,siyosat bajarildi
 Policy rule (5 quotes / 2 countries) not satisfied. Check policy exception and specify reason.,Qoida (5 taklif / 2 mamlakat) bajarilmadi. Istisnoni belgilang va sababini ko'rsating.
-Policy: at least 5 quotations from 2 countries.,Siyosat: kamida 2 davlatdan kamida 5 ta taklif.
 Port & Insurance,Port & Sug'urta
 Port of discharge,Tushirish porti
 Port of Discharge,Tushirish porti
@@ -6598,3 +6597,10 @@ Week,Hafta
 no end planned,tugash rejalashtirilmagan
 No lines to plan on.,Rejalashtirish uchun liniya yo'q.
 {0} order(s) have no planned hour yet,rejalashtirilgan soati yo'q buyurtmalar: {0}
+Asking {count} vendor(s) from {countries} country(ies).,"{count} ta yetkazib beruvchidan, {countries} ta davlatdan so'ralmoqda."
+The policy wants {min} quotations from {countries} countries.,Siyosat {min} ta taklif va {countries} ta davlatni talab qiladi.
+This invitation reaches {countries} country(ies). On its own it cannot satisfy the {min}-country rule — a quotation attached from elsewhere still can.,Bu taklifnoma {countries} ta davlatga yetadi. O'z-o'zidan {min} ta davlat qoidasini bajara olmaydi — boshqa joydan biriktirilgan taklif hali ham bajarishi mumkin.
+"{count} of the vendors has no country on file, so it counts toward no country. Fixing the supplier record is quicker now than after the answers arrive.","Yetkazib beruvchilardan {count} tasining davlati kiritilmagan, shuning uchun ular hech qaysi davlatga hisoblanmaydi. Yetkazib beruvchi yozuvini tuzatish javoblar kelgandan keyingiga qaraganda hozir tezroq."
+"Asked: {count} vendor(s), {countries} country(ies)","So'raldi: {count} ta yetkazib beruvchi, {countries} ta davlat"
+"Everyone asked so far is in {countries} country(ies). More rounds, or a quotation attached from elsewhere, are what change that.",Hozirgacha so'ralganlarning hammasi {countries} ta davlatda. Buni faqat yangi bosqichlar yoki boshqa joydan biriktirilgan taklif o'zgartiradi.
+{count} of the vendors asked has no country on file and counts toward no country.,So'ralgan yetkazib beruvchilardan {count} tasining davlati kiritilmagan va hech qaysi davlatga hisoblanmaydi.

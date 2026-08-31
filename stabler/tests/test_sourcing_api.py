@@ -626,7 +626,9 @@ class TestListRfqs(unittest.TestCase):
 		"""Pre-migrate the column does not exist. Reading it would 500 the page;
 		mirroring `tender_quotations`, an unmigrated site reports "no RFQs"."""
 		api = _load_api(self.fake, missing_columns=("custom_crm_deal",))
-		self.assertEqual(api.list_rfqs("LOT-A", company="ACME"), {"rows": [], "count": 0})
+		out = api.list_rfqs("LOT-A", company="ACME")
+		self.assertEqual(out["rows"], [])
+		self.assertEqual(out["count"], 0)
 
 
 class TestCreateRfq(unittest.TestCase):
@@ -1630,3 +1632,154 @@ class TestSqRfqLink(unittest.TestCase):
 
 if __name__ == "__main__":
 	unittest.main()
+
+
+class TestListRfqsReportsWhatTheInvitationReaches(unittest.TestCase):
+	"""The send-side half of the 5-quotations/2-countries rule.
+
+	The rule is checked on the way OUT, in `Tender Sourcing Decision.validate`.
+	Nothing checked the way IN, so a lot invited entirely inside one country
+	read as healthy until the award refused it -- at the point where re-running
+	the RFQs costs the submission deadline.
+
+	What is asserted here is the wiring, not the arithmetic: the arithmetic is
+	`_sourcing_reach.reach_of`, pinned frappe-free in `test_sourcing_reach.py`.
+	What can only break here is which rows get fed to it.
+	"""
+
+	def setUp(self):
+		self.fake = _FakeFrappe()
+		# A country lives on Supplier, not on the RFQ row, so the reach has to
+		# join out to get it. Set here rather than in the shared fixture: no
+		# other contract in this file asked for this field, and widening a
+		# fixture everything shares is how one test starts holding another one
+		# hostage.
+		self.fake.docs[("Supplier", "SUP-A")]["country"] = "Uzbekistan"
+		self.fake.docs[("Supplier", "SUP-B")]["country"] = "Turkey"
+		self.api = _load_api(self.fake)
+
+	def _invite(self, row_name, rfq, supplier):
+		self.fake.docs[("Request for Quotation Supplier", row_name)] = _Doc(
+			parent=rfq, parenttype="Request for Quotation", supplier=supplier
+		)
+
+	def test_it_reports_the_vendors_and_countries_the_lot_asked(self):
+		reach = self.api.list_rfqs("LOT-A", company="ACME")["reach"]
+		self.assertEqual(reach["suppliers"], 2)
+		self.assertEqual(reach["countries"], 2)
+
+	def test_a_vendor_asked_in_two_rounds_is_one_vendor_asked(self):
+		"""A second RFQ to the same supplier is a follow-up, not a second
+		opinion. Counting the child rows would report three vendors where two
+		were asked, and a number that flatters is the number nobody checks."""
+		self.fake.docs[("Request for Quotation", "RFQ-2")] = _Doc(
+			name="RFQ-2",
+			company="ACME",
+			custom_crm_deal="LOT-A",
+			status="Draft",
+			docstatus=0,
+			transaction_date="2026-07-06",
+		)
+		self._invite("RFQ2-SUP-A", "RFQ-2", "SUP-A")
+		reach = self.api.list_rfqs("LOT-A", company="ACME")["reach"]
+		self.assertEqual(reach["suppliers"], 2)
+
+	def test_a_cancelled_rounds_vendors_are_not_counted(self):
+		"""`list_rfqs` already refuses to list a cancelled RFQ, for exactly this
+		reason -- it would inflate the "we asked N suppliers" story. The reach
+		must refuse it on the same grounds, or the badge tells the story the row
+		list declines to."""
+		self.fake.docs[("Supplier", "SUP-C")] = _Doc(
+			name="SUP-C", supplier_name="Gamma", country="Kazakhstan"
+		)
+		self._invite("RFQC-SUP-C", "RFQ-CANCELLED", "SUP-C")
+		reach = self.api.list_rfqs("LOT-A", company="ACME")["reach"]
+		self.assertEqual(reach["suppliers"], 2, "a withdrawn round still counted")
+		self.assertEqual(reach["countries"], 2)
+
+	def test_another_lots_invitation_is_not_borrowed(self):
+		self._invite("RFQOTHER-SUP-A", "RFQ-OTHER-LOT", "SUP-A")
+		reach = self.api.list_rfqs("LOT-A", company="ACME")["reach"]
+		self.assertEqual(reach["suppliers"], 2)
+
+	def test_a_vendor_with_no_country_on_file_is_named_not_hidden(self):
+		"""The one gap still fixable before sending: the officer can open the
+		Supplier record and fill it in. Folded into the total it would just
+		depress the country count for a reason nobody could see."""
+		self.fake.docs[("Supplier", "SUP-D")] = _Doc(name="SUP-D", supplier_name="Delta")
+		self._invite("RFQ1-SUP-D", "RFQ-1", "SUP-D")
+		reach = self.api.list_rfqs("LOT-A", company="ACME")["reach"]
+		self.assertEqual(reach["suppliers"], 3)
+		self.assertEqual(reach["countries"], 2)
+		self.assertEqual(reach["unknown_country"], 1)
+
+	def test_one_country_cannot_reach_two_however_many_vendors(self):
+		"""The warning this whole slice exists to make possible."""
+		self.fake.docs[("Supplier", "SUP-B")]["country"] = "Uzbekistan"
+		reach = self.api.list_rfqs("LOT-A", company="ACME")["reach"]
+		self.assertEqual(reach["countries"], 1)
+		self.assertFalse(reach["meets_countries"])
+
+	def test_the_verdicts_use_the_thresholds_the_award_will_be_judged_by(self):
+		"""If this half invented its own 5 and 2, the badge could go green on a
+		set the award then refuses. The numbers come from the decision doctype,
+		which is where the refusal reads them."""
+		from stabler.stabler.doctype.tender_sourcing_decision.tender_sourcing_decision import (
+			MIN_COUNTRIES,
+			MIN_QUOTATIONS,
+		)
+
+		reach = self.api.list_rfqs("LOT-A", company="ACME")["reach"]
+		self.assertEqual(reach["meets_suppliers"], reach["suppliers"] >= MIN_QUOTATIONS)
+		self.assertEqual(reach["meets_countries"], reach["countries"] >= MIN_COUNTRIES)
+		# The comparisons above cannot tell a named constant from a literal that
+		# happens to equal it today -- which is the whole failure mode. So read the
+		# call sites: EVERY one of them must name the constants, because a single
+		# hard-coded pair is enough to let the badge and the refusal drift.
+		calls = re.findall(r"reach_of\(([^)]*)\)", API_SOURCE.read_text())
+		self.assertTrue(calls, "no reach_of call left — did the endpoint stop reporting reach?")
+		for args in calls:
+			with self.subTest(call=args):
+				self.assertNotRegex(args, r"\b\d+\b", "a threshold is spelled at the call site")
+				self.assertIn("MIN_QUOTATIONS", args)
+				self.assertIn("MIN_COUNTRIES", args)
+
+	def test_an_unmigrated_site_reports_a_reach_of_nothing(self):
+		"""Pre-migrate there is no lot tag to group RFQs by, so there is no
+		invitation to report. The key must still be present: a badge reading
+		`undefined.suppliers` would break the workspace on exactly the sites
+		that have not migrated yet."""
+		api = _load_api(self.fake, missing_columns=("custom_crm_deal",))
+		reach = api.list_rfqs("LOT-A", company="ACME")["reach"]
+		self.assertEqual(reach["suppliers"], 0)
+		self.assertEqual(reach["countries"], 0)
+		self.assertFalse(reach["meets_countries"])
+
+
+class TestRfqDefaultsCarryThePolicyNumbers(unittest.TestCase):
+	"""The form badge counts before anything is saved, so it needs the two
+	thresholds client-side. They travel with the defaults rather than being
+	typed into the component: a number copied into Vue goes stale in silence,
+	and a form that goes green on a set the award then refuses is worse than no
+	badge at all."""
+
+	def setUp(self):
+		self.fake = _FakeFrappe()
+		self.api = _load_api(self.fake)
+
+	def test_the_defaults_carry_the_thresholds_the_award_uses(self):
+		from stabler.stabler.doctype.tender_sourcing_decision.tender_sourcing_decision import (
+			MIN_COUNTRIES,
+			MIN_QUOTATIONS,
+		)
+
+		policy = self.api.get_deal_rfq_defaults("LOT-A", company="ACME")["policy"]
+		self.assertEqual(policy["min_suppliers"], MIN_QUOTATIONS)
+		self.assertEqual(policy["min_countries"], MIN_COUNTRIES)
+
+	def test_the_numbers_are_never_spelled_at_the_call_site(self):
+		"""Same guard the reach call sites carry, for the same reason."""
+		source = API_SOURCE.read_text()
+		block = re.search(r'"policy": \{([^}]*)\}', source)
+		self.assertIsNotNone(block, "the defaults stopped carrying a policy block")
+		self.assertNotRegex(block.group(1), r"\b\d+\b", "a threshold is spelled in the payload")

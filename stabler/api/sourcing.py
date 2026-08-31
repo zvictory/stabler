@@ -433,16 +433,67 @@ def submit_supplier_quotation(name, company=None):
 	return {"name": name, "deal": deal, "docstatus": int(doc.docstatus or 0)}
 
 
+def _invited_rows(rfq_names: list[str]) -> list[dict]:
+	"""Who a lot's live RFQs asked, each with the country they answer from.
+
+	The country lives on Supplier, so this joins out for it; `_rfq_supplier_counts`
+	does not, because it answers a different question -- how big was THIS RFQ.
+	That count is rows; this one is vendors, and the two must not be swapped.
+
+	Parents are pulled rather than counted for the reason spelled out on
+	`_rfq_supplier_counts`: Frappe v16 refuses a SQL function inside a string
+	SELECT field, which passes every local check and then 500s the live list.
+
+	De-duplication is left to `_sourcing_reach.reach_of` -- one place decides what
+	a vendor is, so the badge and its test cannot drift apart.
+	"""
+	if not rfq_names:
+		return []
+	rows = frappe.get_all(
+		_RFQ_SUPPLIER_TABLE,
+		filters={"parent": ["in", rfq_names], "parenttype": "Request for Quotation"},
+		fields=["supplier"],
+		limit_page_length=0,
+	)
+	suppliers = sorted({r["supplier"] for r in rows if r.get("supplier")})
+	if not suppliers:
+		return []
+	country_of = {
+		s["name"]: s.get("country") or ""
+		for s in frappe.get_all("Supplier", filters={"name": ["in", suppliers]}, fields=["name", "country"])
+	}
+	return [{"supplier": name, "country": country_of.get(name, "")} for name in suppliers]
+
+
 @frappe.whitelist()
 def list_rfqs(deal, company=None):
-	"""Open requests for quotation raised for one tender lot."""
+	"""Open requests for quotation raised for one tender lot, and their reach.
+
+	`reach` is the send-side half of the procurement rule. The rule itself is
+	checked on the way out, by `Tender Sourcing Decision.validate`; until this
+	key existed nothing checked the way in, so a lot invited entirely inside one
+	country read as healthy right up to the award that refused it.
+
+	It reports what the invitation ALONE can reach. It is not a ceiling: an
+	uninvited vendor's quotation can still be attached to the lot later
+	(`attach_quotation_to_deal`), so anything shown from it must be worded as
+	"this invitation", never as "impossible".
+	"""
+	from stabler.api._sourcing_reach import reach_of
+	from stabler.stabler.doctype.tender_sourcing_decision.tender_sourcing_decision import (
+		MIN_COUNTRIES,
+		MIN_QUOTATIONS,
+	)
+
 	_require_tender(company)
 	selected_company = _assert_company_scope(company)
 	_deal_scope(deal, selected_company)
 	# An unmigrated site reports "no RFQs" rather than 500-ing the workspace —
-	# the same tolerance `purchasing.tender_quotations` shows for v30.
+	# the same tolerance `purchasing.tender_quotations` shows for v30. The reach
+	# key is still present and zeroed: a badge reading `undefined.suppliers`
+	# would break the workspace on exactly the sites that have not migrated.
 	if not _rfq_link_ready():
-		return {"rows": [], "count": 0}
+		return {"rows": [], "count": 0, "reach": reach_of([], MIN_QUOTATIONS, MIN_COUNTRIES)}
 	rows = frappe.get_list(
 		"Request for Quotation",
 		# A cancelled RFQ is not an open request. Counting it would inflate the
@@ -452,7 +503,15 @@ def list_rfqs(deal, company=None):
 		order_by="transaction_date desc",
 		limit_page_length=0,
 	)
-	return {"rows": rows, "count": len(rows)}
+	# Built from `rows`, so a cancelled RFQ is out of the reach for the same
+	# reason it is out of the list — otherwise the badge tells the "we asked N
+	# suppliers" story this filter exists to refuse.
+	invited = _invited_rows([row["name"] for row in rows])
+	return {
+		"rows": rows,
+		"count": len(rows),
+		"reach": reach_of(invited, MIN_QUOTATIONS, MIN_COUNTRIES),
+	}
 
 
 def _read_deal_intake_items(doc) -> list[dict]:
@@ -494,6 +553,16 @@ def get_deal_rfq_defaults(deal, company=None):
 		for line in _read_deal_intake_items(doc)
 	]
 
+	# The form counts the reach of the vendors being picked, before anything is
+	# saved, so it needs the same two numbers the award will be judged by. Sent
+	# from here rather than spelled in the component: a threshold typed into Vue
+	# is a copy that goes stale silently, and the screen that goes green on a set
+	# the award refuses is worse than no badge at all.
+	from stabler.stabler.doctype.tender_sourcing_decision.tender_sourcing_decision import (
+		MIN_COUNTRIES,
+		MIN_QUOTATIONS,
+	)
+
 	return {
 		"deal": deal,
 		"deal_label": doc.get("organization") or doc.get("lead_name") or deal,
@@ -501,6 +570,7 @@ def get_deal_rfq_defaults(deal, company=None):
 		"company": selected_company,
 		"items": items,
 		"suppliers": [],
+		"policy": {"min_suppliers": MIN_QUOTATIONS, "min_countries": MIN_COUNTRIES},
 	}
 
 

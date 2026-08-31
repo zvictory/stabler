@@ -4062,7 +4062,6 @@ Policy exception required,Қоидадан истисно сабаби тала�
 Policy gap,Таклиф етишмовчилиги
 policy met,сиёсат бажарилди
 Policy rule (5 quotes / 2 countries) not satisfied. Check policy exception and specify reason.,Қоида (5 таклиф / 2 мамлакат) бажарилмади. Истиснони белгиланг ва сабабини кўрсатинг.
-Policy: at least 5 quotations from 2 countries.,Сиёсат: камида 2 давлатдан камида 5 та таклиф.
 Port & Insurance,Порт & Суғурта
 Port of discharge,Тушириш порти
 Port of Discharge,Тушириш порти
@@ -6598,3 +6597,10 @@ Week,Ҳафта
 no end planned,тугаш режалаштирилмаган
 No lines to plan on.,Режалаштириш учун линия йўқ.
 {0} order(s) have no planned hour yet,режалаштирилган соати йўқ буюртмалар: {0}
+Asking {count} vendor(s) from {countries} country(ies).,"{count} та етказиб берувчидан, {countries} та давлатдан сўралмоқда."
+The policy wants {min} quotations from {countries} countries.,Сиёсат {min} та таклиф ва {countries} та давлатни талаб қилади.
+This invitation reaches {countries} country(ies). On its own it cannot satisfy the {min}-country rule — a quotation attached from elsewhere still can.,Бу таклифнома {countries} та давлатга етади. Ўз-ўзидан {min} та давлат қоидасини бажара олмайди — бошқа жойдан бириктирилган таклиф ҳали ҳам бажариши мумкин.
+"{count} of the vendors has no country on file, so it counts toward no country. Fixing the supplier record is quicker now than after the answers arrive.","Етказиб берувчилардан {count} тасининг давлати киритилмаган, шунинг учун улар ҳеч қайси давлатга ҳисобланмайди. Етказиб берувчи ёзувини тузатиш жавоблар келгандан кейингига қараганда ҳозир тезроқ."
+"Asked: {count} vendor(s), {countries} country(ies)","Сўралди: {count} та етказиб берувчи, {countries} та давлат"
+"Everyone asked so far is in {countries} country(ies). More rounds, or a quotation attached from elsewhere, are what change that.",Ҳозиргача сўралганларнинг ҳаммаси {countries} та давлатда. Буни фақат янги босқичлар ёки бошқа жойдан бириктирилган таклиф ўзгартиради.
+{count} of the vendors asked has no country on file and counts toward no country.,Сўралган етказиб берувчилардан {count} тасининг давлати киритилмаган ва ҳеч қайси давлатга ҳисобланмайди.

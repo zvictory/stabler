@@ -4479,7 +4479,6 @@ Policy exception required,Policy exception required
 Policy gap,Policy gap
 policy met,policy met
 Policy rule (5 quotes / 2 countries) not satisfied. Check policy exception and specify reason.,Policy rule (5 quotes / 2 countries) not satisfied. Check policy exception and specify reason.
-Policy: at least 5 quotations from 2 countries.,Policy: at least 5 quotations from 2 countries.
 Port & Insurance,Port & Insurance
 Port of discharge,Port of discharge
 Port of Discharge,Port of Discharge
@@ -6992,3 +6991,10 @@ Week,Week
 no end planned,no end planned
 No lines to plan on.,No lines to plan on.
 {0} order(s) have no planned hour yet,{0} order(s) have no planned hour yet
+Asking {count} vendor(s) from {countries} country(ies).,Asking {count} vendor(s) from {countries} country(ies).
+The policy wants {min} quotations from {countries} countries.,The policy wants {min} quotations from {countries} countries.
+This invitation reaches {countries} country(ies). On its own it cannot satisfy the {min}-country rule — a quotation attached from elsewhere still can.,This invitation reaches {countries} country(ies). On its own it cannot satisfy the {min}-country rule — a quotation attached from elsewhere still can.
+"{count} of the vendors has no country on file, so it counts toward no country. Fixing the supplier record is quicker now than after the answers arrive.","{count} of the vendors has no country on file, so it counts toward no country. Fixing the supplier record is quicker now than after the answers arrive."
+"Asked: {count} vendor(s), {countries} country(ies)","Asked: {count} vendor(s), {countries} country(ies)"
+"Everyone asked so far is in {countries} country(ies). More rounds, or a quotation attached from elsewhere, are what change that.","Everyone asked so far is in {countries} country(ies). More rounds, or a quotation attached from elsewhere, are what change that."
+{count} of the vendors asked has no country on file and counts toward no country.,{count} of the vendors asked has no country on file and counts toward no country.

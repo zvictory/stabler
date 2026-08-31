@@ -36,6 +36,11 @@ const loading = ref(false);
 
 const data = ref(null); // { rows, base_currency, count, countries, has_min_5, has_2_countries }
 const rfqs = ref([]);
+// Who this lot has ASKED, counted on the server from the same rows the RFQ list
+// is built from. Reported apart from the quotation counts below it: "asked" and
+// "answered" are separate facts, and letting one stand in for the other is what
+// kept a single-country invitation looking healthy until the award refused it.
+const reach = ref(null);
 const rfqsLoading = ref(false);
 
 const decisionData = ref(null); // { decision, award, comparison }
@@ -148,8 +153,10 @@ async function loadRfqs() {
 			company: activeCompany.value,
 		});
 		rfqs.value = res?.rows || [];
+		reach.value = res?.reach || null;
 	} catch {
 		rfqs.value = [];
+		reach.value = null;
 	} finally {
 		rfqsLoading.value = false;
 	}
@@ -503,6 +510,38 @@ watch(
 						<i class="ti" :class="data.has_2_countries ? 'ti-check' : 'ti-alert-triangle'"></i>
 						{{ t("Countries") }}: {{ data.countries }} / 2
 					</span>
+				</div>
+				<div v-if="reach" class="col-auto">
+					<span class="badge bg-blue-lt text-blue">
+						<i class="ti ti-send"></i>
+						{{
+							t("Asked: {count} vendor(s), {countries} country(ies)", {
+								count: reach.suppliers,
+								countries: reach.countries,
+							})
+						}}
+					</span>
+				</div>
+				<div v-if="reach && reach.suppliers && !reach.meets_countries" class="col-12">
+					<div class="text-warning small">
+						<i class="ti ti-alert-triangle me-1"></i>
+						{{
+							t(
+								"Everyone asked so far is in {countries} country(ies). More rounds, or a quotation attached from elsewhere, are what change that.",
+								{ countries: reach.countries },
+							)
+						}}
+					</div>
+				</div>
+				<div v-if="reach && reach.unknown_country" class="col-12">
+					<div class="text-secondary small">
+						<i class="ti ti-map-pin-off me-1"></i>
+						{{
+							t("{count} of the vendors asked has no country on file and counts toward no country.", {
+								count: reach.unknown_country,
+							})
+						}}
+					</div>
 				</div>
 			</div>
 

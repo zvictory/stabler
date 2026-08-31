@@ -18,6 +18,7 @@ import MoneyInput from "../../../components/MoneyInput.vue";
 import SkeletonRows from "../../../components/SkeletonRows.vue";
 import Typeahead from "../../../components/Typeahead.vue";
 import TenderPage from "../TenderPage.vue";
+import { reachOf } from "../../../composables/sourcingReach.js";
 
 const session = useSession();
 const { activeCompany, user } = storeToRefs(session);
@@ -31,6 +32,14 @@ const currency = ref("");
 
 const defaultsLoading = ref(false);
 const suppliers = ref([]);
+// Country by supplier, kept beside `suppliers` rather than inside it: the create
+// call posts `suppliers` verbatim as a list of names, and widening it to objects
+// would change the payload to teach the badge a fact only the badge needs.
+const supplierCountry = ref({});
+// Sent by `get_deal_rfq_defaults`, never typed here — see the note on that
+// endpoint. Zeroed until it arrives so the badge stays quiet rather than
+// announcing a policy it has not been told.
+const policy = ref({ min_suppliers: 0, min_countries: 0 });
 const items = ref([]);
 const scheduleDate = ref("");
 const saving = ref(false);
@@ -56,7 +65,11 @@ async function searchSuppliers(q) {
 		search: q,
 		limit: 20,
 	});
-	return (rows || []).map((r) => ({ name: r.name, label: r.supplier_name || r.name }));
+	return (rows || []).map((r) => ({
+		name: r.name,
+		label: r.supplier_name || r.name,
+		country: r.country || "",
+	}));
 }
 
 async function searchItems(q) {
@@ -72,7 +85,12 @@ function pickDeal(o) {
 }
 
 function pickSupplier(o) {
-	if (o && !suppliers.value.includes(o.name)) suppliers.value.push(o.name);
+	if (!o) return;
+	// Remembered even for a vendor already on the list: the picker is the only
+	// place the country is ever seen, and a re-pick is the cheapest chance to
+	// learn one that was blank the first time round.
+	supplierCountry.value[o.name] = o.country || "";
+	if (!suppliers.value.includes(o.name)) suppliers.value.push(o.name);
 }
 
 function pickItem(line, o) {
@@ -93,6 +111,10 @@ async function loadDefaults() {
 		});
 		dealLabel.value = res?.deal_label || deal.value;
 		currency.value = res?.currency || "";
+		policy.value = {
+			min_suppliers: Number(res?.policy?.min_suppliers) || 0,
+			min_countries: Number(res?.policy?.min_countries) || 0,
+		};
 		const lines = (res?.items || []).map((i) => ({
 			item_code: i.item_code || "",
 			itemLabel: i.item_name || i.item_code || "",
@@ -117,6 +139,18 @@ function removeLine(idx) {
 	items.value.splice(idx, 1);
 	if (!items.value.length) addLine();
 }
+
+// What THIS invitation reaches, counted before it is saved. Rounds already sent
+// for the lot are counted on the server and shown on the sourcing workspace; the
+// two are reported apart on purpose, because "asked" and "answered" are separate
+// facts and one standing in for the other is what hid the gap in the first place.
+const reach = computed(() =>
+	reachOf(
+		suppliers.value.map((name) => ({ name, supplier: name, country: supplierCountry.value[name] || "" })),
+		policy.value.min_suppliers,
+		policy.value.min_countries,
+	),
+);
 
 const validLines = computed(() => items.value.filter((l) => l.item_code && Number(l.qty) > 0));
 const canCreate = computed(
@@ -223,8 +257,39 @@ onMounted(() => {
 				>
 					<template #option="{ item }">{{ item.label }}</template>
 				</Typeahead>
-				<div class="text-secondary small mt-2">
-					{{ t("Policy: at least 5 quotations from 2 countries.") }}
+				<div v-if="policy.min_suppliers" class="small mt-2">
+					<div class="text-secondary">
+						{{
+							t("Asking {count} vendor(s) from {countries} country(ies).", {
+								count: reach.suppliers,
+								countries: reach.countries,
+							})
+						}}
+						{{
+							t("The policy wants {min} quotations from {countries} countries.", {
+								min: policy.min_suppliers,
+								countries: policy.min_countries,
+							})
+						}}
+					</div>
+					<div v-if="suppliers.length && !reach.meets_countries" class="text-warning mt-1">
+						<i class="ti ti-alert-triangle me-1"></i>
+						{{
+							t(
+								"This invitation reaches {countries} country(ies). On its own it cannot satisfy the {min}-country rule — a quotation attached from elsewhere still can.",
+								{ countries: reach.countries, min: policy.min_countries },
+							)
+						}}
+					</div>
+					<div v-if="reach.unknown_country" class="text-warning mt-1">
+						<i class="ti ti-map-pin-off me-1"></i>
+						{{
+							t(
+								"{count} of the vendors has no country on file, so it counts toward no country. Fixing the supplier record is quicker now than after the answers arrive.",
+								{ count: reach.unknown_country },
+							)
+						}}
+					</div>
 				</div>
 			</div>
 		</div>
