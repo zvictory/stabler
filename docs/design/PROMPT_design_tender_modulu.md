@@ -132,6 +132,15 @@ Bunlar **kural**, soru değil. Her biri bir dosyaya bağlı.
 - **Rol kapıları değişmez** ve kapı **uçta** durur, navigasyonda değil. Gerekçesi bir
   olayla `tender.py`'nin `_require_any_tender_view` docstring'inde yazılı: menü gizlese
   bile URL'yi bilen kullanıcı 200 alıyordu.
+- **Severity üç kodla taşınır: renk + biçim + etiket.** Renk tek başına bilgi taşımaz.
+  Bu kural brief'e sonradan eklendi çünkü hiçbir dokümanda değil, yalnız tasarım
+  sisteminin kendi CSS yorumunda yazılı: `stabler-modernist.css:83-84`. Aciliyet,
+  gecikme, politika ihlali — hepsi renkle birlikte bir **şekil** ve bir **kelime**
+  taşımak zorunda.
+- **Metin rengi ile dolgu/kenar rengi ayrı token'lardır.** `--ds-today` (parlak turuncu)
+  beyaz üstünde metin olarak 2,3:1 kontrast veriyor; metin için `--ds-today-tx` (koyu,
+  7:1) var. Gerekçe ölçülmüş: `stabler-modernist.css:91-92`. Parlak severity rengini
+  gövde metnine uygulama.
 - **Gümrük kuyruğu ve lojistik panosu salt-okuma projeksiyondur (R3).** Kart sürükleyerek
   ilerletme **eklenmez** — kartı ilerleten şey gerçek belge/sevkiyat olayıdır.
 - **`Tender Sourcing Decision`'a ikinci bir yazma yolu açılmaz.**

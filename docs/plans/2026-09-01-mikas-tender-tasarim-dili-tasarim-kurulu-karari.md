@@ -296,27 +296,45 @@ DECISIONS
      testle korunan, bilerek "güzel olmayan" bir küme.
 
 ACCEPTANCE
-  Her ölçüt "hiçbir şey yapmayan bir değişiklikle" sağlanamayacak biçimde YAZILDI —
-  çürütme turu ilk hâlinin dördünü tam bu şekilde kırdı.
+  İki turdan geçti. Birinci tur: her ölçüt "hiçbir şey yapmayan bir değişiklikle"
+  sağlanamayacak hâle getirildi (ilk hâlinin dördü tam öyle sağlanabiliyordu).
+  İkinci tur (Aşama A çürütmesi): sıkılaştırmanın kendisi üçünü SAĞLANAMAZ yapmıştı —
+  mount testi isteyen ölçütler, deponun bilerek DOM'suz kurulmuş test altyapısıyla
+  çelişiyordu. Aşağıdaki hâl ikisinin ortasında durmuyor; ikisini de karşılıyor.
 
   1. TenderMasterDrawer'da `tgm-` sayısı 46 → 0  VE  `ds-drawer` + `ds-form-section`
      sayısı > 0  VE  çekmece `data-size="lg"` taşıyor.
      (Yalnız sınıfları silmek 1. koşulu sağlar, 2. ve 3.'yü sağlamaz — stilsiz çekmece
      bu kapıdan geçemez.)
-  2. Sıfır `ds-*` taşıyan tender dosyası 17 → 0  VE  `RfqPrint.vue` ile `BidPricing.vue`
-     bir `.stbl-ds` atası kazanıyor (bugün ikisinde de `TenderPage` 0).
-  3. `SourcingWorkspace`'te `table-responsive` 0 → ≥1  VE  1280px genişlikte 9 sütunlu
-     tablonun taşmadığını gösteren bir mount testi var.
+  2. Sıfır `ds-*` taşıyan CANLI tender dosyası 13 → 0  VE  `RfqPrint.vue` ile
+     `BidPricing.vue` bir `.stbl-ds` atası kazanıyor (bugün ikisinde de `TenderPage` 0).
+     17 değil 13: dördü ÖLÜ KOD ve ölü kodu güzelleştirmek bir ölçüt olamaz —
+     `TenderCrmWrapper` · `TenderExecutionFlow` · `TenderExecutiveKpis` · `TenderTrendChart`,
+     dördü de 0 içe aktarma (kendi ölçümüm, 2026-09-01). Onların kararı silmek ya da
+     bırakmaktır, boyamak değil; bu ayrı bir iş.
+  3. `SourcingWorkspace`'te tablonun yatay taşması kapanıyor  VE  bunu iddia eden bir
+     spec var — **mount testi değil**, deponun kendi kalıbıyla (`sourcingAwardPanel.spec.js`
+     kaynaktan `v-if` ifadelerini çıkarıp çalıştırıyor; aynı yöntem sarmalayıcının varlığını
+     ve sınıfını iddia edebilir).
   4. `PoControlBoard`'dan `tender-sourcing` veya `tender-rfq-*` bağlantı sayısı 0 → ≥1.
-  5. `RfqList`'te başarısız yükleme, boş listeden FARKLI bir eleman gösteriyor — bir mount
-     testi başarısız çağrıyı taklit edip iki durumun farklı render ettiğini iddia ediyor.
-     (Bugün de bir toast var; toast bu ölçütü geçmez.)
-  6. Kapsamdaki 5 tender spec'inde `@vue/test-utils` kullanan spec sayısı 0 → ekran başına ≥1.
+  5. `RfqList`'te başarısız yükleme, boş listeden FARKLI bir eleman gösteriyor — ve bunu
+     bir spec kaynaktan iddia ediyor: hata dalının çizdiği seçici ile boş dalınki AYNI
+     OLAMAZ. (Bugün de bir toast var; toast bu ölçütü geçmez.)
+  6. Kapsamdaki 5 tender ekranının her biri için, davranışı kaynaktan yürüten en az bir
+     spec var (bugün 0). `@vue/test-utils` DEĞİL — o bağımlılık depoda yok ve eklemek
+     `stabler/` dışına çıkar; bkz. NOT DECIDED.
   7. Değişen dosyaların hiçbiri `stabler/` dışında değil  VE  hiçbir doctype JSON'u
      değişmedi  VE  yeni patch dosyası yok.
      (Bu bugün doğru; ölçüt olarak duruyor çünkü İHLAL EDİLEBİLİR — bir Custom Field
      patch'i eklenirse kırmızı verir.)
-  8. Teslim edilen her ekranda görünen her lot no, kurum adı, tedarikçi ve tutar
+  8. `ds-btn` ve `ds-btn--primary` için bir `:disabled` kuralı VAR (bugün 0) ve devre dışı
+     düğme etkin olandan renk + biçim + etiketten en az ikisiyle ayrılıyor.
+     Ölçüldü 2026-09-01: tüm katmanda `disabled` iki kez geçiyor, ikisi de köprüde
+     (`css:930-931`, `.form-control`/`.form-select`). `ds-btn` arka planı ve rengi açıkça
+     yazdığı için tarayıcının kendi grileştirmesi de devreye giremez — yani bugünkü
+     `btn btn-primary`'den `ds-btn--primary`'ye geçiş, GÖRÜNÜR bir devre dışı hâli
+     GÖRÜNMEZ yapardı. Göçün getireceği gerileme; ölçüt onu kapatmak için var.
+  9. Teslim edilen her ekranda görünen her lot no, kurum adı, tedarikçi ve tutar
      `seed_tender_demo.py`'nin sabitlerinde BULUNABİLİYOR  VE  her ekran görseli
      "sentetik" işaretini taşıyor  VE  kümenin dürüstlük durumlarından en az üçü
      çiziliyor: politika boşluğu (6 lot geçemiyor), "ölçülemiyor" satırı (2 damgasız lot),
@@ -325,6 +343,14 @@ ACCEPTANCE
      zorunlu.)
 
 NOT DECIDED
+  · **DOM test altyapısı — Zafar'ın kararı.** Yukarıdaki 3/5/6, ilk yazımda "mount testi"
+    istiyordu. İmkânsızdı: `package.json`'da `@vue/test-utils`/`jsdom`/`happy-dom` yok ve
+    `vitest.config.mjs:15` `environment: "node"` diyor — üstelik gerekçesini YAZILI olarak
+    reddederek. İkisi de depo kökünde, yani ölçüt 7'nin ("`stabler/` dışı 0") yasakladığı
+    yerde. Ölçütleri deponun mevcut kaynak-yürütme kalıbına indirdim; ama gerçek soru
+    duruyor: **tender'a DOM testi girsin mi?** Girerse iki bağımlılık, bir config
+    değişikliği ve belgelenmiş bir mimari kararın geri alınması demek. Tasarımın değil,
+    Zafar'ın kararı.
   · ~~Veri ön koşulu.~~ **KARARA BAĞLANDI** (Zafar, 2026-09-01): gerçek kayıt yok,
     sentetik devam. Kaynak `seed_tender_demo.py`; brief §7.0 tek dala indirildi.
     Betiğin kendisi PROD'da çalıştırılmıyor — canlı siteye yazıyor, bu işin kapsamı
@@ -346,7 +372,16 @@ WOULD CHANGE MY MIND
     olarak gösterirse, yeni bileşen gerekçelenir.
 
 CORRECTIONS
-  Kendi hatalarım:
+  Kendi hatalarım — ikinci tur (Aşama A çürütmesi, 2026-09-01):
+  · Kabul ölçütü 6 ile 7'yi BİRBİRİYLE ÇELİŞİR yazdım. 6 mount spec'i istiyor, 7 `stabler/`
+    dışını yasaklıyor; gereken iki dosya da depo kökünde. "Hiçbir şey yapmadan sağlanamaz"
+    diye sıkılaştırdığım liste, bu sefer HİÇBİR ŞEYLE sağlanamaz hâle gelmişti.
+  · "Sıfır `ds-*` taşıyan 17 dosya" dedim ve hepsini hedef saydım. Dördü ölü kod: 0 içe
+    aktarma. Ölü kodu tasarım sistemine taşımak bir ölçüt değil, bir israf.
+  · `ds-btn`'in `:disabled` taşımadığını hiç ölçmemiştim — göçün bir GERİLEME getireceğini
+    çürütme turu buldu. Şimdi kendi ölçütü var (8).
+
+  Kendi hatalarım — birinci tur:
   · Zafar'a "19 rota" dedim, ölçmemiştim. Gerçek: 18 girdi, 2'si yönlendirme → 16 ekran.
     Ayrıca `/tender/board` bir tender bileşeni bile değil (`SalesOrderBoard`, `pages/sales`).
   · "tgm-* ↔ ds-* birebir karşılık" dedim. Yanlış: adlar eşleşiyor, değerler eşleşmiyor
