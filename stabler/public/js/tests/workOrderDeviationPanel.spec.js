@@ -8,10 +8,6 @@ const { roleLabel } = await import("../composables/workOrderRoles.js");
 
 const here = dirname(fileURLToPath(import.meta.url));
 const list = readFileSync(resolve(here, "../pages/manufacturing/WorkOrderDetail.vue"), "utf8");
-const kiosk = readFileSync(
-	resolve(here, "../pages/manufacturing/ManufacturingOperatorBoard.vue"),
-	"utf8"
-);
 
 /**
  * The per-role deviation panel under the materials table.
@@ -62,7 +58,11 @@ describe("roleLabel", () => {
 		expect(roleLabel("")).toBe("");
 	});
 
-	for (const [label, src] of [["work order list", list], ["kiosk", kiosk]]) {
+	// The kiosk dropped out of this loop on 2026-08-31: it imported `roleLabel`
+	// for the write-off dialog's role badge, and the write-off left the operator
+	// screen entirely. The manager's list still names roles and still must not
+	// restate the helper.
+	for (const [label, src] of [["work order list", list]]) {
 		it(`${label} imports roleLabel instead of restating it`, () => {
 			expect(src).toContain("roleLabel");
 			expect(src).not.toMatch(/const roleLabel\s*=/);
@@ -80,24 +80,12 @@ describe("roleLabel", () => {
  * answers what the operator actually wants to know standing at the machine —
  * "has this been moved to me yet".
  */
-describe("kiosk required-materials WIP line", () => {
-	it("no longer reads the never-populated wip_stock field", () => {
-		expect(kiosk).not.toMatch(/\bwip_stock\b/);
-	});
-
-	it("labels the quantity with the key Work Orders.vue already uses for it", () => {
-		// Reusing "Transferred" (already shipped in ru/uz/uzc/tr for the manager's
-		// list column, detail and materials table) means the operator's card and
-		// the manager's screen name this number the same way, at zero new-string cost.
-		expect(kiosk).toContain('t("Transferred")');
-		expect(kiosk).toContain("it.transferred_qty");
-	});
-
-	it("reads green once a line is fully transferred and red while it is short", () => {
-		const m = kiosk.match(/:class="(it\.transferred_qty[^"]+)"/);
-		expect(m, "no class binding keyed on it.transferred_qty").toBeTruthy();
-		const fn = new Function("it", `return (${m[1]});`);
-		expect(fn({ transferred_qty: 10, required_qty: 10 })).toBe("text-success");
-		expect(fn({ transferred_qty: 4, required_qty: 10 })).toBe("text-danger");
-	});
-});
+// The "kiosk required-materials WIP line" block lived here until 2026-08-31. It
+// pinned the panel that showed an operator each required item with its code, its
+// name and how much of it had been transferred — including the fix that made that
+// line read `transferred_qty` instead of the never-populated `wip_stock`. Anjan's
+// requirement is that an operator sees no item and no quantity at all, so the
+// panel is gone rather than corrected, and the tests that described it went with
+// it. What replaced them is `operatorMaterialSecrecy.spec.js`, which asserts the
+// absence — including the route this suite never covered, `wo_transfer_preview`,
+// measured that day handing a Manufacturing User all 15 lines with quantities.

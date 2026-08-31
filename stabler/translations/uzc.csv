@@ -144,6 +144,7 @@ Same as your last transfer,Охирги ўтказмангиздаги каби
 Select at least one Work Order.,Камида битта ишлаб чиқариш буюртмасини танланг.
 Select Warehouse,Омборни танланг
 Selected work orders: {0},Танланган буюртмалар: {0}
+Starting moves this order's materials from the store to the line. The store issues the standard quantities.,Бошлаш бу буюртма материалларини омборхонадан линияга кўчиради. Омборхона стандарт миқдорларни беради.
 Terminated by {0}: {1},{0} томонидан ёпилди: {1}
 The approved sourcing decision for this tender lot selected a different quotation.,Бу тендер лоти учун тасдиқланган харид қарори бошқа таклифни танлаган.
 The destination desk ({branch}) has no {currency} cash account — add it in Remittance Settings before registering.,Манзил кассасида ({branch}) {currency} ҳисоби йўқ — рўйхатга олишдан олдин уни Ўтказма созламаларида қўшинг.

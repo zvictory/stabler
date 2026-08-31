@@ -838,6 +838,23 @@ def wo_transfer_preview(work_order: str):
 		frappe.throw(f"Unknown Work Order: {work_order}")
 	if not _is_mfg_manager():
 		_require_own_work_order(work_order)
+	# An operator is not shown the recipe. Measured on anjan 2026-08-31 as
+	# `qwerty03@mail.com` (Manufacturing User and nothing else): this endpoint
+	# answered with 15 lines and their quantities -- R194 27 840 Dona among them.
+	# It was the only route by which the bill of materials reached the kiosk; the
+	# three role-scoped readers (`list_work_orders`, `work_order_detail`,
+	# `wo_consumption_preview`) all correctly answered empty for the same user, so
+	# a check of those three would have reported the leak closed.
+	#
+	# Warehouse staff stage the transfer as one document for the whole order and
+	# still need the list. The operator needs only the button:
+	# `make_work_order_stock_entry` builds the same rows itself when the client
+	# sends none, so nothing about the document that gets posted changes.
+	#
+	# Returned rather than refused, and empty rather than 403: the caller is
+	# entitled to be here, there is simply nothing here for them.
+	if not (_is_mfg_manager() or _is_warehouse_role()):
+		return {"items": [], "from_warehouse": None, "to_warehouse": None, "materials_hidden": True}
 	try:
 		se = make_stock_entry(work_order, "Material Transfer for Manufacture")
 	except Exception as e:  # preview must never hard-fail the kiosk
@@ -923,6 +940,28 @@ def wo_consumption_preview(work_order: str):
 	# has nothing left rather than that the site is unset up for the split.
 
 	from_wh = next((r.get("s_warehouse") for r in rows if r.get("s_warehouse")), None)
+	# One rule, applied here as well as in `wo_transfer_preview`: an operator is
+	# handed no item and no quantity, whichever endpoint they reach. `sweep_risk`
+	# is the sharper half — it is the OTHER role's lines by name, which the role
+	# scoping was never meant to hand out and which this payload carried anyway
+	# because it rode along with rows already paid for.
+	#
+	# The write-off this list fed left the operator screen in the same change, so
+	# nothing reads either field for an operator any more. Emptying them rather
+	# than leaving them is the difference between a screen that does not show the
+	# recipe and an API that does not send it — and a whitelisted endpoint is one
+	# fetch away from any browser on the floor.
+	if not is_manager:
+		# The unassigned COUNT stays truthful. It names nothing, and returning a
+		# stubbed 0 over a real 3 would be this module telling a caller the order
+		# is settled when it is not.
+		return {
+			**empty,
+			"role": role,
+			"enabled": True,
+			"from_warehouse": from_wh,
+			"unassigned_item_count": len([r for r in rows if not r.get("operator_role")]),
+		}
 	items = [r for r in rows if is_manager or (role and r.get("operator_role") == role)]
 	return {
 		"items": items,
@@ -2906,10 +2945,16 @@ def update_work_order_materials(work_order: str, materials: str):
 	if not doc:
 		frappe.throw(f"Unknown Work Order: {work_order}")
 
-	# Operators can only edit their own assigned Work Orders
-	is_manager = _is_mfg_manager()
-	if not is_manager:
-		_require_own_work_order(work_order)
+	# Manager-only since 2026-08-31. It was operator-writable, scoped to their own
+	# role's lines: the point was that a pourer could correct a plan they could see
+	# was wrong without waiting for the shift lead. Anjan's requirement removes the
+	# premise — an operator no longer sees the lines at all, so an operator who
+	# reaches this endpoint is reaching past a screen that stopped offering it.
+	# The role scoping below is kept rather than deleted: it is what stops a
+	# second manager-shaped caller from being handed both roles by accident, and
+	# it costs nothing now that only managers arrive.
+	_require_mfg_manager()
+	is_manager = True
 
 	# D7 (P0): `required_qty` is the denominator the deviation panel scores people
 	# against, and the SQL below goes around the docstatus lock on purpose — so on
