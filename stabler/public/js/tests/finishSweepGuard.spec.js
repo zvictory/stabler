@@ -89,12 +89,19 @@ describe("finish button, when the other operator has not written off yet", () =>
 });
 
 describe("the sweep warning reaches the operator before they count", () => {
-	it("asks the server what finishing would sweep when the dialog opens", () => {
-		// Not after the refusal: by then the pallet is walked and the numbers are
-		// typed. Seeing it on open is what lets them go fetch the packer instead.
-		const body = functionBody("openFinish");
-		expect(body).toContain("wo_consumption_preview");
-		expect(body).toContain("sweep_risk");
+	// The early warning was withdrawn on 2026-08-31, and this is the test that
+	// used to demand it: `openFinish` called `wo_consumption_preview` so the
+	// operator met the sweep on open rather than as a refusal after the pallet was
+	// walked. That preview answers with item codes and quantities, and Anjan's
+	// requirement is that an operator never sees either. The early warning was
+	// only worth its cost while the operator could act on it — go and fetch the
+	// packer — and they no longer can: the write-off left this screen in the same
+	// change, so there is no packer writing anything off. Measured across all 8
+	// stabler tenants that day: 0 Material Consumption entries have ever been
+	// posted and 0 Items carry an operator role, so the warning had never actually
+	// fired for anyone.
+	it("no longer asks an endpoint that answers with item names", () => {
+		expect(functionBody("openFinish")).not.toContain("wo_consumption_preview");
 	});
 
 	it("clears the previous order's acknowledgement when the dialog opens", () => {
@@ -105,10 +112,12 @@ describe("the sweep warning reaches the operator before they count", () => {
 		expect(body).toMatch(/sweepBlocked\.value\s*=\s*false/);
 	});
 
-	it("names the items in the dialog rather than only counting them", () => {
-		// "2 items" tells the operator nothing they can act on. The names tell
-		// them which colleague to go and find.
-		expect(src).toMatch(/v-for="[^"]*\bin\s+finishSweep"/);
+	it("shows the warning without listing what would be swept", () => {
+		// The refusal still has to be answerable — the checkbox is what the server
+		// is waiting for — but the list under it was the recipe, one item and
+		// quantity per line.
+		expect(src).not.toMatch(/v-for="[^"]*\bin\s+finishSweep"/);
+		expect(src).toContain('id="sweep-ack"');
 	});
 });
 

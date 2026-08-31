@@ -145,6 +145,7 @@ Same as your last transfer,Как в прошлом переводе
 Select at least one Work Order.,Выберите хотя бы один производственный заказ.
 Select Warehouse,Выберите склад
 Selected work orders: {0},Выбрано заказов: {0}
+Starting moves this order's materials from the store to the line. The store issues the standard quantities.,Запуск перемещает материалы этого заказа со склада на линию. Склад выдаёт стандартные количества.
 Terminated by {0}: {1},Закрыт пользователем {0}: {1}
 The approved sourcing decision for this tender lot selected a different quotation.,Утверждённое решение по закупке для этого лота тендера выбрало другое предложение.
 The destination desk ({branch}) has no {currency} cash account — add it in Remittance Settings before registering.,У кассы назначения ({branch}) нет счёта в {currency} — добавьте его в настройках переводов до регистрации.

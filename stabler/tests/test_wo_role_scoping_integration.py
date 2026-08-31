@@ -317,29 +317,41 @@ class TestRoleScopingOnRealColumns(FrappeTestCase):
 		self.assertTrue(out["enabled"])
 		self.assertEqual(out["role"], "Production")
 
-	def test_the_preview_never_offers_the_other_operators_material(self):
-		"""End to end on the real thing: the setting on, ERPNext building the list,
-		roles read from the Item column.
+	def test_the_preview_offers_an_operator_no_material_at_all(self):
+		"""Was `test_the_preview_never_offers_the_other_operators_material`, which
+		asserted the pourer got their OWN line and not the packer's. Anjan's
+		requirement of 2026-08-31 removes the first half: an operator sees no item
+		code and no quantity, whichever endpoint they reach.
 
-		BOTH lines are forced pending, and both directions are asserted. With only
-		the pourer's line pending the `assertNotIn` passes without proving
-		anything — the packer's material was never in ERPNext's list to be scoped
-		out of it, so a preview with no role filter at all would be just as green.
+		BOTH lines are forced pending on purpose, and that is inherited from the
+		test this replaces for the same reason it had it — with nothing pending,
+		ERPNext builds no list, and an empty payload would prove nothing about the
+		scoping. Here it has to be empty against a list that really had two rows in
+		it.
+
+		`sweep_risk` is asserted alongside `items` because it is the sharper leak of
+		the two: it is the OTHER role's lines by name, and it rode this payload as a
+		free by-product of rows already fetched.
 		"""
 		self._enable_consumption()
 		self._force_pending(self.codes[0])  # the packer's line
 		self._force_pending(self.codes[1])  # the pourer's own
-		frappe.set_user(POURER)
-		out = wo_consumption_preview(self.wo)
-		if not out["items"]:
+		frappe.set_user("Administrator")
+		manager_view = wo_consumption_preview(self.wo)
+		if not manager_view["items"]:
 			# Said out loud rather than passing quietly. ERPNext refuses the stub
 			# outright once an order is fully produced (fg_completed_qty falls to 0)
 			# no matter what consumed_qty says — a green tick here would claim
 			# coverage this run did not have.
 			self.skipTest(f"{self.wo} has nothing pending to consume, so no list was built to scope")
-		offered = [r["item_code"] for r in out["items"]]
-		self.assertIn(self.codes[1], offered, "the pourer was not offered their own material")
-		self.assertNotIn(self.codes[0], offered, "the pourer was offered the packer's material")
+		frappe.set_user(POURER)
+		out = wo_consumption_preview(self.wo)
+		self.assertEqual(out["items"], [], "the pourer was offered material")
+		self.assertEqual(out["sweep_risk"], [], "the pourer was told what the packer still holds")
+		# Still answering, still saying who they are: an empty list from a working
+		# endpoint, not a refusal the kiosk would have to explain.
+		self.assertTrue(out["enabled"])
+		self.assertEqual(out["role"], "Production")
 
 	def test_the_preview_reports_the_sites_actual_consumption_setting(self):
 		"""Reads the real Manufacturing Settings single. With it off the preview must
@@ -389,24 +401,34 @@ class TestRoleScopingOnRealColumns(FrappeTestCase):
 		one's bar: raise the packer's plan and the packer looks efficient, lower
 		it and the packer looks wasteful, and the packer is never told.
 
-		The kiosk only ever sends the caller's own lines — `list_work_orders` has
-		been role-scoped since 238592a — so this closes the hand-made request, not
-		the screen. Which is the point: the screen was never the guard."""
+		The kiosk stopped offering this at all on 2026-08-31 — so this closes the
+		hand-made request, not the screen. Which is the point: the screen was never
+		the guard. The refusal is now a PermissionError from the manager gate
+		rather than a ValidationError from the role scoping; both directions of the
+		original rule are still proven, one tier earlier."""
 		before = self._required(self.codes[0])  # the packer's line
 		frappe.set_user(POURER)
-		with self.assertRaises(frappe.ValidationError):
+		with self.assertRaises(frappe.PermissionError):
 			self._save_materials(self.codes[0], before + 99)
 		frappe.set_user("Administrator")
 		self.assertEqual(self._required(self.codes[0]), before, "the packer's plan moved")
 
-	def test_the_pourer_can_still_correct_their_own_line(self):
-		"""The other half, and the one that proves the guard is scoping rather
-		than simply refusing everything — a test suite where the endpoint had been
-		disabled outright would pass the test above just as well."""
+	def test_the_pourer_may_no_longer_correct_even_their_own_line(self):
+		"""Was `test_the_pourer_can_still_correct_their_own_line`, and it was there
+		to prove the guard scoped rather than refused outright.
+
+		It is inverted rather than deleted because the refusal now IS the rule:
+		anjan asked on 2026-08-31 that an operator not see the material list, and a
+		plan they cannot see is not a plan they can correct. What the endpoint kept
+		is the role scoping underneath the manager gate — see
+		`test_the_manager_may_still_plan_both_roles`, which is now the test that
+		proves this endpoint still writes at all."""
+		before = self._required(self.codes[1])
 		frappe.set_user(POURER)
-		self._save_materials(self.codes[1], 77)
+		with self.assertRaises(frappe.PermissionError):
+			self._save_materials(self.codes[1], 77)
 		frappe.set_user("Administrator")
-		self.assertEqual(self._required(self.codes[1]), 77)
+		self.assertEqual(self._required(self.codes[1]), before, "the pourer rewrote their own plan")
 
 	def test_the_manager_may_still_plan_both_roles(self):
 		frappe.set_user("Administrator")

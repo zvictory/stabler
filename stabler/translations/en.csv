@@ -464,6 +464,7 @@ Showing the first {count} — narrow the search to see the rest.,Showing the fir
 Showing the first {shown} of {count}.,Showing the first {shown} of {count}.
 Stage timeline,Stage timeline
 "Stored, but not enforced yet — no expiry time is written onto a transfer.","Stored, but not enforced yet — no expiry time is written onto a transfer."
+Starting moves this order's materials from the store to the line. The store issues the standard quantities.,Starting moves this order's materials from the store to the line. The store issues the standard quantities.
 Terminated by {0}: {1},Terminated by {0}: {1}
 That is not the name this transfer was registered under.,That is not the name this transfer was registered under.
 That screen is not available yet.,That screen is not available yet.

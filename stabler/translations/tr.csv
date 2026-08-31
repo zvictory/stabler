@@ -144,6 +144,7 @@ Same as your last transfer,Son transferinizdeki gibi
 Select at least one Work Order.,En az bir iş emri seçin.
 Select Warehouse,Depo seçin
 Selected work orders: {0},Seçilen iş emri: {0}
+Starting moves this order's materials from the store to the line. The store issues the standard quantities.,"Başlatmak, bu emrin malzemelerini depodan hatta taşır. Depo standart miktarları verir."
 Terminated by {0}: {1},{0} tarafından kapatıldı: {1}
 The approved sourcing decision for this tender lot selected a different quotation.,Bu ihale lotu için onaylanmış tedarik kararı başka bir teklifi seçti.
 The destination desk ({branch}) has no {currency} cash account — add it in Remittance Settings before registering.,Hedef kasada ({branch}) {currency} hesabı yok — kaydetmeden önce Havale Ayarları'ndan ekleyin.
