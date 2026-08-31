@@ -4067,7 +4067,6 @@ Policy exception required,Требуется обоснование исключ
 Policy gap,Недобор предложений
 policy met,политика соблюдена
 Policy rule (5 quotes / 2 countries) not satisfied. Check policy exception and specify reason.,Правило (5 предложений / 2 страны) не выполнено. Отметьте исключение и укажите причину.
-Policy: at least 5 quotations from 2 countries.,Политика: не менее 5 предложений из не менее чем 2 стран.
 Port & Insurance,Порт + страховка
 Port of discharge,Порт разгрузки
 Port of Discharge,Порт выгрузки
@@ -6603,3 +6602,10 @@ Week,Неделя
 no end planned,конец не запланирован
 No lines to plan on.,Нет линий для планирования.
 {0} order(s) have no planned hour yet,заказов без планового часа: {0}
+Asking {count} vendor(s) from {countries} country(ies).,Запрос отправляется {count} поставщику(ам) из {countries} страны(стран).
+The policy wants {min} quotations from {countries} countries.,Политика требует {min} предложений из {countries} стран.
+This invitation reaches {countries} country(ies). On its own it cannot satisfy the {min}-country rule — a quotation attached from elsewhere still can.,"Это приглашение охватывает {countries} страну(ы). Само по себе оно не может выполнить правило {min} стран — предложение, добавленное со стороны, всё ещё может."
+"{count} of the vendors has no country on file, so it counts toward no country. Fixing the supplier record is quicker now than after the answers arrive.","У {count} из поставщиков не указана страна, поэтому они не засчитываются ни в одну страну. Исправить карточку поставщика сейчас быстрее, чем после получения ответов."
+"Asked: {count} vendor(s), {countries} country(ies)","Запрошено: {count} поставщик(ов), {countries} страна(стран)"
+"Everyone asked so far is in {countries} country(ies). More rounds, or a quotation attached from elsewhere, are what change that.","Все, кого запросили до сих пор, находятся в {countries} стране(ах). Это изменят только новые раунды или предложение, добавленное со стороны."
+{count} of the vendors asked has no country on file and counts toward no country.,"У {count} из запрошенных поставщиков не указана страна, и они не засчитываются ни в одну страну."

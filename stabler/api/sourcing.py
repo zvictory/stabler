@@ -553,6 +553,16 @@ def get_deal_rfq_defaults(deal, company=None):
 		for line in _read_deal_intake_items(doc)
 	]
 
+	# The form counts the reach of the vendors being picked, before anything is
+	# saved, so it needs the same two numbers the award will be judged by. Sent
+	# from here rather than spelled in the component: a threshold typed into Vue
+	# is a copy that goes stale silently, and the screen that goes green on a set
+	# the award refuses is worse than no badge at all.
+	from stabler.stabler.doctype.tender_sourcing_decision.tender_sourcing_decision import (
+		MIN_COUNTRIES,
+		MIN_QUOTATIONS,
+	)
+
 	return {
 		"deal": deal,
 		"deal_label": doc.get("organization") or doc.get("lead_name") or deal,
@@ -560,6 +570,7 @@ def get_deal_rfq_defaults(deal, company=None):
 		"company": selected_company,
 		"items": items,
 		"suppliers": [],
+		"policy": {"min_suppliers": MIN_QUOTATIONS, "min_countries": MIN_COUNTRIES},
 	}
 
 

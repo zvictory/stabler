@@ -1754,3 +1754,32 @@ class TestListRfqsReportsWhatTheInvitationReaches(unittest.TestCase):
 		self.assertEqual(reach["suppliers"], 0)
 		self.assertEqual(reach["countries"], 0)
 		self.assertFalse(reach["meets_countries"])
+
+
+class TestRfqDefaultsCarryThePolicyNumbers(unittest.TestCase):
+	"""The form badge counts before anything is saved, so it needs the two
+	thresholds client-side. They travel with the defaults rather than being
+	typed into the component: a number copied into Vue goes stale in silence,
+	and a form that goes green on a set the award then refuses is worse than no
+	badge at all."""
+
+	def setUp(self):
+		self.fake = _FakeFrappe()
+		self.api = _load_api(self.fake)
+
+	def test_the_defaults_carry_the_thresholds_the_award_uses(self):
+		from stabler.stabler.doctype.tender_sourcing_decision.tender_sourcing_decision import (
+			MIN_COUNTRIES,
+			MIN_QUOTATIONS,
+		)
+
+		policy = self.api.get_deal_rfq_defaults("LOT-A", company="ACME")["policy"]
+		self.assertEqual(policy["min_suppliers"], MIN_QUOTATIONS)
+		self.assertEqual(policy["min_countries"], MIN_COUNTRIES)
+
+	def test_the_numbers_are_never_spelled_at_the_call_site(self):
+		"""Same guard the reach call sites carry, for the same reason."""
+		source = API_SOURCE.read_text()
+		block = re.search(r'"policy": \{([^}]*)\}', source)
+		self.assertIsNotNone(block, "the defaults stopped carrying a policy block")
+		self.assertNotRegex(block.group(1), r"\b\d+\b", "a threshold is spelled in the payload")
