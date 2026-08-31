@@ -1064,6 +1064,7 @@ def cancel_bom(name: str):
 
 from stabler.api._downtime import stop_minutes
 from stabler.api._scrap import available_to_scrap
+from stabler.api._wo_errors import operator_posting_error
 from stabler.api._wo_filters import build_work_order_filters
 from stabler.api._wo_genealogy import annotate_consumed_origin
 from stabler.api._wo_material_request import should_request_materials
@@ -2234,8 +2235,33 @@ def make_work_order_stock_entry(
 			row.t_warehouse = None
 
 	assert_stock_entry_valuation_sane(se)
-	se.insert(ignore_permissions=False)
-	se.submit()
+	# The only two lines in this function that hand ERPNext's own words to the
+	# caller. Everything above throws in ours, and ours name no material.
+	#
+	# ERPNext's do. Its short-stock refusal reads "{qty} units of {item} needed in
+	# {warehouse} to complete this transaction" (stock_ledger.py, `raise_exceptions`)
+	# and renders the item as a Desk link — so on the day the material list came off
+	# the kiosk, the Start button's most likely outcome was still the recipe, in a
+	# red box, linking into /app. Measured on anjan 2026-08-31: all three of the one
+	# pure operator's open orders are short, so this was the ordinary path, not the
+	# edge.
+	#
+	# Managers keep the original: they are the people who have to act on which item
+	# and how much, and they may see it anyway.
+	try:
+		se.insert(ignore_permissions=False)
+		se.submit()
+	except Exception as exc:
+		replacement = None if is_manager else operator_posting_error(type(exc).__name__)
+		if replacement is None:
+			raise
+		# Logged in full before it is swallowed. The operator loses the detail; the
+		# shift lead they are sent to must be able to find it.
+		frappe.log_error(
+			title="Kassa/mfg: posting refused, operator told nothing about it",
+			message=f"wo={work_order} purpose={purpose} user={frappe.session.user}\n{frappe.get_traceback()}",
+		)
+		frappe.throw(_(replacement))
 
 	if purpose == "Material Transfer for Manufacture":
 		_log_wo_event(work_order, "Work Order started (materials transferred)")

@@ -499,12 +499,14 @@ The server did not return a pickup code for this call. Do not hand over cash aga
 The settings payload could not be read.,The settings payload could not be read.
 "The state of the code, never the code.","The state of the code, never the code."
 The step could not be completed. Nothing was changed.,The step could not be completed. Nothing was changed.
+The store does not have enough of this order's materials. Tell the shift lead.,The store does not have enough of this order's materials. Tell the shift lead.
 The strip at the top says which parts are built and which are still drawings,The strip at the top says which parts are built and which are still drawings
 The transfer list could not be loaded.,The transfer list could not be loaded.
 The transfer's status and the journal entries it names do not agree.,The transfer's status and the journal entries it names do not agree.
 This clears the form without saving. The lines you entered will be lost.,This clears the form without saving. The lines you entered will be lost.
 This company runs the {engine} remittance engine. The Transfer V1 screens stay unavailable until it is switched to V1 below.,This company runs the {engine} remittance engine. The Transfer V1 screens stay unavailable until it is switched to V1 below.
 "This compares each transfer against the journal entries it names. The ledger-side balances are not read here, so agreement means the master is self-consistent, not that the trial balance was checked.","This compares each transfer against the journal entries it names. The ledger-side balances are not read here, so agreement means the master is self-consistent, not that the trial balance was checked."
+This could not be recorded. Tell the shift lead.,This could not be recorded. Tell the shift lead.
 This entry does not balance. Do not hand over cash — report it.,This entry does not balance. Do not hand over cash — report it.
 This is the step that moves cash.,This is the step that moves cash.
 This order is {0} — its plan can no longer be changed.,This order is {0} — its plan can no longer be changed.

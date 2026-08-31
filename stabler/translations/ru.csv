@@ -155,9 +155,11 @@ The pickup code was refused.,Код получения отклонён.
 The posting could not be previewed.,Не удалось показать предварительную проводку.
 The V1 engine reads every cash account from the desk table. Add at least one desk before switching to V1.,Движок V1 читает все кассовые счета из таблицы касс. Добавьте хотя бы одну кассу перед переключением на V1.
 The settings payload could not be read.,Не удалось прочитать данные настроек.
+The store does not have enough of this order's materials. Tell the shift lead.,На складе не хватает материалов для этого заказа. Сообщите бригадиру.
 The strip at the top says which parts are built and which are still drawings,"Полоса сверху говорит, что уже построено, а что пока нарисовано"
 This clears the form without saving. The lines you entered will be lost.,Форма будет очищена без сохранения. Введённые строки будут потеряны.
 This company runs the {engine} remittance engine. The Transfer V1 screens stay unavailable until it is switched to V1 below.,"Эта компания использует движок переводов {engine}. Экраны Transfer V1 остаются недоступными, пока он не переключён на V1 ниже."
+This could not be recorded. Tell the shift lead.,Не удалось записать. Сообщите бригадиру.
 This entry does not balance. Do not hand over cash — report it.,Проводка не сходится. Не выдавайте наличные — сообщите об этом.
 This order is {0} — its plan can no longer be changed.,Этот заказ {0} — его план больше нельзя изменить.
 This site is not migrated for packaging operators yet.,На этом сайте ещё не выполнена миграция для операторов упаковки.
