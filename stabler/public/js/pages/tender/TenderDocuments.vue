@@ -1,9 +1,5 @@
 <template>
 	<TenderPage :title="t('Document Center')">
-		<template #actions>
-			<TenderWorkspaceTabs active="documents" :deal="deal" />
-		</template>
-
 		<div v-if="deal" class="d-flex flex-column gap-3">
 			<!-- Header KPI / Readiness Summary -->
 			<div class="row g-3">
@@ -303,7 +299,6 @@ import EmptyState from "../../components/EmptyState.vue";
 import SkeletonRows from "../../components/SkeletonRows.vue";
 import DateInput from "../../components/DateInput.vue";
 import TenderPage from "./TenderPage.vue";
-import TenderWorkspaceTabs from "./TenderWorkspaceTabs.vue";
 
 const session = useSession();
 const { activeCompany } = storeToRefs(session);
