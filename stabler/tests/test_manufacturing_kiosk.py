@@ -1371,6 +1371,14 @@ class TestPlanChangesDoNotWithdrawSubmittedRequests(unittest.TestCase):
 	Until D8 was fixed, the invalid `material_request_type` literal further down
 	was the only thing stopping this loop from ever completing. Fixing that
 	literal alone would have armed it, which is why the three went together.
+
+	The operator half of this class is gone as of b9cc7d8: `update_work_order_materials`
+	is manager-only now, so "an operator edits and the request survives" is not a
+	reachable state — the edit is refused before the cancel path is ever considered.
+	`_require_mfg_manager` is what enforces that, and it is covered where it lives,
+	in `test_wo_role_scoping_integration.py`. What remains here is the half the gate
+	does not switch off: a manager still refreshes the request, and a request that
+	will not cancel still stops the edit rather than doubling the order.
 	"""
 
 	def _edit(self, is_manager, mrs=(), cancel_raises=False):
@@ -1405,21 +1413,6 @@ class TestPlanChangesDoNotWithdrawSubmittedRequests(unittest.TestCase):
 			out = update_work_order_materials("WO-00009", '[{"item_code": "RAW-MLK", "required_qty": 5}]')
 			return out, mr, log
 
-	def test_an_operator_does_not_withdraw_the_warehouses_approved_order(self):
-		out, mr, _ = self._edit(is_manager=False, mrs=["MAT-MR-0001"])
-		mr.cancel.assert_not_called()
-		self.assertEqual(out, {"ok": True})
-
-	def test_the_operator_is_told_the_request_was_left_standing(self):
-		"""A stale request nobody is told about is its own quiet failure — the
-		plan says one thing and the order to the warehouse says another, and the
-		person who caused it walked away believing they had fixed it."""
-		_, _, log = self._edit(is_manager=False, mrs=["MAT-MR-0001"])
-		notes = [str(c) for c in log.call_args_list]
-		left = [n for n in notes if "left as it stands" in n]
-		self.assertTrue(left, f"nothing said the request was untouched: {notes}")
-		self.assertIn("manager", left[0].lower(), "the note does not say who can fix it")
-
 	def test_a_manager_still_refreshes_it(self):
 		"""The gate is about who, not about switching the behaviour off."""
 		_, mr, _ = self._edit(is_manager=True, mrs=["MAT-MR-0001"])
@@ -1433,16 +1426,22 @@ class TestPlanChangesDoNotWithdrawSubmittedRequests(unittest.TestCase):
 		self.assertIn("MAT-MR-0001", str(cm.exception))
 
 
-class TestConsumptionPreviewNarrowsToOwnRole(unittest.TestCase):
+class TestConsumptionPreviewHandsTheOperatorNoMaterial(unittest.TestCase):
 	"""`wo_consumption_preview` and `_assert_sweep_is_acknowledged` both read
 	`_unconsumed_material_rows`, but must not read it the same way: the preview
-	narrows to the caller's OWN role (an operator must not be offered the other
-	role's material to write off), while the sweep guard narrows to every OTHER
-	role. Mocking `_unconsumed_material_rows` directly isolates that per-role
-	filter — added because the extraction that created the shared helper moved
+	answers what the CALLER may be shown, while the sweep guard narrows to every
+	role that is not theirs. Mocking `_unconsumed_material_rows` directly isolates
+	that split — added because the extraction that created the shared helper moved
 	this exact filter, and the one test that already covered it end to end
 	(`test_wo_role_scoping_integration.py`) self-skips whenever the site's real
-	fixture Work Order has nothing left pending, which it does right now."""
+	fixture Work Order has nothing left pending, which it does right now.
+
+	Was `TestConsumptionPreviewNarrowsToOwnRole` until b9cc7d8, when narrowing
+	became emptying: an operator is handed no `items` and no `sweep_risk` at all,
+	and only the manager still receives either. The per-role filter is still in
+	the module and still decides what may be written off — it is no longer what
+	this endpoint returns, which is why the operator tests here now assert absence
+	and the filter itself is proven through the manager."""
 
 	ROWS: ClassVar = [
 		{
@@ -1493,13 +1492,19 @@ class TestConsumptionPreviewNarrowsToOwnRole(unittest.TestCase):
 			session.user = user
 			return wo_consumption_preview("WO-00009")
 
-	def test_the_pourer_sees_only_the_production_line(self):
-		out = self._preview("pourer@x.uz")
-		self.assertEqual([r["item_code"] for r in out["items"]], ["RAW-MLK"])
+	def test_an_operator_is_handed_neither_list(self):
+		"""Replaces the pair that asked which line each role sees. Since b9cc7d8 the
+		answer is neither: `items` is the recipe and `sweep_risk` is the other
+		role's half of it by name, and an operator gets both empty. The per-role
+		filter underneath did not go away — it still decides what may be written
+		off — it simply stopped being something this payload hands out.
 
-	def test_the_packer_sees_only_the_packaging_line(self):
-		out = self._preview("packer@x.uz")
-		self.assertEqual([r["item_code"] for r in out["items"]], ["PKG-LBL"])
+		Asserted on both roles because a filter that leaks tends to leak one way."""
+		for user in ("pourer@x.uz", "packer@x.uz"):
+			with self.subTest(user=user):
+				out = self._preview(user)
+				self.assertEqual(out["items"], [])
+				self.assertEqual(out["sweep_risk"], [])
 
 	def test_the_manager_sees_both(self):
 		out = self._preview("boss@x.uz", is_manager=True)
@@ -1514,10 +1519,6 @@ class TestConsumptionPreviewNarrowsToOwnRole(unittest.TestCase):
 	# the same rows, but only on the way out, after the walk of the pallet is
 	# already done. A refusal at that point is a wall, not a warning.
 
-	def test_the_pourer_is_warned_about_the_packers_untouched_lines(self):
-		out = self._preview("pourer@x.uz")
-		self.assertEqual([r["item_code"] for r in out["sweep_risk"]], ["PKG-LBL"])
-
 	def test_the_warning_stays_silent_about_lines_nobody_owns(self):
 		"""An unfiled row is not the other operator's — it is nobody's. Named in
 		the sweep warning it reads as "wait for your colleague to write this
@@ -1527,10 +1528,6 @@ class TestConsumptionPreviewNarrowsToOwnRole(unittest.TestCase):
 		out = self._preview("pourer@x.uz")
 		self.assertNotIn("MISC-XX", [r["item_code"] for r in out["sweep_risk"]])
 		self.assertEqual(out["unassigned_item_count"], 1)
-
-	def test_the_packer_is_warned_about_the_pourers_untouched_lines(self):
-		out = self._preview("packer@x.uz")
-		self.assertEqual([r["item_code"] for r in out["sweep_risk"]], ["RAW-MLK"])
 
 	def test_the_manager_is_warned_about_both_because_neither_line_is_theirs(self):
 		"""A manager holds no role of their own, so every role-owned row is
@@ -1543,21 +1540,27 @@ class TestConsumptionPreviewNarrowsToOwnRole(unittest.TestCase):
 	def test_what_the_kiosk_warns_about_is_what_the_server_refuses_over(self):
 		"""The one that matters. Two filters over the same rows, written in two
 		places, drift: the kiosk lists the label rolls, the server refuses over
-		the milk, and the operator ticks a box that does not unblock them. Tie
-		them together here so the drift fails a test instead of a shift."""
-		for user, is_manager, role in (
-			("pourer@x.uz", False, "Production"),
-			("packer@x.uz", False, "Packaging"),
-			("boss@x.uz", True, None),
+		the milk, and the caller ticks a box that does not unblock them. Tie them
+		together here so the drift fails a test instead of a shift.
+
+		Manager only since b9cc7d8, and the operator rows are not merely dropped
+		for tidiness — asking this of an operator would now assert the OPPOSITE of
+		the rule. Their preview carries no `sweep_risk` while the server still
+		refuses over the other role's rows by name, so the two sides are
+		deliberately unequal and equality would be the bug. The operator's half of
+		the contract is that they are warned without being told what about, and it
+		is `test_an_operator_is_handed_neither_list` that holds that line.
+
+		The manager is where the drift can still bite: they see the list AND are
+		refused over it, so the two filters have to agree."""
+		previewed = self._preview("boss@x.uz", is_manager=True)["sweep_risk"]
+		with patch(
+			"stabler.api.manufacturing._unconsumed_material_rows",
+			return_value=[dict(r) for r in self.ROWS],
 		):
-			with self.subTest(user=user):
-				previewed = self._preview(user, is_manager=is_manager)["sweep_risk"]
-				with patch(
-					"stabler.api.manufacturing._unconsumed_material_rows",
-					return_value=[dict(r) for r in self.ROWS],
-				):
-					refused = _sweep_risk_rows("WO-00009", role)
-				self.assertEqual(previewed, refused)
+			refused = _sweep_risk_rows("WO-00009", None)
+		self.assertEqual(previewed, refused)
+		self.assertTrue(previewed, "the fixture stopped exercising the filter at all")
 
 	def test_an_unset_up_site_still_answers_the_question_it_was_asked(self):
 		"""`enabled: False` is the site without continuous consumption, where
