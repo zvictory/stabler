@@ -19,7 +19,7 @@ import SkeletonRows from "../../../components/SkeletonRows.vue";
 import TenderPage from "../TenderPage.vue";
 
 const session = useSession();
-const { activeCompany } = storeToRefs(session);
+const { activeCompany, tenderPolicy } = storeToRefs(session);
 const route = useRoute();
 const router = useRouter();
 const toast = useToast();
@@ -118,7 +118,11 @@ function openNew() {
 							<td class="text-end">
 								<span
 									class="badge"
-									:class="r.quotation_count >= 5 ? 'bg-green-lt text-green' : 'bg-secondary-lt'"
+									:class="
+										tenderPolicy.minQuotations && r.quotation_count >= tenderPolicy.minQuotations
+											? 'bg-green-lt text-green'
+											: 'bg-secondary-lt'
+									"
 								>
 									{{ r.quotation_count }}
 								</span>

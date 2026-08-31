@@ -23,13 +23,13 @@
 1:1 Foreign Postings,1:1 Foreign Postings
 1C ClientBank Exchange format (.txt). Uzbek bank-client export.,1C ClientBank Exchange format (.txt). Uzbek bank-client export.
 1C Sync Log,1C Sync Log
-2 countries met,2 countries met
-2 countries needed,2 countries needed
+{countries} countries met,{countries} countries met
+{countries} countries needed,{countries} countries needed
 2. Decide,2. Decide
 3. Pay the money back,3. Pay the money back
 31–60,31–60
-5 quotes met,5 quotes met
-5 quotes needed,5 quotes needed
+{min} quotes met,{min} quotes met
+{min} quotes needed,{min} quotes needed
 61–90,61–90
 7-day schedule,7-day schedule
 70% balance due 7 days before Iran arrival,70% balance due 7 days before Iran arrival
@@ -971,7 +971,7 @@ Assigned to,Assigned to
 Assigned.,Assigned.
 Assignment initializes document center,Assignment initializes document center
 At Destination,At Destination
-at least 5 quotations from 2 countries,at least 5 quotations from 2 countries
+at least {min} quotations from {countries} countries,at least {min} quotations from {countries} countries
 At least one counted item line is required.,At least one counted item line is required.
 At least one item is required.,At least one item is required.
 At least one received item line is required.,At least one received item line is required.
@@ -1070,7 +1070,7 @@ Bank transaction is required.,Bank transaction is required.
 Bank transaction not found.,Bank transaction not found.
 Bank/cash account is required.,Bank/cash account is required.
 Bar is relative to the busiest queue,Bar is relative to the busiest queue
-bar: share of lots that satisfy the 5-quote rule,bar: share of lots that satisfy the 5-quote rule
+bar: share of lots that satisfy the {min}-quote rule,bar: share of lots that satisfy the {min}-quote rule
 Base,Base
 Base currency,Base currency
 Base equivalent,Base equivalent
@@ -2409,7 +2409,7 @@ Expiring soon,Expiring soon
 Expiring within,Expiring within
 Expiry,Expiry
 Expiry date,Expiry date
-Explain why the 5-quote / 2-country policy could not be fulfilled…,Explain why the 5-quote / 2-country policy could not be fulfilled…
+Explain why the {min}-quote / {countries}-country policy could not be fulfilled…,Explain why the {min}-quote / {countries}-country policy could not be fulfilled…
 Explain why this supplier was selected over others…,Explain why this supplier was selected over others…
 Export,Export
 Export CSV,Export CSV
@@ -4478,7 +4478,7 @@ Policy exception approved,Policy exception approved
 Policy exception required,Policy exception required
 Policy gap,Policy gap
 policy met,policy met
-Policy rule (5 quotes / 2 countries) not satisfied. Check policy exception and specify reason.,Policy rule (5 quotes / 2 countries) not satisfied. Check policy exception and specify reason.
+Policy rule ({min} quotes / {countries} countries) not satisfied. Check policy exception and specify reason.,Policy rule ({min} quotes / {countries} countries) not satisfied. Check policy exception and specify reason.
 Port & Insurance,Port & Insurance
 Port of discharge,Port of discharge
 Port of Discharge,Port of Discharge
@@ -4672,7 +4672,7 @@ Quotation number or customer…,Quotation number or customer…
 Quotation saved as a draft.,Quotation saved as a draft.
 Quotation submitted.,Quotation submitted.
 Quotations,Quotations
-Quotations are coming in but the 5-quote / 2-country rule is not met yet.,Quotations are coming in but the 5-quote / 2-country rule is not met yet.
+Quotations are coming in but the {min}-quote / {countries}-country rule is not met yet.,Quotations are coming in but the {min}-quote / {countries}-country rule is not met yet.
 Quote set,Quote set
 quote set complete,quote set complete
 Quotes,Quotes

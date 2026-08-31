@@ -26,7 +26,7 @@ import TenderDocumentsPanel from "./TenderDocumentsPanel.vue";
 import TenderWorkspaceTabs from "./TenderWorkspaceTabs.vue";
 
 const session = useSession();
-const { user, activeCompany } = storeToRefs(session);
+const { user, activeCompany, tenderPolicy } = storeToRefs(session);
 const route = useRoute();
 const router = useRouter();
 const toast = useToast();
@@ -374,8 +374,8 @@ watch(() => route.query.deal, (d) => { if (d && d !== deal.value) { deal.value =
 					<div class="card-header py-2 d-flex justify-content-between align-items-center">
 						<span class="fw-semibold">{{ t("Supplier quotations") }}</span>
 						<div class="d-flex gap-1">
-							<span class="badge" :class="sourcing.has_min_5 ? 'bg-green-lt text-green' : 'bg-yellow-lt text-yellow'">{{ sourcing.has_min_5 ? t("5 quotes met") : t("5 quotes needed") }}</span>
-							<span class="badge" :class="sourcing.has_2_countries ? 'bg-green-lt text-green' : 'bg-yellow-lt text-yellow'">{{ sourcing.has_2_countries ? t("2 countries met") : t("2 countries needed") }}</span>
+							<span class="badge" :class="sourcing.has_min_5 ? 'bg-green-lt text-green' : 'bg-yellow-lt text-yellow'">{{ sourcing.has_min_5 ? t("{min} quotes met", { min: tenderPolicy.minQuotations }) : t("{min} quotes needed", { min: tenderPolicy.minQuotations }) }}</span>
+							<span class="badge" :class="sourcing.has_2_countries ? 'bg-green-lt text-green' : 'bg-yellow-lt text-yellow'">{{ sourcing.has_2_countries ? t("{countries} countries met", { countries: tenderPolicy.minCountries }) : t("{countries} countries needed", { countries: tenderPolicy.minCountries }) }}</span>
 						</div>
 					</div>
 					<div class="card-body py-2">

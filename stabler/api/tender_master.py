@@ -7,6 +7,7 @@ from frappe import _
 from frappe.utils import flt, getdate, today
 
 from stabler.api import _funnel, _tender_master_state
+from stabler.api import _procurement_policy as _policy
 from stabler.api._common import _require_company
 from stabler.api.organization import _ADMIN_ROLES, _user_allowed_companies
 from stabler.api.tender import (
@@ -35,10 +36,6 @@ _TENDER_FIELDS = (
 	"owner_user",
 )
 
-
-#: Procurement policy: a lot needs at least this many supplier bids before its
-#: pricing is defensible. Same threshold `tender.tender_funnel` reports on.
-_MIN_SUPPLIER_BIDS = 5
 
 #: The gap is only a gap while the lot is still being sourced — the same
 #: population `tender.tender_funnel` counts (see the `stage == "sourcing"` test
@@ -203,7 +200,7 @@ def _tender_lot_cards(company: str, parent_names: list[str]) -> tuple[dict[str, 
 		if stage == "submitted":
 			card["submitted_lot_count"] += 1
 		card["lot_estimated_total"] += flt(row.get("deal_value"))
-		if stage in _POLICY_GAP_STAGES and sq_count < _MIN_SUPPLIER_BIDS:
+		if stage in _POLICY_GAP_STAGES and sq_count < _policy.MIN_QUOTATIONS:
 			card["policy_gap_count"] += 1
 		if _bid_at_risk(intake, today_d):
 			card["risk_count"] += 1

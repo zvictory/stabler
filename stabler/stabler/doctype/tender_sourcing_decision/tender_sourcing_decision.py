@@ -26,11 +26,15 @@ import frappe
 from frappe import _
 from frappe.model.document import Document
 
-#: The procurement policy the sourcing screens count against. Same numbers as
-#: `purchasing.tender_quotations`, named here so the exception rule and the badge
-#: can never drift apart.
-MIN_QUOTATIONS = 5
-MIN_COUNTRIES = 2
+#: The procurement policy this gate enforces. Defined in
+#: `stabler.api._procurement_policy` and re-exported here because that module is
+#: frappe-free and the pure reporters (`_desk_rules`) have to be able to read it
+#: too — a constant only the frappe-bound half can import is how twenty copies of
+#: this number came to exist. Kept importable under this name: `api.sourcing`
+#: has imported it from here since the badge was built.
+from stabler.api._procurement_policy import MIN_COUNTRIES, MIN_QUOTATIONS
+
+__all__ = ["MIN_COUNTRIES", "MIN_QUOTATIONS", "TenderSourcingDecision"]
 
 
 class TenderSourcingDecision(Document):

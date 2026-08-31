@@ -19,7 +19,7 @@ const route = useRoute();
 const { sourcingLocation, documentsLocation, poControlLocation } = useTenderContext(route);
 
 const session = useSession();
-const { activeCompany, user, currency } = storeToRefs(session);
+const { activeCompany, user, currency, tenderPolicy } = storeToRefs(session);
 const toast = useToast();
 const { confirm } = useConfirm();
 
@@ -179,7 +179,10 @@ const kpis = computed(() => {
 			label: t("Sourcing policy"),
 			val: `${all.filter(KPI_TESTS.policy).length}/${all.length}`,
 			cap: t("quote set complete"),
-			note: t("at least 5 quotations from 2 countries"),
+			note: t("at least {min} quotations from {countries} countries", {
+				min: tenderPolicy.value.minQuotations,
+				countries: tenderPolicy.value.minCountries,
+			}),
 		},
 		{
 			key: "deadline",
@@ -494,7 +497,7 @@ function riskLabel(risk) {
 							<span class="ds-meter-seg">
 								<i v-for="(on, i) in quoteMarks(c.sq_count)" :key="i" :data-on="on ? '1' : null"></i>
 							</span>
-							<span class="ds-meter-txt">{{ c.sq_count }}/5 {{ t("quotes") }}</span>
+							<span class="ds-meter-txt">{{ c.sq_count }}/{{ tenderPolicy.minQuotations || "—" }} {{ t("quotes") }}</span>
 						</div>
 
 						<div class="crm-ready">
@@ -549,7 +552,7 @@ function riskLabel(risk) {
 						</td>
 						<td>
 							<span class="ds-chip" :data-tone="c.has_min_5 && c.has_2_countries ? 'ok' : c.sq_count > 0 ? 'today' : 'crit'">
-								{{ c.sq_count }}/5
+								{{ c.sq_count }}/{{ tenderPolicy.minQuotations || "—" }}
 							</span>
 						</td>
 						<td>
@@ -608,7 +611,7 @@ function riskLabel(risk) {
 											<i v-for="(on, i) in quoteMarks(dealQuotations?.count ?? selectedDeal.sq_count)" :key="i" :data-on="on ? '1' : null"></i>
 										</span>
 										<span class="ds-meter-txt">
-											{{ dealQuotations?.count ?? selectedDeal.sq_count }}/5
+											{{ dealQuotations?.count ?? selectedDeal.sq_count }}/{{ tenderPolicy.minQuotations || "—" }}
 											· {{ dealQuotations?.has_min_5 && dealQuotations?.has_2_countries ? t("policy met") : t("below policy") }}
 										</span>
 									</div>

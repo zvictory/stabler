@@ -9,6 +9,7 @@ from frappe import _
 from frappe.utils import cint, flt, getdate, today
 
 from stabler.api import _import_exposure, _unbilled_receipts
+from stabler.api import _procurement_policy as _policy
 from stabler.api._common import (
 	_assert_can_read,
 	_assert_can_write,
@@ -3188,8 +3189,8 @@ def tender_quotations(deal: str) -> dict:
 		"base_currency": base_ccy,
 		"count": len(rows),
 		"countries": len(countries),
-		"has_min_5": len(rows) >= 5,
-		"has_2_countries": len(countries) >= 2,
+		"has_min_5": len(rows) >= _policy.MIN_QUOTATIONS,
+		"has_2_countries": len(countries) >= _policy.MIN_COUNTRIES,
 		"cheapest_price_quote": ranked_res["cheapest_price_quote"],
 		"cheapest_landed_quote": ranked_res["cheapest_landed_quote"],
 		"estimate_complete": ranked_res["estimate_complete"],

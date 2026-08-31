@@ -19,11 +19,11 @@
 1:1 Foreign Postings,
 1C ClientBank Exchange format (.txt). Uzbek bank-client export.,1C ClientBank Exchange формати (.txt). Банк-мижоз экспорти.
 1C Sync Log,1C Синхрон журнали
-2 countries met,2 мамлакат талаби бажарилди
-2 countries needed,2 мамлакат керак
+{countries} countries met,{countries} мамлакат талаби бажарилди
+{countries} countries needed,{countries} мамлакат керак
 31–60,31–60
-5 quotes met,5 та таклиф талаби бажарилди
-5 quotes needed,5 та таклиф керак
+{min} quotes met,{min} та таклиф талаби бажарилди
+{min} quotes needed,{min} та таклиф керак
 61–90,61–90
 7-day schedule,7 кунлик жадвал
 70% balance due 7 days before Iran arrival,Эронга етиб келишдан 7 кун олдин 70% тўлов
@@ -552,7 +552,7 @@ Assigned to,Бириктирилган
 Assigned.,Бириктирилди.
 Assignment initializes document center,Бириктириш ҳужжат марказини ишга туширади
 At Destination,Манзилда
-at least 5 quotations from 2 countries,камида 2 мамлакатдан 5 таклиф
+at least {min} quotations from {countries} countries,камида {countries} мамлакатдан {min} таклиф
 At least one counted item line is required.,
 At least one item is required.,Камида битта позиция талаб қилинади.
 At least one received item line is required.,Камида битта қабул қилинган товар қатори талаб қилинади.
@@ -652,7 +652,7 @@ Bank transaction is required.,
 Bank transaction not found.,
 Bank/cash account is required.,Банк/касса ҳисоби талаб қилинади.
 Bar is relative to the busiest queue,Чизиқ энг банд навбатга нисбатан
-bar: share of lots that satisfy the 5-quote rule,чизиқ: 5 таклиф қоидасига жавоб берадиган лотлар улуши
+bar: share of lots that satisfy the {min}-quote rule,чизиқ: {min} таклиф қоидасига жавоб берадиган лотлар улуши
 Base,Асос
 Base currency,Асосий валюта
 Base equivalent,Асосий эквивалент
@@ -1993,7 +1993,7 @@ Expiring soon,Муддати тугаяпти
 Expiring within,Тугаш муддати
 Expiry,Муддати
 Expiry date,Яроқлилик муддати
-Explain why the 5-quote / 2-country policy could not be fulfilled…,Нима учун 5 таклиф / 2 мамлакат қоидаси бажарилмаганини тушунтиринг…
+Explain why the {min}-quote / {countries}-country policy could not be fulfilled…,Нима учун {min} таклиф / {countries} мамлакат қоидаси бажарилмаганини тушунтиринг…
 Explain why this supplier was selected over others…,Нима учун ушбу етказиб берувчи танланганини тушунтиринг…
 Export,Экспорт
 Export CSV,CSV экспорт
@@ -4061,7 +4061,7 @@ Policy exception approved,Қоидадан истисно тасдиқланди
 Policy exception required,Қоидадан истисно сабаби талаб қилинади
 Policy gap,Таклиф етишмовчилиги
 policy met,сиёсат бажарилди
-Policy rule (5 quotes / 2 countries) not satisfied. Check policy exception and specify reason.,Қоида (5 таклиф / 2 мамлакат) бажарилмади. Истиснони белгиланг ва сабабини кўрсатинг.
+Policy rule ({min} quotes / {countries} countries) not satisfied. Check policy exception and specify reason.,Қоида ({min} таклиф / {countries} мамлакат) бажарилмади. Истиснони белгиланг ва сабабини кўрсатинг.
 Port & Insurance,Порт & Суғурта
 Port of discharge,Тушириш порти
 Port of Discharge,Тушириш порти
@@ -4255,7 +4255,7 @@ Quotation number or customer…,
 Quotation saved as a draft.,Таклиф қоралама сифатида сақланди.
 Quotation submitted.,Таклиф юборилди.
 Quotations,Нарх таклифлари
-Quotations are coming in but the 5-quote / 2-country rule is not met yet.,"Таклифлар келмоқда, аммо ""5 таклиф / 2 мамлакат"" қоидаси ҳали бажарилмаган."
+Quotations are coming in but the {min}-quote / {countries}-country rule is not met yet.,"Таклифлар келмоқда, аммо ""{min} таклиф / {countries} мамлакат"" қоидаси ҳали бажарилмаган."
 Quote set,Таклиф тўплами
 quote set complete,таклиф тўплами тўлиқ
 Quotes,Таклифлар
