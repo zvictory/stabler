@@ -25,7 +25,7 @@ import { t } from "../../composables/i18n.js";
 import { useToast } from "../../composables/useToast.js";
 
 const session = useSession();
-const { activeCompany } = storeToRefs(session);
+const { activeCompany, tenderPolicy } = storeToRefs(session);
 const router = useRouter();
 const toast = useToast();
 
@@ -293,7 +293,11 @@ const PIPE_LABELS = {
 const PIPE_NOTES = {
 	seen: () => t("Intake is done and the GO/NO-GO decision is still open."),
 	go: () => t("Decided to go, and not one supplier quotation has been collected."),
-	sourcing: () => t("Quotations are coming in but the 5-quote / 2-country rule is not met yet."),
+	sourcing: () =>
+		t("Quotations are coming in but the {min}-quote / {countries}-country rule is not met yet.", {
+			min: tenderPolicy.value.minQuotations,
+			countries: tenderPolicy.value.minCountries,
+		}),
 	priced: () => t("Priced and not submitted — this is where the funnel loses the most."),
 	submitted: () => t("Submitted and waiting on the result. Nothing to do but track it."),
 };
@@ -414,7 +418,7 @@ function go(st) {
 				</div>
 				<div class="ds-panel-foot">
 					<span class="ds-mono">{{ PIPE_SOURCE }}</span>
-					<span>{{ t("bar: share of lots that satisfy the 5-quote rule") }}</span>
+					<span>{{ t("bar: share of lots that satisfy the {min}-quote rule", { min: tenderPolicy.minQuotations }) }}</span>
 				</div>
 			</section>
 

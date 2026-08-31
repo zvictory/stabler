@@ -31,6 +31,7 @@ export const useSession = defineStore("session", {
 		costVisible: typeof boot.cost_visible === "boolean" ? boot.cost_visible : null,
 		rolesLoaded: Array.isArray(boot.roles) && boot.roles.length > 0,
 		tenderViews: [],
+		tenderPolicy: { minQuotations: 0, minCountries: 0 },
 		tenderViewsLoaded: false,
 	}),
 	getters: {
@@ -118,6 +119,13 @@ export const useSession = defineStore("session", {
 					const views = Array.isArray(result?.views) ? result.views : [];
 					if (this.activeCompany === company) {
 						this.tenderViews = views;
+						// Zero, not 5, when the server has not answered yet: a
+						// screen must render "—" rather than a threshold nobody
+						// enforces. Every consumer already guards on truthiness.
+						this.tenderPolicy = {
+							minQuotations: Number(result?.policy?.min_quotations) || 0,
+							minCountries: Number(result?.policy?.min_countries) || 0,
+						};
 						this.tenderViewsLoaded = true;
 					}
 					return views;

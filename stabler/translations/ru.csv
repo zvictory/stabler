@@ -20,11 +20,11 @@
 1C ClientBank Exchange format (.txt). Uzbek bank-client export.,Формат 1C ClientBank Exchange (.txt). Экспорт из банк-клиента.
 1C Sync Log,Журнал синхронизации 1C
 1C:Enterprise sync log appears here.,Здесь отображается журнал синхронизации 1C:Предприятие.
-2 countries met,Требование по 2 странам выполнено
-2 countries needed,Требуются поставщики из 2 стран
+{countries} countries met,Требование по {countries} странам выполнено
+{countries} countries needed,Требуются поставщики из {countries} стран
 31–60,31–60
-5 quotes met,Требование по 5 предложениям выполнено
-5 quotes needed,Требуются 5 предложений
+{min} quotes met,Требование по {min} предложениям выполнено
+{min} quotes needed,Требуются {min} предложений
 61–90,61–90
 7-day schedule,График на 7 дней
 70% balance due 7 days before Iran arrival,70% оплаты за 7 дней до прибытия в Иран
@@ -556,7 +556,7 @@ Assigned to,Назначено
 Assigned.,Назначено.
 Assignment initializes document center,Назначение инициализирует центр документов
 At Destination,В пункте назначения
-at least 5 quotations from 2 countries,минимум 5 предложений из 2 стран
+at least {min} quotations from {countries} countries,минимум {min} предложений из {countries} стран
 At least one counted item line is required.,
 At least one item is required.,Требуется хотя бы одна позиция.
 At least one received item line is required.,Требуется хотя бы одна строка полученного товара.
@@ -656,7 +656,7 @@ Bank transaction is required.,
 Bank transaction not found.,
 Bank/cash account is required.,Требуется счет в банке или кассе.
 Bar is relative to the busiest queue,Полоса — относительно самой загруженной очереди
-bar: share of lots that satisfy the 5-quote rule,"полоса: доля лотов, удовлетворяющих правилу 5 предложений"
+bar: share of lots that satisfy the {min}-quote rule,"полоса: доля лотов, удовлетворяющих правилу {min} предложений"
 Base,База
 Base currency,Базовая валюта
 Base equivalent,Эквивалент в базовой валюте
@@ -1999,7 +1999,7 @@ Expiring soon,Скоро истекает
 Expiring within,Истекает в течение
 Expiry,Срок годности
 Expiry date,Срок годности
-Explain why the 5-quote / 2-country policy could not be fulfilled…,"Объясните, почему правило 5 предложений / 2 стран не выполнено…"
+Explain why the {min}-quote / {countries}-country policy could not be fulfilled…,"Объясните, почему правило {min} предложений / {countries} стран не выполнено…"
 Explain why this supplier was selected over others…,"Объясните, почему был выбран именно этот поставщик…"
 Export,Экспорт
 Export CSV,Экспорт CSV
@@ -4066,7 +4066,7 @@ Policy exception approved,Исключение из правил утвержд�
 Policy exception required,Требуется обоснование исключения
 Policy gap,Недобор предложений
 policy met,политика соблюдена
-Policy rule (5 quotes / 2 countries) not satisfied. Check policy exception and specify reason.,Правило (5 предложений / 2 страны) не выполнено. Отметьте исключение и укажите причину.
+Policy rule ({min} quotes / {countries} countries) not satisfied. Check policy exception and specify reason.,Правило ({min} предложений / {countries} страны) не выполнено. Отметьте исключение и укажите причину.
 Port & Insurance,Порт + страховка
 Port of discharge,Порт разгрузки
 Port of Discharge,Порт выгрузки
@@ -4261,7 +4261,7 @@ Quotation number or customer…,
 Quotation saved as a draft.,Предложение сохранено как черновик.
 Quotation submitted.,Предложение отправлено.
 Quotations,Предложения
-Quotations are coming in but the 5-quote / 2-country rule is not met yet.,"Предложения поступают, но правило «5 предложений из 2 стран» ещё не выполнено."
+Quotations are coming in but the {min}-quote / {countries}-country rule is not met yet.,"Предложения поступают, но правило «{min} предложений из {countries} стран» ещё не выполнено."
 Quote set,Комплект предложений
 quote set complete,комплект предложений собран
 Quotes,Предложения

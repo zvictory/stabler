@@ -25,7 +25,7 @@ import QuotationEntryDrawer from "../../components/QuotationEntryDrawer.vue";
 import LandedChargesEditor from "../../components/LandedChargesEditor.vue";
 
 const session = useSession();
-const { activeCompany, user } = storeToRefs(session);
+const { activeCompany, user, tenderPolicy } = storeToRefs(session);
 const route = useRoute();
 const router = useRouter();
 const toast = useToast();
@@ -499,7 +499,7 @@ watch(
 						:class="data.has_min_5 ? 'bg-green-lt text-green' : 'bg-yellow-lt text-yellow'"
 					>
 						<i class="ti" :class="data.has_min_5 ? 'ti-check' : 'ti-alert-triangle'"></i>
-						{{ t("Quotations") }}: {{ data.count }} / 5
+						{{ t("Quotations") }}: {{ data.count }} / {{ tenderPolicy.minQuotations || "—" }}
 					</span>
 				</div>
 				<div class="col-auto">
@@ -508,7 +508,7 @@ watch(
 						:class="data.has_2_countries ? 'bg-green-lt text-green' : 'bg-yellow-lt text-yellow'"
 					>
 						<i class="ti" :class="data.has_2_countries ? 'ti-check' : 'ti-alert-triangle'"></i>
-						{{ t("Countries") }}: {{ data.countries }} / 2
+						{{ t("Countries") }}: {{ data.countries }} / {{ tenderPolicy.minCountries || "—" }}
 					</span>
 				</div>
 				<div v-if="reach" class="col-auto">
@@ -941,7 +941,8 @@ watch(
 								<i class="ti ti-alert-triangle me-1"></i>
 								{{
 									t(
-										"Policy rule (5 quotes / 2 countries) not satisfied. Check policy exception and specify reason."
+										"Policy rule ({min} quotes / {countries} countries) not satisfied. Check policy exception and specify reason.",
+										{ min: tenderPolicy.minQuotations, countries: tenderPolicy.minCountries },
 									)
 								}}
 							</div>
@@ -955,7 +956,10 @@ watch(
 									class="form-control form-control-sm"
 									rows="2"
 									:placeholder="
-										t('Explain why the 5-quote / 2-country policy could not be fulfilled…')
+										t('Explain why the {min}-quote / {countries}-country policy could not be fulfilled…', {
+											min: tenderPolicy.minQuotations,
+											countries: tenderPolicy.minCountries,
+										})
 									"
 								></textarea>
 							</div>

@@ -19,11 +19,11 @@
 1:1 Foreign Postings,
 1C ClientBank Exchange format (.txt). Uzbek bank-client export.,1C ClientBank Exchange formati (.txt). Bank-mijoz eksporti.
 1C Sync Log,1C Sinxronizatsiya Jurnali
-2 countries met,2 mamlakat talabi bajarildi
-2 countries needed,2 mamlakat kerak
+{countries} countries met,{countries} mamlakat talabi bajarildi
+{countries} countries needed,{countries} mamlakat kerak
 31–60,31–60
-5 quotes met,5 ta taklif talabi bajarildi
-5 quotes needed,5 ta taklif kerak
+{min} quotes met,{min} ta taklif talabi bajarildi
+{min} quotes needed,{min} ta taklif kerak
 61–90,61–90
 7-day schedule,7 kunlik jadval
 70% balance due 7 days before Iran arrival,Eronga yetib kelishdan 7 kun oldin 70% to‘lov
@@ -552,7 +552,7 @@ Assigned to,Biriktirilgan
 Assigned.,Biriktirildi.
 Assignment initializes document center,Biriktirish hujjat markazini ishga tushiradi
 At Destination,Manzilda
-at least 5 quotations from 2 countries,kamida 2 mamlakatdan 5 taklif
+at least {min} quotations from {countries} countries,kamida {countries} mamlakatdan {min} taklif
 At least one counted item line is required.,
 At least one item is required.,Kamida bitta pozitsiya talab qilinadi.
 At least one received item line is required.,Kamida bitta qabul qilingan tovar qatori talab qilinadi.
@@ -652,7 +652,7 @@ Bank transaction is required.,
 Bank transaction not found.,
 Bank/cash account is required.,Bank/kassa hisob talab qilinadi.
 Bar is relative to the busiest queue,Chiziq eng band navbatga nisbatan
-bar: share of lots that satisfy the 5-quote rule,chiziq: 5 taklif qoidasiga javob beradigan lotlar ulushi
+bar: share of lots that satisfy the {min}-quote rule,chiziq: {min} taklif qoidasiga javob beradigan lotlar ulushi
 Base,Asos
 Base currency,Asosiy valyuta
 Base equivalent,Asosiy ekvivalent
@@ -1993,7 +1993,7 @@ Expiring soon,Muddati tugayapti
 Expiring within,Tugash muddati
 Expiry,Muddati
 Expiry date,Yaroqlilik muddati
-Explain why the 5-quote / 2-country policy could not be fulfilled…,Nima uchun 5 taklif / 2 mamlakat qoidasi bajarilmaganini tushuntiring…
+Explain why the {min}-quote / {countries}-country policy could not be fulfilled…,Nima uchun {min} taklif / {countries} mamlakat qoidasi bajarilmaganini tushuntiring…
 Explain why this supplier was selected over others…,Nima uchun ushbu etkazib beruvchi tanlanganini tushuntiring…
 Export,Eksport
 Export CSV,CSV eksport
@@ -4061,7 +4061,7 @@ Policy exception approved,Qoidadan istisno tasdiqlandi
 Policy exception required,Qoidadan istisno sababi talab qilinadi
 Policy gap,Taklif yetishmovchiligi
 policy met,siyosat bajarildi
-Policy rule (5 quotes / 2 countries) not satisfied. Check policy exception and specify reason.,Qoida (5 taklif / 2 mamlakat) bajarilmadi. Istisnoni belgilang va sababini ko'rsating.
+Policy rule ({min} quotes / {countries} countries) not satisfied. Check policy exception and specify reason.,Qoida ({min} taklif / {countries} mamlakat) bajarilmadi. Istisnoni belgilang va sababini ko'rsating.
 Port & Insurance,Port & Sug'urta
 Port of discharge,Tushirish porti
 Port of Discharge,Tushirish porti
@@ -4255,7 +4255,7 @@ Quotation number or customer…,
 Quotation saved as a draft.,Taklif qoralama sifatida saqlandi.
 Quotation submitted.,Taklif yuborildi.
 Quotations,Takliflar
-Quotations are coming in but the 5-quote / 2-country rule is not met yet.,"Takliflar kelmoqda, ammo ""5 taklif / 2 mamlakat"" qoidasi hali bajarilmagan."
+Quotations are coming in but the {min}-quote / {countries}-country rule is not met yet.,"Takliflar kelmoqda, ammo ""{min} taklif / {countries} mamlakat"" qoidasi hali bajarilmagan."
 Quote set,Taklif to'plami
 quote set complete,taklif to'plami to'liq
 Quotes,Takliflar

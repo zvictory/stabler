@@ -1913,8 +1913,21 @@ def _require_any_tender_view(views: tuple[str, ...], company: str) -> None:
 
 @frappe.whitelist()
 def tender_views() -> dict:
-	"""Which role windows the current user may open (drives SPA nav)."""
-	return {"views": _tender_views()}
+	"""Which role windows the current user may open (drives SPA nav), plus the
+	procurement policy every tender screen reports against.
+
+	The policy rides along here rather than on each board's own endpoint because
+	the session store already fetches this once per company and every tender page
+	has it. Screens that printed their own `5` disagreed with the award gate the
+	moment the gate moved; there is one number and this is how it reaches them.
+	"""
+	return {
+		"views": _tender_views(),
+		"policy": {
+			"min_quotations": _policy.MIN_QUOTATIONS,
+			"min_countries": _policy.MIN_COUNTRIES,
+		},
+	}
 
 
 _OVERSIGHT_ROLES = ("System Manager", "Stabler Admin", "Sales Manager", "Stabler Tender Director")

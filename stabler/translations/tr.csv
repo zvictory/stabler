@@ -19,11 +19,11 @@
 1:1 Foreign Postings,
 1C ClientBank Exchange format (.txt). Uzbek bank-client export.,1C ClientBank Exchange formatı (.txt). Banka-istemci dışa aktarımı.
 1C Sync Log,1C Senkronizasyon Günlüğü
-2 countries met,2 ülke şartı karşılandı
-2 countries needed,2 ülke gerekli
+{countries} countries met,{countries} ülke şartı karşılandı
+{countries} countries needed,{countries} ülke gerekli
 31–60,31–60
-5 quotes met,5 teklif şartı karşılandı
-5 quotes needed,5 teklif gerekli
+{min} quotes met,{min} teklif şartı karşılandı
+{min} quotes needed,{min} teklif gerekli
 61–90,61–90
 7-day schedule,7 günlük takvim
 70% balance due 7 days before Iran arrival,İran'a varıştan 7 gün önce %70 ödeme
@@ -551,7 +551,7 @@ Assigned to,Atanan kişi
 Assigned.,Atandı.
 Assignment initializes document center,Atama belge merkezini başlatır
 At Destination,Varış noktasında
-at least 5 quotations from 2 countries,en az 2 ülkeden 5 teklif
+at least {min} quotations from {countries} countries,en az {countries} ülkeden {min} teklif
 At least one counted item line is required.,
 At least one item is required.,En az bir kalem gereklidir.
 At least one received item line is required.,En az bir alınan ürün satırı gereklidir.
@@ -650,7 +650,7 @@ Bank transaction is required.,
 Bank transaction not found.,
 Bank/cash account is required.,Banka/kasa hesabı gereklidir.
 Bar is relative to the busiest queue,Çubuk en yoğun kuyruğa göre
-bar: share of lots that satisfy the 5-quote rule,çubuk: 5 teklif kuralını karşılayan lot oranı
+bar: share of lots that satisfy the {min}-quote rule,çubuk: {min} teklif kuralını karşılayan lot oranı
 Base,Taban
 Base currency,Ana para birimi
 Base equivalent,Baz karşılığı
@@ -1991,7 +1991,7 @@ Expiring soon,Yakında sona eriyor
 Expiring within,Şu süre içinde
 Expiry,Son kullanım
 Expiry date,Son kullanma tarihi
-Explain why the 5-quote / 2-country policy could not be fulfilled…,5 teklif / 2 ülke kuralının neden karşılanamadığını açıklayın…
+Explain why the {min}-quote / {countries}-country policy could not be fulfilled…,{min} teklif / {countries} ülke kuralının neden karşılanamadığını açıklayın…
 Explain why this supplier was selected over others…,Bu tedarikçinin neden seçildiğini açıklayın…
 Export,Dışa Aktar
 Export CSV,CSV dışa aktar
@@ -4058,7 +4058,7 @@ Policy exception approved,Politika istisnası onaylandı
 Policy exception required,Politika istisnası gerekli
 Policy gap,Teklif eksiği
 policy met,politika sağlandı
-Policy rule (5 quotes / 2 countries) not satisfied. Check policy exception and specify reason.,Politika kuralı (5 teklif / 2 ülke) karşılanamadı. Istisnayı işaretleyin ve gerekçe belirtin.
+Policy rule ({min} quotes / {countries} countries) not satisfied. Check policy exception and specify reason.,Politika kuralı ({min} teklif / {countries} ülke) karşılanamadı. Istisnayı işaretleyin ve gerekçe belirtin.
 Port & Insurance,Liman & Sigorta
 Port of discharge,Boşaltma limanı
 Port of Discharge,Boşaltma limanı
@@ -4251,7 +4251,7 @@ Quotation number or customer…,
 Quotation saved as a draft.,Teklif taslak olarak kaydedildi.
 Quotation submitted.,Teklif gönderildi.
 Quotations,Teklifler
-Quotations are coming in but the 5-quote / 2-country rule is not met yet.,Teklifler geliyor ama 5 teklif / 2 ülke kuralı henüz sağlanmadı.
+Quotations are coming in but the {min}-quote / {countries}-country rule is not met yet.,Teklifler geliyor ama {min} teklif / {countries} ülke kuralı henüz sağlanmadı.
 Quote set,Teklif seti
 quote set complete,teklif seti tam
 Quotes,Teklifler
