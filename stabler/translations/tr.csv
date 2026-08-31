@@ -154,9 +154,11 @@ The pickup code was refused.,Teslim kodu reddedildi.
 The posting could not be previewed.,Muhasebe kaydı önizlenemedi.
 The V1 engine reads every cash account from the desk table. Add at least one desk before switching to V1.,V1 motoru tüm kasa hesaplarını kasa tablosundan okur. V1'e geçmeden önce en az bir kasa ekleyin.
 The settings payload could not be read.,Ayar verisi okunamadı.
+The store does not have enough of this order's materials. Tell the shift lead.,Depoda bu emrin malzemeleri yeterli değil. Vardiya amirine bildirin.
 The strip at the top says which parts are built and which are still drawings,"Üstteki şerit hangi kısmın yapıldığını, hangisinin hâlâ çizim olduğunu söyler"
 This clears the form without saving. The lines you entered will be lost.,Form kaydedilmeden temizlenir. Girdiğiniz satırlar kaybolur.
 This company runs the {engine} remittance engine. The Transfer V1 screens stay unavailable until it is switched to V1 below.,Bu şirket {engine} transfer motorunu çalıştırıyor. Aşağıdan V1'e geçirilene kadar Transfer V1 ekranları kullanılamaz.
+This could not be recorded. Tell the shift lead.,Kaydedilemedi. Vardiya amirine bildirin.
 This entry does not balance. Do not hand over cash — report it.,Bu kayıt denkleşmiyor. Nakit vermeyin — bildirin.
 This order is {0} — its plan can no longer be changed.,Bu emir {0} — planı artık değiştirilemez.
 This site is not migrated for packaging operators yet.,Bu sitede paketleme operatörleri için geçiş henüz yapılmadı.

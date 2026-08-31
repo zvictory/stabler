@@ -278,3 +278,4 @@ stabler.tests.test_scrap_math
 stabler.tests.test_je_rate_direction
 stabler.tests.test_shift_ledger_math
 stabler.tests.test_wo_register_columns
+stabler.tests.test_wo_posting_errors

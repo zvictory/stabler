@@ -154,9 +154,11 @@ The pickup code was refused.,Olib ketish kodi rad etildi.
 The posting could not be previewed.,Provodkani oldindan ko‘rsatib bo‘lmadi.
 The V1 engine reads every cash account from the desk table. Add at least one desk before switching to V1.,V1 mexanizmi barcha kassa hisoblarini kassa jadvalidan o'qiydi. V1 ga o'tishdan oldin kamida bitta kassa qo'shing.
 The settings payload could not be read.,Sozlamalar ma'lumotini o'qib bo'lmadi.
+The store does not have enough of this order's materials. Tell the shift lead.,Omborxonada bu buyurtma materiallari yetarli emas. Smena boshlig'iga ayting.
 The strip at the top says which parts are built and which are still drawings,"Yuqoridagi chiziq nimasi qurilgan, nimasi hali chizma ekanini aytadi"
 This clears the form without saving. The lines you entered will be lost.,Forma saqlanmasdan tozalanadi. Kiritilgan qatorlar yo'qoladi.
 This company runs the {engine} remittance engine. The Transfer V1 screens stay unavailable until it is switched to V1 below.,Bu kompaniya {engine} o'tkazma mexanizmida ishlaydi. Quyida V1 ga o'tkazilmaguncha Transfer V1 ekranlari mavjud bo'lmaydi.
+This could not be recorded. Tell the shift lead.,Yozib bo'lmadi. Smena boshlig'iga ayting.
 This entry does not balance. Do not hand over cash — report it.,Bu provodka tenglashmayapti. Naqd pul bermang — xabar bering.
 This order is {0} — its plan can no longer be changed.,Bu buyurtma {0} — uning rejasini endi o'zgartirib bo'lmaydi.
 This site is not migrated for packaging operators yet.,Bu saytda qadoqlash operatorlari uchun migratsiya hali bajarilmagan.

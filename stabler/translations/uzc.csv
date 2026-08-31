@@ -154,9 +154,11 @@ The pickup code was refused.,Олиб кетиш коди рад этилди.
 The posting could not be previewed.,Проводкани олдиндан кўрсатиб бўлмади.
 The V1 engine reads every cash account from the desk table. Add at least one desk before switching to V1.,V1 механизми барча касса ҳисобларини касса жадвалидан ўқийди. V1 га ўтишдан олдин камида битта касса қўшинг.
 The settings payload could not be read.,Созламалар маълумотини ўқиб бўлмади.
+The store does not have enough of this order's materials. Tell the shift lead.,Омборхонада бу буюртма материаллари етарли эмас. Смена бошлиғига айтинг.
 The strip at the top says which parts are built and which are still drawings,"Юқоридаги чизиқ нимаси қурилган, нимаси ҳали чизма эканини айтади"
 This clears the form without saving. The lines you entered will be lost.,Форма сақланмасдан тозаланади. Киритилган қаторлар йўқолади.
 This company runs the {engine} remittance engine. The Transfer V1 screens stay unavailable until it is switched to V1 below.,Бу компания {engine} ўтказма механизмида ишлайди. Қуйида V1 га ўтказилмагунча Transfer V1 экранлари мавжуд бўлмайди.
+This could not be recorded. Tell the shift lead.,Ёзиб бўлмади. Смена бошлиғига айтинг.
 This entry does not balance. Do not hand over cash — report it.,Бу проводка тенглашмаяпти. Нақд пул берманг — хабар беринг.
 This order is {0} — its plan can no longer be changed.,Бу буюртма {0} — унинг режасини энди ўзгартириб бўлмайди.
 This site is not migrated for packaging operators yet.,Бу сайтда қадоқлаш операторлари учун миграция ҳали бажарилмаган.
