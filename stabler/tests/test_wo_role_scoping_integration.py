@@ -438,13 +438,18 @@ class TestRoleScopingOnRealColumns(FrappeTestCase):
 	def test_a_finished_order_no_longer_accepts_a_new_plan(self):
 		"""Rewriting the plan for a shift that has already been scored rewrites
 		the score. The raw SQL goes through docstatus on purpose, so nothing else
-		stops this."""
+		stops this.
+
+		Asked as the manager since 2026-08-31. An operator is refused by the
+		manager gate before the status is ever read, so asking as the pourer
+		proved only that the gate fires — this guard would have been dead and
+		still green. The manager is the only caller that reaches it, which makes
+		them the only caller who can still rewrite a scored shift."""
 		before = self._required(self.codes[1])
 		self._force_status("Completed")
-		frappe.set_user(POURER)
+		frappe.set_user("Administrator")
 		with self.assertRaises(frappe.ValidationError):
 			self._save_materials(self.codes[1], before + 5)
-		frappe.set_user("Administrator")
 		self.assertEqual(self._required(self.codes[1]), before)
 
 	def test_the_change_is_recorded_with_the_number_it_replaced(self):
@@ -452,11 +457,14 @@ class TestRoleScopingOnRealColumns(FrappeTestCase):
 		fraud it enables. "Raw materials manually adjusted by X" — the whole audit
 		trail before this — says a number moved without saying which, from what,
 		or to what, so a plan quietly raised 20% reads exactly like a typo
-		corrected back."""
+		corrected back.
+
+		Asked as the manager since 2026-08-31: they are now the only caller who
+		can reach the write, and an audit trail matters most for the role that is
+		not scoped by anything else."""
 		before = self._required(self.codes[1])
-		frappe.set_user(POURER)
-		self._save_materials(self.codes[1], before + 3)
 		frappe.set_user("Administrator")
+		self._save_materials(self.codes[1], before + 3)
 		note = frappe.get_all(
 			"Comment",
 			filters={"reference_doctype": "Work Order", "reference_name": self.wo},
