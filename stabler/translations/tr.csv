@@ -6602,3 +6602,5 @@ This invitation reaches {countries} country(ies). On its own it cannot satisfy t
 "Everyone asked so far is in {countries} country(ies). More rounds, or a quotation attached from elsewhere, are what change that.",Şu ana kadar sorulan herkes {countries} ülkede. Bunu ancak yeni turlar ya da başka yerden eklenen bir teklif değiştirir.
 {count} of the vendors asked has no country on file and counts toward no country.,Sorulan tedarikçilerden {count} tanesinin ülkesi kayıtlı değil ve hiçbir ülkeye sayılmıyor.
 "Lines with no exchange rate, not in this total: {count}","Kuru girilmemiş satırlar, bu toplama dahil değil: {count}"
+Quotation date,Teklif tarihi
+The currency list could not be loaded — only your company's currency is available.,Para birimi listesi yüklenemedi — yalnızca şirketinizin para birimi kullanılabilir.

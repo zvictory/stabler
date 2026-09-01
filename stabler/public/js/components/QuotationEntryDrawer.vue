@@ -24,7 +24,7 @@ import { useSession } from "../stores/session.js";
 import { call } from "../api/client.js";
 import { t } from "../composables/i18n.js";
 import { formatMoney } from "../composables/money.js";
-import { todayIso } from "../composables/date.js";
+import { formatDate, todayIso } from "../composables/date.js";
 import { useToast } from "../composables/useToast.js";
 import MoneyInput from "./MoneyInput.vue";
 import DateInput from "./DateInput.vue";
@@ -43,6 +43,10 @@ const session = useSession();
 const { activeCompany, user, currency } = storeToRefs(session);
 const toast = useToast();
 
+// Set when the currency list request failed and the field fell back to the
+// company's own currency. Degrading is fine; degrading silently is not — the
+// only place a foreign currency enters the product would go quietly dead.
+const currencyListFailed = ref(false);
 const saving = ref(false);
 const submitting = ref(false);
 const currencies = ref([]);
@@ -124,6 +128,7 @@ const minValidTill = computed(() => {
 	} catch {
 		// Para birimi listesi düşerse alan boş kalmasın: hiç değilse şirketinki.
 		currencies.value = currency.value ? [currency.value] : [];
+		currencyListFailed.value = true;
 	}
 	if (!form.value.currency && currencies.value.length) {
 		form.value.currency = currency.value || currencies.value[0] || "";
@@ -265,11 +270,17 @@ async function submitQuotation() {
 				<label class="qed-field qed-field--narrow">
 					<span class="ds-label">{{ t("Currency") }}</span>
 					<Select v-model="form.currency" :options="currencies" size="sm" />
+					<span v-if="currencyListFailed" class="ds-hint text-danger" role="alert">
+						{{ t("The currency list could not be loaded — only your company's currency is available.") }}
+					</span>
 				</label>
 
 				<label class="qed-field qed-field--narrow">
 					<span class="ds-label">{{ t("Valid till") }}</span>
 					<DateInput v-model="form.valid_till" :min="minValidTill" size="sm" />
+					<span v-if="form.transaction_date" class="ds-hint">
+						{{ t("Quotation date") }}: {{ formatDate(form.transaction_date) }}
+					</span>
 				</label>
 			</div>
 
