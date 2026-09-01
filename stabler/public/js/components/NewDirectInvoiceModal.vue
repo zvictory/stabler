@@ -337,7 +337,7 @@ async function saveInvoice(submitNow = false) {
 												/>
 											</td>
 											<td>
-												<MoneyInput v-model="row.rate" :currency="currency" size="sm" class="rounded-3 bg-white" />
+												<MoneyInput v-model="row.rate" :currency="currency" size="sm" />
 											</td>
 											<td class="text-end font-monospace fw-bold h5 m-0 text-body">
 												{{ formatMoney(Number(row.qty || 0) * Number(row.rate || 0), currency, user.language) }}

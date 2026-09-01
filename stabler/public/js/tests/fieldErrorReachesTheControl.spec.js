@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { readFileSync } from "fs";
+import { readdirSync, readFileSync } from "fs";
 import { dirname, join, resolve } from "path";
 import { fileURLToPath } from "url";
 
@@ -89,6 +89,38 @@ describe("a field error reaches the control, not its wrapper", () => {
 			);
 		});
 	}
+
+	// The other half of the same contract. Once a class reaches the control, a class
+	// that was shaping the GROUP starts shaping the control instead — and one call
+	// site was doing exactly that. Measured in Chrome against Tabler 1.0.0-beta20
+	// (the version `www/stabler.html:1` pins), NewDirectInvoiceModal.vue:340:
+	//
+	//   wrapper carries rounded-3  ->  input border-radius  0px / 2px   (flush)
+	//   input   carries rounded-3  ->  input border-radius  8px / 8px   (seam)
+	//
+	// The group has no overflow clip, so `rounded-3` on the wrapper was painted over
+	// by its children and did nothing. On the control it rounds the corner that meets
+	// the currency badge and opens a visible gap. Rendering with the class removed is
+	// pixel-identical to what shipped before, which is why removing it was the fix.
+	it("is never handed a rounded-* utility, which would open a seam at the currency badge", () => {
+		const offenders = [];
+		const walk = (dir) => {
+			for (const entry of readdirSync(dir, { withFileTypes: true })) {
+				const full = join(dir, entry.name);
+				if (entry.isDirectory()) {
+					walk(full);
+					continue;
+				}
+				if (!entry.name.endsWith(".vue")) continue;
+				const src = readFileSync(full, "utf8");
+				for (const tag of src.match(/<MoneyInput\b[\s\S]*?\/>/g) ?? []) {
+					if (/:?class="[^"]*\brounded-/.test(tag)) offenders.push(entry.name);
+				}
+			}
+		};
+		walk(resolve(here, ".."));
+		expect(offenders).toEqual([]);
+	});
 
 	it("never forwards style onto a control whose callers size the wrapper", () => {
 		// The failure this guards: someone simplifies DateInput to a plain

@@ -204,10 +204,10 @@ async function save() {
 											/>
 										</td>
 										<td>
-											<MoneyInput
+												<MoneyInput
 												v-model="line.amount"
 												:currency="props.currency"
-												class="form-control-sm"
+												size="sm"
 											/>
 										</td>
 										<td class="text-center">
