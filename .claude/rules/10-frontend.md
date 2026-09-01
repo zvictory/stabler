@@ -82,8 +82,11 @@ sessions. Original: `docs/archive/CLAUDE.md.2026-08-15.bak`.
   every list page — measured 2026-09-01, it has 46 consumers, most of them outside `.stbl-ds`.
 - **`ds-btn` has no disabled state, so it is not yet safe for a button that can be disabled.**
   Measured 2026-09-01 in Chrome against the pinned Tabler (`www/stabler.html:1`): a disabled
-  `.ds-btn` renders `opacity: 1` with `pointer-events: auto` — indistinguishable from enabled, and
-  still taking clicks — while a bridged `.btn:disabled` fades to `.4` and stops taking them. The
+  `.ds-btn` renders `opacity: 1` and keeps `cursor: pointer`, so it is indistinguishable from an
+  enabled one — the user gets a hand cursor over a button that does nothing and no reason why.
+  (The click itself is blocked: a native `<button disabled>` dispatches no click event even at
+  `pointer-events: auto`. The defect is what the user sees, not what fires.) A bridged
+  `.btn:disabled` fades to `.4` instead. 12 live buttons are `ds-btn` and disableable today; the
   fix is drafted (`docs/design/2026-09-01-asama-a-delta.css`) and not yet in the layer.
 - Nothing enforces this mechanically. `make guards` has no button check, and the per-screen source
   tests that assert button classes cover only the Bootstrap half. A guard is writable in the shape

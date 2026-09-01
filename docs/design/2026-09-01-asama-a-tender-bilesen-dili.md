@@ -1959,7 +1959,12 @@ kırmızıya düşürür. Kural değişmeden yasak yürürlüğe giremez, guard 
    | | `:disabled` |
    |---|---|
    | `btn btn-outline-secondary` (köprülü) | `opacity: .4`, `pointer-events: none` |
-   | `ds-btn` | `opacity: 1`, `pointer-events: auto` — **etkin görünür ve tıklamayı alır** |
+   | `ds-btn` | `opacity: 1`, `cursor: pointer` — **etkinden ayırt edilemez** |
+
+   Tıklamanın kendisi engelleniyor (yerel `<button disabled>` `pointer-events: auto` ile de
+   click yaymıyor — ölçüldü). Zarar tamamen görsel: ölü bir butonun üstünde el imleci, ve
+   kullanıcıya hiçbir gerekçe yok. **Bugün 12 canlı buton hem `ds-btn` hem devre dışı
+   edilebilir** — `Login.vue:262` (giriş) ve `TenderCrm.vue:741` (silme) dahil.
 
    Kurul kararının ACCEPTANCE #8'i bu yüzden var ve delta bunu zaten yazmış
    (`delta.css:67-68`) — **katmanda hâlâ yok.**
