@@ -194,8 +194,10 @@ onun düzeltildiğinin tek kanıtı.
 **Regresyon ağı**
 17. Kapsamdaki 5 tender spec'inin (`sourcingWorkspace`, `sourcingAwardPanel`, `rfqDetail`,
     `rfqForm`, `quotationEntryDrawer`) **hiçbiri** bileşen mount etmiyor (`mount(` /
-    `@vue/test-utils` sayımı: hepsinde 0). Repo'nun 76 spec'inin 17'si mount ediyor, yani
-    kalıp mevcut ama bu ekranlarda kullanılmamış.
+    `@vue/test-utils` sayımı: hepsinde 0). **Ve kalıp repoda da yok** — 17 spec
+    `@vue/test-utils`'i *anıyor*, ama `mount(` çağıran spec sayısı **0**
+    (ölçüldü 2026-09-01). Yani sorun "kalıp var, burada kullanılmamış" değil;
+    mount edilen tek bir spec yok ve altyapısı da kurulu değil.
     **Kısmî istisna** (çürütme turu buldu): `sourcingAwardPanel.spec.js` (182 satır)
     şablondan çıkardığı `v-if` ifadelerini **çalıştırıyor**, yani ödül panelinin dallanma
     mantığı yeniden kurulursa kırılır. Geri kalanı için iddia ayakta: tasarımı bozan bir
@@ -253,8 +255,11 @@ referans onlar, yenisi icat edilmez.
 ### ADR-306 — Regresyon ağı brief'in teslim şartıdır
 Kusur 17 nedeniyle "tasarım uygulandı" iddiası bugün hiçbir testle doğrulanamaz. Brief,
 her ekran için **gözlemlenebilir kabul ölçütü** üretmek zorunda (hangi durum hangi
-elemanı gösterir), ve uygulama dilimi bunları mount eden testlere çevirir. Kalıp repoda
-zaten var (76 spec'in 17'si).
+elemanı gösterir), ve uygulama dilimi bunları **kaynaktan yürüten** testlere çevirir —
+mount eden değil. İlk yazımda "kalıp repoda zaten var (76 spec'in 17'si)" demiştim;
+**yanlıştı**: 17 spec `@vue/test-utils`'i anıyor, `mount(` çağıran **0**. Var olan gerçek
+kalıp `sourcingAwardPanel.spec.js`'in yaptığı — kaynaktan `v-if` ifadelerini çıkarıp
+çalıştırmak. Altyapı sorusu NOT DECIDED'da.
 
 ### ADR-307 — ERPNext'e dokunulmaz; **bu iş için** yeni alan gerekmiyor
 Zafar'ın kısıtı karara bağlanır. Ölçüldü: bugün main'e giren hiçbir değişiklik `stabler/`
@@ -310,8 +315,15 @@ ACCEPTANCE
      `BidPricing.vue` bir `.stbl-ds` atası kazanıyor (bugün ikisinde de `TenderPage` 0).
      17 değil 13: dördü ÖLÜ KOD ve ölü kodu güzelleştirmek bir ölçüt olamaz —
      `TenderCrmWrapper` · `TenderExecutionFlow` · `TenderExecutiveKpis` · `TenderTrendChart`,
-     dördü de 0 içe aktarma (kendi ölçümüm, 2026-09-01). Onların kararı silmek ya da
-     bırakmaktır, boyamak değil; bu ayrı bir iş.
+     dördü de 0 `.vue`/`.js` içe aktarma. Onların kararı silmek ya da bırakmaktır,
+     boyamak değil.
+     **Ama "ayrı bir iş" derken maliyetini ölçmemiştim** (Aşama A ölçtü, ben doğruladım):
+     Python tarafında **10 referans / 3 test modülü** var
+     (`test_tender_dashboard_i18n`, `test_tender_dashboard_spa`,
+     `test_tender_master_board_spa`) ve **üçü de `.github/frappe-free-tests.txt`'te**,
+     yani `make test`, yani push kapısında. Üstelik
+     `test_tender_master_board_spa.py:37` doğrudan dosyanın VARLIĞINI iddia ediyor.
+     Silmek üç test modülünü birlikte değiştirmek demek.
   3. `SourcingWorkspace`'te tablonun yatay taşması kapanıyor  VE  bunu iddia eden bir
      spec var — **mount testi değil**, deponun kendi kalıbıyla (`sourcingAwardPanel.spec.js`
      kaynaktan `v-if` ifadelerini çıkarıp çalıştırıyor; aynı yöntem sarmalayıcının varlığını
@@ -395,7 +407,12 @@ CORRECTIONS
 
   Keşif ajanlarının hataları:
   · "unassigned tablosunda table-responsive var" — dosyada 0 kez geçiyor.
-  · "hiçbir spec bileşen mount etmiyor" — 76'nın 17'si mount ediyor; kapsamdaki 5 için doğru.
+  · ~~"hiçbir spec bileşen mount etmiyor" — 76'nın 17'si mount ediyor.~~
+    **DÜZELTMENİN KENDİSİ YANLIŞTI** (Aşama A çürütmesi buldu, ben doğruladım):
+    17 dosya `@vue/test-utils`'i *anıyor*, `mount(` çağıran **0**. Ajanın iddiası
+    benim düzeltmemden daha doğruydu. `decision-review`'in kendi uyarısı birebir bu:
+    *"yanlış bir düzeltme, yanlış iddiadan pahalıdır — çünkü bir incelemenin
+    otoritesiyle gelir."*
   · "19 dosyada sıfır ds-*" — kendi sayımım 17.
   · RU/UZ uzaması "2.75×" — kendi ölçümüm 3.75× (`RFQs` → uz `Narx so'rovlari`).
 ```
