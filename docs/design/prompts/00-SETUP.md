@@ -876,3 +876,41 @@ open questions into one measured collision.**
 - **Both blocks load without a skeleton** (a line of text), neither uses
   `useAutoRefresh`, and the screen carries a manual `Refresh` button. It is not one of
   the six live screens.
+
+### From 16 — 2026-09-02
+
+**The screen whose entire subject is thresholds is the one that dropped the rule line.**
+Four counters, four human notes, and **no `ds-kpi-q` anywhere** — the fourth `ds-kpis`
+strip in the package and the only one with none. It matters most on `Bottleneck`, whose
+value *is* the output of a computation the reader cannot see: the step over its
+threshold by the greatest **ratio**, not the greatest difference. On seed data that
+choice changes the answer — `sourcing` is 8,5 days over and `priced` only 4, but
+`priced` wins at 2,33× against 1,61×. A reader working from the table alone picks the
+wrong step and nothing on screen corrects them.
+
+- **Two of the four public functions in `_tender_sla.py` have no production caller.**
+  `severity()` (crit · today · soon · info, per deal) and `overdue_by()` (days past the
+  threshold) are referenced only by `stabler/tests/test_tender_sla.py`; `_tender_flow`
+  imports the module and uses `days_in_stage` and `sla_for` only. Meanwhile the `Worst`
+  column is the one column on the screen with no state — and every one of its four
+  seeded values would carry one: 3 and 5 sit **exactly on** their thresholds, 26 is 12
+  days over and 8 is 5 over. The verdict exists, is documented, is tested, and is dead.
+- **`stage_sla` is the second unread payload key**, after `generated_at` (from 13). The
+  panel foot promises *"Thresholds come from Stabler Settings, per company"* and nothing
+  on screen distinguishes a tenant override from the built-in default — nor a step an
+  administrator deliberately switched off (threshold 0 means *stop tracking*, not
+  *revert to default*) from one never configured.
+- **The worst empty rendering in the package so far.** `v-if="loading"` / `v-else` makes
+  the table the fallback for everything, so a failed load, an unselected company and a
+  genuinely empty pipeline all render **five column headers over an empty tbody** — no
+  sentence at all — under four counters reading `0 · 0 steps · none today · 0`, which is
+  exactly what a healthy pipeline looks like.
+- **No responsive CSS whatsoever**: zero `@media`, zero `overflow-x`, five columns. The
+  page scrolls, not the table. Prompt 14's board solved the same problem one screen
+  earlier with `.board-scroll` and a comment saying exactly that.
+- **Manual pluralisation reaches a shipped catalogue.** `stuck === 1 ? t("step") :
+  t("steps")` — the i18n layer has interpolation and no plurals, and with five working
+  steps the counter reaches 2, 3, 4 and 5, where Russian and Uzbek need a third form.
+- **Zero `aria-*` and zero `role=` on the whole screen** — the lowest in the module.
+- **Seventh consecutive screen with a state the demo data cannot reach**: `empty`,
+  `Within`, `not tracked` and a `none today` bottleneck are all unreachable on the seed.
