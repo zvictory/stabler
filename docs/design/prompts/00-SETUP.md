@@ -189,7 +189,7 @@ From the council's own output contract, not from the screens:
 
 ---
 
-## One decision that leaves this folder
+## The decision that left this folder — SETTLED 2026-09-01
 
 **The third currency exception (screen 03, S2) edits `.claude/rules/10-frontend.md`,
 not a component.** That file governs all sixteen remaining screens, so the paragraph is
@@ -203,9 +203,21 @@ the standard of the two existing exceptions, including the condition that makes 
 disappear: **when every bid on a lot is in one currency the column is not rendered at
 all** — which is every lot in the demo data, and is why nobody noticed.
 
-Adopting it legalises one column. Rejecting it deletes the comparison and moves the
-arithmetic into the user's head at a rate they guess. Both are real; neither is a
-drawing.
+**Zafar adopted it on 2026-09-01**: Mikas's home currency is **UZS** and the sourcing
+comparison resolves in the home currency. The paragraph is now the **third documented
+exception** in `.claude/rules/10-frontend.md`, and screen 03's K10 asserts against it
+rather than against an open question.
+
+The decision corrected the draft in two places, and both corrections matter to the
+fifteen screens that have not been drawn yet:
+
+- **The currency is `Company.default_currency` read from the server, never the literal
+  `UZS`.** Stabler is multi-tenant — `_accounts.py:94` already resolves it per company.
+  A literal would have been correct for Mikas and wrong for everyone else.
+- **What disappears when every bid is already in the home currency is the conversion,
+  not the column.** `Delivered total` is the bid's total *plus its landed charges*, so
+  it keeps doing work with nothing to convert. The draft had the column vanishing —
+  which would have deleted the landed-charge sum along with it.
 
 ---
 

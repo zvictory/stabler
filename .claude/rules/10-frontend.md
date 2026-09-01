@@ -113,6 +113,29 @@ sessions. Original: `docs/archive/CLAUDE.md.2026-08-15.bak`.
   renders only while the form refuses to save, and disappears the moment it balances. It is an
   error explanation, not a display convenience. The per-row `→ base` hints it replaced are not
   covered by either exception and must not come back.
+- **Documented exception:** the Sourcing workspace's quotation comparison shows one
+  home-currency column, `Delivered total`, beside each bid's own `Total`. It exists because
+  this is the one screen whose entire purpose is choosing between offers **denominated in
+  different currencies** — suppliers in China, Russia and Uzbekistan bidding on the same lot —
+  and the transaction-currency figures cannot be ranked at all: `566 760 CNY` beside
+  `846 400 000 UZS` carries no visual ordering, and the smaller number is the dearer bid.
+  Same conditions as the Sales Order and Journal Entry exceptions — a live rate, never a
+  hardcoded one, never a replacement for the transaction-currency total, and nothing rendered
+  when no live rate is available — plus three more.
+  **The currency is the company's home currency**, read from the server (`base_currency`,
+  `SourcingWorkspace.vue:305`), never a literal: Mikas's is UZS and another tenant's is its
+  own, exactly as `_accounts.py:94` resolves it. **The rate is stated once** — in the section
+  head, with the timestamp it was read at — and never per row. And **the conversion disappears
+  when there is nothing to convert**: `Delivered total` is the bid's total plus its landed
+  charges, so the column keeps doing work when every bid on a lot is already in the home
+  currency — it simply renders the plain sum, with no rate line and no conversion. That is the
+  state of every lot in the demo data, which is why nine base-currency sites survived in this
+  file unnoticed. One derived figure is covered besides the column: the "selected bid is +X
+  over the cheapest" banner, which is arithmetic on it and renders only while a dearer bid is
+  selected. **Not covered, and removed rather than grandfathered:** the `Sticker price (base)`
+  column, which ranked bids identically to `Total` and bought a conversion for no information;
+  `Landed estimate` as a standalone base column (it is a sub-line of the delivered cell); and
+  any per-row rate hint.
 
 ### Centralized status codes
 - All status badges and labels must be resolved centrally using `getStatusBadgeClass` from `composables/status.js`. No per-page status mappings.

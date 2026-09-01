@@ -156,6 +156,19 @@ Draw **both**. Recommend one. **"It depends" is not an answer, and neither is
 silence** — this rule has been broken by nine sites for long enough that nobody
 notices any more, which is exactly why it is being asked now.
 
+> **SETTLED 2026-09-01 — (b), adopted.** Zafar's decision: Mikas's home currency is
+> **UZS**, and the sourcing comparison resolves in the home currency. The third
+> exception is now written into `.claude/rules/10-frontend.md`. Draw (a) anyway and
+> keep it labelled *not chosen* — an alternative that has been erased cannot be
+> re-examined — but do not reopen the recommendation.
+>
+> **Two things the decision fixed in the draft.** The currency is
+> `Company.default_currency` read from the server (`base_currency`, `:305`), **never
+> the literal `UZS`** — Stabler is multi-tenant and another tenant's home currency is
+> its own. And what disappears when every bid is already in the home currency is the
+> **conversion and its rate line**, not the column: `Delivered total` is the bid's
+> total *plus its landed charges*, so it keeps doing work with nothing to convert.
+
 **One measurement you must not skip:** in the only data that exists, **every
 quotation is in the same currency**. The seed sets no per-quotation currency, so the
 two base columns render the same numbers as the two transaction columns in every
@@ -347,6 +360,6 @@ Do not propose a criterion that needs a browser. Every number below was measured
 | K7 | Every alert carries `role="alert"`; the screen has at least one `aria-describedby` binding the disabled primary to its reason | 0 / 0 | 4 / 1 |
 | K8 | The forbidden state renders an explanation instead of nothing: no region is gated by a bare `v-if="canSourcingView"` with no `v-else` | 2 bare | 0 |
 | K9 | No count is concatenated with a bare noun. `{{ n }} {{ t("RFQs") }}` is the live case | 1 | 0 |
-| K10 | Base-currency rendering is **either** absent **or** covered by a documented exception naming this file. Whichever S2 concludes, the test asserts it — a rule broken by nine sites and covered by nothing is the state that must not survive | 9 sites / 0 exceptions | asserted |
+| K10 | Home-currency rendering is confined to what the **third documented exception** allows: one column, one banner, the rate stated once, the currency read from the server and never written as a literal. `Sticker price (base)`, the standalone `Landed estimate` column and every per-row rate hint are gone | 9 sites / 0 exceptions | 1 col + 1 banner / 1 exception |
 
 State plainly which of these your design satisfies, and name anything it cannot.
