@@ -244,10 +244,10 @@ belgelenmesi kayıt işidir ve **B-6**'dadır.
 | Tarih | `DateInput` + `formatDate` | `components/DateInput.vue` | §7 | manda 4 |
 | Tipeahead | `Typeahead` + **sarmalayan** `<label class="ds-field">` | `components/Typeahead.vue` | §7 | Ç13 |
 | Çoklu seçim **ve** dosya eki | **tek jeton listesi**: `ds-table` + `ds-cut-del` + `ds-cut-add` + ekleyici (`Typeahead` / `FileSlot`) | css:389, 785, 790 | §7 | Ç1, D1 |
-| Köprülenmiş kontrolde geçersizlik | `.form-control[aria-invalid="true"]` — **`MoneyInput`/`DateInput`'a ULAŞMIYOR**, §10.9 | **YENİ köprü** | §7 | form delta-2 |
+| Köprülenmiş kontrolde geçersizlik | `.form-control[aria-invalid="true"]` — `MoneyInput`/`DateInput`'a **artık ulaşıyor** (`f267e6d`); `Typeahead`/`MultiSelectPicker`'a hâlâ ulaşmıyor, §4.1(a) | **YENİ köprü** | §7 | form delta-2, §10.9 ✔ |
 | **— Veri —** | | | | |
 | Tablo | `ds-table`, **`table-responsive` sarmalayıcı zorunlu** | css:389 | §7 | Ç3 |
-| Şeritli tablo (kaçış yolu) | `class="ds-table table"` — **izinli**, `ds-table` göçünün şerit kaybını (14 tablo) telafi eder | `stabler.css:145` | §7 | §10.8(b) |
+| Şeritli tablo ← **varsayılan** | `class="ds-table table"` — göç eden her tablo bunu yazar; şerit korunur (14 tablo) | `stabler.css:145` | §7 | §10.8(b) ✔ |
 | Liste ekranı araç çubuğu ← **bu turda eklendi** | `ListToolbar` — **manda 8 ile zorunlu**, filtre/arama elle kurulmaz | `components/ListToolbar.vue` | §7 | manda 8, K17 |
 | Sayısal hücre/başlık | `ds-td-num` — **`ds-col-n` DEĞİL** | css:399 | §7 | Ç26 |
 | Satır vurgusu | `tr[data-sev]` + satırda `ds-chip[data-tone]` | **YENİ varyant** | §7 | Ç34, D4 |
@@ -1903,6 +1903,29 @@ bir mimari sınırın değişmesini istiyor**, ve bir şartname bunları kendi b
 **10.9'u** (köprünün iki bileşene ulaşmaması) ekledi, ve **10.5** ile **10.8(b)**
 artık ölçülmüş maliyetleriyle soruluyor.
 
+### ✔ Zafar'ın kararları — 2026-09-01
+
+Üçü kapandı, altısı açık. Kapananlar aşağıda kendi maddelerinde de işaretli.
+
+| # | Karar | Durum |
+|---|---|---|
+| **10.5** | Dört çağrılmayan dosya **siliniyor**, üç test modülü birlikte düzeltiliyor | ✔ uygulandı — `1eb780a` |
+| **10.8(b)** | **Şerit korunuyor**: göç eden tablo `class="ds-table table"` yazar, `ds-table` tek başına değil | ✔ kayda geçti — aşağıda ve §1.2 |
+| **10.9** | Seçenek **(a)**: `inheritAttrs: false` + `v-bind="$attrs"` | ✔ uygulandı — `f267e6d` |
+
+**10.9 lafzından bir sapma var ve ölçülmüştür.** Seçenek (a) yazıldığı gibi —
+"her iki bileşene `v-bind="$attrs"`" — `DateInput`'ta **28 çağrı yerinin yerleşimini
+bozardı**: 202 çağrının 28'i bir `style` geçiriyor ve hepsi **grubu** boyutlayan bir
+genişlik (`width: 120px`). `MoneyInput`'ta ise 135 çağrının 5'i öznitelik geçiriyor
+ve hepsi **kontrole** ait bir `class` (`is-invalid`, `form-control-sm`,
+`ds-input so-rate`). Bu yüzden uygulanan biçim: `MoneyInput` her şeyi input'a verir;
+`DateInput` `class` ve `style`'ı sarmalayıcıda tutar, kalan her şeyi
+(`aria-invalid`, `aria-describedby`, `data-*`) input'a verir. Asimetri çağrı
+yerlerinden geliyor, üsluptan değil. Sözleşme
+`stabler/public/js/tests/fieldErrorReachesTheControl.spec.js` ile pinli — ve **olumlu**
+yazılı: "öteki bileşenin şeklinin yokluğu" biçiminde yazılan iki kriter hiçbir şey
+yazılmadan yeşildi, düzeltildi.
+
 **10.1 · Sayfasız tablo — Aşama B'nin liste ekranlarını etkiliyor.**
 Brief §5.3 sunucu sayfalaması olmadığını söylüyor (`limit_page_length=0`); beş
 şartnamenin **hiçbiri** bu kısıtı ele almadı (`grep -ni 'sayfala\|pagination\|limit_page_length'`
@@ -1933,7 +1956,7 @@ var ve çoğu yüzde (`margin_pct`, `vat_pct`, `duty_pct`, `penalty_pct_per_day`
 ("%") **resmî bir form-grameri satırı** olur; (b) yüzde alanları kısıt dışında bırakılır
 ve bu **yazılı** olur. Sessiz kalmak kabul edilemez.
 
-**10.5 · ↺ Dört çağrılmayan dosya, ve maliyeti — sürüm 1 soruyu maliyetsiz soruyordu.**
+**10.5 · ✔ KARAR: SİLİNDİ (`1eb780a`). ↺ Dört çağrılmayan dosya, ve maliyeti — sürüm 1 soruyu maliyetsiz soruyordu.**
 `TenderCrmWrapper`, `TenderExecutionFlow`, `TenderExecutiveKpis`, `TenderTrendChart` —
 dördünün de `.vue`/`.js` grafiğinde **0 çağrısı var** (doğrulandı). Ama sürüm 1'in
 *"0 dış referans"* ölçümü `--include='*.vue' --include='*.js'` kapsamıyla yapılmıştı.
@@ -1957,6 +1980,14 @@ değiştirmeyi** gerektirir. Soru bu maliyetle sorulur: siliniyorlar mı (ve ü�
 modülü düzeltiliyor mu), yoksa `TenderTrendChart` bir ekrana geri mi bağlanıyor?
 Cevaba göre grafik sözlüğü ya tamamen kapsam dışı kalır ya da küçük bir varyant
 gerekir. **Bu turun ölçemeyeceği tek sözlük sorusu bu.**
+
+**✔ Zafar: silme.** Dördü de silindi ve üç test modülü birlikte düzeltildi (`1eb780a`).
+Testler "dosya var" iddiasından davranış iddiasına çevrildi — sarmalayıcının silinmesi
+rotayı kaydırmıyor (`test_crm_route_reaches_tender_crm_with_no_wrapper_level`), üç pano
+bileşeni gerçekten yok (`test_unreachable_dashboard_components_are_deleted`). i18n
+modülündeki `COMPONENT_LABEL_KEYS` **testiyle birlikte silindi**: tek girdisi kalkınca
+sıfır kez dönen ve yine de yeşil kalan bir döngü olurdu. **Grafik sözlüğü kapsam
+dışıdır** — `TenderTrendChart` geri bağlanmadı.
 
 **10.6 · Mimari, çözülmedi: z-index.**
 `.ds-drawer` z-**41** / `.ds-drawer-backdrop` z-**40** (css:645, 649) ↔ `.tgm-drawer`
@@ -1989,7 +2020,7 @@ zaten doğrusunu yazıyor; ADR-306'nın gövdesi ve "Keşif ajanlarının hatala
 (b) **ADR-302/303:** *"Bugün bilinen tek gerçek boşluk dosya-eki çipi"* — Ç1/D1 ile
 **düştü**: `ds-table` + `ds-cut-del` + `FileSlot` o işi yapıyor, ve `ds-file-*` yazılmıyor.
 
-**10.8 · Manda 9'un lafzı, ve `ds-table`'ın şeritsizliği.**
+**10.8 · Manda 9'un lafzı, ve `ds-table`'ın şeritsizliği.** *(b) ✔ karara bağlandı; (a) açık.*
 (a) Manda 9 *"Place animated skeleton rows inside the table body"* diyor. Ama
 `SkeletonRows`'un kökü **zaten** bir `<tbody>` — lafzı harfiyen uygulamak **iç içe
 `<tbody>`** üretiyor, ve bugünkü 8 site tam bunu yapmış. Doğru okuma "tablo gövdesinin
@@ -2012,7 +2043,14 @@ içermiyordu, yani `class="ds-table table"` de dağarcık dışı kalıyordu —
 varsayılan** olacağıdır: 14 tablo şeridini korusun mu (bileşim yazılır), yoksa
 `ds-table`'ın sessizliği mi kazansın (şerit gider ve bu kayıt edilir).
 
-**10.9 · ↺ YENİ — `[aria-invalid]` köprüsü manda 3 ve manda 4'ün bileşenlerine ULAŞMIYOR.**
+**✔ Zafar: şerit korunsun.** Göç eden her tablonun varsayılanı `class="ds-table table"`
+bileşimidir; `ds-table` tek başına yalnız `table-no-stripe` ile bilerek şeritten
+çıkarılmış 5 tablo için yazılır. Aşama B'nin her tablo satırı bu bileşimle başlar, ve
+9 sütunlu karşılaştırma tablosu satır takibinin tek görsel yardımını korur. Bu bir
+kural değil bir **varsayılan**: bir ekran şeritten çıkmak isterse `table-no-stripe`
+zaten var ve gerekçesini yazar.
+
+**10.9 · ✔ KARAR: (a) UYGULANDI (`f267e6d`). ↺ `[aria-invalid]` köprüsü manda 3 ve manda 4'ün bileşenlerine ULAŞMIYORDU.**
 Blok J'nin `aria-invalid` köprüsü doğru bir boşluğu kapatıyor ama **iki bileşene hiç
 varmıyor**, ve sürüm 1 bunu ne §10'a ne §11'e yazmıştı. Ölçüldü:
 
@@ -2048,6 +2086,13 @@ verme" diye okunursa ihlal değil; (b) alan hatası bu iki kontrolde `ds-field-e
 sarmalayıcıyı hedefler, bileşene dokunmaz. **Sessiz kalmak kabul edilemez:** §4.2 madde
 5 ve §7'nin `ds-field` satırı bugün bu iki kontrolde **uygulanamaz**, ve ikisi de manda
 ile zorunlu.
+
+**✔ Zafar: (a).** Uygulandı — ölçülmüş bir sapmayla; gerekçesi bu bölümün başındaki
+karar tablosunun altında. Köprü doktrini (`css:894-908`) "bileşene **stil** verme"
+diye okundu: iki bileşenin hiçbir CSS'i değişmedi, yalnız öznitelik yönlendirmesi
+değişti. §4.2 madde 5 ve §7'nin `ds-field` satırı artık bu iki kontrolde de
+uygulanabilir. Kalan boşluk `Typeahead` ve `MultiSelectPicker`'dır (§4.1(a)) — aynı
+kalıp, ayrı iş.
 
 ---
 
