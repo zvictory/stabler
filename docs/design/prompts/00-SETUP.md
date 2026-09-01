@@ -55,7 +55,7 @@ because that is where the third dialect lives.
 | — | **↑ Verification gate — PASSED 2026-09-01** | The language was approved on 01 and 02 before the rest were drawn. The gate is spent; it does not re-arm |
 | 03 | Sourcing workspace | comparison table + award panel; 1039 lines, 0 `ds-*` |
 | 04 | Quotation entry drawer | drawer grammar, second pass |
-| 05–08 | RFQ list · new · detail · print | all four at zero `ds-*` |
+| 05–08 | RFQ list · new · detail · print | three inside the layer with no vocabulary; **only the print letter is outside it** |
 | 09 | Document center | the one surface all four roles share |
 | 10 | PO control board | post-award; 765 lines, 0 `ds-*` |
 | 11–12 | Customs queue · Logistics board | read-only projections; drag-to-advance is forbidden |
@@ -82,8 +82,8 @@ put to Zafar with both canvases drawn, and passed on 2026-09-01.
 
 ## What has been drawn — the verification gate
 
-Two canvases exist. Together they **are** the gate the table above stops at: the language
-is approved on these before sixteen more screens are drawn in it.
+Five canvases exist. The first two **were** the gate the table above stops at: the
+language was approved on them before the rest were drawn in it.
 
 | # | canvas | artboards | what it settles |
 |---|---|---|---|
@@ -91,16 +91,24 @@ is approved on these before sixteen more screens are drawn in it.
 | 02 | [Tender CRM kanban](https://claude.ai/code/artifact/564c73b0-6e7a-49ab-b6c9-87c7db56fb2c) | 10 | S1(a) drawer width → **760** via the existing `[data-size="lg"]` · S1(b) six orphans → **one** new component · one accessibility rule for the card and the row |
 | 03 | [Sourcing workspace](https://claude.ai/code/artifact/477c7af9-3734-4986-a842-dc215c56e76e) | 8 | S2 currency → a **third documented exception**, narrowed from 9 sites to one column · nine comparison columns → **seven** · a table row is **not** a region |
 | 04 | [Quotation entry drawer](https://claude.ai/code/artifact/16250885-0340-4e6b-a6ca-9421ae5f00d1) | 6 | S3 a failed load is a **state, not a toast** · the module's **reference patterns**, named so the other fourteen can copy them |
+| 05–08 | [RFQ family](https://claude.ai/code/artifact/623be708-1d87-4213-a274-b5670a75d4f3) | 8 | `ds-* = 0` does **not** mean outside the layer · the layer has **zero** `@media print` rules · the demo seed creates **no RFQ at all** · 07's `Mark as sent` writes a record nothing can read back |
 
-Both canvases carry their own **not chosen** artboards rather than deleting the rejected
-option — the stepped intake on 01, the 542 px drawer on 02. A decision whose alternative
-has been erased cannot be re-examined.
+Each canvas carries its own **not chosen** artboards rather than deleting the rejected
+option — the stepped intake on 01, the 542 px drawer on 02, the per-bid conversion on 03,
+both readings of the two denominators on 05. A decision whose alternative has been erased
+cannot be re-examined.
+
+**05–08 are one canvas, not four.** Zafar's standing choice is an independent prompt per
+screen and that is unchanged — there are four prompt files. But the four screens are one
+doctype seen four ways, and the family-level questions (one status vocabulary, one
+toolbar, one print stylesheet, one denominator for "answered") have to be decided once and
+seen together.
 
 The working files (`*.dc.html`, `canvas.json`) live in the session scratchpad, not in the
 repo: they are re-seeded from source on every edit and a 2.6 MB payload per canvas has no
 business in git. **The canvas URL is the artefact**; the prompt file is how it was produced.
 
-### What the two canvases raised that the prompts did not
+### What the canvases raised that the prompts did not
 
 - **The card title slot is empty in the data** — `c.label || c.name`, and nothing sets a
   deal label, so a card renders the same string twice. Screen 01 hit the same gap from the
@@ -109,6 +117,34 @@ business in git. **The canvas URL is the artefact**; the prompt file is how it w
 - **There is no keyboard path to move a card between lanes** — today or after the redesign.
 - **Migrating the intake drawer to `ds-drawer` moves it from z-index 1050 to 41** — from
   above the Bootstrap modal band to below it. That is 10.6, shown and left open.
+
+**From 05–08, and each one changes something outside its own screen:**
+
+- **`ds-* = 0` does not mean "outside the layer".** `stabler-modernist.css` carries **344**
+  `.stbl-ds`-prefixed rules that restyle bare Bootstrap. A screen inside `<TenderPage>` is
+  already wearing the layer's clothes without speaking its vocabulary — which is why nobody
+  migrated these files: **the cost was never visual.** In the whole tender module only
+  `RfqPrint.vue` and `BidPricing.vue` are genuinely outside it, exactly the two the council
+  named. This corrects how 03's and 05–08's zero counts should be read; it does not change
+  any decision already taken on them.
+- **The layer contains zero `@media print` rules.** It has never been asked to print, so
+  the RFQ letter invented a fourth dialect (`rfq-*`, 20 classes, its own type ramp in
+  points). Deciding what a Stabler document looks like on paper is new work — prompt 08.
+- **`seed_tender_demo.py` never writes the string "Request for Quotation".** Every
+  quotation the sourcing workspace compares is an answer to a question that was never
+  recorded. 05 opens empty, 07 and 08 have no reachable record at all. That is a finding
+  about the product, not the seed — it is the gap these four screens exist to close.
+- **10.1 is sharper than "no server-side pagination".** `list_all_rfqs` **caps** at 200
+  (clamped to 500, `sourcing.py:806`) and returns `len(rows)` as the count, which the
+  toolbar renders as the total. And `search` matches the **document id only**, so the lot
+  and the supplier columns cannot be searched. Silent truncation reported as a total.
+- **A write with no read.** `mark_rfq_sent` inserts a `Communication` keyed to the RFQ;
+  `get_rfq` returns nothing about it, so no screen in the SPA can show it. **The only
+  surface where that record is visible is Frappe Desk — the one place mandate 1 forbids
+  linking to.** The backend question is stated in prompt 07 and left open.
+- **Four global `@page` rules ship at once** — A5 twice, A4 twice, in unscoped `<style>`
+  blocks, all live because `router.js` has 208 static imports and 0 lazy ones. One page
+  size wins per print job by bundle order. Recorded as a bug, not designed.
 
 ---
 
@@ -177,7 +213,11 @@ From the council's own output contract, not from the screens:
   mount it. The repo's working pattern is `stabler/public/js/tests/sourcingAwardPanel.spec.js`.
   Measured: 17 specs mention `@vue/test-utils`, **0** call `mount(`.
 - **`RfqPrint.vue` and `BidPricing.vue` must gain a `.stbl-ds` ancestor.** Both measure
-  **0** today (`TenderPage.vue` has 1). Prompts 08 and 10.
+  **0** today (`TenderPage.vue` has 1). Prompts 08 and 10. **Confirmed 2026-09-01 by
+  measuring the whole module**: these are the only two tender files whose root sits outside
+  the shell, and `RfqPrint.vue` also has no `ds-*`, no layer tokens and no print rules to
+  inherit — see prompt 08's S1, where the ancestor is one of two drawn answers rather than
+  a foregone conclusion.
 - **Four dead files are out of scope and must not be prettified**: `TenderCrmWrapper`,
   `TenderExecutionFlow`, `TenderExecutiveKpis`, `TenderTrendChart` — measured **0**
   JS/Vue imports each, but **1–2 Python references** apiece across three test modules
