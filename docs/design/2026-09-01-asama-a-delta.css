@@ -1,0 +1,306 @@
+/* ============================================================================
+ * Aşama A · Mikas Tender — bileşen dili CSS DELTASI
+ * ----------------------------------------------------------------------------
+ * ÖNERİ. Bu dosya HENÜZ UYGULANMADI ve `stabler-modernist.css`'e eklenmedi.
+ * Gerekçesi, alternatifleri ve 16 kabul ölçütü:
+ *   docs/design/2026-09-01-asama-a-tender-bilesen-dili.md  (§3 · TEK CSS DELTASI)
+ *
+ * Kapsam: 43 kural · 2 yeni ds-* sınıfı · 2 yeni token. Hepsi `.stbl-ds` altına
+ * scope'lu — katmanın kendi yasağı (dışına kural yazılmaz) korunuyor.
+ *
+ * Uygulanmadan önce Zafar'ın §10'daki dokuz kararı gerekiyor; ikisi doğrudan bu
+ * deltayı etkiliyor (şerit varsayılanı ve aria-invalid köprüsü).
+ * ========================================================================== */
+
+/* ══ A · MEVCUT İKİ SEÇİCİ DEĞİŞİR — css:427 ve css:429 YERİNE ═══════════════
+ * `:hover` devre dışı bir <button>'da da eşleşiyor, ve aşağıdaki
+ * `.ds-btn:disabled` bu iki kuralla AYNI özgüllükte (0-3-0). Koruma olmadan
+ * doğruluk kural sırasına kalır — katmanın kendi yazılı ilkesi bunu yasaklıyor
+ * (css:160: "doğruluğu kural SIRASINA bağlayan örtük bir bağımlılık olurdu").
+ * Deponun kendi kalıbı: TenderCrm.vue:900 `.crm-dw-del:hover:not(:disabled)`.
+ * Değerler DEĞİŞMİYOR — yalnız koruma ekleniyor.
+ * ------------------------------------------------------------------------- */
+.stbl-ds .ds-btn:hover:not(:disabled):not([aria-disabled="true"])          { background: #f4f6f9; }
+.stbl-ds .ds-btn--primary:hover:not(:disabled):not([aria-disabled="true"]) { background: #1b5ca8; }
+/* ↺ `[aria-disabled]` sürüm 1'de KORUMASIZDI: blok B iki seçici yazıyor
+ * (`:disabled` VE `[aria-disabled="true"]`), koruma yalnız birine konmuştu.
+ * `:not(:disabled)` bir aria-disabled düğmeyi dışlamaz — o gerçekten
+ * `:disabled` değildir. Bugün kullanım 0 (ölçüldü), yani gizli bir kusurdu;
+ * ama sözlüğü bu belge yazdı, kusuru da bu belge kapatır. */
+
+/* ══ B · DEVRE DIŞI EKSENİ · kurul ACCEPTANCE #8 ════════ ekleme yeri: css:430 sonrası
+ * Ölçüldü: katmanda `disabled` İKİ kez geçiyor, ikisi de köprüde (css:930-931,
+ * .form-control/.form-select). `.ds-btn` arka planını (#fff) ve rengini
+ * (var(--ds-tx)) AÇIKÇA yazdığı için tarayıcının kendi grileştirmesi de
+ * devreye giremez: `.ds-btn--primary[disabled]` bugün etkin hâliyle piksel
+ * piksel aynı. Bugünkü `btn btn-primary`'de Tabler'ın opaklığı hayattaydı —
+ * yani göç bunu kapatmazsa GERİLEME getirir.
+ *
+ * Katmanın kendi kuralı (css:83-84): renk tek başına bilgi taşımaz.
+ *
+ * ↺ SÜRÜM 1 "ÜÇ KOD, ÜÇÜ DE YAZILIYOR" DİYORDU. ÖLÇÜLDÜ, İKİSİ TAŞIYOR:
+ *   RENK  (taşıyıcı)      → metin --ds-tx3'e iner: 14.9:1 → 2.71:1, büyük bir
+ *                           parlaklık sıçraması. --primary'de mavi dolgu KALKAR
+ *                           (gerçek bir sıçrama). Dolgunun kaybı bu sistemde
+ *                           anlamlıdır: css:80 `--ds-ink: sidebar / dolu alan`;
+ *                           ds-fill, ds-seg[aria-pressed], ds-step[aria-current]
+ *                           hep dolguyla konuşuyor.
+ *   ETİKET (taşıyıcı)     → SEBEP yazılır: yanında `.ds-field-hint`, veya düğmede
+ *                           `:title` / `aria-describedby`. Ölçüldü: 12 devre dışı
+ *                           ds-btn'in 9'unda bugün YOK (gerekçeli 3, sürüm 1 "4"
+ *                           diyordu — PartyTransactions:325'in :title'ı koşulsuz
+ *                           bir açıklama). K7 bunu zorunlu kılıyor.
+ *                           Canlı emsal: SourcingWorkspace.vue:995-1000 (ti-lock),
+ *                           QuotationEntryDrawer.vue:332 (:title).
+ *   BİÇİM (DESTEKLEYİCİ)  → kenar KESİKLİ. Sürüm 1 bunu `--ds-ln` ile yazıyordu:
+ *                           ÖLÇÜLDÜ, kendi dolgusuna karşı 1.19:1 — görünmeyen bir
+ *                           çizginin kesikliliği bir kod DEĞİLDİR. Kenar --ds-tx3'e
+ *                           taşındı: 2.71:1, etkin kenarın (--ds-ln2, 1.52:1)
+ *                           1.78 katı. HÂLÂ 1.4.11'in 3:1'ini GEÇMİYOR ve bu
+ *                           bilerek yazılı — bu kod DESTEKLEYİCİDİR, taşıyıcı
+ *                           değil. Kurul ACCEPTANCE #8 "en az ikisi" istiyor;
+ *                           RENK + ETİKET onu karşılıyor. 3:1'i geçen tek aday
+ *                           --ds-tx2 (4.55:1) REDDEDİLDİ: devre dışı bir düğmenin
+ *                           kenarını etkin düğmeninkinden üç kat koyu yapardı,
+ *                           yani "devre dışı geri çekilir" ilkesinin tersi. (D9)
+ * ------------------------------------------------------------------------- */
+.stbl-ds .ds-btn:disabled,
+.stbl-ds .ds-btn[aria-disabled="true"] {
+  background: var(--ds-bg); color: var(--ds-tx3);
+  border-color: var(--ds-tx3); border-style: dashed;
+  cursor: not-allowed;
+}
+/* Köprüdeki .form-control:disabled'ın (css:930-931) AYNASI — kesikli kenar
+ * eklenmiyor: bir girdi zaten kenarını taşıyor, ve iki bildirim köprüyle
+ * birebir aynı kalırsa iki katman aynı satırda yan yana ayırt edilemez. */
+.stbl-ds .ds-input:disabled { background: var(--ds-bg); color: var(--ds-tx3); }
+
+/* ══ C · KONTROL BOYUTU ═════════════════════════════════ ekleme yeri: css:430 sonrası
+ * 34px köprünün .btn-sm/.btn-icon uzlaşısı (css:956, 961) — iki katman aynı
+ * satırda yan yana durursa yükseklikleri tutsun diye. 40px `.ds-btn`'in kendi
+ * min-height'ı (css:424). `gap: 5px` icat DEĞİL, SAYILDI: beş yerel yeniden
+ * icadın üçü aynı değere varmış (PartyTransactions.vue:733, PartyList.vue:399,
+ * PartyCenter.vue:1314). `.ds-btn`'in 7px'i 40px'lik düğme için.
+ * İki ayrı ikon kuralı, çünkü tek kural min-height:40px'i yürürlükte bırakıp
+ * 34×40 DİKDÖRTGEN üretiyordu.
+ * ------------------------------------------------------------------------- */
+.stbl-ds .ds-btn[data-size="sm"]                { min-height: 34px; padding: 6px 12px; font-size: 12.5px; gap: 5px; }
+.stbl-ds .ds-btn[data-icon="1"]                 { width: 40px; padding: 6px; gap: 0; justify-content: center; }
+.stbl-ds .ds-btn[data-size="sm"][data-icon="1"] { width: 34px; }
+
+/* ══ D · GERİ ALINAMAZ AKSİYON ══════════════════════════ ekleme yeri: css:430 sonrası
+ * TenderCrm.vue:895-901'deki yerel `.crm-dw-del`'in genelleştirilmiş hâli;
+ * o iki bildirim oradan SİLİNİR. Ağırlık RENKTEN değil KENARDAN ve BÖLGEDEN
+ * gelir: dolgu --ds-acc'a ayrılmış (tek primary kuralı), ve kırmızı dolgu bir
+ * onayı "hata" gibi gösterirdi. Üçüncü kod için ayrı kural YOK — düğmenin
+ * içindeki `.ds-sev` [data-sev] atası üzerinden zaten renklenip kareleniyor
+ * (css:307-314).
+ *
+ * ↺ D8 — SÜRÜM 1'İN EN AĞIR KUSURU BURADAYDI. Bu dört kural (0-3-0) blok B ile
+ * (0-3-0) AYNI özgüllükteydi ve ondan SONRA iniyordu → silahlanmamış
+ * "Approve decision" (varsayılan hâli DEVRE DIŞI, §5.4 parça 4) kırmızı metin +
+ * kırmızı kesikli kenar çiziyordu: etkin hâlinden DAHA alarmlı. Yani sistemin
+ * en görünür devre dışı düğmesi, deltanın devre dışı eksenini geçemiyordu.
+ * Belge tam bu kaskad kusuru için blok A'yı yazıp, aynı korumaya muhtaç dört
+ * kuralı korumasız bırakmıştı. `:not()` argümanı özgüllüğe sayıldığı için
+ * korunmuş kurallar 0-5-0 olur ve blok B'yi (0-3-0) sırasından bağımsız yener.
+ * ------------------------------------------------------------------------- */
+.stbl-ds .ds-btn--commit:not(:disabled):not([aria-disabled="true"])                   { border-width: 2px; border-color: var(--ds-ink); color: var(--ds-tx); }
+.stbl-ds .ds-btn--commit[data-sev="crit"]:not(:disabled):not([aria-disabled="true"])  { border-color: var(--ds-crit);  color: var(--ds-crit-tx); }
+.stbl-ds .ds-btn--commit[data-sev="today"]:not(:disabled):not([aria-disabled="true"]) { border-color: var(--ds-today); color: var(--ds-today-tx); }
+/* Kenar KALINLIĞI devre dışıyken de korunur — 2px commit'in kimliği, ve blok B
+ * border-width yazmıyor. Yani silahlanmamış commit düğmesi: 2px KESİKLİ gri
+ * kenar + gri metin. Etkin hâlinden hem sessiz hem hâlâ "ağır". */
+.stbl-ds .ds-btn--commit:disabled,
+.stbl-ds .ds-btn--commit[aria-disabled="true"] { border-width: 2px; }
+.stbl-ds .ds-btn--commit[data-armed="1"]:hover:not(:disabled) { background: var(--ds-acc-tint); }
+
+/* ══ E · COMMIT BÖLGESİ ═════════════════════════════════ ekleme yeri: css:576 sonrası
+ * Yeni kutu değil: `.ds-form-section`'ın (css:568) varyantı. Commit bloğu bir
+ * form bölümüdür — içinde bir silahlama kutusu ve bir sonuç özeti var.
+ * ------------------------------------------------------------------------- */
+.stbl-ds .ds-form-section[data-commit="1"] { border: 2px solid var(--ds-ink); }
+.stbl-ds .ds-form-section[data-commit="1"] .ds-form-section-head { background: var(--ds-acc-tint); }
+
+/* ══ F · BOŞ HÂLİN İKİNCİ DÜZEYİ ve FORM HATA ÖZETİ ═════ ekleme yeri: css:445 sonrası
+ * `.ds-empty` 42px dikey dolgu (css:444); `.ds-col` 268px (css:370) ve kart
+ * 13px dolgu (css:378) — kulvarda karttan uzun bir boşluk kutusu çıkıyor.
+ * ↺ SÜRÜM 1 "İKİ bağımsız dosya bu değeri zaten ezmiş" diyordu; ÖLÇÜLDÜ, BİR:
+ * PartyTransactions.vue (`ds-empty pc-empty`, :340 ve :584). TenderCrm.vue:789
+ * `class="crm-col-empty ds-mono"` taşıyor — `ds-empty` YOK, yani bir ezme değil.
+ * Karar ayakta (268px kulvarda 42+42px dolgu ölçülü bir kusur), ama gerekçe
+ * "iki bağımsız emsal" değil, TEK emsal + kulvar geometrisinin kendisi.
+ *
+ * ↺ [data-tone="crit"] — SÜRÜM 1 BUNU YALNIZ RENKLE YAZIYORDU. Kullanıcı için
+ * boş kutu ile hata kutusu arasındaki tek fark metin rengi (gri → koyu kırmızı)
+ * ve hizalamaydı. Brief §5.2: "Yalnız renkle ayırt edilen HER durum blocker'dır."
+ * `role="alert"` ekran okuyucuyu kurtarır, GÖZÜ kurtarmaz. Katmanın kendi hata
+ * dili aynı dosyada tanımlı ve bu belge onu §6.5'te "sıfır yeni CSS" diye
+ * övüyordu: css:1013 `.alert { border: 1px solid; border-left-width: 3px }`.
+ * Aynı 3px sol çizgi buraya da yazılır — bir bildirim, ikinci kod. (İ7)
+ * ------------------------------------------------------------------------- */
+.stbl-ds .ds-empty[data-size="sm"]   { padding: 16px var(--ds-pad); font-size: 12.5px; }
+.stbl-ds .ds-empty[data-tone="crit"] { color: var(--ds-crit-tx); text-align: left;
+                                       border-left: 3px solid var(--ds-crit); }
+
+/* ══ G · TABLO DIŞI ve ALAN İÇİ YÜKLEME ═════════════════ ekleme yeri: css:449 sonrası
+ * `SkeletonRows`'un kökü <tbody> (SkeletonRows.vue:10) → <table> dışında
+ * ÖKSÜZ kalıyor. Ölçüldü: tender'ın 16 kullanımının 8'i öksüz, 8'i iç içe,
+ * 0'ı doğru. `.ds-skel` (css:446) background/animation/height:13px veriyor;
+ * margin, gap, width YOK — art arda konan N çubuk tek bir 13N piksellik blok
+ * gibi okunur. Tek canlı tüketicisi bu yüzden kendi yerel sınıfını yazmak
+ * zorunda kalmış: PartyCenter.vue:916 `class="ds-skel pc-chart-skel"`.
+ * Alan içi: 13px'lik iskelet 44px'lik `.ds-input`'un (css:438) yerine konunca
+ * yükleme bitince sayfa alan başına 31px zıplıyor.
+ * ------------------------------------------------------------------------- */
+.stbl-ds .ds-skel-stack { display: flex; flex-direction: column; gap: 10px; padding: var(--ds-pad); }
+.stbl-ds .ds-skel-stack .ds-skel:nth-child(2n) { width: 78%; }
+.stbl-ds .ds-skel-stack .ds-skel:nth-child(3n) { width: 61%; }
+.stbl-ds .ds-field .ds-skel { height: 44px; }
+
+/* ══ H · TABLO SATIR VURGUSU ════════════════════════════ ekleme yeri: css:403 sonrası
+ * Bootstrap'ın .table-success/.table-primary'si `.table` sınıfına bağlı ve
+ * `.ds-table`'da ÇALIŞMIYOR (ölçüldü: ds-table `.table` taşımıyor). Değerler
+ * `.ds-row--lead`'den (css:327-332).
+ * Öznitelik `data-sev`, `data-state` DEĞİL: ikincisi `ds-sla`'da (css:867-875)
+ * beş değerle DOLU. Ve [data-sev] ataya konunca satırdaki `.ds-sev` çocukları
+ * kendiliğinden renkleniyor (css:307-314) — bedava kazanç.
+ * `ok` tonu YAZILMIYOR: `--ds-ok-t` token'ı yok (ölçüldü: 0).
+ * `tbody tr:hover` (css:396) ile aynı özgüllükte → ONDAN SONRA gelmeli.
+ * :hover ton başına AÇIK yazılıyor; `background: inherit` <tbody>'nin
+ * (genelde transparent) zeminini alır ve satırın kendi tonunu geri
+ * getirmeyebilir — tarayıcı olmadan doğrulanamaz bir varsayım.
+ * Renk TEK BAŞINA bilgi taşımaz: satırdaki `ds-chip[data-tone]` kelimeyi ve
+ * şekli taşır; bu kural yalnız gözü satırda tutar.
+ * ------------------------------------------------------------------------- */
+.stbl-ds .ds-table tbody tr[data-sev="crit"]  { box-shadow: inset 3px 0 0 0 var(--ds-crit);  background: var(--ds-crit-t); }
+.stbl-ds .ds-table tbody tr[data-sev="today"] { box-shadow: inset 3px 0 0 0 var(--ds-today); background: var(--ds-today-t); }
+.stbl-ds .ds-table tbody tr[data-sev="soon"]  { box-shadow: inset 3px 0 0 0 var(--ds-soon);  background: var(--ds-soon-t); }
+/* ↺ `info` satırı ZEMİN ALMAZ. Ölçüldü: --ds-soon-t (#eef2f7) ile --ds-info-t
+ * (#eef0f3) arasındaki kontrast 1.02:1 — dört ton zemini görsel olarak ÜÇ.
+ * Ayrımı taşıyan şey sol çubuğun rengi (#8b95a5 ↔ #206bc4), zemin değil; o
+ * yüzden yalan söyleyen bildirimi yazmıyoruz. */
+.stbl-ds .ds-table tbody tr[data-sev="info"]  { box-shadow: inset 3px 0 0 0 var(--ds-info); }
+.stbl-ds .ds-table tbody tr[data-sev="crit"]:hover  { background: var(--ds-crit-t); }
+.stbl-ds .ds-table tbody tr[data-sev="today"]:hover { background: var(--ds-today-t); }
+.stbl-ds .ds-table tbody tr[data-sev="soon"]:hover  { background: var(--ds-soon-t); }
+
+/* ══ I · KANBAN KULVAR BAŞLIĞI · ACİLİYET ÇUBUĞU ════════ ekleme yeri: css:377 sonrası
+ * `.ds-col-head` üst kenarı sabit gri (css:373, `border-top: 3px solid
+ * var(--ds-ln2)`); TenderCrm.vue:**454** (455 DEĞİL — 455 `ds-col-n` span'i) onu
+ * satır-içi :style ile eziyor. ↺ SÜRÜM 1 ikinci bir emsal sayıyordu
+ * (DeclarantQueue.vue:210) — ÖLÇÜLDÜ, o bir Bootstrap `card-header`, dosyada
+ * `ds-col-head` HİÇ YOK ve dosya zaten sıfır-`ds-*` on yediden biri. Emsal BİR.
+ *
+ * ↺ Değerler `.ds-kpi[data-sev]`den (css:250-257). SÜRÜM 1 "BİREBİR" diyordu ve
+ * BEŞ kural yazıyordu; ölçüldü, `.ds-kpi[data-sev]` DÖRT değer taşıyor:
+ * crit, today, soon, ok. `info` YOK. Beşinci kural kopya değil İCATtı, ve
+ * ADR-303'ün ispat yükünü karşılamıyordu → SİLİNDİ. Bir kulvar başlığı
+ * "bilgilendirme" aciliyeti taşımaz; taşıması gerekirse gerekçesi ekran
+ * şartnamesinde yazılır.
+ *
+ * Bu ACİLİYET taşır (bu aşamada ne kadar acil iş var), DURUM değil;
+ * kaydın durumu StatusBadge + STATUS_MAP'ten gelir. İkisi farklı nesne.
+ * UYARI: tek canlı tüketici satır-içi `:style` taşıdığı için bu blok, o stil
+ * kaldırılana kadar (§3.5-T7) HİÇBİR ŞEY YAPMAZ.
+ * ------------------------------------------------------------------------- */
+.stbl-ds .ds-col-head[data-sev="crit"]  { border-top-color: var(--ds-crit); }
+.stbl-ds .ds-col-head[data-sev="today"] { border-top-color: var(--ds-today); }
+.stbl-ds .ds-col-head[data-sev="soon"]  { border-top-color: var(--ds-soon); }
+.stbl-ds .ds-col-head[data-sev="ok"]    { border-top-color: var(--ds-ok); }
+
+/* ══ J · KÖPRÜ · ONAY KUTUSU ve GEÇERSİZLİK ═════════════ ekleme yeri: css:944 sonrası
+ * Kare-köşe sıfırlaması (css:136-138) `.form-check-input`'u LİSTELEMİYOR →
+ * --ds-radius:0 geometrisi içindeki tek yuvarlak kontrol o kalıyor. Mekanizma
+ * .form-control/.badge/.alert ile AYNI (css:894-908): bileşene dokunulmuyor,
+ * yalnız .stbl-ds altında yeniden giydiriliyor. Yeni sınıf adı: 0.
+ * `form-switch` YENİ İŞARETLEMEDE KULLANILMAZ — switch "anında etkili ayar" der;
+ * politika istisnası formla gönderilen bir alandır. Ayrıca border-radius: 2rem
+ * --ds-radius: 0 ile doğrudan çelişir.
+ *
+ * ↺ D11 — SÜRÜM 1 SEÇİCİYİ ÇIPLAK YAZIYORDU ve iki kusuru vardı:
+ *  (1) Tender'da 3 CANLI `form-switch` var (SourcingWorkspace:928,
+ *      TenderDocuments:70, PoControlBoard:708 — sürüm 1 katmanı ölçüp "0"
+ *      demişti). `border-radius: 0` üçünü de "kayan kare"ye çevirirdi:
+ *      tasarlanmamış bir kontrol, ve göç maddesi hiçbir listede yoktu.
+ *      Bir kontrolü yasaklayıp aynı anda kimse taşımadan bozmak kabul edilemez.
+ *  (2) Bootstrap'ın `.form-switch .form-check-input { border-radius: 2em }`
+ *      özgüllüğü (0-2-0) ile çıplak seçicininki (0-2-0) BERABERE; doğruluk
+ *      yükleme sırasına kalıyordu — blok A'da alıntılanan css:160 ilkesinin
+ *      tam ihlali. Katmanın kendi köşe sıfırlaması bu yüzden `!important`
+ *      kullanıyor (css:138).
+ * Çözüm ikisini birden kapatıyor: switch seçiciden AÇIKÇA dışlanıyor, ve
+ * yarıçap sıfırlaması katmanın kendi !important'lı listesine ekleniyor.
+ * Üç switch'in `form-check`'e göçü B-16.
+ *
+ * aria-invalid köprüsü: `.ds-input[aria-invalid]` VAR (css:591) ama
+ * MoneyInput (inputClass = "form-control text-end font-monospace", :157-161) ve
+ * DateInput (textClass = "form-control", :92-96) `form-control` üretiyor ve
+ * onlara `ds-input` eklenemiyor. Köprüde `.is-invalid` kuralı da 0 (ölçüldü).
+ * ------------------------------------------------------------------------- */
+/* Yarıçap: katmanın mevcut kare-köşe listesine (css:136-138, !important'lı)
+ * `.form-check:not(.form-switch) .form-check-input` eklenir. Ayrı bir kural
+ * değil, mevcut seçici listesine bir üye. */
+.stbl-ds .form-check:not(.form-switch) .form-check-input { border-color: var(--ds-ln2); box-shadow: none; }
+.stbl-ds .form-check-input:checked { background-color: var(--ds-acc); border-color: var(--ds-acc); }
+.stbl-ds .form-check-input:focus   { border-color: var(--ds-acc); box-shadow: none;
+                                     outline: 2px solid var(--ds-acc); outline-offset: 1px; }
+.stbl-ds .form-control[aria-invalid="true"],
+.stbl-ds .form-select[aria-invalid="true"]  { border-color: var(--ds-crit); }
+
+/* ══ L · METİN TOKEN'I OLMAYAN İKİ SEVERITY TONU ════════ ekleme yeri: css:79 ve css:417
+ * ↺ Bu blok sürüm 1'de YOKTU ve brief §5.2'nin "pazarlık dışı" ikinci kısıtının
+ * ölçülmüş ihlaliydi: "metin rengi ile dolgu/kenar rengi AYRI token'lardır…
+ * parlak severity rengini gövde metnine uygulama."
+ * Ölçüldü: `--ds-*-tx` ailesinin TAMAMI iki üye — `--ds-crit-tx`, `--ds-today-tx`.
+ * `ok` ve `soon` metinlerinde DOLGU token'ı kullanılıyor:
+ *     ds-chip[data-tone="ok"]   color: var(--ds-ok)   / #e8f7ea  →  2.47:1  ✘
+ *     ds-sev[data-sev="info"]   color: var(--ds-info) / beyaz    →  3.03:1  ✘
+ *     ds-chip[data-tone="soon"] color: var(--ds-soon) / #eef2f7  →  4.72:1  ✔ kontrast
+ * İlk ikisi 10–10.5px metin için 4.5:1 eşiğinin ALTINDA. Ve bu kusur sürüm 1'in
+ * kendi işine yansıyordu: §5.5(a) bugün `badge bg-green` olan "Cheapest
+ * Delivered"ı ds-chip[data-tone="ok"] yapıyordu — yani göç, uyumlu bir Tabler
+ * rozetini alıp 2.47:1'lik bir çipe taşıyordu.
+ * `--ds-soon-tx` YAZILMIYOR (D10): kontrastı geçiyor, yalnız token ayrımı
+ * kuralını çiğniyor; görsel değişiklik üretmeyen bir yeniden adlandırma bu
+ * deltanın işi değil → B-18.
+ * Yayılma yarıçapı ölçüldü: ds-chip[data-tone="ok"] 3 canlı site
+ * (TenderCrm:691, Suppliers:646, Suppliers:702), ds-sev 7 dosya. Değişiklik
+ * GÖRÜNÜRDÜR ve istenen etkidir.
+ * ------------------------------------------------------------------------- */
+/* token tanımları — .stbl-ds bloğuna, --ds-ok'un yanına */
+/*   --ds-ok-tx:   #1c7430;   ← #e8f7ea üstünde 5.27:1 (ölçüldü)              */
+/*   --ds-info-tx: #5b6675;   ← beyaz üstünde 5.83:1 (ölçüldü)                */
+.stbl-ds .ds-chip[data-tone="ok"]      { color: var(--ds-ok-tx); }   /* border/background DEĞİŞMİYOR */
+.stbl-ds [data-sev="info"] .ds-sev span { color: var(--ds-info-tx); } /* noktalı kare --ds-info kalıyor */
+
+/* ══ K · MEVCUT ÜÇ KURALA BİRER BİLDİRİM ════════════════════════════════════
+ * Üçünün de yayılma yarıçapı ölçüldü; üçü de sıfır regresyon.
+ * ------------------------------------------------------------------------- */
+
+/* css:582 — `.ds-field`'in TEK özelliği `min-width: 0` idi; `display` yok.
+ * Bir <label> varsayılan `inline` olduğu için ds-field normal akışta
+ * ÇALIŞMIYOR. Yayılma ölçüldü: 3 site / 2 dosya — Login.vue:176,198 zaten
+ * <div> (blok), TenderCrm.vue:390 bir `ds-actions` flex item'ı (flex item'da
+ * display:block düzeni değiştirmez). Bir kural yerine kuralı GEREKSİZ kılan
+ * bir bildirim (form §2.1'in vaat edip §6'da teslim etmediği satır). */
+.stbl-ds .ds-field { display: block; min-width: 0; }
+
+/* css:657 — `.ds-drawer-head` `justify-content` TAŞIMIYOR (ölçüldü). İki canlı
+ * tüketici ona iki farklı yerel cevap vermiş: TenderCrm `.crm-dw-head{flex:1}`,
+ * QuotationEntryDrawer çıplak <div>. Üçüncü tüketiciyi (çekmece) aynı deliğe
+ * göndermek, aynı hatayı üçüncü kez yazdırmaktır. `tgm-*`'in katmana taşınan
+ * TEK değeri budur. */
+.stbl-ds .ds-drawer-head { /* mevcut bildirimler + */ justify-content: space-between; }
+
+/* css:569 — `justify-content: space-between` zaten VAR; eksik olan yalnız
+ * `flex-wrap`. 3.75× çeviri uzamasında başlık + sağ yuva sıkışıyor.
+ * `ds-drawer-foot` (css:671) ve `ds-cut-add` (css:792) aynı sorunu zaten
+ * `flex-wrap: wrap` ile çözmüş.
+ * ↺ SÜRÜM 1 "Mevcut tüketici 0 → sıfır regresyon" diyordu. ÖLÇÜLDÜ: İKİ
+ * tüketici — SalesOrderFormModern.vue:1108 ve :1241. Üstelik belge o dosyanın
+ * BİR SATIR AŞAĞISINI (§2 sıra 10) bölüm numarası emsali diye alıntılıyordu,
+ * yani satırları okumuş, `-head`'i saymamıştı. Etki: dar ekranda sağ yuva
+ * ikinci satıra iner. Şiddet düşük, ama "sıfır regresyon" YANLIŞ. */
+.stbl-ds .ds-form-section-head { /* mevcut bildirimler + */ flex-wrap: wrap; }
+python3 -m unittest stabler.tests.test_design_layer_contract.TestScopeIsolation
