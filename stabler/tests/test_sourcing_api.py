@@ -952,6 +952,20 @@ class TestRfqPrint(unittest.TestCase):
 		self.assertEqual(res["company_abbr"], "ACME")
 		self.assertEqual(len(res["items"]), 1)
 
+	def test_the_letter_does_not_carry_our_own_ceiling_price(self):
+		"""`get_rfq` joins the intake estimate on purpose — the officer reading
+		the RFQ detail should see the tender's own expectation beside the ask,
+		and the test above pins that. `rfq_print` is built on `get_rfq`, so the
+		same figure rode into the payload of the one screen whose entire purpose
+		is to be turned toward the vendor being asked to beat it. The letter is
+		handed over; the ceiling is not part of it."""
+		detail = self.api.get_rfq("RFQ-1", company="ACME")
+		self.assertEqual(detail["items"][0]["target_rate"], 2.5, "the detail must keep it")
+
+		letter = self.api.rfq_print("RFQ-1", company="ACME")
+		for line in letter["items"]:
+			self.assertNotIn("target_rate", line)
+
 	def test_rejects_an_rfq_of_another_company(self):
 		with self.assertRaises(PermissionError):
 			self.api.rfq_print("RFQ-OTHER-COMPANY", company="ACME")

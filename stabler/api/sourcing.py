@@ -912,6 +912,14 @@ def rfq_print(name, company=None):
 	selected_company = _assert_company_scope(company)
 	_rfq_doc_scope(name, selected_company)
 	base = get_rfq(name, company)
+	# `get_rfq` joins the intake's estimate so the officer reading the RFQ sees
+	# the tender's own expectation beside the ask. THIS payload is the letter the
+	# supplier is handed — our ceiling is not part of what we hand the vendor we
+	# are asking to come in under it.
+	base["items"] = [
+		{key: value for key, value in line.items() if key != "target_rate"}
+		for line in (base.get("items") or [])
+	]
 	company_doc = frappe.get_doc("Company", selected_company)
 	return {
 		**base,
