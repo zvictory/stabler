@@ -2101,8 +2101,15 @@ kalıp, ayrı iş.
 Dürüstlük listesi. Bunlar bu belgenin **zayıf** yerleri ve uygulayıcı bunları bilerek
 başlamalı.
 
-- **Hiçbir tarayıcı render'ı, hiçbir ekran görüntüsü yok.** Bütün kaskad ve özgüllük
-  akıl yürütmesi CSS **kaynağından**; `getComputedStyle` ile teyit **edilmedi**. Bu
+- **↺ Bir tarayıcı render'ı yapıldı — tam olarak bir soru için.** 10.9 uygulanırken
+  `getComputedStyle` + ekran görüntüsü ile ölçülen tek şey, `MoneyInput`'un
+  `.input-group`'unda bir `rounded-*` yardımcı sınıfının sarmalayıcıda mı kontrolde mi
+  durduğuydu (CDN'den gerçek Tabler `1.0.0-beta20`, `www/stabler.html:1`). Sonuç bir
+  regresyonu yakaladı ve `7df361d`'de düzeltildi. **Bu tek ölçüm aşağıdaki maddeyi
+  geçersiz kılmıyor** — belgenin geri kalanındaki kaskad akıl yürütmesi hâlâ
+  kaynaktan, ve yöntemin işe yaradığını göstermesi onu daha da borçlu kılıyor.
+- **Ekran düzeyinde hiçbir tarayıcı render'ı, hiçbir ekran görüntüsü yok.** Bütün kaskad
+  ve özgüllük akıl yürütmesi CSS **kaynağından**; `getComputedStyle` ile teyit **edilmedi**. Bu
   özellikle şunları etkiler: `.ds-btn:disabled` ile `.ds-btn--primary:hover`'ın aynı
   özgüllükte olduğu (0-3-0 elle sayıldı), ve köprünün Tabler ton varyantlarını düşürdüğü
   iddiası.
