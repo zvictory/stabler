@@ -526,6 +526,21 @@ def _read_deal_intake_items(doc) -> list[dict]:
 	return read_intake_items(doc)
 
 
+def _read_deal_intake_currency(doc) -> str:
+	"""The unit the tender's own estimate was written in.
+
+	The intake states its own currency — an import tender is routinely
+	estimated in USD while the company keeps its books in UZS — and the item
+	lines carry only a bare `rate`. Reading the company's default currency
+	instead would put a confident wrong label on the number, which is worse on
+	screen than leaving it unlabelled. An intake captured before the drawer had
+	the field reads as unknown, and says so.
+	"""
+	from stabler.api._tender_intake_items import parse_intake
+
+	return str(parse_intake(doc.get("custom_tender_intake")).get("currency") or "").strip()[:8]
+
+
 @frappe.whitelist()
 def get_deal_rfq_defaults(deal, company=None):
 	"""Return company-scoped default items and suppliers for a tender deal lot.
@@ -833,10 +848,12 @@ def get_rfq(name, company=None):
 	deal = doc.get(_RFQ_DEAL_FIELD) or ""
 	deal_label = deal
 	intake_items = []
+	target_currency = ""
 	if deal:
 		deal_doc = frappe.get_doc("CRM Deal", deal)
 		deal_label = deal_doc.get("organization") or deal_doc.get("lead_name") or deal
 		intake_items = _read_deal_intake_items(deal_doc)
+		target_currency = _read_deal_intake_currency(deal_doc)
 	target_rate = {line["item_code"]: line["rate"] for line in intake_items}
 
 	quotations: dict[str, list[str]] = {}
@@ -888,6 +905,9 @@ def get_rfq(name, company=None):
 		"docstatus": int(doc.docstatus or 0),
 		"transaction_date": str(doc.transaction_date or ""),
 		"schedule_date": str(doc.schedule_date or ""),
+		# The unit `target_rate` below is written in. Empty means the intake never
+		# stated one — unknown, not "the company's".
+		"target_currency": target_currency,
 		"suppliers": suppliers,
 		"items": [
 			{
@@ -920,6 +940,9 @@ def rfq_print(name, company=None):
 		{key: value for key, value in line.items() if key != "target_rate"}
 		for line in (base.get("items") or [])
 	]
+	# The unit travels with the figure or not at all — the currency alone still
+	# tells the supplier which market we priced this in.
+	base.pop("target_currency", None)
 	company_doc = frappe.get_doc("Company", selected_company)
 	return {
 		**base,

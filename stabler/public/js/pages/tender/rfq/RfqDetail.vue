@@ -62,7 +62,15 @@ useAutoRefresh(load);
 const respondedCount = computed(() => (rfq.value?.suppliers || []).filter((s) => s.responded).length);
 
 function fmtRate(v) {
-	return formatMoney(v, "", user.value.language);
+	// The rate is the tender INTAKE's estimate, written in the intake's own
+	// currency — routinely USD while the company's books are UZS. Passing "" here
+	// made Intl throw (an empty string is no ISO code) and fell through to a bare
+	// `toFixed(2)`, so a nine-digit figure printed ungrouped, unlabelled and
+	// identical in all four languages. Guessing the company's currency instead
+	// would only replace an unformatted number with a confidently mislabelled one.
+	const currency = rfq.value?.target_currency || "";
+	if (!currency) return "—";
+	return formatMoney(v, currency, user.value.language);
 }
 
 function openLot(deal) {
