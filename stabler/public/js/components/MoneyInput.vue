@@ -40,6 +40,15 @@ const props = defineProps({
 
 const emit = defineEmits(["update:modelValue", "blur", "focus"]);
 
+// The root is a <div class="input-group"> on every branch that shows a currency,
+// so Vue's automatic fallthrough put a caller's `aria-invalid` on the GROUP, where
+// `.stbl-ds .form-control[aria-invalid="true"]` cannot match it. Turning it off and
+// binding $attrs onto the control is what makes an invalid money field look invalid.
+//
+// Both branches bind it, and that is the point: the same `class="is-invalid"` used
+// to land on the input when no currency was set and on the wrapper when one was.
+defineOptions({ inheritAttrs: false });
+
 const focused = ref(false);
 const display = ref("");
 
@@ -165,6 +174,7 @@ const inputClass = computed(() => {
 <template>
 	<input
 		v-if="hideCurrency || (!currency && !isUZS)"
+		v-bind="$attrs"
 		:id="id || undefined"
 		:data-field="dataField || undefined"
 		type="text"
@@ -181,6 +191,7 @@ const inputClass = computed(() => {
 	<div v-else class="input-group" :class="{ 'input-group-sm': size === 'sm', 'input-group-lg': size === 'lg' }">
 		<span v-if="currency && !isUZS" class="input-group-text text-uppercase small">{{ currency }}</span>
 		<input
+			v-bind="$attrs"
 			:id="id || undefined"
 			:data-field="dataField || undefined"
 			type="text"

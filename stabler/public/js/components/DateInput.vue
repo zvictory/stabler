@@ -17,7 +17,7 @@
  *   - min / max: forwarded to the hidden native input as ISO yyyy-mm-dd so
  *     the calendar constrains the selectable range.
  */
-import { ref, watch, onMounted, computed } from "vue";
+import { ref, watch, onMounted, computed, useAttrs } from "vue";
 import { parseDateInput, formatDate } from "../composables/date.js";
 
 const props = defineProps({
@@ -32,6 +32,26 @@ const props = defineProps({
 });
 
 const emit = defineEmits(["update:modelValue", "blur", "focus"]);
+
+// The root is a <div class="input-group"> wrapping a text field, a calendar button
+// and a hidden native picker, so Vue's automatic fallthrough put a caller's
+// `aria-invalid` on the GROUP — where `.stbl-ds .form-control[aria-invalid="true"]`
+// never matches. Everything a caller passes therefore goes to the text field...
+//
+// ...except `class` and `style`, which stay on the wrapper. Measured 2026-09-01:
+// of 202 call sites, 28 pass a `style` and every one of them is a width sizing the
+// GROUP (`width: 120px`). Moving those onto the input would let the group grow past
+// the width its caller asked for. So this component splits $attrs and MoneyInput
+// does not — the asymmetry is the call sites, not an oversight.
+defineOptions({ inheritAttrs: false });
+
+const attrs = useAttrs();
+const controlAttrs = computed(() => {
+	const rest = { ...attrs };
+	delete rest.class;
+	delete rest.style;
+	return rest;
+});
 
 const display = ref("");
 const nativePicker = ref(null);
@@ -105,8 +125,12 @@ const btnClass = computed(() => {
 </script>
 
 <template>
-	<div class="input-group" :class="{ 'input-group-sm': size === 'sm', 'input-group-lg': size === 'lg' }">
+	<div
+		:class="['input-group', { 'input-group-sm': size === 'sm', 'input-group-lg': size === 'lg' }, $attrs.class]"
+		:style="$attrs.style"
+	>
 		<input
+			v-bind="controlAttrs"
 			:id="id || undefined"
 			type="text"
 			inputmode="numeric"
