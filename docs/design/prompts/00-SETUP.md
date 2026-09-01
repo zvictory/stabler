@@ -57,7 +57,7 @@ because that is where the third dialect lives.
 | 04 | Quotation entry drawer | drawer grammar, second pass |
 | 05–08 | RFQ list · new · detail · print | three inside the layer with no vocabulary; **only the print letter is outside it** |
 | 09 | Document center | the one surface all four roles share — **three scopes: company · tender · lot**, a **library with two-way binding** — and the only screen whose **forbidden state is per row** |
-| 10 | PO control board | post-award; 765 lines, 0 `ds-*` |
+| 10 | PO control board | post-award; **one route, six components, 1,696 lines, 0 `ds-*` in any of them** — the module's money is decided here, and the layer has no tab component |
 | 11–12 | Customs queue · Logistics board | read-only projections; drag-to-advance is forbidden |
 | 13–18 | Operations desk · Director board · Overview · Process flow · My tenders · Contract board | the boards |
 
@@ -82,7 +82,7 @@ put to Zafar with both canvases drawn, and passed on 2026-09-01.
 
 ## What has been drawn — the verification gate
 
-Six canvases exist. The first two **were** the gate the table above stops at: the
+Seven canvases exist. The first two **were** the gate the table above stops at: the
 language was approved on them before the rest were drawn in it.
 
 | # | canvas | artboards | what it settles |
@@ -93,10 +93,11 @@ language was approved on them before the rest were drawn in it.
 | 04 | [Quotation entry drawer](https://claude.ai/code/artifact/16250885-0340-4e6b-a6ca-9421ae5f00d1) | 6 | S3 a failed load is a **state, not a toast** · the module's **reference patterns**, named so the other fourteen can copy them |
 | 05–08 | [RFQ family](https://claude.ai/code/artifact/623be708-1d87-4213-a274-b5670a75d4f3) | 8 | `ds-* = 0` does **not** mean outside the layer · the layer has **zero** `@media print` rules · the demo seed creates **no RFQ at all** · 07's `Mark as sent` writes a record nothing can read back |
 | 09 | [Document center](https://claude.ai/code/artifact/0ac0448d-6295-4657-9d0e-c3d321b19af6) | 9 | **two scopes exist and the product needs three** (S1, added 2026-09-01) · a document center that **cannot take a document** · the write gate is **per row, by role**, and no row shows one · an empty checklist reports **100 % ready** · a **fifth dialect**: two hand-rolled modals |
+| 10 | [PO control board](https://claude.ai/code/artifact/97034dcd-ea7f-481e-a02d-31f1feabdce9) | 8 | the editor's **landed total omits charges it is displaying** (right in the database, wrong on screen) · the layer has **no tab component** · the chain **keys on a link it never renders** and prints a currency that is not the document's · **S6 settles both deferred rulings**: the documents panel becomes one table, `TenderIntake` becomes read-only |
 
 Each canvas carries its own **not chosen** artboards rather than deleting the rejected
 option — the stepped intake on 01, the 542 px drawer on 02, the per-bid conversion on 03,
-both readings of the two denominators on 05. A decision whose alternative has been erased
+both readings of the two denominators on 05, the card grid and the editable intake on 10. A decision whose alternative has been erased
 cannot be re-examined.
 
 **05–08 are one canvas, not four.** Zafar's standing choice is an independent prompt per
@@ -256,6 +257,64 @@ asks instead for the surface that makes the gap legible — K0d–K0k in 09's ac
 table, split into what costs nothing (K0e, K0f), what costs a query (K0g, K0h) and
 what is an admission the design must show rather than hide (K0i, K0j, K0k).
 
+### From 10 — 2026-09-01
+
+**The route is not the screen.** `/tender/po-control` renders **six components and
+1,696 lines**, and none of them uses a single `ds-*` class. The roadmap row said
+"765 lines"; that is the shell.
+
+- **`upload`-shaped naming struck twice in this package.** Screen 09's write endpoint
+  is a bind called `upload_tender_document`. Screen 10's totals sum `l.amount`, a field
+  named as if the client owned it while the **server** is its only writer
+  (`tender.py:319-321`, *"the one chokepoint both reads and writes pass through"*). Both
+  defects are a name promising a thing the code does not do.
+- **The landed total is right in the database and wrong on screen.** `editorCharges`
+  sums `l.amount`; for a foreign-currency line that is `null` when newly added and
+  **stale** when edited, while `convertedPreview(l)` prints the correct figure in the
+  same cell. `saveEditor` was already fixed for exactly this asymmetry — the save filter
+  carries the comment *"Filtering on `amount` alone silently dropped every such line on
+  save"* — and the totals were not. The stored plan is correct; the number the vendor is
+  chosen by is not.
+- **The module's own rule, obeyed at the line and broken at the total.**
+  `tender_landed_math.converted_amount` returns `None` rather than a number when a rate
+  is unusable, because both fallbacks *"read as CHEAP and hand the tender to the wrong
+  vendor"*. The client mirrors it per line. The footer adds the line in as zero.
+- **The layer has no tab component.** `ds-tab` **0**, `nav-tabs` **0** in
+  `stabler-modernist.css`. `TenderWorkspaceTabs` is raw Bootstrap with **one** `aria-`
+  attribute, no keyboard model, and the active tab computed **twice** — once by the
+  parent, once by itself — joined with `||`, so a future divergence renders two active
+  tabs rather than failing.
+- **The finance tab is the module's only role-conditional region done right**: the
+  server omits the `finance` key, the client derives the tab list from its absence, and
+  nothing is hidden by CSS or by a client-side role check. Every other screen in this
+  package hides things worse. Copy it.
+- **`TenderDocumentChain` keys on a link it never renders.** Every receipt and invoice
+  row carries `purchase_order` / `sales_order`; the component uses it in its `:key` and
+  draws three flat lists. It also prints `grand_total` — the document's **own-currency**
+  figure — with the **tender's** currency, while `row.currency` and `base_grand_total`
+  are both sent and unused. Mandate 6, one word away.
+- **After a failed load the screen says "Pick a tender deal"** while the deal is in the
+  picker above it. Three states — never picked · loading · failed — collapse into two
+  empty states, and loading is an `EmptyState` with `icon="ti-loader"`, a fourth
+  spinner-substitute nobody else invented.
+- **Two server refusals the client never prevents**, and one names a hidden field: a
+  customs line cannot carry a currency, and the currency select is `v-if`-ed away for
+  customs while a **type** change does not clear it.
+- **The hand-rolled modal is now three files** (09 has two, 10 has one) — and 10's is
+  `modal-xl`, wider than any drawer the layer defines. 10.6, the z-index question, is
+  reopened and still not settled.
+- **The roadmap has eighteen slots and this route alone holds five surfaces.**
+  `BidPricing.vue` is drawn in prompt 10 because nothing else would ever draw it, and
+  `TenderIntake.vue` only appears because ADR-304 asked. **Whether prompts 11–18 have
+  the same problem is worth checking before they are written.**
+
+**What 10 settles for other prompts:** `TenderDocumentsPanel` and screen 09 become
+**one table** — the panel wins on `FileSlot`, the role and the filter, and loses on
+layout, because a card grid destroys the row-to-row comparison a readiness checklist
+exists for. And **ADR-304** is answered as *read-only intake beside a route to the
+drawer that owns it*, which satisfies "connected or removed" without creating a second
+writer against ADR-201.
+
 ---
 
 ## Decisions taken while writing these prompts — 2026-09-01
@@ -322,12 +381,20 @@ From the council's own output contract, not from the screens:
   number measured from source, turned into tests that **read the `.vue` as text**, never
   mount it. The repo's working pattern is `stabler/public/js/tests/sourcingAwardPanel.spec.js`.
   Measured: 17 specs mention `@vue/test-utils`, **0** call `mount(`.
-- **`RfqPrint.vue` and `BidPricing.vue` must gain a `.stbl-ds` ancestor.** Both measure
-  **0** today (`TenderPage.vue` has 1). Prompts 08 and 10. **Confirmed 2026-09-01 by
-  measuring the whole module**: these are the only two tender files whose root sits outside
-  the shell, and `RfqPrint.vue` also has no `ds-*`, no layer tokens and no print rules to
-  inherit — see prompt 08's S1, where the ancestor is one of two drawn answers rather than
-  a foregone conclusion.
+- **`RfqPrint.vue` must gain a `.stbl-ds` ancestor. `BidPricing.vue` already has one** —
+  and the earlier claim that both lacked it was **wrong. Corrected 2026-09-01 while
+  writing prompt 10.** The measurement counted the string `stbl-ds` *in each file*; what
+  matters is the render tree. `RfqPrint` is a **route component**
+  (`router.js:302`, `/tender/rfq/:name/print`), so its `.print-wrapper` root mounts at
+  the router outlet with nothing above it — genuinely outside, and it also has no `ds-*`,
+  no layer tokens and no print rules to inherit (prompt 08's S1, where the ancestor is
+  one of two drawn answers rather than a foregone conclusion). `BidPricing` has **one
+  call site**, `PoControlBoard.vue:369`, inside `<TenderPage>`'s default slot — and
+  `TenderPage.vue:12` is `<div class="tender-page stbl-ds">`. Slot content renders at the
+  slot's DOM position, so `BidPricing`'s root card **is** a descendant of the layer today.
+  **This is the second time in this package that "the file does not write the class" was
+  read as "the component is not under it"** — the first was `ds-* = 0`, corrected at
+  screen 05. Grep the render tree, not the file.
 - **Four dead files are out of scope and must not be prettified**: `TenderCrmWrapper`,
   `TenderExecutionFlow`, `TenderExecutiveKpis`, `TenderTrendChart` — measured **0**
   JS/Vue imports each, but **1–2 Python references** apiece across three test modules
