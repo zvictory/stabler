@@ -914,3 +914,54 @@ wrong step and nothing on screen corrects them.
 - **Zero `aria-*` and zero `role=` on the whole screen** — the lowest in the module.
 - **Seventh consecutive screen with a state the demo data cannot reach**: `empty`,
   `Within`, `not tracked` and a `none today` bottleneck are all unreachable on the seed.
+
+### From 17 — 2026-09-02
+
+**The module is not a migrated system that drifted. It is six migrated screens and ten
+that were never touched.** Counted across `pages/tender/`:
+
+    TenderCrm 107 · OperationsDesk 79 · TenderFunnel 64 · DirectorBoard 43
+    TenderFlow 34 · TenderOverview 27 · TenderPage 4 · TenderNav 3 · MyTenders 1
+    BidPricing · DeclarantQueue · LogistBoard · PoControlBoard · SourcingWorkspace
+    · TenderDocumentChain · TenderDocuments · TenderDocumentsPanel · TenderIntake
+    · TenderWorkspaceTabs — all 0
+
+**Prompt 13 is corrected.** Its comparison row put `43 · 64 · 34` under *"What 10 / 11 /
+12 have"*; those numbers belong to `DirectorBoard`, `TenderFunnel` and `TenderFlow` —
+prompts **14 / 15 / 16**. Prompts 10, 11 and 12 each state 0 `ds-*` in their own headers
+and were right. The desk's lead was understated, not overstated.
+
+- **`MyTenders.vue` is 125 lines and carries one house token.** It is the smallest
+  member of the unmigrated majority and therefore the cheapest place to prove the
+  migration end to end: five columns, one badge map, one table.
+- **A `badge bg-` grep over the template returns 0 for it anyway**, because the classes
+  are built in a JS map. Prompts 11 and 12 already caught the same trick and counted
+  *"2 `badge bg-` sites over three colour maps"* — the lesson is only that the count has
+  to be taken from the JavaScript as well as the markup.
+- **`EmptyState: 0` on every migrated screen is the migration, not an oversight.**
+  `EmptyState.vue` is Tabler-native; the moved screens replaced it with `.ds-panel-foot`
+  state rows. `MyTenders` is the only screen in 10–17 still using it — and uses a third
+  of it (no `subtitle`, no `tone`, no `actions` slot), which is why a failed load renders
+  *"No tenders match these filters."*
+- **The sourcing window's only two data columns are post-win facts.** `Landed` is
+  `Σ (PO.base_grand_total + charges)` and `PO count` counts purchase orders — both zero
+  until a tender is won. **Eleven of thirteen seeded rows read `0` and `0`**, and those
+  eleven are exactly what a sourcing user is working on. Zafar's pre-win ruling (prompt
+  03) names the number that belongs there instead: the fixed landed estimate entered
+  against each quotation, which `get_quotation_landed` already returns.
+- **Third unread payload key**: `oversight`, after `generated_at` (13) and `stage_sla`
+  (16). The client's own comment explains that a sourcing user sees a subset of the
+  director's number "by design" — and the flag that would let the screen *say* that is
+  on the wire, unread.
+- **The same three purchase orders total two numbers on two screens.** *Total committed*
+  1 640 000 000 on prompt 10 and *Landed* 1 769 000 000 here; the 129 000 000 difference
+  is exactly the customs charges. Both correct, one word apart, reconciled nowhere.
+- **`sourcing_my_tenders` sorts on two keys over an unordered set**, so ten of thirteen
+  rows tie and their order is arbitrary across restarts. Prompt 14's board sorts the same
+  rows on three keys ending in the deal id; `tender_flow` iterates `sorted(deal_names)`.
+- **The funnel has three destinations, not one**: the chevron filters in place or goes to
+  `/tender/portfolio`, seven stage boxes and all five rungs go to `/tender/my-tenders`,
+  and the four execution buckets go to `/tender/board`. Prompt 18 is the third.
+- **Arriving with `?funnel_stage=` issues a second full call to the module's heaviest
+  endpoint**, and on failure the filter degrades to "show all" while the header keeps
+  naming the stage. The filter is also announced before it can be applied.

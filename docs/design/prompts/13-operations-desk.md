@@ -21,7 +21,7 @@ Measured, this file against the module:
 
 | Signal | Operations desk | What 10 / 11 / 12 have |
 |---|---|---|
-| `ds-*` tokens | **79** | 43 · 64 · 34 |
+| `ds-*` tokens | **79** | **0 · 0 · 0** — corrected 2026-09-02 by prompt 17; this row read `43 · 64 · 34`, which are `DirectorBoard`, `TenderFunnel` and `TenderFlow`, i.e. prompts **14 / 15 / 16**. Prompts 10 / 11 / 12 are `PoControlBoard`, `DeclarantQueue` and `LogistBoard`, and each of those files states 0 `ds-*` in its own header |
 | Bootstrap `badge bg-*` | **0** | present in all three |
 | Bare Bootstrap `btn-*` | **0** | present |
 | `spinner-border` | **0** | present |
@@ -31,10 +31,19 @@ Measured, this file against the module:
 | View **and** filter in the URL | **both** | neither (plain refs) |
 | Stale-response guard | **`reqToken`** | none |
 
-`ds-*` ranking across the whole tender module, counted:
+`ds-*` ranking across the whole tender module, counted (corrected and completed
+2026-09-02 by prompt 17 — the earlier version listed only the top of the table and
+omitted that most of the module is at zero):
 
-    TenderCrm 107  >  OperationsDesk 79  >  TenderFunnel 64
-    >  PartyTransactions 46  >  DirectorBoard 43  >  TenderFlow 34
+    TenderCrm 107 · OperationsDesk 79 · TenderFunnel 64 · DirectorBoard 43
+    TenderFlow 34 · TenderOverview 27 · TenderPage 4 · TenderNav 3 · MyTenders 1
+    BidPricing · DeclarantQueue · LogistBoard · PoControlBoard · SourcingWorkspace
+    · TenderDocumentChain · TenderDocuments · TenderDocumentsPanel · TenderIntake
+    · TenderWorkspaceTabs — all 0
+
+**Ten of nineteen tender files carry no house layer at all**, which is the real
+shape of the module: not a migrated system that drifted, but six migrated screens
+and ten that were never touched.
 
 ---
 
