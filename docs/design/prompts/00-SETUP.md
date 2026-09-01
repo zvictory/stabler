@@ -522,8 +522,20 @@ five real ones. The scope of the defect was exactly 10 and 11.
   (*"reads as CHEAP and hands the tender to the wrong vendor"*), reproduced by its own
   demo data.
 
-**The canvases for 10 and 11 were drawn from the replaced tables.** Whether to redraw
-them is Zafar's decision; the prompts are now correct, the artefacts are not.
+**Both canvases were redrawn on 2026-09-02** and republished to their existing URLs, so
+the *not chosen* artboards and the settled rulings survive. 11's board is now four cards
+in one lane, one in another and three drawn as unreachable; its twin artboard no longer
+carries the refuted drift diagnosis. 10's board is one populated lane, and its
+four-line multi-currency plan is now labelled a **constructed case** rather than demo
+data, because the seed cannot produce one.
+
+**And a product ruling from Zafar, 2026-09-02, that bounds prompt 12:** the logistics
+and customs figures are entered directly at the sourcing stage, only to compute the bid
+price — so the surface must stay simple. Confirmed in code: `BidPricing.vue` takes the
+whole import cost as **one field** (`landed_goods`, *"Landed cost (goods + import)"*),
+and the structured per-type charge list lives on the Purchase Order, after award. The
+consequence is written into prompt 12: the four unreachable lanes are **not** a hole to
+fill by designing a freight-booking flow, and the prompt now forbids proposing one.
 
 ---
 

@@ -305,6 +305,24 @@ anything is being planned, but because nothing has been booked. The file's own h
 comment covers this (*"pending files/waiver **or booking needed**"*); the lane label
 does not.
 
+**And before you design around this, the product's own answer, from Zafar, 2026-09-02:**
+*the logistics and customs figures are entered directly at the sourcing stage; they are
+needed only for the calculation, so that we can quote — they determine the tender's
+price — so it has to be something simple.*
+
+That is confirmed in code. `BidPricing.vue` — *"landed cost (buy) + our margin → the
+price WE bid"* — takes the whole import cost as **one field**, `landed_goods`, labelled
+*Landed cost (goods + import)*, with free-form *Other costs* lines beneath it. The
+structured per-type charge list lives on the **Purchase Order**, downstream of award.
+So the numbers that matter commercially are typed once, early, as one figure.
+
+**This bounds the brief.** The four unreachable lanes are not a hole to be filled by
+designing a freight-booking flow — they are machinery for a question the business does
+not ask here. Draw what makes the emptiness legible and stop; do **not** propose a
+Freight Booking creator, a status editor, or any surface whose purpose is to feed those
+four lanes. If the honest conclusion is that a six-lane journey board is more board than
+this product needs, say that — it is a legitimate outcome of this prompt.
+
 **What the design must produce:** a lane header that can say **why** a lane is empty —
 *nothing here* is not the same as *nothing can ever be here on this data* — and a
 stated answer for whether a six-lane board whose middle four are structurally empty
@@ -319,9 +337,10 @@ sits in is reachable by hovering it.** This is the same defect prompt 11 found o
 customs declaration's channel, on a field with more consequence: the channel described
 a row, this one places it.
 
-**And name the question this raises for the product**, without answering it with a
-schema: a Freight Booking is the only thing that moves a row out of *Planning*, and
-nothing in this module creates one.
+**The question this raises is a scoping one, not a schema one.** A Freight Booking is
+the only thing that moves a row out of *Planning*, nothing in this module creates one,
+and per the ruling above nothing should be designed here that does. Name it and leave
+it.
 
 ### S3 — the only money on the board is zero, and the word above it is wrong
 
@@ -336,7 +355,9 @@ transport = sum(c["amount"] for c in charges if c["type"] in ("transport", "load
 **Two defects, and they compound.**
 
 1. **The label names one of the two types it sums.** The figure is transport *plus
-   loading*; the column says *Transport*. This is the third time this package has caught
+   loading*; the column says *Transport*. And note what this figure **is**: a charge
+   typed at sourcing to price the bid, carried forward onto the order — a planning
+   number, not a freight invoice. The column must not read as an operational fact. This is the third time this package has caught
    a name promising something the code does not do — screen 09's `upload_tender_document`
    is a bind, screen 10's `l.amount` is server-owned. **Mandate 6's sibling problem**:
    the number is right and the word is not.
