@@ -31,6 +31,18 @@ sessions. Original: `docs/archive/CLAUDE.md.2026-08-15.bak`.
 ### Money fields
 - Every numeric monetary input MUST use the shared MoneyInput component.
   Never use bare `<input type="number">` for amounts, rates, or balances.
+- **A percent is in scope and it is not a MoneyInput amount.** Its approved shape is a
+  `.form-control` inside an `.input-group` whose suffix is `<span class="input-group-text">%</span>`
+  — either a bare `<input type="number" class="form-control">` (`BidPricing.vue:171`) or
+  `MoneyInput` with `hide-currency` and an explicit `:max-fraction-digits`, which renders the same
+  `.form-control` and adds locale grouping (`NewRemittance.vue:711`). A percent never gets currency
+  precision and never calls `moneyFractionDigits`.
+  **Not `ds-input`.** Measured 2026-09-01 in Chrome against the pinned Tabler: `ds-input` is outside
+  Tabler's `.input-group > .form-control` flex contract and carries `width: 100%`, so the `%` wraps
+  to a second row and the group renders 80px tall instead of 44.
+- Name a percent field `*_pct`, `*_percent` or `*percentage`. That is not cosmetic: `make guards`
+  exempts exactly those name shapes from the money check (`Makefile:508`), so a percent called
+  `*_rate` is reported as a MoneyInput violation and the gate wins.
 - **How many decimals a currency has is decided in `composables/money.js` and
   nowhere else** — call `moneyFractionDigits(currency)`. Do not write
   `cur === "UZS" ? 0 : 2` in a page. Three files had each grown their own copy
@@ -56,8 +68,27 @@ sessions. Original: `docs/archive/CLAUDE.md.2026-08-15.bak`.
 - Currency cells use `font-monospace` for alignment.
 
 ### Button hierarchy
-- Maximum of one `.btn-primary` per visual region (card header, drawer/offcanvas footer, detail header).
-- Secondary/neutral actions must use `.btn-outline-secondary` or `.btn-ghost-secondary`. Color must never be used as a "second primary".
+- Maximum of one primary button per visual region (card header, drawer/offcanvas footer, detail header).
+- Color must never be used as a "second primary". Secondary/neutral actions use
+  `.btn-outline-secondary` or `.btn-ghost-secondary`.
+- **Which vocabulary you write is decided by the markup you are in, not by preference.** The
+  bridge re-skins `.btn`, `.btn-sm`, `.btn-primary`, `.btn-icon`, `.btn-ghost-*` and `.btn-link`
+  under `.stbl-ds` (`stabler-modernist.css:950-974`), so opting a screen into the design layer
+  needs **no** button rewrite. `ds-btn` / `ds-btn--primary` are for markup the design layer owns
+  outright — not a migration target for buttons that already work.
+- A **shared** component is rendered in both scopes by different callers, so it keeps the
+  Bootstrap vocabulary and lets the bridge cover it. Never migrate one to `ds-*`: `ListToolbar`
+  hardcodes `btn btn-sm btn-primary` (`ListToolbar.vue:63`) and mandate 8 makes it compulsory on
+  every list page — measured 2026-09-01, it has 46 consumers, most of them outside `.stbl-ds`.
+- **`ds-btn` has no disabled state, so it is not yet safe for a button that can be disabled.**
+  Measured 2026-09-01 in Chrome against the pinned Tabler (`www/stabler.html:1`): a disabled
+  `.ds-btn` renders `opacity: 1` with `pointer-events: auto` — indistinguishable from enabled, and
+  still taking clicks — while a bridged `.btn:disabled` fades to `.4` and stops taking them. The
+  fix is drafted (`docs/design/2026-09-01-asama-a-delta.css`) and not yet in the layer.
+- Nothing enforces this mechanically. `make guards` has no button check, and the per-screen source
+  tests that assert button classes cover only the Bootstrap half. A guard is writable in the shape
+  of the `type="date"` check (`Makefile:463-469`), but not while in-scope screens still mix both
+  vocabularies — write it after they stop, not before.
 
 ### Currency display
 - Amounts must render in their original transaction/account currency only. Do not convert totals or display base-currency/USD equivalent sub-lines.
@@ -85,4 +116,15 @@ sessions. Original: `docs/archive/CLAUDE.md.2026-08-15.bak`.
 
 ### Filter and loading guidelines
 - Every list page must use `ListToolbar.vue` with auto-apply filtering on filter changes (no Apply/Refresh buttons). Suffix search placeholders with `⌘K`.
-- Place animated skeleton rows (`SkeletonRows.vue`) inside the table body while loading data. Never show a spinner in a void.
+- Loading a table: mount `SkeletonRows.vue` **in place of** the table body, never inside it. Its
+  own root is a `<tbody>` (`SkeletonRows.vue:10`), so putting it inside one renders
+  `<tbody><tbody>`. Two shapes are correct — `<SkeletonRows v-if="loading" />` as a sibling of
+  `<tbody v-else>`, both direct children of `<table>`; or a whole-block `v-if`/`v-else` swap whose
+  loading branch carries its own `<table>`. Measured 2026-09-01: 96 call sites, 16 nested wrongly.
+  Correct one when you next edit that file for another reason — this is not a sweep.
+- Loading something that is **not** a table (cards, panels, a drawer): `SkeletonRows` is still what
+  the repo uses, and `test_tender_desk_spa.py:23` requires it in `OperationsDesk.vue`, whose two
+  uses are panel-mounted. Do not "fix" such a site by deleting the component — that turns
+  `make check` red. `ds-skel-stack` is drafted for this case
+  (`docs/design/2026-09-01-asama-a-delta.css`) and the assertion moves with the markup when it lands.
+- Never show a spinner in a void.
