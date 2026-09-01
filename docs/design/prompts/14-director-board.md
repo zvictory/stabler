@@ -29,8 +29,21 @@ The screen prints its own thesis in the page head (`:148`):
 
 **Three of its six rules do not say what it counted.** That is S1, and it is the
 reason this prompt exists. Correct prompt 13's §1 and `00-SETUP.md`'s *From 13*
-section: the signature appears in two screens, implemented two different ways,
-and the older implementation is the one whose promise fails.
+section: the signature appears in more than one screen, and the older
+implementation is the one whose promise fails.
+
+**Corrected again the same day by prompt 15.** There are **three** carriers, not
+two, and this is not the largest: `TenderFunnel` carries the signature fifteen
+times — 4 counters, 11 stage boxes, plus a rule inside each chevron popover.
+
+**And this screen does not render six counters. It renders ten.**
+`<TenderFunnel pipeline-strip :selected="phase">` passes no `mode`, the prop
+defaults to `"full"`, and the `v-if="props.mode === 'full'"` branch draws **four
+more counters** plus eleven stage boxes plus the conversion funnel — below this
+screen's own six and above its table. Two of those pairs collide on label,
+caption and rule while showing different numbers. Prompt 15 §S1 measures it; this
+file was written before that was known, so every count in §6 below is the board's
+own, not the page's.
 
 ---
 
@@ -92,6 +105,13 @@ silence**, behind a toast that has already faded. This is the defect prompt 13
 proved is avoidable — `OperationsDesk` renders five distinct states in one panel
 — and it is worse here, because this screen is read by the one person who will
 act on a number without checking it.
+
+**The finished answer is already in the repository.** `TenderOverview.vue` renders
+a user with neither role a panel titled *"Your work is on the operations desk"*
+with a link there, because *a white page reads like an error*; and `loadFlow()`
+writes its failure **into the panel** rather than a toast, because two requests
+fire on open and the reader must be able to see which one fell over. Cite prompt
+15 §2 rather than designing this twice.
 
 ---
 
@@ -195,7 +215,7 @@ This is the screen's central defect, and it is fatal to its own thesis.
 | counter | its printed rule | what the code actually does | on seed data |
 |---|---|---|---|
 | **Active tenders** | `tender_lot · result = null` | `visible_count` increments for **every readable deal**, before any result test (`tender.py:2091-2093`). Won and lost lots are included. | says **13**; only **10** are open |
-| **Risk** | `deadline < 48h · act_now` | `dl["risk"] == "risk"`, and `_milestone` sets `risk` when **`days < 0`** — already past due — across four milestones: bid, contract, PO ETA, delivery. Nothing is 48 hours. `days <= 7` is `warn`, which this counter ignores entirely. | says **2**; one of them is a *purchase order ETA that passed six days ago*, which no reading of "deadline < 48h" reaches |
+| **Risk** | `deadline < 48h · act_now` | `dl["risk"] == "risk"`, and `_milestone` sets `risk` when **`days < 0`** — already past due — across four milestones: bid, contract, PO ETA, delivery. Nothing is 48 hours. `days <= 7` is `warn`, which this counter ignores entirely. **`TenderFunnel` prints the identical string**, where it is equally false and yields **1** — and both render on this page. | says **2**; one of them is a *purchase order ETA that passed six days ago*, which no reading of "deadline < 48h" reaches |
 | **Portfolio value** | `sum(sales_order.grand_total)` | `value = so_revenue or bid_price` (`:2113`) — a Sales Order wins where one exists, otherwise the **stored bid price** from the deal's pricing plan | **2** of 13 rows come from a Sales Order; **5** come from a stored bid price; **6** are zero |
 
 The other three are honest: `result in (won, lost)` is exactly the win-rate

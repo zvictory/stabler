@@ -111,6 +111,10 @@ idea but its execution — the desk's four rules are true sentences; three of th
 director board's six do not describe what the number counted. Measure 14 against
 13 on honesty, not on novelty.
 
+**Prompt 15 found a third and larger carrier**: `TenderFunnel.vue` prints a rule
+fifteen times (4 counters, 11 stage boxes, one per chevron popover). The desk is
+the smallest of the three and the only one where every rule is true.
+
 ---
 
 ## 2 · The role, and why this gate is the module's most complete one

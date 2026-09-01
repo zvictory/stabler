@@ -756,8 +756,10 @@ in prompt 11 — this section records only what the measurement changed.
   by prompt 14**: `DirectorBoard.vue` carries the same comment over six counters, each
   with a human `note` *and* a raw-query `rule`, and it is the older of the two. The
   distinction that survives is sharper than the one claimed: the desk's four rules are
-  true, and **three of the director board's six are false**. The signature is a promise;
-  only one of its two implementations keeps it.
+  true, and **three of the director board's six are false**. **Corrected once more the
+  same day by prompt 15**: there are three carriers, and `TenderFunnel` is the largest
+  — fifteen rule lines on one component. The signature is a promise; of its three
+  implementations only the smallest keeps it.
 - **Five of eight reasoning rules cannot fire on a seeded site**, and the empty state
   claims *"All items in this view are up to date."* Four consecutive screens now share
   the shape (10 lanes, 11 lanes, 12 lanes, 13 rules) but this is the first where what
@@ -829,3 +831,48 @@ promise fails.
   draws neither the funnel nor a second copy of it.
 - **Escape from the director board goes to `/tender/board`** — the sales-folder file of
   coverage finding #3. Recorded, not fixed.
+
+### From 15 — 2026-09-02
+
+**Prompt 15 draws `TenderFunnel` once, and measuring it turned two of the package's
+open questions into one measured collision.**
+
+- **The funnel's counter strip renders on `/tender/portfolio` too.** `DirectorBoard`
+  passes no `mode`, the prop defaults to `"full"`, and the guarded branch draws four
+  counters, eleven stage boxes and the conversion funnel **below the board's own six
+  counters**. That page carries **ten** counters, not six — a fact prompt 14 was written
+  without, and corrected in it.
+- **Two counter pairs collide on that page.** *Active tenders* (13) and *Open pipeline*
+  (10) share the caption *lots in the pipeline* and the note *seen through to awaiting
+  result* verbatim — and the board's rule string, `tender_lot · result = null`,
+  describes what **the funnel** does. *Risk* (2) and *Risk* (1) share label, caption,
+  note **and rule string**; both call `_deal_deadlines(...)["risk"] == "risk"`, which is
+  `days < 0`, so `deadline < 48h · act_now` is false in both components. A third pair,
+  *Result / win rate*, agrees at 66,7% only because a fresh seed puts every result
+  inside the 90-day window the funnel applies and the board does not.
+- **The `mode` prop is confirmed dead.** Both hosts resolve to `"full"`. It was the
+  mechanism that would have prevented the collision above.
+- **Three vocabularies name the same five stages on one page** — chevron strip
+  (`PIPE_LABELS`), stage boxes (`GROUPS`), flow strip (`STEP_LABELS`). `flowLabels.js`
+  exists *specifically* so two screens cannot name one step differently; a third set
+  sits 200 lines away in the other component on the same page.
+- **One lot is in two stages at once.** The funnel derives stage from intake facts;
+  `tender_flow` reads the stored `custom_tender_stage` column first. On seed data
+  UTY-2026-4305 is `go` to the flow strip and `sourcing` to the chevron — on one screen,
+  under a comment promising *"Every deal is counted in exactly one stage."*
+- **The server refuses an optimistic lie and the client tells it.** `_tender_flow._state`
+  separates `empty` from `unknown` at length, and `stateLabel` prints *Not measurable* —
+  then `stepTone()` returns `null` for `unknown`, the same tone as `in`. Two unstamped
+  lots render with the colour of a healthy step.
+- **The funnel's failure state is absence.** `load()` toasts and leaves `data` null;
+  `v-else-if="data"` then renders nothing at all. Ten lines away in the same screen,
+  `loadFlow()` writes its error **into the panel** with a comment explaining that two
+  requests fire on open and the reader must see which one fell over. The module contains
+  its own fix.
+- **`/tender/overview` holds the package's reference forbidden state.** A user with
+  neither role gets a panel — *"Your work is on the operations desk"* — and a link,
+  because *a white page reads like an error*. Prompts 11, 12 and 14 all need this;
+  none of them should design it again.
+- **Both blocks load without a skeleton** (a line of text), neither uses
+  `useAutoRefresh`, and the screen carries a manual `Refresh` button. It is not one of
+  the six live screens.
