@@ -52,7 +52,7 @@ because that is where the third dialect lives.
 |---|---|---|
 | 01 | Tender intake drawer | the entire third dialect: 0 `ds-*`, 46 `tgm-*` sites / 15 classes; sole writer of intake per ADR-201 |
 | 02 | Tender CRM kanban | the drawer's home; the module's `ds-*` reference screen (107 sites) |
-| — | **↑ STOP. Verification gate.** | Approve the language on these two before drawing sixteen more in it |
+| — | **↑ Verification gate — PASSED 2026-09-01** | The language was approved on 01 and 02 before the rest were drawn. The gate is spent; it does not re-arm |
 | 03 | Sourcing workspace | comparison table + award panel; 1039 lines, 0 `ds-*` |
 | 04 | Quotation entry drawer | drawer grammar, second pass |
 | 05–08 | RFQ list · new · detail · print | all four at zero `ds-*` |
@@ -61,8 +61,9 @@ because that is where the third dialect lives.
 | 11–12 | Customs queue · Logistics board | read-only projections; drag-to-advance is forbidden |
 | 13–18 | Operations desk · Director board · Overview · Process flow · My tenders · Contract board | the boards |
 
-**The gate after 02 is not optional.** Getting the language wrong and then drawing
-eighteen screens in it is the expensive failure this ordering exists to prevent.
+**The gate after 02 was not optional** — getting the language wrong and then drawing
+eighteen screens in it is the expensive failure this ordering exists to prevent. It was
+put to Zafar with both canvases drawn, and passed on 2026-09-01.
 
 ---
 
@@ -88,6 +89,7 @@ is approved on these before sixteen more screens are drawn in it.
 |---|---|---|---|
 | 01 | [Tender intake drawer](https://claude.ai/code/artifact/3d45f238-495f-4832-a25f-eac7c301820e) | 10 | single form (not stepped) · adjacent stack · `ds-file-list[data-mode]` (D14) |
 | 02 | [Tender CRM kanban](https://claude.ai/code/artifact/564c73b0-6e7a-49ab-b6c9-87c7db56fb2c) | 10 | S1(a) drawer width → **760** via the existing `[data-size="lg"]` · S1(b) six orphans → **one** new component · one accessibility rule for the card and the row |
+| 03 | [Sourcing workspace](https://claude.ai/code/artifact/477c7af9-3734-4986-a842-dc215c56e76e) | 8 | S2 currency → a **third documented exception**, narrowed from 9 sites to one column · nine comparison columns → **seven** · a table row is **not** a region |
 
 Both canvases carry their own **not chosen** artboards rather than deleting the rejected
 option — the stepped intake on 01, the 542 px drawer on 02. A decision whose alternative
@@ -184,6 +186,26 @@ From the council's own output contract, not from the screens:
 - **ADR-304 — `TenderIntake.vue` is an orphan.** No route; embedded only at
   `PoControlBoard.vue:368`. The council said it is *either connected or removed, but not
   left orphaned*. Prompt 10 carries it as a question.
+
+---
+
+## One decision that leaves this folder
+
+**The third currency exception (screen 03, S2) edits `.claude/rules/10-frontend.md`,
+not a component.** That file governs all sixteen remaining screens, so the paragraph is
+*drafted* on the canvas and *not* adopted. Measured state today:
+`SourcingWorkspace.vue` renders base-currency amounts at **nine sites** and the rule
+documents **zero** exceptions covering them — while explicitly saying of this very
+pattern that the per-row hints it replaced *"must not come back"*.
+
+The design narrows nine sites to one column plus one banner and writes the paragraph to
+the standard of the two existing exceptions, including the condition that makes it
+disappear: **when every bid on a lot is in one currency the column is not rendered at
+all** — which is every lot in the demo data, and is why nobody noticed.
+
+Adopting it legalises one column. Rejecting it deletes the comparison and moves the
+arithmetic into the user's head at a rate they guess. Both are real; neither is a
+drawing.
 
 ---
 
