@@ -166,8 +166,11 @@ business in git. **The canvas URL is the artefact**; the prompt file is how it w
   A per-deal `except Exception` (`tender_documents.py:470`) produces a third rendering:
   a green tick beside a 0 % bar.
 - **The seed gap is not confined to the RFQ family.** `seed_tender_demo.py` creates no
-  requests for quotation **and** no document requirements. Two of the module's three
-  record types exist only if a human makes one.
+  requests for quotation. **Half of this was overtaken by `ef649cf` / `58f3cbc`** — the
+  seed now writes **six** document requirements per deal, with roles (`:571-597`), each
+  as a `status: "ready"` tick with **no file**, which the parser records as
+  `unverified`. So the checklist is populated and every row on it is an unverified
+  claim. Measured while writing prompt 12.
 - **The same endpoint feeds two screens with two vocabularies.**
   `TenderDocumentsPanel.vue` (inside screen 10) reads `list_tender_documents` too, and
   has the real file control, the role badge and a role filter that screen 09 lacks —
@@ -398,14 +401,20 @@ file**. What is shared is the whole projection: load, filters-from-URL, view tog
 branches, the lane board, the item card and the table view. What differs is the API
 method, five lanes versus six, the labels and the card's metrics.
 
-- **And the copies have already drifted on something that matters.** The server derives
-  `risk` (`< 0` → `risk`, `<= 7` → `warn`) and `due` and sends both on every row.
-  `LogistBoard` reads `item.risk` and has **no warning tier at all**; `DeclarantQueue`
-  ignores `risk` and re-derives it inline with a hard-coded `7`, **twice**. So the same
-  PO five days from its ETA is **orange on the customs board and plain on the logistics
-  board**, from the same row of the same payload.
-- **The number `7` lives in five places** — `tender.py:1651`, `:2279`, `:3125`, and
-  `DeclarantQueue.vue:265`, `:325`.
+- **And the copies have already drifted on something that matters.** `DeclarantQueue`
+  ignored the server's derived `risk` and re-derived it inline with a hard-coded `7`,
+  **twice**, so the same PO rendered differently on the two boards.
+  **Corrected while writing prompt 12 — the cause stated here was wrong.** The two
+  endpoints derive `risk` from **two different comparisons**: `declarant_queue` from
+  days-to-ETA (three tiers), `logist_board` from `eta > delivery` (two tiers), and the
+  latter paints the **deadline**, not the ETA. They are two questions sharing a field
+  name; giving `logist_board` a `warn` tier would invent a third meaning rather than
+  reconcile anything. The observable symptom stands, the diagnosis did not. Prompt 12
+  §S1 carries the measurement.
+- **The client half is fixed and on prod** (`26481f1`, deployed as `746ece2`):
+  `DeclarantQueue` reads `risk` through one `etaClass()`. The number `7` now lives in
+  **three** places, all server-side — `tender.py:1651`, `:2279`, `:3125`.
+  `LogistBoard` never had one and has no day arithmetic at all.
 - **Decision, matching the `TenderFunnel` one:** prompt 11 draws the **read-only lane
   projection** once, as a named component; prompt 12 draws only what is genuinely
   different — six lanes in the same grid, which is **~193 px** of lane at 1280 against
@@ -431,6 +440,65 @@ client then filters separately. The last one is a server change: raised, not sol
   a loose `<p>` carrying the explanation. **Every screen in the package will ask whether
   that sentence belongs inside the component's contract**; 11 raises it and does not
   settle it.
+
+### From 12 — 2026-09-01
+
+**Prompt 12 draws a delta, and the delta turned out to be bigger than the lane count.**
+The ordering decision (11 draws the projection, 12 draws only the difference) held; what
+did not hold is the assumption that the difference was cosmetic.
+
+- **The twins' `risk` fields answer different questions** — the correction above. This
+  is the first time in the package that a finding recorded from one screen was refuted
+  by measuring its twin, and it is an argument for the per-screen measurement discipline
+  rather than against it.
+- **Four of the six lanes cannot be reached on a seeded site.** *Booking*, *In Transit*,
+  *Border Crossed* and *Delivered* are all selected by a **Freight Booking**; the
+  doctype exists (`stabler/stabler/doctype/freight_booking`) and `seed_tender_demo.py`
+  never creates one. The board a logistician opens is two populated lanes and four
+  permanently empty ones. Same class as 05's *the seed creates no RFQ at all* — the
+  surface exists, the record it projects does not.
+- **And nothing in the module creates a Freight Booking.** Raised as a product question
+  in the prompt, not answered with a schema.
+- **The board's only money column is zero in every row.** `transport` sums landed
+  charges of type `transport` **and `loading`** (`tender.py:2384`) under a column headed
+  *Transport*; the seed writes only `{"type": "customs"}` charges, so the sum is `0`,
+  and `v-if="item.transport"` erases the line entirely. **The third `name promising
+  what the code does not do` in this package**, after 09's `upload_tender_document` and
+  10's `l.amount`.
+- **`freight_booking_status` is a `:title`.** The literal value the lane chain branches
+  on is reachable only by hovering a badge (`:244`) — the same defect as 11's *Red
+  Channel*, on a field with more consequence: the channel described a row, this one
+  places it.
+- **A missed ETA is invisible here.** `late` compares the ETA to the *deadline*, never
+  to today, so a purchase order six days past its ETA with nothing received draws as
+  on time — while the same row is red on the customs board. The seed contains exactly
+  that row (*Hebei Rail Parts*). **Neither board asks whether the ETA has passed.**
+- **`per_received` is thresholded away.** The server sends `received` as
+  `per_received >= 100`; a 40 %-delivered shipment is indistinguishable from one that
+  has not left the factory. The value exists and the boolean discards it.
+- **The fix that shipped between prompts widened the gap.** The twins were ~77 %
+  identical when the package began; `26481f1` moved them to **90 differing lines here
+  and 75 there**. Fixing one copy of a duplicated screen makes the duplication worse,
+  which is the concrete argument for L17's single component.
+
+**The data tables in prompts 10 and 11 do not match the seed.** Prompt 11 §7 lists six
+purchase orders against lots `UTY-2026-4291` and `UTY-2026-4277`, which **do not exist**
+in `seed_tender_demo.py`, and vendors — *Alfa Kabel MChJ*, *Shenzhen Hualing Ltd*,
+*Uz-Tex Logistics*, *Termiz Metall*, *Andijon Kabel*, *Guangzhou Metal Co* — **none of
+which the seed creates**. The seed writes **five** purchase orders across the **two won
+lots** (`UTY-2026-4314`, `UTY-2026-4315`), from five vendors. Prompt 10 §7 draws the PO
+board for `UTY-2026-4308` — a real lot the seed leaves at the *sourcing* stage, with no
+purchase order against it — using vendors the seed also does not create.
+
+**This is not the same as the RFQ family's tables.** 05–08 had no records to draw from
+and said so in the prompt itself: the seed creates no RFQ, which is the finding those
+screens exist to expose. 10 and 11 had real rows available and used invented ones
+instead, which contradicts the rule at the top of this file.
+
+The affected sections have **not** been rewritten — the canvases drawn from them exist,
+and whether to redraw them is Zafar's decision, not a silent edit. **Prompt 12 §7 was
+derived by executing the lane and risk logic against the seed on 01.09.2026**, and is
+the first data table in the package that can be reproduced from source.
 
 ---
 
