@@ -56,7 +56,7 @@ because that is where the third dialect lives.
 | 03 | Sourcing workspace | comparison table + award panel; 1039 lines, 0 `ds-*` |
 | 04 | Quotation entry drawer | drawer grammar, second pass |
 | 05–08 | RFQ list · new · detail · print | three inside the layer with no vocabulary; **only the print letter is outside it** |
-| 09 | Document center | the one surface all four roles share — **three scopes: company · tender · lot** — and the only screen whose **forbidden state is per row** |
+| 09 | Document center | the one surface all four roles share — **three scopes: company · tender · lot**, a **library with two-way binding** — and the only screen whose **forbidden state is per row** |
 | 10 | PO control board | post-award; 765 lines, 0 `ds-*` |
 | 11–12 | Customs queue · Logistics board | read-only projections; drag-to-advance is forbidden |
 | 13–18 | Operations desk · Director board · Overview · Process flow · My tenders · Contract board | the boards |
@@ -211,6 +211,50 @@ Three questions the prompt raises and deliberately does not settle: the **route*
 (`/tender/documents` is wrong for a company-wide surface), the **gate** (opening the
 screen needs a tender view; a company contract has none, and the per-row role table has
 no company row), and the **writer role** for an expired licence.
+
+### The library Zafar asked for next — 2026-09-01
+
+Immediately after the three scopes landed, Zafar asked for the document center to be
+*organised every way — chronological, by tender — a smart library, with integration in
+both directions: from the library into a tender, or from a tender entry back to the
+document.* That is now **S2**, and the measurement changed what the prompt could ask
+for:
+
+- **`upload_tender_document` does not upload.** It refuses to run unless the `File`
+  already exists (`tender_documents.py:227`) and then appends four strings —
+  `file_name`, `file_url`, `uploaded_by`, `uploaded_at` — to the requirement's list
+  (`:239-245`). It is a **bind**, and its name is the reason nobody knew.
+- **Reuse already works on the server, in both directions.** Nothing ties a `file_url`
+  to a deal; `_assert_local_file_url` (`:121-143`) guards the URL's *shape*, not its
+  ownership. And `download_tender_document` (`:419-445`) gates on "is this file listed
+  on *this* requirement of *this* deal" — so N bindings are N independent checks. The
+  permission model for a shared library is already correct and nobody has to design it.
+- **What is missing is the record.** Both stores are JSON blobs — `Long Text`
+  (`patches/v76_tender_master_documents.py:30`, `patches/v37_deal_tender_intake.py:28`).
+  No child table, no doctype, no index. `tender_documents.py` touches `"File"` exactly
+  once, by URL existence, and **never sets `attached_to_doctype`** (the only API-layer
+  site that does is `service.py:216`, for Issues). A document is a string pair inside
+  one deal's blob; the same PDF on thirteen lots is thirteen unrelated string pairs.
+- **`uploaded_at` is bind time, not file time** (`now()` at `:243`). A chronological
+  shelf built on it sorts *bindings*. The prompt makes the design label that axis
+  **"last used"** rather than quietly relabelling the field.
+- **Four facets have no field at all**: document type, validity, version, owner scope.
+  The prompt forbids drawing them as disabled controls — each is a stated requirement
+  or it is absent.
+- **`tender_document_targets` (`:449`) lists deals, not documents.** There is no
+  endpoint that lists documents, so any shelf is an N+1 scan over every deal's JSON.
+  Harmless at thirteen; the library is the one view in the module whose count grows
+  without bound.
+- **A binding can be un-openable.** The download gate re-validates the URL on every
+  request because legacy rows may carry an external one (`:441-443`). Listed, and
+  refused. A fifth status, invisible today.
+
+The asymmetry is the finding, and it is what makes this a design task rather than a
+backend one: **the binding is one button away from doing everything asked of it; the
+library does not exist at all.** The prompt therefore forbids inventing a doctype and
+asks instead for the surface that makes the gap legible — K0d–K0k in 09's acceptance
+table, split into what costs nothing (K0e, K0f), what costs a query (K0g, K0h) and
+what is an admission the design must show rather than hide (K0i, K0j, K0k).
 
 ---
 

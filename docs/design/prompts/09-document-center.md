@@ -4,8 +4,8 @@
 **0 `ds-*`, 0 `tgm-*`, 11 badges, 3 spinners, 1 `form-switch`, 25 bare `btn-*`, 0
 `table-responsive`, 0 `ListToolbar`, 0 `aria-*`**.
 
-**It is the worst-measuring screen in the package**, and the two things that make it
-worth drawing carefully are not in that list.
+**It is the worst-measuring screen in the package**, and none of the four things that
+make it worth drawing carefully are in that list.
 
 **First:** this is the screen the roadmap calls *"the one surface all four roles
 share"* — and the server gates **every write on this screen** by a field the screen
@@ -21,12 +21,21 @@ pick or drop — exists, works, and is used by a **different** screen.
 requirement is either `lot` or `tender`; the company's own documents — its licence, its
 registration certificate, its tax clearance — have nowhere to live, so they would be
 re-uploaded per lot. The council fixed the direction for half of this and deferred it
-(**ADR-210**); the other half has never been written down. **That is now S1, and it is
-the largest question in the package.**
+(**ADR-210**); the other half has never been written down. That is **S1**.
+
+**Fourth, and the largest question in the package:** the screen is named a *centre* and
+it is not one. A document here is not a record — it is a filename and a URL appended to
+a JSON blob inside one deal. The write endpoint is already a **bind**, not an upload
+(it refuses to run unless the file exists), and the download gate already checks each
+binding independently, so **the same file may be reused across lots today and the
+server will handle it correctly**. What is missing is everything above the plumbing:
+no way to pick a document you already own, no way to see where one is used, no shelf
+to arrange them on. That is **S2**, and it is the reason this screen is worth
+redrawing rather than restyling.
 
 **Scope.** `TenderDocumentsPanel.vue` and `TenderDocumentChain.vue` are **not** this
 screen: both are rendered by `PoControlBoard.vue` (`:504`, `:508`) and belong to prompt
-10. The panel appears here only as the mirror that produces S4 — it reads the same
+10. The panel appears here only as the mirror that produces S5 — it reads the same
 endpoint and renders the same requirements, differently.
 
 ---
@@ -59,7 +68,7 @@ a menu item was already tried, and a user who knew the URL still got a 200.
 | `declarant` | System Manager · Stabler Admin · Sales Manager · Stabler Declarant · Stabler Tender Declarant |
 | `logist` | System Manager · Stabler Admin · Sales Manager · Stabler Logist · Stabler Tender Logistics |
 
-**This is the only screen all four open, and §6's S2 is about exactly that.** Read the
+**This is the only screen all four open, and §6's S3 is about exactly that.** Read the
 gate now, because it shapes every region below:
 
 ```
@@ -107,10 +116,10 @@ a **gated API URL** (`getGatedDownloadUrl`, `:497`), not a Desk link.
 
 - **Severity is carried by three codes at once: colour + shape + word.**
 - **A disabled control carries its reason beside it.** On this screen the controls are
-  **not disabled at all** — see S2. Two more reasons live in `:title` attributes
+  **not disabled at all** — see S3. Two more reasons live in `:title` attributes
   (`:133`, `:85`).
 - **The procurement policy numbers are server values** and never literal digits. *(No
-  policy numbers on this screen; the readiness percentage is derived — see S4.)*
+  policy numbers on this screen; the readiness percentage is derived — see S5.)*
 - **No fixed-width label, badge or nav item.** Worst-case growth **3.75×**. This screen
   has **six** fixed column widths in its editor (`:58-63`) and a `max-width: 200px`
   truncation on file names (`:149`).
@@ -299,7 +308,175 @@ that already holds company-scoped tender configuration — `company_modules` and
 this is that place, with the shape already in use. **Mentioning it is in scope;
 designing it is not.**
 
-### S2 — the Document Center cannot upload a document
+### S2 — a document is not a record, and everything else depends on making it one
+
+This is the largest question in the prompt. Read S1 first: it establishes that three
+scopes are needed. This one establishes that **there is no thing to put in them.**
+
+**What a document is today.** Open the write endpoint and read what it actually does
+(`tender_documents.py:215-256`):
+
+```python
+def upload_tender_document(deal, requirement_key, file_name, file_url, company=None):
+    ...
+    file_url = _assert_local_file_url(file_url)
+    if not frappe.db.exists("File", {"file_url": file_url}):
+        frappe.throw(_("No uploaded file found for {0}.").format(file_url), ...)
+    ...
+    r["files"].append({
+        "file_name":   file_name,
+        "file_url":    file_url,
+        "uploaded_by": frappe.session.user,
+        "uploaded_at": now(),
+    })
+    r["done"] = True
+```
+
+**It does not upload.** It refuses to run unless the `File` already exists, and then it
+appends four strings to a list. The name of the endpoint is the last thing in this
+module you should trust: `upload_tender_document` is a **bind** operation, and has been
+one all along.
+
+Three consequences, each measured:
+
+**One — reuse already works on the write path.** Nothing in that function ties the
+`file_url` to this deal, this requirement, or this company. `_assert_local_file_url`
+(`:121-143`) checks the *shape* of the URL — starts with `/files/` or `/private/files/`,
+contains no `://`, no `..`, no CR/LF. That is an open-redirect guard, not an ownership
+check. The same licence PDF can be bound to thirteen lots today and the endpoint will
+accept all thirteen.
+
+**Two — the read path was written for reuse too.** `download_tender_document`
+(`:419-445`) does not ask "does this user own the file". It asks "is this `file_url`
+listed on *this* requirement of *this* deal", and refuses otherwise with a
+`PermissionError`. Thirteen bindings are thirteen independent gates. The permission
+model for a shared library is **already correct** — nobody has to design it.
+
+**Three — and yet there is no library.** Bindings live in two JSON blobs:
+`Tender Master.custom_tender_documents` is a `Long Text` field
+(`patches/v76_tender_master_documents.py:30`) and `CRM Deal.custom_tender_intake` is the
+same shape (`patches/v37_deal_tender_intake.py:28`). Not a child table. Not a doctype.
+No index. `tender_documents.py` looks up `"File"` exactly once, by `file_url` existence
+(`:227`), and **never sets `attached_to_doctype` / `attached_to_name`** — the one place
+in the API layer that does is `service.py:216`, for Issues. A tender document is
+therefore a *string pair inside a JSON blob inside one deal*. The same PDF bound to
+thirteen lots is thirteen unrelated string pairs that happen to spell the same thing.
+
+**The asymmetry to design against:** the binding is one picker away from doing
+everything asked of it. The *library* does not exist at all. Do not solve this by
+inventing a doctype — draw the surface that makes the gap obvious and name what it needs.
+
+#### The two directions, which are one operation
+
+Reuse has two entry points and they must be drawn as **the same act seen from two
+sides**, not as two features:
+
+| From | The user is holding | And wants |
+|---|---|---|
+| **Library → tender** | a document | to satisfy a requirement with it |
+| **Tender → library** | a requirement | to satisfy it with a document |
+
+The second is the missing button. Today a requirement row offers `Upload file` and
+nothing else (S3) — so the only way to satisfy a requirement with a document the firm
+already has is **to upload a second copy of it**, which creates a second `File`, a
+second `uploaded_at`, and no relationship between them. Every duplicate in this system
+was created by the absence of one button.
+
+Draw both. Then answer the harder question: **is the picker the same component in both
+directions, or two?** Coming from the library the user has already chosen the document
+and is choosing a target; coming from the requirement the target is fixed and the
+document is being chosen. One is a target picker, one is a document picker, and they
+may share nothing but a modal frame. Say which you built and why.
+
+**Multi-bind is the real case, not an edge case.** A tender with four lots asks for the
+same company licence four times. Coming from the library, the target chooser must let
+the user tick four requirements at once, or the feature has replaced one upload with
+four picks and saved nobody anything. Draw the multi-select target list, and draw what
+it says afterwards — *"Bound to 4 requirements in 2 lots"* — because the confirmation is
+the only place the user learns that reuse happened rather than copying.
+
+#### The facets — three groups, and only one of them is honest
+
+Zafar asked for the library to be organised "her türlü" — chronologically, by tender,
+and so on. The data answers this unevenly, and the design has to show which shelf is
+real. Sort them yourself before drawing:
+
+**Real today** — derivable from the bindings that exist:
+
+| Facet | Field | Note |
+|---|---|---|
+| By tender / lot | `deal`, `tender_master` | the natural spine; matches how the data is stored |
+| By role | `role` | four values: `customs`, `logistics`, `finance`, `general` (`_tender_documents.py:19`) |
+| By requirement | `key` / `label` | free text — see the warning below |
+| By status | derived `done` / `unverified` / waived | already a vocabulary on this screen |
+| By person | `uploaded_by` | never rendered anywhere today |
+| By name | `file_name` | the only text a user can search; client-side only |
+
+**Real but not what it says** — draw it, and draw the trap:
+
+*Chronological.* `uploaded_at` is stamped by `now()` **at bind time**, not at file time.
+Bind the same 2019 licence to a new lot this morning and it sorts to the top of "most
+recent". A chronological shelf built on this field is a shelf of *bindings*, not
+documents — and for a library that is the wrong axis. Show the timeline and label its
+axis honestly: **"last used"**, never "uploaded". If you want a true document date, say
+so as a requirement; do not quietly relabel a field that means something else.
+
+**Not present at all** — these are the ones that make it a library rather than a list:
+
+- **Document type.** There is no such field. A passport is only "the thing that
+  satisfied the requirement named *passport*", per deal, as free text. Two lots spelling
+  the same requirement differently produce two shelves. Grouping by type is therefore
+  grouping by a string somebody typed.
+- **Validity / expiry.** Established as missing in S1, and it is the facet with
+  operational teeth: *"what expires in 30 days"* is the one query that prevents a lost
+  bid, and it is the one query this data cannot answer.
+- **Owner scope.** S1 again — the company shelf has nowhere to live.
+- **Version.** Nothing links last year's licence to this year's. A renewed document is
+  an unrelated file with a similar name.
+
+Draw the facet rail with **all four groups visible and visibly different**: real facets
+live, the chronological one labelled for what it is, and the missing ones present as
+what they are — a stated requirement, not a greyed-out control pretending to be a
+feature. A disabled filter is a lie about what exists.
+
+#### What "smart" is allowed to mean
+
+Smart here means **derived, not guessed.** Every shelf in this library must be
+computable from a field: counted, grouped, sorted, filtered. Nothing in this design may
+depend on inferring a document's type from its contents or its filename — that is a
+different product, it fails silently, and it fails on a document that decides whether a
+bid is legal. Where a shelf needs a fact the data does not carry, the answer is to name
+the missing field, not to infer it.
+
+The one genuinely derived thing you *should* draw, because it needs no new field and it
+is the reason a library beats a folder: **usage**. From the bindings alone you can
+compute, for any document, *where else it is used* — the back-reference that does not
+exist today in either direction. A document row that reads
+*"used in 4 requirements across 2 tenders"*, expandable to the list, is the single
+strongest argument on the canvas for making the document the primary record. Draw it.
+
+#### The cost, stated once so the design is honest about it
+
+Computing any of this today means loading every deal's JSON and parsing it — there is no
+query. `tender_document_targets` (`:449`) lists **deals**, not documents; there is no
+endpoint anywhere that lists documents. At the thirteen-deal scale in §7 that is
+harmless. At five hundred it is not, and the library is exactly the screen where the
+count grows without bound while everything else in the module stays lot-sized.
+
+You are not asked to solve this. You are asked to **draw a library whose shape does not
+collapse when the list is long**: a facet rail that narrows before it renders, a default
+view that is not "everything ever", and a paging or windowing story stated rather than
+assumed. Screen 05 shipped a silent truncation at 200 reported as the total — the same
+mistake here would hide a document the firm owns, which is worse than hiding a bid.
+
+**One state you must draw and could not guess at:** the download gate re-validates the
+URL on every request, with a comment saying why — rows written before the upload-side
+check existed may carry an **external** URL, and those are refused rather than
+redirected to (`:441-443`). So a document can be listed in the library and be
+**un-openable**. That is a fifth status, it is invisible today, and it is precisely the
+kind of thing a library surfaces and a per-lot checklist never will.
+
+### S3 — the Document Center cannot upload a document
 
 `Upload file` (`:157`) opens a modal (`:173`) with exactly two controls:
 
@@ -332,7 +509,7 @@ layout from a button that opens a modal:
 Draw both. Note that (a) removes one of this screen's two modals and (b) keeps a
 dialog this file hand-rolled — see §8.
 
-### S3 — four roles share this screen and it shows no role
+### S4 — four roles share this screen and it shows no role
 
 The write gate in §2 is enforced on **every** upload, waive and remove. The standard
 set assigns the roles (`:344-352`):
@@ -363,7 +540,7 @@ Do not solve it by hiding the rows. A declarant needs to see that the CMR is mis
 even though attaching it is the logist's job; that is what "the one surface all four
 roles share" means.
 
-### S4 — the same data, two screens, two vocabularies
+### S5 — the same data, two screens, two vocabularies
 
 `TenderDocumentsPanel.vue` reads the **same endpoint** (`list_tender_documents`) and
 renders the **same requirement set** on the PO control board. Measured differences:
@@ -477,6 +654,32 @@ They are the documents an Uzbek public-tender bid packet routinely asks the bidd
 thresholds live in one file for exactly this reason (`_procurement_policy.py`); a
 validity horizon belongs beside them, as a question.
 
+### The reuse this data already implies — draw these numbers
+
+S2 needs a library with something in it. Build it from the two tables above rather than
+inventing a third: the thirteen lots plus the standard set produce the duplication on
+their own, and the numbers are the argument.
+
+| document | what it is | bound to | the point it makes |
+|---|---|---|---|
+| `licence_2025.pdf` | activity licence *(company, proposed)* | **13 lots** — every one | one expiry, thirteen consequences |
+| `guvohnoma.pdf` | registration certificate *(company, proposed)* | **13 lots** | the clearest case for binding over copying |
+| `CMR_4308.pdf` | waybill for one shipment | **1 requirement** | genuinely per-lot; not everything is shared |
+| `offer_4308.pdf` | price offer | **1 requirement** | per-lot, and per-round — it will be superseded |
+| `invoice_4308.pdf` | commercial invoice | **1 tender-master requirement** | the scope that is neither company nor lot |
+
+Two things to draw from this and nothing else:
+
+- **The usage column is the library's spine.** *"Used in 13 requirements across 13
+  lots"* against the licence, and *"Used in 1"* against the waybill, in the same column
+  — the contrast is what tells a user which documents are the firm's and which belong to
+  a shipment, **without a scope field existing**. It is derived, it is honest, and it is
+  the strongest thing on the canvas.
+- **Reuse is not always right.** `offer_4308.pdf` is per-lot *and* per-round; a library
+  that invites the user to bind last month's price offer to this month's lot has
+  automated a mistake. Draw what the picker shows to warn about that, or state that it
+  does not and why.
+
 **Dates:** `dd.mm.yyyy` via `formatDate()`. **No money on this screen.**
 
 ## 8 · Vocabulary
@@ -544,9 +747,32 @@ toggle. One answer for both.
 **Actions** — `ds-btn`, at most one `ds-btn--primary` per region. Two reasons currently
 live in `:title` attributes (`:85`, `:133`) and must move beside their controls.
 
+**Facets and filtering (S2)** — the module already has a filter vocabulary and this
+screen has none of it. `ListToolbar` is the settled answer for search plus filters plus
+`⌘K` (mandate 8), and it is **`0` on this file**. Use it before inventing a rail; if the
+library genuinely needs a persistent vertical facet rail that a toolbar cannot express,
+say why, and say what happens to it at 640 where a rail has no room. **Every facet must
+show its count**, because a facet with no count is a filter you cannot judge before
+clicking — and the counts are the only way a user sees that thirteen bindings are one
+document.
+
+**Usage / back-reference (S2)** — new, and there is no component for it. It is a
+**count with a disclosure**, not a badge: badges on this screen carry status severity
+(`ds-status`), and a usage count is not a severity — a document used thirteen times is
+not thirteen times as urgent. Pick a form that cannot be mistaken for one, and make the
+expanded list say *where*, in the module's own words: tender code, lot, requirement.
+
+**Bind vs upload** — two verbs, one result, and the user must be able to tell them
+apart before clicking. `Upload` creates a file; `Use existing` creates a reference.
+Mandate 6 allows one primary per region, so they cannot both be primary: decide which
+one the product prefers and let the layout say so. **Naming matters more than usual
+here** — the server calls binding "upload" (`upload_tender_document`) and that name is
+the reason the duplication exists. Do not inherit it into the UI.
+
 **Forbidden here:** `class="badge bg-*"`; `spinner-border`; `form-switch`; `card-table`;
 `alert` as a table cell; a raw `progress` bar; `substring(0, 10)` on a date;
-`<tr role="button">`.
+`<tr role="button">`; a **disabled facet** standing in for a field that does not exist;
+the word *upload* on a control that binds an existing document.
 
 ## 9 · Responsive
 
@@ -560,6 +786,10 @@ Draw at **1280**, **992** and **640** px.
   3.75× growth, plus a `<select>`, a `DateInput` and a text input inside them.
 - The four KPI cards are `col-md-3`, so they collapse at **768** — a different
   breakpoint from the layer's **640**.
+- The **library** (S2) is new and therefore has no measured width to inherit. It carries
+  more columns than anything else on this screen — document, usage, last used, role,
+  status — beside a facet rail. It is the hardest thing in the package to fit at 640,
+  and it is also the view a buyer's deadline will be checked on from a phone.
 
 The editor at 640 px is the problem on this screen: six columns of live controls,
 820 px of them fixed. Nothing may scroll the page horizontally.
@@ -572,25 +802,44 @@ The editor at 640 px is the problem on this screen: six columns of live controls
    licence visible and its effect on the lot's biddability stated.
 3. The **company library** as its own surface: five documents, their validity states,
    and what it says when a document is not required for this buyer.
-4. The **picker** at 1280 / 992 / 640, loaded with the thirteen-green-ticks state that
+4. **The library** (S2) at 1280 / 992 / 640: the five documents of §7's reuse table,
+   the usage count against each, and the facet rail — with the real facets live, the
+   chronological one **labelled "last used"**, and the missing ones present as stated
+   requirements rather than disabled controls.
+5. **Both directions of binding**, drawn as two flows:
+   **(a)** from the library — one document, a multi-select target list, and the
+   confirmation that says *"Bound to 4 requirements in 2 lots"*;
+   **(b)** from a requirement row — `Use existing` beside `Upload`, the document picker,
+   and the row after it is satisfied. Then a **stated answer** to whether these are one
+   component or two.
+6. **The usage back-reference expanded**: `licence_2025.pdf` showing its thirteen
+   bindings, in the module's own words (tender code · lot · requirement), at 1280 and
+   640.
+7. **The library when it is long.** The same view at a scale the module will reach —
+   with the paging, windowing or narrow-by-default behaviour visible. Screen 05's silent
+   truncation at 200, reported as the total, is the failure to design against.
+8. The **picker** at 1280 / 992 / 640, loaded with the thirteen-green-ticks state that
    the real data produces.
-5. The **checklist** at 1280 / 992 / 640, read mode, with the seven rows above.
-6. The **editor** at 1280 and 640, with the tender-master row's disappearance made
-   visible before it happens.
-7. All five states — including the **error** state the file does not have anywhere, and
-   the **not measurable** state for `readiness_pct` when there is no checklist.
-8. **Both** answers to S2, each drawn, with trade-offs and a recommendation.
-9. S3: the role made visible, and every row that this user cannot write shown as such —
-   for **two different users** (a logist and a sourcing officer), same lot, same data.
-10. S4: a stated answer for which vocabulary wins, with the panel's card grid and this
+9. The **checklist** at 1280 / 992 / 640, read mode, with the seven rows above.
+10. The **editor** at 1280 and 640, with the tender-master row's disappearance made
+    visible before it happens.
+11. All five states — including the **error** state the file does not have anywhere, and
+    the **not measurable** state for `readiness_pct` when there is no checklist — **plus
+    the un-openable file**: a binding whose URL the download gate refuses (`:441-443`).
+12. **Both** answers to S3, each drawn, with trade-offs and a recommendation.
+13. S4: the role made visible, and every row that this user cannot write shown as such —
+    for **two different users** (a logist and a sourcing officer), same lot, same data.
+14. S5: a stated answer for which vocabulary wins, with the panel's card grid and this
     screen's table side by side.
-11. The four status badges redrawn from one vocabulary, `Unverified tick` included, with
+15. The four status badges redrawn from one vocabulary, `Unverified tick` included, with
     its explanation out of the `:title`.
-12. The waiver row: reason, person and date, out of the `alert` component.
-13. The two hand-rolled modals resolved into the layer, or a stated argument for
+16. The waiver row: reason, person and date, out of the `alert` component.
+17. The two hand-rolled modals resolved into the layer, or a stated argument for
     keeping them.
-14. Every question your design raised, listed — **including the route, the gate and the
-    writer-role for the company scope**, which this prompt raises and does not settle.
+18. Every question your design raised, listed — **including the route, the gate and the
+    writer-role for the company scope**, and **every field S2 needs that does not
+    exist** (document type, validity, version, owner scope), each written as a
+    requirement with the shelf it unlocks. This prompt raises them and settles none.
 
 ## 11 · Acceptance — what a test must be able to see
 
@@ -607,6 +856,14 @@ Every number below was measured from `TenderDocuments.vue`,
 | K0a | **A third scope exists and is not silently swallowed.** `_tender_documents.py:69-71` rewrites anything outside `("lot", "tender")` to `"lot"`; a design that adds `company` without that parser changing produces rows that lie about what they are | 2 scopes | 3, or a stated reason for keeping 2 |
 | K0b | **A company document's validity is a rendered state, not a date to read.** No requirement row carries an expiry today; *valid* · *expiring* · *expired* are drawn, and the horizon is a server value, never a literal | 0 | asserted |
 | K0c | **An expired company document invalidates every lot, visibly.** A lot at 100 % on its own requirements does not present as ready when the licence behind it has lapsed | 1 number | 2 facts |
+| K0d | **A document is a thing, and the design says what identifies it.** Today identity is `file_url` — two bindings of the same file are related only because the strings match. Whatever the design treats as the document's identity is named, and it is not the filename | none | named |
+| K0e | **A requirement can be satisfied from what the firm already owns.** A control beside `Upload` that binds an existing document. The endpoint already accepts this: `upload_tender_document` requires the `File` to exist and appends a reference (`:227`, `:239-245`) | 0 paths | 2 |
+| K0f | **Binding is not called uploading.** No control that attaches an existing document uses the word *upload*, whatever the server's method is named | 1 verb | 2 |
+| K0g | **Every document shows where it is used.** A count derived from the bindings, expandable to tender · lot · requirement, and rendered as a count rather than a status badge | 0 | asserted |
+| K0h | **The chronological shelf is labelled for what it sorts.** `uploaded_at` is stamped by `now()` at bind time (`:243`), so it orders bindings, not documents; the axis says *last used* or the design states the new field it needs | mislabelled | asserted |
+| K0i | **A facet that has no field behind it is not a disabled control.** Document type, validity, version and owner scope are absent from the data; each appears as a stated requirement or not at all | — | asserted |
+| K0j | **The library's length is designed for.** The count grows without bound while every other list on this screen is lot-sized, and there is no document endpoint to page — the narrowing, windowing or paging behaviour is drawn, not assumed | 0 | asserted |
+| K0k | **An un-openable binding is visible.** The download gate re-validates the URL and refuses legacy external ones (`:441-443`); a document listed but not retrievable does not present as available | invisible | asserted |
 | K1 | **The screen can attach a real file.** `<input type="file">` or `FileSlot` is present; the two text inputs at `:186-192` are gone | 0 | 1 |
 | K2 | **Every row shows its `role`, and a row this user cannot write is not offered a write control.** `role` appears in the read view, not only in the editor | 0 | asserted |
 | K3 | **No page-local colour map.** Eleven hand-written badges across six scales; zero imports of `getStatusBadgeClass` | 11 / 0 | 0 / 1 |
@@ -628,10 +885,19 @@ the checklist's sole writer (ADR-201/205) and it reloads after every write — t
 screens 03 and 07 do not do. A rebuild that makes uploading pleasant and stops
 reloading has traded a real defect for a worse one.
 
-**K0a–K0c are not testable against today's file, and that is deliberate.** They are the
-three things a three-scope design must be able to claim; a design that draws a company
-library without them has drawn a fourth place to lose a document. If your answer to S1
-is (b) — a gate line rather than reference rows — say which of the three it satisfies
-where, because the gate line is the only thing carrying them.
+**K0a–K0k are not testable against today's file, and that is deliberate.** K0a–K0c are
+the three things a three-scope design must be able to claim; a design that draws a
+company library without them has drawn a fourth place to lose a document. If your answer
+to S1 is (b) — a gate line rather than reference rows — say which of the three it
+satisfies where, because the gate line is the only thing carrying them.
+
+**K0d–K0k are the library.** They divide cleanly and the division is the point: **K0e
+and K0f cost nothing** — the server already binds by reference and gates each binding
+independently, so both are UI decisions available today. **K0g and K0h cost a query and
+a rename**, both derivable from data that exists. **K0i, K0j and K0k are admissions** —
+a missing field, an unbounded list and a refused URL — and the criterion for each is
+that the design shows them rather than papering over them. A library that quietly
+disables four filters, renders every document it can find, and lists a file nobody can
+open has met none of the three, while looking finished.
 
 State plainly which of these your design satisfies, and name anything it cannot.
