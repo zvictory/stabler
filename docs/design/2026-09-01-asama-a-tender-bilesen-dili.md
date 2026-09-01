@@ -241,6 +241,7 @@ belgelenmesi kayıt işidir ve **B-6**'dadır.
 | Metin girdisi | `ds-input` · çok satırlı `textarea.ds-input` (`rows` yazılmaz) | css:437, 592 | §7 | form §3.6 |
 | Onay kutusu ← **12. madde** | `form-check` + `form-check-input` (köprü) — **`form-switch` yasak** | **YENİ köprü** | §7 | Ç15, Ç27 |
 | Para | `MoneyInput` + `formatMoney`/`moneyFractionDigits` | `components/MoneyInput.vue` | §7 | manda 3 |
+| Yüzde ← **10.4(a)** | `.input-group` + `.form-control` + `<span class="input-group-text">%</span>` — **`ds-input` YASAK** (esneklik sözleşmesi dışı, `%` alt satıra düşer) | `BidPricing.vue:170-173` | §7 | manda 3 ✔ |
 | Tarih | `DateInput` + `formatDate` | `components/DateInput.vue` | §7 | manda 4 |
 | Tipeahead | `Typeahead` + **sarmalayan** `<label class="ds-field">` | `components/Typeahead.vue` | §7 | Ç13 |
 | Çoklu seçim **ve** dosya eki | **tek jeton listesi**: `ds-table` + `ds-cut-del` + `ds-cut-add` + ekleyici (`Typeahead` / `FileSlot`) | css:389, 785, 790 | §7 | Ç1, D1 |
@@ -1912,6 +1913,9 @@ artık ölçülmüş maliyetleriyle soruluyor.
 | **10.5** | Dört çağrılmayan dosya **siliniyor**, üç test modülü birlikte düzeltiliyor | ✔ uygulandı — `1eb780a` |
 | **10.8(b)** | **Şerit korunuyor**: göç eden tablo `class="ds-table table"` yazar, `ds-table` tek başına değil | ✔ kayda geçti — aşağıda ve §1.2 |
 | **10.9** | Seçenek **(a)**: `inheritAttrs: false` + `v-bind="$attrs"` | ✔ uygulandı — `f267e6d` |
+| **10.2** | Buton mandası değişsin | ✔ değişti — `dbafeeb`; **ama premisi düştü**, aşağıda |
+| **10.8(a)** | Manda 9'un lafzı düzeltilsin | ✔ değişti — `dbafeeb` |
+| **10.4** | Seçenek **(a)**: yüzde kapsamda, kendi şekliyle | ✔ değişti — `dbafeeb`; **`ds-input` DEĞİL**, aşağıda |
 
 **10.9 lafzından bir sapma var ve ölçülmüştür.** Seçenek (a) yazıldığı gibi —
 "her iki bileşene `v-bind="$attrs"`" — `DateInput`'ta **28 çağrı yerinin yerleşimini
@@ -1934,12 +1938,39 @@ da **eklenmez** (eksik veri yanılsaması yaratır), ölçek kontrolü **filtre*
 sentetik küme 13 lot / 9 tedarikçi ile küçük; gerçek üretim verisi 200+ RFQ satırı
 üretirse hiçbir şartname bir davranış tanımlamadı. **Onay gerek.**
 
-**10.2 · `10-frontend.md` "Button hierarchy" değişikliği — Aşama B'yi blokluyor.**
+**10.2 · ✔ KARAR: KURAL DEĞİŞTİ (`dbafeeb`) — ama ~~Aşama B'yi blokluyordu~~ BLOKLAMIYORDU.**
 Kural bugün *"Secondary/neutral actions **must use** `.btn-outline-secondary` or
 `.btn-ghost-secondary`"* diyor. `.stbl-ds` altında doğrusu `.ds-btn`'dir. `aksiyon`'un
 önerdiği guard regex'i (`btn-(success|warning|danger|secondary|outline-[a-z]+|ghost-[a-z]+)`)
 **deponun kendi mandasının zorunlu kıldığı iki sınıfı yakalar** ve `make check`'i
 kırmızıya düşürür. Kural değişmeden yasak yürürlüğe giremez, guard yazılamaz (B-7).
+
+**↺ BU MADDENİN PREMİSİ YANLIŞTI, ve iki yerinden.** Karar uygulanırken ölçüldü:
+
+1. **Manda `.ds-btn`'i yasaklamıyor, çünkü `.stbl-ds` altında ikisi de doğru.** Köprü
+   katmanı `.btn`, `.btn-sm`, `.btn-primary`, `.btn-icon`, `.btn-ghost-*` ve `.btn-link`'i
+   `.stbl-ds` altında **zaten yeniden giydiriyor** (`css:950-974`) — köprünün kendi
+   doktrininin (`css:894-908`) tam olarak yaptığı şey bu. Bir ekranı taşımak buton
+   yazmayı **gerektirmiyor**. Yani mandanın Aşama B'yi bloklaması diye bir şey yoktu.
+2. **Ve göç ters yönde bir gerileme olurdu.** Chrome + sabitlenmiş Tabler ile ölçüldü
+   (2026-09-01): renk, kenar ve köşe **birebir aynı** (`#fff`/`#c7ccd4`, `#206bc4`, radius 0);
+   fark yükseklik (44 ↔ 40) ve font (13.5/600 ↔ 14/800) — ve **`:disabled`**:
+
+   | | `:disabled` |
+   |---|---|
+   | `btn btn-outline-secondary` (köprülü) | `opacity: .4`, `pointer-events: none` |
+   | `ds-btn` | `opacity: 1`, `pointer-events: auto` — **etkin görünür ve tıklamayı alır** |
+
+   Kurul kararının ACCEPTANCE #8'i bu yüzden var ve delta bunu zaten yazmış
+   (`delta.css:67-68`) — **katmanda hâlâ yok.**
+
+**Kural bu yüzden bir yasak değil, bir yer tarifi oldu:** hangi sözcük dağarcığının nerede
+geçerli olduğunu söylüyor, **paylaşılan bileşen** durumunu adlandırıyor (`ListToolbar`
+`btn btn-sm btn-primary`'yi sabit yazıyor — `ListToolbar.vue:63` — ve manda 8 onu her liste
+sayfasında zorunlu kılıyor; 46 tüketicisi var, çoğu `.stbl-ds` dışında), ve devre dışı
+edilebilen bir butonda `ds-btn`'i yasaklıyor. **Guard yazılmadı** ve nedeni yazılı: yazılabilir
+(`type="date"` guard'ı tam o şekil, `Makefile:463-469`) ama bugün kapsamdaki ekranlar iki
+dağarcığı karıştırdığı için kırmızı olurdu.
 
 **10.3 · `10-frontend.md` "Currency display" — karşılaştırma tablosu dilimini blokluyor.**
 Kural taban/USD çevrimi yasaklıyor ve **iki belgelenmiş istisnası** var (Sales Order
@@ -1948,13 +1979,40 @@ altbilgisi, Journal Entry kalıntısı). Karşılaştırma tablosunun üç taban
 **üçüncü ve belgelenmemiş** bir istisna — ve brief §5.3 onu **zorunlu** kılıyor.
 Mevcut ikisinin biçiminde yazılmadan o dilim başlamamalı.
 
-**10.4 · Manda 3'ün kapsamı: yüzde alanları.**
+**10.4 · ✔ KARAR: (a) — ama adlandırdığı sınıfla DEĞİL (`dbafeeb`).**
 Kural *"amounts, rates, or balances"* diyor. Tender'da **10 çıplak `<input type="number">`**
 var ve çoğu yüzde (`margin_pct`, `vat_pct`, `duty_pct`, `penalty_pct_per_day`).
 `MoneyInput`'un ondalık mantığı bir yüzdeye uymuyor, ve envanterde `PercentInput` yok.
 İki kabul edilebilir cevap: (a) `%` bir "rate" sayılır ve `ds-input` + `input-group-text`
 ("%") **resmî bir form-grameri satırı** olur; (b) yüzde alanları kısıt dışında bırakılır
 ve bu **yazılı** olur. Sessiz kalmak kabul edilemez.
+
+**✔ Zafar: (a).** Kapsama alındı — **ama `ds-input` ile değil, `form-control` ile.** (a)'nın
+lafzı ölçülerek çürütüldü: Chrome + sabitlenmiş Tabler (2026-09-01), `.stbl-ds` içinde
+
+```
+.input-group > input.ds-input      → flex: 0 1 auto,  width:100%  → "%" ALT SATIRA düşer, grup 80px
+.input-group > input.form-control  → flex: 1 1 auto               → aynı satır, grup 44px
+```
+
+çünkü Tabler'ın esneklik sözleşmesi yalnız `.form-control`, `.form-select` ve `.form-floating`
+çocuklarını tanıyor; `ds-input` o listede yok ve `css:437`'nin `width:100%`'ü satırı dolduruyor.
+Katmanın kendi yazdığı `.stbl-ds .input-group > .form-control` sıfırlaması (`css:942-944`) da
+aynı şeyi söylüyor — grubun alan yuvası **bilerek** bir Bootstrap sınıfı.
+
+**Onaylanan şekil:** `.input-group` + `.form-control` + `<span class="input-group-text">%</span>`.
+İki canlı öncülü var: `BidPricing.vue:170-173` (çıplak `<input type="number">`) ve
+`NewRemittance.vue:710-720` (`MoneyInput` + `hide-currency` + `:max-fraction-digits="4"`, ki o da
+aynı `.form-control`'ü render eder ve yerelleştirilmiş gruplama ekler). `PercentInput` icat
+**edilmedi**.
+
+**Ve kural guard ile çelişmiyor artık:** `make guards`'ın para muafiyeti bir *ad şekli*
+(`_pct|_percent|percentage`, `Makefile:508`), sözleşme değil — `vat_rate` adlı bir yüzde
+"MoneyInput kullan" hatası alır. Bu yüzden adlandırma kuralın parçası oldu.
+
+**Ölçüm ayrıca bir itirazı düşürdü:** `<input type="number">`'ın virgüllü ondalığı yiyeceğinden
+şüphelenmiştim; Chrome/macOS, `lang="ru"`, "12,5" → `value="12.5"`, `badInput=false`. Başka
+tarayıcı doğrulanmadı.
 
 **10.5 · ✔ KARAR: SİLİNDİ (`1eb780a`). ↺ Dört çağrılmayan dosya, ve maliyeti — sürüm 1 soruyu maliyetsiz soruyordu.**
 `TenderCrmWrapper`, `TenderExecutionFlow`, `TenderExecutiveKpis`, `TenderTrendChart` —
@@ -2020,11 +2078,20 @@ zaten doğrusunu yazıyor; ADR-306'nın gövdesi ve "Keşif ajanlarının hatala
 (b) **ADR-302/303:** *"Bugün bilinen tek gerçek boşluk dosya-eki çipi"* — Ç1/D1 ile
 **düştü**: `ds-table` + `ds-cut-del` + `FileSlot` o işi yapıyor, ve `ds-file-*` yazılmıyor.
 
-**10.8 · Manda 9'un lafzı, ve `ds-table`'ın şeritsizliği.** *(b) ✔ karara bağlandı; (a) açık.*
+**10.8 · Manda 9'un lafzı, ve `ds-table`'ın şeritsizliği.** *(a) ve (b) ✔ karara bağlandı.*
 (a) Manda 9 *"Place animated skeleton rows inside the table body"* diyor. Ama
 `SkeletonRows`'un kökü **zaten** bir `<tbody>` — lafzı harfiyen uygulamak **iç içe
 `<tbody>`** üretiyor, ve bugünkü 8 site tam bunu yapmış. Doğru okuma "tablo gövdesinin
 **yerine**"dir; kuralın metni bunu söyleyecek şekilde düzeltilmeli.
+
+**✔ Zafar: metin düzeltilsin.** Düzeltildi (`dbafeeb`). Kapsam ölçüldü: **96 çağrı yerinin
+16'sı** iç içe (belgedeki 8, tender kapsamıydı ve doğruydu). Ama düzeltme **daha katı
+yazılamazdı**: "tablo değilse `SkeletonRows` kullanma" diyen bir kural `make check`'i kırmızıya
+düşürürdü — `test_tender_desk_spa.py:23` `OperationsDesk.vue`'da `SkeletonRows`'u **şart
+koşuyor**, ve o dosyadaki iki kullanımın ikisi de panel içinde, tablosuz. Kuralı izleyen biri
+bileşeni silseydi hem o iddia hem `no-unused-vars` düşerdi. Bu yüzden tablosuz hâl **yasak
+değil, açık bir borç** olarak yazıldı; `ds-skel-stack` onun için delta'da hazır
+(`delta.css:156`) ve iddia işaretleme ile birlikte taşınacak.
 (b) Manda 2'nin şerit kuralı `.table` sınıfını şart koşuyor
 (`stabler.css:145`, `.table:not(.table-no-stripe)`) ve `ds-table` onu taşımıyor →
 **`ds-table` şeritsiz.** ↺ **Sürüm 1 bu maddeyi sayısız yazıyordu; ölçüldü: tender'da
@@ -2101,13 +2168,14 @@ kalıp, ayrı iş.
 Dürüstlük listesi. Bunlar bu belgenin **zayıf** yerleri ve uygulayıcı bunları bilerek
 başlamalı.
 
-- **↺ Bir tarayıcı render'ı yapıldı — tam olarak bir soru için.** 10.9 uygulanırken
-  `getComputedStyle` + ekran görüntüsü ile ölçülen tek şey, `MoneyInput`'un
-  `.input-group`'unda bir `rounded-*` yardımcı sınıfının sarmalayıcıda mı kontrolde mi
-  durduğuydu (CDN'den gerçek Tabler `1.0.0-beta20`, `www/stabler.html:1`). Sonuç bir
-  regresyonu yakaladı ve `7df361d`'de düzeltildi. **Bu tek ölçüm aşağıdaki maddeyi
-  geçersiz kılmıyor** — belgenin geri kalanındaki kaskad akıl yürütmesi hâlâ
-  kaynaktan, ve yöntemin işe yaradığını göstermesi onu daha da borçlu kılıyor.
+- **↺ Dört tarayıcı render'ı yapıldı — dördü de tek bir soru için.** Gerçek Tabler
+  `1.0.0-beta20` (CDN, `www/stabler.html:1`) + deponun kendi iki CSS'i ile,
+  `getComputedStyle` ve ekran görüntüsüyle: (1) `MoneyInput`'un `.input-group`'unda bir
+  `rounded-*` sarmalayıcıda mı kontrolde mi durur (→ bir regresyon yakaladı, `7df361d`);
+  (2) `<input type="number">` virgüllü ondalığı yer mi (→ hayır); (3) `.stbl-ds` altında
+  `ds-btn` ile köprülü `.btn` farkı (→ `:disabled` yok); (4) `ds-input` bir `.input-group`
+  çocuğu olabilir mi (→ olamaz). **Dördü de bir kararı değiştirdi.** Ama aşağıdaki madde
+  ayakta: hiçbiri bir *ekranı* render etmedi.
 - **Ekran düzeyinde hiçbir tarayıcı render'ı, hiçbir ekran görüntüsü yok.** Bütün kaskad
   ve özgüllük akıl yürütmesi CSS **kaynağından**; `getComputedStyle` ile teyit **edilmedi**. Bu
   özellikle şunları etkiler: `.ds-btn:disabled` ile `.ds-btn--primary:hover`'ın aynı
@@ -2172,6 +2240,22 @@ başlamalı.
 ---
 
 ## 12 · DÜZELTMELER — üç çürütme raporunun izi
+
+> **↺ 2026-09-01, kararlar uygulanırken eklenen dördüncü tur.** Zafar'ın altı kararı
+> uygulanırken bağımsız bir ölçüm + çürütme turu daha koştu. Üç şey düştü, biri **bu belgenin
+> kendi premisi**, biri **benim düzeltmemdi**:
+>
+> | Ne | Kim yanlıştı | Ne çıktı |
+> |---|---|---|
+> | §10.2 *"manda Aşama B'yi blokluyor"* | **bu belge** | Köprü `.btn*`'i `.stbl-ds` altında zaten giydiriyor (`css:950-974`); bloklama yok, ve göç `:disabled`'ı kaybettiriyor |
+> | §10.4(a)'nın `ds-input`'u | **bu belge** | Tabler'ın `.input-group` esneklik sözleşmesi dışında; `%` alt satıra düşüyor, grup 80px. Doğrusu `.form-control` |
+> | *"§10.4'ün 10'u ve §10.8'in 8'i yanlış"* | **ben** | İkisi de doğruymuş. Dar kapsamlı taramam (`pages/tender/` yalnız, gömülü bileşenler hariç) 6 buldu; tender yüzeyi = 10. 8 de tender kapsamında doğruydu |
+> | §10.8(a)'nın daha katı yazılabileceği | **hiç kimse — yeni olgu** | `test_tender_desk_spa.py:23` `OperationsDesk.vue`'da `SkeletonRows`'u şart koşuyor ve iki kullanımı da tablosuz; katı kural `make check`'i kırardı |
+>
+> Üçüncü satır bu belgenin en pahalı hata sınıfı: **yanlış bir düzeltme, yanlış iddiadan
+> pahalıdır**, çünkü bir incelemenin otoritesiyle gelir. Ölçmeden "belgedeki iki sayı tutmuyor"
+> yazdım; ikisi de tutuyordu.
+
 
 Bu bölüm silinmez. **Yanlış çıkmış bir iddianın kaydı, düzeltildiğinin tek kanıtıdır** —
 ve bir sonraki turun bu belgeye ne kadar güvenebileceğini yalnız bu bölüm söyler.
