@@ -6609,3 +6609,6 @@ This invitation reaches {countries} country(ies). On its own it cannot satisfy t
 "Lines with no exchange rate, not in this total: {count}","Valyuta kursi yo'q qatorlar, bu jamiga kirmaydi: {count}"
 Quotation date,Taklif sanasi
 The currency list could not be loaded — only your company's currency is available.,Valyutalar ro'yxatini yuklab bo'lmadi — faqat kompaniyangiz valyutasi mavjud.
+Handled by the {role} role.,«{role}» roli tomonidan boshqariladi.
+Remove file?,Fayl o'chirilsinmi?
+Remove {file} from {requirement}? The requirement re-opens if this was its last file.,"«{file}» fayli «{requirement}» talabidan o'chirilsinmi? Agar bu oxirgi fayl bo'lsa, talab yana ochiladi."

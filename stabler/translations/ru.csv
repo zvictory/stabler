@@ -6614,3 +6614,6 @@ This invitation reaches {countries} country(ies). On its own it cannot satisfy t
 "Lines with no exchange rate, not in this total: {count}","Строки без курса валюты, не входят в этот итог: {count}"
 Quotation date,Дата предложения
 The currency list could not be loaded — only your company's currency is available.,Не удалось загрузить список валют — доступна только валюта вашей компании.
+Handled by the {role} role.,Обрабатывается ролью «{role}».
+Remove file?,Удалить файл?
+Remove {file} from {requirement}? The requirement re-opens if this was its last file.,"Удалить «{file}» из «{requirement}»? Если это был последний файл, требование снова станет невыполненным."
