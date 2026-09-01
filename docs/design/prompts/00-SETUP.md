@@ -79,6 +79,36 @@ eighteen screens in it is the expensive failure this ordering exists to prevent.
 
 ---
 
+## What has been drawn — the verification gate
+
+Two canvases exist. Together they **are** the gate the table above stops at: the language
+is approved on these before sixteen more screens are drawn in it.
+
+| # | canvas | artboards | what it settles |
+|---|---|---|---|
+| 01 | [Tender intake drawer](https://claude.ai/code/artifact/3d45f238-495f-4832-a25f-eac7c301820e) | 10 | single form (not stepped) · adjacent stack · `ds-file-list[data-mode]` (D14) |
+| 02 | [Tender CRM kanban](https://claude.ai/code/artifact/564c73b0-6e7a-49ab-b6c9-87c7db56fb2c) | 10 | S1(a) drawer width → **760** via the existing `[data-size="lg"]` · S1(b) six orphans → **one** new component · one accessibility rule for the card and the row |
+
+Both canvases carry their own **not chosen** artboards rather than deleting the rejected
+option — the stepped intake on 01, the 542 px drawer on 02. A decision whose alternative
+has been erased cannot be re-examined.
+
+The working files (`*.dc.html`, `canvas.json`) live in the session scratchpad, not in the
+repo: they are re-seeded from source on every edit and a 2.6 MB payload per canvas has no
+business in git. **The canvas URL is the artefact**; the prompt file is how it was produced.
+
+### What the two canvases raised that the prompts did not
+
+- **The card title slot is empty in the data** — `c.label || c.name`, and nothing sets a
+  deal label, so a card renders the same string twice. Screen 01 hit the same gap from the
+  other side ("no tender title on record"). Two screens now depend on one missing field.
+- **`Seen` and `Priced` have no Uzbek string.** Five lanes translate, two do not.
+- **There is no keyboard path to move a card between lanes** — today or after the redesign.
+- **Migrating the intake drawer to `ds-drawer` moves it from z-index 1050 to 41** — from
+  above the Bootstrap modal band to below it. That is 10.6, shown and left open.
+
+---
+
 ## Decisions taken while writing these prompts — 2026-09-01
 
 Two of them close a contradiction between the council record and Phase A. Both were
