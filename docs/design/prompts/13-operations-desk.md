@@ -101,8 +101,15 @@ rules, and prints the intersection that belongs to *you*, today.
 > çıktığını yazar — tasarımın imzası bu: **her rakam kendi sorgusunu taşır**,
 > kullanıcı sayıya güvenmek için kimseye sormaz.
 
-Every number carries its own query. Keep this. It is the best idea in the module
-and it appears nowhere else in it.
+Every number carries its own query. Keep this.
+
+**Corrected 2026-09-02 by prompt 14.** This paragraph claimed the idea "appears
+nowhere else in the module." It appears in `DirectorBoard.vue` too, with the
+same comment, and there it is older and larger: six counters, each carrying a
+human `note` **and** a raw-query `rule`. What is unique to the desk is not the
+idea but its execution — the desk's four rules are true sentences; three of the
+director board's six do not describe what the number counted. Measure 14 against
+13 on honesty, not on novelty.
 
 ---
 

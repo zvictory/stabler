@@ -752,8 +752,12 @@ in prompt 11 — this section records only what the measurement changed.
   that it was recorded as an absence for three prompts.
 - **Every number carries its own query.** All four counters print a `rule` line under
   the value (*due date passed, still open*). The screen's own comment calls this the
-  design's signature. **It exists nowhere else in the module** and prompts 14–18 should
-  be measured against it rather than the other way round.
+  design's signature. ~~It exists nowhere else in the module~~ — **corrected the next day
+  by prompt 14**: `DirectorBoard.vue` carries the same comment over six counters, each
+  with a human `note` *and* a raw-query `rule`, and it is the older of the two. The
+  distinction that survives is sharper than the one claimed: the desk's four rules are
+  true, and **three of the director board's six are false**. The signature is a promise;
+  only one of its two implementations keeps it.
 - **Five of eight reasoning rules cannot fire on a seeded site**, and the empty state
   claims *"All items in this view are up to date."* Four consecutive screens now share
   the shape (10 lanes, 11 lanes, 12 lanes, 13 rules) but this is the first where what
@@ -782,3 +786,46 @@ in prompt 11 — this section records only what the measurement changed.
   `filter` in the URL, `aria-pressed` / `aria-expanded` / `role="alert"`, five rendered
   states in one panel, skeletons instead of spinners, and zero Bootstrap badges or
   buttons. Prompts 14–18 inherit these as the baseline, not as goals.
+
+### From 14 — 2026-09-02
+
+**Prompt 14 is the second prompt in two days to refute the one before it**, and the
+refutation is the finding: the *rule under the number* is not the operations desk's
+invention, it is `DirectorBoard`'s, and the older implementation is the one whose
+promise fails.
+
+- **Three of six rule lines on the director board do not describe the query that
+  produced the number.** `Active tenders` prints `tender_lot · result = null` while
+  `visible_count` counts every readable deal, won and lost included (13 on seed, 10
+  open). `Risk` prints `deadline < 48h · act_now` while `_milestone` sets `risk` at
+  `days < 0` across four milestones — one of the two at-risk lots is there because a
+  **purchase order ETA passed six days ago**. `Portfolio value` prints
+  `sum(sales_order.grand_total)` while `value = so_revenue or bid_price`, and only 2
+  of 13 rows have a Sales Order. **A number that prints a false query is worse than a
+  number that prints none**, and this screen prints its thesis in its own page head.
+- **The board has two states where it needs five.** `load()` catches into a toast and
+  leaves `data.value` untouched, so a permission refusal, an unselected company and a
+  server failure all render as *"No tenders match these filters. Clear filters or select
+  another dashboard period."* The failure mode is **blaming the reader's filters for the
+  server's silence** — on the one screen a director acts on without checking.
+  Corollary nobody designed: a failed **auto**-refresh silently keeps the last good
+  numbers with no staleness marker.
+- **Six of thirteen rows are zero in every money column** because `custom_bid_pricing`
+  is written only from stage `priced` onward — correct behaviour, undesigned surface.
+  *Not yet priced* and *zero* are the same pixels. Third appearance of this class after
+  12's *Transport* column and 10's `l.amount`.
+- **The module's only inline write outside the document centre lies on failure.**
+  `assign()` updates `row.assigned_to` only on success; the `<select>` is a one-way
+  `:value` bind, so nothing re-renders and **the control keeps showing the manager the
+  server refused**. The toast fades; the wrong name stays.
+- **The row is the control and the control is unreachable.** `<tr class="board-row">`
+  with `cursor: pointer`, no focus, no Enter, and exactly one `aria-*` on the whole
+  screen (the manager select, which needed `@click.stop` to defend itself from the row).
+  `openDeal`'s object branch reads `item.parent_tender`, the call site passes a string,
+  and the payload never emits that field — dead twice over.
+- **The funnel ordering decision held.** `TenderOverview` hosts the same strip but does
+  not select with it: clicking a phase there **navigates here** with the phase applied
+  (`TenderOverview.vue:115-118`). 14 owns the arrival, 15 owns the strip. Prompt 14
+  draws neither the funnel nor a second copy of it.
+- **Escape from the director board goes to `/tender/board`** — the sales-folder file of
+  coverage finding #3. Recorded, not fixed.
