@@ -343,8 +343,11 @@ surfaces (`TenderIntake` 365, `BidPricing` 287, `TenderDocumentsPanel` 186,
    `PoControlBoard`'s shell. Rendered by `DirectorBoard.vue:192` (slot 14) and
    `TenderOverview.vue:119-125` (slot 15). Without a decision it gets drawn twice, by
    two prompts, differently.
-   **Two measurements settle where it goes.** It is the module's most layer-native
-   component — **64 `ds-*`, 0 `badge bg-`** — so it needs extension, not migration. And
+   **Two measurements settle where it goes.** It is layer-native — **64 `ds-*`,
+   0 `badge bg-`** — so it needs extension, not migration. (This line said *the
+   module's most layer-native component* until 2026-09-02, when prompt 13 counted
+   the module: `TenderCrm` 107 > `OperationsDesk` 79 > `TenderFunnel` 64 >
+   `PartyTransactions` 46 > `DirectorBoard` 43 > `TenderFlow` 34. It is third.) And
    its `mode` prop **has exactly one value in the whole app**: `DirectorBoard` omits it
    (default `"full"`), `TenderOverview` passes `mode="full"` explicitly, and both pass
    `pipeline-strip`. The `v-if="props.mode === 'full'"` at `:425` guards a branch that
@@ -353,11 +356,13 @@ surfaces (`TenderIntake` 365, `BidPricing` 287, `TenderDocumentsPanel` 186,
    then carries only the difference — `DirectorBoard` passes `:selected` and controls
    the phase, `TenderOverview` does not. The dead `mode` prop belongs to whichever
    prompt draws it, as a finding.
-2. **The shell is in no prompt.** `TenderPage.vue` (29) and `TenderNav.vue` (87) render
-   on **all sixteen routes**, and `TenderPage.vue:12` is where `.stbl-ds` is applied —
-   the single line that puts every tender screen inside the layer. Neither is named in
-   any prompt. Small, and load-bearing enough that it should be said out loud
-   somewhere rather than assumed sixteen times.
+2. ~~**The shell is in no prompt.**~~ **Resolved 2026-09-02 — it belongs to prompt 13.**
+   `TenderPage.vue` (29) and `TenderNav.vue` (87) render on **all sixteen routes**, and
+   `TenderPage.vue:12` is where `.stbl-ds` is applied — the single line that puts every
+   tender screen inside the layer. The owner was not arbitrary: `OperationsDesk.vue:2-3`
+   records that the shell's padding **came from this screen** — the desk is the
+   measurement `TenderPage` was calibrated against. Prompt 13 specifies the shell:
+   `label`, `title`, the four-span `#meta` slot and the `#actions` slot.
 3. **`/tender/board` renders a file in the sales folder.** `pages/sales/SalesOrderBoard.vue`
    (192), reached from a tender route, using `TenderPage` and the shared
    `tenderBoardFilters` composable. Slot 18 covers it; the prompt has to say whose
@@ -387,11 +392,23 @@ contract. The defect surfaced there precisely because nothing else was in the wa
   entirely while the tab is hidden — a backgrounded board issues zero requests — and
   fires once on reveal. A countdown ring or a polling indicator that keeps ticking in a
   hidden tab trades a correct behaviour for a decoration.
-- **Six screens are live and none of them says so.** No timestamp, no staleness signal,
-  no change indication anywhere in the module. **Prompt 11 draws the liveness vocabulary
-  for all six**, in the page head's `ds-meta` slot beside the filters — the other thing
-  that determines what the user is looking at. The staleness line doubles as the retry,
-  which is how mandate 8's ban on a Refresh button is honoured rather than argued with.
+- **Six screens are live and what two of them say about it is the wrong thing.**
+  **Corrected 2026-09-02 by prompt 13.** This paragraph read *"none of them says so. No
+  timestamp, no staleness signal, no change indication anywhere in the module"* and that
+  is false twice over: `Last read` exists in `OperationsDesk.vue:8-10` **and** in
+  `DirectorBoard.vue`, and `DirectorBoard` is one of the six `useAutoRefresh` consumers
+  — so the auto-refreshing screen that supposedly showed nothing shows a stamp. The
+  real finding is narrower and worse: both render
+  `new Date().toTimeString().slice(0, 5)`, **the browser's clock at the moment the
+  response arrived**. The server sends `"generated_at": now()` (`tender_desk.py:363`)
+  and **nothing in the SPA reads it** — zero matches outside the line that writes it.
+  The signal that exists is the wrong one; the right one is on the wire, unread.
+  **Prompt 11 draws the liveness vocabulary for all six**, in the page head's `ds-meta`
+  slot beside the filters — the other thing that determines what the user is looking at.
+  The staleness line doubles as the retry, which is how mandate 8's ban on a Refresh
+  button is honoured rather than argued with. **Prompt 11's acceptance row K3
+  (*"Six screens auto-refresh and none shows a timestamp | before 0"*) is void** and is
+  corrected in that file.
 - **Prompt 05 is owed a correction.** `RfqList` was drawn without catching either half.
   Noted in that file.
 
@@ -715,3 +732,53 @@ quietly:
 And two things explicitly out of scope for Phase B: closing the `ds-btn:disabled`
 debt (written in the delta, absent from the layer), and ADR-210 / ADR-211, which the
 previous council deferred on purpose.
+
+### From 13 — 2026-09-02
+
+**Prompt 13 is the first one that had to argue the package was wrong about a screen
+before it could describe it.** `OperationsDesk.vue` is not a fifth broken board; it is
+the most house-native surface in the module after `TenderCrm`, and four package
+statements did not survive contact with it. All four are corrected in place above and
+in prompt 11 — this section records only what the measurement changed.
+
+- **Three corrections landed** — the `TenderFunnel` "most layer-native" claim (it is
+  third of six), coverage gap #2 (the shell belongs to 13, because the shell was
+  calibrated *from* 13), and the module-wide "no timestamp anywhere" claim, together
+  with prompt 11's acceptance row K3 that rested on it.
+- **The right staleness signal is already on the wire and nobody reads it.**
+  `"generated_at": now()` (`tender_desk.py:363`) has **zero** consumers SPA-wide. Two
+  screens print the browser's clock instead. This is a new category for the package:
+  not a missing signal, a *substituted* one — and the substitute is convincing enough
+  that it was recorded as an absence for three prompts.
+- **Every number carries its own query.** All four counters print a `rule` line under
+  the value (*due date passed, still open*). The screen's own comment calls this the
+  design's signature. **It exists nowhere else in the module** and prompts 14–18 should
+  be measured against it rather than the other way round.
+- **Five of eight reasoning rules cannot fire on a seeded site**, and the empty state
+  claims *"All items in this view are up to date."* Four consecutive screens now share
+  the shape (10 lanes, 11 lanes, 12 lanes, 13 rules) but this is the first where what
+  cannot populate is the **reasoning**, not the projection — and the first where the
+  empty state makes a false claim about the world rather than merely saying nothing.
+- **`delivery_deadline` is resolved, carried and never read.** `tender_desk.py:100-107`
+  digs it out of the intake JSON — with a comment about the bug that made it
+  unconditionally `None` — and passes it into `lots_fact`; `_desk_rules.py` has eight
+  rule kinds and none consumes it. The calendar's sublabel still promises
+  *"Bid · delivery · due"*. **The fourth `name promising what the code does not do`**,
+  after 09's `upload_tender_document`, 10's `l.amount` and 12's *Transport* column.
+- **The seven-day calendar begins today, so nothing overdue can appear on it** — while
+  the Overdue counter directly above it reads 1. Two regions of one screen describing
+  the same four items, unable to agree by construction.
+- **Three raw server identifiers reach the user** by three different mechanisms:
+  `t()` called on a value that is not a key, a server that builds
+  `{"id": v, "label": v}` so the label *is* the id, and `{{ item.kind }}` printed
+  verbatim in the most prominent row on the page. The second is a **server** fix stated
+  in a design prompt, which is a precedent worth noting rather than repeating casually.
+- **Forbidden collapses into error.** Two of three permission gates render as their own
+  worded states; the third — the server's `PermissionError` — is caught into
+  `error.value`. The screen with the module's best state coverage still loses the one
+  distinction that tells a user whether to retry or to ask for access.
+- **What this screen already does that the package keeps asking for**, and should now be
+  cited from rather than reinvented: `reqToken` stale-response guarding, `view` **and**
+  `filter` in the URL, `aria-pressed` / `aria-expanded` / `role="alert"`, five rendered
+  states in one panel, skeletons instead of spinners, and zero Bootstrap badges or
+  buttons. Prompts 14–18 inherit these as the baseline, not as goals.

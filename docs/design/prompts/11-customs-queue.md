@@ -581,7 +581,7 @@ Every number below was measured from `DeclarantQueue.vue`, `LogistBoard.vue`,
 |---|---|---|---|
 | K1 | **A background refresh does not replace the screen with a skeleton.** The loading flag a first paint sets is not the flag a tick sets — measured across all six consumers of `useAutoRefresh` | 6 / 6 blank | 0 / 6 |
 | K2 | **A failed background refresh is not a toast.** `load()` catches its own error and calls `toast.error`, so the composable's documented swallow never runs | 6 / 6 toast | 0 / 6 |
-| K3 | **The board says how fresh it is.** Six screens auto-refresh and none shows a timestamp or a change signal | 0 | asserted |
+| K3 | **The board says how fresh it is — and says it about the right clock.** ~~none shows a timestamp~~ **Corrected 2026-09-02 by prompt 13:** two screens do — `OperationsDesk` and `DirectorBoard`, the latter one of the six auto-refreshers — but both stamp `new Date().toTimeString()`, the browser's clock at receipt. The server's `generated_at` is sent and read by nothing in the SPA | 2 stamps, 0 of them the server's | asserted |
 | K4 | **No urgency threshold is a literal in a template.** `7` appears at `:265` and `:325` while `risk` and `due` are already on every row | 2 | 0 |
 | K5 | **Urgency comes from the server's field.** `risk` / `due` are read; the twin already reads `risk` and this file does not | 0 / 2 | 1 vocabulary |
 | K6 | **Urgency is not carried by colour alone.** Three codes — colour, shape, word — and *no ETA* is distinguishable from *on time* | colour only | asserted |
