@@ -484,43 +484,96 @@ if per_received > 0:      return "partial"
 return "to_receive"
 ```
 
-Draw the board for **`UTY-2026-4308`** · *Signal va aloqa boshqarmasi*, company currency
-**UZS**:
+**Read this before you draw.** These rows were derived by executing `po_control_board`
+and `_po_lane` against `seed_tender_demo.py`, not transcribed from a screen. **An
+earlier version of this section drew the board for `UTY-2026-4308`** — a real lot the
+seed leaves at the *sourcing* stage, with no purchase order against it — using four
+vendors the seed does not create. That table was replaced on 2026-09-02.
+
+This board is per-deal, and the seed writes purchase orders against **two** lots only.
+Every demo record carries a literal ` [DEMO]` suffix. Company currency **UZS**.
+
+**`UTY-2026-4314` · *Qurilish materiallari kombinati [DEMO]*:**
 
 | lane | vendor | own currency | base | charges | landed | badges |
 |---|---|---|---|---|---|---|
-| Draft | Alfa Kabel MChJ | 148 000 000 UZS | 148 000 000 | 0 | 148 000 000 | `draft` |
-| To receive | Shenzhen Hualing Ltd | **USD 12 000** | 152 000 000 | 3 200 000 | 155 200 000 | — |
-| Partially received | Uz-Tex Logistics | 96 400 000 UZS | 96 400 000 | 1 850 000 | 98 250 000 | `partial:60` · `cheapest` |
-| Completed | Termiz Metall | 210 000 000 UZS | 210 000 000 | 4 100 000 | 214 100 000 | `received` · `billed` |
+| Draft | Hebei Rail Parts [DEMO] | 620 000 000 UZS | 620 000 000 | 41 000 000 | 661 000 000 | `draft` |
+| Draft | Temiryo'l ta'minot [DEMO] | 430 000 000 UZS | 430 000 000 | **0** | 430 000 000 | `cheapest` · `draft` · `received` |
+| Draft | UralVagonSnab [DEMO] | 590 000 000 UZS | 590 000 000 | 88 000 000 | 678 000 000 | `draft` |
 
-KPI strip from that set: **PO count 4** · **Total committed 606 400 000 UZS** ·
-**Received 40 %** · **Vendors 4**.
+KPI strip: **PO count 3** · **Total committed 1 640 000 000 UZS** · **Received 26,2 %** ·
+**Vendors 3**.
 
-**Four things in this data the design must not smooth over:**
+**`UTY-2026-4315` · *O'zbekiston temir yo'llari AJ [DEMO]*** — the only place a
+`partial:` badge exists on seeded data:
 
-1. **`cheapest` is landed-cheapest and sits on a partially-received PO.** The badge
-   means *cheapest delivered cost*, not *best vendor* and not *chosen vendor* — and the
-   comparison table adds `Award winner` and `Selected` as two more blue badges beside it
-   (`:481-483`). Three badges, three meanings, one colour family, no shared map.
-2. **The `Received 40 %` KPI is unconditionally green** (`:404` —
-   `class="h3 m-0 text-green"`). At 0 % it is green. It is the only KPI with a colour and the colour
-   carries no information.
-3. **`partial:60` is a string the client parses** (`:138` — `b.startsWith("partial:")`,
-   `b.slice(8)`). A severity encoded in a string prefix, decoded in a template helper.
-4. **`min_landed` decides `cheapest` by float equality** (`tender.py:604` —
+| lane | vendor | own currency | base | charges | landed | badges |
+|---|---|---|---|---|---|---|
+| Draft | Shandong Heavy [DEMO] | 780 000 000 UZS | 780 000 000 | 62 000 000 | 842 000 000 | `draft` · `partial:40` |
+| Draft | Sanoat kompleks [DEMO] | 340 000 000 UZS | 340 000 000 | **0** | 340 000 000 | `cheapest` · `draft` |
+
+KPI strip: **PO count 2** · **Total committed 1 120 000 000 UZS** · **Received 27,9 %** ·
+**Vendors 2**.
+
+**Seven things in this data the design must not smooth over:**
+
+1. **Every purchase order is a draft, and that is deliberate.** The seed leaves them at
+   `docstatus 0` because the boards count `docstatus < 2` (`seed_tender_demo.py:392`).
+   `_po_lane` returns `"draft"` before it looks at anything else — so **three of the four
+   lanes are empty on both boards**, and *To receive*, *Partially received* and
+   *Completed* never fill. Draw a four-lane board with one populated column; it is what
+   the screen actually shows.
+2. **`draft` and `received` sit on the same card.** Temiryo'l ta'minot is `docstatus 0`
+   with `per_received` written straight to the column, so the board badges a **draft
+   purchase order as fully received**. Two badges from two independent facts saying
+   contradictory things, in one row, with no shared map to notice.
+3. **`delayed` is unreachable.** It requires `docstatus == 1`, and nothing is submitted.
+   Hebei Rail Parts is **six days past its ETA** with nothing received and carries no
+   delay badge at all — while the customs board paints the same purchase order red.
+4. **No purchase order is in a foreign currency.** The seed sets none, so
+   `currency == base_ccy` and `base_amount == amount` on every row. **S1 — the landed
+   total that omits the charge printed above it — cannot be reproduced on seeded data**,
+   because the asymmetry only appears on a foreign-currency line and there is none. The
+   defect is real and measured in code; it is invisible to anyone testing on a demo site.
+   Say so in your rationale rather than drawing demo rows that imply otherwise.
+5. **`cheapest` has landed on the two rows with no charges recorded.** `min_landed`
+   ranks on `base_grand_total + charges`, and the seed writes no landed charges at all
+   when the customs amount is zero — so the vendor nobody has costed wins. This is the
+   module's own warned-about failure, from its own rule: an unpriced charge that
+   *"reads as CHEAP and hands the tender to the wrong vendor"*. The badge is not wrong
+   about its arithmetic; the arithmetic is being fed an absence as a zero.
+6. **`min_landed` decides `cheapest` by float equality** (`tender.py:604` —
    `if landed and landed == min_landed`). Two vendors at the same landed total both get
    the badge; a vendor at landed `0` gets none. Draw the tie.
+7. **The `Received 26,2 %` KPI is unconditionally green** (`:404` —
+   `class="h3 m-0 text-green"`). At 0 % it is green. It is the only KPI with a colour and
+   the colour carries no information. And **`partial:40` is a string the client parses**
+   (`:138` — `b.startsWith("partial:")`, `b.slice(8)`) — a severity encoded in a string
+   prefix, decoded in a template helper.
 
-**The landed plan for the Shenzhen PO** — this is the editor's loaded state, and it is
-the one that produces S1:
+**`cheapest` is landed-cheapest, and it is not a recommendation.** The badge means
+*cheapest delivered cost*, not *best vendor* and not *chosen vendor* — and the
+comparison table adds `Award winner` and `Selected` as two more blue badges beside it
+(`:481-483`). Three badges, three meanings, one colour family, no shared map.
+
+**The landed plan, as the seed actually writes it** — one line per purchase order, and
+that is the whole editor's loaded state:
 
 | type | HS code | provider | description | quoted | rate | planned (UZS) | actual |
 |---|---|---|---|---|---|---|---|
-| transport | — | Uz-Tex Logistics | Tashkent ← Shenzhen | **USD 1 200** | 12 800 | 15 360 000 | — |
-| customs | 8544 49 | — | ГТД | — | — | 2 480 000 | PInv-2026-0412 |
-| certification | — | Uzstandart | conformity | 720 000 UZS | — | 720 000 | — |
-| broker | — | Sharq Broker | declarant fee | **EUR 150** | *(no rate)* | **not measurable** | — |
+| customs | 7302 10 900 0 | — | Bojxona to'lovi [DEMO] | — | — | 41 000 000 | — |
+
+**One line, one currency, nothing unvalued — which is why S1 has never been seen.** The
+plan that produces it needs several lines in at least two currencies with one of them
+unrated, and no seeded purchase order has one. Draw that case as a **constructed
+example** and label it as constructed; do not present it as demo data:
+
+| type | HS code | provider | description | quoted | rate | planned (UZS) | actual |
+|---|---|---|---|---|---|---|---|
+| transport | — | *(a freight provider)* | inland leg | **USD 1 200** | 12 800 | 15 360 000 | — |
+| customs | 7302 10 900 0 | — | ГТД | — | — | 41 000 000 | PInv reference |
+| certification | — | *(a certifier)* | conformity | 720 000 UZS | — | 720 000 | — |
+| broker | — | *(a broker)* | declarant fee | **EUR 150** | *(no rate)* | **not measurable** | — |
 
 Four lines, two currencies, one unvalued. The footer today prints a Landed total that
 includes the customs and certification lines, includes a **stale or zero** figure for the

@@ -392,42 +392,68 @@ nothing else on the screen honours that.
 
 ## 7 · Data — use these rows, invent nothing
 
-The demo seed writes Purchase Orders tagged with `custom_crm_deal`, so this board has
-real shape on a seeded site. Company currency **UZS**. Draw these six:
+**Read this section before you draw.** These rows were derived by executing the lane
+and risk logic in `tender.py:2270-2330` against `seed_tender_demo.py`, not transcribed
+from a screen. **An earlier version of this section listed six purchase orders against
+lots the seed does not create** (`UTY-2026-4291`, `UTY-2026-4277`) from vendors it does
+not create; that table was replaced on 2026-09-02. Company currency **UZS**;
+`moneyFractionDigits("UZS")` is 0.
 
-| PO | vendor | tender | HS code | customs | ETA | days left | lane |
-|---|---|---|---|---|---|---|---|
-| PUR-ORD-2026-0041 | Alfa Kabel MChJ | UTY-2026-4308 | — | — | 04.09.2026 | **3** | **Document Missing** |
-| PUR-ORD-2026-0042 | Shenzhen Hualing Ltd | UTY-2026-4308 | 8544 49 | 2 480 000 | 12.09.2026 | 11 | **Ready for GTD** |
-| PUR-ORD-2026-0038 | Uz-Tex Logistics | UTY-2026-4291 | 8536 90 | 1 120 000 | 29.08.2026 | **−3** | **Declared** |
-| PUR-ORD-2026-0035 | Termiz Metall | UTY-2026-4277 | 7308 90 | 4 100 000 | 21.08.2026 | **−11** | **Under Inspection** |
-| PUR-ORD-2026-0031 | Andijon Kabel | UTY-2026-4277 | 8544 49 | 980 000 | 14.08.2026 | −18 | **Released** |
-| PUR-ORD-2026-0044 | Guangzhou Metal Co | UTY-2026-4312 | — | — | *(none)* | **null** | **Document Missing** |
+The seed writes **five** purchase orders, all against the **two won lots**. Every demo
+record carries a literal ` [DEMO]` suffix — that is real, on screen, and part of what
+the layout has to survive. `days_left` is `eta − today`, and the seed sets each ETA as
+an offset from the day it was run, so on a freshly seeded site the column below **is**
+the offset.
 
-**Six things in this data the design must not smooth over:**
+| vendor | tender | HS code | customs | days left | `risk` | lane |
+|---|---|---|---|---|---|---|
+| Hebei Rail Parts [DEMO] | Qurilish materiallari kombinati [DEMO] | 7302 10 900 0 | 41 000 000 | **−6** | `risk` | **Document Missing** |
+| Shandong Heavy [DEMO] | O'zbekiston temir yo'llari AJ [DEMO] | 8607 19 100 0 | 62 000 000 | **3** | `warn` | **Document Missing** |
+| Temiryo'l ta'minot [DEMO] | Qurilish materiallari kombinati [DEMO] | — | — | **4** | `warn` | **Released** |
+| UralVagonSnab [DEMO] | Qurilish materiallari kombinati [DEMO] | 7302 40 000 0 | 88 000 000 | 45 | `good` | **Document Missing** |
+| Sanoat kompleks [DEMO] | O'zbekiston temir yo'llari AJ [DEMO] | — | — | 75 | `good` | **Document Missing** |
 
-1. **`PUR-ORD-2026-0041` is 3 days from its ETA and missing documents.** It is the row
-   the whole screen exists for, and today its urgency is orange text and nothing else.
-   The lane already says *Document Missing*; the card must say **which** documents —
-   the payload carries `["Customs Declaration (GTD)", "Certificate of Origin"]`.
-2. **`PUR-ORD-2026-0044` has no ETA.** `days_left` is `null`, `etaText` returns `"—"`,
-   and the urgency expression's `!= null` guard renders no colour — **the same nothing
-   an on-time row gets.** *Not measurable* and *fine* look identical. This is the fifth
-   state, on the one field the screen sorts urgency by.
-3. **Two rows have no HS code and no customs total**, because nobody has classified
-   them yet. Today those cells are `v-if`-ed away entirely in the card (`:253`, `:257`)
-   so the metrics panel silently shrinks — three facts on one card and one on another,
-   with no indication that anything is absent rather than zero.
-4. **`Under Inspection` at −11 days is worse than `Document Missing` at 3.** Lane
-   position and urgency are two independent severities and the board today shows lane
-   position as a column and urgency as text colour inside it. Say how they combine.
-5. **`Released` at −18 days is not late.** The same `days_left` expression paints it
-   red (`< 0` → `text-red`), because the urgency rule knows nothing about the lane.
-   Goods that cleared customs three weeks ago are drawn as the most urgent thing on the
-   board.
-6. **A lane can be empty and a lane can be filtered to empty.** *"No items in this
-   stage"* (`:219-221`) says the same thing for both. With a `deal` filter applied,
-   four of five lanes say it, and nothing says the filter is why.
+The card's tender label is the buyer's organisation, not the lot number — `_deal_label`
+returns the deal's `organization`, so *Qurilish materiallari kombinati [DEMO]* is
+**37 characters** in the default language.
+
+**Eight things in this data the design must not smooth over:**
+
+1. **Shandong Heavy is 3 days from its ETA and missing documents.** It is the row the
+   whole screen exists for, and today its urgency is orange text and nothing else. The
+   lane already says *Document Missing*; the card must say **which** — the payload
+   carries `["License Copy / Certificate", "Customs Declaration (GTD)"]`.
+2. **Hebei Rail Parts is six days past its ETA with nothing received**, and it is the
+   most urgent thing on the board. Its twin, the logistics board, draws the same
+   purchase order as **on time** — see prompt 12 §S1. Whatever urgency vocabulary you
+   design here is read by someone who also reads that board.
+3. **Three of the five lanes cannot be reached on demo data.** *Declared* and *Under
+   Inspection* both require a **Customs Declaration**, and `seed_tender_demo.py` creates
+   none. *Ready for GTD* requires zero missing customs documents, which never happens
+   because both customs requirements are unverified ticks (below). So the board is
+   **four cards in one lane and one in another**, with three empty columns — and no
+   artboard in this package yet shows a lane layout under that load. Draw it.
+4. **The two missing documents are the same two on every row, and both are ticked.**
+   The seed writes them as `status: "ready"` with **no file attached**, which the parser
+   records as `unverified` — never `done`. So the lane says *Document Missing* while the
+   checklist behind it says *ready*, and nothing on this screen reconciles the two.
+5. **Temiryo'l ta'minot is `Released` and painted `warn`.** It is fully received and
+   out of customs; `risk` is derived from `days_left` with no knowledge of the lane, so
+   a finished purchase order is drawn as *due soon* four days from an ETA that no longer
+   matters. Lane position and urgency are two independent severities and the board shows
+   one as a column and the other as text colour inside it. Say how they combine.
+6. **Two rows have no HS code and no customs total** — the seed writes no landed charges
+   at all when the customs amount is zero. Today those cells are `v-if`-ed away in the
+   card (`:253`, `:257`) so the metrics panel silently shrinks: three facts on one card,
+   one on another, with nothing saying anything is absent rather than zero.
+7. **No row has a null ETA, so the demo cannot produce the *not measurable* state.** The
+   guard is real — `days_left` is `None` for a purchase order with no `schedule_date`,
+   `etaText` returns `"—"`, and the urgency expression renders **the same nothing an
+   on-time row gets**. Draw that state; state plainly that seeded data cannot exercise
+   it, which is exactly why it has survived.
+8. **A lane can be empty, filtered to empty, or unreachable** — and *"No items in this
+   stage"* says the same thing for all three. With a `deal` filter applied, four of five
+   lanes say it, and nothing says the filter is why.
 
 **Dates:** `dd.mm.yyyy` via `formatDate()`. **Money:** company currency only, one
 currency for the payload; `moneyFractionDigits("UZS")` is 0.

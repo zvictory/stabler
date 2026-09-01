@@ -495,10 +495,35 @@ and said so in the prompt itself: the seed creates no RFQ, which is the finding 
 screens exist to expose. 10 and 11 had real rows available and used invented ones
 instead, which contradicts the rule at the top of this file.
 
-The affected sections have **not** been rewritten — the canvases drawn from them exist,
-and whether to redraw them is Zafar's decision, not a silent edit. **Prompt 12 §7 was
-derived by executing the lane and risk logic against the seed on 01.09.2026**, and is
-the first data table in the package that can be reproduced from source.
+**Both §7 sections were rewritten on 2026-09-02**, on Zafar's instruction, by executing
+`po_control_board` · `_po_lane` and `declarant_queue`'s lane and risk logic against the
+seed. Each carries a line saying what it replaced. Checked across the whole folder while
+correcting them: **every lot number in every prompt now resolves to a seeded lot**, and
+the invented vendors appear nowhere else — 03's comparison table was already using the
+five real ones. The scope of the defect was exactly 10 and 11.
+
+**The rewrite changed findings, not just names**, which is why the canvases matter:
+
+- **10's KPI figure moves from `Received 40 %` to `26,2 %`**, and three findings are new
+  — every seeded PO is a **draft** (`docstatus 0`, deliberate, `seed_tender_demo.py:392`)
+  so three of four lanes never fill; `delayed` is unreachable because it requires
+  `docstatus == 1`; and **no seeded PO is in a foreign currency**, so **S1 — the landed
+  total that omits the charge printed above it — cannot be reproduced on demo data at
+  all.** The four-line multi-currency plan now appears as a **labelled constructed
+  example**, because the seed writes exactly one customs line per order.
+- **11's board is four cards in one lane and one in another**, with three lanes
+  unreachable (*Declared* and *Under Inspection* need a Customs Declaration the seed
+  never creates; *Ready for GTD* needs zero missing customs documents, which never
+  happens). Its *Released* row is painted `warn` because urgency knows nothing about the
+  lane — the old table made the same point with a red *Released* row that does not exist.
+- **`cheapest` lands on the two purchase orders with no charges recorded**, in both
+  deals. The seed writes no landed charges when the customs amount is zero, so the
+  vendor nobody has costed wins — the module's own warned-about failure
+  (*"reads as CHEAP and hands the tender to the wrong vendor"*), reproduced by its own
+  demo data.
+
+**The canvases for 10 and 11 were drawn from the replaced tables.** Whether to redraw
+them is Zafar's decision; the prompts are now correct, the artefacts are not.
 
 ---
 
