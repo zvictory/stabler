@@ -56,7 +56,7 @@ because that is where the third dialect lives.
 | 03 | Sourcing workspace | comparison table + award panel; 1039 lines, 0 `ds-*` |
 | 04 | Quotation entry drawer | drawer grammar, second pass |
 | 05–08 | RFQ list · new · detail · print | three inside the layer with no vocabulary; **only the print letter is outside it** |
-| 09 | Document center | the one surface all four roles share |
+| 09 | Document center | the one surface all four roles share — and the only screen whose **forbidden state is per row** |
 | 10 | PO control board | post-award; 765 lines, 0 `ds-*` |
 | 11–12 | Customs queue · Logistics board | read-only projections; drag-to-advance is forbidden |
 | 13–18 | Operations desk · Director board · Overview · Process flow · My tenders · Contract board | the boards |
@@ -82,7 +82,7 @@ put to Zafar with both canvases drawn, and passed on 2026-09-01.
 
 ## What has been drawn — the verification gate
 
-Five canvases exist. The first two **were** the gate the table above stops at: the
+Six canvases exist. The first two **were** the gate the table above stops at: the
 language was approved on them before the rest were drawn in it.
 
 | # | canvas | artboards | what it settles |
@@ -92,6 +92,7 @@ language was approved on them before the rest were drawn in it.
 | 03 | [Sourcing workspace](https://claude.ai/code/artifact/477c7af9-3734-4986-a842-dc215c56e76e) | 8 | S2 currency → a **third documented exception**, narrowed from 9 sites to one column · nine comparison columns → **seven** · a table row is **not** a region |
 | 04 | [Quotation entry drawer](https://claude.ai/code/artifact/16250885-0340-4e6b-a6ca-9421ae5f00d1) | 6 | S3 a failed load is a **state, not a toast** · the module's **reference patterns**, named so the other fourteen can copy them |
 | 05–08 | [RFQ family](https://claude.ai/code/artifact/623be708-1d87-4213-a274-b5670a75d4f3) | 8 | `ds-* = 0` does **not** mean outside the layer · the layer has **zero** `@media print` rules · the demo seed creates **no RFQ at all** · 07's `Mark as sent` writes a record nothing can read back |
+| 09 | [Document center](https://claude.ai/code/artifact/0ac0448d-6295-4657-9d0e-c3d321b19af6) | 7 | a document center that **cannot take a document** · the write gate is **per row, by role**, and no row shows one · an empty checklist reports **100 % ready** · a **fifth dialect**: two hand-rolled modals |
 
 Each canvas carries its own **not chosen** artboards rather than deleting the rejected
 option — the stepped intake on 01, the 542 px drawer on 02, the per-bid conversion on 03,
@@ -145,6 +146,31 @@ business in git. **The canvas URL is the artefact**; the prompt file is how it w
 - **Four global `@page` rules ship at once** — A5 twice, A4 twice, in unscoped `<style>`
   blocks, all live because `router.js` has 208 static imports and 0 lazy ones. One page
   size wins per print job by bundle order. Recorded as a bug, not designed.
+
+**From 09:**
+
+- **A fifth dialect.** After `ds-*`, `tgm-*`, bare Bootstrap and `rfq-*`, the document
+  center hand-rolls two Bootstrap-shaped modals (`:173`, `:205`):
+  `class="modal modal-blur fade show d-block"` with an inline backdrop colour, no
+  `role="dialog"`, no `aria-modal`, no focus trap, no Escape handler.
+- **The fourth state is not always a page state.** Every screen before this one could
+  draw *forbidden* as one alert. Here the server gates **each requirement row** by its
+  `role` field (`tender_documents.py:176-191`), the read view does not show that field,
+  and a logist is offered fourteen write controls of which four work. Refusal arrives as
+  a red toast **after** a modal has been filled in.
+- **`readiness_pct` returns 100 for a lot with no checklist** —
+  `_tender_documents.py:181`, `if required > 0 else 100`. Combined with the picker's
+  sort, a lot nobody has set up sorts **above** every lot with real work outstanding.
+  A per-deal `except Exception` (`tender_documents.py:470`) produces a third rendering:
+  a green tick beside a 0 % bar.
+- **The seed gap is not confined to the RFQ family.** `seed_tender_demo.py` creates no
+  requests for quotation **and** no document requirements. Two of the module's three
+  record types exist only if a human makes one.
+- **The same endpoint feeds two screens with two vocabularies.**
+  `TenderDocumentsPanel.vue` (inside screen 10) reads `list_tender_documents` too, and
+  has the real file control, the role badge and a role filter that screen 09 lacks —
+  while screen 09 has the words that the panel puts in `:title` attributes. Prompt 09
+  asks for a ruling, because prompt 10 inherits it.
 
 ---
 
