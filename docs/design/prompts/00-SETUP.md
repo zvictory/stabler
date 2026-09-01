@@ -315,6 +315,52 @@ exists for. And **ADR-304** is answered as *read-only intake beside a route to t
 drawer that owns it*, which satisfies "connected or removed" without creating a second
 writer against ADR-201.
 
+### Coverage audit — 2026-09-01
+
+Prompt 10 raised the question and this answers it: **the eighteen slots map exactly onto
+the module.** Sixteen `/tender/*` routes (eighteen `path:` entries less two redirects)
+plus the two drawers, which are not routes:
+
+| slots | surfaces |
+|---|---|
+| 01, 04 | the two drawers — `components/TenderMasterDrawer.vue`, and the quotation drawer **inside** `SourcingWorkspace.vue` |
+| 02, 03, 05–10 | one route each |
+| 11–18 | one route each: `/tender/customs` · `/logistics` · `/desk` · `/portfolio` · `/overview` · `/flow` · `/my-tenders` · `/board` |
+
+**Screen 10 was the exception, not the pattern.** Measured across 11–18: every one of
+them imports **only** `TenderPage` plus `EmptyState` / `SkeletonRows` — shared
+infrastructure, not screen-sized components. Nothing there resembles 10's four hosted
+surfaces (`TenderIntake` 365, `BidPricing` 287, `TenderDocumentsPanel` 186,
+`TenderDocumentChain` 48).
+
+**Three gaps, in descending size:**
+
+1. **`TenderFunnel.vue` — 745 lines, no slot, two hosts.** Bigger than
+   `PoControlBoard`'s shell. Rendered by `DirectorBoard.vue:192` (slot 14) and
+   `TenderOverview.vue:119-125` (slot 15). Without a decision it gets drawn twice, by
+   two prompts, differently.
+   **Two measurements settle where it goes.** It is the module's most layer-native
+   component — **64 `ds-*`, 0 `badge bg-`** — so it needs extension, not migration. And
+   its `mode` prop **has exactly one value in the whole app**: `DirectorBoard` omits it
+   (default `"full"`), `TenderOverview` passes `mode="full"` explicitly, and both pass
+   `pipeline-strip`. The `v-if="props.mode === 'full'"` at `:425` guards a branch that
+   is always taken. **A mode switch with one mode.**
+   **Decision: draw it once, in prompt 15**, where it is the whole screen. Prompt 14
+   then carries only the difference — `DirectorBoard` passes `:selected` and controls
+   the phase, `TenderOverview` does not. The dead `mode` prop belongs to whichever
+   prompt draws it, as a finding.
+2. **The shell is in no prompt.** `TenderPage.vue` (29) and `TenderNav.vue` (87) render
+   on **all sixteen routes**, and `TenderPage.vue:12` is where `.stbl-ds` is applied —
+   the single line that puts every tender screen inside the layer. Neither is named in
+   any prompt. Small, and load-bearing enough that it should be said out loud
+   somewhere rather than assumed sixteen times.
+3. **`/tender/board` renders a file in the sales folder.** `pages/sales/SalesOrderBoard.vue`
+   (192), reached from a tender route, using `TenderPage` and the shared
+   `tenderBoardFilters` composable. Slot 18 covers it; the prompt has to say whose
+   screen it is before it redesigns it.
+
+**Also confirmed: no dead files remain** — see the corrected bullet above.
+
 ---
 
 ## Decisions taken while writing these prompts — 2026-09-01
@@ -395,10 +441,16 @@ From the council's own output contract, not from the screens:
   **This is the second time in this package that "the file does not write the class" was
   read as "the component is not under it"** — the first was `ds-* = 0`, corrected at
   screen 05. Grep the render tree, not the file.
-- **Four dead files are out of scope and must not be prettified**: `TenderCrmWrapper`,
-  `TenderExecutionFlow`, `TenderExecutiveKpis`, `TenderTrendChart` — measured **0**
-  JS/Vue imports each, but **1–2 Python references** apiece across three test modules
-  that sit in the push gate. Deleting them is a three-module change, not a cleanup.
+- ~~Four dead files are out of scope and must not be prettified~~ — **stale, corrected
+  2026-09-01 by the coverage audit.** `TenderCrmWrapper`, `TenderExecutionFlow`,
+  `TenderExecutiveKpis` and `TenderTrendChart` **were already deleted** (Phase A §10.5,
+  Zafar's decision); measured **0** `.vue` files today. The Python references that made
+  them look alive are **deletion guards**, not blockers:
+  `self.assertFalse(os.path.exists(path), "... should be deleted")`
+  (`test_tender_dashboard_spa.py:143-144`) and
+  `self.assertNotIn("TenderCrmWrapper", router)` (`test_tender_master_board_spa.py:50-53`).
+  Nothing is left to delete; three test modules exist to keep it that way. The old note
+  described work that had already happened.
 - **`SourcingWorkspace`'s horizontal overflow closes, and a spec asserts it.** Measured:
   `table-responsive` **0**, `card-table` **2**, `ds-` **0**. Prompt 03.
 - **ADR-304 — `TenderIntake.vue` is an orphan.** No route; embedded only at
