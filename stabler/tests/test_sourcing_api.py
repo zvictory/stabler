@@ -930,6 +930,27 @@ class TestGetRfq(unittest.TestCase):
 		self.assertEqual(res["items"][0]["item_code"], "RAIL-01")
 		self.assertEqual(res["items"][0]["target_rate"], 2.5)
 
+	def test_the_target_rate_carries_the_intake_currency_not_the_company_one(self):
+		"""The intake states its own currency — the tender is estimated in USD
+		while the company keeps its books in UZS, which is the ordinary case for
+		an import tender. The rate is meaningless without the unit it was written
+		in, and the company's default currency is the wrong unit to assume."""
+		deal = self.fake.docs[("CRM Deal", "LOT-A")]
+		intake = json.loads(deal["custom_tender_intake"])
+		intake["currency"] = "USD"
+		deal["custom_tender_intake"] = json.dumps(intake)
+
+		res = self.api.get_rfq("RFQ-1", company="ACME")
+		self.assertEqual(res["target_currency"], "USD")
+
+	def test_an_intake_that_never_stated_a_currency_reads_as_unknown(self):
+		"""Older lots were captured before the drawer carried a currency. The
+		honest answer is that we do not know the unit — filling in the company's
+		own currency would turn "unknown" into a confident wrong label, which is
+		worse on screen than an unformatted number."""
+		res = self.api.get_rfq("RFQ-1", company="ACME")
+		self.assertEqual(res["target_currency"], "")
+
 	def test_rejects_an_rfq_of_another_company(self):
 		with self.assertRaises(PermissionError):
 			self.api.get_rfq("RFQ-OTHER-COMPANY", company="ACME")
@@ -951,6 +972,23 @@ class TestRfqPrint(unittest.TestCase):
 		self.assertEqual(res["company_name"], "ACME Corp")
 		self.assertEqual(res["company_abbr"], "ACME")
 		self.assertEqual(len(res["items"]), 1)
+
+	def test_the_letter_does_not_carry_our_own_ceiling_price(self):
+		"""`get_rfq` joins the intake estimate on purpose — the officer reading
+		the RFQ detail should see the tender's own expectation beside the ask,
+		and the test above pins that. `rfq_print` is built on `get_rfq`, so the
+		same figure rode into the payload of the one screen whose entire purpose
+		is to be turned toward the vendor being asked to beat it. The letter is
+		handed over; the ceiling is not part of it."""
+		detail = self.api.get_rfq("RFQ-1", company="ACME")
+		self.assertEqual(detail["items"][0]["target_rate"], 2.5, "the detail must keep it")
+
+		letter = self.api.rfq_print("RFQ-1", company="ACME")
+		for line in letter["items"]:
+			self.assertNotIn("target_rate", line)
+		# The unit travels with the figure or not at all: leaving the currency
+		# behind would tell the supplier which market we priced this in.
+		self.assertNotIn("target_currency", letter)
 
 	def test_rejects_an_rfq_of_another_company(self):
 		with self.assertRaises(PermissionError):

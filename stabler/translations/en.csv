@@ -935,6 +935,7 @@ Approved,Approved
 Approved and posted.,Approved and posted.
 Approved at,Approved at
 Approved by,Approved by
+Approving…,Approving…
 Approx. at current valuation rate,Approx. at current valuation rate
 APR,APR
 AR Aging,AR Aging
@@ -4462,6 +4463,7 @@ Please ensure all items are selected and have a quantity greater than zero.,Plea
 Please enter both username/email and password.,Please enter both username/email and password.
 Please fill all required fields.,Please fill all required fields.
 Please respond by,Please respond by
+No deadline specified,No deadline specified
 Please select a supplier first.,Please select a supplier first.
 Please select an active company.,Please select an active company.
 "Please state: unit price, currency, validity period, and delivery time.","Please state: unit price, currency, validity period, and delivery time."
@@ -6998,3 +7000,9 @@ This invitation reaches {countries} country(ies). On its own it cannot satisfy t
 "Asked: {count} vendor(s), {countries} country(ies)","Asked: {count} vendor(s), {countries} country(ies)"
 "Everyone asked so far is in {countries} country(ies). More rounds, or a quotation attached from elsewhere, are what change that.","Everyone asked so far is in {countries} country(ies). More rounds, or a quotation attached from elsewhere, are what change that."
 {count} of the vendors asked has no country on file and counts toward no country.,{count} of the vendors asked has no country on file and counts toward no country.
+"Lines with no exchange rate, not in this total: {count}","Lines with no exchange rate, not in this total: {count}"
+Quotation date,Quotation date
+The currency list could not be loaded — only your company's currency is available.,The currency list could not be loaded — only your company's currency is available.
+Handled by the {role} role.,Handled by the {role} role.
+Remove file?,Remove file?
+Remove {file} from {requirement}? The requirement re-opens if this was its last file.,Remove {file} from {requirement}? The requirement re-opens if this was its last file.

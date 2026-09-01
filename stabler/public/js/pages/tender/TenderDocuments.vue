@@ -106,13 +106,14 @@
 							<tr>
 								<th>{{ t("Requirement") }}</th>
 								<th>{{ t("Scope") }}</th>
+								<th>{{ t("Responsible role") }}</th>
 								<th>{{ t("Status") }}</th>
 								<th>{{ t("Attached files / Waiver") }}</th>
 								<th class="text-end">{{ t("Actions") }}</th>
 							</tr>
 						</thead>
 						<tbody>
-							<SkeletonRows v-if="loading" :cols="5" :rows="4" />
+							<SkeletonRows v-if="loading" :cols="6" :rows="4" />
 							<tr v-for="r in requirements" :key="r.key">
 								<td>
 									<div class="fw-semibold">{{ r.label }}</div>
@@ -125,6 +126,9 @@
 									<span class="badge" :class="r.scope === 'tender' ? 'bg-purple-lt text-purple' : 'bg-blue-lt text-blue'">
 										{{ r.scope === 'tender' ? t("Tender Master") : t("Lot Specific") }}
 									</span>
+								</td>
+								<td>
+									<span class="text-secondary small">{{ roleLabel(r.role) }}</span>
 								</td>
 								<td>
 									<span v-if="r.done" class="badge bg-green text-white">
@@ -150,17 +154,31 @@
 												{{ f.file_name || f.file_url }}
 											</a>
 											<span class="text-secondary ms-auto" style="font-size: 0.8em">{{ f.uploaded_at ? f.uploaded_at.substring(0, 10) : '' }}</span>
+											<button
+												v-if="canWrite(r, tenderViews)" type="button" class="btn btn-ghost-danger btn-sm px-1 py-0"
+												:disabled="removingFile === f.file_url" :aria-busy="removingFile === f.file_url"
+												:title="t('Remove file')" :aria-label="t('Remove file')"
+												@click="removeFile(r, f)">
+												<i class="ti ti-x"></i>
+											</button>
 										</div>
 									</div>
 									<span v-else class="text-secondary small">—</span>
 								</td>
 								<td class="text-end">
-									<button type="button" class="btn btn-ghost-primary btn-sm me-1" @click="openUpload(r)">
+									<button
+										type="button" class="btn btn-ghost-primary btn-sm me-1"
+										:disabled="!canWrite(r, tenderViews)" :title="writeHint(r)" @click="openUpload(r)">
 										<i class="ti ti-upload me-1"></i>{{ t("Upload file") }}
 									</button>
-									<button type="button" class="btn btn-ghost-warning btn-sm" @click="openWaive(r)">
+									<button
+										type="button" class="btn btn-ghost-warning btn-sm"
+										:disabled="!canWrite(r, tenderViews)" :title="writeHint(r)" @click="openWaive(r)">
 										<i class="ti ti-shield-off me-1"></i>{{ t("Waive") }}
 									</button>
+									<div v-if="!canWrite(r, tenderViews)" class="text-secondary small mt-1">
+										{{ t("Handled by the {role} role.", { role: roleLabel(r.role) }) }}
+									</div>
 								</td>
 							</tr>
 						</tbody>
@@ -293,6 +311,7 @@ import { storeToRefs } from "pinia";
 import { useSession } from "../../stores/session.js";
 import { call } from "../../api/client.js";
 import { t } from "../../composables/i18n.js";
+import { useConfirm } from "../../composables/useConfirm.js";
 import { useToast } from "../../composables/useToast.js";
 import { useTenderContext } from "../../composables/useTenderContext.js";
 import EmptyState from "../../components/EmptyState.vue";
@@ -301,10 +320,11 @@ import DateInput from "../../components/DateInput.vue";
 import TenderPage from "./TenderPage.vue";
 
 const session = useSession();
-const { activeCompany } = storeToRefs(session);
+const { activeCompany, tenderViews } = storeToRefs(session);
 const route = useRoute();
 const router = useRouter();
 const toast = useToast();
+const { confirm } = useConfirm();
 const { documentsLocation } = useTenderContext(route);
 
 const deal = ref(route.query.deal ? String(route.query.deal) : "");
@@ -316,6 +336,7 @@ const summary = ref(null);
 const targets = ref([]);
 const targetsLoading = ref(false);
 
+const removingFile = ref("");
 const uploadOpen = ref(false);
 const uploadSaving = ref(false);
 const targetReq = ref(null);
@@ -338,6 +359,36 @@ const ROLE_OPTIONS = [
 	{ value: "logistics", label: t("Logistics") },
 	{ value: "finance", label: t("Finance") },
 ];
+
+// Mirrors DOC_ROLE_WRITER_VIEWS in `stabler/api/_tender_documents.py`, which is
+// what actually decides the request. A second copy of a rule is a liability, so
+// this one is not trusted on its word: a test reads the Python and executes
+// this function against it, role by role. `director` is the universal writer;
+// an unknown or absent role falls back to "general" the way the server does,
+// rather than refusing a row written by an older version of the list.
+function canWrite(row, views) {
+	const writers = {
+		customs: ["declarant", "director"],
+		logistics: ["logist", "director"],
+		general: ["sourcing", "director"],
+		finance: ["sourcing", "director"],
+	};
+	const role = String((row && row.role) || "general").trim().toLowerCase();
+	const allowed = writers[role] || writers.general;
+	return (views || []).some((v) => allowed.includes(v));
+}
+
+function roleLabel(role) {
+	const found = ROLE_OPTIONS.find((o) => o.value === String(role || "general"));
+	return found ? found.label : String(role || "");
+}
+
+function writeHint(row) {
+	// null, not "" — Vue drops the attribute entirely rather than leaving an
+	// empty title on a button that has nothing to explain.
+	if (canWrite(row, tenderViews.value)) return null;
+	return t("Handled by the {role} role.", { role: roleLabel(row.role) });
+}
 
 // Mirrors the backend's default_doc_requirements() — keys and role assignments
 // drive who may upload to each row.
@@ -424,6 +475,37 @@ async function loadTargets() {
 
 function pickLot(dealId) {
 	router.push(documentsLocation(dealId));
+}
+
+async function removeFile(req, file) {
+	// This screen lists every attachment by name, truncated to 200px — an X on
+	// the wrong row is a plausible slip in a way the panel's single-file button
+	// is not, so this one asks first even though the sister panel does not.
+	const ok = await confirm({
+		title: t("Remove file?"),
+		body: t("Remove {file} from {requirement}? The requirement re-opens if this was its last file.", {
+			file: file.file_name || file.file_url,
+			requirement: req.label,
+		}),
+		danger: true,
+		confirmLabel: t("Remove"),
+	});
+	if (!ok) return;
+	removingFile.value = file.file_url;
+	try {
+		await call("stabler.api.tender_documents.remove_tender_document", {
+			deal: deal.value,
+			requirement_key: req.key,
+			file_url: file.file_url,
+			company: activeCompany.value,
+		});
+		toast.success(t("Document removed."));
+		await load();
+	} catch (err) {
+		toast.error(err.message || t("Could not remove document."));
+	} finally {
+		removingFile.value = "";
+	}
 }
 
 async function load() {
@@ -514,6 +596,7 @@ watch([deal, activeCompany], () => {
 	}
 });
 onMounted(() => {
+	session.ensureTenderViews();
 	if (deal.value) load();
 	else loadTargets();
 });

@@ -518,6 +518,7 @@ Approved,Одобрена
 Approved and posted.,Согласовано и проведено.
 Approved at,Утверждено в
 Approved by,Утвердил
+Approving…,Утверждение…
 Approx. at current valuation rate,"Прибл., по текущей себестоимости"
 APR,УТВ
 AR Aging,Анализ дебиторской задолженности
@@ -4050,6 +4051,7 @@ Please ensure all items are selected and have a quantity greater than zero.,"П�
 Please enter both username/email and password.,Введите имя пользователя/e-mail и пароль.
 Please fill all required fields.,"Пожалуйста, заполните все обязательные поля."
 Please respond by,"Пожалуйста, ответьте до"
+No deadline specified,Срок не указан
 Please select a supplier first.,Сначала выберите поставщика.
 Please select an active company.,Выберите активную компанию.
 "Please state: unit price, currency, validity period, and delivery time.","Пожалуйста, укажите: цену за единицу, валюту, срок действия и срок поставки."
@@ -6609,3 +6611,9 @@ This invitation reaches {countries} country(ies). On its own it cannot satisfy t
 "Asked: {count} vendor(s), {countries} country(ies)","Запрошено: {count} поставщик(ов), {countries} страна(стран)"
 "Everyone asked so far is in {countries} country(ies). More rounds, or a quotation attached from elsewhere, are what change that.","Все, кого запросили до сих пор, находятся в {countries} стране(ах). Это изменят только новые раунды или предложение, добавленное со стороны."
 {count} of the vendors asked has no country on file and counts toward no country.,"У {count} из запрошенных поставщиков не указана страна, и они не засчитываются ни в одну страну."
+"Lines with no exchange rate, not in this total: {count}","Строки без курса валюты, не входят в этот итог: {count}"
+Quotation date,Дата предложения
+The currency list could not be loaded — only your company's currency is available.,Не удалось загрузить список валют — доступна только валюта вашей компании.
+Handled by the {role} role.,Обрабатывается ролью «{role}».
+Remove file?,Удалить файл?
+Remove {file} from {requirement}? The requirement re-opens if this was its last file.,"Удалить «{file}» из «{requirement}»? Если это был последний файл, требование снова станет невыполненным."

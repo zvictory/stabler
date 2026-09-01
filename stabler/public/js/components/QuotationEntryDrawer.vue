@@ -23,7 +23,8 @@ import { storeToRefs } from "pinia";
 import { useSession } from "../stores/session.js";
 import { call } from "../api/client.js";
 import { t } from "../composables/i18n.js";
-import { todayIso } from "../composables/date.js";
+import { formatMoney } from "../composables/money.js";
+import { formatDate, todayIso } from "../composables/date.js";
 import { useToast } from "../composables/useToast.js";
 import MoneyInput from "./MoneyInput.vue";
 import DateInput from "./DateInput.vue";
@@ -42,6 +43,10 @@ const session = useSession();
 const { activeCompany, user, currency } = storeToRefs(session);
 const toast = useToast();
 
+// Set when the currency list request failed and the field fell back to the
+// company's own currency. Degrading is fine; degrading silently is not — the
+// only place a foreign currency enters the product would go quietly dead.
+const currencyListFailed = ref(false);
 const saving = ref(false);
 const submitting = ref(false);
 const currencies = ref([]);
@@ -123,6 +128,7 @@ const minValidTill = computed(() => {
 	} catch {
 		// Para birimi listesi düşerse alan boş kalmasın: hiç değilse şirketinki.
 		currencies.value = currency.value ? [currency.value] : [];
+		currencyListFailed.value = true;
 	}
 	if (!form.value.currency && currencies.value.length) {
 		form.value.currency = currency.value || currencies.value[0] || "";
@@ -152,6 +158,17 @@ function removeLine(index) {
 
 const lineTotal = (row) => Number(row.qty || 0) * Number(row.rate || 0);
 const total = computed(() => form.value.items.reduce((sum, row) => sum + lineTotal(row), 0));
+
+// Money goes through the house formatter, never `toLocaleString()` — that reads
+// the BROWSER's locale, not the user's language, and knows nothing about how
+// many fraction digits a currency carries. `form.currency` can genuinely be
+// empty (the currency list request can fail and leave the field unfilled), and
+// `formatMoney(v, "")` makes Intl throw and degrades to an unformatted
+// `toFixed(2)`. An amount whose unit nobody knows is not measurable, and says so.
+function fmtAmount(v) {
+	if (!form.value.currency) return "—";
+	return formatMoney(v, form.value.currency, user.value.language);
+}
 
 /* Sunucunun reddedeceği şeyi göndermeden söylüyoruz. Bu bir GÜVENLİK kontrolü
  * DEĞİL — api/sourcing.py aynı kuralları kendi uyguluyor ve asıl kapı orası.
@@ -253,14 +270,21 @@ async function submitQuotation() {
 				<label class="qed-field qed-field--narrow">
 					<span class="ds-label">{{ t("Currency") }}</span>
 					<Select v-model="form.currency" :options="currencies" size="sm" />
+					<span v-if="currencyListFailed" class="ds-hint text-danger" role="alert">
+						{{ t("The currency list could not be loaded — only your company's currency is available.") }}
+					</span>
 				</label>
 
 				<label class="qed-field qed-field--narrow">
 					<span class="ds-label">{{ t("Valid till") }}</span>
 					<DateInput v-model="form.valid_till" :min="minValidTill" size="sm" />
+					<span v-if="form.transaction_date" class="ds-hint">
+						{{ t("Quotation date") }}: {{ formatDate(form.transaction_date) }}
+					</span>
 				</label>
 			</div>
 
+			<div class="table-responsive">
 			<table class="ds-table qed-lines">
 				<thead>
 					<tr>
@@ -299,17 +323,18 @@ async function submitQuotation() {
 								:max-fraction-digits="4"
 							/>
 						</td>
-						<td class="ds-td-num ds-mono">{{ lineTotal(row).toLocaleString() }}</td>
+						<td class="ds-td-num ds-mono">{{ fmtAmount(lineTotal(row)) }}</td>
 						<td class="qed-col-act">
 							<button type="button" class="ds-btn qed-rm" :aria-label="t('Remove line')" @click="removeLine(index)">✕</button>
 						</td>
 					</tr>
 				</tbody>
 			</table>
+			</div>
 
 			<div class="qed-lines-foot">
 				<button type="button" class="ds-btn" @click="addLine">＋ {{ t("Add line") }}</button>
-				<span class="ds-mono qed-total">{{ t("Total") }}: {{ total.toLocaleString() }} {{ form.currency }}</span>
+				<span class="ds-mono qed-total">{{ t("Total") }}: {{ fmtAmount(total) }}</span>
 			</div>
 
 			<ul v-if="problems.length" class="qed-problems" role="alert">
@@ -322,6 +347,7 @@ async function submitQuotation() {
 				type="button"
 				class="ds-btn ds-btn--primary"
 				:disabled="saving || problems.length > 0"
+				:aria-busy="saving"
 				@click="save"
 			>
 				{{ saving ? t("Saving…") : t("Save draft") }}
@@ -331,6 +357,7 @@ async function submitQuotation() {
 				class="ds-btn"
 				:disabled="!form.name || submitting"
 				:title="!form.name ? t('Save the draft first') : ''"
+				:aria-busy="submitting"
 				@click="submitQuotation"
 			>
 				{{ submitting ? t("Submitting…") : t("Submit quotation") }}

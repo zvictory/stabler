@@ -208,7 +208,7 @@ onMounted(() => {
 			<div class="card-body">
 				<div class="row g-3">
 					<div class="col-md-6">
-						<label class="form-label fw-semibold">{{ t("Tender lot") }} <span class="text-danger">*</span></label>
+						<label class="form-label fw-semibold">{{ t("Tender lot") }} <span class="text-danger" aria-hidden="true">*</span><span class="visually-hidden"> {{ t("Required") }}</span></label>
 						<Typeahead
 							:model-value="deal"
 							:display="dealLabel || deal"
@@ -237,7 +237,7 @@ onMounted(() => {
 		</div>
 
 		<div class="card mb-3">
-			<div class="card-header py-2 fw-semibold">{{ t("Suppliers to ask") }} <span class="text-danger">*</span></div>
+			<div class="card-header py-2 fw-semibold">{{ t("Suppliers to ask") }} <span class="text-danger" aria-hidden="true">*</span><span class="visually-hidden"> {{ t("Required") }}</span></div>
 			<div class="card-body">
 				<div v-if="suppliers.length" class="d-flex flex-wrap gap-1 mb-2">
 					<span v-for="(sup, idx) in suppliers" :key="sup" class="badge bg-primary-lt text-primary">
@@ -296,7 +296,7 @@ onMounted(() => {
 
 		<div class="card mb-3">
 			<div class="card-header py-2 d-flex justify-content-between align-items-center">
-				<span class="fw-semibold">{{ t("Requested items") }} <span class="text-danger">*</span></span>
+				<span class="fw-semibold">{{ t("Requested items") }} <span class="text-danger" aria-hidden="true">*</span><span class="visually-hidden"> {{ t("Required") }}</span></span>
 				<button type="button" class="btn btn-outline-secondary btn-sm" @click="addLine">
 					<i class="ti ti-plus me-1"></i>{{ t("Add line") }}
 				</button>
@@ -371,9 +371,14 @@ onMounted(() => {
 				>
 					{{ t("Cancel") }}
 				</button>
-				<button type="button" class="btn btn-primary" :disabled="!canCreate" @click="create">
-					<span v-if="saving" class="spinner-border spinner-border-sm me-1"></span>
-					{{ t("Create draft RFQ") }}
+				<button
+					type="button"
+					class="btn btn-primary"
+					:disabled="!canCreate"
+					:aria-busy="saving"
+					@click="create"
+				>
+					{{ saving ? t("Creating…") : t("Create draft RFQ") }}
 				</button>
 				<span class="text-secondary small ms-auto">
 					{{ t("Stabler creates the draft; sharing it with suppliers stays your act.") }}

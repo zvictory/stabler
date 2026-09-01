@@ -224,7 +224,7 @@ and say which one it is and where it came from.
 
 ### An architectural problem you must show, not solve
 
-**Three `<a href="#">` with `@click.prevent`** (`:107`, `:194`) — the lot link in the
+**Two `<a href="#">` with `@click.prevent`** (`:107`, `:194`) — the lot link in the
 header meta and the "Open comparison" link in the suppliers footer. Fake links: no
 target, no middle-click, no copy-link, no keyboard focus order that means anything.
 One of them sits in a `#meta` slot whose whole content is *"Lot: <fake link>"*.

@@ -151,9 +151,15 @@ const editorSupplier = ref("");
 const editorBase = ref(0);
 const editorLines = ref([]); // [{ type, label, amount }]
 
-const editorCharges = computed(() => editorLines.value.reduce((a, l) => a + (Number(l.amount) || 0), 0));
+// `amount`/`actual` are the company-currency figures the SERVER derives at save.
+// In the open modal they are null on a line just added and stale on one just
+// edited, so summing them printed a total that omitted a charge the row above it
+// was already showing. Price the lines the way the cells do.
+const editorPlanned = computed(() => priceLines(editorLines.value, convertedPreview));
+const editorCharges = computed(() => editorPlanned.value.total);
 const editorLanded = computed(() => (Number(editorBase.value) || 0) + editorCharges.value);
-const editorActual = computed(() => editorLines.value.reduce((a, l) => a + (Number(l.actual) || 0), 0));
+const editorActualPriced = computed(() => priceLines(editorLines.value, actualPreview));
+const editorActual = computed(() => editorActualPriced.value.total);
 const editorActualLanded = computed(() => (Number(editorBase.value) || 0) + editorActual.value);
 // WP-T5: how many actual lines are sourced from the ledger vs hand-typed.
 const editorActualLinked = computed(() => editorLines.value.filter((l) => l.actual_voucher).length);
@@ -229,6 +235,33 @@ function convertedPreview(l) {
 	const rate = Number(l.fx_rate) || 0;
 	if (rate <= 0) return null;
 	return Math.round((Number(l.amount_original) || 0) * rate * 100) / 100;
+}
+
+// The actual side of the same rule. It is deliberately NOT symmetrical with the
+// planned one: a planned line carrying a currency and no rate is an incomplete
+// plan and must be flagged, but an actual of nothing is the ordinary state of a
+// charge that has not been invoiced yet — flagging it would park a permanent
+// warning under every open PO.
+function actualPreview(l) {
+	if (!l.currency) return Number(l.actual) || 0;
+	const original = Number(l.actual_original) || 0;
+	if (!original) return 0;
+	const rate = Number(l.fx_rate) || 0;
+	if (rate <= 0) return null;
+	return Math.round(original * rate * 100) / 100;
+}
+
+// `null` means the line cannot be valued at all. Counting those is the whole
+// point: adding them as zero is how a total silently shrinks.
+function priceLines(lines, preview) {
+	let total = 0;
+	let unvalued = 0;
+	for (const l of lines || []) {
+		const value = preview(l);
+		if (value === null) unvalued += 1;
+		else total += value;
+	}
+	return { total, unvalued };
 }
 async function fetchChargeRate(l) {
 	l.fx_source = "";
@@ -740,6 +773,7 @@ watch(() => route.query.deal, (d) => { if (d && d !== deal.value) { deal.value =
 								<div class="col-6">
 									<div class="d-flex justify-content-between small text-secondary"><span>{{ t("Planned") }} {{ t("Charges").toLowerCase() }}</span><span class="font-monospace">+{{ formatMoney(editorCharges, ccy, user.language) }}</span></div>
 									<div class="d-flex justify-content-between fw-bold"><span>{{ t("Landed total") }}</span><span class="font-monospace">{{ formatMoney(editorLanded, ccy, user.language) }}</span></div>
+									<div v-if="editorPlanned.unvalued" class="small text-danger"><i class="ti ti-alert-triangle me-1"></i>{{ t("Lines with no exchange rate, not in this total: {count}", { count: editorPlanned.unvalued }) }}</div>
 									<div v-if="editorRecoverableVat" class="d-flex justify-content-between small text-green" :title="t('Recoverable input VAT — not part of landed cost')"><span><i class="ti ti-receipt-refund"></i> {{ t("VAT recoverable") }}</span><span class="font-monospace">{{ formatMoney(editorRecoverableVat, ccy, user.language) }}</span></div>
 								</div>
 								<div class="col-6">
@@ -748,6 +782,7 @@ watch(() => route.query.deal, (d) => { if (d && d !== deal.value) { deal.value =
 									<div class="d-flex justify-content-between fw-bold"><span>{{ t("Actual landed") }}</span>
 										<span class="font-monospace" :class="editorActual && editorActualLanded > editorLanded ? 'text-red' : (editorActual ? 'text-green' : '')">{{ formatMoney(editorActualLanded, ccy, user.language) }}</span>
 									</div>
+									<div v-if="editorActualPriced.unvalued" class="small text-danger"><i class="ti ti-alert-triangle me-1"></i>{{ t("Lines with no exchange rate, not in this total: {count}", { count: editorActualPriced.unvalued }) }}</div>
 								</div>
 							</div>
 						</div>

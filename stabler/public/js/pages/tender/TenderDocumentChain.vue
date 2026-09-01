@@ -20,6 +20,14 @@ const sides = computed(() => [
 	{ key: "sales", title: t("Sales execution"), chain: props.sales, labels: [t("Sales order"), t("Delivery"), t("Invoice")] },
 ]);
 
+// Each document in the chain carries its own currency — the server sends it per
+// row — and a tender routinely pairs a USD purchase order to a foreign supplier
+// with a UZS-invoiced sales order. The tender's own currency is only the
+// fallback, the same way the board's charge lines already read `c.currency || ccy`.
+function rowCurrency(row) {
+	return row.currency || props.currency;
+}
+
 function openOrder(side, name) {
 	router.push(side === "purchase" ? `/purchasing/orders/${name}` : `/sales/orders/${name}`);
 }
@@ -37,7 +45,7 @@ function openOrder(side, name) {
 							<button v-if="index === 0" type="button" class="btn btn-link p-0 text-start font-monospace" @click="openOrder(side.key, row.name)">{{ row.name }}</button>
 							<span v-else class="font-monospace">{{ row.name }}</span>
 							<span class="text-secondary text-nowrap">{{ row.posting_date ? formatDate(row.posting_date) : "—" }}</span>
-							<span class="font-monospace text-end text-nowrap">{{ formatMoney(row.grand_total, currency, language) }}</span>
+							<span class="font-monospace text-end text-nowrap">{{ formatMoney(row.grand_total, rowCurrency(row), language) }}</span>
 						</div>
 						<div v-if="!(rows || []).length" class="text-secondary small">{{ t("No linked documents") }}</div>
 					</div>
