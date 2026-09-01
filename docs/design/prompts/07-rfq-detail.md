@@ -13,6 +13,15 @@ in the SPA can read that record back**. Screen 04's silent fork lost an error; t
 one loses a success. Both leave a toast as the only evidence, and a toast is not a
 record.
 
+**Correction, 2026-09-01 — carried from prompt 11.** `RfqDetail.vue` calls
+`useAutoRefresh(load)`, `load()` sets `loading = true`, and the template answers with
+`v-if="loading"` — **so this page replaces itself with a skeleton every sixty seconds**.
+`load()` also catches its own error and toasts, defeating the composable's documented
+promise never to surface an auto-refresh failure as a toast. Six screens do both; the
+module's answer is drawn on **prompt 11's canvas** and this screen adopts it rather than
+inventing a second one. A detail page is the harder case: there is no lane board to
+redraw, only a form the user may be reading mid-sentence.
+
 ---
 
 <!-- ═══════════ PASTE BELOW THIS LINE ═══════════ -->

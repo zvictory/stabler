@@ -58,7 +58,7 @@ because that is where the third dialect lives.
 | 05–08 | RFQ list · new · detail · print | three inside the layer with no vocabulary; **only the print letter is outside it** |
 | 09 | Document center | the one surface all four roles share — **three scopes: company · tender · lot**, a **library with two-way binding** — and the only screen whose **forbidden state is per row** |
 | 10 | PO control board | post-award; **one route, six components, 1,696 lines, 0 `ds-*` in any of them** — the module's money is decided here, and the layer has no tab component |
-| 11–12 | Customs queue · Logistics board | read-only projections; drag-to-advance is forbidden |
+| 11–12 | Customs queue · Logistics board | read-only projections; drag-to-advance is forbidden — and **~77 % the same file**, so 11 draws the projection and 12 draws only the difference |
 | 13–18 | Operations desk · Director board · Overview · Process flow · My tenders · Contract board | the boards |
 
 **The gate after 02 was not optional** — getting the language wrong and then drawing
@@ -82,7 +82,7 @@ put to Zafar with both canvases drawn, and passed on 2026-09-01.
 
 ## What has been drawn — the verification gate
 
-Seven canvases exist. The first two **were** the gate the table above stops at: the
+Eight canvases exist. The first two **were** the gate the table above stops at: the
 language was approved on them before the rest were drawn in it.
 
 | # | canvas | artboards | what it settles |
@@ -94,6 +94,7 @@ language was approved on them before the rest were drawn in it.
 | 05–08 | [RFQ family](https://claude.ai/code/artifact/623be708-1d87-4213-a274-b5670a75d4f3) | 8 | `ds-* = 0` does **not** mean outside the layer · the layer has **zero** `@media print` rules · the demo seed creates **no RFQ at all** · 07's `Mark as sent` writes a record nothing can read back |
 | 09 | [Document center](https://claude.ai/code/artifact/0ac0448d-6295-4657-9d0e-c3d321b19af6) | 9 | **two scopes exist and the product needs three** (S1, added 2026-09-01) · a document center that **cannot take a document** · the write gate is **per row, by role**, and no row shows one · an empty checklist reports **100 % ready** · a **fifth dialect**: two hand-rolled modals |
 | 10 | [PO control board](https://claude.ai/code/artifact/97034dcd-ea7f-481e-a02d-31f1feabdce9) | 8 | the editor's **landed total omits charges it is displaying** (right in the database, wrong on screen) · the layer has **no tab component** · the chain **keys on a link it never renders** and prints a currency that is not the document's · **S6 settles both deferred rulings**: the documents panel becomes one table, `TenderIntake` becomes read-only |
+| 11 | [Customs queue](https://claude.ai/code/artifact/5497548e-a529-41a9-9c14-1a703cc78774) | 6 | **six screens blank themselves every sixty seconds** and six toast on a failed background tick — the module's liveness vocabulary, drawn here · the same PO is orange on one board and plain on its twin · `DeclarantQueue` and `LogistBoard` are **~77 % the same file** · the card says *"3 docs missing"* and the three names are in the payload |
 
 Each canvas carries its own **not chosen** artboards rather than deleting the rejected
 option — the stepped intake on 01, the 542 px drawer on 02, the per-bid conversion on 03,
@@ -360,6 +361,76 @@ surfaces (`TenderIntake` 365, `BidPricing` 287, `TenderDocumentsPanel` 186,
    screen it is before it redesigns it.
 
 **Also confirmed: no dead files remain** — see the corrected bullet above.
+
+### From 11 — 2026-09-01
+
+**The largest finding in the package so far is not a screen finding, and it was found on
+the package's best-behaved screen.** `DeclarantQueue.vue` is the only file measured to
+date that obeys mandate 9 outright — **0 `spinner-border`, 3 real `SkeletonRows`** — with
+real empty states, SPA-internal routing and a header comment stating its own read-only
+contract. The defect surfaced there precisely because nothing else was in the way.
+
+- **Six screens replace themselves with a skeleton every sixty seconds.**
+  `useAutoRefresh(fn)` re-runs the page's own `load()`, which sets `loading = true`,
+  which every one of these templates answers with `v-if="loading"`. Measured, all six:
+  `DeclarantQueue`, `LogistBoard`, `DirectorBoard`, `MyTenders`, **`RfqList`** and
+  **`RfqDetail`**. Nothing distinguishes a first paint from a background tick.
+- **And six toast on a failed background tick.** The composable documents *"Swallows
+  errors — an auto-refresh must never surface as an error toast"*, and its `catch {}`
+  only catches what `refreshFn` throws. Every consumer's `load()` catches its own error
+  and calls `toast.error(...)`, so it never throws and the swallow never runs. **The
+  composable is careful and every consumer defeats the care.**
+- **The composable is otherwise right and must not be redesigned away.** It pauses
+  entirely while the tab is hidden — a backgrounded board issues zero requests — and
+  fires once on reveal. A countdown ring or a polling indicator that keeps ticking in a
+  hidden tab trades a correct behaviour for a decoration.
+- **Six screens are live and none of them says so.** No timestamp, no staleness signal,
+  no change indication anywhere in the module. **Prompt 11 draws the liveness vocabulary
+  for all six**, in the page head's `ds-meta` slot beside the filters — the other thing
+  that determines what the user is looking at. The staleness line doubles as the retry,
+  which is how mandate 8's ban on a Refresh button is honoured rather than argued with.
+- **Prompt 05 is owed a correction.** `RfqList` was drawn without catching either half.
+  Noted in that file.
+
+**Two boards, one file.** `DeclarantQueue.vue` (351) and `LogistBoard.vue` (346) have
+**identical import lists** and differ in **80 and 75 lines** — roughly **77 % the same
+file**. What is shared is the whole projection: load, filters-from-URL, view toggle, both
+branches, the lane board, the item card and the table view. What differs is the API
+method, five lanes versus six, the labels and the card's metrics.
+
+- **And the copies have already drifted on something that matters.** The server derives
+  `risk` (`< 0` → `risk`, `<= 7` → `warn`) and `due` and sends both on every row.
+  `LogistBoard` reads `item.risk` and has **no warning tier at all**; `DeclarantQueue`
+  ignores `risk` and re-derives it inline with a hard-coded `7`, **twice**. So the same
+  PO five days from its ETA is **orange on the customs board and plain on the logistics
+  board**, from the same row of the same payload.
+- **The number `7` lives in five places** — `tender.py:1651`, `:2279`, `:3125`, and
+  `DeclarantQueue.vue:265`, `:325`.
+- **Decision, matching the `TenderFunnel` one:** prompt 11 draws the **read-only lane
+  projection** once, as a named component; prompt 12 draws only what is genuinely
+  different — six lanes in the same grid, which is **~193 px** of lane at 1280 against
+  235 for five.
+
+**The payload knows more than the board.** `missing_customs_docs` — the list of *which*
+documents are missing — rides every row and is rendered nowhere; the card shows only the
+count, so the declarant is told a number and must open screen 09 to learn the noun.
+`risk` and `due` are read by neither twin. `stage`, `status` and `lane` are **one value
+under three names**. `customs_declaration_status` — *Red channel* — is a `:title`. And
+`out.append(row_item)` plus `lanes[key]["items"].append(row_item)` put the **same object
+in the payload twice**, so `rows` and the union of the lanes are identical sets that the
+client then filters separately. The last one is a server change: raised, not solved.
+
+**Two more that generalise:**
+
+- **A failed first load renders as an empty queue.** `catch` fires a toast and does not
+  touch `data`, so the initial `{rows: [], lanes: {}}` makes the count zero and the
+  screen says *"No active customs declarations or won lots in the pipeline."* A
+  declarant reads that as *nothing to do today*. Same family as screen 10's *"Pick a
+  tender deal"*, and worse: this one is a plausible sentence.
+- **The empty state is half in the component and half beside it** — an `EmptyState` plus
+  a loose `<p>` carrying the explanation. **Every screen in the package will ask whether
+  that sentence belongs inside the component's contract**; 11 raises it and does not
+  settle it.
 
 ---
 

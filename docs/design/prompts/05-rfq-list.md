@@ -18,6 +18,19 @@ construct that carries meaning rather than paint.
 **It is also the best-behaved list in the module.** It keeps mandates 7, 8 and 9
 already. Name what it does right; the other three screens must copy it.
 
+**Correction, 2026-09-01 — this prompt missed a defect, and prompt 11 found it.**
+`RfqList.vue` calls `useAutoRefresh(load)`, and `load()` sets `loading = true`, which
+this file's template answers with `v-if="loading"`. **So the list replaces itself with a
+skeleton every sixty seconds.** And `load()` catches its own error and calls
+`toast.error(...)`, so it never throws — which defeats the composable's documented
+promise that *"an auto-refresh must never surface as an error toast"*. Both hold for six
+screens (`DeclarantQueue`, `LogistBoard`, `DirectorBoard`, `MyTenders`, `RfqList`,
+`RfqDetail`). **The module's answer is drawn on prompt 11's canvas, not here** — this
+note exists so a designer reading 05 alone does not redraw the same gap. Anything drawn
+for this screen must adopt 11's liveness vocabulary: a first-paint flag that a
+background tick does not set, a staleness line in the page head, and a failed tick that
+is not a toast.
+
 ---
 
 <!-- ═══════════ PASTE BELOW THIS LINE ═══════════ -->
