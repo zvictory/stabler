@@ -17,9 +17,16 @@ text inputs: a file name, and a path you type by hand. The component that perfor
 real upload — `components/files/FileSlot.vue`, `FormData` → `/api/method/upload_file`,
 pick or drop — exists, works, and is used by a **different** screen.
 
+**Third:** the screen holds **two** scopes and the product needs **three**. Today a
+requirement is either `lot` or `tender`; the company's own documents — its licence, its
+registration certificate, its tax clearance — have nowhere to live, so they would be
+re-uploaded per lot. The council fixed the direction for half of this and deferred it
+(**ADR-210**); the other half has never been written down. **That is now S1, and it is
+the largest question in the package.**
+
 **Scope.** `TenderDocumentsPanel.vue` and `TenderDocumentChain.vue` are **not** this
 screen: both are rendered by `PoControlBoard.vue` (`:504`, `:508`) and belong to prompt
-10. The panel appears here only as the mirror that produces S3 — it reads the same
+10. The panel appears here only as the mirror that produces S4 — it reads the same
 endpoint and renders the same requirements, differently.
 
 ---
@@ -68,6 +75,9 @@ then, **per requirement row**, on upload · waive · remove
 | `logistics` | logist + director |
 | `general` | sourcing + director |
 | `finance` | sourcing + director |
+
+**There is no row for the company scope**, because the company scope does not exist
+yet. Who may replace an expired company licence is undefined — see S1.
 
 ## 3 · Nine mandates — not negotiable
 
@@ -159,8 +169,8 @@ load. Three counters that say "zero" when they mean "not yet known".
 
 ## 6 · The screen
 
-**Document center.** Two screens behind one route, chosen by whether `?deal=` is in
-the query:
+**Document center.** Two screens behind one route today, chosen by whether `?deal=` is
+in the query — and S1 asks for a third thing this route cannot express:
 
 - **no `deal`** — a **lot picker**: 6 columns, every tender lot in the company, sorted
   by missing-required then readiness.
@@ -169,7 +179,8 @@ the query:
 
 The checklist merges two levels: **tender-master** requirements shared by every lot
 under the master, and **lot-specific** ones. Only the lot rows are editable here
-(`:355-358`); the server refuses a master row in this payload.
+(`:355-358`); the server refuses a master row in this payload. **S1 adds a third level
+above both**, with a different nature from either.
 
 This screen is also the **sole writer of the checklist**, and that is recent and
 deliberate. Its own comment (`:324-330`):
@@ -179,9 +190,116 @@ deliberate. Its own comment (`:324-330`):
 > through the intake JSON blob. That is why ADR-201 could not retire its edit rights.
 > The writer lives here now: one surface owns the checklist.*
 
-### S1 — the question this screen exists to answer
+### S1 — two scopes exist and the product needs three
 
-**The Document Center cannot upload a document.**
+A requirement row's `scope` is parsed like this (`_tender_documents.py:69-71`):
+
+```python
+scope = str(item.get("scope") or "lot").strip().lower()
+if scope not in ("lot", "tender"):
+    scope = "lot"
+```
+
+**A `company` scope is not missing — it is silently rewritten to `lot`.** And
+`list_tender_documents` merges exactly two lists, `master_reqs + lot_reqs`
+(`tender_documents.py:82-87`). There is no third level and nothing that fails loudly
+when one is attempted.
+
+**The council fixed the direction for half of this and deferred the work.** ADR-210
+(`docs/plans/2026-08-17-mikas-tender-workflow-formlari-tasarim-kurulu-karari.md:345`):
+
+> *…belge gereksinim katalogu tender seviyesinde orada yaşıyor (`custom_tender_documents`)
+> — yani tek-seviye mimarisiyle çelişen tek kalıntı burası. **Yön: katalog şirket
+> seviyesine (ayarlar) taşınır**, Tender Master salt-okuma arşive döner. **Bu dilimde
+> yapılmaz.***
+
+That is about the **catalogue** — *which documents are required* — moving to company
+settings. **It is not about the company's own document files**, and nothing in the
+council record, the UZEX integration plan or `docs/decisions/` mentions those at all.
+
+#### The three scopes, and why the third is not one more row
+
+| scope | belongs to | how many | expires | who may write | consumed by |
+|---|---|---|---|---|---|
+| **company** | the firm | **one set** | **yes** | not defined anywhere | every lot, **and things outside tender** |
+| **tender** | one tender master | one per tender | rarely | sourcing · director | every lot under it |
+| **lot** | one deal | one per lot | no | the row's `role` | that lot only |
+
+**The direction of reuse is the opposite of the direction of ownership.** A company
+document is owned once and consumed everywhere; a lot document is owned per lot and
+consumed once. So the company level is not another row in the same table — **it is a
+library**, and the question is how a lot's checklist relates to it.
+
+Draw **both** answers:
+
+- **(a) reference rows** — every lot's checklist carries the company requirements as
+  rows satisfied by the library: *"Company licence · ✓ from the company file · valid
+  until 14.03.2027"*. The bid packet is assembled per lot and the person assembling it
+  sees the whole list in one place. Costs: 13 lots × 5 company documents = **65 rows
+  carrying 5 facts**, against a checklist capped at **40 rows**
+  (`_REQUIREMENT_LIMIT`, `tender_documents.py:104`).
+- **(b) a gate line** — the lot checklist stays lot-scoped, and company compliance is
+  **one line** above it: *"5 company documents required · 4 valid · 1 expired"*, linking
+  to the library. Costs: the bid packet's full list is no longer on one screen.
+
+Trade-offs and a recommendation.
+
+#### Expiry is a new severity, and it propagates
+
+**No document in this module has a validity date today** — the requirement row carries
+`label`, `required`, `role`, `date` (a *due* date), `done`, `waiver_reason`, `files`.
+There is no `expires_at` anywhere in `tender_documents.py` or `_tender_documents.py`.
+
+Company documents are precisely the kind that expire. That gives the design a state no
+existing requirement has — **valid · expiring soon · expired** — and one consequence
+the other two scopes never produce:
+
+> **An expired licence makes every lot non-compliant at once.**
+
+So a lot can be at 100 % on its own documents and still be un-biddable. Draw that: the
+readiness figure and the company gate are two different facts, and the screen currently
+has one number.
+
+Say what "expiring soon" is measured against. **Do not invent a threshold** — the
+procurement policy's numbers live in one file for exactly this reason
+(`_procurement_policy.py`); a validity horizon belongs in the same place, as a question.
+
+#### The identity question — say it, do not settle it
+
+The third scope also holds documents with **no lot and no tender at all**: contracts,
+insurance policies, records that are simply the company's. That breaks three premises
+of this screen at once:
+
+1. **The route.** `/tender/documents` is the wrong address for a company-wide surface.
+2. **The gate.** Opening this screen requires one of four **tender** views
+   (`tender_documents.py:461`). A company contract has no tender view that governs it,
+   and the per-row role table (§2) has **no row for the company scope** — who may
+   replace an expired licence is undefined.
+3. **The entry point.** The lot picker assumes you arrive to work on a lot. A user
+   coming to update the firm's insurance policy is not picking a lot.
+
+**Draw the surface as it must look, and raise the route, the gate and the writer-role
+as three questions.** They are architecture, not layout, and this prompt does not
+settle architecture.
+
+#### One measured fact that shapes every answer
+
+**The file plumbing is deal-shaped.** `FileSlot`'s `attachedTo` prop is generic
+(`FileSlot.vue:33`, default `"CRM Deal"`), but **all three call sites in the app pass
+`'CRM Deal'`** — `TenderDocumentsPanel.vue:154`, `TenderMasterDrawer.vue:470`, and the
+default. Nothing in Stabler attaches a file to a **Company**.
+
+So a company document is not merely un-scoped in the checklist; there is no path in the
+product that puts a file on the firm. Note it, design around it, and do not invent the
+doctype.
+
+**Where the catalogue would live, if asked:** `Stabler Settings` is a Single doctype
+that already holds company-scoped tender configuration — `company_modules` and
+`tender_stage_sla`, both `Table` fields. ADR-210 names "şirket seviyesine (ayarlar)" and
+this is that place, with the shape already in use. **Mentioning it is in scope;
+designing it is not.**
+
+### S2 — the Document Center cannot upload a document
 
 `Upload file` (`:157`) opens a modal (`:173`) with exactly two controls:
 
@@ -214,7 +332,7 @@ layout from a button that opens a modal:
 Draw both. Note that (a) removes one of this screen's two modals and (b) keeps a
 dialog this file hand-rolled — see §8.
 
-### S2 — four roles share this screen and it shows no role
+### S3 — four roles share this screen and it shows no role
 
 The write gate in §2 is enforced on **every** upload, waive and remove. The standard
 set assigns the roles (`:344-352`):
@@ -245,7 +363,7 @@ Do not solve it by hiding the rows. A declarant needs to see that the CMR is mis
 even though attaching it is the logist's job; that is what "the one surface all four
 roles share" means.
 
-### S3 — the same data, two screens, two vocabularies
+### S4 — the same data, two screens, two vocabularies
 
 `TenderDocumentsPanel.vue` reads the **same endpoint** (`list_tender_documents`) and
 renders the **same requirement set** on the PO control board. Measured differences:
@@ -327,6 +445,38 @@ unverified **1**, readiness **60 %**.
    is about to save. The footer note says *"Tender-level requirements are edited on the
    tender, not here"* (`:92`) — in the editor, after the row has already gone.
 
+### The company set — invented as a proposal, and labelled as one
+
+**No company documents exist in the product, in the seed, or in any council record.**
+So unlike every other table in this package, the rows below are **not measured** — they
+are a proposal, drawn so S1 has something concrete to argue about. Label them that way
+on the artboard; do not present them as data.
+
+They are the documents an Uzbek public-tender bid packet routinely asks the bidder for:
+
+| company document | required by | validity | state to draw |
+|---|---|---|---|
+| Guvohnoma — state registration certificate | every bid | none | **valid** |
+| Tax clearance (*qarzdorlik yo'qligi*) | every bid | **90 days** | **expires in 11 days** |
+| Licence for the activity | activity-dependent | **1 year** | **expired 6 days ago** |
+| Nizomnoma — charter | every bid | none | valid |
+| Bank reference | some buyers | 30 days | not on file |
+
+**Three things this set must make visible, and none of them exists today:**
+
+1. **The expired licence blocks every lot at once.** Thirteen lots, one file. A lot
+   sitting at 100 % on its own documents is still un-biddable. Two facts, and the screen
+   has one number.
+2. **"Expires in 11 days" is a state no requirement in this module can hold.** There is
+   no validity field on a requirement row; the only date it carries is a *due* date.
+3. **"Not on file" and "not required for this buyer" are different**, and the second is
+   the fifth state again — a bank reference some buyers want is not measurable against a
+   lot whose buyer has not asked.
+
+**Do not pick the validity horizon for "expiring soon".** The procurement policy's
+thresholds live in one file for exactly this reason (`_procurement_policy.py`); a
+validity horizon belongs beside them, as a question.
+
 **Dates:** `dd.mm.yyyy` via `formatDate()`. **No money on this screen.**
 
 ## 8 · Vocabulary
@@ -351,6 +501,19 @@ picker's table is 6 columns wide with no wrapper at all.
 **Status** — `ds-chip[data-tone]` through the shared status map. **Measured: 11
 hand-written badges, 6 colour scales, 0 imports of the map.** Two of them are pure
 colour (`bg-green-lt` with a `✓`, `bg-red-lt` with a count) with no word.
+
+**Scope** — today two values rendered as two coloured badges (`bg-purple-lt` for
+tender, `bg-blue-lt` for lot, `:120-122`). S1 makes it **three**, and the third is not a
+peer of the other two: company documents are a library the other levels draw on. Decide
+whether three scopes are three tones of one construct or whether the library needs its
+own, and say why.
+
+**Validity** — **nothing in the layer expresses it and nothing in the module has it.**
+A company document is *valid* · *expiring* · *expired*, and the third propagates to
+every lot. `ds-sev` carries severity and `ds-chip[data-tone]` carries status; whether
+expiry is one of those or a fourth thing is a decision this screen has to make, because
+it is the first screen in the package where **one row's state invalidates another
+screen's total**.
 
 **Files** — `ds-file-list[data-mode="edit"|"read"]` with `-row`, `-name`, `-meta`.
 Settled on screen 01 as **D14**, and this screen is the reason the decision has two
@@ -403,24 +566,31 @@ The editor at 640 px is the problem on this screen: six columns of live controls
 
 ## 10 · Deliverables
 
-1. The **picker** at 1280 / 992 / 640, loaded with the thirteen-green-ticks state that
+1. **Both** answers to S1 — reference rows and a gate line — each drawn at 1280, with
+   the company set above, and a recommendation.
+2. The **three scopes together** on one lot: company · tender · lot, with the expired
+   licence visible and its effect on the lot's biddability stated.
+3. The **company library** as its own surface: five documents, their validity states,
+   and what it says when a document is not required for this buyer.
+4. The **picker** at 1280 / 992 / 640, loaded with the thirteen-green-ticks state that
    the real data produces.
-2. The **checklist** at 1280 / 992 / 640, read mode, with the seven rows above.
-3. The **editor** at 1280 and 640, with the tender-master row's disappearance made
+5. The **checklist** at 1280 / 992 / 640, read mode, with the seven rows above.
+6. The **editor** at 1280 and 640, with the tender-master row's disappearance made
    visible before it happens.
-4. All five states — including the **error** state the file does not have anywhere, and
+7. All five states — including the **error** state the file does not have anywhere, and
    the **not measurable** state for `readiness_pct` when there is no checklist.
-5. **Both** answers to S1, each drawn, with trade-offs and a recommendation.
-6. S2: the role made visible, and every row that this user cannot write shown as such —
+8. **Both** answers to S2, each drawn, with trade-offs and a recommendation.
+9. S3: the role made visible, and every row that this user cannot write shown as such —
    for **two different users** (a logist and a sourcing officer), same lot, same data.
-7. S3: a stated answer for which vocabulary wins, with the panel's card grid and this
-   screen's table side by side.
-8. The four status badges redrawn from one vocabulary, `Unverified tick` included, with
-   its explanation out of the `:title`.
-9. The waiver row: reason, person and date, out of the `alert` component.
-10. The two hand-rolled modals resolved into the layer, or a stated argument for
+10. S4: a stated answer for which vocabulary wins, with the panel's card grid and this
+    screen's table side by side.
+11. The four status badges redrawn from one vocabulary, `Unverified tick` included, with
+    its explanation out of the `:title`.
+12. The waiver row: reason, person and date, out of the `alert` component.
+13. The two hand-rolled modals resolved into the layer, or a stated argument for
     keeping them.
-11. Every question your design raised, listed.
+14. Every question your design raised, listed — **including the route, the gate and the
+    writer-role for the company scope**, which this prompt raises and does not settle.
 
 ## 11 · Acceptance — what a test must be able to see
 
@@ -434,6 +604,9 @@ Every number below was measured from `TenderDocuments.vue`,
 
 | # | Criterion | Before | After |
 |---|---|---|---|
+| K0a | **A third scope exists and is not silently swallowed.** `_tender_documents.py:69-71` rewrites anything outside `("lot", "tender")` to `"lot"`; a design that adds `company` without that parser changing produces rows that lie about what they are | 2 scopes | 3, or a stated reason for keeping 2 |
+| K0b | **A company document's validity is a rendered state, not a date to read.** No requirement row carries an expiry today; *valid* · *expiring* · *expired* are drawn, and the horizon is a server value, never a literal | 0 | asserted |
+| K0c | **An expired company document invalidates every lot, visibly.** A lot at 100 % on its own requirements does not present as ready when the licence behind it has lapsed | 1 number | 2 facts |
 | K1 | **The screen can attach a real file.** `<input type="file">` or `FileSlot` is present; the two text inputs at `:186-192` are gone | 0 | 1 |
 | K2 | **Every row shows its `role`, and a row this user cannot write is not offered a write control.** `role` appears in the read view, not only in the editor | 0 | asserted |
 | K3 | **No page-local colour map.** Eleven hand-written badges across six scales; zero imports of `getStatusBadgeClass` | 11 / 0 | 0 / 1 |
@@ -454,5 +627,11 @@ Every number below was measured from `TenderDocuments.vue`,
 the checklist's sole writer (ADR-201/205) and it reloads after every write — two things
 screens 03 and 07 do not do. A rebuild that makes uploading pleasant and stops
 reloading has traded a real defect for a worse one.
+
+**K0a–K0c are not testable against today's file, and that is deliberate.** They are the
+three things a three-scope design must be able to claim; a design that draws a company
+library without them has drawn a fourth place to lose a document. If your answer to S1
+is (b) — a gate line rather than reference rows — say which of the three it satisfies
+where, because the gate line is the only thing carrying them.
 
 State plainly which of these your design satisfies, and name anything it cannot.

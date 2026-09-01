@@ -56,7 +56,7 @@ because that is where the third dialect lives.
 | 03 | Sourcing workspace | comparison table + award panel; 1039 lines, 0 `ds-*` |
 | 04 | Quotation entry drawer | drawer grammar, second pass |
 | 05–08 | RFQ list · new · detail · print | three inside the layer with no vocabulary; **only the print letter is outside it** |
-| 09 | Document center | the one surface all four roles share — and the only screen whose **forbidden state is per row** |
+| 09 | Document center | the one surface all four roles share — **three scopes: company · tender · lot** — and the only screen whose **forbidden state is per row** |
 | 10 | PO control board | post-award; 765 lines, 0 `ds-*` |
 | 11–12 | Customs queue · Logistics board | read-only projections; drag-to-advance is forbidden |
 | 13–18 | Operations desk · Director board · Overview · Process flow · My tenders · Contract board | the boards |
@@ -92,7 +92,7 @@ language was approved on them before the rest were drawn in it.
 | 03 | [Sourcing workspace](https://claude.ai/code/artifact/477c7af9-3734-4986-a842-dc215c56e76e) | 8 | S2 currency → a **third documented exception**, narrowed from 9 sites to one column · nine comparison columns → **seven** · a table row is **not** a region |
 | 04 | [Quotation entry drawer](https://claude.ai/code/artifact/16250885-0340-4e6b-a6ca-9421ae5f00d1) | 6 | S3 a failed load is a **state, not a toast** · the module's **reference patterns**, named so the other fourteen can copy them |
 | 05–08 | [RFQ family](https://claude.ai/code/artifact/623be708-1d87-4213-a274-b5670a75d4f3) | 8 | `ds-* = 0` does **not** mean outside the layer · the layer has **zero** `@media print` rules · the demo seed creates **no RFQ at all** · 07's `Mark as sent` writes a record nothing can read back |
-| 09 | [Document center](https://claude.ai/code/artifact/0ac0448d-6295-4657-9d0e-c3d321b19af6) | 7 | a document center that **cannot take a document** · the write gate is **per row, by role**, and no row shows one · an empty checklist reports **100 % ready** · a **fifth dialect**: two hand-rolled modals |
+| 09 | [Document center](https://claude.ai/code/artifact/0ac0448d-6295-4657-9d0e-c3d321b19af6) | 9 | **two scopes exist and the product needs three** (S1, added 2026-09-01) · a document center that **cannot take a document** · the write gate is **per row, by role**, and no row shows one · an empty checklist reports **100 % ready** · a **fifth dialect**: two hand-rolled modals |
 
 Each canvas carries its own **not chosen** artboards rather than deleting the rejected
 option — the stepped intake on 01, the 542 px drawer on 02, the per-bid conversion on 03,
@@ -171,6 +171,46 @@ business in git. **The canvas URL is the artefact**; the prompt file is how it w
   has the real file control, the role badge and a role filter that screen 09 lacks —
   while screen 09 has the words that the panel puts in `:title` attributes. Prompt 09
   asks for a ruling, because prompt 10 inherits it.
+
+### The scope Zafar reopened — 2026-09-01
+
+Screen 09 was drawn once with two scopes and **redrawn with three**, on Zafar's
+objection that the document center must carry the company's own documents and not only
+a tender's. Checked against the record before acting; the answer is that **the council
+discussed half of it**:
+
+- **ADR-210** (`docs/plans/2026-08-17-mikas-tender-workflow-formlari-tasarim-kurulu-karari.md:345`)
+  fixed the direction — *"katalog şirket seviyesine (ayarlar) taşınır"* — and deferred
+  the work behind Tender Master's retirement (16 consumers, "ayrı program"). That is the
+  **catalogue**: which documents are required.
+- **The company's own document files** — licence, `guvohnoma`, tax clearance,
+  `nizomnoma` — appear in **no** council record, no plan and no decision. Nor do
+  contracts and insurance policies with no tender at all.
+
+Measured while answering, and all of it new to this package:
+
+- **`scope` accepts two values and silently rewrites the rest**
+  (`_tender_documents.py:69-71`): `if scope not in ("lot", "tender"): scope = "lot"`.
+  A third level is not missing from the parser — it is quietly renamed by it.
+- **`list_tender_documents` merges exactly two lists** — `master_reqs + lot_reqs`
+  (`tender_documents.py:82-87`).
+- **No document anywhere in the module has a validity date.** A requirement row carries
+  a *due* date and nothing else, so *valid · expiring · expired* is a state the layer
+  has never had to express — and an expired company licence invalidates **every lot at
+  once**, which makes this the first screen where one row's state breaks another
+  screen's total.
+- **The file plumbing is deal-shaped.** `FileSlot`'s `attachedTo` prop is generic
+  (`FileSlot.vue:33`) but all three call sites pass `'CRM Deal'`
+  (`TenderDocumentsPanel.vue:154`, `TenderMasterDrawer.vue:470`, and the default).
+  **Nothing in Stabler attaches a file to a Company.**
+- **`Stabler Settings` is the home ADR-210 names** — a Single doctype already holding
+  company-scoped tender configuration as `Table` fields (`company_modules`,
+  `tender_stage_sla`).
+
+Three questions the prompt raises and deliberately does not settle: the **route**
+(`/tender/documents` is wrong for a company-wide surface), the **gate** (opening the
+screen needs a tender view; a company contract has none, and the per-row role table has
+no company row), and the **writer role** for an expired licence.
 
 ---
 
