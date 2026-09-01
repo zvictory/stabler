@@ -90,6 +90,7 @@ is approved on these before sixteen more screens are drawn in it.
 | 01 | [Tender intake drawer](https://claude.ai/code/artifact/3d45f238-495f-4832-a25f-eac7c301820e) | 10 | single form (not stepped) · adjacent stack · `ds-file-list[data-mode]` (D14) |
 | 02 | [Tender CRM kanban](https://claude.ai/code/artifact/564c73b0-6e7a-49ab-b6c9-87c7db56fb2c) | 10 | S1(a) drawer width → **760** via the existing `[data-size="lg"]` · S1(b) six orphans → **one** new component · one accessibility rule for the card and the row |
 | 03 | [Sourcing workspace](https://claude.ai/code/artifact/477c7af9-3734-4986-a842-dc215c56e76e) | 8 | S2 currency → a **third documented exception**, narrowed from 9 sites to one column · nine comparison columns → **seven** · a table row is **not** a region |
+| 04 | [Quotation entry drawer](https://claude.ai/code/artifact/16250885-0340-4e6b-a6ca-9421ae5f00d1) | 6 | S3 a failed load is a **state, not a toast** · the module's **reference patterns**, named so the other fourteen can copy them |
 
 Both canvases carry their own **not chosen** artboards rather than deleting the rejected
 option — the stepped intake on 01, the 542 px drawer on 02. A decision whose alternative
