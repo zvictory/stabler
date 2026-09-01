@@ -81,7 +81,7 @@ olur, ve buradaki on bir hatanın altısı tam olarak kapsam hatasıydı.
 | `.ds-kpi[data-sev]` değerleri | `sed -n '250,257p'` | **crit, today, soon, ok** — **`info` YOK**. Blok I'in beşinci kuralı kopya değil **icat**tı |
 | `ds-empty` yerel ezme | `grep -rn 'ds-empty' --include='*.vue'` | **1 dosya / 2 site** (`PartyTransactions:340`, `:584`). `TenderCrm.vue:789` `crm-col-empty ds-mono` — `ds-empty` **taşımıyor**, ezme değil |
 | `ds-col-head` canlı | `grep -rn` | **1 site**, `TenderCrm.vue:**454**` (455 değil), satır-içi `:style`. `DeclarantQueue.vue:210` bir **`card-header`**, `ds-col-head` değil |
-| `class="badge"` ile `<tr role="button">` | `grep -rn 'role="button"' pages/tender` | `TenderDocuments.vue:**257**` bir `<tr>` üzerinde — sürüm 1 *"tender'da 0 emsal"* diyordu |
+| `class="badge"` ile `<tr role="button">` | ↺ satır-bazlı grep **yetmiyor**; `perl -0777` ile çok satırlı ara | `TenderDocuments.vue:**257**` ve `TenderCrm.vue:**535**` — **iki** `<tr>`. Sürüm 1 *"0 emsal"*, sürüm 2 *"1"* diyordu; ikisi de aynı sebepten eksikti |
 | `nav-link` köprüde | `grep -n 'nav-link' …css` | **css:137**, kare-köşe sıfırlama listesinde. Sürüm 1 **"0"** diyordu |
 | `a4-print` | `grep -rl` | **1 dosya** (`RfqPrint.vue`). Sürüm 1 **"4 dosya"** diyordu; `@media print` 5 dosyada, ama ortak bir `a4-print` **deseni yok** |
 | `ds-field-req` **tender'da** | `grep -rn` | **0** (uygulama geneli 2, ikisi de `Login.vue`) — K11'i boşta doğru yapan sayı |
@@ -146,10 +146,12 @@ Bu, bu turun kendi bulgusu. `UZLASTIRMA-celiskiler.md` (03:15) ve `UZLASTIRMA-de
 
 **Sonuç:** `ds-*` envanteri **149 → 151**. Yazılmayan altı ad §3.4'te.
 
-### 0.4 · Çürütmenin zorladığı altı ek karar (D8–D13)
+### 0.4 · Çürütmenin zorladığı altı ek karar (D8–D13), artı Aşama B'nin zorladığı bir tane (D14)
 
 Bunlar sürüm 1'de **karar bile değildi** — ölçülmemiş varsayımlardı. Üç rapor onları
-ölçtü ve karar gerektirdiğini gösterdi.
+ölçtü ve karar gerektirdiğini gösterdi. **D14 sonradan eklendi:** Aşama B'nin 01 numaralı
+ekranı çizilirken bu belgenin bir hükmü kurul kaydıyla çelişti ve ölçüm ikisini de yarı
+haklı buldu (§12c).
 
 | # | Soru | **KARAR** ve gerekçe |
 |---|---|---|
@@ -159,6 +161,7 @@ Bunlar sürüm 1'de **karar bile değildi** — ölçülmemiş varsayımlardı. 
 | **D11** | Blok J'nin `border-radius: 0`'ı üç canlı `form-switch`'i kareleştiriyordu; ve özgüllük Bootstrap'la **berabere** (0-2-0), doğruluk yükleme sırasına kalıyordu. | **Seçici `.ds-form-check .form-check-input` değil, `.form-check:not(.form-switch) .form-check-input` olur**, ve yarıçap sıfırlaması katmanın **kendi** `!important`'lı listesine (css:136-138) eklenir. Yani: onay kutuları kareleşir, **switch'ler bugünkü hâllerinde kalır**. `form-switch` yasağı yürürlükte, ama **göçü Aşama B'ye adıyla yazılı** (B-16, üç site). Bir kontrolü yasaklayıp aynı anda kimse taşımadan bozmak kabul edilemez |
 | **D12** | B13 (`ds-form-section`) ile B5 (`ds-drawer-foot`) **iç içe**; tanım "en küçük eleman" diyor, tablo ikisini birden sayıyor, K8 üçüncü bir cevap veriyor. | **R9 yazılır** (§5.2): iç içe bölgelerde kota **en dış bölge kökünde** toplanır, iç kökler onun **yuvası**dır. `ds-form-section` bir **bölge**, `ds-form-section-head` ve `ds-drawer-foot` onun **iki yuvası** — ikisi birlikte ≤1 primary. B4 ve B5 bağımsız birer bölge olarak yalnız **B13'ün dışında** (panel başlığı, çekmece altbilgisi) geçerlidir. Tanım cümlesi *"en küçük eleman"*dan *"kendi kenarı/zemini ile ayrılan **en dış** eleman"*a düzeltilir |
 | **D13** | `EmptyState.vue` **dördüncü lehçe**: 8 sınıflık `stabler-empty-*`, `<style scoped>` içinde, katmanda 0 kural, ve **iki `border-radius: 50%`** (`:81`, `:111`) — `--ds-radius: 0` ilan eden bir sistemin içinde iki tam daire. `tgm-*`'e sorulan uzlaştırma sorusu buna hiç sorulmadı. | **Bu turda uzlaştırılmaz, ve bu bir karar.** Gerekçe: `EmptyState` **159 kullanım / uygulama geneli** — `tgm-*`'in (1 dosya) aksine bir tender sorunu değil, bir **uygulama** sorunu, ve bu turun kapsamı tender'dı. Ama sürüm 1'in *"üç lehçe"* sayımı **yanlıştı**: dört. Adıyla **B-17**'ye yazılır ve §1.2'de `EmptyState` satırına *"kendi lehçesini taşır, katman ona ulaşmaz"* notu düşülür |
+| **D14** | ↺ **Bu belge ile kurul kaydı çelişiyordu.** §1.2 ve §4.2/11 *"10 ve 11 aynı gramer maddesidir"* diyordu — dosya eki, çoklu seçimle aynı jeton listesi, yeni bileşen yok, çünkü *"ayrı çizmek üçüncü bir lehçe üretirdi"*. Kurul kaydı ADR-302 tam tersini yazmıştı: `tgm-file-chip/-list/-name` `ds-*`'a **yeni bileşen** olarak eklenir, *"belge merkezinde de gerekiyor"*; ADR-303 onu *"bugün bilinen tek gerçek boşluk"* diye adlandırıyordu. §0.2'nin dört öncelik kuralı bu çifti (kurul ADR'si ↔ bu belge) **kapsamıyor**. | **Tek bileşen, iki mod: `ds-file-list[data-mode="edit"\|"read"]`.** İkisi de yarı haklıydı, ve ölçüm bunu gösterdi: belge merkezinin dosyaları o ekranın **düzenleyemediği sunucu olguları** (`TenderDocuments.vue:78`) — silme yok, kapılı indirme var, meta boyut değil yükleme tarihi, ve çekmecede karşılığı olmayan üç durum (`ready` / `Missing file` / doğrulanmamış eski tik, `:133`). Çekmece ise kaydetmeden önce dosya **kurguluyor**. Fark **anatomide değil, silinebilirlikte ve izinde**. Bu yüzden kurulun "yeni bileşen" kararı uygulanır (bu belgenin hükmü geri alınır) ama bileşen **bir tane** kalır (bu belgenin gerekçesi korunur) — üçüncü lehçe doğmaz. Çoklu seçim jeton listesinde kalır. Karar Zafar'a soruldu ve onaylandı, 2026-09-01 |
 
 ---
 
@@ -244,7 +247,8 @@ belgelenmesi kayıt işidir ve **B-6**'dadır.
 | Yüzde ← **10.4(a)** | `.input-group` + `.form-control` + `<span class="input-group-text">%</span>` — **`ds-input` YASAK** (esneklik sözleşmesi dışı, `%` alt satıra düşer) | `BidPricing.vue:170-173` | §7 | manda 3 ✔ |
 | Tarih | `DateInput` + `formatDate` | `components/DateInput.vue` | §7 | manda 4 |
 | Tipeahead | `Typeahead` + **sarmalayan** `<label class="ds-field">` | `components/Typeahead.vue` | §7 | Ç13 |
-| Çoklu seçim **ve** dosya eki | **tek jeton listesi**: `ds-table` + `ds-cut-del` + `ds-cut-add` + ekleyici (`Typeahead` / `FileSlot`) | css:389, 785, 790 | §7 | Ç1, D1 |
+| Çoklu seçim | **jeton listesi**: `ds-table` + `ds-cut-del` + `ds-cut-add` + `Typeahead` | css:389, 785, 790 | §7 | Ç1, D1 |
+| ↺ Dosya eki | `ds-file-list[data-mode="edit"\|"read"]` + `-row` + `-name` + `-meta` | **YENİ** | §7 | **D14** (Aşama B, ekran 01) |
 | Köprülenmiş kontrolde geçersizlik | `.form-control[aria-invalid="true"]` — `MoneyInput`/`DateInput`'a **artık ulaşıyor** (`f267e6d`); `Typeahead`/`MultiSelectPicker`'a hâlâ ulaşmıyor, §4.1(a) | **YENİ köprü** | §7 | form delta-2, §10.9 ✔ |
 | **— Veri —** | | | | |
 | Tablo | `ds-table`, **`table-responsive` sarmalayıcı zorunlu** | css:389 | §7 | Ç3 |
@@ -278,7 +282,7 @@ belgelenmesi kayıt işidir ve **B-6**'dadır.
 | Boşlukta `spinner-border` | `SkeletonRows` / `ds-skel-stack` | **5 site** (adlarıyla §8-K5) | manda 9 |
 | Düğme içi `spinner-border` | etiket takası + `aria-busy` | **13 site** | Ç9 |
 | `ds-form-grid[data-cols="3"]` | `data-cols="2"` | tender'da **0** (mevcut tek `data-cols="3"` `ds-kpis` üzerinde — meşru) | Ç11 |
-| ↺ `<tr role="button">` | satırda gerçek `<button>` + fare için `@click`+`cursor:pointer` | tender'da **1 canlı ihlal**: `TenderDocuments.vue:257` — ve o dosya §5.5(d)'de yeniden tasarlanıyor. Sürüm 1 üç öznitelikli birebir dizeyi arayıp *"0 emsal"* demişti | Ç18 |
+| ↺↺ `<tr role="button">` | satırda gerçek `<button>` + fare için `@click`+`cursor:pointer` | tender'da **2 canlı ihlal**: `TenderDocuments.vue:257` (tek satırlık `<tr>`) ve `TenderCrm.vue:535` (`<tr>` çok satırlı, öznitelik dört satır aşağıda). Sürüm 1 üç öznitelikli birebir dizeyi arayıp *"0 emsal"* demişti; **sürüm 2 onu 1'e düzeltti ama satır-bazlı grep ile ölçtüğü için ikincisini gördü sanıp kaçırdı.** Doğru ölçüm çok satırlı: `perl -0777 -ne 'while(/<tr\b[^>]*?role="button"/gs){$c++}'` | Ç18 |
 | `ds-col-n` bir `<th>` üzerinde | `ds-td-num` | seçici `.ds-col-head .ds-col-n` (css:375) → `<th>`'de **etkisiz** | Ç26 |
 | ↺ `form-switch` (**yeni işaretlemede**) | `form-check` | **kodda 3 canlı site**: `SourcingWorkspace:928`, `TenderDocuments:70`, `PoControlBoard:708`. Sürüm 1 *"katmanda 0"* diyordu — **yasağın konusunu hiç saymamıştı.** Üçünün göçü **B-16**; delta onları bozmuyor (D11) | Ç15 |
 | `btn-xs`, `shadow-xs` | `ds-btn[data-size="sm"]` | **14 kullanım / 5 dosya**, **0 tanım** — "çok küçük" yazıp 44px alıyor | bosluk §1.4 |
@@ -727,7 +731,7 @@ python3 -m unittest stabler.tests.test_design_layer_contract.TestScopeIsolation
 | T5 | `.crm-dw-del` iki bildirimi silinir | `TenderCrm.vue:895-901` | `ds-btn--commit`'in genelleştirdiği yerel icat |
 | T6 | `.board-scroll` → `table-responsive` | `DirectorBoard.vue:327` | tek yerel kaydırma icadı |
 | **T7** ← YENİ | `:style="{ borderTopColor: l.color }"` **kaldırılır**, yerine `:data-sev` | `TenderCrm.vue:454` | Satır-içi stil her seçiciyi yener → **blok I bu satır kalkmadan hiçbir şey yapmaz.** Sürüm 1 ezmeyi geçmiş zamanla anlatıp kaldırma işini hiçbir listeye koymamıştı |
-| **T8** ← YENİ | `<tr … role="button">` kaldırılır, satıra gerçek bir `<button>` konur | `TenderDocuments.vue:257` | §1.3'ün kendi yasağının tek canlı ihlali, ve §5.5(d)'de yeniden tasarlanan ekranda |
+| **↺ T8** ← YENİ | `<tr … role="button">` kaldırılır, satıra gerçek bir `<button>` konur | `TenderDocuments.vue:257` **ve** `TenderCrm.vue:535` | §1.3'ün kendi yasağının **iki** canlı ihlali. Sürüm 2 yalnız birincisini görmüştü, bu yüzden T8 tek dosyalık bir görev sanılıyordu; ikincisi ayrı bir ekranda (kanban), yani T8 §5.5(d) ile birlikte kapanmıyor |
 | **T9** ← YENİ | `test_design_layer_contract` node id'si düzeltilir (`unittest` biçimine) | bu belge, K14 | Sürüm 1'in yazdığı pytest node id'si çalışmıyor (§3.3) |
 
 ---
@@ -794,7 +798,7 @@ Bir sayfada iki kez mount edilen bileşen (çekmece) kendi kök `id` önekini al
 | 8 | **Tarih** | `DateInput` + `formatDate` | `components/DateInput.vue` | Manda 4. Ölçüldü: tender'da çıplak `type="date"` **0** — modülün en sağlam yeri |
 | 9 | **Tipeahead** | `Typeahead` + **sarmalayan** `<label class="ds-field">` | `components/Typeahead.vue` | `for=` **kullanılmaz** (§4.1a). `Typeahead` yükleme sırasında kendi içinde `spinner-border` çiziyor (`:270`) — o bileşenin içi, dokunulmaz |
 | 10 | **Çoklu seçim** | **jeton listesi**: `ds-table` gövdesi + satır sonu `ds-cut-del` + `ds-cut-add` ekleyici şeridi + `Typeahead` | css:389-403, 785-789, 790-795 | Kap `<div class="ds-field" role="group" aria-labelledby>` (İstisna 1) |
-| 11 | **Dosya eki** | **aynı jeton listesi** + `FileSlot` (dropzone) | aynı + `components/files/FileSlot.vue` | 10 ve 11 **aynı gramer maddesidir**: "silinebilir şeylerin listesi + bir ekleyici". Ayrı çizmek üçüncü bir lehçe üretirdi. `ds-cut-del` 30px — 34px'lik hedeften küçük, **kabul edilmiş gerileme** (§0.3-D1) |
+| ↺ 11 | **Dosya eki** | `ds-file-list[data-mode]` + `-row` + `-name` + `-meta` + `FileSlot` (dropzone, yalnız `edit`) | **YENİ** + `components/files/FileSlot.vue` | **D14 · sürüm 2'nin hükmü geri alındı.** *"10 ve 11 aynı gramer maddesidir"* deniyordu; belge merkezi ölçülünce yanlışlandı (`TenderDocuments.vue:78` — *"Files and waivers are server facts: this editor cannot touch them"*): orada **silme yok**, kapılı indirme var, meta boyut değil **yükleme tarihi**, ve çekmecede karşılığı olmayan üç durum çipi (`ready` / `Missing file` / doğrulanmamış eski tik). Satır anatomisi ortak, **sondaki yuva + meta + çip moda göre değişiyor**. `edit` modunda `ds-cut-del` 30px — **kabul edilmiş gerileme** (§0.3-D1) |
 | 12 | **Onay kutusu** ← YENİ | `<label class="form-check">` + `<input class="form-check-input" type="checkbox">` (köprü, §3.2-J) | **YENİ köprü** | `form-switch` **yasak**. Kare-köşe sıfırlaması (css:136-138) `.form-check-input`'u listelemiyor → `--ds-radius: 0` içindeki tek yuvarlak kontrol o. Silahlama kutusu (§5.4) bu maddeyi kullanır |
 
 ### 4.3 · Gramerin 3.75×'e cevabı
@@ -1091,7 +1095,7 @@ olarak kalır (`@click` + `cursor: pointer`); klavye yolu satırdaki gerçek `<b
 | **waive modal `Confirm waiver`** 228-230 | B6 | **`ds-btn--commit[data-sev="today"]`**; mevcut `:disabled="waiveSaving \|\| !waiveForm.reason.trim()"` silahlama görevini görür; footer'da primary yok → R5 ✔ |
 | waive modal uyarısı 212-215 | B6 | **kalır** — commit grameri parça 2'nin (sonuç cümlesi) hazır örneği |
 | 10 literal `badge bg-*` | — | durum olanlar `<StatusBadge>`; `Tender Master`/`Lot Specific` **kapsam** rozetleri durum değil → `ds-chip` |
-| **↺ `<tr … role="button">` 257** | B10 | **SİLİNİR** (T8). §1.3'ün yasağının tek canlı ihlali burada, ve sürüm 1'in bu tablosunda **hiç geçmiyordu** — yasak kendi ekranındaki tek ihlali görmüyordu. Yerine: satırda gerçek bir `<button>` (lot seç), fare için `@click` + `cursor: pointer` (Ç18) |
+| **↺↺ `<tr … role="button">` 257** | B10 | **SİLİNİR** (T8). §1.3'ün yasağının **iki** canlı ihlalinden biri burada, ve sürüm 1'in bu tablosunda **hiç geçmiyordu** — yasak kendi ekranındaki ihlali görmüyordu. Sürüm 2 onu buldu ama *"tek"* dedi; ikincisi `TenderCrm.vue:535`'te duruyor (D14 turu, §12c/43). Yerine: satırda gerçek bir `<button>` (lot seç), fare için `@click` + `cursor: pointer` (Ç18) |
 | **↺ `form-switch` 70** | — | **KALIR** bu turda; `form-check`'e göçü B-16. Delta onu bozmuyor (D11) |
 
 **Tek yazar kuralı korunur** (brief §5.2): `TenderIntake.vue:287` `Open Document Center`
@@ -2376,3 +2380,20 @@ Ve iki hamle üç raporun üçünde de **doğru** bulundu: **§10'un Zafar'a ta�
 maddesi** (§0.2 kural 4'ün dürüst uygulaması) ve **§11'in ölçmediklerim listesi** —
 *"ikisi de bu turun ölçebildiği kusurları bulmayı mümkün kıldı."* Bir belgenin kendi
 zayıflığını yazması, çürütmeyi kolaylaştırır; bu iyi bir şeydir.
+
+---
+
+### 12c · Aşama B'nin geri yazdığı iki düzeltme — 2026-09-01
+
+Bu belge Aşama A'yı kapatmıştı. Aşama B'nin **01 numaralı ekranı** (`TenderMasterDrawer`)
+çizilirken iki hükmü ölçümle yanlışlandı. Kayıt, §12a'nın biçimini izler.
+
+| # | İtiraz (kaynak) | Ne yapıldı |
+|---|---|---|
+| 42 | §1.2 ve §4.2/11'in *"10 ve 11 aynı gramer maddesidir"* hükmü, kurul kaydı ADR-302/303 ile **doğrudan çelişiyor**: kurul dosya eki çipini `ds-*`'a yeni bileşen olarak eklenecek *"tek gerçek boşluk"* diye adlandırmıştı. §0.2'nin öncelik sırası bu çifti kapsamıyor — dört kuralı şartname↔şartname ve depo kuralı↔şartname çatışmalarını çözüyor, kurul ADR'si↔bu belge çiftini değil (Aşama B, ekran 01) | **D14.** İkisi de yarı haklı çıktı: belge merkezinin dosyaları o ekranın düzenleyemediği **sunucu olguları** (`TenderDocuments.vue:78`) — silme yok, kapılı indirme, meta olarak yükleme tarihi, ve çekmecede karşılığı olmayan üç durum çipi. Çekmece ise kaydetmeden önce dosya kurguluyor. **Tek bileşen, iki mod** (`ds-file-list[data-mode]`): kurulun kararı uygulandı, bu belgenin gerekçesi korundu. §1.2 iki satıra bölündü, §4.2/11 yeniden yazıldı. Karar Zafar'a soruldu ve onaylandı |
+| 43 | §1.3 ve §1.1'in ölçüm tablosu `<tr role="button">` için **1 canlı ihlal** diyor (`TenderDocuments.vue:257`). Gerçek sayı **2**: ikincisi `TenderCrm.vue:535`, `<tr>` çok satırlı yazıldığı için öznitelik dört satır aşağıda ve satır-bazlı grep'e görünmüyor (Aşama B, ekran 02) | Her iki satır da **2** ile düzeltildi ve ölçüm komutu çok satırlı hâliyle yazıldı. **Bu, bu belgenin kendi yakaladığı hatanın tekrarıdır:** sürüm 1 üç öznitelikli birebir dizeyi arayıp *"0 emsal"* demişti, sürüm 2 onu 1'e çıkardı — ama aynı sınıf araçla ölçtüğü için ikinci vakayı da göremedi. Bir sayım yöntemi düzeltilmeden, sayının düzeltilmesi yetmiyor. **Sonucu bir görevi büyüttü:** §7'nin **T8**'i tek dosyalık sanılıyordu, iki dosyalık çıktı — ve ikinci dosya ayrı bir ekranda olduğu için T8 artık §5.5(d) ile birlikte kapanmıyor. §7 ve §8 satırları düzeltildi |
+
+**Bu turun kendi dersi.** İki düzeltmenin ikisi de bu belgenin *"ölçmediklerim"* listesinde
+(§11) **yoktu** — ikisi de ölçüldüğü sanılan şeylerdi. §11 bir belgenin bildiği
+boşlukları yazar; bu iki madde, bilinmediği bilinmeyen boşluklardı ve onları açan şey
+belgeyi okumak değil, **belgeye göre bir şey çizmek** oldu.
