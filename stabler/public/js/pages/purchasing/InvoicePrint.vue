@@ -133,7 +133,7 @@ onMounted(load);
 </script>
 
 <template>
-	<div class="print-wrapper">
+	<div>
 		<!-- Controls — hidden when printing (.no-print). No waybill for purchase invoices. -->
 		<div class="no-print mb-3 d-flex gap-2">
 			<button type="button" class="btn btn-sm btn-outline-secondary" @click="router.back()">

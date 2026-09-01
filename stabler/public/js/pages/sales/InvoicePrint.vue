@@ -155,7 +155,7 @@ onMounted(load);
 </script>
 
 <template>
-	<div class="print-wrapper">
+	<div>
 		<!-- Controls — hidden when printing (.no-print) and excluded from the
 		     print isolation block since they live outside .a5-print. -->
 		<div class="no-print mb-3 d-flex gap-2">

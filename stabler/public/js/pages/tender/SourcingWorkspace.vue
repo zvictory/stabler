@@ -464,9 +464,7 @@ watch(
 			<div class="card mb-3">
 				<div class="card-header py-2 d-flex justify-content-between align-items-center">
 					<span class="fw-semibold">{{ t("Requests for Quotation (RFQ)") }}</span>
-					<span class="badge bg-secondary-lt text-secondary"
-						>{{ rfqs.length }} {{ t("RFQs") }}</span
-					>
+					<span class="badge bg-secondary-lt text-secondary">{{ t("RFQs") }}: {{ rfqs.length }}</span>
 				</div>
 				<div class="card-body py-2">
 					<div v-if="rfqsLoading" class="text-secondary small py-1">{{ t("Loading RFQs…") }}</div>
@@ -572,8 +570,8 @@ watch(
 								<th class="text-end">{{ t("Actions") }}</th>
 							</tr>
 						</thead>
-						<tbody>
-							<SkeletonRows v-if="loading" :cols="9" :rows="4" />
+						<SkeletonRows v-if="loading" :cols="9" :rows="4" />
+						<tbody v-else>
 							<tr
 								v-for="r in rows"
 								:key="r.name"
@@ -710,8 +708,8 @@ watch(
 								<th class="text-end">{{ t("Action") }}</th>
 							</tr>
 						</thead>
-						<tbody>
-							<SkeletonRows v-if="unassignedLoading" :cols="7" :rows="2" />
+						<SkeletonRows v-if="unassignedLoading" :cols="7" :rows="2" />
+						<tbody v-else>
 							<tr v-for="q in unassigned" :key="q.name">
 								<td class="fw-semibold font-monospace">{{ q.name }}</td>
 								<td>{{ q.supplier_name }}</td>
@@ -771,6 +769,7 @@ watch(
 					<div
 						v-if="data?.estimate_complete === false && rows.length > 0"
 						class="alert alert-warning py-2 mb-3"
+						role="alert"
 					>
 						<i class="ti ti-alert-triangle me-1"></i>
 						<b>{{ t("Landed cost estimates incomplete:") }}</b>
@@ -817,6 +816,7 @@ watch(
 						<div
 							v-if="standingAward.selected_quotation !== standingAward.cheapest_quotation"
 							class="alert alert-warning py-2 mb-2"
+							role="alert"
 						>
 							<i class="ti ti-info-circle me-1"></i>
 							{{ t("The selected quotation was NOT the cheapest bid.") }}
@@ -829,7 +829,7 @@ watch(
 							<p class="mb-2 text-body">{{ standingAward.selection_reason }}</p>
 						</div>
 
-						<div v-if="standingAward.policy_exception" class="alert alert-danger py-2 mb-0">
+						<div v-if="standingAward.policy_exception" class="alert alert-danger py-2 mb-0" role="alert">
 							<div class="fw-bold">
 								<i class="ti ti-shield-alert me-1"></i>{{ t("Policy exception approved") }}
 							</div>
@@ -899,6 +899,7 @@ watch(
 						<div
 							v-if="isSelectedDifferentFromCheapest"
 							class="alert alert-warning py-2 mb-0 d-flex align-items-center gap-2"
+							role="alert"
 						>
 							<i class="ti ti-alert-circle fs-3 text-warning"></i>
 							<div>
@@ -925,7 +926,7 @@ watch(
 
 						<!-- Policy Exception Section -->
 						<div class="border rounded p-3 bg-light">
-							<div class="form-check form-switch mb-2">
+							<div class="form-check mb-2">
 								<input
 									id="policy-exception-chk"
 									v-model="awardForm.policy_exception"
@@ -971,10 +972,16 @@ watch(
 								type="button"
 								class="btn btn-primary"
 								:disabled="isAwardSaveDisabled"
+								:aria-busy="savingDecision"
 								@click="saveDecision"
 							>
-								<span v-if="savingDecision" class="spinner-border spinner-border-sm me-1"></span>
-								{{ decisionData?.decision ? t("Update draft decision") : t("Save draft decision") }}
+								{{
+									savingDecision
+										? t("Saving…")
+										: decisionData?.decision
+											? t("Update draft decision")
+											: t("Save draft decision")
+								}}
 							</button>
 
 							<button
@@ -986,10 +993,11 @@ watch(
 								type="button"
 								class="btn btn-success"
 								:disabled="approvingDecision"
+								:aria-busy="approvingDecision"
 								@click="approveDecision"
 							>
-								<span v-if="approvingDecision" class="spinner-border spinner-border-sm me-1"></span>
-								<i class="ti ti-check me-1"></i>{{ t("Approve decision") }}
+								<i class="ti ti-check me-1"></i
+								>{{ approvingDecision ? t("Approving…") : t("Approve decision") }}
 							</button>
 
 							<span

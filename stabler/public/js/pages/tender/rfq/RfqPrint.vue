@@ -9,6 +9,7 @@ import { useSession } from "../../../stores/session.js";
 import { call } from "../../../api/client.js";
 import { formatDate } from "../../../composables/date.js";
 import { t } from "../../../composables/i18n.js";
+import SkeletonRows from "../../../components/SkeletonRows.vue";
 
 const route = useRoute();
 const router = useRouter();
@@ -47,7 +48,7 @@ onMounted(load);
 </script>
 
 <template>
-	<div class="print-wrapper">
+	<div>
 		<div class="no-print mb-3 d-flex gap-2">
 			<button type="button" class="btn btn-sm btn-outline-secondary" @click="router.back()">
 				<i class="ti ti-arrow-left me-1"></i>{{ t("Back") }}
@@ -57,9 +58,9 @@ onMounted(load);
 			</button>
 		</div>
 
-		<div v-if="loading" class="text-center py-5">
-			<div class="spinner-border text-primary"></div>
-		</div>
+		<table v-if="loading" class="rfq-table">
+			<SkeletonRows :rows="6" :cols="5" />
+		</table>
 		<div v-else-if="error" class="alert alert-danger">{{ error }}</div>
 
 		<div v-else-if="doc" class="a4-print">
@@ -90,6 +91,9 @@ onMounted(load);
 				<div v-if="doc.schedule_date">
 					<strong>{{ t("Please respond by") }}:</strong> {{ formatDate(doc.schedule_date) }}
 				</div>
+				<div v-else>
+					<strong>{{ t("Please respond by") }}:</strong> {{ t("No deadline specified") }}
+				</div>
 			</div>
 
 			<table class="rfq-table">
@@ -99,7 +103,7 @@ onMounted(load);
 						<th class="rfq-th">{{ t("Item") }}</th>
 						<th class="rfq-th rfq-num">{{ t("Qty") }}</th>
 						<th class="rfq-th rfq-center">{{ t("UOM") }}</th>
-						<th class="rfq-th rfq-center" style="width: 30mm">{{ t("Needed by") }}</th>
+						<th class="rfq-th rfq-center">{{ t("Needed by") }}</th>
 					</tr>
 				</thead>
 				<tbody>
