@@ -537,6 +537,41 @@ and the structured per-type charge list lives on the Purchase Order, after award
 consequence is written into prompt 12: the four unreachable lanes are **not** a hole to
 fill by designing a freight-booking flow, and the prompt now forbids proposing one.
 
+### The pre-win costing rule — 2026-09-02, and it is a council item
+
+Zafar, immediately after the 10/11 redraw: **in the pre-win stage there are no customs,
+logistics or real landed-cost calculations.** Fixed landed-cost items are entered onto
+the incoming quotations; the sourcing officer works them out alone, from experience,
+without a declarant, a customs broker or a logistics colleague, so a sales quotation can
+go out quickly. *"Kurul bunu tekrar görsün."*
+
+Measured while recording it, and it moves the problem:
+
+- **The pre-win path already exists and it is on the quotation, not the order.**
+  `LandedChargesEditor.vue` (253 lines) is mounted in `SourcingWorkspace.vue` and writes
+  `custom_landed_charges` on the **Supplier Quotation** through
+  `update_quotation_landed`. Six charge types, recoverable VAT correctly excluded from
+  the landed total. The comparison already ranks on landed and already knows when the
+  estimate is incomplete.
+- **Prompt 03 contradicted itself about where that figure comes from.** Its §5 table said
+  *"the quotation's own"*; its §7 said the column is empty *because no purchase order
+  exists*. The second is wrong — `get_quotation_landed` never touches a purchase order —
+  and it is corrected.
+- **The missing piece is the word *fixed*.** No preset, template, standard set or
+  per-company default exists anywhere; `addChargeLine()` appends a blank line defaulting
+  to *Freight*. An officer comparing five bids types five copies of the same four
+  charges under deadline. The rule says this must be quick and it is the slowest thing
+  on the screen.
+
+**The council question**, written into prompt 03: what is a *fixed* landed-cost item — a
+per-company default set, a per-tender set applied to every bid, or a per-supplier
+memory — and what does applying one to five quotations look like as **one gesture**.
+
+This also draws the line the later prompts were missing: **pre-win is a costing
+estimate, post-win is an operational record.** 10's per-type charge editor and 12's
+six-lane journey board are both post-win, and 12 is already forbidden from designing
+anything that feeds its unreachable lanes.
+
 ---
 
 ## Decisions taken while writing these prompts — 2026-09-01

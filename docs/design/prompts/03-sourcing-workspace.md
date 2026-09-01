@@ -229,8 +229,51 @@ stage against a limit of **14** · bid deadline **today** · 5 quotations, 3 cou
 | 5 | Shandong Heavy | China | 956 800 000 | |
 
 Valid till: **deadline + 30 days**. Transaction date: **7 days ago**.
-**Landed charges: none.** No purchase order exists for this lot, so "Landed estimate"
-and "Delivered total" have nothing behind them — draw what that column shows.
+**Landed charges: none — and the reason matters.** An earlier version of this line said
+the column was empty *because no purchase order exists for this lot*. **That is wrong,
+and §5's table above already had it right:** the landed estimate is the **quotation's
+own**. `get_quotation_landed` (`sourcing.py:1284`) reads `custom_landed_charges` off the
+**Supplier Quotation** and returns `landed_charges_total`, `base_landed_total` and
+`has_landed_estimate` (`:1295-1297`); the comparison ranks on it (`is_cheapest_landed`,
+`landed_delta`, `landed_pct`) and falls back to cheapest-by-price only when
+`estimate_complete` is false. No purchase order is involved. The column is empty because
+**nobody has typed the charges yet** — which is the whole of the workflow below.
+
+### The pre-win costing rule — Zafar, 2026-09-02
+
+*In the pre-win stage there are **no** customs, logistics or real landed-cost
+calculations. We enter **fixed** landed-cost items onto the incoming quotations. The
+sourcing/procurement person can work these out alone — without a declarant, a customs
+broker or a logistics colleague — because they know them from experience. Pre-win we
+have to compute this quickly and give a sales quotation.*
+
+**Almost all of this is already built, which changes what the design has to solve.**
+Measured 2026-09-02:
+
+- `LandedChargesEditor.vue` (253 lines) is mounted **in this screen**
+  (`SourcingWorkspace.vue`) and writes the quotation, not the order —
+  `update_quotation_landed` (`sourcing.py:1303-1327`).
+- It offers **six charge types**: *Freight & Logistics · Customs Duty & Tariff ·
+  Handling & Terminal Fees · Cargo Insurance · Import VAT (Recoverable) · Other* — with
+  recoverable VAT excluded from the landed total, which is correct and must survive.
+- The comparison already ranks on landed and already knows when the estimate is
+  incomplete.
+
+**What does not exist is the one word in the rule: *fixed*.** There is no preset, no
+template, no standard set, no per-company defaults — `addChargeLine()` appends a
+**blank** line defaulting to *Freight*, and every line is typed from scratch for every
+quotation. So a sourcing officer comparing five bids types five sets of the same four
+charges, from memory, under deadline. The rule says this must be quick and it is the
+slowest thing on the screen.
+
+**This is a design question, not a backend one**, and it is the one the council should
+see: what is a *fixed* landed-cost item — a per-company default set, a per-tender set
+applied to every bid, or a per-supplier memory — and what does applying one to five
+quotations look like as a single gesture. **Do not design a customs or logistics
+workflow here.** One person, from experience, in a few seconds, so a sales quotation can
+go out.
+
+Draw what the column shows before any of that has been entered, and what it shows after.
 
 ### Lot B · `UTY-2026-4309` — the policy is **not** satisfied
 
