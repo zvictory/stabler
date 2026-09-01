@@ -965,3 +965,82 @@ and were right. The desk's lead was understated, not overstated.
 - **Arriving with `?funnel_stage=` issues a second full call to the module's heaviest
   endpoint**, and on failure the filter degrades to "show all" while the header keeps
   naming the stage. The filter is also announced before it can be applied.
+
+### From 18 — 2026-09-02
+
+Written from `pages/sales/SalesOrderBoard.vue` (192 lines) and `so_board` /
+`move_so_stage` / `so_stage_save` / `so_stage_delete`.
+
+**Coverage finding #3 is confirmed and closed.** `/tender/board` is the component's
+**only** route (`router.js:295`); there is no `/sales/...` mount. A tender route renders
+a sales file, and that file's own Escape handler leaves the module: `useEscapeBack(null,
+"/sales")`. Prompts 14 and 17 both escape *into* this screen, so the module's escape
+chain is director board → contract board → `/sales`.
+
+- **Three prompts pointed here and none of them drew it** — 14 and 17 by Escape, 15 by
+  `TenderFunnel.go()` sending the four `kind: "so"` buckets to `router.push("/tender/board")`.
+- **The funnel's own comment is refuted by the navigation under it.** `TenderFunnel.vue:358-360`
+  says the execution buckets open the contract board *"whose columns ARE that list."* The
+  push carries no `?tender=1`, and `tender_only` changes two things at once: it adds the
+  deal filter **and** widens `docstatus: 1` to `docstatus < 2`. So the buckets count
+  submitted tender-linked orders and the board shows every submitted order in the company —
+  narrower on one axis, wider on the other, with no control for the flag anywhere.
+- **First money-math defect in the package.** The column header sums `contract_value`
+  (transaction currency, `rounded_total or grand_total`) across cards and formats the total
+  with the *session* currency. Every other total in the module reads the base figure —
+  `_deal_landed` (`tender.py:1048-1061`), `_deal_revenue_actual` (`:1075-1084`), prompt 10's
+  *Total committed*. Mixed-currency columns print a meaningless sum.
+- **Stage colours are user data rendered as string concatenation.** `colorOf(s) + '22'` /
+  `+ '55'` only produces valid hex from a 6-digit `#rrggbb`; the fallback `#6c757d` is the
+  *New* stage's own colour; and `color: colorOf(s)` sits on a 13 % tint of itself with no
+  contrast rule. Any prompt that assumes a fixed palette is wrong about this screen.
+- **The worst empty-state instance in the package.** `stages === []` covers a failed
+  request, a missing role, `enable_tender` off, no company selected, and a genuinely empty
+  board — and all five render *"No stages yet. Add a stage to start tracking contracts."*
+  Every other screen fails into a wrong sentence; this one fails into an **invitation to
+  perform a write the user may not be entitled to**, whose refusal arrives on the same
+  toast channel that swallowed the original error.
+- **Alone in the module it has no `watch(activeCompany)`** — the import list is
+  `{ computed, onMounted, ref }`, no `watch`. Switching company does not reload the board,
+  and a session that resolves its company after mount lands on the invitation above.
+- **The only kanban with no keyboard path.** Zero `aria-*`, zero `role=`; HTML5 drag is the
+  only way to move a card, and the card is simultaneously the drag handle and a link — a
+  press that starts a drag and ends where it began navigates to the Sales Order.
+- **`window.prompt()` creates a stage** while the *delete* path uses the house
+  `useConfirm()`. The destructive action gets the design system and the creative one gets
+  the browser.
+- **Client-side re-derivation survives here.** `status: per_delivered >= 100 ? "delivered"
+  : "delivery_pending"` is computed in `filteredCards` — the defect commit `26481f1`
+  removed from the customs queue one prompt earlier.
+- **Lazy placement is a second, quieter disagreement with prompt 15.** The board draws an
+  unplaced order in the first open stage; `tender_funnel` reads `custom_board_stage` raw and
+  folds `None` to *contract*. They agree only because *New* is position 1 and not closed.
+- **Fourth "the fact is in a tooltip" instance**, after prompt 11's *Red Channel*, 12's
+  `freight_booking_status` and 10's evidence line: on the tender module's own board, "this
+  contract came from a tender" is an icon with a `:title`.
+- **Loading measured across the module**: nine tender screens render `SkeletonRows`; four
+  render a spinner (`BidPricing`, `TenderIntake`, `TenderDocumentsPanel`, and this one).
+  This is the only *board* among the four.
+- **Seed reaches two of seven columns.** Both seeded Sales Orders carry an explicit stage —
+  *Procurement* (1 650 000 000) and *Invoicing* (2 270 000 000); `per_delivered` is never
+  written by the seed, so the blue *Delivered* bar is 0 % on both cards and never renders.
+  Five columns are empty, and `is_won` / `is_closed` cannot be exercised at all.
+
+**Ninth consecutive screen with states the demo data cannot reach**, and the largest count
+of them — six.
+
+### The package is complete — 2026-09-02
+
+Eighteen prompts, `01` through `18`. Every screen the tender module routes to now has one,
+including the two the folder did not know it was missing (`13` and `18`).
+
+What the eighteen files are for is not the drawings alone. Measuring each screen against
+the real code refuted claims this folder had been carrying — the rule-under-the-number
+"appears nowhere else" (13, twice), the `ds-*` attribution row (13), `/tender/portfolio`
+rendering six counters (14), the funnel being the module's most layer-native screen, the
+"no timestamp anywhere" claim, and the funnel's promise that the board's columns are the
+list it counted (18). Those corrections are in place in the files that made the claims.
+
+Nothing here has been implemented. The acceptance tables are the shippable inventory:
+**13** D8–D19 · **14** P8–P16 · **15** F10–F18 · **16** W9–W18 · **17** M7–M16 ·
+**18** C7–C20. Picking the first batch is Zafar's call.
