@@ -8,15 +8,12 @@ from pathlib import Path
 _ROOT = Path(__file__).resolve().parents[1]
 _SOURCES = (
 	_ROOT / "public/js/pages/Dashboard.vue",
-	_ROOT / "public/js/pages/tender/TenderExecutiveKpis.vue",
 	_ROOT / "public/js/pages/tender/TenderFunnel.vue",
 	_ROOT / "public/js/pages/sales/SalesOrderBoard.vue",
 	_ROOT / "public/js/pages/tender/DirectorBoard.vue",
 	_ROOT / "public/js/pages/tender/MyTenders.vue",
 	_ROOT / "public/js/pages/tender/DeclarantQueue.vue",
 	_ROOT / "public/js/pages/tender/LogistBoard.vue",
-	_ROOT / "public/js/pages/tender/TenderTrendChart.vue",
-	_ROOT / "public/js/pages/tender/TenderExecutionFlow.vue",
 	_ROOT / "public/js/pages/tender/TenderDocumentChain.vue",
 	_ROOT / "public/js/pages/tender/SourcingWorkspace.vue",
 	_ROOT / "public/js/components/Sidebar.vue",
@@ -53,9 +50,16 @@ REQUIRED_KEYS = (
 	"SI",
 	"DN",
 )
-COMPONENT_LABEL_KEYS = {
-	"TenderExecutionFlow.vue": ("Won", "SO", "PO", "PR", "PI", "SI", "DN"),
-}
+# NOT (2026-09-01): burada bir `COMPONENT_LABEL_KEYS` sözlüğü ve onu dolaşan
+# `test_control_tower_component_labels_are_translation_calls` vardı. Sözlüğün TEK
+# girdisi `TenderExecutionFlow.vue`'ydu; o dosya Aşama A §10.5 kararıyla silindi
+# (hiçbir yerden import edilmiyordu, 0 çağrı).
+#
+# Girdiyi çıkarıp testi bırakmak sözlüğü boşaltırdı ve `for ... in .items()` sıfır
+# kez dönerdi — test YEŞİL kalır, hiçbir şey doğrulamazdı. Konusu silinmiş bir
+# testi sessizce yeşil bırakmak, silmekten daha pahalıdır. O yüzden ikisi de
+# silindi ve bu not kaldı: kalıp geri gerekirse, canlı bir bileşenle yeniden
+# yazılır.
 
 
 class TestTenderDashboardTranslations(unittest.TestCase):
@@ -83,14 +87,6 @@ class TestTenderDashboardTranslations(unittest.TestCase):
 					translations = {row[0]: row[1] for row in csv.reader(source) if len(row) >= 2}
 				missing = sorted(key for key in keys if not translations.get(key, "").strip())
 				self.assertEqual(missing, [], f"{language} has untranslated tender dashboard copy")
-
-	def test_control_tower_component_labels_are_translation_calls(self):
-		for filename, keys in COMPONENT_LABEL_KEYS.items():
-			with self.subTest(component=filename):
-				content = (_ROOT / "public/js/pages/tender" / filename).read_text(encoding="utf-8")
-				for key in keys:
-					with self.subTest(key=key):
-						self.assertRegex(content, rf"t\(\s*['\"]{re.escape(key)}['\"]\s*\)")
 
 
 if __name__ == "__main__":

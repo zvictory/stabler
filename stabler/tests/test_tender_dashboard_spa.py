@@ -125,18 +125,24 @@ class TestTenderDashboardSpaContract(unittest.TestCase):
 		self.assertIn('class="alert alert-danger"', source)
 		self.assertIn('role="alert"', source)
 
-	def test_p1_components_preserve_visual_and_keyboard_accessibility(self):
-		trend_source = _read(_TREND_CHART)
-		self.assertIn('<svg role="img"', trend_source)
-		self.assertIn("<title", trend_source)
-		self.assertIn("visually-hidden", trend_source)
-		self.assertIn("prefers-reduced-motion", trend_source)
+	def test_unreachable_dashboard_components_are_deleted(self):
+		"""Hiçbir ekranın çizmediği bileşenin erişilebilirlik sözleşmesi
+		hiçbir şeyi kanıtlamaz.
 
-		execution_source = _read(_EXECUTION_FLOW)
-		self.assertIn('t("Won")', execution_source)
-		self.assertIn('t("PI")', execution_source)
-		self.assertIn('t("SI")', execution_source)
-		self.assertIn("@media (max-width", execution_source)
+		Bu üç dosya hiçbir yerden import edilmiyordu (ölçüldü 2026-09-01:
+		`.vue`/`.js` grafiğinde 0 çağrı) — yani hiçbir rota onları render
+		etmiyordu. Buranın eski hâli `<svg role="img">`, `prefers-reduced-motion`
+		ve `t("PI")` iddialarını tutuyordu ve hepsi GEÇİYORDU; geçmelerinin
+		sebebi kodun doğru olması değil, kodun hiç çalışmamasıydı. Ölü kodun
+		üstündeki yeşil bir test kanıt değil örtüdür.
+
+		Geri gelirlerse bir rotaya bağlanarak gelirler; erişilebilirlik
+		sözleşmesi o zaman, RENDER EDİLEN bir bileşen üzerinde yeniden yazılır.
+
+		Silme kararı Zafar'ın (Aşama A §10.5).
+		"""
+		for path in (_TREND_CHART, _EXECUTION_FLOW, _EXECUTIVE_KPIS):
+			self.assertFalse(os.path.exists(path), f"{os.path.basename(path)} should be deleted")
 
 	def test_sales_order_board_reads_dashboard_period_and_status(self):
 		source = _read(_SALES_BOARD)

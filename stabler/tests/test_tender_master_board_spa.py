@@ -1,7 +1,7 @@
 """SPA Source contract test for Single-Level Tender CRM (Flat Architecture).
 
 Validates that:
-- TenderCrmWrapper unconditionally renders TenderCrm
+- /tender/crm reaches TenderCrm with no wrapper level in between
 - TenderMasterBoard.vue and tenderMaster.js do not exist in the repository
 - TenderCrm has a New tender button mounting TenderMasterDrawer
 - TenderCrm handles ?deal= deep link
@@ -32,12 +32,26 @@ def _read(path: str) -> str:
 
 
 class TestTenderMasterBoardSpaContract(unittest.TestCase):
-	def test_wrapper_renders_tender_crm_unconditionally(self):
-		source = _read(_WRAPPER)
-		self.assertTrue(bool(source), "TenderCrmWrapper.vue does not exist")
-		self.assertIn("<TenderCrm />", source)
-		self.assertNotIn("TenderMasterBoard", source)
-		self.assertNotIn("route.query?.tender", source)
+	def test_crm_route_reaches_tender_crm_with_no_wrapper_level(self):
+		"""Sarmalayıcı bir seviyeydi; seviye kayabilir, rota kayamaz.
+
+		`TenderCrmWrapper.vue` yalnızca `<TenderCrm />` çiziyordu, ve router
+		`/tender/crm`'i zaten DOĞRUDAN `TenderCrm`'e bağlıyor (`router.js:296`).
+		Yani düz mimariyi router'ın kendisi kuruyordu; sarmalayıcı aynı olgunun
+		ikinci bir kaynağıydı ve hiçbir yerden import edilmiyordu (ölçüldü
+		2026-09-01: `.vue`/`.js` grafiğinde 0 çağrı).
+
+		Bu testin koruduğu şey dosyanın yokluğu değil, ARADA BİR SEVİYE
+		OLMAMASI. Biri yarın sarmalayıcıyı geri koyup router'ı ona bağlarsa
+		ikinci iddia kırmızı verir.
+
+		Silme kararı Zafar'ın (Aşama A §10.5).
+		"""
+		self.assertFalse(os.path.exists(_WRAPPER), "TenderCrmWrapper.vue should be deleted")
+		router = _read(_ROUTER)
+		self.assertIn("component: TenderCrm,", router)
+		self.assertNotIn("TenderCrmWrapper", router)
+		self.assertNotIn("TenderMasterBoard", router)
 
 	def test_deleted_level1_artifacts_do_not_exist(self):
 		self.assertFalse(os.path.exists(_MASTER_BOARD), "TenderMasterBoard.vue should be deleted")
