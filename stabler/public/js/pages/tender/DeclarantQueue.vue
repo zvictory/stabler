@@ -136,6 +136,16 @@ const stLabel = (s) =>
 		missing_docs: t("Document Missing"),
 	}[s] || s);
 
+// The server already decided this: `declarant_queue` derives `risk` from the very
+// `days_left` it sends on the same row (<0 → risk, <=7 → warn). Re-deriving it
+// here kept a second and third copy of the threshold in the client, and the
+// number 7 lived in five places across the module.
+function etaClass(row, emphasis = false) {
+	if (row.risk === "risk") return emphasis ? "text-red fw-bold" : "text-red";
+	if (row.risk === "warn") return emphasis ? "text-warning fw-semibold" : "text-warning";
+	return "";
+}
+
 function etaText(r) {
 	if (r.days_left == null) return "—";
 	if (r.days_left < 0) return `${-r.days_left} ${t("days late")}`;
@@ -262,7 +272,7 @@ function clearFilters() {
 									<span class="text-secondary">{{ t("ETA") }}:</span>
 									<span
 										class="ms-2"
-										:class="item.days_left != null && item.days_left < 0 ? 'text-red fw-bold' : (item.days_left != null && item.days_left <= 7 ? 'text-warning fw-semibold' : '')"
+										:class="etaClass(item, true)"
 									>
 										{{ formatDate(item.eta) }} ({{ etaText(item) }})
 									</span>
@@ -322,7 +332,7 @@ function clearFilters() {
 							<td class="text-nowrap">{{ r.eta ? formatDate(r.eta) : "—" }}</td>
 							<td
 								class="text-nowrap"
-								:class="r.days_left != null && r.days_left < 0 ? 'text-red' : (r.days_left != null && r.days_left <= 7 ? 'text-warning' : '')"
+								:class="etaClass(r)"
 							>
 								{{ etaText(r) }}
 							</td>
