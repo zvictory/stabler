@@ -4045,6 +4045,7 @@ Please ensure all items are selected and have a quantity greater than zero.,"И�
 Please enter both username/email and password.,Фойдаланувчи номи/е-почта ва паролни киритинг.
 Please fill all required fields.,Зарур бўлган барча майдонларни тўлдиринг.
 Please respond by,"Илтимос, ушбу санагача жавоб беринг"
+No deadline specified,Муддат кўрсатилмаган
 Please select a supplier first.,Аввал етказиб берувчини танланг.
 Please select an active company.,Фаол компанияни танланг.
 "Please state: unit price, currency, validity period, and delivery time.","Илтимос, кўрсатинг: бирлик нархи, валюта, амал қилиш муддати ва етказиб бериш муддати."
@@ -6604,3 +6605,4 @@ This invitation reaches {countries} country(ies). On its own it cannot satisfy t
 "Asked: {count} vendor(s), {countries} country(ies)","Сўралди: {count} та етказиб берувчи, {countries} та давлат"
 "Everyone asked so far is in {countries} country(ies). More rounds, or a quotation attached from elsewhere, are what change that.",Ҳозиргача сўралганларнинг ҳаммаси {countries} та давлатда. Буни фақат янги босқичлар ёки бошқа жойдан бириктирилган таклиф ўзгартиради.
 {count} of the vendors asked has no country on file and counts toward no country.,Сўралган етказиб берувчилардан {count} тасининг давлати киритилмаган ва ҳеч қайси давлатга ҳисобланмайди.
+"Lines with no exchange rate, not in this total: {count}","Валюта курси йўқ қаторлар, бу жамига кирмайди: {count}"
