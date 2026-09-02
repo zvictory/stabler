@@ -363,6 +363,17 @@ function pick(row) {
 	emit("select", next, next ? dealsOf(next) : [], next ? metaOf(next) : null);
 }
 
+/* F16 (docs/design/prompts/15-pipeline-overview.md, S6): `.pipe-pop` opened on
+ * `@mouseenter`/`@focus` only. Focus reaches it (Tab); a pointer that cannot
+ * hover -- a touchscreen -- had no path in, because the only tap target was
+ * the chevron button itself, whose own @click already calls `pick()` and
+ * navigates in the same gesture. This toggles `hovered` and NOTHING else --
+ * no select, no navigation -- so a second, independent tap target can open
+ * and close the popover without doing what the chevron button does. */
+function toggleDetails(row) {
+	hovered.value = hovered.value === row.key ? "" : row.key;
+}
+
 /* Adres çubuğunda `?phase=` ile gelen (veya sayfa yenilenen) kullanıcı da
  * filtrelenmiş tabloyu görsün: veri indiğinde seçim yeniden yayınlanıyor.
  * Yoksa paylaşılan bağlantı şeridi seçili, tabloyu filtresiz açardı. */
@@ -431,6 +442,24 @@ function go(st) {
 						>
 							<span class="pipe-n">{{ c.n }}</span>
 							<span class="pipe-t">{{ c.label }}</span>
+						</button>
+						<!-- F16: independent of the chevron button above -- opens/closes the
+						     same popover, never selects or navigates. Its own tap target, so
+						     touch (no hover) and keyboard (native button) both reach it. -->
+						<!-- No aria-label: `test_tender_dashboard_i18n.py`'s
+						     `test_every_dashboard_copy_key_has_a_nonempty_translation`
+						     requires every new t() key in this file to already have a
+						     non-empty entry in all five translations/*.csv, and editing
+						     those files is out of scope here. The glyph is the button's
+						     only accessible name until that key is added (see the
+						     final report). -->
+						<button
+							type="button"
+							class="pipe-info"
+							:aria-expanded="String(hovered === c.key)"
+							@click="toggleDetails(c)"
+						>
+							ℹ
 						</button>
 						<span v-if="hovered === c.key" class="pipe-pop">
 							<span class="pipe-bar"
@@ -656,6 +685,39 @@ function go(st) {
 
 .pipe-chev:hover {
 	filter: brightness(1.12);
+}
+
+/* F16: top-right, not centred -- the chevron's own clip-path cuts the cell's
+ * right edge into a point (see the polygon above), so anything placed near
+ * that edge has to stay clear of it. The top corner is flat on every cell,
+ * first or not; verified against the real clip-path values before landing
+ * this, not eyeballed against the compiled page. */
+.pipe-info {
+	position: absolute;
+	top: 3px;
+	right: 3px;
+	z-index: 5;
+	width: 18px;
+	height: 18px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	border: 0;
+	border-radius: 50%;
+	background: rgba(255, 255, 255, 0.28);
+	color: #fff;
+	font-family: var(--ds-mono);
+	font-size: 10px;
+	font-style: normal;
+	font-weight: 700;
+	line-height: 1;
+	cursor: pointer;
+	padding: 0;
+}
+
+.pipe-info:hover,
+.pipe-info:focus-visible {
+	background: rgba(255, 255, 255, 0.46);
 }
 
 /* Seçili faz: rengini değil KONTURUNU değiştiriyor. Rengi karartmak fazın

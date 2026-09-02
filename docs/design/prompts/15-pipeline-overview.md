@@ -314,6 +314,20 @@ the rule — lives in `<span v-if="hovered === c.key" class="pipe-pop">`. It is
 better than a `title` (it opens on `@focus` too), but it is not in the DOM until
 then, so nothing announces it and it cannot be printed or linked to.
 
+**Resolution (2026-09-02, F16):** a second, independent `.pipe-info` button was
+added inside `.pipe-cell`, wired to a new `toggleDetails(row)` that only ever
+writes `hovered` — never `pick()`, never `select`. Being a native `<button>`,
+it is keyboard-reachable on its own (Tab + Enter/Space), and being a separate
+tap target from the chevron button — whose own `@click="pick(c)"` already
+selects and navigates in the same gesture — it gives a touchscreen a path in
+that carries no navigation side effect. `aria-expanded` reports open/closed.
+One piece is still short of "announces": the button carries no `aria-label`,
+because the only text that would describe it is a *new* `t()` key, and
+`test_tender_dashboard_i18n.py`'s completeness guard requires a new key to
+already be translated in all five `translations/*.csv` before landing — out of
+scope for this change. The glyph (ℹ) is its only accessible name until that
+key is added.
+
 And `PIPE_SOURCE` is carried as data with a careful comment — a source name is
 not a translatable sentence, and bare text trips the guard that requires every
 text node to pass through `t()`. Then `TenderFunnel.vue:478` writes
@@ -484,6 +498,6 @@ Keep the artboards you rejected.
 | F13 | A failed funnel load renders something | **passes** — a new `error` ref, cleared at the top of every `load()` attempt, is written in the catch branch instead of a toast; a new `v-else-if="error"` panel renders it with `role="alert"` (fixed 2026-09-02) |
 | F14 | `Not measurable` is visually distinct from `Within` | **passes** — `stepTone` now returns `"mute"` for `unknown`, the same tone `empty` already gets and the same one the SLA badge already uses for this state; `edge` still gets no tone in `stepTone` (a separate, narrower gap this row does not name) (fixed 2026-09-02) |
 | F15 | A lot appears in exactly one stage per screen | **passes, disclosed not reconciled** — 4305 (and any manually moved deal) can still legitimately appear in two; the flow panel now says why instead of leaving it unexplained (S5, corrected 2026-09-02) |
-| F16 | The chevron's second layer is reachable without a pointer | **partial** — focus works, touch does not |
+| F16 | The chevron's second layer is reachable without a pointer | **passes, one gap noted** — a second, independent `.pipe-info` button (native `<button>`, wired to its own `toggleDetails(row)`) opens and closes `.pipe-pop` without ever calling `pick()` or emitting `select`, so touch and keyboard both reach it on their own tap target; `aria-expanded` reports open/closed. No `aria-label`: `test_tender_dashboard_i18n.py`'s `test_every_dashboard_copy_key_has_a_nonempty_translation` requires a new `t()` key to already carry a non-empty entry in all five `translations/*.csv`, out of scope for this change — the visible glyph (ℹ) is the button's only accessible name until that key is added (fixed 2026-09-02) |
 | F17 | Loading renders a skeleton | **fails** — a line of text, in both blocks |
 | F18 | The screen says how fresh it is | **passes for the timestamp** (2026-09-02) — the older of the flow's and the funnel's `generated_at`. The manual `Refresh` button is untouched |
