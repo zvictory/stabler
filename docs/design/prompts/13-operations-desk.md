@@ -506,15 +506,15 @@ re-examined.
 | D5 | Zero `badge bg-*`, zero bare `btn-*`, zero `spinner-border` | passes |
 | D6 | Loading renders `SkeletonRows`, not a spinner | passes |
 | D7 | `view` and `filter` round-trip through the URL | passes |
-| D8 | Band collapse round-trips through the URL | **fails** — plain ref |
+| D8 | Band collapse round-trips through the URL | **passes** — `?collapsed=` (2026-09-02) |
 | D9 | A view the user lacks renders as *forbidden*, distinct from *error* | **fails** — collapses into `error` |
 | D10 | No snake_case identifier appears in rendered text | **fails** — three (S3) |
 | D11 | The role `<select>` shows translated labels, not ids | **fails** — server sends `label == id` |
-| D12 | The freshness stamp reflects `generated_at`, not the browser clock | **fails** — `generated_at` unread SPA-wide |
+| D12 | The freshness stamp reflects `generated_at`, not the browser clock | **passes** (2026-09-02) — first reader of `generated_at` in the SPA |
 | D13 | An overdue item is discoverable from the calendar region | **fails** — window starts today (S1) |
 | D14 | The empty plan distinguishes *nothing to do* from *could not be computed* | **fails** — asserts "up to date" while 5 of 8 rules were silent |
 | D15 | The Decision box, Team load and calendar each render five states | **fails** — only the plan panel does |
 | D16 | Team load empty-for-your-role ≠ Team load empty-of-work | **fails** — same rendering |
-| D17 | The primary CTA is the focusable, hoverable control, or is not drawn as one | **fails** — `<span>` (S4) |
+| D17 | The primary CTA is the focusable, hoverable control, or is not drawn as one | **passes** (2026-09-02) — the row is the control; the span is no longer painted as one |
 | D18 | Which clock produced "today" is legible to the reader | **fails** — two clocks, one word (S5) |
 | D19 | `delivery_deadline` is either consumed by a rule or absent from the calendar's promise | **fails** — resolved, carried, unread; sublabel still says "delivery" |

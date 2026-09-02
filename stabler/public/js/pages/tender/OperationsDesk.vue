@@ -97,7 +97,7 @@
 							<div class="ds-row-owner" :data-unassigned="String(!leadItem.owner)">
 								{{ leadItem.owner || t("unassigned") }}
 							</div>
-							<span class="ds-btn ds-btn--primary desk-lead-cta">{{ t("Open") }} →</span>
+							<div class="ds-label desk-lead-cta">{{ t("Open") }} →</div>
 						</div>
 					</button>
 
@@ -241,7 +241,7 @@ import { useRoute, useRouter } from "vue-router";
 import { useSession } from "../../stores/session.js";
 import { t } from "../../composables/i18n.js";
 import { call } from "../../api/client.js";
-import { formatDate, todayIso } from "../../composables/date.js";
+import { formatDate, formatTime, todayIso } from "../../composables/date.js";
 import SkeletonRows from "../../components/SkeletonRows.vue";
 import TenderPage from "./TenderPage.vue";
 
@@ -254,7 +254,33 @@ const error = ref("");
 const deskData = ref(null);
 const currentView = ref(route.query.view || null);
 const activeFilter = ref(route.query.filter || "all");
-const collapsed = ref({});
+/* Bant sıralaması sabit ve anlamlı: en acil üstte. severity API'den gelen
+ * türetilmiş bir alan — burada yeniden hesaplanmıyor, sadece gruplanıyor. */
+const SEVERITY_ORDER = ["overdue", "today", "soon", "info"];
+const SEVERITY_TO_SEV = { overdue: "crit", today: "today", soon: "soon", info: "info" };
+
+/* Bant katlaması da `view` ve `filter` gibi URL'de yaşar: masa insanların
+ * birbirine yapıştırdığı bir bağlantı, gönderenin neyi KAPATTIĞI da
+ * gösterdiği şeyin parçası. Liste yukarıdaki iki sabitten türetilir —
+ * ikinci bir sev listesi ikinci bir doğruluk kaynağı demek olurdu.
+ * Sıra sabittir: aynı görünüm her zaman aynı URL, ekleme sırası değil. */
+const COLLAPSIBLE_SEVS = SEVERITY_ORDER.map((severity) => SEVERITY_TO_SEV[severity]);
+
+function collapsedFromQuery(value) {
+	const state = {};
+	for (const raw of String(value || "").split(",")) {
+		const sev = raw.trim();
+		if (COLLAPSIBLE_SEVS.includes(sev)) state[sev] = true;
+	}
+	return state;
+}
+
+function collapsedToQuery(state) {
+	const shut = COLLAPSIBLE_SEVS.filter((sev) => state[sev]);
+	return shut.length ? shut.join(",") : undefined;
+}
+
+const collapsed = ref(collapsedFromQuery(route.query.collapsed));
 const lastReadAt = ref("");
 
 // `toISOString()` UTC verir. Taşkent UTC+5: her gece 00:00–05:00 arası masanın
@@ -285,7 +311,11 @@ async function fetchDesk() {
 		if (token !== reqToken) return;
 
 		deskData.value = res;
-		lastReadAt.value = new Date().toTimeString().slice(0, 5);
+		// Damga VERİYİ anlatır, okuyucunun cihazını değil: `generated_at`
+		// sunucunun saatiyle yazılır (tender_desk.py:364). Sunucu damga
+		// göndermediyse hiçbir şey gösterme — tarayıcı saatine düşmek
+		// gerçeğinden ayırt edilemeyen bir yalan üretirdi.
+		lastReadAt.value = formatTime(res.generated_at);
 		if (res.view && currentView.value !== res.view) {
 			currentView.value = res.view;
 		}
@@ -357,11 +387,6 @@ const kpis = computed(() => {
 		},
 	];
 });
-
-/* Bant sıralaması sabit ve anlamlı: en acil üstte. severity API'den gelen
- * türetilmiş bir alan — burada yeniden hesaplanmıyor, sadece gruplanıyor. */
-const SEVERITY_ORDER = ["overdue", "today", "soon", "info"];
-const SEVERITY_TO_SEV = { overdue: "crit", today: "today", soon: "soon", info: "info" };
 
 function sevLabel(severity) {
 	return {
@@ -458,7 +483,14 @@ function dueLabel(item) {
 }
 
 function toggleGroup(sev) {
-	collapsed.value = { ...collapsed.value, [sev]: !collapsed.value[sev] };
+	const next = { ...collapsed.value, [sev]: !collapsed.value[sev] };
+	collapsed.value = next;
+	router.replace({
+		query: {
+			...route.query,
+			collapsed: collapsedToQuery(next),
+		},
+	});
 }
 
 /* Eski şablonda panel başlığında ayrı bir "Tümü / Bugün / Geciken" düğme
@@ -519,6 +551,15 @@ watch(
 	(newFilter) => {
 		if (newFilter && newFilter !== activeFilter.value) {
 			activeFilter.value = newFilter;
+		}
+	}
+);
+
+watch(
+	() => route.query.collapsed,
+	(newValue) => {
+		if (newValue !== collapsedToQuery(collapsed.value)) {
+			collapsed.value = collapsedFromQuery(newValue);
 		}
 	}
 );
