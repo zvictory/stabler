@@ -30,6 +30,8 @@ useEscapeBack(null, "/tender/board");
 
 const loading = ref(false);
 const data = ref({ rows: [], kpi: {}, currency: "" });
+const error = ref("");
+const everLoaded = ref(false);
 const managers = ref([]);
 /* Bu sayfa İKİ istek çiziyor: kendi panosu ve TenderFunnel'ın kendi
  * çağrısı. Sayfa en bayat bloğu kadar taze, o yüzden yazılan damga
@@ -39,30 +41,53 @@ const lastReadAt = computed(() =>
 	formatTime(oldestStamp([data.value?.generated_at, funnelStamp.value]))
 );
 
+const canDirector = computed(() => session.tenderViews.includes("director"));
+const forbidden = computed(() => session.tenderViewsLoaded && !canDirector.value);
+
 async function load() {
 	if (!activeCompany.value) return;
 	loading.value = true;
 	try {
+		await session.ensureTenderViews();
+		if (!canDirector.value) return;
 		data.value = await call("stabler.api.tender.tender_director_board", { company: activeCompany.value });
+		error.value = "";
+		everLoaded.value = true;
 	} catch (err) {
-		toast.error(err?.message || t("Could not load the director board."));
+		error.value = err?.message || t("Could not load the director board.");
 	} finally {
 		loading.value = false;
 	}
 }
+/* Bir arka-plan yenilemesi başarısız olursa data.value BİLEREK dokunulmadan
+ * kalır (S3) — son iyi sayılar ekranda kalır. `stale`, o seçimin eksik yarısı:
+ * "hâlâ doğru" ile "bir kez doğruydu, son deneme başarısız oldu" aynı piksel
+ * olmasın. everLoaded şart: hiç yüklenmemiş bir tahtayı da "bayat" saymaz. */
+const stale = computed(() => Boolean(error.value) && everLoaded.value);
 async function loadManagers() {
 	try {
 		const r = await call("stabler.api.tender.tender_managers", { company: activeCompany.value });
 		managers.value = r?.managers || [];
 	} catch { /* assignment is optional */ }
 }
-async function assign(row, user) {
+async function assign(row, user, event) {
+	const previous = row.assigned_to;
 	try {
 		const r = await call("stabler.api.tender.assign_tender", { deal: row.deal, user: user || "" });
 		row.assigned_to = r.assigned_to;
 		row.assigned_to_name = r.assigned_to_name;
 		toast.success(t("Assigned."));
 	} catch (err) {
+		/* :value tek yönlü — reddedilince row.assigned_to hiç değişmiyor, o
+		 * yüzden Vue bu bağı yeniden eşlemiyor ve <select> tarayıcının zaten
+		 * uyguladığı seçimi göstermeye devam ediyor. Tek düzeltme DOM'a
+		 * doğrudan yazmak; tepkisel olan burada geri almaz.
+		 *
+		 * Aynı <select> üzerinde iki değişiklik aynı DOM düğümünü paylaşır, bu
+		 * yüzden yalnızca BU çağrının gönderdiği değer hâlâ ekranda duruyorsa
+		 * geri al — aksi halde geç gelen bir ret, arada başarıyla tamamlanmış
+		 * farklı bir çağrının sonucunu ezer. */
+		if (event?.target && event.target.value === user) event.target.value = previous;
 		toast.error(err?.message || t("Could not assign."));
 	}
 }
@@ -94,7 +119,14 @@ function clearPhase() {
 }
 
 const filters = computed(() => tenderRouteFilters(route.query));
-const filterSummary = computed(() => activeTenderFilters(filters.value).map(([key, value]) => `${key}: ${value}`));
+/* tenderBoardFilters.js'nin yedi anahtarı hep BÖYLE anlaşılıyor; burada
+ * yeniden icat edilmiyor, yalnız okunaklı hale getiriliyor (S6). Bilinmeyen
+ * bir anahtar sessizce yutulmak yerine kendi adını gösteriyor. */
+const filterLabel = (key) => ({
+	stage: t("Stage"), period: t("Period"), risk: t("Risk"), due: t("Deadline"),
+	status: t("Result"), from_date: t("From"), to_date: t("To"),
+}[key] || key);
+const filterSummary = computed(() => activeTenderFilters(filters.value).map(([key, value]) => `${filterLabel(key)}: ${value}`));
 const filteredRows = computed(() => {
 	const base = filterTenderRows(rows.value, filters.value);
 	if (!phaseDeals.value) return base;
@@ -110,7 +142,7 @@ const kpis = computed(() => {
 		{
 			key: "count", sev: "neutral", label: t("Active tenders"),
 			value: String(k.count || 0), caption: t("lots in the pipeline"),
-			note: t("seen through to awaiting result"), rule: "tender_lot · result = null",
+			note: t("seen through to awaiting result"), rule: "tender_lot · every readable deal",
 		},
 		{
 			key: "win_rate", sev: "ok", label: t("Result"),
@@ -121,12 +153,12 @@ const kpis = computed(() => {
 		{
 			key: "at_risk", sev: "crit", label: t("Risk"),
 			value: String(k.at_risk || 0), caption: t("deadline risk"),
-			note: t("needs action today — lands on the desk"), rule: "deadline < 48h · act_now",
+			note: t("needs action today — lands on the desk"), rule: "any milestone · not done · days < 0",
 		},
 		{
 			key: "total_value", sev: "neutral", label: t("Portfolio value"),
 			value: fm(k.total_value || 0), caption: t("contracted"),
-			note: t("sum of every open tender's value"), rule: "sum(sales_order.grand_total)",
+			note: t("sum of every open tender's value"), rule: "sum(sales_order.base_grand_total or bid_price)",
 		},
 		{
 			key: "avg_margin", sev: "ok", label: t("Avg margin"),
@@ -172,13 +204,10 @@ function clearFilters() { router.replace({ query: {} }); }
 			<span>{{ t("Every lot is counted in exactly one stage") }}</span>
 			<span>{{ t("Numbers are read from ERP records — the rule under each says what it counted") }}</span>
 			<span v-if="lastReadAt">{{ t("Last read") }} <span class="ds-mono">{{ lastReadAt }}</span></span>
+			<span v-if="stale" class="ds-chip" data-tone="crit">{{ t("Refresh failed — showing the last known numbers") }}</span>
 		</template>
 
-		<template v-if="filterSummary.length" #actions>
-			<span class="ds-chip" data-tone="soon">{{ filterSummary.join(" · ") }}</span>
-			<button type="button" class="ds-btn" @click="clearFilters">{{ t("Clear filters") }}</button>
-		</template>
-
+		<template v-if="!forbidden">
 		<div class="ds-kpis" data-cols="3">
 			<div v-for="k in kpis" :key="k.key" class="ds-kpi" :data-sev="k.sev">
 				<div class="ds-label">{{ k.label }}</div>
@@ -208,6 +237,17 @@ function clearFilters() { router.replace({ query: {} }); }
 			<span class="board-phase-note">{{ phaseMeta.note }}</span>
 			<button type="button" class="ds-btn board-phase-clear" @click="clearPhase">
 				{{ t("Clear filter") }}
+			</button>
+		</div>
+
+		<!-- Aynı bar, ikinci bir sebep için: rota filtreleri de tabloyu süzüyor
+		     ama hiç açıklamıyordu (S6) — üstteki fazın çözümü zaten hazır,
+		     burada yeniden tasarlanmıyor. -->
+		<div v-if="filterSummary.length" class="board-phase" role="status">
+			<span class="ds-label board-phase-kicker">{{ t("Filters") }}</span>
+			<span class="board-phase-note">{{ filterSummary.join(" · ") }}</span>
+			<button type="button" class="ds-btn board-phase-clear" @click="clearFilters">
+				{{ t("Clear filters") }}
 			</button>
 		</div>
 
@@ -256,13 +296,16 @@ function clearFilters() { router.replace({ query: {} }); }
 									<span v-else-if="r.lifecycle?.unverified_history" class="ds-chip" data-tone="today">
 										{{ t("Unverified") }}
 									</span>
+									<span v-else-if="!r.priced" class="ds-chip" data-tone="soon">
+										{{ t("Not yet priced") }}
+									</span>
 								</div>
 								<div class="ds-row-ev">{{ r.po_count }} PO · {{ r.so_count }} SO · {{ r.deal }}</div>
 							</td>
-							<td class="ds-td-num">{{ fm(r.value) }}</td>
-							<td class="ds-td-num">{{ r.margin_pct }}%</td>
-							<td class="ds-td-num board-muted">{{ fm(r.landed) }}</td>
-							<td class="ds-td-num board-strong">{{ fm(r.ostatok) }}</td>
+							<td class="ds-td-num">{{ r.priced ? fm(r.value) : "—" }}</td>
+							<td class="ds-td-num">{{ r.priced ? `${r.margin_pct}%` : "—" }}</td>
+							<td class="ds-td-num board-muted">{{ r.priced ? fm(r.landed) : "—" }}</td>
+							<td class="ds-td-num board-strong">{{ r.priced ? fm(r.ostatok) : "—" }}</td>
 							<td class="ds-mono board-nowrap">{{ r.delivery ? formatDate(r.delivery) : "—" }}</td>
 							<td>
 								<span class="ds-chip" :data-tone="riskTone(r.risk)">{{ riskLabel(r.risk) }}</span>
@@ -272,7 +315,7 @@ function clearFilters() { router.replace({ query: {} }); }
 									class="ds-input board-select"
 									:value="r.assigned_to"
 									:aria-label="t('Manager')"
-									@change="assign(r, $event.target.value)"
+									@change="assign(r, $event.target.value, $event)"
 								>
 									<option value="">— {{ t("Unassigned") }} —</option>
 									<option v-for="m in managers" :key="m.name" :value="m.name">{{ m.full_name }}</option>
@@ -283,13 +326,34 @@ function clearFilters() { router.replace({ query: {} }); }
 				</table>
 			</div>
 
-			<div v-if="!loading && !filteredRows.length" class="ds-panel-foot board-empty">
+			<div v-if="!loading && error && !everLoaded" class="ds-panel-foot board-empty" role="alert">
+				<span>{{ error }}</span>
+			</div>
+			<div v-else-if="!loading && !filteredRows.length" class="ds-panel-foot board-empty">
 				<span>{{ t("No tenders match these filters.") }}</span>
 				<span>{{ t("Clear filters or select another dashboard period.") }}</span>
 			</div>
 			<div v-else class="ds-panel-foot">
 				<span>{{ t("Linked directly to ERP records") }}</span>
 				<span class="ds-mono">tender_lot · quotation · sales_order · purchase_order</span>
+			</div>
+		</section>
+		</template>
+		<!-- Bu tahtanın tek kapısı `_require_tender_view("director", company)`;
+		     ne bir görünüm seçici ne başka bir rol için varyant var. Boş bir
+		     tablo hataya benziyor — TenderOverview.vue'nun panosu zaten çözülmüş,
+		     burada yeniden tasarlanmıyor (prompt 15 §2). -->
+		<section v-else class="ds-panel board-forbidden">
+			<div class="ds-panel-head">
+				<h2>{{ t("Your work is on the operations desk") }}</h2>
+			</div>
+			<div class="board-forbidden-body">
+				{{ t("This board is built for the director role. Your queue for today is on the operations desk.") }}
+			</div>
+			<div class="ds-panel-foot">
+				<button type="button" class="board-forbidden-link" @click="router.push('/tender/desk')">
+					{{ t("Operations desk →") }}
+				</button>
 			</div>
 		</section>
 	</TenderPage>
@@ -342,9 +406,43 @@ function clearFilters() { router.replace({ query: {} }); }
 	margin-top: 14px;
 }
 
+.board-forbidden {
+	margin-top: 14px;
+}
+
+.board-forbidden-body {
+	padding: 18px var(--ds-pad);
+	font-size: 13.5px;
+	color: var(--ds-tx2);
+}
+
+/* TenderOverview.vue's `.ov-link`: reads like a link, works like a button —
+ * the layer has no `ds-link` class and `ds-btn` is too heavy for this line. */
+.board-forbidden-link {
+	border: 0;
+	background: none;
+	padding: 0;
+	font: inherit;
+	font-size: 10.5px;
+	color: var(--ds-tx);
+	text-decoration: underline;
+	cursor: pointer;
+}
+
 /* Dokuz sütunlu tablo dar ekrana sığmıyor; sayfayı değil TABLOYU kaydır. */
 .board-scroll {
 	overflow-x: auto;
+}
+
+/* `.ds-table` katmanda `width: 100%` (stabler-modernist.css:389) — kapsayıcı
+ * dar olunca sütunlar sıkışır, TAŞMAZ, ve yukarıdaki overflow-x'in kaydıracak
+ * hiçbir şeyi kalmaz. min-width ile width çakışmıyor (iki ayrı özellik);
+ * tarayıcı max(width, min-width) alır, o yüzden 700px'in üstünde yine
+ * width: 100% geçerli, yalnız kapsayıcı bundan darsa taban devreye giriyor —
+ * tam bir telefonda olduğu gibi. Bu, Vue'nun scoped stiliyle YALNIZ bu
+ * ekranın tablosuna uygulanıyor; katmandaki genel .ds-table dokunulmuyor. */
+.ds-table {
+	min-width: 960px;
 }
 
 .board-row {
