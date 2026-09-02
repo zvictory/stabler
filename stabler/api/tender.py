@@ -2089,6 +2089,7 @@ def _tender_director_payload(company: str, *, include_rows: bool) -> dict:
 	margins = []
 	won = lost = pending = 0
 	unverified_history = 0
+	has_pricing_col = frappe.db.has_column("CRM Deal", "custom_bid_pricing")
 	for deal in _tender_deal_names(company):
 		if not frappe.has_permission("CRM Deal", "read", doc=deal):
 			continue
@@ -2110,6 +2111,7 @@ def _tender_director_payload(company: str, *, include_rows: bool) -> dict:
 			frappe.db.get_value("CRM Deal", deal, "creation"),
 			dl["risk"],
 		)
+		has_pricing = bool(has_pricing_col and frappe.db.get_value("CRM Deal", deal, "custom_bid_pricing"))
 		inp, refs = _bid_inputs(deal, company)
 		pnl = _compute_bid_pnl(inp)
 		value = flt(refs["so_revenue"]) or flt(pnl["bid_price"])
@@ -2129,6 +2131,7 @@ def _tender_director_payload(company: str, *, include_rows: bool) -> dict:
 					"landed": refs["po_landed"],
 					"ostatok": pnl["ostatok"],
 					"margin_pct": pnl["margin_on_revenue_pct"],
+					"priced": has_pricing,
 					"po_count": refs["po_count"],
 					"so_count": refs["so_count"],
 					"risk": dl["risk"],

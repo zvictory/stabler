@@ -256,13 +256,16 @@ function clearFilters() { router.replace({ query: {} }); }
 									<span v-else-if="r.lifecycle?.unverified_history" class="ds-chip" data-tone="today">
 										{{ t("Unverified") }}
 									</span>
+									<span v-else-if="!r.priced" class="ds-chip" data-tone="soon">
+										{{ t("Not yet priced") }}
+									</span>
 								</div>
 								<div class="ds-row-ev">{{ r.po_count }} PO · {{ r.so_count }} SO · {{ r.deal }}</div>
 							</td>
-							<td class="ds-td-num">{{ fm(r.value) }}</td>
-							<td class="ds-td-num">{{ r.margin_pct }}%</td>
-							<td class="ds-td-num board-muted">{{ fm(r.landed) }}</td>
-							<td class="ds-td-num board-strong">{{ fm(r.ostatok) }}</td>
+							<td class="ds-td-num">{{ r.priced ? fm(r.value) : "—" }}</td>
+							<td class="ds-td-num">{{ r.priced ? `${r.margin_pct}%` : "—" }}</td>
+							<td class="ds-td-num board-muted">{{ r.priced ? fm(r.landed) : "—" }}</td>
+							<td class="ds-td-num board-strong">{{ r.priced ? fm(r.ostatok) : "—" }}</td>
 							<td class="ds-mono board-nowrap">{{ r.delivery ? formatDate(r.delivery) : "—" }}</td>
 							<td>
 								<span class="ds-chip" :data-tone="riskTone(r.risk)">{{ riskLabel(r.risk) }}</span>
