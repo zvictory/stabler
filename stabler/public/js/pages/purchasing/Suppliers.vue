@@ -692,7 +692,7 @@ async function deleteSupplier() {
 								<span v-else class="text-secondary">—</span>
 							</td>
 							<td class="ds-td-num">
-								{{ formatMoney(q.base_grand_total || q.grand_total, q.currency || session.currency, user.language) }}
+								{{ formatMoney(q.base_grand_total, session.currency, user.language) }}
 							</td>
 							<td>{{ q.valid_till ? formatDate(q.valid_till) : "—" }}</td>
 							<td>
