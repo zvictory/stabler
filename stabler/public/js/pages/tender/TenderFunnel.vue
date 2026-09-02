@@ -491,61 +491,67 @@ function go(st) {
 				</div>
 			</section>
 
-			<template v-if="props.mode === 'full'">
-				<div class="ds-kpis" data-cols="4">
-					<div v-for="k in KPIS" :key="k.key" class="ds-kpi" :data-sev="k.sev">
-						<div class="ds-label">{{ k.label }}</div>
-						<div>
-							<span class="ds-kpi-val">{{ k.n }}</span
-							><span class="ds-kpi-cap">{{ k.cap }}</span>
-						</div>
-						<div class="ds-kpi-note">{{ k.note }}</div>
-						<div class="ds-kpi-q">{{ k.rule }}</div>
+			<!-- P1-6 (coordinator review, 2026-09-02): this used to gate the counter
+			     strip AND the stage-grid section below under one wrapping template.
+			     F10 only found the counters colliding with DirectorBoard's own six;
+			     the grid was never a collision -- DirectorBoard has none of its own
+			     and its own mount comment already promises "stage grid, funnel and
+			     chevron strip are in their own component" (DirectorBoard.vue).
+			     Gating both silently took the boxes, rule lines, submitted-urgent
+			     chip and the go() drill-down away from that screen, and no test
+			     caught it. Only the counters stay opt-in now; the pipeline section
+			     below is unconditional again. -->
+			<div v-if="props.mode === 'full'" class="ds-kpis" data-cols="4">
+				<div v-for="k in KPIS" :key="k.key" class="ds-kpi" :data-sev="k.sev">
+					<div class="ds-label">{{ k.label }}</div>
+					<div>
+						<span class="ds-kpi-val">{{ k.n }}</span
+						><span class="ds-kpi-cap">{{ k.cap }}</span>
 					</div>
+					<div class="ds-kpi-note">{{ k.note }}</div>
+					<div class="ds-kpi-q">{{ k.rule }}</div>
+				</div>
+			</div>
+
+			<section class="ds-panel funnel-block">
+				<div class="ds-panel-head">
+					<h2>{{ t("Tender pipeline") }}</h2>
+					<span class="ds-label">
+						{{ t("Each tender is counted in exactly one stage. Click a stage to open its list.") }}
+					</span>
 				</div>
 
-				<section class="ds-panel funnel-block">
-					<div class="ds-panel-head">
-						<h2>{{ t("Tender pipeline") }}</h2>
-						<span class="ds-label">
-							{{
-								t("Each tender is counted in exactly one stage. Click a stage to open its list.")
-							}}
-						</span>
+				<template v-for="g in GROUPS" :key="g.key">
+					<div class="ds-stage-group">
+						<span class="ds-label">{{ g.label }}</span>
+						<span class="ds-stage-count">{{ groupTotal(g) }} {{ t("lots") }}</span>
 					</div>
-
-					<template v-for="g in GROUPS" :key="g.key">
-						<div class="ds-stage-group">
-							<span class="ds-label">{{ g.label }}</span>
-							<span class="ds-stage-count">{{ groupTotal(g) }} {{ t("lots") }}</span>
-						</div>
-						<div class="ds-stage-grid" :data-cols="String(g.cols)">
-							<button
-								v-for="st in g.stages"
-								:key="st.key"
-								type="button"
-								class="ds-stage"
-								:data-tone="st.tone"
-								@click="go(st)"
-							>
-								<div>
-									<span class="ds-stage-n">{{ st.n }}</span
-									><span class="ds-stage-t">{{ st.label }}</span>
-								</div>
-								<div class="ds-stage-rule">{{ st.rule }}</div>
-								<div v-if="st.chip" class="funnel-chip">
-									<span class="ds-chip" :data-tone="st.chip.tone">{{ st.chip.text }}</span>
-								</div>
-							</button>
-						</div>
-					</template>
-
-					<div class="ds-panel-foot">
-						<span class="ds-mono">tender_lot · quotation · sales_order · purchase_order</span>
-						<span>{{ t("last {days} days", { days }) }}</span>
+					<div class="ds-stage-grid" :data-cols="String(g.cols)">
+						<button
+							v-for="st in g.stages"
+							:key="st.key"
+							type="button"
+							class="ds-stage"
+							:data-tone="st.tone"
+							@click="go(st)"
+						>
+							<div>
+								<span class="ds-stage-n">{{ st.n }}</span
+								><span class="ds-stage-t">{{ st.label }}</span>
+							</div>
+							<div class="ds-stage-rule">{{ st.rule }}</div>
+							<div v-if="st.chip" class="funnel-chip">
+								<span class="ds-chip" :data-tone="st.chip.tone">{{ st.chip.text }}</span>
+							</div>
+						</button>
 					</div>
-				</section>
-			</template>
+				</template>
+
+				<div class="ds-panel-foot">
+					<span class="ds-mono">tender_lot · quotation · sales_order · purchase_order</span>
+					<span>{{ t("last {days} days", { days }) }}</span>
+				</div>
+			</section>
 
 			<div class="funnel-2col">
 				<section class="ds-panel">
