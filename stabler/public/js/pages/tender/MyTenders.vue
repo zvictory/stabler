@@ -33,6 +33,16 @@ const data = ref({ rows: [], currency: "" });
 // matched" -- load() used to catch straight into toast.error and leave
 // data.value alone, so a failed load rendered the SAME EmptyState line as an
 // honest empty result (§5).
+//
+// P1-4 (coordinator review, 2026-09-02): `error` latches across background
+// ticks too (useAutoRefresh calls load() every 60s) and is cleared only at
+// the TOP of the next load() -- correct for load() itself, but the template's
+// `v-if="error"` alone could not tell "the server never returned anything"
+// apart from "it answered fine earlier, a later tick failed, and 13 real
+// rows are still sitting in data.value.rows". The template guard now also
+// requires `!data.rows.length`, so a stale background failure over real data
+// renders "No tenders match these filters." (an honest empty view, possibly
+// stale), not a false "Could not load your tenders."
 const error = ref("");
 const lastReadAt = computed(() => formatTime(data.value?.generated_at));
 
@@ -128,10 +138,23 @@ const fm = (v) => formatMoney(v, ccy.value, user.value.language);
 // logistics staff -- the number a sourcing officer can act on is the FIXED
 // estimate they typed onto the deal's own bid pricing. `landed_estimate`
 // reads exactly that field server-side (_deal_landed_estimate, tender.py).
-// Once a PO exists the real post-win sum is the better number, so it wins.
-function rowLanded(r) {
-	return r.po_count ? r.landed : r.landed_estimate;
-}
+//
+// P1-1/P1-2 (coordinator review, 2026-09-02): this used to SWITCH between the
+// two under one "Landed" header, keyed on whether a PO existed yet.
+// That contradicted §8's own vocabulary -- "Landed... a post-win figure. Not
+// the quotation's pre-win landed estimate" -- and DirectorBoard, which shows
+// the identical `landed` field under the identical header with no switch, so
+// the same deal read two disagreeing numbers on the two screens. Worse, the
+// switch triggered on the first DRAFT Purchase Order (_deal_landed_split
+// counts docstatus < 2), so an empty draft with no line items yet made
+// `landed` read 0 -- the original M16 defect, reappearing the moment sourcing
+// work begins, reading as a 73% cost drop to whoever is watching.
+// `landed` now renders unconditionally in the template below (never switched,
+// matches DirectorBoard without touching it), and the estimate is a sub-line
+// inside the same cell, guarded only on its own value -- the same shape the
+// Sourcing workspace's Delivered column already uses for a secondary figure
+// (10-frontend.md, Currency display) rather than a sixth column ("the five
+// columns... are the contract", §4).
 
 // Same three-value map as DirectorBoard's RISK_TONE -- imported as a pattern,
 // not re-authored (§S1).
@@ -139,12 +162,18 @@ const RISK_TONE = { good: "ok", warn: "today", risk: "crit" };
 const riskTone = (r) => RISK_TONE[r] || null;
 const riskLabel = (r) => ({ good: t("On track"), warn: t("Deadline near"), risk: t("At risk"), none: "—" }[r] || "—");
 
-// M11: `result` ("" · won · lost) is on every row and was rendered nowhere
-// (§S6), so a won, a lost and an open tender looked identical on the one
-// screen where that distinction decides whether there is work left to do.
-// Same tone convention as DirectorBoard's RESULT_TONE, minus its "pending"
-// case -- this endpoint's `result` is only ever "", "won" or "lost".
-const RESULT_TONE = { won: "ok", lost: "crit" };
+// M11: `result` ("" · won · lost · pending) is on every row and was rendered
+// nowhere (§S6), so a won, a lost and an open tender looked identical on the
+// one screen where that distinction decides whether there is work left to do.
+// Exact tone convention as DirectorBoard's RESULT_TONE, including "pending":
+// _clean_intake normalizes result to won/lost/pending (tender.py:1512) before
+// this endpoint ever reads it, so pending is real here too -- an earlier
+// comment claiming otherwise was wrong (P2-6, coordinator review, 2026-09-02).
+//
+// P1-3: the server now gates `result` on submitted evidence, so a result set
+// without a submitted bid arrives as "" plus `lifecycle.unverified_history`
+// -- DirectorBoard's own v-else-if branch, mirrored in the template below.
+const RESULT_TONE = { won: "ok", lost: "crit", pending: "today" };
 const resultTone = (x) => RESULT_TONE[x] || null;
 const resultLabel = (x) => t(x.charAt(0).toUpperCase() + x.slice(1));
 
@@ -173,8 +202,8 @@ function clearFilters() { router.replace({ query: {} }); }
 						<th style="min-width: 220px">{{ t("Tender") }}</th><th class="ds-td-num" style="min-width: 130px">{{ t("Landed") }}</th>
 						<th class="ds-td-num" style="min-width: 90px">{{ t("PO count") }}</th><th class="mt-nowrap" style="min-width: 150px">{{ t("Delivery deadline") }}</th><th style="min-width: 110px">{{ t("Risk") }}</th>
 					</tr></thead>
-					<tbody>
-						<SkeletonRows v-if="loading" :cols="5" :rows="6" />
+					<SkeletonRows v-if="loading" :cols="5" :rows="6" />
+					<tbody v-else>
 						<tr
 							v-for="r in filteredRows"
 							:key="r.deal"
@@ -189,9 +218,15 @@ function clearFilters() { router.replace({ query: {} }); }
 								<div class="mt-tender">
 									<span class="ds-row-title mt-label">{{ r.label }}</span>
 									<span v-if="r.result" class="ds-chip" :data-tone="resultTone(r.result)">{{ resultLabel(r.result) }}</span>
+									<span v-else-if="r.lifecycle?.unverified_history" class="ds-chip" data-tone="today">{{ t("Unverified") }}</span>
 								</div>
 							</td>
-							<td class="ds-td-num">{{ fm(rowLanded(r)) }}</td>
+							<td class="ds-td-num">
+								<div class="mt-landed">
+									<span>{{ fm(r.landed) }}</span>
+									<span v-if="r.landed_estimate" class="ds-mono">{{ t("Pre-win estimate") }}: {{ fm(r.landed_estimate) }}</span>
+								</div>
+							</td>
 							<td class="ds-td-num">{{ r.po_count }}</td>
 							<td class="ds-mono mt-nowrap">{{ r.delivery ? formatDate(r.delivery) : "—" }}</td>
 							<td><span class="ds-chip" :data-tone="riskTone(r.risk)">{{ riskLabel(r.risk) }}</span></td>
@@ -201,7 +236,7 @@ function clearFilters() { router.replace({ query: {} }); }
 			</div>
 
 			<template v-if="!loading && !filteredRows.length">
-				<div v-if="error" class="ds-panel-foot mt-empty">
+				<div v-if="error && !data.rows.length" class="ds-panel-foot mt-empty">
 					<span>{{ t("Could not load your tenders.") }}</span>
 					<span class="ds-mono">{{ error }}</span>
 				</div>
@@ -229,6 +264,16 @@ function clearFilters() { router.replace({ query: {} }); }
 
 .mt-nowrap {
 	white-space: nowrap;
+}
+
+/* Landed cell: the post-win sum always on top (matches DirectorBoard), the
+   pre-win estimate as a muted sub-line beneath it when there is one -- never
+   a swap, see the M16 comment on the script side. */
+.mt-landed {
+	display: flex;
+	flex-direction: column;
+	align-items: flex-end;
+	gap: 2px;
 }
 
 .mt-tender {
