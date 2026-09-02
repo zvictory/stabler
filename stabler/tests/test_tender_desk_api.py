@@ -161,6 +161,196 @@ class TestTenderDeskApiSource(unittest.TestCase):
 		self.assertIn("self_made", helper.group(1))
 		self.assertIn("requested_by", helper.group(1))
 
+	def test_the_payload_states_the_calendar_day_it_reasoned_with(self):
+		# D18. The desk has two clocks and one word for them. Every severity, every
+		# counter and the calendar window are derived here from frappe.utils.today()
+		# in the SITE's timezone; the client re-filtered the identical predicate
+		# with the browser's local date, because the server never said what its own
+		# date was. Same predicate, different clock: between 00:00 and 05:00 in
+		# Tashkent (UTC+5) against a UTC host the two disagree, the Today chip and
+		# the list it filters to show different numbers, and each half is internally
+		# consistent. `today` is the fact the client was missing.
+		#
+		# assertTrue over assertRegex: a failure of assertRegex prints all 370 lines
+		# of tender_desk.py, which nobody reads.
+		self.assertTrue(
+			re.search(r'^\t\t"today": today_str,$', self.source, re.M),
+			'the payload must carry "today": today_str',
+		)
+
+	def test_the_stated_day_is_the_one_the_counters_were_built_with(self):
+		# WHAT WOULD MAKE THIS FAIL: stamping a second, freshly-read date onto the
+		# payload — `"today": today()`. A request that straddles midnight would then
+		# ship counters computed for one day labelled with the next, which is worse
+		# than the seam it replaced: the client would trust it and have no way to
+		# see the mismatch. One read, one variable, everything downstream from it.
+		self.assertEqual(
+			len(re.findall(r"^\ttoday_str = today\(\)$", self.source, re.M)),
+			1,
+			"today() must be read exactly once, into today_str",
+		)
+		self.assertNotIn('"today": today()', self.source)
+
+	def test_the_calendar_partition_is_delegated_to_the_frappe_free_engine(self):
+		# D13. The seven-day window used to be built inline here, which meant the
+		# one property that matters -- that no dated plan row disappears between the
+		# regions -- could only be pattern-matched, never executed: this module
+		# imports frappe, so no frappe-free test can call it. The partition is pure
+		# date arithmetic over the plan, so it moved to _desk_rules, where
+		# test_desk_rules.py runs it against build_plan's own output.
+		self.assertTrue(
+			re.search(
+				r"^\tcalendar = _desk_rules\.build_calendar\(plan_items, today_str, days_cnt\)$",
+				self.source,
+				re.M,
+			),
+			"the calendar must be built by _desk_rules.build_calendar(plan_items, today_str, days_cnt)",
+		)
+
+	def test_the_payload_carries_the_past_due_bucket(self):
+		# WHAT WOULD MAKE THIS FAIL: computing the bucket and not sending it. The
+		# seven cells would look identical to the day the overdue row was invisible,
+		# and the engine's test would still be green -- the exact shape of a fix
+		# that is real in the code and absent on the screen.
+		self.assertTrue(
+			re.search(r'^\t\t"calendar_past": calendar\["past"\],$', self.source, re.M),
+			'the payload must carry "calendar_past"',
+		)
+
+	def test_a_failed_approval_read_is_not_swallowed_into_an_empty_queue(self):
+		# D14, and the measurement that made this row real. The desk claimed "All
+		# items in this view are up to date" -- a statement about the WORLD -- and
+		# one of its inputs was:
+		#
+		#     except Exception:
+		#         all_pending_approvals = []
+		#
+		# list_pending() throws frappe.PermissionError for anyone who is not an
+		# approver (approvals.py:119-121), which on a real site is most of the
+		# desk's readers. So the two approval counters read 0, the Decision box read
+		# "No pending decisions" and the plan read "up to date" -- four confident
+		# statements produced by a swallowed exception, indistinguishable from a
+		# genuinely quiet queue.
+		#
+		# Three outcomes, three names: read, not_yours (the queue exists and is not
+		# mine), unreadable (nobody knows). The first two are answers; only the third
+		# is a gap.
+		# assertTrue, not assertNotIn: a failing assertNotIn against this module
+		# prints all 400 lines of it, which nobody reads.
+		self.assertTrue(
+			"\texcept Exception:\n\t\tall_pending_approvals = []\n\n" not in self.source,
+			"a bare except that empties the queue makes a failure look like an answer",
+		)
+		block = self._approval_block()
+		for state in ("read", "not_yours", "unreadable"):
+			with self.subTest(state=state):
+				self.assertTrue(f'approvals_state = "{state}"' in block, f"the {state} outcome is gone")
+		# Not being an approver is a SCOPE ANSWER, not a computation failure. This
+		# used to be pinned as `except frappe.PermissionError:` -- catching the
+		# answer out of the failure path, which review showed was reading one
+		# exception type as one cause. What the row actually requires is that the
+		# answer is reached WITHOUT a failure, so that is what is pinned: the state
+		# is set outside the try, from a role check.
+		self.assertLess(
+			block.index('approvals_state = "not_yours"'),
+			block.index("try:"),
+			"not being an approver is being discovered by failing again",
+		)
+
+	def test_the_rows_the_engine_could_not_date_reach_the_payload(self):
+		# WHAT WOULD MAKE THIS FAIL: going back to reading only ["items"].
+		# build_plan already counts every row it had to drop because a date would
+		# not parse -- and the caller discarded that number, so a lot with a
+		# malformed bid deadline vanished from the plan and the panel then asserted
+		# the view was up to date. The count existed; nothing carried it.
+		self.assertTrue(
+			re.search(r'^\t\t"skipped": plan_res\["skipped"\],$', self.source, re.M),
+			'the payload must carry "skipped": plan_res["skipped"]',
+		)
+
+	def test_the_payload_says_whether_team_load_is_the_readers_panel(self):
+		# WHAT WOULD MAKE THIS FAIL: shipping team_load without saying who it is
+		# for. The list is built only under `if oversight:`, so a sourcing user and
+		# a director of a company with no lots receive the SAME empty list. Only
+		# the server holds the roles; the client sees the consequence, and the
+		# consequence is ambiguous. Without this flag the panel can do nothing but
+		# guess, and the guess it made was to render nothing at all -- which reads
+		# as "your colleagues are idle" to the one reader who is not entitled to
+		# know either way.
+		self.assertTrue(
+			re.search(r'^\t\t"oversight": oversight,$', self.source, re.M),
+			'the payload must carry "oversight": oversight',
+		)
+
+	def test_a_team_member_with_nothing_open_still_gets_a_row(self):
+		# WHAT WOULD MAKE THIS FAIL: moving the users_map insert under the
+		# open-lots guard. It is what makes the panel's empty state sayable: the
+		# map takes a row for EVERY deal owner and only then counts the open ones,
+		# so an empty list means the company has no lots at all -- not that nobody
+		# is busy. Move the insert and the empty state starts claiming an idle team
+		# on a company whose lots are simply all won, and the two sentences the
+		# panel now distinguishes collapse back into one.
+		body = self.source[self.source.index("\tteam_load = []") :]
+		body = body[: body.index("\n\tcurr = ")]
+		insert = body.index("users_map[owner] = {")
+		guard = body.index("if owner not in users_map:")
+		self.assertLess(guard, insert, "the row insert must be guarded by membership only")
+		self.assertTrue(
+			body.index('if result not in ("won", "lost", "cancelled"):') > insert,
+			"the open-lots count must come after the row exists, never gate it",
+		)
+
+	def _approval_block(self) -> str:
+		"""The approvals cohort as CODE -- comment lines dropped.
+
+		Sliced rather than asserted against `self.source`: the module is 20 KB and
+		an assertion that fails against the whole of it prints the whole of it.
+
+		Comment-free because the section documents the construct it replaced -- the
+		note explaining why a PermissionError must no longer be read as "not an
+		approver" contains the words `except frappe.PermissionError`, and an
+		assertion that scanned prose would be tripped by the explanation of the very
+		thing it checks is gone. Same lesson as _code_only() in
+		test_operations_desk_source.py.
+		"""
+		anchor = "\t# 7. Approvals Cohort"
+		self.assertIn(anchor, self.source, "the approvals section moved")
+		block = self.source[self.source.index(anchor) :]
+		block = block[: block.index("\n\t# Map facts")]
+		return "\n".join(line for line in block.splitlines() if not line.lstrip().startswith("#"))
+
+	def test_not_being_an_approver_is_determined_not_inferred(self):
+		# WHAT WOULD MAKE THIS FAIL: going back to `except frappe.PermissionError ->
+		# not_yours`. That read one exception TYPE as one cause, and the type has at
+		# least two: list_pending raises it for a non-approver (approvals.py:119-121)
+		# AND for an approver whose role lacks read permission on Stabler Approval
+		# Request. The second is a genuine gap and it was being answered with "you
+		# are not an approver" -- after which `not_yours` is suppressed from the gap
+		# list by design (it is an answer, not a gap), so the plan went on saying
+		# everything was up to date over a queue it could not read.
+		block = self._approval_block()
+		self.assertTrue("is_approver(" in block, "the desk infers the approver instead of determining it")
+		self.assertTrue(
+			"except frappe.PermissionError" not in block,
+			"a PermissionError is being read as 'not an approver' again",
+		)
+		self.assertTrue('approvals_state = "unreadable"' in block, "a failed read no longer reports a gap")
+		self.assertTrue(
+			'approvals_state = "not_yours"' in block, "the answer state disappeared with the guess"
+		)
+
+	def test_the_queue_is_not_even_asked_for_when_it_is_not_yours(self):
+		# WHAT WOULD MAKE THIS FAIL: calling list_pending first and classifying
+		# after. Most of this desk's readers are not approvers, so that is one
+		# guaranteed-to-throw query per desk load, per reader -- and it only ever
+		# produced the answer the role check already held.
+		block = self._approval_block()
+		self.assertLess(
+			block.index('approvals_state = "not_yours"'),
+			block.index("list_pending("),
+			"the refusal is still discovered by making the call",
+		)
+
 	def test_no_sql_aggregation_functions_in_select(self):
 		lines = self.source.splitlines()
 		for idx, line in enumerate(lines, 1):

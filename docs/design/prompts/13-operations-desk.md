@@ -148,6 +148,46 @@ error.* A person who picked a view they are not entitled to sees a red-flavoured
 failure, not "this view isn't yours". Two of three gates are exemplary; the third
 throws away the distinction the other two protect.
 
+**Fixed 2026-09-02 (D9), and one thing measured on the way.** The refusal is now
+its own branch ahead of the error branch, without `role="alert"` — an assertive
+live region is for a failure, and being refused a view you never held is a policy
+outcome. The counter strip is hidden while refused: with no payload the four chips
+render `0 / 0 / 0 / 0` under rules like *due date passed, still open*, i.e. a
+measurement of the very view the server declined to measure.
+**The repo's standard forbidden test would not have worked here.** Five screens
+carry `err?.status === 403 || /role|permission/i.test(err?.message || "")`
+(`UnbilledReceipts.vue:235`). This path throws `_("Not permitted")`
+(`tender.py:1893`) — *permitted* does not contain *permission*, so that regex
+matches nothing, and a translated message matches nothing in any language. The
+**403 is the load-bearing half**; the wording is an English-only backstop.
+
+**Corrected 2026-09-02 in review — a 403 does not mean "this view is not yours".**
+The first fix read every 403 as the view refusal and printed *"This view is not
+yours / Your roles do not include it. Remove the view from the address to open
+your own desk."* Measured: `operations_desk` raises `frappe.PermissionError` —
+and therefore 403 — from **four** places, and only the last is about a view:
+
+| line | raised by | the reader is told |
+|---|---|---|
+| `:30` | `_assert_company_scope` | *This request belongs to a company you cannot access.* |
+| `:31` | `_require_tender` | *Not permitted* / *Tender module is not enabled for {0}.* |
+| `:36` | no view role at all | *Access denied to Operations Desk.* |
+| `:51` | `_require_tender_view` | *Not permitted* — and only reached `if view:` |
+
+The `:36` case is reachable **with no `view` in the URL**: a reader who holds the
+tender module but none of the four view roles opens `/tender/desk` and is told to
+remove a query parameter that is not there. And `err.message` — the server's own
+sentence, already translated by the time `client.js` unwraps `_server_messages` —
+was discarded, so the one line that said what was actually wrong never rendered.
+`session.canAccessModule("tender")` does not cover this: that is the company
+module map plus `allowedModules` (`stores/session.js:52-65`), not the view roles.
+
+All four are refusals, not failures, so all four keep the `forbidden` state and
+its no-`role="alert"` treatment. What changed is the wording: the panel prints
+the **server's** sentence, falls back to a generic refusal line that is true of
+all four, and offers *"Remove the view from the address…"* only when the failed
+request actually named a view.
+
 **A second, recorded gate bug — read the comment, do not repeat the bug**
 (`tender_desk.py:295-311`). The Decision box partitions one approval queue into
 "Awaiting my approval" and "Waiting others". The old predicate OR'd in
@@ -169,12 +209,12 @@ three that fail.
 | 1 | House layer, not Bootstrap | **PASS** — 79 `ds-*`, zero `badge bg-`, zero bare `btn-` |
 | 2 | Every number carries its rule | **PASS** — all four chips print `rule` under the value |
 | 3 | Loading is skeleton, not spinner | **PASS** — `<SkeletonRows :rows="6" :cols="3">`, zero `spinner-border` |
-| 4 | Five states per region | **PASS in the plan panel only** — see §5 |
+| 4 | Five states per region | **PASS** (2026-09-02, D15) — was PASS in the plan panel only; the other three rendered nothing at all in four of the five, see §5 |
 | 5 | State lives in the URL | **PARTIAL** — `view` and `filter` yes (`:470`, `:480`); band collapse (`collapsed`, `:257`) no |
 | 6 | Keyboard and screen reader reachable | **PASS** — `aria-pressed`, `aria-label`, `aria-expanded`, `role="alert"`; every interactive thing is a real `<button>` except one (S4) |
-| 7 | No raw server identifiers in front of a human | **FAIL** — three of them, S3 |
-| 8 | The empty state must distinguish *nothing to do* from *cannot be computed* | **FAIL** — S2 |
-| 9 | Freshness is the server's, not the browser's | **FAIL** — correction 2 above |
+| 7 | No raw server identifiers in front of a human | **PASS** (2026-09-02) — was FAIL with four of them, S3 |
+| 8 | The empty state must distinguish *nothing to do* from *cannot be computed* | **PASS** (2026-09-02, D14) — three-way in the plan, three-way in the Decision box; S2's own premise was corrected in place |
+| 9 | Freshness is the server's, not the browser's | **PASS** (2026-09-02, D12) — `lastReadAt` reads `generated_at`; this row still read FAIL while the D12 acceptance row read *passes*, and was corrected on 2026-09-02 while closing D15. The D12 work itself is not mine |
 
 ---
 
@@ -211,8 +251,40 @@ implementation for the module:
 | error | `.ds-panel-foot.desk-state[role=alert]` | `:72` |
 | empty | two lines: *"No tasks scheduled for today"* / *"All items in this view are up to date."* | `:73` |
 
-**The other three panels — Decision box, Team load, Next 7 days — do not have
-five states.** Draw them. And note what the empty text asserts: *"All items in
+**Corrected 2026-09-02 while closing D15 — the plan panel renders SIX, and
+"forbidden" is two different gates.** The table above says *forbidden (module)*,
+which is the client-side module check. D9 added a second refusal that is not the
+same thing: `_require_tender_view` raises `frappe.PermissionError` for a **role
+view** the reader may not open, and it arrives as a 403 on the same request that
+feeds all four regions. Two refusals, opposite recoveries — one needs the module
+enabled for the company, the other needs a role — so the chain is now
+loading · module · company · **view refusal** · error · empty, in that order,
+with `role="alert"` on the error alone. (The fourth is not *view* refusal — see
+D9's second correction: four gates raise it and only one is about a view.)
+
+**Corrected again 2026-09-02 in review — the plan panel does not keep its own
+chain.** The first D15 fix left the plan panel's inline chain in place as "the
+reference implementation" and claimed a test held the two equal. It did not: the
+test compared each chain to a hardcoded five-entry oracle and never to the other,
+so divergence past the fifth entry was invisible from both sides — and the two had
+**already** diverged. The plan panel had no `!deskData` state, so on the first
+paint the three side panels rendered skeletons while the plan panel rendered *"No
+tasks scheduled for today / All items in this view are up to date."* One screen,
+one instant, two answers to the same question. The gates now live only in
+`regionState`; every region branches on its own **content** and on nothing else,
+and the test that replaced the decorative one reads that invariant off the source
+rather than off an oracle typed into the test.
+
+**And the other three panels did not have ONE state, not four.** The doc says
+they "do not have five states"; measured, Team load and Next 7 days rendered
+`v-if="teamLoad.length"` / `v-if="week.length"` on the `<section>` itself, so on
+anything but a populated payload the panel was **not in the DOM at all**. That is
+worse than an unstyled empty and it is the one state a reader cannot interrogate:
+the page is simply shorter. A failed request, a module the company does not have,
+a refused view, a director's panel shown to a sourcing user and a genuinely quiet
+week were five different facts rendered as the same absence.
+
+Draw them. And note what the empty text asserts: *"All items in
 this view are up to date"* is a **claim about the world**, and §7 proves it is
 false on real data — five of eight rules cannot produce a row at all, so the
 panel says "you are up to date" when the honest sentence is "four of the eight
@@ -294,6 +366,50 @@ items, that cannot agree by construction.
 
 Draw the fix. A seven-day window that begins today is a choice, not a law.
 
+**Fixed 2026-09-02 (D13) — and the fix is not an earlier start date.** Overdue is
+unbounded (an invoice can be four months past due), so any N-day lead-in still
+hides whatever is older than N, *and hides it in a region that now looks like it
+covers the past*. The calendar gained a **past-due bucket**: everything with
+`due < today`, however old, as one pile — complete by construction. The boundary
+is strict, so today's deadline is counted in the today cell and not in both.
+The partition moved to `_desk_rules.build_calendar`, which is Frappe-free, so the
+property that matters — *no dated plan row disappears between the regions* — is
+now **executed** by `test_desk_rules.py` against `build_plan`'s own output rather
+than pattern-matched in a module that imports frappe.
+**Measured again 2026-09-02 in review — the bucket and the Overdue chip do not
+count the same set, and that is deliberate.** The bucket partitions on `due <
+today`; the chip counts `severity == "overdue"`. A sourcing lot under the quote
+minimum whose deadline has passed emits TWO rows on the same date — `bid_due` at
+severity overdue and `policy_gap` at severity **today**, because the policy row's
+severity is unconditional (`_desk_rules.py:113-122`). The bucket counts both, the
+chip counts one.
+
+Aligning them was considered and rejected in both directions. Narrowing the
+bucket to severity drops the policy row out of the calendar entirely — a dated
+plan row invisible in the region a reader scans to plan the week, which is this
+section's own defect restored. Widening the chip to dates recomputes severity on
+the client, which §4 forbids. What is pinned instead
+(`test_desk_rules.py::TestThePastDueBucketAndTheOverdueChip`) is the relationship
+that makes the disagreement safe: **the chip's set is a strict subset of the
+bucket's**, because all three overdue emitters guard on a strictly past date
+(`:69`, `:186`, `:215`). The calendar can never omit a row the chip is shouting
+about; the reverse is legitimate work.
+
+**Still open:** the bucket's label reads *PAST DUE / already past due*, which is
+the chip's vocabulary for a different set. Rewording it needs a catalogue key and
+is left to the coordinator.
+
+It is drawn as the panel's own `.ds-panel-foot` under the seven cells, not as an
+eighth cell: `.ds-week` is `repeat(7, minmax(0,1fr))`
+(`stabler-modernist.css:361`), and the bucket is not a day. Its colour comes from
+`data-sev="crit"` through the layer's `.ds-sev` rules (`:307-308`) — no colour
+rule was added to this page. It is **not** a control: `.ds-band` would have
+painted it as one, and the past bucket counts by *due date* while the Overdue
+chip counts by *severity*, which are not the same set (a `policy_gap` on a lot
+whose bid deadline has passed is dated in the past and has severity `today`), so
+wiring it to the overdue filter would have created a fresh disagreement of
+exactly the kind S1 is about.
+
 ### S2 — five of the eight rules cannot produce a row, and the screen claims otherwise
 
 `_desk_rules.build_plan` emits exactly eight kinds. Executed against the seed:
@@ -313,6 +429,79 @@ Draw the fix. A seven-day window that begins today is a choice, not a law.
 cannot populate from demo data. On the boards it was lanes. Here it is the
 reasoning itself.
 
+---
+
+**Corrected again 2026-09-02 in review, twice.** The two approval chips printed
+a literal `0` directly above the sentence saying both approval counters are
+unknown — the numeral is the half a reader believes, so they now print `—` when
+`approvals_state` is `unreadable`. The other two chips keep their numbers: they
+come off the plan, not off the approval read. And `gaps` was reachable **only**
+through the empty-plan branch, whose outer condition already required
+`plan.length === 0`, so a desk with twelve rows and three dropped for unparseable
+dates said nothing at all — the case where a silently missing row is least likely
+to be noticed. The same sentences now render under the rows.
+
+**And `not_yours` is now determined, not inferred.** It was `except
+frappe.PermissionError -> not_yours`, i.e. one exception type read as one cause.
+The type has at least two: `list_pending` raises it for a non-approver
+(`approvals.py:119-121`) and for an approver whose role lacks read permission on
+Stabler Approval Request. The second is a real gap and was being answered with
+"you are not an approver" — after which `not_yours` is suppressed from the gap
+list by design, so the plan went on saying everything was up to date over a queue
+it could not read. `is_approver()` decides it directly, every surviving exception
+means what it says, and the desk stops making one guaranteed-to-throw query per
+load for the majority of its readers.
+
+**Still open:** the gap sentence names the two approval counters, but an
+unreadable queue also removes `approval_pending` rows from the plan, so
+`due_today` is understated as well. Widening it needs a catalogue key.
+
+**Corrected 2026-09-02 while closing D14 — this section's premise is wrong, and
+the row it motivates is right for a different reason.**
+
+This section is headed *"five of the eight rules **cannot produce a row**"* and
+asks for a panel that says *"4 rules ran · 4 could not"* (a count that also
+contradicts its own table, which is 3 fire / 5 do not). Measured against the
+table's own "why not" column, **all eight rules run on seed data.** Five of them
+find nothing because there is nothing of that kind in the data, which is an
+answer, not a failure — and this file says so itself, rule by rule: both won lots
+*have* POs; every PO is a draft, and an unsubmitted PO cannot be late; the seed
+creates no Purchase Invoice; it creates no Approval Request; and with no parent
+tender anywhere *"the lots are not orphaned, the site simply files tenders flat."*
+A rule that ran and found nothing is *nothing to do*. **"Did not fire" is not
+"could not be checked."**
+
+So the deliverable as written — a coverage report over eight rules — would have
+manufactured a warning where there was none. **The row is still real**, because
+this screen does have *could not be computed* states, and both were already in
+the code and both were being thrown away:
+
+1. **A swallowed exception.** `list_pending` was wrapped in a bare
+   `except Exception: all_pending_approvals = []`. It throws
+   `frappe.PermissionError` for anyone who is not an approver
+   (`approvals.py:119-121`) — most of this desk's readers — and can throw for any
+   other reason too. Both produced an empty list, so a failure and a quiet queue
+   rendered identically: two counters at 0, an empty Decision box, and the plan
+   asserting *"All items in this view are up to date"*. **Four confident
+   statements out of one swallowed exception.**
+2. **A discarded count.** `build_plan` returns `skipped` — the rows it had to drop
+   because a date would not parse — and the caller read only `["items"]`. A lot
+   with a malformed bid deadline vanished from the plan and the panel then said
+   the view was up to date.
+
+The fix names three approval outcomes (`read` / `not_yours` / `unreadable`) and
+ships `skipped`. `not_yours` is deliberately **not** a gap: the queue exists and
+is not yours, so a plan without it is complete *for you*, and a warning that fires
+every day for most users would bury the one that matters.
+
+**A third meaning of empty was found and closed at the same time**, and it is the
+most reachable of all: `filteredPlan` is empty whenever a counter chip hides every
+row. One click from the default view, on a desk with three items due today,
+pressing **Overdue** made the panel say *"No tasks scheduled for today · All items
+in this view are up to date."* The empty state is now three-way — the filter, the
+gap, and the genuine all-clear — and the world-claim sentence survives only in the
+third.
+
 **And one fact is resolved, carried, and never read.** `tender_desk.py:100-107`
 resolves `delivery_deadline` out of the intake JSON — with a long comment about
 the bug that made it unconditionally `None` — passes it into `lots_fact` as
@@ -325,18 +514,55 @@ Your deliverable is not the missing rule. It is the state that tells the truth:
 a plan panel that can say *"4 rules ran · 4 could not"* instead of *"All items in
 this view are up to date."*
 
-### S3 — three raw server identifiers are printed at the user
+**D19 resolved 2026-09-02, and one more thing measured.** The rule was *not*
+invented (§4 forbids it); the calendar's sublabel stopped promising it, and now
+reads *"Plan items by due date"*. Measured while doing it: even the one
+delivery-flavoured rule that does exist, `po_late`, can never reach that calendar
+— its severity is unconditionally `overdue` (`_desk_rules.py:186`, `sched_date <
+today_date`), so it is always outside a window that begins today. "delivery" was
+impossible in that region twice over. The fact stays on the wire and stays
+unread; `test_operations_desk_source.py` now ties the promise and the engine
+together **in both directions**, so writing a delivery rule and forgetting to
+re-advertise it fails too.
+
+**And the second half of the sublabel was also measured.** The header said
+*"Next 7 days · Bid · delivery · due"*. Of the eight rules, only `bid_due`
+(today), `bid_soon` and `policy_gap` can ever produce a future-dated row; every
+other kind's `due` is `today_str` or a past date. The seven cells therefore show
+bid deadlines and a pile of today — which is what the new sublabel claims and the
+old one did not.
+
+### S3 — ~~three~~ **four** raw server identifiers are printed at the user
+
+**Corrected 2026-09-02 while closing D10.** This section said *three*; measured,
+there are **four** sites, and the missing one is the higher-volume of the two
+`kind` leaks. Method: every `{{ … }}` interpolation in the template was extracted
+and read (58 of them), rather than the three the first pass happened to find.
 
 | Where | Renders | Value on real data |
 |---|---|---|
 | `:11` | `{{ t(deskData.view) }}` | `sourcing` / `declarant` / `logist` / `director` — **none is a key**; 0 hits in `en.csv`, so `t()` returns the id |
-| `:24` | `{{ t(v.label || v.id) }}` | the server builds `available_views = [{"id": v, "label": v}]` (`:40`) — **the label *is* the id**, so the option text is `logist` |
+| `:24` | `{{ t(v.label \|\| v.id) }}` | the server builds `available_views = [{"id": v, "label": v}]` (`:40`) — **the label *is* the id**, so the option text is `logist` |
 | `:96` | `<div class="ds-row-ev">{{ leadItem.kind }}</div>` | `bid_due`, `policy_gap`, `won_no_po`, `approval_pending` — snake_case internals, unlabelled, in the most prominent row on the page |
+| **`:128`** | `<div class="ds-row-ev">{{ item.kind }}</div>` | **the same leak in every ordinary band row.** On the seed's four rows the lead row leaks `bid_due` once and this one leaks `bid_due`, `policy_gap` and `bid_soon` — three of the four |
 
-Three different mechanisms, one result: the machine's vocabulary on a surface
-whose whole promise is *you will not need to ask anyone*. Fix all three — and
-note that the second one is a **server** fix (a label is not an id), which the
-design must state even though the design cannot make it.
+Four different mechanisms, one result: the machine's vocabulary on a surface
+whose whole promise is *you will not need to ask anyone*.
+
+**Fixed 2026-09-02 (D10, D11).** Two literal-keyed maps in the component —
+`KIND_LABEL` (eight rules) and `VIEW_LABEL` (four views) — the same idiom as
+`TenderDocumentsPanel.vue:29`. Literal because `t()` is harvested by scanning
+source, so a key computed anywhere (including on the server) can never be
+translated. The **server fix was made too**: `available_views` is now
+`[{"id": v}]` — the field had exactly one consumer, and a key called `label`
+holding an id invites the next screen to render it.
+The two fallbacks differ **on purpose**: an unknown `kind` renders nothing (the
+evidence line is `v-if`-guarded, so it vanishes rather than leaking), while an
+unknown view falls back to its id (an `<option>` with empty text is a row the
+reader can select and cannot name). Completeness of both maps against
+`_desk_rules.py` and `_TENDER_VIEW_ROLES` is asserted in
+`test_operations_desk_source.py`, so a ninth rule or a fifth view fails the build
+instead of reaching a user.
 
 ### S4 — the primary action is not a control
 
@@ -369,6 +595,18 @@ will notice the day they do not.
 
 `todayStr` drives four things: the header date, the TODAY filter, the calendar's
 today cell, and the row badge. Show which clock a reader is looking at.
+
+**Fixed 2026-09-02 (D18).** The seam is closed *and* stated, because closing it
+silently would leave the acceptance row open — a reader still could not tell
+which clock. The payload now carries `"today": today_str`, the same variable the
+counters and the calendar window were already built from (not a second read of
+`today()`, which would let a request straddling midnight ship one day's counters
+under the next day's label). The client prefers it and falls back to
+`todayIso()` only when the key is absent — an older server mid-deploy, or the
+render before the first response. The meta row names the clock in both cases
+(*server date* / *device date*), and on a day the two disagree it adds what the
+device says. `todayIso()` is now called exactly once in the file, which is what
+makes "two sources of today" fail a test rather than a night.
 
 ---
 
@@ -416,6 +654,20 @@ calendar; the loudest one is not.
 **Decision box: empty. Team load: empty for every non-director; for a director,
 built from site users.**
 
+**Corrected 2026-09-02 (D16) — from deal OWNERS, not site users.** `team_load`
+is `for d in deals: owner = assigned_to or owner or "Unassigned"`
+(`tender_desk.py` §9), so the rows are the people who hold lots, not the people
+who have accounts. On seed data the two nearly coincide, because the seeder
+assigns round-robin over the team (`seed_tender_demo.py:655`) — but the `seen`
+lots are deliberately left unassigned and fall back to the document owner, so the
+seeder gets a row of their own. A site with twelve users and four lots held by two
+of them renders two rows, and adding a user changes nothing.
+
+**Which also fixes the sentence the merged empty state would have used.** The map
+takes a row for **every** deal owner and only then counts the open lots, so a
+team whose lots are all won or lost still renders rows reading 0. `team_load ==
+[]` therefore means *the company has no lots at all* — never *nobody is busy*.
+
 **Three states you cannot exercise from this data — say so on the canvas rather
 than faking rows:**
 
@@ -440,7 +692,7 @@ Words this screen owns. Use them; do not synonymise.
 | **Next up** | the first row of the highest-severity band — derived, never set |
 | **rule** | the one-line query printed under a counter, e.g. *due date passed, still open* |
 | **band** | a collapsible severity group: Overdue · Today · Soon · Info |
-| **kind** | the internal rule name (`bid_due`, `policy_gap`, …) — currently leaking to the user, S3 |
+| **kind** | the internal rule name (`bid_due`, `policy_gap`, …) — never rendered; `KIND_LABEL` names it for the reader (S3) |
 | **why** | the server's sentence for *why this row is here*, e.g. *3/5 quotes collected* |
 | **view** | the role lens: sourcing · declarant · logist · director |
 | **oversight** | director; the only role with Team load |
@@ -473,9 +725,20 @@ Artboards. Every one at 1440×900 unless stated.
 3. **Plan panel · five states** — the four non-loading ones side by side, plus
    the sixth this screen needs: *rules that could not run* (S2).
 4. **Decision box · five states**, including the empty it actually has on real
-   data.
+   data. *Corrected 2026-09-02 (D15): its empty is THREE empties. The box is fed
+   by `list_pending`, which raises `PermissionError` for a non-approver — most
+   readers — and can fail outright; D14 split those into `not_yours` and
+   `unreadable`, and both used to render the same "No pending decisions" as a
+   genuinely quiet queue. Only the third may say it. The head counter goes to `—`
+   for `unreadable` and stays a number for `not_yours`, because zero decisions
+   waiting on you is the true answer when the queue is not yours.*
 5. **Team load · five states**, including "not your role" — which today renders
    as an empty panel indistinguishable from "nobody has any work".
+   *Corrected 2026-09-02 (D16): it renders as NO PANEL — `v-if="teamLoad.length"`
+   removes the `<section>`. And "nobody has any work" is not what the other empty
+   means either (see §7). The role answer cannot be inferred from the list at all;
+   it now ships as `oversight` on the payload, the name the rest of the tender API
+   already uses (`tender.py:2525`, `:3554`).*
 6. **Next 7 days · the S1 problem, and your answer to it.** Two artboards: what
    it does now (overdue invisible) and what it should do.
 7. **The three identifier leaks** (S3), before and after, all three in one board.
@@ -507,14 +770,14 @@ re-examined.
 | D6 | Loading renders `SkeletonRows`, not a spinner | passes |
 | D7 | `view` and `filter` round-trip through the URL | passes |
 | D8 | Band collapse round-trips through the URL | **passes** — `?collapsed=` (2026-09-02) |
-| D9 | A view the user lacks renders as *forbidden*, distinct from *error* | **fails** — collapses into `error` |
-| D10 | No snake_case identifier appears in rendered text | **fails** — three (S3) |
-| D11 | The role `<select>` shows translated labels, not ids | **fails** — server sends `label == id` |
+| D9 | A view the user lacks renders as *forbidden*, distinct from *error* | **passes** (2026-09-02) — own state, no `role="alert"`, counters hidden; corrected in review — **four** gates raise 403 and only one is about a view, so the server's own sentence is printed and the view recovery is conditional |
+| D10 | No snake_case identifier appears in rendered text | **passes** (2026-09-02) — `KIND_LABEL`; the leak was in **four** places, not three (S3) |
+| D11 | The role `<select>` shows translated labels, not ids | **passes** (2026-09-02) — `VIEW_LABEL`; the server stopped sending `label == id` |
 | D12 | The freshness stamp reflects `generated_at`, not the browser clock | **passes** (2026-09-02) — first reader of `generated_at` in the SPA |
-| D13 | An overdue item is discoverable from the calendar region | **fails** — window starts today (S1) |
-| D14 | The empty plan distinguishes *nothing to do* from *could not be computed* | **fails** — asserts "up to date" while 5 of 8 rules were silent |
-| D15 | The Decision box, Team load and calendar each render five states | **fails** — only the plan panel does |
-| D16 | Team load empty-for-your-role ≠ Team load empty-of-work | **fails** — same rendering |
+| D13 | An overdue item is discoverable from the calendar region | **passes** (2026-09-02) — a past-due bucket, not an earlier start date |
+| D14 | The empty plan distinguishes *nothing to do* from *could not be computed* | **passes** (2026-09-02) — three-way, and S2's premise was corrected: the silent five had *run* |
+| D15 | The Decision box, Team load and calendar each render five states | **passes** (2026-09-02) — one `regionState` for the four page-level gates, read by **all four** regions; the plan panel's second copy was kept at first, was found already diverged in review, and is gone |
+| D16 | Team load empty-for-your-role ≠ Team load empty-of-work | **passes** (2026-09-02) — `oversight` on the payload, and (review) the client prefers the flag, falls back to a populated `team_load` when an older server omits it, and never lets the fallback overrule an explicit `false`; and empty-of-work is *no lots in the company*, not *nobody busy* (§7) |
 | D17 | The primary CTA is the focusable, hoverable control, or is not drawn as one | **passes** (2026-09-02) — the row is the control; the span is no longer painted as one |
-| D18 | Which clock produced "today" is legible to the reader | **fails** — two clocks, one word (S5) |
-| D19 | `delivery_deadline` is either consumed by a rule or absent from the calendar's promise | **fails** — resolved, carried, unread; sublabel still says "delivery" |
+| D18 | Which clock produced "today" is legible to the reader | **passes** (2026-09-02) — the server sends `today`; the meta row names the clock and flags disagreement. Corrected in review: the device date was a one-shot snapshot taken at setup, so on a desk left open overnight the skew warning fired on the desk's own staleness every morning. It is re-read on each load |
+| D19 | `delivery_deadline` is either consumed by a rule or absent from the calendar's promise | **passes** (2026-09-02) — absent from the promise; the rule was NOT invented |

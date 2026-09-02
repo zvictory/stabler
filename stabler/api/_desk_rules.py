@@ -282,3 +282,47 @@ def build_plan(facts: dict | None, today: str) -> dict:
 	items.sort(key=_sort_key)
 
 	return {"items": items, "skipped": skipped}
+
+
+def build_calendar(items: list[dict] | None, today: str, days: int = 7) -> dict:
+	"""Partition plan items by due date: one past-due bucket, then `days` day cells.
+
+	Returns::
+
+	    {"past": {"count": int, "items": list}, "days": [{"date": str, "count": int, "items": list}, ...]}
+
+	The window used to begin at today and consist of nothing else. A day's count is
+	`due == that day`, and everything overdue has a due date in the PAST by
+	definition, so nothing overdue could ever appear in the one region a reader
+	scans to plan a week. Measured on seed data: the desk's loudest row -- a bid
+	deadline that passed yesterday -- was absent from all seven cells while the
+	Overdue counter directly above them read 1. Two regions of one screen,
+	describing the same four items, unable to agree by construction.
+
+	The bucket is not an earlier start date, and that is the whole point. Overdue is
+	unbounded -- an invoice can be four months past due -- so any N-day lead-in
+	still hides whatever is older than N, and hides it in a region that now looks
+	like it covers the past. A bucket is complete however old the item is.
+
+	The boundary is strict (`< today`): with `<=` today's deadline would be counted
+	in the pile AND in the today cell, and the region's own numbers would add up to
+	more work than the plan holds -- the same defect as hiding a row, with the
+	opposite sign. An item with no due date belongs to neither: nobody dated it, so
+	it is not late, and the calendar has nothing to say about it.
+
+	Lives here rather than in tender_desk.py because it is pure date arithmetic over
+	the plan and can therefore be executed by a test without a bench.
+	"""
+	rows = items or []
+	today_date = _parse_date(today) or datetime.date.today()
+	today_str = today_date.isoformat()
+
+	past = [i for i in rows if i.get("due") and str(i["due"]) < today_str]
+
+	day_cells = []
+	for offset in range(max(1, int(days or 0) or 1)):
+		day_str = (today_date + datetime.timedelta(days=offset)).isoformat()
+		on_day = [i for i in rows if i.get("due") and str(i["due"]) == day_str]
+		day_cells.append({"date": day_str, "count": len(on_day), "items": on_day[:2]})
+
+	return {"past": {"count": len(past), "items": past[:2]}, "days": day_cells}

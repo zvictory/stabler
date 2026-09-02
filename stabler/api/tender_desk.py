@@ -6,14 +6,12 @@ derived deterministically from source documents without manual task records.
 
 from __future__ import annotations
 
-import datetime
-
 import frappe
 from frappe import _
 from frappe.utils import now, today
 
 from stabler.api import _desk_rules
-from stabler.api.approvals import list_pending
+from stabler.api.approvals import is_approver, list_pending
 from stabler.api.tender import (
 	_assert_company_scope,
 	_is_tender_oversight,
@@ -37,7 +35,17 @@ def operations_desk(company: str, view: str | None = None, days: int = 7) -> dic
 	if not raw_views:
 		frappe.throw(_("Access denied to Operations Desk."), frappe.PermissionError)
 
-	available_views = [{"id": v, "label": v} for v in raw_views]
+	# A label is not an id. This list was `{"id": v, "label": v}` -- the key said
+	# "label" and held the id, so the desk's role picker rendered `logist` at the
+	# user and `t()` handed it straight back, because none of the four ids is a key
+	# in any catalogue (measured 2026-09-02: en.csv has `Sourcing` and `Declarant`
+	# capitalised, and no `logist` or `director` in any case). A field that lies
+	# about what it holds invites the next screen to render it too, and this one had
+	# exactly one consumer, so the id now travels alone. Display names live in the
+	# client's literal-keyed VIEW_LABEL map (OperationsDesk.vue, the same idiom as
+	# TenderDocumentsPanel.vue:29) -- literal because t() is harvested by scanning
+	# the source, so a name computed here could never be translated there.
+	available_views = [{"id": v} for v in raw_views]
 
 	if view:
 		_require_tender_view(view, company)
@@ -46,7 +54,6 @@ def operations_desk(company: str, view: str | None = None, days: int = 7) -> dic
 
 	oversight = _is_tender_oversight(user)
 	today_str = today()
-	today_date = datetime.date.fromisoformat(today_str)
 	try:
 		days_cnt = int(days)
 	except (ValueError, TypeError):
@@ -250,10 +257,43 @@ def operations_desk(company: str, view: str | None = None, days: int = 7) -> dic
 	# iterate the dict, i.e. its three KEYS, so the desk showed three phantom
 	# "Approval required: Document requests / total / can_approve" rows while every
 	# real pending approval was silently dropped (measured 2026-08-01 on mikas).
-	try:
-		all_pending_approvals = list_pending(company=company).get("requests") or []
-	except Exception:
+	#
+	# Three outcomes, three names -- because the desk's empty state is a claim
+	# about the WORLD ("All items in this view are up to date") and one of its
+	# inputs used to be `except Exception: all_pending_approvals = []`. A failure
+	# and a quiet queue rendered identically: two counters at 0, an empty Decision
+	# box, and a plan asserting everything was current. Four confident statements
+	# out of a swallowed exception.
+	#
+	# `not_yours` is the common case, not an edge one: most of this desk's readers
+	# are not approvers. That is an ANSWER -- the queue exists and it is not mine,
+	# so a plan without it is complete for me -- and it must not be reported as a
+	# gap, or the real gap would be invisible under a warning that fires every day.
+	#
+	# DETERMINED, not inferred. This used to read `except frappe.PermissionError ->
+	# not_yours`, i.e. one exception TYPE taken to mean one cause. The type has at
+	# least two: list_pending raises it for a non-approver (approvals.py:119-121)
+	# and also for an approver whose role lacks read permission on Stabler Approval
+	# Request. The second is a real gap and it was being answered with "you are not
+	# an approver" -- and because not_yours is deliberately suppressed from the gap
+	# list, the plan then went on asserting everything was up to date over a queue
+	# it could not read. is_approver() answers the question directly, so every
+	# exception that survives means what it says.
+	#
+	# It also stops asking. For a non-approver the call could only ever throw, so
+	# it was one guaranteed-to-fail query per desk load, per reader, to obtain an
+	# answer the role check already held.
+	if not is_approver(user):
 		all_pending_approvals = []
+		approvals_state = "not_yours"
+	else:
+		try:
+			all_pending_approvals = list_pending(company=company).get("requests") or []
+		except Exception:
+			all_pending_approvals = []
+			approvals_state = "unreadable"
+		else:
+			approvals_state = "read"
 
 	# Map facts for _desk_rules
 	lots_fact = [
@@ -264,6 +304,14 @@ def operations_desk(company: str, view: str | None = None, days: int = 7) -> dic
 			"lot_no": d.get("custom_lot_no"),
 			"stage": d.get("custom_tender_stage"),
 			"bid_deadline": str(d.get("custom_bid_deadline")) if d.get("custom_bid_deadline") else None,
+			# CARRIED AND UNREAD, on purpose. Measured 2026-09-02: _desk_rules.py
+			# contains zero occurrences of delivery_deadline -- there is no delivery
+			# rule, and the calendar used to advertise one ("Bid · delivery · due").
+			# The screen stopped promising it (D19); the fact stays because it is
+			# resolved correctly after a real bug fix and it is the evidence that a
+			# delivery rule is writable at all. Write that rule and the sublabel may
+			# say "delivery" again -- test_operations_desk_source.py asserts the two
+			# move together, in both directions.
 			"delivery_deadline": str(d.get("custom_delivery_deadline"))
 			if d.get("custom_delivery_deadline")
 			else None,
@@ -320,13 +368,16 @@ def operations_desk(company: str, view: str | None = None, days: int = 7) -> dic
 		"waiting_others": len(waiting_others),
 	}
 
-	# 8. Build 7-day calendar
-	calendar_days = []
-	for d_offset in range(max(1, days_cnt)):
-		dt_cur = today_date + datetime.timedelta(days=d_offset)
-		dt_str = dt_cur.isoformat()
-		day_items = [i for i in plan_items if i.get("due") == dt_str]
-		calendar_days.append({"date": dt_str, "count": len(day_items), "items": day_items[:2]})
+	# 8. Build the calendar: a past-due bucket, then the seven days.
+	#
+	# The partition is _desk_rules.build_calendar -- pure date arithmetic over the
+	# plan, so it lives with the rules and can be executed by a frappe-free test.
+	# Why the bucket exists at all is documented there; the short version is that a
+	# day's count is `due == that day`, everything overdue is dated in the past, and
+	# the window began at today, so the desk's loudest row could never appear in the
+	# region a reader scans to plan the week.
+	calendar = _desk_rules.build_calendar(plan_items, today_str, days_cnt)
+	calendar_days = calendar["days"]
 
 	# 9. Team Load (Oversight role only)
 	team_load = []
@@ -357,9 +408,36 @@ def operations_desk(company: str, view: str | None = None, days: int = 7) -> dic
 		"plan": plan_items,
 		"decisions": decisions,
 		"calendar": calendar_days,
+		"calendar_past": calendar["past"],
 		"team_load": team_load,
+		# WHO team_load is for. It is built only under `if oversight:` above, so a
+		# sourcing user and a director of a company that holds no lots both receive
+		# []. The client cannot tell those apart from the list alone -- and the two
+		# sentences are opposites: one says "this panel is not yours to read", the
+		# other says "there is nothing in this company to spread". The roles live
+		# here; the flag is the only way the answer reaches the reader. Same name
+		# the rest of the tender API already ships it under (tender.py:2525, :3554).
+		"oversight": oversight,
 		"currency": curr or "USD",
 		"view": view,
 		"views": available_views,
+		# WHICH CALENDAR DAY this answer reasoned with. Every severity, all four
+		# counters and the calendar window come off `today_str` above -- the SITE's
+		# timezone via frappe.utils.today() -- while the client re-filtered the
+		# identical predicate with the browser's local date, because the server had
+		# never said what its own date was. Same predicate, different clock: between
+		# 00:00 and 05:00 in Tashkent (UTC+5) against a UTC host the two disagree,
+		# and the Today chip and the list it filters to then show different numbers,
+		# each half internally consistent. `today_str`, not a second read of
+		# today(): a request that straddles midnight must not ship counters computed
+		# for one day labelled with the next.
+		"today": today_str,
+		# WHY A NUMBER MIGHT BE MISSING RATHER THAN ZERO. Both of these already
+		# existed and both were thrown away: `skipped` is build_plan's own count of
+		# the rows it had to drop because a date would not parse, and the caller
+		# read only ["items"], so a lot with a malformed deadline vanished from the
+		# plan and the panel then said the view was up to date.
+		"approvals_state": approvals_state,
+		"skipped": plan_res["skipped"],
 		"generated_at": now(),
 	}
