@@ -6024,7 +6024,6 @@ undecided,не решено
 {count} container(s) behind the invoice,{count} контейнер(ов) отстаёт от инвойса
 {count} container(s) could not be advanced.,{count} контейнер(ов) не удалось продвинуть.
 {count} container(s) will move to {status}.,{count} контейнер(ов) перейдёт в статус {status}.
-{count} deadline <48h,{count} срок <48ч
 {count} fully shipped lines hidden,{count} полностью отгруженных строк скрыто
 {count} line(s) added,добавлено строк: {count}
 {count} line(s) changed,изменено строк: {count}
@@ -6698,3 +6697,4 @@ Refresh failed — showing the last known numbers,Обновление не уд
 This board is built for the director role. Your queue for today is on the operations desk.,Эта доска предназначена для роли директора. Ваша очередь на сегодня — на операционной панели.
 Showing every tender in the company.,Показаны все тендеры компании.
 Showing only tenders assigned to you.,Показаны только назначенные вам тендеры.
+{count} overdue,{count} просрочено

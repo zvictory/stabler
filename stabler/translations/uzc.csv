@@ -6019,7 +6019,6 @@ undecided,ҳал қилинмаган
 {count} container(s) behind the invoice,{count} та контейнер инвойсдан орқада
 {count} container(s) could not be advanced.,{count} та контейнерни илгарилатиб бўлмади.
 {count} container(s) will move to {status}.,{count} та контейнер {status} ҳолатига ўтади.
-{count} deadline <48h,{count} та муддат <48с
 {count} fully shipped lines hidden,{count} та тўлиқ жўнатилган қатор яширилди
 {count} line(s) added,{count} қатор қўшилди
 {count} line(s) changed,{count} қатор ўзгарди
@@ -6693,3 +6692,4 @@ Refresh failed — showing the last known numbers,Янгилаш амалга о
 This board is built for the director role. Your queue for today is on the operations desk.,Бу доска директор роли учун мўлжалланган. Бугунги навбатингиз операцион столда.
 Showing every tender in the company.,Компаниядаги барча тендерлар кўрсатилмоқда.
 Showing only tenders assigned to you.,Фақат сизга бириктирилган тендерлар кўрсатилмоқда.
+{count} overdue,{count} та муддати ўтган

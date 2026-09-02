@@ -6013,7 +6013,6 @@ undecided,karara bağlanmadı
 {count} container(s) behind the invoice,{count} konteyner faturadan geride
 {count} container(s) could not be advanced.,{count} konteyner ilerletilemedi.
 {count} container(s) will move to {status}.,{count} konteyner {status} durumuna geçecek.
-{count} deadline <48h,{count} süre <48s
 {count} fully shipped lines hidden,{count} tamamen sevk edilmiş satır gizlendi
 {count} line(s) added,{count} satır eklendi
 {count} line(s) changed,{count} satır değişti
@@ -6688,3 +6687,4 @@ Refresh failed — showing the last known numbers,Yenileme başarısız — son 
 This board is built for the director role. Your queue for today is on the operations desk.,Bu pano direktör rolü için tasarlanmıştır. Bugünkü kuyruğunuz operasyon masasında.
 Showing every tender in the company.,Şirketteki tüm ihaleler gösteriliyor.
 Showing only tenders assigned to you.,Yalnızca size atanmış ihaleler gösteriliyor.
+{count} overdue,{count} gecikmiş

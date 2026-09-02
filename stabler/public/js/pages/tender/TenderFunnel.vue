@@ -175,7 +175,7 @@ const GROUPS = computed(() => {
 					rule: "submitted_at ✓ · result = ?",
 					chip: meta.value.submitted_urgent
 						? {
-								text: t("{count} deadline <48h", { count: meta.value.submitted_urgent }),
+								text: t("{count} overdue", { count: meta.value.submitted_urgent }),
 								tone: "crit",
 							}
 						: null,
