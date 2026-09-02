@@ -42,6 +42,7 @@ const lastReadAt = computed(() =>
 );
 
 const canDirector = computed(() => session.tenderViews.includes("director"));
+const forbidden = computed(() => session.tenderViewsLoaded && !canDirector.value);
 
 async function load() {
 	if (!activeCompany.value) return;
@@ -193,6 +194,7 @@ function clearFilters() { router.replace({ query: {} }); }
 			<button type="button" class="ds-btn" @click="clearFilters">{{ t("Clear filters") }}</button>
 		</template>
 
+		<template v-if="!forbidden">
 		<div class="ds-kpis" data-cols="3">
 			<div v-for="k in kpis" :key="k.key" class="ds-kpi" :data-sev="k.sev">
 				<div class="ds-label">{{ k.label }}</div>
@@ -312,6 +314,24 @@ function clearFilters() { router.replace({ query: {} }); }
 				<span class="ds-mono">tender_lot · quotation · sales_order · purchase_order</span>
 			</div>
 		</section>
+		</template>
+		<!-- Bu tahtanın tek kapısı `_require_tender_view("director", company)`;
+		     ne bir görünüm seçici ne başka bir rol için varyant var. Boş bir
+		     tablo hataya benziyor — TenderOverview.vue'nun panosu zaten çözülmüş,
+		     burada yeniden tasarlanmıyor (prompt 15 §2). -->
+		<section v-else class="ds-panel board-forbidden">
+			<div class="ds-panel-head">
+				<h2>{{ t("Your work is on the operations desk") }}</h2>
+			</div>
+			<div class="board-forbidden-body">
+				{{ t("This board is built for the director role. Your queue for today is on the operations desk.") }}
+			</div>
+			<div class="ds-panel-foot">
+				<button type="button" class="board-forbidden-link" @click="router.push('/tender/desk')">
+					{{ t("Operations desk →") }}
+				</button>
+			</div>
+		</section>
 	</TenderPage>
 </template>
 
@@ -360,6 +380,29 @@ function clearFilters() { router.replace({ query: {} }); }
 
 .board-portfolio {
 	margin-top: 14px;
+}
+
+.board-forbidden {
+	margin-top: 14px;
+}
+
+.board-forbidden-body {
+	padding: 18px var(--ds-pad);
+	font-size: 13.5px;
+	color: var(--ds-tx2);
+}
+
+/* TenderOverview.vue's `.ov-link`: reads like a link, works like a button —
+ * the layer has no `ds-link` class and `ds-btn` is too heavy for this line. */
+.board-forbidden-link {
+	border: 0;
+	background: none;
+	padding: 0;
+	font: inherit;
+	font-size: 10.5px;
+	color: var(--ds-tx);
+	text-decoration: underline;
+	cursor: pointer;
 }
 
 /* Dokuz sütunlu tablo dar ekrana sığmıyor; sayfayı değil TABLOYU kaydır. */
