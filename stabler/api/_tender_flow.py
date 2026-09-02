@@ -79,9 +79,12 @@ def _sla_source(stage: str, limit) -> str:
 	therefore a claim about the VALUE ("matches the built-in default"), never
 	about who entered it, and the UI wording follows that limit exactly.
 
-	`limit is None` can only mean an administrator switched the step off: every
-	working stage has a built-in default, an invariant held by
-	`test_the_stages_match_the_thresholds_that_exist`.
+	`limit is None` means the company's settings row yielded no positive
+	threshold. It is NOT proof that anyone chose that: `stage_sla_for` reads each
+	field as `int(getattr(row, f"sla_{stage}_days", 0) or 0)`, so a child table
+	that has not migrated yet gives the same 0 as a deliberately cleared field.
+	The word is `off` because the EFFECT is identical — a step with no threshold
+	can never be late — and the screen's wording says only that.
 	"""
 	if limit is None:
 		return "off"

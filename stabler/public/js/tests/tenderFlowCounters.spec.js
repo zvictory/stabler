@@ -52,7 +52,14 @@ function fnSrc(name) {
 /** Lift the named functions into one scope with fakes for what they close over. */
 function lift(names) {
 	const scope = {
-		t: (s) => s,
+		// Models `composables/i18n.js`: an untranslated key falls back to the
+		// source string, and `{name}` placeholders are filled. The fallback is
+		// not a simplification — it is what every one of these keys does today,
+		// because none of them is in a catalogue yet.
+		t: (s, params) =>
+			params
+				? Object.entries(params).reduce((out, [k, v]) => out.replaceAll(`{${k}}`, String(v)), s)
+				: s,
 		// Supplied so a regression that puts the step's NAME back into the strip
 		// fails on the assertion that says so, rather than on a ReferenceError.
 		stepLabel: (key) => ({ priced: "Bid pricing", sourcing: "Quotation gathering" })[key] || key,
@@ -216,8 +223,26 @@ describe("the worst deal carries a verdict, and none where there is nothing to j
 		// and called by nothing outside its own tests.
 		const { worstNote } = lift(["worstNote"]);
 		expect(worstNote(row({ worst_state: "crit", worst_over: 12, worst_days: 26, sla_days: 14 }))).toBe(
-			"12 days over"
+			"over by 12"
 		);
+	});
+
+	it("still reads correctly when the worst deal is one day over", () => {
+		// WHAT WOULD MAKE THIS FAIL: a noun placed after the count — which is
+		// what this line shipped as. `overdue_by` is `max(0, waited - limit)`
+		// and `crit` means overdue, so 1 is the ROUTINE value: a `seen` deal at
+		// four days against the built-in three. It read "1 days over" in
+		// English, and in Russian and Uzbek it needs the 1 / 2-4 / 5+ agreement
+		// the i18n layer cannot express — the exact defect W15 exists to close,
+		// on the row this screen is for.
+		//
+		// The repair is the counter's repair: nothing that has to agree may
+		// follow the number. The second assertion is the general form of that
+		// rule, so the next person to append a unit here fails rather than ships.
+		const { worstNote } = lift(["worstNote"]);
+		const one = worstNote(row({ worst_state: "crit", worst_over: 1, worst_days: 4, sla_days: 3 }));
+		expect(one).toBe("over by 1");
+		expect(one, "a word follows the count and would have to agree with it").not.toMatch(/\d+\s+\w/);
 	});
 
 	it("marks a deal sitting exactly on its threshold", () => {
@@ -279,13 +304,25 @@ describe("a threshold says whether it is the tenant's or the box's", () => {
 		);
 	});
 
-	it("says a switched-off step was switched off, not never tracked", () => {
-		// WHAT WOULD MAKE THIS FAIL: rendering threshold-0 the same as a step
-		// nobody configured. A 0 is an administrator taking a step out of
-		// tracking on purpose; showing it as an absence hides the decision and
-		// invites the next reader to "fix" it back to the default.
+	it("says what a missing threshold MEANS without claiming who caused it", () => {
+		// WHAT WOULD MAKE THIS FAIL: "switched off for this company", which is
+		// what this shipped as and which the data cannot support.
+		// `stage_sla_for` builds its dict with
+		// `int(getattr(row, f"sla_{stage}_days", 0) or 0)`
+		// (`stabler_settings.py:137`), so a child-table column that has not
+		// migrated yet yields the same 0 — hence the same absent threshold — as
+		// an administrator deliberately clearing the field. The one string on
+		// this screen that asserted a human decision was the one absent DDL
+		// could fabricate.
+		//
+		// What is true in every case is the consequence, and it is the rule the
+		// reader actually needs: a step with no threshold can never be late.
 		const { slaNote } = lift(["slaNote"]);
-		expect(slaNote(row({ sla_source: "off", sla_days: null }))).toBe("switched off for this company");
+		const off = slaNote(row({ sla_source: "off", sla_days: null }));
+		expect(off).toBe("so this step is never late");
+		expect(off, "the wording claims a person did something").not.toMatch(
+			/switched|administrator|cleared|turned off|disabled/i
+		);
 	});
 
 	it("renders it under every threshold, not only the overridden ones", () => {

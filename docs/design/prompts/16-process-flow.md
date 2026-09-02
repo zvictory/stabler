@@ -461,8 +461,13 @@ Artboards, 1440×900 unless stated.
 7. **The bottleneck, said once** (S5) — one place, named, not a stripe plus a
    word in a different region.
 8. **A counter that needs no plural** (S6).
-9. **Default vs. tenant override** (S7) — using `stage_sla`, which is already on
-   the wire, and the honest rendering of a step switched off.
+9. **Default vs. tenant override** (S7) — ~~using `stage_sla`, which is already on
+   the wire~~ (correction 2: it cannot answer this), and the honest rendering of
+   a step switched off. **"Switched off" is not sayable either** — `stage_sla_for`
+   reads each field as `int(getattr(row, f"sla_{stage}_days", 0) or 0)`
+   (`stabler_settings.py:137`), so an unmigrated child-table column fabricates
+   the same 0 as a cleared field. Draw the CONSEQUENCE — a step with no
+   threshold can never be late — not the decision.
 10. **This screen beside prompt 15's strip** — same data, two densities, proving
     they cannot disagree.
 11. **An annotation board** listing the two unread payload keys the package has
@@ -490,7 +495,7 @@ Keep the artboards you rejected.
 | W12 | A user without the director view sees a refusal | ~~**fails** — same branch~~ → **passes at the screen**. The 403 is turned into its own branch naming the director view. **The gate itself is untested here** — `_require_tender_view` needs a bench (`test_tender_view_gates`), and this branch could not run `make test-bench` |
 | W13 | The table scrolls on a phone; the page does not | ~~**fails** — no responsive CSS at all (S4)~~ → **CSS in place, layout unverified** — `.flow-scroll` + `min-width: 680px` on the table inside it, asserted at source. No jsdom in this repository, so no test lays out a 390px viewport |
 | W14 | The bottleneck is named in one place, in words | ~~**fails** — a stripe and a distant counter (S5)~~ → **passes** — the word is on the row; the counter carries the ratio the rule is made of. The stripe stays, in the same cell as the word |
-| W15 | No user-facing string is pluralised by a ternary | ~~**fails** — `step` / `steps` (S6)~~ → **passes** — `2 / 5`, and the whole `? t(…) : t(…)` shape is banned file-wide (it caught the Refresh button too). **Not fixed:** `10 open deals` still hardcodes an English plural for `n = 1` |
+| W15 | No user-facing string is pluralised by a ternary | ~~**fails** — `step` / `steps` (S6)~~ → **passes** — `2 / 5`, and the whole `? t(…) : t(…)` shape is banned file-wide (it caught the Refresh button too). **Three instances, not one.** The first pass shipped a third in the fix itself — `Worst`'s verdict read `{n} days over`, i.e. **"1 days over"** for any deal a single day past its threshold, which is the routine value of `overdue_by` when the state is `crit`. Found in review, corrected to `over by {n}`: nothing that has to agree may follow the count. **Still not fixed:** `10 open deals` and the screen's three `{n} days` sites hardcode an English plural for `n = 1`; they are the file's pre-existing convention and this row does not cover them |
 | W16 | A reader can tell a tenant threshold from a default | ~~**fails** — `stage_sla` unread (S7)~~ → **passes, with a stated limit** — see correction 2. A tenant who types the default number is indistinguishable, and the wording never claims otherwise |
 | W17 | Any interactive element is reachable by keyboard and announced | ~~**fails** — 0 `aria-*`, 0 `role=`~~ → **attributes in place, behaviour unverified** — `environment: "node"`, no jsdom, no `@vue/test-utils`: nothing here fires a key or reads a name aloud. The Refresh button was already a real `<button>` and always was reachable |
 | W18 | The screen says how fresh it is | **passes for the timestamp** (2026-09-02) — `generated_at`. The manual `Refresh` button is untouched |

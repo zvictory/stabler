@@ -154,7 +154,13 @@ const kpis = computed(() => counters(data.value || {}, steps.value));
  * SLA cell beside it already says why. */
 function worstNote(row) {
 	if (row.worst_days == null || !row.sla_days) return "";
-	if (row.worst_state === "crit") return `${row.worst_over} ${t("days over")}`;
+	// Nothing that has to agree may follow the count. `over by 12` and `over by
+	// 1` are both grammatical; `12 days over` and `1 days over` are not, and 1
+	// is the routine value here — `crit` means overdue, so `overdue_by` is 1 for
+	// any deal a single day past its threshold. The unit is the column's: the
+	// number directly above this line already reads `4 days`. Interpolated
+	// rather than concatenated so a translator can move the count.
+	if (row.worst_state === "crit") return t("over by {n}", { n: row.worst_over });
 	if (row.worst_state === "today") return t("at the limit");
 	if (row.worst_state === "soon") return t("near the limit");
 	return t("Within");
@@ -168,7 +174,13 @@ function worstNote(row) {
  * who typed it. */
 function slaNote(row) {
 	if (row.sla_source === "tenant") return t("set for this company");
-	if (row.sla_source === "off") return t("switched off for this company");
+	// NOT "switched off for this company". `stage_sla_for` reads the row with
+	// `int(getattr(row, f"sla_{stage}_days", 0) or 0)`, so a child-table column
+	// that has not migrated yet produces the same 0 as an administrator clearing
+	// the field — this was the one string on the screen asserting a human
+	// decision, and it was the one absent DDL could fabricate. The consequence
+	// is true either way, and it is the rule the reader needs.
+	if (row.sla_source === "off") return t("so this step is never late");
 	return t("matches the built-in default");
 }
 </script>
