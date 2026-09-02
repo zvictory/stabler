@@ -115,3 +115,69 @@ describe("C7 — five states, and the empty one stops answering for four others"
 		expect(new Set(conds).size).toBe(conds.length);
 	});
 });
+
+/** Source between `from` and `to` markers. */
+function region(from, to) {
+	const a = src.indexOf(from);
+	const b = src.indexOf(to, a + 1);
+	expect(a, `marker ${from} not found`).toBeGreaterThan(-1);
+	expect(b, `marker ${to} not found after ${from}`).toBeGreaterThan(a);
+	return src.slice(a, b);
+}
+
+const loadingBranch = () => region('v-if="loading"', "<EmptyState");
+const columnsBranch = () => region('v-else class="d-flex gap-3', "</template>");
+
+describe("C9 — loading looks like the board that is coming", () => {
+	it("renders no spinner anywhere in the file", () => {
+		// WHAT WOULD MAKE THIS FAIL: the spinner coming back. It was the only
+		// `spinner-border` among the module's boards — the other eight render
+		// SkeletonRows — and it said "something is happening" where the reader
+		// needed "columns are coming".
+		// (boolean form: a failing toMatch would print the whole component.)
+		expect(/spinner-border/.test(src), "spinner-border is back").toBe(false);
+	});
+
+	it("uses the placeholder utilities the rest of the SPA already uses", () => {
+		// WHAT WOULD MAKE THIS FAIL: inventing a skeleton for this one screen.
+		// SkeletonRows is rooted in a <tbody> (SkeletonRows.vue:10) and cannot
+		// stand outside a table, and `ds-skel-stack` — drafted for exactly this
+		// case in docs/design/2026-09-01-asama-a-delta.css — is not in the layer
+		// yet (measured 2026-09-02: zero occurrences in stabler-modernist.css).
+		// Bootstrap's placeholder/placeholder-glow is what the other fifteen
+		// non-table loading sites in this SPA use, and it needs no new CSS.
+		const branch = loadingBranch();
+		expect(branch).toMatch(/placeholder-glow/);
+		expect((branch.match(/class="placeholder col-/g) ?? []).length).toBeGreaterThanOrEqual(3);
+	});
+
+	it("holds the real board's column width, so nothing jumps when data lands", () => {
+		// WHAT WOULD MAKE THIS FAIL: the two widths drifting apart. A skeleton
+		// whose columns are a different width than the board's is a layout shift
+		// dressed as a loading state — the reader watches the thing they were
+		// about to click move. Asserting the RELATIONSHIP rather than the number
+		// means changing the board's column width fails here until the skeleton
+		// follows it.
+		const width = (r) => r.match(/width: (\d+px)/)?.[1];
+		expect(width(loadingBranch())).toBe(width(columnsBranch()));
+		expect(width(columnsBranch())).toBeTruthy();
+	});
+
+	it("stands in the same space the board will occupy", () => {
+		// WHAT WOULD MAKE THIS FAIL: a skeleton that does not reserve the board's
+		// height. The page would grow when the columns arrive, which on a screen
+		// whose whole job is horizontal scrolling moves the scroll position too.
+		expect(loadingBranch()).toMatch(/min-height: 65vh/);
+		expect(columnsBranch()).toMatch(/min-height: 65vh/);
+	});
+
+	it("does not offer a drop target that answers to nothing", () => {
+		// WHAT WOULD MAKE THIS FAIL: copying the real column's dragover/drop
+		// handlers into the skeleton along with its shape. A placeholder column
+		// that accepts a card would call onDrop with a stage name that does not
+		// exist — and there is nothing to drag yet anyway.
+		const branch = loadingBranch();
+		expect(branch).not.toMatch(/@drop/);
+		expect(branch).not.toMatch(/draggable/);
+	});
+});

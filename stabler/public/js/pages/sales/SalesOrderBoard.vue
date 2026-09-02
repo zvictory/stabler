@@ -154,7 +154,32 @@ function openSo(name) {
 			</button>
 		</template>
 
-		<div v-if="loading" class="text-center py-5"><span class="spinner-border text-primary"></span></div>
+		<!-- İskelet PANONUN biçiminde: aynı genişlikte sütunlar, aynı yükseklik.
+		     Spinner "bir şey oluyor" der; bu "sütunlar geliyor" der ve veri inince
+		     yerleşim zıplamaz. Dört sütun ekranı doldurur — gerçek sayı yük gelene
+		     kadar bilinmiyor, o yüzden iddia edilmiyor. SkeletonRows burada
+		     kullanılamaz: kökü bir <tbody> (SkeletonRows.vue:10). -->
+		<div
+			v-if="loading"
+			class="d-flex gap-3 align-items-start overflow-hidden pb-3 placeholder-glow"
+			style="min-height: 65vh"
+		>
+			<div v-for="col in 4" :key="col" class="flex-shrink-0" style="width: 290px">
+				<div class="card mb-2">
+					<div class="card-header py-2 px-2">
+						<span class="placeholder col-7"></span>
+					</div>
+				</div>
+				<div class="vstack gap-2 px-1">
+					<div v-for="c in 2" :key="c" class="card card-sm">
+						<div class="card-body p-2">
+							<span class="placeholder col-8 d-block mb-1"></span>
+							<span class="placeholder col-5 d-block"></span>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
 		<!-- Beş durum, ve ilk DOĞRU olan kazanıyor. `!stages.length` beşinin
 		     hepsinde doğru, o yüzden en sonda sorulur; yukarı taşınırsa diğer
 		     dördü ölü işaretlemeye döner. İstemci kapısı sunucununkinin birebir

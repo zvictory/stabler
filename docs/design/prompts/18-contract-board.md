@@ -97,7 +97,7 @@ worst instance of a defect this package has now found on five screens.
 |---|---|---|
 | 1 | House layer, not Bootstrap | **FAIL** — 1 `ds-*` (the `Add stage` button). `card` · `card-sm` · `card-header` · `badge` · `progress` · `btn-ghost-secondary btn-icon btn-sm` · `vstack` · `d-flex` · `bg-primary-lt`, plus eleven inline `style=` attributes |
 | 2 | Every number carries its rule | **N/A** — no counters; the column header count and total carry no rule |
-| 3 | Loading is skeleton, not spinner | **FAIL** — `<span class="spinner-border text-primary">`. Nine tender screens render `SkeletonRows` on load; **four render a spinner**, and this is the only *board* among them (the others are a form, a panel and a pricing sheet) |
+| 3 | Loading is skeleton, not spinner | **PASS since 2026-09-02** (C9) — a board-shaped skeleton in Bootstrap `placeholder` utilities. As measured it was `<span class="spinner-border text-primary">`, the only *board* among the four tender screens that spun; **three still do** — `BidPricing`, `TenderIntake`, `TenderDocumentsPanel`, none of them a board |
 | 4 | Five states per region | **FAIL** — two, and one of them is wrong (S2) |
 | 5 | State lives in the URL | **PARTIAL** — `?tender=1` and `tenderRouteFilters` are read; nothing is ever written back, and the funnel arrives without either (S1) |
 | 6 | Keyboard and screen reader reachable | **FAIL, hardest in the package** — zero `aria-*`, zero `role=`; the only way to move a card is an HTML5 drag (S4) |
@@ -129,7 +129,7 @@ worst instance of a defect this package has now found on five screens.
 
 | Region | Has | Missing |
 |---|---|---|
-| Board | **2** — `spinner-border`, then `EmptyState` **or** the columns | error, forbidden, no-company |
+| Board | **5 since 2026-09-02** — skeleton · forbidden · no-company · error · empty (C7, C9) | — |
 | A column | **1** — cards, or 40 px of nothing | empty |
 
 ### S2 — a failed load invited the user to create a stage · FIXED 2026-09-02
@@ -481,7 +481,7 @@ Keep the artboards you rejected.
 | C6 | Orders with status *Closed* or *Cancelled* never appear | passes |
 | C7 | A failed load is distinguishable from a board with no stages | **passes** (2026-09-02) — five rungs, `!stages.length` last (S2) |
 | C8 | A user without the tender role sees a refusal | **passes** (2026-09-02) — `canAccessModule('tender')`, which mirrors the server's role-or-flag gate |
-| C9 | Loading renders a skeleton | **fails** — spinner, while the eight sibling boards use `SkeletonRows` |
+| C9 | Loading renders a skeleton | **passes** (2026-09-02) — four column placeholders at the board's own width. Not `SkeletonRows`: its root is a `<tbody>` |
 | C10 | A card can be moved between stages from the keyboard | **fails** — drag only, 0 `aria-`, 0 `role=` (S4) |
 | C11 | A press that does not move the card does not navigate away | **fails** — drag and click share the element (S4) |
 | C12 | Switching the active company reloads the board | **passes** (2026-09-02) — plus a request token, so a superseded company's answer cannot land (S5) |
