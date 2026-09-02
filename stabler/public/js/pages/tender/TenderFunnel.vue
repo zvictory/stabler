@@ -12,25 +12,32 @@
 //    was already computed for the legend but sat as a small "· −7"; the
 //    biggest drop IS the finding, so it gets the space.
 //
-// `mode` stays: "full" draws the counter strip and the stage pipeline as well;
-// anything else draws the conversion funnel and its losses only. Both callers
-// ask for "full" today -- the Director board and the dashboard overview -- and
-// the contract is also specified in test_tender_dashboard_spa.
+// `mode="full"` draws the counter strip and the stage pipeline as well; the
+// default draws the conversion funnel and its losses only. Only the dashboard
+// overview asks for "full", explicitly (test_tender_dashboard_spa pins it) --
+// the director board mounts TenderFunnel for its chevron strip and does not
+// ask for the rest, so it no longer gets a second copy of the overview's own
+// counters (docs/design/prompts/15-pipeline-overview.md, F10/S1).
 import { computed, onMounted, ref, watch } from "vue";
 import { storeToRefs } from "pinia";
 import { useRouter } from "vue-router";
 import { useSession } from "../../stores/session.js";
 import { call } from "../../api/client.js";
 import { t } from "../../composables/i18n.js";
-import { useToast } from "../../composables/useToast.js";
+import { stepLabel } from "./flowLabels.js";
+import SkeletonRows from "../../components/SkeletonRows.vue";
 
 const session = useSession();
 const { activeCompany, tenderPolicy } = storeToRefs(session);
 const router = useRouter();
-const toast = useToast();
 
 const props = defineProps({
-	mode: { type: String, default: "full" },
+	// F10 (docs/design/prompts/15-pipeline-overview.md, S1): both hosts used to
+	// resolve to "full" -- TenderOverview by passing it explicitly, DirectorBoard
+	// by doing nothing -- so a silent host got the counters/stage-boxes block it
+	// never asked for, and their labels collided with DirectorBoard's own six
+	// counters. The default now means "just the strip"; a host asks for the rest.
+	mode: { type: String, default: "" },
 	days: { type: Number, default: 90 },
 	/* Chevron şeridi. Varsayılan kapalı: şerit ALTINDA filtreleyebileceği bir
 	 * belge tablosu olan ekranlar için var, her yerde çizilmesi için değil. */
@@ -46,10 +53,17 @@ const emit = defineEmits(["select", "loaded"]);
 
 const loading = ref(false);
 const data = ref(null);
+// F13 (docs/design/prompts/15-pipeline-overview.md, S3): a failed load used to
+// report only through a transient toast. A toast fades in a few seconds; a
+// reader who looked away got no explanation, and the panel itself rendered
+// nothing at all -- `loading` is false again (see `finally` below) and `data`
+// never got set, which was a state the template had no branch for.
+const error = ref(null);
 
 async function load() {
 	if (!activeCompany.value) return;
 	loading.value = true;
+	error.value = null;
 	try {
 		data.value = await call("stabler.api.tender.tender_funnel", {
 			company: activeCompany.value,
@@ -57,7 +71,7 @@ async function load() {
 		});
 		emit("loaded", data.value?.generated_at || "");
 	} catch (err) {
-		toast.error(err?.message || t("Could not load the tender funnel."));
+		error.value = err?.message || t("Could not load the tender funnel.");
 	} finally {
 		loading.value = false;
 	}
@@ -114,12 +128,26 @@ const KPIS = computed(() => [
 		n: kpi.value.urgent ?? 0,
 		cap: t("deadline risk"),
 		note: t("needs action today — lands on the desk"),
-		rule: "deadline < 48h · act_now",
+		// F11/P1-7 (docs/design/prompts/15-pipeline-overview.md, S1): measured
+		// against api/tender.py. `_milestone()` sets `status = "risk"` on
+		// `days < 0` only when NOT `done` (not within 48h of one -- there is no
+		// 48h threshold in the computation), and `urgent` itself is only
+		// computed `if stage in ("go","sourcing","priced","submitted")`. Not
+		// reconciled with DirectorBoard's own `at_risk` string: that one loops
+		// every deal with no stage filter, a different population.
+		rule: "open stage · any milestone · not done · days < 0",
 	},
 ]);
 
 /* Aşama kutuları. Grup başlıkları hattın fazlarını ayırır; her kutu tek bir
- * aşamayı sayar ve o aşamanın sahibi olan ekrana gider. */
+ * aşamayı sayar ve o aşamanın sahibi olan ekrana gider.
+ *
+ * F12 (docs/design/prompts/15-pipeline-overview.md, S2): each stage's label
+ * comes from flowLabels.js's `stepLabel`, the same source the chevron below
+ * and the process-flow strip use -- three independent literals for one
+ * stage ("Intake" / "Under review" / "Intake — file opened") is drift, not a
+ * design decision; nothing here distinguishes "state" from "phase" on
+ * purpose. */
 const GROUPS = computed(() => {
 	const s = stagesN.value;
 	const x = so.value;
@@ -129,11 +157,11 @@ const GROUPS = computed(() => {
 			label: t("Decision"),
 			cols: 2,
 			stages: [
-				{ key: "seen", n: s.seen || 0, label: t("Under review"), rule: 'intake ✓ · go_no_go = ""' },
+				{ key: "seen", n: s.seen || 0, label: stepLabel("seen"), rule: 'intake ✓ · go_no_go = ""' },
 				{
 					key: "go",
 					n: s.go || 0,
-					label: t("GO — awaiting sourcing"),
+					label: stepLabel("go"),
 					rule: "go_no_go = go · SQ = 0",
 				},
 			],
@@ -146,7 +174,7 @@ const GROUPS = computed(() => {
 				{
 					key: "sourcing",
 					n: s.sourcing || 0,
-					label: t("Collecting quotations"),
+					label: stepLabel("sourcing"),
 					rule: "SQ > 0 · no pricing",
 					chip: meta.value.sourcing_policy_gap
 						? {
@@ -158,7 +186,7 @@ const GROUPS = computed(() => {
 				{
 					key: "priced",
 					n: s.priced || 0,
-					label: t("Priced — ready to bid"),
+					label: stepLabel("priced"),
 					rule: "bid_pricing ✓",
 				},
 			],
@@ -171,7 +199,7 @@ const GROUPS = computed(() => {
 				{
 					key: "submitted",
 					n: s.submitted || 0,
-					label: t("Bid submitted"),
+					label: stepLabel("submitted"),
 					rule: "submitted_at ✓ · result = ?",
 					chip: meta.value.submitted_urgent
 						? {
@@ -225,11 +253,22 @@ const GROUPS = computed(() => {
 
 const groupTotal = (g) => g.stages.reduce((sum, st) => sum + (st.n || 0), 0);
 
+// P1-2 (coordinator review, 2026-09-02): this is a fourth, independent stage
+// vocabulary that F12's audit missed -- it draws the conversion-funnel rows
+// below, unconditionally on every host, and its `go` text drifted out of
+// agreement with the chevron/stage-box text once F12 and P1-3 corrected
+// those two to "GO — awaiting sourcing". Not a fourth `stepLabel("go")` call
+// site: a funnel rung counts every deal that REACHED at least this stage
+// (`_funnel.FUNNEL_STEPS`, cumulative -- a lost deal still counts at
+// `submitted`), not deals currently sitting in it, so it needs its own words
+// and "Reached ..." makes that difference impossible to mistake for the
+// stage box's point-in-time state next to it. `won` is a result, not a rung
+// reached in passing, and keeps its own word.
 const FUNNEL_LABELS = {
-	seen: () => t("Lots seen"),
-	go: () => t("GO decision"),
-	sourcing: () => t("Sourcing started"),
-	submitted: () => t("Bid submitted"),
+	seen: () => t("Reached intake"),
+	go: () => t("Reached GO"),
+	sourcing: () => t("Reached sourcing"),
+	submitted: () => t("Reached submission"),
 	won: () => t("Won"),
 };
 
@@ -286,13 +325,6 @@ const PIPE_META = {
 	priced: { tone: "blue", rule: "bid_pricing ✓" },
 	submitted: { tone: "ok", rule: "submitted_at ✓ · result = ?" },
 };
-const PIPE_LABELS = {
-	seen: () => t("Intake"),
-	go: () => t("GO decision"),
-	sourcing: () => t("Sourcing"),
-	priced: () => t("Pricing"),
-	submitted: () => t("Bid submitted"),
-};
 const PIPE_NOTES = {
 	seen: () => t("Intake is done and the GO/NO-GO decision is still open."),
 	go: () => t("Decided to go, and not one supplier quotation has been collected."),
@@ -311,7 +343,8 @@ const pipeline = computed(() =>
 		n: row.n,
 		full: row.full,
 		pct: row.n ? Math.round((row.full / row.n) * 100) : 0,
-		label: PIPE_LABELS[row.key] ? PIPE_LABELS[row.key]() : row.key,
+		// F12: same source as the stage boxes and the flow strip -- see GROUPS.
+		label: stepLabel(row.key),
 		note: PIPE_NOTES[row.key] ? PIPE_NOTES[row.key]() : "",
 		tone: PIPE_META[row.key]?.tone || "ink",
 		rule: PIPE_META[row.key]?.rule || "",
@@ -343,6 +376,17 @@ function metaOf(key) {
 function pick(row) {
 	const next = props.selected === row.key ? "" : row.key;
 	emit("select", next, next ? dealsOf(next) : [], next ? metaOf(next) : null);
+}
+
+/* F16 (docs/design/prompts/15-pipeline-overview.md, S6): `.pipe-pop` opened on
+ * `@mouseenter`/`@focus` only. Focus reaches it (Tab); a pointer that cannot
+ * hover -- a touchscreen -- had no path in, because the only tap target was
+ * the chevron button itself, whose own @click already calls `pick()` and
+ * navigates in the same gesture. This toggles `hovered` and NOTHING else --
+ * no select, no navigation -- so a second, independent tap target can open
+ * and close the popover without doing what the chevron button does. */
+function toggleDetails(row) {
+	hovered.value = hovered.value === row.key ? "" : row.key;
 }
 
 /* Adres çubuğunda `?phase=` ile gelen (veya sayfa yenilenen) kullanıcı da
@@ -377,7 +421,15 @@ function go(st) {
 <template>
 	<div class="tender-funnel">
 		<div v-if="loading && !data" class="ds-panel funnel-loading">
-			<div class="ds-panel-foot">{{ t("Loading tender funnel…") }}</div>
+			<!-- F17 (docs/design/prompts/15-pipeline-overview.md, §3 mandate 3):
+			     a line of text painted instantly and gave no sense of shape or
+			     wait. SkeletonRows is what every other tender panel loads with
+			     (OperationsDesk.vue). -->
+			<SkeletonRows :rows="5" :cols="4" class="funnel-pad" />
+		</div>
+
+		<div v-else-if="error" class="ds-panel funnel-error">
+			<div class="ds-panel-foot" role="alert">{{ error }}</div>
 		</div>
 
 		<template v-else-if="data">
@@ -410,7 +462,29 @@ function go(st) {
 							<span class="pipe-n">{{ c.n }}</span>
 							<span class="pipe-t">{{ c.label }}</span>
 						</button>
-						<span v-if="hovered === c.key" class="pipe-pop">
+						<!-- F16: independent of the chevron button above -- opens/closes the
+						     same popover, never selects or navigates. Its own tap target, so
+						     touch (no hover) and keyboard (native button) both reach it.
+						     aria-label names WHICH cell's details this opens -- the glyph
+						     alone is invisible to a screen reader at default verbosity, and
+						     aria-expanded with no aria-controls does not say what it expands.
+						     "Details: {label}", not "Show details for {label}": aria-expanded
+						     already flips to "true" while this is open, so "Show" would read
+						     backwards at exactly the state that matters, and "for {label}"
+						     needs case agreement Russian's «для» + genitive breaks with no
+						     case support in the t() layer (see "1 days over", same day, same
+						     assumption). Mirrors TenderOverview.vue's "Bottleneck: {step}". -->
+						<button
+							type="button"
+							class="pipe-info"
+							:aria-expanded="String(hovered === c.key)"
+							:aria-controls="'pipe-pop-' + c.key"
+							:aria-label="t('Details: {label}', { label: c.label })"
+							@click="toggleDetails(c)"
+						>
+							ℹ
+						</button>
+						<span v-if="hovered === c.key" :id="'pipe-pop-' + c.key" class="pipe-pop">
 							<span class="pipe-bar"
 								><i :style="{ width: c.pct + '%' }" :data-full="c.pct >= 100 ? '1' : null"></i
 							></span>
@@ -432,61 +506,67 @@ function go(st) {
 				</div>
 			</section>
 
-			<template v-if="props.mode === 'full'">
-				<div class="ds-kpis" data-cols="4">
-					<div v-for="k in KPIS" :key="k.key" class="ds-kpi" :data-sev="k.sev">
-						<div class="ds-label">{{ k.label }}</div>
-						<div>
-							<span class="ds-kpi-val">{{ k.n }}</span
-							><span class="ds-kpi-cap">{{ k.cap }}</span>
-						</div>
-						<div class="ds-kpi-note">{{ k.note }}</div>
-						<div class="ds-kpi-q">{{ k.rule }}</div>
+			<!-- P1-6 (coordinator review, 2026-09-02): this used to gate the counter
+			     strip AND the stage-grid section below under one wrapping template.
+			     F10 only found the counters colliding with DirectorBoard's own six;
+			     the grid was never a collision -- DirectorBoard has none of its own
+			     and its own mount comment already promises "stage grid, funnel and
+			     chevron strip are in their own component" (DirectorBoard.vue).
+			     Gating both silently took the boxes, rule lines, submitted-urgent
+			     chip and the go() drill-down away from that screen, and no test
+			     caught it. Only the counters stay opt-in now; the pipeline section
+			     below is unconditional again. -->
+			<div v-if="props.mode === 'full'" class="ds-kpis" data-cols="4">
+				<div v-for="k in KPIS" :key="k.key" class="ds-kpi" :data-sev="k.sev">
+					<div class="ds-label">{{ k.label }}</div>
+					<div>
+						<span class="ds-kpi-val">{{ k.n }}</span
+						><span class="ds-kpi-cap">{{ k.cap }}</span>
 					</div>
+					<div class="ds-kpi-note">{{ k.note }}</div>
+					<div class="ds-kpi-q">{{ k.rule }}</div>
+				</div>
+			</div>
+
+			<section class="ds-panel funnel-block">
+				<div class="ds-panel-head">
+					<h2>{{ t("Tender pipeline") }}</h2>
+					<span class="ds-label">
+						{{ t("Each tender is counted in exactly one stage. Click a stage to open its list.") }}
+					</span>
 				</div>
 
-				<section class="ds-panel funnel-block">
-					<div class="ds-panel-head">
-						<h2>{{ t("Tender pipeline") }}</h2>
-						<span class="ds-label">
-							{{
-								t("Each tender is counted in exactly one stage. Click a stage to open its list.")
-							}}
-						</span>
+				<template v-for="g in GROUPS" :key="g.key">
+					<div class="ds-stage-group">
+						<span class="ds-label">{{ g.label }}</span>
+						<span class="ds-stage-count">{{ groupTotal(g) }} {{ t("lots") }}</span>
 					</div>
-
-					<template v-for="g in GROUPS" :key="g.key">
-						<div class="ds-stage-group">
-							<span class="ds-label">{{ g.label }}</span>
-							<span class="ds-stage-count">{{ groupTotal(g) }} {{ t("lots") }}</span>
-						</div>
-						<div class="ds-stage-grid" :data-cols="String(g.cols)">
-							<button
-								v-for="st in g.stages"
-								:key="st.key"
-								type="button"
-								class="ds-stage"
-								:data-tone="st.tone"
-								@click="go(st)"
-							>
-								<div>
-									<span class="ds-stage-n">{{ st.n }}</span
-									><span class="ds-stage-t">{{ st.label }}</span>
-								</div>
-								<div class="ds-stage-rule">{{ st.rule }}</div>
-								<div v-if="st.chip" class="funnel-chip">
-									<span class="ds-chip" :data-tone="st.chip.tone">{{ st.chip.text }}</span>
-								</div>
-							</button>
-						</div>
-					</template>
-
-					<div class="ds-panel-foot">
-						<span class="ds-mono">tender_lot · quotation · sales_order · purchase_order</span>
-						<span>{{ t("last {days} days", { days }) }}</span>
+					<div class="ds-stage-grid" :data-cols="String(g.cols)">
+						<button
+							v-for="st in g.stages"
+							:key="st.key"
+							type="button"
+							class="ds-stage"
+							:data-tone="st.tone"
+							@click="go(st)"
+						>
+							<div>
+								<span class="ds-stage-n">{{ st.n }}</span
+								><span class="ds-stage-t">{{ st.label }}</span>
+							</div>
+							<div class="ds-stage-rule">{{ st.rule }}</div>
+							<div v-if="st.chip" class="funnel-chip">
+								<span class="ds-chip" :data-tone="st.chip.tone">{{ st.chip.text }}</span>
+							</div>
+						</button>
 					</div>
-				</section>
-			</template>
+				</template>
+
+				<div class="ds-panel-foot">
+					<span class="ds-mono">tender_lot · quotation · sales_order · purchase_order</span>
+					<span>{{ t("last {days} days", { days }) }}</span>
+				</div>
+			</section>
 
 			<div class="funnel-2col">
 				<section class="ds-panel">
@@ -636,6 +716,49 @@ function go(st) {
 	filter: brightness(1.12);
 }
 
+/* F16 (coordinator review, 2026-09-02): top-right, not centred -- the
+ * chevron's own clip-path cuts the cell's right edge to a point (see the
+ * polygon above: `(100% - 18px, 0) -> (100%, 50%)` on top). That cut is
+ * IDENTICAL whether or not `data-first` is set -- `data-first="1"` removes
+ * the LEFT-edge notch (the interlocking point at `18px 50%`) so the first
+ * cell's left side reads flat instead, and has no effect on this corner. A
+ * prior version of this comment claimed the top corner was flat "first or
+ * not"; measured against the polygon values above, the top-right corner is
+ * never flat in either case -- it is this same diagonal cut in both.
+ * `right: 3px` put most of the button's own top row, and the glyph's visual
+ * center, past that diagonal -- on the clipped-away side, sitting over the
+ * panel behind a partially transparent fill rather than the chevron itself.
+ * `right: 18px` is the button's own width: at exactly that offset its right
+ * edge sits ON the cut regardless of cell height, since the cut only moves
+ * further right as height grows. `right: 26px` clears it with margin. */
+.pipe-info {
+	position: absolute;
+	top: 3px;
+	right: 26px;
+	z-index: 5;
+	width: 18px;
+	height: 18px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	border: 0;
+	border-radius: 50%;
+	background: rgba(255, 255, 255, 0.28);
+	color: #fff;
+	font-family: var(--ds-mono);
+	font-size: 10px;
+	font-style: normal;
+	font-weight: 700;
+	line-height: 1;
+	cursor: pointer;
+	padding: 0;
+}
+
+.pipe-info:hover,
+.pipe-info:focus-visible {
+	background: rgba(255, 255, 255, 0.46);
+}
+
 /* Seçili faz: rengini değil KONTURUNU değiştiriyor. Rengi karartmak fazın
  * kendi tonunu (uyarı / iyi) siler ve seçim bilgi taşımaz hale gelir. */
 .pipe-chev[aria-pressed="true"] {
@@ -745,8 +868,15 @@ function go(st) {
 }
 
 .funnel-loading,
-.funnel-empty {
+.funnel-empty,
+.funnel-error {
 	padding: 6px 0;
+}
+
+/* F17: `.ds-panel` itself carries no padding (stabler-modernist.css) --
+ * SkeletonRows needs its own, same shape as OperationsDesk.vue's .desk-pad. */
+.funnel-pad {
+	padding: 14px 16px;
 }
 
 .ds-funnel-row[role="button"] {

@@ -23,6 +23,7 @@ _OPERATIONS_DESK = os.path.join(_ROOT, "public", "js", "pages", "tender", "Opera
 _OVERVIEW = os.path.join(_ROOT, "public", "js", "pages", "tender", "TenderOverview.vue")
 _FLOW = os.path.join(_ROOT, "public", "js", "pages", "tender", "TenderFlow.vue")
 _FLOW_LABELS = os.path.join(_ROOT, "public", "js", "pages", "tender", "flowLabels.js")
+_FUNNEL_PY = os.path.join(_ROOT, "api", "_funnel.py")
 _ROUTER = os.path.join(_ROOT, "public", "js", "router.js")
 _DELIVERY_NOTES = os.path.join(_ROOT, "public", "js", "pages", "sales", "DeliveryNotes.vue")
 
@@ -30,6 +31,18 @@ _DELIVERY_NOTES = os.path.join(_ROOT, "public", "js", "pages", "sales", "Deliver
 def _read(path: str) -> str:
 	with open(path, encoding="utf-8") as source:
 		return source.read()
+
+
+def _without_comments(source: str) -> str:
+	"""Strip Vue-template HTML comments (`<!-- ... -->`) before a structural scan.
+
+	P1-4 (coordinator review, 2026-09-02): an assertion anchored on a literal
+	tag-open substring like `"<SkeletonRows"` still matches inside a comment
+	that merely TALKS ABOUT the tag -- `<!-- we mount <SkeletonRows here -->`
+	stayed green with the real mount replaced by a `<div>`. Call this on any
+	source string before searching it for a call site a comment could impersonate.
+	"""
+	return re.sub(r"<!--.*?-->", "", source, flags=re.DOTALL)
 
 
 class TestTenderDashboardSpaContract(unittest.TestCase):
@@ -100,6 +113,252 @@ class TestTenderDashboardSpaContract(unittest.TestCase):
 			self.assertIn('from "./flowLabels.js"', source)
 			self.assertNotIn("const STEP_LABELS", source)
 			self.assertNotIn("const STATE_LABEL", source)
+
+	def test_chevron_and_stage_boxes_share_the_flow_strips_vocabulary(self):
+		"""F12 (docs/design/prompts/15-pipeline-overview.md, S2): the chevron
+		strip, the stage boxes and the flow strip are all drawn on this one
+		screen (TenderOverview embeds TenderFunnel), and measured 2026-09-02 they
+		spelled three of the five stages three different ways -- e.g. `seen` read
+		"Intake" on the chevron, "Under review" on its stage box and "Intake —
+		file opened" on the flow strip, within one scroll.
+
+		`flowLabels.js` exists precisely to prevent this (see the test above) but
+		was wired to the flow strip only. TenderFunnel.vue must import the same
+		`stepLabel` rather than keep an independent literal for each of the five
+		pipeline stages, on both surfaces it draws.
+		"""
+		funnel = _read(_FUNNEL)
+		self.assertIn('from "./flowLabels.js"', funnel)
+		self.assertNotIn("const STEP_LABELS", funnel)
+		# The chevron: PIPE_LABELS was a second, independent copy of the same
+		# five names. Its removal, not just stepLabel's presence, is the claim --
+		# stepLabel could be imported and unused while PIPE_LABELS kept winning.
+		self.assertNotIn("const PIPE_LABELS", funnel)
+		self.assertRegex(funnel, r"label:\s*stepLabel\(row\.key\)")
+		# The stage boxes: each of the five pipeline stages' own `label:` comes
+		# from the shared source, not a literal re-typed in this file. `won` and
+		# `lost` are excluded on purpose -- S2 compares the five open phases the
+		# chevron and the flow strip both walk, not the two terminal outcomes.
+		#
+		# P1-5 (coordinator review, 2026-09-02): a bare `assertIn(f'stepLabel("{stage}")',
+		# funnel)` searches the WHOLE FILE for that substring, not the stage box's own
+		# `label:` call site -- it is satisfied just as well by a comment mentioning
+		# `stepLabel("seen")` while the box itself reverted to a hardcoded literal.
+		# Reproduced independently: reverting all five stage-box labels to their
+		# pre-F12 literals and adding one comment line naming the five stepLabel(...)
+		# calls left the old assertion green. Anchored on `label:` immediately before
+		# the call (matching the chevron's own assertion above), and counted -- not
+		# just "found somewhere" -- so a second, coexisting literal for the same
+		# stage cannot hide next to a lone genuine call elsewhere in the file.
+		for stage in ("seen", "go", "sourcing", "priced", "submitted"):
+			with self.subTest(stage=stage):
+				pattern = rf'label:\s*stepLabel\("{stage}"\)'
+				self.assertRegex(funnel, pattern)
+				self.assertEqual(
+					len(re.findall(pattern, funnel)),
+					1,
+					f'expected exactly one label: stepLabel("{stage}") call site',
+				)
+
+	def test_go_step_label_names_a_decision_already_made_not_a_pending_one(self):
+		"""P1-3 (coordinator review, 2026-09-02): F12 unified the chevron, the
+		stage boxes and the flow strip onto `flowLabels.js`'s single
+		`stepLabel`, which is correct -- but the shared text it unified onto,
+		`STEP_LABELS.go = "GO / NO-GO decision"`, was itself wrong, so F12's fix
+		made the error consistent instead of removing it.
+
+		Measured against `_funnel.classify()` (api/_funnel.py): "go" is
+		reached only when `go_no_go == "go"` AND none of submitted,
+		has_pricing or sq_count > 0 are true -- the decision has ALREADY been
+		made and sourcing has not started yet. "GO / NO-GO decision" reads as
+		the decision still being pending, which is backwards; the stage box's
+		own rule line agrees with the corrected text, not the old one
+		(`rule: "go_no_go = go · SQ = 0"`, TenderFunnel.vue).
+		"""
+		labels = _read(_FLOW_LABELS)
+		self.assertRegex(
+			labels,
+			r'go:\s*"GO — awaiting sourcing"',
+			"STEP_LABELS.go no longer names the state _funnel.classify() actually reaches",
+		)
+		self.assertNotIn(
+			"GO / NO-GO decision",
+			labels,
+			"the pending-decision phrasing is still present somewhere in flowLabels.js",
+		)
+
+		# Cross-checked rather than asserted in isolation: a rewritten label
+		# that merely stops saying "decision" without matching what the
+		# classifier actually computes would still be a made-up name. Anchored
+		# on the actual `facts.get(...)` call sites, not a bare field-name
+		# substring -- the function's own docstring lists all five fact keys
+		# up front (including "sq_count") purely to document the input shape,
+		# in an order that does not promise anything about branch order.
+		funnel_py = _read(_FUNNEL_PY)
+		classify_at = funnel_py.index("def classify(")
+		classify_fn = funnel_py[classify_at : funnel_py.index("\ndef ", classify_at + 1)]
+		go_at = classify_fn.index('facts.get("go_no_go")')
+		sq_at = classify_fn.index('facts.get("sq_count")')
+		self.assertLess(
+			sq_at,
+			go_at,
+			"go_no_go is no longer checked after sq_count -- 'awaiting sourcing' may no longer hold",
+		)
+		self.assertRegex(
+			classify_fn[go_at:],
+			r'return "go"',
+			"_funnel.classify() moved or was renamed",
+		)
+
+	def test_funnel_rungs_read_as_reached_not_as_the_stage_boxs_current_state(self):
+		"""P1-2 (coordinator review, 2026-09-02): S2's original audit (below)
+		compared three vocabularies -- chevron, stage box, flow strip -- and
+		missed a fourth: `FUNNEL_LABELS`, which names the conversion-funnel
+		rows beneath the stage grid and renders unconditionally on every host,
+		independently of `mode`.
+
+		Before F12, `PIPE_LABELS.go` and `FUNNEL_LABELS.go` both said "GO
+		decision" and agreed by accident. F12 unified the chevron and the
+		stage box onto `stepLabel("go")`; P1-3 then corrected that shared text
+		to "GO — awaiting sourcing". `FUNNEL_LABELS.go` was never touched by
+		either change, so the funnel row still reads "GO decision" while the
+		chevron and stage box 400px above it now read "GO — awaiting
+		sourcing" -- a NEW disagreement, worse than the one F12 fixed.
+
+		The resolution is not a fourth `stepLabel("go")` call site: a funnel
+		rung counts every deal that reached AT LEAST this stage on its way
+		through (`_funnel.FUNNEL_STEPS`, "reached at least this stage" -- lost
+		deals still count at `submitted`), while a stage box counts only deals
+		CURRENTLY sitting in that stage. Two different quantities sharing one
+		word ("GO") is what drifted into disagreement in the first place; the
+		fix names the rungs so their cumulativeness cannot be mistaken for the
+		box's point-in-time state.
+		"""
+		funnel = _read(_FUNNEL)
+		for stage in ("seen", "go", "sourcing", "submitted"):
+			with self.subTest(stage=stage):
+				pattern = rf'{stage}:\s*\(\)\s*=>\s*t\("Reached [^"]+"\)'
+				self.assertRegex(
+					funnel,
+					pattern,
+					f'FUNNEL_LABELS.{stage} does not read "Reached ..." -- lost the cumulative framing',
+				)
+				self.assertEqual(
+					len(re.findall(pattern, funnel)),
+					1,
+					f"expected exactly one FUNNEL_LABELS.{stage} call site",
+				)
+		# `won` is a result, not a rung reached along the way -- left as-is,
+		# on purpose, not swept into the same rename.
+		self.assertRegex(funnel, r'won:\s*\(\)\s*=>\s*t\("Won"\)')
+
+		# The two vocabularies stay deliberately separate: the funnel rows
+		# read FUNNEL_LABELS, not stepLabel -- unifying them would be
+		# re-introducing the same bug P1-2 found, one level up.
+		funnel_labels_at = funnel.index("const FUNNEL_LABELS")
+		funnel_computed_at = funnel.index("const funnel = computed")
+		funnel_computed_fn = funnel[funnel_computed_at : funnel.index("\nconst ", funnel_computed_at + 1)]
+		self.assertIn("FUNNEL_LABELS[r.key]", funnel_computed_fn)
+		self.assertNotIn("stepLabel", funnel_computed_fn)
+		self.assertLess(
+			funnel_labels_at,
+			funnel_computed_at,
+			"FUNNEL_LABELS moved after its own consumer -- re-check by hand, this test's anchors assume the old order",
+		)
+
+		# Cross-checked against api/_funnel.py rather than asserted from the
+		# Vue file alone: "Reached" is only the right word if the server-side
+		# rung really is a cumulative "at least this far" count.
+		funnel_py = _read(_FUNNEL_PY)
+		self.assertRegex(
+			funnel_py,
+			r'#:\s*Funnel rungs\s*—\s*"reached at least this stage"',
+			"_funnel.py no longer documents FUNNEL_STEPS as a cumulative reached-count",
+		)
+
+	def test_a_manually_placed_deal_is_disclosed_not_left_unexplained(self):
+		"""F15 (docs/design/prompts/15-pipeline-overview.md, S5): `tender_funnel`
+		(api/tender.py) always computes a deal's stage fresh from intake facts;
+		`tender_flow` reads the stored `custom_tender_stage` first and only
+		falls back to that same computation when nothing was ever set by hand --
+		`stage = stored or _funnel.classify(...)`. On seed data 2026-09-02,
+		UTY-2026-4305 read `go` in the flow strip below and `sourcing` in the
+		chevron above it: the same lot, the same screen, two stages at once.
+
+		Reconciling the two mechanisms was considered and rejected: `stage =
+		stored or _funnel.classify(...)` is pinned as deliberate by
+		test_tender_flow_source.py::test_the_stored_stage_wins_over_the_derived_one
+		("if the user moved the card by hand, the screen should show that;
+		derivation is only for deals that haven't been moved") -- forcing
+		agreement would either discard a director's manual kanban placement or
+		make the chevron stop matching the pipeline counters it derives its own
+		numbers from. The screen discloses the mechanism instead of reconciling
+		it, so the two numbers do not stand unexplained.
+		"""
+		overview = _read(_OVERVIEW)
+		start = overview.index('class="ds-panel ov-flow"')
+		flow_panel = overview[start : start + 3000]
+		self.assertRegex(
+			flow_panel,
+			r't\(\s*"A deal moved by hand can show a different stage here than in the pipeline strip above',
+			"the cross-mechanism disclosure is missing, moved out of the flow panel, or no longer translatable",
+		)
+
+	def test_loading_renders_a_skeleton_not_a_line_of_text(self):
+		"""F17 (docs/design/prompts/15-pipeline-overview.md, §3 mandate 3 "Loading
+		is skeleton, not spinner"): measured 2026-09-02, this screen's two
+		loading states -- TenderFunnel's own
+		initial load and TenderOverview's process-flow panel -- each rendered
+		one line of `t()` text ("Loading tender funnel…", "Loading…") where
+		every other loading state on the tender screens (OperationsDesk.vue,
+		test_tender_desk_spa.py's test_uses_skeleton_rows) mounts SkeletonRows
+		instead. A text line paints instantly and gives no sense of shape or
+		wait, and it reads as a cheaper, different kind of screen than the
+		panel next to it.
+		"""
+		funnel = _read(_FUNNEL)
+		self.assertIn(
+			'from "../../components/SkeletonRows.vue"',
+			funnel,
+			"TenderFunnel.vue no longer imports SkeletonRows",
+		)
+		# TenderFunnel's own branches are each a wrapper <div> carrying the
+		# v-if (matching its existing error branch, F13) -- bounded on the
+		# next sibling branch's landmark, not a fixed character window that
+		# would silently stop matching once a comment shifted the tag a few
+		# bytes further away.
+		#
+		# P1-4 (coordinator review, 2026-09-02): anchoring on the literal tag-open
+		# substring "<SkeletonRows" was NOT enough on its own -- a comment inside
+		# this same branch can contain that exact substring too. Reproduced: the
+		# reviewer swapped the real mount for `<div>{{ t("Please wait…") }}</div>`
+		# and wrote the comment as `<!-- F17: we mount <SkeletonRows here … -->`,
+		# and the old assertion (below, before this fix) still passed. Scanning
+		# the comment-stripped branch closes that hole rather than papering over
+		# this one instance of it.
+		loading_at = funnel.index('v-if="loading && !data"')
+		error_at = funnel.index('v-else-if="error"', loading_at)
+		loading_branch = _without_comments(funnel[loading_at:error_at])
+		# The opening tag itself, not the bare word: an explanatory comment in
+		# this branch is allowed to say "SkeletonRows" in prose, and a plain
+		# `assertIn("SkeletonRows", ...)` cannot tell that mention apart from
+		# the component actually being mounted.
+		self.assertIn("<SkeletonRows", loading_branch, "the initial-load branch is not a skeleton")
+		self.assertNotIn(
+			"Loading tender funnel", loading_branch, "the initial-load branch still renders the old text line"
+		)
+
+		overview = _read(_OVERVIEW)
+		self.assertIn(
+			'from "../../components/SkeletonRows.vue"',
+			overview,
+			"TenderOverview.vue no longer imports SkeletonRows",
+		)
+		self.assertRegex(
+			_without_comments(overview),
+			r'<SkeletonRows[^>]*\bv-else-if="flowLoading && !flow"',
+			"the process-flow loading branch is not a skeleton",
+		)
 
 	def test_company_disabled_tender_keeps_financial_fallback(self):
 		source = _read(_DASHBOARD)
