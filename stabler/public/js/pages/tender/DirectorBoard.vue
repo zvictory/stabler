@@ -30,6 +30,8 @@ useEscapeBack(null, "/tender/board");
 
 const loading = ref(false);
 const data = ref({ rows: [], kpi: {}, currency: "" });
+const error = ref("");
+const everLoaded = ref(false);
 const managers = ref([]);
 /* Bu sayfa İKİ istek çiziyor: kendi panosu ve TenderFunnel'ın kendi
  * çağrısı. Sayfa en bayat bloğu kadar taze, o yüzden yazılan damga
@@ -39,17 +41,28 @@ const lastReadAt = computed(() =>
 	formatTime(oldestStamp([data.value?.generated_at, funnelStamp.value]))
 );
 
+const canDirector = computed(() => session.tenderViews.includes("director"));
+
 async function load() {
 	if (!activeCompany.value) return;
+	await session.ensureTenderViews();
+	if (!canDirector.value) return;
 	loading.value = true;
 	try {
 		data.value = await call("stabler.api.tender.tender_director_board", { company: activeCompany.value });
+		error.value = "";
+		everLoaded.value = true;
 	} catch (err) {
-		toast.error(err?.message || t("Could not load the director board."));
+		error.value = err?.message || t("Could not load the director board.");
 	} finally {
 		loading.value = false;
 	}
 }
+/* Bir arka-plan yenilemesi başarısız olursa data.value BİLEREK dokunulmadan
+ * kalır (S3) — son iyi sayılar ekranda kalır. `stale`, o seçimin eksik yarısı:
+ * "hâlâ doğru" ile "bir kez doğruydu, son deneme başarısız oldu" aynı piksel
+ * olmasın. everLoaded şart: hiç yüklenmemiş bir tahtayı da "bayat" saymaz. */
+const stale = computed(() => Boolean(error.value) && everLoaded.value);
 async function loadManagers() {
 	try {
 		const r = await call("stabler.api.tender.tender_managers", { company: activeCompany.value });
@@ -172,6 +185,7 @@ function clearFilters() { router.replace({ query: {} }); }
 			<span>{{ t("Every lot is counted in exactly one stage") }}</span>
 			<span>{{ t("Numbers are read from ERP records — the rule under each says what it counted") }}</span>
 			<span v-if="lastReadAt">{{ t("Last read") }} <span class="ds-mono">{{ lastReadAt }}</span></span>
+			<span v-if="stale" class="ds-chip" data-tone="crit">{{ t("Refresh failed — showing the last known numbers") }}</span>
 		</template>
 
 		<template v-if="filterSummary.length" #actions>
@@ -286,7 +300,10 @@ function clearFilters() { router.replace({ query: {} }); }
 				</table>
 			</div>
 
-			<div v-if="!loading && !filteredRows.length" class="ds-panel-foot board-empty">
+			<div v-if="!loading && error && !everLoaded" class="ds-panel-foot board-empty" role="alert">
+				<span>{{ error }}</span>
+			</div>
+			<div v-else-if="!loading && !filteredRows.length" class="ds-panel-foot board-empty">
 				<span>{{ t("No tenders match these filters.") }}</span>
 				<span>{{ t("Clear filters or select another dashboard period.") }}</span>
 			</div>
