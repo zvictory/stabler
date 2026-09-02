@@ -110,7 +110,7 @@ const kpis = computed(() => {
 		{
 			key: "count", sev: "neutral", label: t("Active tenders"),
 			value: String(k.count || 0), caption: t("lots in the pipeline"),
-			note: t("seen through to awaiting result"), rule: "tender_lot · result = null",
+			note: t("seen through to awaiting result"), rule: "tender_lot · every readable deal",
 		},
 		{
 			key: "win_rate", sev: "ok", label: t("Result"),
@@ -121,12 +121,12 @@ const kpis = computed(() => {
 		{
 			key: "at_risk", sev: "crit", label: t("Risk"),
 			value: String(k.at_risk || 0), caption: t("deadline risk"),
-			note: t("needs action today — lands on the desk"), rule: "deadline < 48h · act_now",
+			note: t("needs action today — lands on the desk"), rule: "worst(bid,contract,po_eta,delivery).days < 0",
 		},
 		{
 			key: "total_value", sev: "neutral", label: t("Portfolio value"),
 			value: fm(k.total_value || 0), caption: t("contracted"),
-			note: t("sum of every open tender's value"), rule: "sum(sales_order.grand_total)",
+			note: t("sum of every open tender's value"), rule: "sum(sales_order.base_grand_total or bid_price)",
 		},
 		{
 			key: "avg_margin", sev: "ok", label: t("Avg margin"),
