@@ -1983,6 +1983,11 @@ def create_work_order(
 	doc.production_item = production_item
 	doc.bom_no = bom_no
 	doc.qty = flt(qty)
+	# Single-level: require the sub-assembly itself, not the materials it is made
+	# of. Must be set before get_items_and_operations_from_bom() below, which reads
+	# the flag as it runs (work_order.py:1559) and is never re-derived on insert
+	# (reset_use_multi_level_bom returns early for a new doc, work_order.py:405).
+	doc.use_multi_level_bom = 0
 	if planned_start_date:
 		doc.planned_start_date = planned_start_date
 	if fg_warehouse:

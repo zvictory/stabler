@@ -103,3 +103,4 @@ stabler.patches.v98_item_operator_role
 stabler.patches.v99_work_order_finish_draft
 stabler.patches.v100_enable_pos
 stabler.patches.v101_seed_stop_reasons
+stabler.patches.v102_work_order_multi_level_bom_default
