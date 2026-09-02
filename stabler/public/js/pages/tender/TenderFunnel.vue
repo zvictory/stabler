@@ -25,6 +25,7 @@ import { useSession } from "../../stores/session.js";
 import { call } from "../../api/client.js";
 import { t } from "../../composables/i18n.js";
 import { useToast } from "../../composables/useToast.js";
+import { stepLabel } from "./flowLabels.js";
 
 const session = useSession();
 const { activeCompany, tenderPolicy } = storeToRefs(session);
@@ -130,7 +131,14 @@ const KPIS = computed(() => [
 ]);
 
 /* Aşama kutuları. Grup başlıkları hattın fazlarını ayırır; her kutu tek bir
- * aşamayı sayar ve o aşamanın sahibi olan ekrana gider. */
+ * aşamayı sayar ve o aşamanın sahibi olan ekrana gider.
+ *
+ * F12 (docs/design/prompts/15-pipeline-overview.md, S2): each stage's label
+ * comes from flowLabels.js's `stepLabel`, the same source the chevron below
+ * and the process-flow strip use -- three independent literals for one
+ * stage ("Intake" / "Under review" / "Intake — file opened") is drift, not a
+ * design decision; nothing here distinguishes "state" from "phase" on
+ * purpose. */
 const GROUPS = computed(() => {
 	const s = stagesN.value;
 	const x = so.value;
@@ -140,11 +148,11 @@ const GROUPS = computed(() => {
 			label: t("Decision"),
 			cols: 2,
 			stages: [
-				{ key: "seen", n: s.seen || 0, label: t("Under review"), rule: 'intake ✓ · go_no_go = ""' },
+				{ key: "seen", n: s.seen || 0, label: stepLabel("seen"), rule: 'intake ✓ · go_no_go = ""' },
 				{
 					key: "go",
 					n: s.go || 0,
-					label: t("GO — awaiting sourcing"),
+					label: stepLabel("go"),
 					rule: "go_no_go = go · SQ = 0",
 				},
 			],
@@ -157,7 +165,7 @@ const GROUPS = computed(() => {
 				{
 					key: "sourcing",
 					n: s.sourcing || 0,
-					label: t("Collecting quotations"),
+					label: stepLabel("sourcing"),
 					rule: "SQ > 0 · no pricing",
 					chip: meta.value.sourcing_policy_gap
 						? {
@@ -169,7 +177,7 @@ const GROUPS = computed(() => {
 				{
 					key: "priced",
 					n: s.priced || 0,
-					label: t("Priced — ready to bid"),
+					label: stepLabel("priced"),
 					rule: "bid_pricing ✓",
 				},
 			],
@@ -182,7 +190,7 @@ const GROUPS = computed(() => {
 				{
 					key: "submitted",
 					n: s.submitted || 0,
-					label: t("Bid submitted"),
+					label: stepLabel("submitted"),
 					rule: "submitted_at ✓ · result = ?",
 					chip: meta.value.submitted_urgent
 						? {
@@ -297,13 +305,6 @@ const PIPE_META = {
 	priced: { tone: "blue", rule: "bid_pricing ✓" },
 	submitted: { tone: "ok", rule: "submitted_at ✓ · result = ?" },
 };
-const PIPE_LABELS = {
-	seen: () => t("Intake"),
-	go: () => t("GO decision"),
-	sourcing: () => t("Sourcing"),
-	priced: () => t("Pricing"),
-	submitted: () => t("Bid submitted"),
-};
 const PIPE_NOTES = {
 	seen: () => t("Intake is done and the GO/NO-GO decision is still open."),
 	go: () => t("Decided to go, and not one supplier quotation has been collected."),
@@ -322,7 +323,8 @@ const pipeline = computed(() =>
 		n: row.n,
 		full: row.full,
 		pct: row.n ? Math.round((row.full / row.n) * 100) : 0,
-		label: PIPE_LABELS[row.key] ? PIPE_LABELS[row.key]() : row.key,
+		// F12: same source as the stage boxes and the flow strip -- see GROUPS.
+		label: stepLabel(row.key),
 		note: PIPE_NOTES[row.key] ? PIPE_NOTES[row.key]() : "",
 		tone: PIPE_META[row.key]?.tone || "ink",
 		rule: PIPE_META[row.key]?.rule || "",

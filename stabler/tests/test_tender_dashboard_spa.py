@@ -101,6 +101,35 @@ class TestTenderDashboardSpaContract(unittest.TestCase):
 			self.assertNotIn("const STEP_LABELS", source)
 			self.assertNotIn("const STATE_LABEL", source)
 
+	def test_chevron_and_stage_boxes_share_the_flow_strips_vocabulary(self):
+		"""F12 (docs/design/prompts/15-pipeline-overview.md, S2): the chevron
+		strip, the stage boxes and the flow strip are all drawn on this one
+		screen (TenderOverview embeds TenderFunnel), and measured 2026-09-02 they
+		spelled three of the five stages three different ways -- e.g. `seen` read
+		"Intake" on the chevron, "Under review" on its stage box and "Intake —
+		file opened" on the flow strip, within one scroll.
+
+		`flowLabels.js` exists precisely to prevent this (see the test above) but
+		was wired to the flow strip only. TenderFunnel.vue must import the same
+		`stepLabel` rather than keep an independent literal for each of the five
+		pipeline stages, on both surfaces it draws.
+		"""
+		funnel = _read(_FUNNEL)
+		self.assertIn('from "./flowLabels.js"', funnel)
+		self.assertNotIn("const STEP_LABELS", funnel)
+		# The chevron: PIPE_LABELS was a second, independent copy of the same
+		# five names. Its removal, not just stepLabel's presence, is the claim --
+		# stepLabel could be imported and unused while PIPE_LABELS kept winning.
+		self.assertNotIn("const PIPE_LABELS", funnel)
+		self.assertRegex(funnel, r"label:\s*stepLabel\(row\.key\)")
+		# The stage boxes: each of the five pipeline stages' own `label:` comes
+		# from the shared source, not a literal re-typed in this file. `won` and
+		# `lost` are excluded on purpose -- S2 compares the five open phases the
+		# chevron and the flow strip both walk, not the two terminal outcomes.
+		for stage in ("seen", "go", "sourcing", "priced", "submitted"):
+			with self.subTest(stage=stage):
+				self.assertIn(f'stepLabel("{stage}")', funnel)
+
 	def test_company_disabled_tender_keeps_financial_fallback(self):
 		source = _read(_DASHBOARD)
 		self.assertIn("loadFinancial()", source)
