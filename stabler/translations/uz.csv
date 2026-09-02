@@ -262,7 +262,7 @@ Add column,Ustun qo'shish
 Add cost item,Xarajat moddasini qo‘shish
 Add cost line,Xarajat qatorini qo‘shish
 Add customer,Xaridor qo'shish
-Add Deal,
+Add Deal,Bitim qo'shish
 Add deal,Bitim qo'shish
 Add Decision,Qaror qo'shish
 Add delivery notes or remarks…,Yetkazib berish eslatmalari yoki izohlarini qo'shing…
@@ -996,7 +996,7 @@ Closing,Yopilmoqda
 Closing Balance,Yakuniy qoldiq
 Closing balance,Yopilish qoldig'i
 Closing in,Yopiladi
-Closure,
+Closure,Yopilish
 CMR / Waybill,CMR / Yuk xati
 CN Return,CN qaytarish
 Cnt / truck,Kont. / mash.
@@ -1509,7 +1509,7 @@ Delete category?,Toifa o'chirilsinmi?
 Delete commercial invoice,Tijorat invoysini o‘chirish
 Delete Customer,Mijozni o'chirish
 Delete customer,Xaridorni o'chirish
-Delete deal?,
+Delete deal?,Bitim o'chirilsinmi?
 Delete document?,
 Delete draft,
 Delete draft bill {name}? This cannot be undone.,{name} qoralama hisobini o'chirasizmi? Buni bekor qilib bo'lmaydi.
@@ -2018,7 +2018,7 @@ Failed to collect payment.,
 Failed to convert deal to customer.,Bitimni mijozga aylantirib bo‘lmadi.
 Failed to create bill.,Hisob-faktura yaratish muvaffaq bo'lmadi.
 Failed to create billing document.,Hujjatni yaratib boʻlmadi.
-Failed to create column.,
+Failed to create column.,Ustun yaratib bo'lmadi.
 Failed to create contract.,Shartnoma yaratib bo'lmadi.
 Failed to create debit note.,
 Failed to create equipment.,Jihozlar yaratish muvaffaq bo'lmadi.
@@ -2037,7 +2037,7 @@ Failed to create warehouse.,Omborni yaratishda xato.
 Failed to create.,Yaratishda xato.
 Failed to delete bill.,Hisobni o'chirib bo'lmadi.
 Failed to delete cashier.,Kassirni o'chirib bo'lmadi.
-Failed to delete column.,
+Failed to delete column.,Ustunni o'chirib bo'lmadi.
 Failed to delete customer.,Mijozni o'chirishda xato.
 Failed to delete deal.,Bitimni oʼchirib boʼlmadi.
 Failed to delete entry.,
@@ -2164,8 +2164,8 @@ Failed to preview collection.,
 Failed to reallocate payment.,To‘lovni qayta taqsimlab bo‘lmadi.
 Failed to record payment.,To'lovni qaydda xato.
 Failed to refresh claim.,Shikoyatni yangilanishda xato.
-Failed to rename column.,
-Failed to reorder columns.,
+Failed to rename column.,Ustun nomini o'zgartirib bo'lmadi.
+Failed to reorder columns.,Ustunlar tartibini o'zgartirib bo'lmadi.
 Failed to reschedule visit.,Tashrifni qayta rejalashtirish amalga oshmadi.
 Failed to reset password.,
 Failed to run report.,Hisobotni ishga tushirishda xato.
@@ -2195,7 +2195,7 @@ Failed to unlink the bill.,Hisobni uzib bo'lmadi.
 Failed to unlink.,Uzib bo'lmadi.
 Failed to update bill.,Hisobni yangilab bo'lmadi.
 Failed to update CBU rates.,CBU kurslarini yangilab bo‘lmadi.
-Failed to update color.,
+Failed to update color.,Rangni o'zgartirib bo'lmadi.
 Failed to update journal entry.,Provodkani yangilab bo'lmadi.
 Failed to update promo plan.,Promo rejasini yangilashda xato.
 Failed to update status.,Holatni yangilashda xato.
@@ -2945,7 +2945,7 @@ Mode of Payment,To'lov usuli
 Mode of Payment {0} has no default account for company {1}.,
 Model,Model
 Modern Sales Order Form,Zamonaviy sotuv buyurtmasi shakli
-Modified,
+Modified,O'zgartirilgan
 Module,Modul
 Module access override,Modul kirish huquqini bekor qilish
 Modules,Modullar
@@ -4436,7 +4436,7 @@ Remove,O'chirish
 REMOVE,O'CHIRISH
 remove,o'chirish
 Remove column,Ustunni o'chirish
-Remove column?,
+Remove column?,Ustun o'chirilsinmi?
 Remove file,Faylni o'chirish
 Remove filter,Filtrni olib tashlash
 Remove from landed cost,Yakuniy tannarxdan olib tashlash
@@ -6648,3 +6648,4 @@ Violet,Binafsha
 Pink,Pushti
 Teal,Firuza
 Cyan,Havorang
+Select Tender No,Tender raqamini tanlang

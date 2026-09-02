@@ -262,7 +262,7 @@ Add column,Sütun ekle
 Add cost item,Masraf kalemi ekle
 Add cost line,Maliyet satırı ekle
 Add customer,Müşteri ekle
-Add Deal,
+Add Deal,Anlaşma ekle
 Add deal,Anlaşma ekle
 Add Decision,Karar Ekle
 Add delivery notes or remarks…,Teslimat notu veya açıklama ekleyin…
@@ -994,7 +994,7 @@ Closing,Kapanış
 Closing Balance,Kapanış Bakiyesi
 Closing balance,Kapanış bakiyesi
 Closing in,Kapanıyor
-Closure,
+Closure,Kapanış
 CMR / Waybill,CMR / Sevk İrsaliyesi
 CN Return,CN İade
 Cnt / truck,Knt / TIR
@@ -1507,7 +1507,7 @@ Delete category?,Kategori silinsin mi?
 Delete commercial invoice,Ticari faturayı sil
 Delete Customer,Müşteriyi sil
 Delete customer,Müşteriyi sil
-Delete deal?,
+Delete deal?,Anlaşma silinsin mi?
 Delete document?,
 Delete draft,
 Delete draft bill {name}? This cannot be undone.,{name} taslak faturası silinsin mi? Bu geri alınamaz.
@@ -2016,7 +2016,7 @@ Failed to collect payment.,
 Failed to convert deal to customer.,Anlaşma müşteriye dönüştürülemedi.
 Failed to create bill.,Fatura oluşturulamadı.
 Failed to create billing document.,Belge oluşturulamadı.
-Failed to create column.,
+Failed to create column.,Sütun oluşturulamadı.
 Failed to create contract.,Sözleşme oluşturulamadı.
 Failed to create debit note.,
 Failed to create equipment.,Ekipman oluşturulamadı.
@@ -2035,7 +2035,7 @@ Failed to create warehouse.,Depo oluşturulamadı.
 Failed to create.,Oluşturulamadı.
 Failed to delete bill.,Fatura silinemedi.
 Failed to delete cashier.,Kasiyer silinemedi.
-Failed to delete column.,
+Failed to delete column.,Sütun silinemedi.
 Failed to delete customer.,Müşteri silinemedi.
 Failed to delete deal.,Anlaşma silinemedi.
 Failed to delete entry.,
@@ -2162,8 +2162,8 @@ Failed to preview collection.,
 Failed to reallocate payment.,Ödeme yeniden tahsis edilemedi.
 Failed to record payment.,Ödeme kaydedilemedi.
 Failed to refresh claim.,Talep yenilenemedi.
-Failed to rename column.,
-Failed to reorder columns.,
+Failed to rename column.,Sütun adı değiştirilemedi.
+Failed to reorder columns.,Sütun sırası değiştirilemedi.
 Failed to reschedule visit.,Ziyaret yeniden planlanamadı.
 Failed to reset password.,
 Failed to run report.,Rapor çalıştırılamadı.
@@ -2193,7 +2193,7 @@ Failed to unlink the bill.,Fatura bağlantısı kaldırılamadı.
 Failed to unlink.,Bağlantı kaldırılamadı.
 Failed to update bill.,Fatura güncellenemedi.
 Failed to update CBU rates.,CBU kurları güncellenemedi.
-Failed to update color.,
+Failed to update color.,Renk güncellenemedi.
 Failed to update journal entry.,Yevmiye kaydı güncellenemedi.
 Failed to update promo plan.,Promosyon planı güncellenemedi.
 Failed to update status.,Durum güncellenemedi.
@@ -2943,7 +2943,7 @@ Mode of Payment,Ödeme şekli
 Mode of Payment {0} has no default account for company {1}.,
 Model,Model
 Modern Sales Order Form,Modern Satış Siparişi Formu
-Modified,
+Modified,Değiştirildi
 Module,Modül
 Module access override,Modül erişim geçersiz kılma
 Modules,Modüller
@@ -4432,7 +4432,7 @@ Remove,Kaldır
 REMOVE,KALDIR
 remove,kaldır
 Remove column,Sütunu sil
-Remove column?,
+Remove column?,Sütun kaldırılsın mı?
 Remove file,Dosyayı kaldır
 Remove filter,Filtreyi kaldır
 Remove from landed cost,Toplam maliyetten çıkar
@@ -6643,3 +6643,4 @@ Violet,Menekşe
 Pink,Pembe
 Teal,Turkuaz
 Cyan,Camgöbeği
+Select Tender No,İhale numarası seçin

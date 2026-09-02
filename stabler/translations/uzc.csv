@@ -262,7 +262,7 @@ Add column,Устун қўшиш
 Add cost item,Харажат моддасини қўшиш
 Add cost line,Харажат қаторини қўшиш
 Add customer,Мижоз қўшиш
-Add Deal,
+Add Deal,Битим қўшиш
 Add deal,Битим қўшиш
 Add Decision,Қарор қўшиш
 Add delivery notes or remarks…,Етказиб бериш эслатмалари ёки изоҳларини қўшинг…
@@ -996,7 +996,7 @@ Closing,Ёпилмокда
 Closing Balance,Якуний қолдиқ
 Closing balance,Ёпилиш баланси
 Closing in,Қўйида ёпилади
-Closure,
+Closure,Ёпилиш
 CMR / Waybill,CMR / Юк хати
 CN Return,CN қайтариш
 Cnt / truck,Конт. / маш.
@@ -1509,7 +1509,7 @@ Delete category?,Турғун ўчирилсинми?
 Delete commercial invoice,Тижорат инвойсини ўчириш
 Delete Customer,Мижозни ўчириш
 Delete customer,Харидини ўчириш
-Delete deal?,
+Delete deal?,Битим ўчирилсинми?
 Delete document?,
 Delete draft,
 Delete draft bill {name}? This cannot be undone.,{name} қоралама ҳисобини ўчирасизми? Буни бекор қилиб бўлмайди.
@@ -2018,7 +2018,7 @@ Failed to collect payment.,
 Failed to convert deal to customer.,Битимни мижозга айлантириб бўлмади.
 Failed to create bill.,Ҳисобни ишлаб чиқарилиши нокамоб.
 Failed to create billing document.,Ҳужжатни яратиб бўлмади.
-Failed to create column.,
+Failed to create column.,Устун яратиб бўлмади.
 Failed to create contract.,Шартнома яратиб бўлмади.
 Failed to create debit note.,
 Failed to create equipment.,Ускунани ишлаб чиқарилиши нокамоб.
@@ -2037,7 +2037,7 @@ Failed to create warehouse.,Омборни яратиб бўла олмади.
 Failed to create.,Яратиб бўла олмади.
 Failed to delete bill.,Ҳисобни ўчириб бўлмади.
 Failed to delete cashier.,Кассирни ўчириб бўлмади.
-Failed to delete column.,
+Failed to delete column.,Устунни ўчириб бўлмади.
 Failed to delete customer.,Мижози ўчириб бўла олмади.
 Failed to delete deal.,Битимни Ӯчириб бўлмади.
 Failed to delete entry.,
@@ -2164,8 +2164,8 @@ Failed to preview collection.,
 Failed to reallocate payment.,Тўловни қайта тақсимлаб бўлмади.
 Failed to record payment.,Тўловни ёзиб бўла олмади.
 Failed to refresh claim.,Талабни янгилаб бўла олмади.
-Failed to rename column.,
-Failed to reorder columns.,
+Failed to rename column.,Устун номини ўзгартириб бўлмади.
+Failed to reorder columns.,Устунлар тартибини ўзгартириб бўлмади.
 Failed to reschedule visit.,Ташрифни қайта режалаштириш амалга ошмади.
 Failed to reset password.,
 Failed to run report.,Ҳисоботни ишга тушириб бўла олмади.
@@ -2195,7 +2195,7 @@ Failed to unlink the bill.,Ҳисобни узиб бўлмади.
 Failed to unlink.,Узиб бўлмади.
 Failed to update bill.,Ҳисобни янгилаб бўлмади.
 Failed to update CBU rates.,CBU курсларини янгилаб бўлмади.
-Failed to update color.,
+Failed to update color.,Рангни ўзгартириб бўлмади.
 Failed to update journal entry.,Проводкани янгилаб бўлмади.
 Failed to update promo plan.,Реклама режасини янгилаш қутулмади.
 Failed to update status.,Ҳолатни янгилаш қутулмади.
@@ -2945,7 +2945,7 @@ Mode of Payment,Тўлов усули
 Mode of Payment {0} has no default account for company {1}.,
 Model,Модель
 Modern Sales Order Form,Замонавий сотув буюртмаси шакли
-Modified,
+Modified,Ўзгартирилган
 Module,Модул
 Module access override,Модул қўллаш ўтказиш
 Modules,Модуллар
@@ -4436,7 +4436,7 @@ Remove,Ўчириш
 REMOVE,ЎЧИРИШ
 remove,alıp taslaw
 Remove column,Устунни ўчириш
-Remove column?,
+Remove column?,Устун ўчирилсинми?
 Remove file,Fayldı alıp taslaw
 Remove filter,Фильтрни олиб ташлаш
 Remove from landed cost,Якуний таннархдан олиб ташлаш
@@ -6648,3 +6648,4 @@ Violet,Бинафша
 Pink,Пушти
 Teal,Фируза
 Cyan,Ҳаворанг
+Select Tender No,Тендер рақамини танланг

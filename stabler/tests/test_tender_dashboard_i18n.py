@@ -20,6 +20,14 @@ _SOURCES = (
 	_ROOT / "public/js/pages/tender/TenderNav.vue",
 	_ROOT / "public/js/pages/tender/TenderWorkspaceTabs.vue",
 	_ROOT / "public/js/pages/tender/PoControlBoard.vue",
+	# 2026-09-02: bu liste ELLE tutuluyor ve 301 .vue dosyasının 13'ünü
+	# kapsıyor. Kapı dışında kalan 126 dosyada, en az bir dilde çevirisi
+	# olmayan 1391 benzersiz anahtar var. Deals.vue tam da bu yüzden
+	# gözden kaçtı: renk seçicisinin on üç adı `t(c.name)` ile — hesaplanan
+	# bir anahtarla — çağrılıyordu, hasat onları hiç görmedi, beş katalogda
+	# da yoklardı, ve bu kapı o ekrana bakmadığı için hiçbir şey kırmızı
+	# olmadı. Ekran çevrildi; buraya eklenmesi onu böyle tutan tek şey.
+	_ROOT / "public/js/pages/crm/Deals.vue",
 )
 _LITERAL_T = re.compile(r"\bt\(\s*(['\"])(?P<source>(?:\\.|(?!\1).)*?)\1")
 REQUIRED_KEYS = (

@@ -263,7 +263,7 @@ Add column,Добавить колонку
 Add cost item,Добавить статью расходов
 Add cost line,Добавить статью затрат
 Add customer,Добавить клиента
-Add Deal,
+Add Deal,Добавить сделку
 Add deal,Добавить сделку
 Add Decision,Добавить решение
 Add delivery notes or remarks…,Добавьте примечания или замечания по доставке…
@@ -1001,7 +1001,7 @@ Closing,Закрытие
 Closing Balance,Конечный остаток
 Closing balance,Сальдо на конец периода
 Closing in,Закрытие в
-Closure,
+Closure,Закрытие
 CMR / Waybill,CMR / Транспортная накладная
 CN Return,Возврат КН
 Cnt / truck,Конт. / маш.
@@ -1514,7 +1514,7 @@ Delete category?,Удалить категорию?
 Delete commercial invoice,Удалить коммерческий инвойс
 Delete Customer,Удалить клиента
 Delete customer,Удалить покупателя
-Delete deal?,
+Delete deal?,Удалить сделку?
 Delete document?,
 Delete draft,
 Delete draft bill {name}? This cannot be undone.,Удалить черновик счёта {name}? Это действие необратимо.
@@ -2024,7 +2024,7 @@ Failed to collect payment.,
 Failed to convert deal to customer.,Не удалось создать клиента из сделки.
 Failed to create bill.,Не удалось создать счёт.
 Failed to create billing document.,Не удалось создать документ.
-Failed to create column.,
+Failed to create column.,Не удалось создать столбец.
 Failed to create contract.,Не удалось создать договор.
 Failed to create debit note.,
 Failed to create equipment.,Не удалось создать оборудование.
@@ -2043,7 +2043,7 @@ Failed to create warehouse.,Не удалось создать склад.
 Failed to create.,Не удалось создать.
 Failed to delete bill.,Не удалось удалить счёт.
 Failed to delete cashier.,Не удалось удалить кассира.
-Failed to delete column.,
+Failed to delete column.,Не удалось удалить столбец.
 Failed to delete customer.,Не удалось удалить клиента.
 Failed to delete deal.,Ошибка при удалении сделки.
 Failed to delete entry.,
@@ -2169,8 +2169,8 @@ Failed to preview collection.,
 Failed to reallocate payment.,Не удалось перераспределить платёж.
 Failed to record payment.,Ошибка записи платежа.
 Failed to refresh claim.,Ошибка обновления претензии.
-Failed to rename column.,
-Failed to reorder columns.,
+Failed to rename column.,Не удалось переименовать столбец.
+Failed to reorder columns.,Не удалось изменить порядок столбцов.
 Failed to reschedule visit.,Не удалось перенести выезд.
 Failed to reset password.,
 Failed to run report.,Ошибка запуска отчёта.
@@ -2200,7 +2200,7 @@ Failed to unlink the bill.,Не удалось отвязать счёт.
 Failed to unlink.,Не удалось отвязать.
 Failed to update bill.,Не удалось обновить счёт.
 Failed to update CBU rates.,Не удалось обновить курсы ЦБ.
-Failed to update color.,
+Failed to update color.,Не удалось изменить цвет.
 Failed to update journal entry.,Не удалось обновить проводку.
 Failed to update promo plan.,Ошибка обновления плана акции.
 Failed to update status.,Ошибка обновления статуса.
@@ -2950,7 +2950,7 @@ Mode of Payment,Способ оплаты
 Mode of Payment {0} has no default account for company {1}.,
 Model,Модель
 Modern Sales Order Form,Современная форма заказа продажи
-Modified,
+Modified,Изменено
 Module,Модуль
 Module access override,Переопределение доступа к модулям
 Modules,Модули
@@ -4442,7 +4442,7 @@ Remove,Удалить
 REMOVE,УДАЛИТЬ
 remove,удалить
 Remove column,Удалить колонку
-Remove column?,
+Remove column?,Удалить столбец?
 Remove file,Удалить файл
 Remove filter,Убрать фильтр
 Remove from landed cost,Убрать из себестоимости
@@ -6653,3 +6653,4 @@ Violet,Фиолетовый
 Pink,Розовый
 Teal,Бирюзовый
 Cyan,Голубой
+Select Tender No,Выберите номер тендера
