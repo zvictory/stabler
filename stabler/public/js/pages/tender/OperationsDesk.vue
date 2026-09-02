@@ -176,6 +176,17 @@
 							</button>
 						</template>
 					</template>
+
+					<!-- Boşluk yalnız BOŞ masada anlatılıyordu: `gaps` sadece
+					     `filteredPlan.length === 0` dalının içinden erişilebiliyordu
+					     ve o dalın dış koşulu zaten plan.length === 0 istiyor. On iki
+					     satırı olan ve tarihi çözülemediği için üçü düşmüş bir masa
+					     hiçbir şey söylemiyordu — oysa sessizce eksilen bir satırın
+					     en az fark edileceği ve en çok önem taşıdığı yer tam olarak
+					     DOLU masadır. Aynı cümleler, satırların altında. -->
+					<div v-if="gaps.length" class="ds-panel-foot desk-state">
+						<span v-for="gap in gaps" :key="gap">{{ gap }}</span>
+					</div>
 				</template>
 			</section>
 
@@ -492,7 +503,13 @@ const lastReadAt = computed(() => formatTime(deskData.value?.generated_at));
 // TODAY işaretliyordu. Etkisi yalnız başlık değil — bu değişken TODAY süzgecini
 // (`filteredItems`), takvimin bugün hücresini ve satır rozetini de sürüyor.
 // `todayIso()` tam bu kayma için var (composables/date.js:106).
-const browserToday = todayIso();
+/* REF, tek seferlik bir anlık görüntü değil. Operasyon masası gece boyunca açık
+ * bırakılan ekran: yerel gece yarısından sonra okuyucu Yenile'ye basınca sunucunun
+ * tarihi ilerliyor, kurulum anında donmuş bu değer ilerlemiyordu — ve üst satır
+ * "cihazın dediği <dün>" diye uyarıyordu. D18'in kayma uyarısı gerçek bir
+ * uyuşmazlıkta değil, masanın kendi bayatlığında ötüyordu; her sabah, biri sayfayı
+ * yeniden yükleyene kadar. */
+const browserToday = ref(todayIso());
 
 /* İKİ SAAT, TEK KELİME. Yukarıdaki hata düzeldi ama arkasında bir dikiş kaldı:
  * sunucu her severity'yi, dört sayacı ve takvim penceresini `frappe.utils.today()`
@@ -507,11 +524,13 @@ const browserToday = todayIso();
  * düşülüyor ve hangi saatin kullanıldığı üst satırda YAZIYOR. Dikişi kapatmak
  * yetmez: okuyucu hangi saate baktığını görebilmeli. */
 const serverToday = computed(() => deskData.value?.today || "");
-const todayStr = computed(() => serverToday.value || browserToday);
+const todayStr = computed(() => serverToday.value || browserToday.value);
 const todayClockLabel = computed(() => (serverToday.value ? t("server date") : t("device date")));
 /* Yalnız gerçekten ayrıştıklarında uyar: her gün duran bir uyarı, önemli olduğu
  * tek geceyi de görünmez yapar. */
-const clockSkew = computed(() => Boolean(serverToday.value) && serverToday.value !== browserToday);
+const clockSkew = computed(
+	() => Boolean(serverToday.value) && serverToday.value !== browserToday.value
+);
 
 let reqToken = 0;
 
@@ -533,6 +552,8 @@ async function fetchDesk() {
 	 * seçici tarafından değiştiriliyor, catch içinde okunsaydı reddedilen isteğin
 	 * hiç sormadığı bir görünümü adlandırabilirdi. */
 	const requestedView = currentView.value || "";
+	// Yükün tarihiyle YAN YANA okunuyor: iki tarih de bu isteğe ait olmalı.
+	browserToday.value = todayIso();
 	const token = ++reqToken;
 	loading.value = true;
 	error.value = "";
@@ -689,7 +710,12 @@ const kpis = computed(() => {
 			filter: "awaiting_me",
 			sev: "soon",
 			label: t("Awaiting my approval"),
-			value: c.awaiting_me ?? 0,
+			/* Okunamamış bir kuyruğun üstünde "0" YAZILMAZ. Boş plan zaten "iki onay
+			 * sayacı da sıfır değil, BİLİNMİYOR" diyor; hemen üstteki iki kart ise
+			 * "sana atanmış onay" kuralının altına düz bir 0 basıyordu ve okuyucunun
+			 * inandığı yarı rakam oluyor. Diğer iki sayaç planın kendisinden gelir,
+			 * onay okumasından değil — onlar sayı kalıyor. */
+			value: decisionsKnown.value ? (c.awaiting_me ?? 0) : "—",
 			caption: t("decision is yours"),
 			rule: t("approval assigned to you"),
 		},
@@ -697,7 +723,7 @@ const kpis = computed(() => {
 			filter: "waiting_others",
 			sev: null,
 			label: t("Waiting others"),
-			value: c.waiting_others ?? 0,
+			value: decisionsKnown.value ? (c.waiting_others ?? 0) : "—",
 			caption: t("no action from you"),
 			rule: t("you requested, someone else answers"),
 		},
@@ -772,7 +798,16 @@ const decisionsKnown = computed(() => approvalsState.value !== "unreadable");
  * kuruluyor (tender_desk.py), dolayısıyla boş liste iki ayrı şey demek:
  * "bu panel senin değil" ve "bu şirkette dağıtılacak lot yok". Listeden
  * hangisi olduğu çıkarılamaz — çıkarmaya çalışmak hatanın kendisiydi. */
-const oversight = computed(() => Boolean(deskData.value?.oversight));
+const oversight = computed(() => {
+	const said = deskData.value?.oversight;
+	if (typeof said === "boolean") return said;
+	/* Sunucu SÖYLEMEDİYSE (bayrağı henüz taşımayan bir sürüm — bu dalın kendi
+	 * dağıtım penceresi) elde tek kanıt listenin kendisi: dolu bir team_load bu
+	 * panelin okuyucuya ait olduğunu zaten kanıtlıyor. Aksi hâlde direktör kendi
+	 * ekibinin satırlarının üstünde "bu panel direktör görünümüne aittir"
+	 * okuyordu. Yedek, AÇIK bir cevabı asla ezmez — D18'in `today` için yaptığı. */
+	return (deskData.value?.team_load || []).length > 0;
+});
 
 const teamLoad = computed(() => {
 	const rows = deskData.value?.team_load || [];

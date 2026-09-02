@@ -315,5 +315,120 @@ class TestCalendarPartition(unittest.TestCase):
 		)
 
 
+class TestThePastDueBucketAndTheOverdueChip(unittest.TestCase):
+	"""P2 from review. The calendar's past-due bucket partitions on `due < today`
+	(build_calendar); the Overdue chip counts `severity == "overdue"`. Two regions
+	of one screen, both about "things that are late", built from different
+	predicates -- which is the exact shape of the defect D13 existed to close.
+
+	Measured: they are NOT the same set, and on ordinary seed-shaped data they
+	disagree. A sourcing lot under the quote minimum whose bid deadline has passed
+	emits TWO rows for the same lot on the same date -- `bid_due` at severity
+	overdue and `policy_gap` at severity today (_desk_rules.py:113-122, where the
+	policy row's severity is unconditional). The bucket counts both; the chip
+	counts one.
+
+	The choice, made here rather than left implicit: KEEP both predicates. Aligning
+	the bucket to severity would drop the policy row out of the calendar entirely
+	-- a dated plan row invisible in the region a reader scans to plan the week,
+	which is D13's defect restored. Aligning the chip to dates would recompute
+	severity, which §4 of the prompt forbids.
+
+	What is pinned instead is the relationship that makes the disagreement safe:
+	the chip's set is a strict SUBSET of the bucket's. Every row the chip calls
+	overdue is dated before today, so the calendar can never omit a row the chip
+	is shouting about. The reverse -- bucket wider than chip -- is legitimate: a
+	quote gap on a lot whose deadline passed is still today's work.
+	"""
+
+	TODAY = "2026-09-02"
+
+	def _plan(self):
+		"""One lot that fires BOTH rules: sourcing stage, under the minimum, and a
+		bid deadline that passed yesterday. This is the case review found."""
+		return build_plan(
+			{
+				"lots": [
+					{
+						"deal": "d1",
+						"label": "LOT-4305",
+						"stage": "sourcing",
+						"bid_deadline": "2026-09-01",
+						"sq_count": 1,
+					}
+				]
+			},
+			self.TODAY,
+		)["items"]
+
+	def test_one_lot_emits_two_rows_the_two_regions_count_differently(self):
+		# WHAT WOULD MAKE THIS FAIL: the disagreement quietly going away -- which
+		# would be good news, but it would mean a rule changed severity or dropped a
+		# row, and the reader of this file needs to know the counts are not equal BY
+		# DESIGN rather than rediscover it from a screenshot.
+		rows = self._plan()
+		kinds = sorted(r["kind"] for r in rows)
+		self.assertEqual(kinds, ["bid_due", "policy_gap"], f"expected both rules, got {kinds}")
+		self.assertEqual(len({r["due"] for r in rows}), 1, "the two rows share one date")
+
+		bucket = build_calendar(rows, self.TODAY)["past"]["count"]
+		chip = len([r for r in rows if r["severity"] == "overdue"])
+		self.assertEqual((bucket, chip), (2, 1), "the measured disagreement moved")
+
+	def test_no_row_the_chip_calls_overdue_can_escape_the_bucket(self):
+		# WHAT WOULD MAKE THIS FAIL: an overdue row dated today or later. All three
+		# emitters guard on a strictly past date (_desk_rules.py:69, :186, :215), and
+		# that guard is the whole reason the two regions cannot contradict each other
+		# in the direction that matters: the desk shouting "1 overdue" while the
+		# calendar region shows nothing anywhere, past bucket included. That was D13.
+		# A future rule that sets severity overdue on a future date reopens it.
+		rows = build_plan(
+			{
+				"lots": [
+					{"deal": "d1", "label": "A", "stage": "go", "bid_deadline": "2026-08-01", "sq_count": 5},
+					{
+						"deal": "d2",
+						"label": "B",
+						"stage": "sourcing",
+						"bid_deadline": "2026-09-01",
+						"sq_count": 0,
+					},
+					{"deal": "d3", "label": "C", "stage": "go", "bid_deadline": "2026-09-20", "sq_count": 5},
+					# The boundary the invariant lives on: a deadline falling TODAY.
+					# It must be severity today, not overdue -- an overdue row dated
+					# today would sit in the day cell and outside the past bucket,
+					# and the chip would then name a row the bucket does not hold.
+					{"deal": "d4", "label": "D", "stage": "go", "bid_deadline": "2026-09-02", "sq_count": 5},
+				],
+				"po_late": [
+					{
+						"po": "PO-1",
+						"supplier": "S",
+						"schedule_date": "2026-07-15",
+						"per_received": 0.0,
+					}
+				],
+				"unpaid": [
+					{
+						"name": "INV-1",
+						"doctype": "Purchase Invoice",
+						"due_date": "2026-06-30",
+						"outstanding": 100.0,
+					}
+				],
+			},
+			self.TODAY,
+		)["items"]
+
+		overdue = [r for r in rows if r["severity"] == "overdue"]
+		self.assertGreaterEqual(len(overdue), 3, "the fixture stopped producing overdue rows")
+
+		past = build_calendar(rows, self.TODAY)["past"]
+		self.assertEqual(past["count"], len([r for r in rows if r["due"] < self.TODAY]))
+		for row in overdue:
+			with self.subTest(kind=row["kind"]):
+				self.assertLess(row["due"], self.TODAY, "an overdue row is not dated in the past")
+
+
 if __name__ == "__main__":
 	unittest.main()

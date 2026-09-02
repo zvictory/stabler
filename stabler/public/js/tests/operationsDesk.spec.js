@@ -591,7 +591,7 @@ describe("D18 — the reader can tell which clock said 'today'", () => {
 		evalInScope(expression, {
 			computed: (fn) => fn(),
 			deskData: { value: payload },
-			browserToday: browser,
+			browserToday: { value: browser },
 			serverToday: { value: payload?.today || "" },
 			t: (key) => key,
 		});
@@ -642,15 +642,28 @@ describe("D18 — the reader can tell which clock said 'today'", () => {
 		expect(skew({}, "2026-09-02")).toBe(false);
 	});
 
-	it("reads the browser's calendar date exactly once", () => {
-		// WHAT WOULD MAKE THIS FAIL: a second `todayIso()` call left behind at one
-		// of the four sites todayStr drives (header, TODAY filter, calendar today
-		// cell, row badge). Two sources of "today" in one screen is the defect this
-		// row exists to close, and the second one would agree on every day a test
-		// is likely to be run. Comments are stripped first: this file's own comment
-		// above the fallback names `todayIso()` while explaining the UTC bug it was
-		// added for, and a test that counted that would be counting prose.
-		expect(scriptWithoutComments().match(/todayIso\(\)/g)).toHaveLength(1);
+	it("reads the browser's calendar date into one place and nowhere else", () => {
+		// WHAT WOULD MAKE THIS FAIL: a `todayIso()` call left behind at one of the
+		// four sites todayStr drives (header, TODAY filter, calendar today cell, row
+		// badge). Two sources of "today" in one screen is the defect this row exists
+		// to close, and the second one would agree on every day a test is likely to
+		// be run.
+		//
+		// This counted ONE call until 2026-09-02, which also forbade refreshing the
+		// value — and review found the snapshot going stale on a desk left open
+		// overnight. What matters is not how often it is called but that every call
+		// lands in `browserToday` and every consumer reads it from there. Comments
+		// are stripped first: two of them name `todayIso()` while explaining the UTC
+		// bug and the staleness, and a test that counted those would count prose.
+		const lines = scriptWithoutComments()
+			.split("\n")
+			.filter((line) => line.includes("todayIso()"));
+		expect(lines.length, "todayIso() is no longer read at all").toBeGreaterThan(0);
+		for (const line of lines) {
+			expect(line, "todayIso() read outside browserToday").toMatch(
+				/browserToday(\.value)? = .*todayIso\(\)/
+			);
+		}
 	});
 
 	it("puts the clock's name and the disagreement in the meta row", () => {
@@ -1102,15 +1115,18 @@ describe("D16 — the two empty Team loads are not the same empty", () => {
 		// being empty — which is the bug, restated as its own fix. Only the server
 		// knows whether the reader holds an oversight role; the client can see
 		// nothing but the consequence, and the consequence is ambiguous.
-		expect(rhsOf("const oversight")).toMatch(/deskData\.value\?\.oversight/);
+		expect(blockRhsOf("oversight")).toMatch(/deskData\.value\?\.oversight/);
 		const value = (payload) =>
-			evalInScope(rhsOf("const oversight"), {
+			evalInScope(blockRhsOf("oversight"), {
 				computed: (fn) => fn(),
 				deskData: { value: payload },
 			});
 		expect(value({ oversight: true, team_load: [] })).toBe(true);
 		expect(value({ oversight: false, team_load: [] })).toBe(false);
 		expect(value({ team_load: [] })).toBe(false);
+		// An EMPTY list still proves nothing — that is this test's name. A populated
+		// one is different evidence and is handled where the fallback is tested.
+		expect(value({ oversight: false, team_load: [{ user: "a" }] })).toBe(false);
 	});
 
 	it("does not tell a director that nobody has work", () => {
@@ -1124,5 +1140,80 @@ describe("D16 — the two empty Team loads are not the same empty", () => {
 		expect(at, "no empty-of-work branch to word").toBeGreaterThan(-1);
 		const empty = branch.slice(at);
 		expect(empty.slice(0, empty.indexOf("</div>"))).not.toMatch(/open lot/i);
+	});
+});
+
+describe("review P2/P3 — the desk stops asserting things it has not measured", () => {
+	it("prints — for the two approval counters it has just called unknown", () => {
+		// WHAT WOULD MAKE THIS FAIL: leaving `c.awaiting_me ?? 0` in the strip. When
+		// the approval queue could not be read the empty plan says both approval
+		// counters are unknown, not zero — and the two chips directly above it
+		// printed a literal 0 under the rules "approval assigned to you" and "you
+		// requested, someone else answers". The numeral is the half a reader
+		// believes. The other two chips keep their numbers: due_today and overdue
+		// come off the plan, not off the approval read.
+		const strip = (payload, known) =>
+			evalInScope(blockRhsOf("kpis"), {
+				computed: (fn) => fn(),
+				t: (key) => key,
+				deskData: { value: payload },
+				decisionsKnown: { value: known },
+			});
+		const counters = { due_today: 3, overdue: 2, awaiting_me: 0, waiting_others: 0 };
+		const unknown = strip({ counters }, false);
+		const byFilter = Object.fromEntries(unknown.map((k) => [k.filter, k.value]));
+		expect(byFilter.awaiting_me).toBe("—");
+		expect(byFilter.waiting_others).toBe("—");
+		expect(byFilter.today).toBe(3);
+		expect(byFilter.overdue).toBe(2);
+
+		const known = Object.fromEntries(strip({ counters }, true).map((k) => [k.filter, k.value]));
+		expect(known.awaiting_me).toBe(0);
+		expect(known.waiting_others).toBe(0);
+	});
+
+	it("re-reads the device date on every load, not once at setup", () => {
+		// WHAT WOULD MAKE THIS FAIL: `const browserToday = todayIso()` at setup. An
+		// operations desk is the screen left open overnight. Past local midnight the
+		// reader presses Refresh, the server's date advances and the snapshot does
+		// not, so the meta row states "your device says <yesterday>" while the
+		// device says today — D18's skew warning firing on the desk's own staleness
+		// rather than on a real disagreement, every morning, until someone reloads.
+		expect(rhsOf("const browserToday")).toMatch(/^ref\(todayIso\(\)\)$/);
+		const body = src.slice(anchor("async function fetchDesk("), anchor("const regionState"));
+		expect(body).toMatch(/browserToday\.value = todayIso\(\);/);
+	});
+
+	it("believes the server about oversight, and the data when the server is silent", () => {
+		// WHAT WOULD MAKE THIS FAIL: `Boolean(deskData.value?.oversight)`, which
+		// cannot tell "the server said false" from "the server did not say". Against
+		// a server that has not shipped the flag yet — the deploy window this branch
+		// creates — a director with a populated team_load read "This panel belongs
+		// to the director view" printed over their own team's rows. Same treatment
+		// D18 gives `today`: prefer the server, fall back to the only other
+		// evidence, and never let the fallback overrule an explicit answer.
+		const value = (payload) =>
+			evalInScope(blockRhsOf("oversight"), {
+				computed: (fn) => fn(),
+				deskData: { value: payload },
+			});
+		expect(value({ oversight: true, team_load: [] })).toBe(true);
+		expect(value({ oversight: false, team_load: [{ user: "a" }] })).toBe(false);
+		expect(value({ team_load: [{ user: "a" }] })).toBe(true);
+		expect(value({ team_load: [] })).toBe(false);
+		expect(value(null)).toBe(false);
+	});
+
+	it("reports a gap on a desk that has rows, not only on an empty one", () => {
+		// WHAT WOULD MAKE THIS FAIL: leaving `gaps` reachable only through the
+		// empty-plan branch, whose outer condition also requires plan.length === 0.
+		// A desk with twelve rows and three more dropped for unparseable dates said
+		// nothing at all — and a busy desk is exactly where a silently missing row
+		// is least likely to be noticed and most likely to matter.
+		const at = anchor('<h2>{{ t("Daily work plan") }}</h2>');
+		const panel = src.slice(src.lastIndexOf("<section", at), src.indexOf("</section>", at));
+		const rows = panel.slice(panel.indexOf("\n\t\t\t\t<template v-else>"));
+		expect(rows).toMatch(/v-if="gaps\.length"/);
+		expect(rows).toMatch(/v-for="gap in gaps"/);
 	});
 });

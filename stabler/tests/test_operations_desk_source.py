@@ -349,6 +349,17 @@ class TestTheSourceScannersReadCodeNotProse(unittest.TestCase):
 		code = _code_only('"""delivery_deadline is not read here."""\nX = 1\n')
 		self.assertNotIn("delivery_deadline", code, "a docstring survived the strip")
 
+	def test_the_scanned_text_is_the_stripped_one(self):
+		# WHAT WOULD MAKE THIS FAIL: `RULES_CODE = RULES_SOURCE`. The three tests
+		# that consume it would not notice today, because _desk_rules.py happens to
+		# contain no comment spelling a rule kind or naming delivery_deadline -- so
+		# the strip could be unwired and every test stay green until someone wrote
+		# the comment, which is exactly the day it is needed. The function's own
+		# tests prove the function; this proves it is the thing actually being read.
+		self.assertIn("#", RULES_SOURCE, "the engine has no comments left to strip")
+		self.assertNotIn("#", RULES_CODE, "RULES_CODE still carries comments")
+		self.assertLess(len(RULES_CODE), len(RULES_SOURCE), "nothing was stripped at all")
+
 	def test_the_engine_still_yields_its_rules_after_the_strip(self):
 		# WHAT WOULD MAKE THIS FAIL: a strip so aggressive it eats the code. The two
 		# assertions that consume RULES_CODE both pass vacuously on an empty set.

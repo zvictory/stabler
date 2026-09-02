@@ -376,6 +376,29 @@ The partition moved to `_desk_rules.build_calendar`, which is Frappe-free, so th
 property that matters — *no dated plan row disappears between the regions* — is
 now **executed** by `test_desk_rules.py` against `build_plan`'s own output rather
 than pattern-matched in a module that imports frappe.
+**Measured again 2026-09-02 in review — the bucket and the Overdue chip do not
+count the same set, and that is deliberate.** The bucket partitions on `due <
+today`; the chip counts `severity == "overdue"`. A sourcing lot under the quote
+minimum whose deadline has passed emits TWO rows on the same date — `bid_due` at
+severity overdue and `policy_gap` at severity **today**, because the policy row's
+severity is unconditional (`_desk_rules.py:113-122`). The bucket counts both, the
+chip counts one.
+
+Aligning them was considered and rejected in both directions. Narrowing the
+bucket to severity drops the policy row out of the calendar entirely — a dated
+plan row invisible in the region a reader scans to plan the week, which is this
+section's own defect restored. Widening the chip to dates recomputes severity on
+the client, which §4 forbids. What is pinned instead
+(`test_desk_rules.py::TestThePastDueBucketAndTheOverdueChip`) is the relationship
+that makes the disagreement safe: **the chip's set is a strict subset of the
+bucket's**, because all three overdue emitters guard on a strictly past date
+(`:69`, `:186`, `:215`). The calendar can never omit a row the chip is shouting
+about; the reverse is legitimate work.
+
+**Still open:** the bucket's label reads *PAST DUE / already past due*, which is
+the chip's vocabulary for a different set. Rewording it needs a catalogue key and
+is left to the coordinator.
+
 It is drawn as the panel's own `.ds-panel-foot` under the seven cells, not as an
 eighth cell: `.ds-week` is `repeat(7, minmax(0,1fr))`
 (`stabler-modernist.css:361`), and the bucket is not a day. Its colour comes from
@@ -407,6 +430,31 @@ cannot populate from demo data. On the boards it was lanes. Here it is the
 reasoning itself.
 
 ---
+
+**Corrected again 2026-09-02 in review, twice.** The two approval chips printed
+a literal `0` directly above the sentence saying both approval counters are
+unknown — the numeral is the half a reader believes, so they now print `—` when
+`approvals_state` is `unreadable`. The other two chips keep their numbers: they
+come off the plan, not off the approval read. And `gaps` was reachable **only**
+through the empty-plan branch, whose outer condition already required
+`plan.length === 0`, so a desk with twelve rows and three dropped for unparseable
+dates said nothing at all — the case where a silently missing row is least likely
+to be noticed. The same sentences now render under the rows.
+
+**And `not_yours` is now determined, not inferred.** It was `except
+frappe.PermissionError -> not_yours`, i.e. one exception type read as one cause.
+The type has at least two: `list_pending` raises it for a non-approver
+(`approvals.py:119-121`) and for an approver whose role lacks read permission on
+Stabler Approval Request. The second is a real gap and was being answered with
+"you are not an approver" — after which `not_yours` is suppressed from the gap
+list by design, so the plan went on saying everything was up to date over a queue
+it could not read. `is_approver()` decides it directly, every surviving exception
+means what it says, and the desk stops making one guaranteed-to-throw query per
+load for the majority of its readers.
+
+**Still open:** the gap sentence names the two approval counters, but an
+unreadable queue also removes `approval_pending` rows from the plan, so
+`due_today` is understated as well. Widening it needs a catalogue key.
 
 **Corrected 2026-09-02 while closing D14 — this section's premise is wrong, and
 the row it motivates is right for a different reason.**
@@ -729,7 +777,7 @@ re-examined.
 | D13 | An overdue item is discoverable from the calendar region | **passes** (2026-09-02) — a past-due bucket, not an earlier start date |
 | D14 | The empty plan distinguishes *nothing to do* from *could not be computed* | **passes** (2026-09-02) — three-way, and S2's premise was corrected: the silent five had *run* |
 | D15 | The Decision box, Team load and calendar each render five states | **passes** (2026-09-02) — one `regionState` for the four page-level gates, read by **all four** regions; the plan panel's second copy was kept at first, was found already diverged in review, and is gone |
-| D16 | Team load empty-for-your-role ≠ Team load empty-of-work | **passes** (2026-09-02) — `oversight` on the payload; and empty-of-work is *no lots in the company*, not *nobody busy* (§7) |
+| D16 | Team load empty-for-your-role ≠ Team load empty-of-work | **passes** (2026-09-02) — `oversight` on the payload, and (review) the client prefers the flag, falls back to a populated `team_load` when an older server omits it, and never lets the fallback overrule an explicit `false`; and empty-of-work is *no lots in the company*, not *nobody busy* (§7) |
 | D17 | The primary CTA is the focusable, hoverable control, or is not drawn as one | **passes** (2026-09-02) — the row is the control; the span is no longer painted as one |
-| D18 | Which clock produced "today" is legible to the reader | **passes** (2026-09-02) — the server sends `today`; the meta row names the clock and flags disagreement |
+| D18 | Which clock produced "today" is legible to the reader | **passes** (2026-09-02) — the server sends `today`; the meta row names the clock and flags disagreement. Corrected in review: the device date was a one-shot snapshot taken at setup, so on a desk left open overnight the skew warning fired on the desk's own staleness every morning. It is re-read on each load |
 | D19 | `delivery_deadline` is either consumed by a rule or absent from the calendar's promise | **passes** (2026-09-02) — absent from the promise; the rule was NOT invented |

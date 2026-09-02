@@ -241,13 +241,20 @@ class TestTenderDeskApiSource(unittest.TestCase):
 			"\texcept Exception:\n\t\tall_pending_approvals = []\n\n" not in self.source,
 			"a bare except that empties the queue makes a failure look like an answer",
 		)
+		block = self._approval_block()
 		for state in ("read", "not_yours", "unreadable"):
 			with self.subTest(state=state):
-				self.assertIn(f'approvals_state = "{state}"', self.source)
-		self.assertIn(
-			"except frappe.PermissionError:",
-			self.source,
-			"not being an approver is a scope answer, not a computation failure",
+				self.assertTrue(f'approvals_state = "{state}"' in block, f"the {state} outcome is gone")
+		# Not being an approver is a SCOPE ANSWER, not a computation failure. This
+		# used to be pinned as `except frappe.PermissionError:` -- catching the
+		# answer out of the failure path, which review showed was reading one
+		# exception type as one cause. What the row actually requires is that the
+		# answer is reached WITHOUT a failure, so that is what is pinned: the state
+		# is set outside the try, from a role check.
+		self.assertLess(
+			block.index('approvals_state = "not_yours"'),
+			block.index("try:"),
+			"not being an approver is being discovered by failing again",
 		)
 
 	def test_the_rows_the_engine_could_not_date_reach_the_payload(self):
@@ -291,6 +298,57 @@ class TestTenderDeskApiSource(unittest.TestCase):
 		self.assertTrue(
 			body.index('if result not in ("won", "lost", "cancelled"):') > insert,
 			"the open-lots count must come after the row exists, never gate it",
+		)
+
+	def _approval_block(self) -> str:
+		"""The approvals cohort as CODE -- comment lines dropped.
+
+		Sliced rather than asserted against `self.source`: the module is 20 KB and
+		an assertion that fails against the whole of it prints the whole of it.
+
+		Comment-free because the section documents the construct it replaced -- the
+		note explaining why a PermissionError must no longer be read as "not an
+		approver" contains the words `except frappe.PermissionError`, and an
+		assertion that scanned prose would be tripped by the explanation of the very
+		thing it checks is gone. Same lesson as _code_only() in
+		test_operations_desk_source.py.
+		"""
+		anchor = "\t# 7. Approvals Cohort"
+		self.assertIn(anchor, self.source, "the approvals section moved")
+		block = self.source[self.source.index(anchor) :]
+		block = block[: block.index("\n\t# Map facts")]
+		return "\n".join(line for line in block.splitlines() if not line.lstrip().startswith("#"))
+
+	def test_not_being_an_approver_is_determined_not_inferred(self):
+		# WHAT WOULD MAKE THIS FAIL: going back to `except frappe.PermissionError ->
+		# not_yours`. That read one exception TYPE as one cause, and the type has at
+		# least two: list_pending raises it for a non-approver (approvals.py:119-121)
+		# AND for an approver whose role lacks read permission on Stabler Approval
+		# Request. The second is a genuine gap and it was being answered with "you
+		# are not an approver" -- after which `not_yours` is suppressed from the gap
+		# list by design (it is an answer, not a gap), so the plan went on saying
+		# everything was up to date over a queue it could not read.
+		block = self._approval_block()
+		self.assertTrue("is_approver(" in block, "the desk infers the approver instead of determining it")
+		self.assertTrue(
+			"except frappe.PermissionError" not in block,
+			"a PermissionError is being read as 'not an approver' again",
+		)
+		self.assertTrue('approvals_state = "unreadable"' in block, "a failed read no longer reports a gap")
+		self.assertTrue(
+			'approvals_state = "not_yours"' in block, "the answer state disappeared with the guess"
+		)
+
+	def test_the_queue_is_not_even_asked_for_when_it_is_not_yours(self):
+		# WHAT WOULD MAKE THIS FAIL: calling list_pending first and classifying
+		# after. Most of this desk's readers are not approvers, so that is one
+		# guaranteed-to-throw query per desk load, per reader -- and it only ever
+		# produced the answer the role check already held.
+		block = self._approval_block()
+		self.assertLess(
+			block.index('approvals_state = "not_yours"'),
+			block.index("list_pending("),
+			"the refusal is still discovered by making the call",
 		)
 
 	def test_no_sql_aggregation_functions_in_select(self):

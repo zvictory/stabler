@@ -11,7 +11,7 @@ from frappe import _
 from frappe.utils import now, today
 
 from stabler.api import _desk_rules
-from stabler.api.approvals import list_pending
+from stabler.api.approvals import is_approver, list_pending
 from stabler.api.tender import (
 	_assert_company_scope,
 	_is_tender_oversight,
@@ -265,22 +265,35 @@ def operations_desk(company: str, view: str | None = None, days: int = 7) -> dic
 	# box, and a plan asserting everything was current. Four confident statements
 	# out of a swallowed exception.
 	#
-	# `not_yours` is the common case, not an edge one: list_pending() throws
-	# PermissionError for anyone who is not an approver (approvals.py:119-121),
-	# which is most of this desk's readers. That is an ANSWER -- the queue exists
-	# and it is not mine, so a plan without it is complete for me -- and it must
-	# not be reported as a gap, or the real gap would be invisible under a warning
-	# that fires every day.
-	try:
-		all_pending_approvals = list_pending(company=company).get("requests") or []
-	except frappe.PermissionError:
+	# `not_yours` is the common case, not an edge one: most of this desk's readers
+	# are not approvers. That is an ANSWER -- the queue exists and it is not mine,
+	# so a plan without it is complete for me -- and it must not be reported as a
+	# gap, or the real gap would be invisible under a warning that fires every day.
+	#
+	# DETERMINED, not inferred. This used to read `except frappe.PermissionError ->
+	# not_yours`, i.e. one exception TYPE taken to mean one cause. The type has at
+	# least two: list_pending raises it for a non-approver (approvals.py:119-121)
+	# and also for an approver whose role lacks read permission on Stabler Approval
+	# Request. The second is a real gap and it was being answered with "you are not
+	# an approver" -- and because not_yours is deliberately suppressed from the gap
+	# list, the plan then went on asserting everything was up to date over a queue
+	# it could not read. is_approver() answers the question directly, so every
+	# exception that survives means what it says.
+	#
+	# It also stops asking. For a non-approver the call could only ever throw, so
+	# it was one guaranteed-to-fail query per desk load, per reader, to obtain an
+	# answer the role check already held.
+	if not is_approver(user):
 		all_pending_approvals = []
 		approvals_state = "not_yours"
-	except Exception:
-		all_pending_approvals = []
-		approvals_state = "unreadable"
 	else:
-		approvals_state = "read"
+		try:
+			all_pending_approvals = list_pending(company=company).get("requests") or []
+		except Exception:
+			all_pending_approvals = []
+			approvals_state = "unreadable"
+		else:
+			approvals_state = "read"
 
 	# Map facts for _desk_rules
 	lots_fact = [
