@@ -1074,6 +1074,31 @@ def _deal_landed(deal: str, company: str) -> tuple[float, int]:
 	return planned, count
 
 
+def _deal_landed_estimate(deal: str) -> float:
+	"""Pre-win landed figure (base currency): the FIXED estimate a sourcing
+	officer types onto the deal's own bid pricing (CRM Deal.custom_bid_pricing
+	.landed_goods) to set the bid price -- Zafar's pre-win costing rule (no
+	customs/logistics staff, no PO, one number from experience -- 00-SETUP.md
+	"The pre-win costing rule", prompt 03). Reads the same stored field
+	_bid_inputs does (:1151-1152) without calling it: that function also
+	resolves SO revenue and merges bid-price defaults, which a list row does
+	not need. Deliberately does NOT fall back to the post-win PO sum the way
+	_bid_inputs' own editor pre-fill does (:1162-1164) -- that default exists so
+	an already-won deal's editor opens on the real number instead of 0, which
+	would make this figure equal `landed` again on every won row. 0 means
+	"nothing typed yet", not "post-win sum unavailable"."""
+	if not frappe.db.has_column("CRM Deal", "custom_bid_pricing"):
+		return 0.0
+	raw = frappe.db.get_value("CRM Deal", deal, "custom_bid_pricing")
+	if not raw:
+		return 0.0
+	try:
+		stored = json.loads(raw) if not isinstance(raw, dict) else raw
+	except (ValueError, TypeError):
+		return 0.0
+	return flt(stored.get("landed_goods") or 0)
+
+
 def _deal_revenue_actual(deal: str, company: str) -> float:
 	"""Actual invoiced revenue (base currency) = Σ SO.base_grand_total × per_billed%."""
 	if not frappe.db.has_column("Sales Order", "custom_crm_deal"):
@@ -2499,12 +2524,14 @@ def sourcing_my_tenders(company: str) -> dict:
 			dl["risk"],
 		)
 		po_landed, po_count = _deal_landed(deal, company)
+		landed_estimate = _deal_landed_estimate(deal)
 		delivery = next((m["date"] for m in dl["milestones"] if m["key"] == "delivery"), None)
 		rows.append(
 			{
 				"deal": deal,
 				"label": _deal_label(deal),
 				"landed": po_landed,
+				"landed_estimate": landed_estimate,
 				"po_count": po_count,
 				"risk": dl["risk"],
 				"delivery": delivery,
@@ -2518,7 +2545,12 @@ def sourcing_my_tenders(company: str) -> dict:
 				"assigned_to_name": intake.get("assigned_to_name") or "",
 			}
 		)
-	rows.sort(key=lambda r: (_RISK_ORDER.get(r["risk"], 3), r["delivery"] or "9999-99-99"))
+	# Three keys, not two: _tender_deal_names iterates a set, so without a full
+	# tie-break the order of every row tied on (risk, delivery) is set
+	# iteration -- stable in one process, arbitrary across a restart. Same
+	# convention _tender_director_payload already uses for the same shape of
+	# row, ending on the deal name.
+	rows.sort(key=lambda r: (_RISK_ORDER.get(r["risk"], 3), r["delivery"] or "9999-99-99", r["deal"]))
 	return {
 		"currency": base_ccy,
 		"rows": rows,
