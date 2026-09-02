@@ -2535,7 +2535,7 @@ def sourcing_my_tenders(company: str) -> dict:
 				"po_count": po_count,
 				"risk": dl["risk"],
 				"delivery": delivery,
-				"result": intake.get("result") or "",
+				"result": intake.get("result") if evidence["lifecycle"]["submitted"] else "",
 				"event_date": evidence["event_date"],
 				"event_dates": evidence["event_dates"],
 				"lifecycle": evidence["lifecycle"],

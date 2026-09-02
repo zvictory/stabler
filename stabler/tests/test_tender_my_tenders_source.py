@@ -52,6 +52,21 @@ def _body(src: str, name: str) -> str:
 	return tail[: nxt.start() + 1] if nxt else tail
 
 
+def _code(src: str, name: str) -> str:
+	"""`_body`, minus the function's own leading docstring.
+
+	The coordinator's review (P1-5, 2026-09-02) found that `_body` includes the
+	docstring, and a docstring naming the right field/key in PROSE satisfies an
+	`assertIn` meant for the executable code: three in-memory mutants (body
+	replaced by `return 0.0`, a wrong dict key, a wrong field name) all left
+	the original version of this test green, because only the docstring --
+	unchanged by any of the three -- was what the assertions actually matched.
+	Use this instead of `_body` wherever an assertion is about what the CODE
+	does, not what it is documented to do."""
+	body = _body(src, name)
+	return re.sub(r'"""[\s\S]*?"""\n?', "", body, count=1)
+
+
 class TestMyTendersSort(unittest.TestCase):
 	"""M10 -- two rows tied on risk and delivery must have a defined order."""
 
@@ -98,18 +113,31 @@ class TestMyTendersSort(unittest.TestCase):
 		)
 
 	def test_matches_the_director_boards_own_three_key_convention(self):
-		# WHAT WOULD MAKE THIS FAIL: inventing a different tie-break (e.g. label,
-		# or assigned_to) instead of reusing what tender_director_board already
-		# does for the identical (risk, delivery)-shaped row. S4 names this board
-		# explicitly as the three-key precedent; a second, different rule for the
-		# same tie would be two conventions for one problem.
+		# WHAT WOULD MAKE THIS FAIL: sourcing_my_tenders' key actually
+		# DISAGREEING with _tender_director_payload's -- not just one side, in
+		# isolation, matching a fixed expected shape. P3-11 (coordinator review,
+		# 2026-09-02): the original version of this test hardcoded
+		# _tender_director_payload's own pattern and never looked at
+		# sourcing_my_tenders at all, so it passed for any value of the thing
+		# it was named after -- reverting THIS file's key to two-wide left it
+		# green. Fixed by extracting both keys and comparing them by VALUE
+		# (whitespace-normalized, since one call is one-line and the other is
+		# formatted across four).
 		# tender_director_board itself only delegates (`_tender_director_payload`,
 		# include_rows=True) -- the sort lives in the payload builder it calls.
-		payload_body = _body(self.src, "_tender_director_payload")
-		self.assertRegex(
-			payload_body,
-			r'_RISK_ORDER\.get\(r\["risk"\],\s*3\),\s*\n\s*r\["delivery"\]\s*or\s*"9999-99-99",\s*\n\s*r\["deal"\],',
-			"_tender_director_payload's own sort shape has moved -- re-anchor before trusting the comparison",
+		mine = re.sub(r"\s+", " ", self._sort_key()).strip().rstrip(",")
+		payload_body = re.sub(r"\s+", " ", _body(self.src, "_tender_director_payload"))
+		m = re.search(r"key=lambda r: \( (.+?) \)\s*\)", payload_body)
+		self.assertIsNotNone(
+			m,
+			"_tender_director_payload's own sort key has moved -- re-anchor before comparing",
+		)
+		theirs = m.group(1).strip().rstrip(",")
+		self.assertEqual(
+			mine,
+			theirs,
+			"sourcing_my_tenders' sort key no longer matches _tender_director_payload's -- "
+			"two different tie-break conventions for the identical row shape",
 		)
 
 
@@ -127,6 +155,16 @@ class TestMyTendersLandedEstimate(unittest.TestCase):
 		# the field a sourcing officer actually types to price a bid (_bid_inputs,
 		# tender.py:1151-1164) -- reusing it is the whole point; re-deriving a PO
 		# sum here would just be `landed` again under a new name.
+		#
+		# P1-5 (coordinator review, 2026-09-02): the original version of this
+		# test asserted against `_body`, which INCLUDES the function's own
+		# docstring -- and the docstring itself names both strings in prose, so
+		# `assertIn("custom_bid_pricing", body)` / `assertIn("landed_goods", body)`
+		# passed on documentation, not code. Three in-memory mutants (body
+		# replaced by `return 0.0`, a wrong dict key, a wrong field name) all
+		# left it green. Fixed with `_code` (docstring stripped) and exact
+		# call-site anchors instead of bare substrings.
+		#
 		# assertTrue(re.search(...)), not assertRegex(self.src, ...): a failed
 		# assertRegex against the WHOLE file dumps ~140 KB into the failure
 		# message, which nobody reads (this file's own rule -- see module intro).
@@ -134,9 +172,17 @@ class TestMyTendersLandedEstimate(unittest.TestCase):
 			re.search(r"^def _deal_landed_estimate\(", self.src, re.M),
 			"_deal_landed_estimate not found in api/tender.py",
 		)
-		body = _body(self.src, "_deal_landed_estimate")
-		self.assertIn("custom_bid_pricing", body, "must read the deal's own bid-pricing field")
-		self.assertIn("landed_goods", body, "must read landed_goods specifically, not another key")
+		code = _code(self.src, "_deal_landed_estimate")
+		self.assertIn(
+			'frappe.db.get_value("CRM Deal", deal, "custom_bid_pricing")',
+			code,
+			"must read the deal's own bid-pricing field via this exact call",
+		)
+		self.assertIn(
+			'stored.get("landed_goods")',
+			code,
+			"must read landed_goods specifically, not another key",
+		)
 
 	def test_landed_estimate_does_not_fall_back_to_the_post_win_sum(self):
 		# WHAT WOULD MAKE THIS FAIL: defaulting to _deal_landed/po_landed the way
@@ -145,10 +191,14 @@ class TestMyTendersLandedEstimate(unittest.TestCase):
 		# the real number instead of 0 -- correct for an editor, wrong for this
 		# list: it would make landed_estimate equal `landed` again on every won
 		# row and prove nothing about the 11 pre-win rows this change is for.
-		body = _body(self.src, "_deal_landed_estimate")
+		# Docstring stripped (_code, not _body) as a matter of the same P1-5
+		# hygiene as the test above -- this docstring does not currently contain
+		# "_deal_landed(", but nothing stops a future edit from adding it in
+		# prose, and this is the one place that would go quietly vacuous again.
+		code = _code(self.src, "_deal_landed_estimate")
 		self.assertNotIn(
 			"_deal_landed(",
-			body,
+			code,
 			"_deal_landed_estimate must not call _deal_landed -- that reintroduces the post-win sum",
 		)
 
@@ -179,6 +229,42 @@ class TestMyTendersLandedEstimate(unittest.TestCase):
 			'"landed": po_landed,',
 			body,
 			"the landed field must stay sourced from po_landed (_deal_landed) -- M1 depends on it",
+		)
+
+
+class TestMyTendersResultGate(unittest.TestCase):
+	"""P1-3 (coordinator review, 2026-09-02) -- the result chip must not bypass
+	the submission-evidence gate the rest of the module enforces.
+
+	`_has_submission_evidence`'s own docstring: "a result is not proof of
+	participation." `_tender_director_payload` already gates the identical
+	field before it reaches its own row (tender.py: `_res = intake.get("result")
+	if verified else ""`, then `"result": _res`). sourcing_my_tenders instead
+	wrote `"result": intake.get("result") or ""` -- raw, unverified -- so a
+	user who sets Result = Won without a submitted bid got a green "Won" chip
+	on this screen and an amber "Unverified" chip on DirectorBoard, for the
+	same deal.
+	"""
+
+	def setUp(self):
+		with open(API, encoding="utf-8") as fh:
+			self.src = fh.read()
+
+	def test_result_is_gated_on_submitted_evidence_like_the_director_board(self):
+		# WHAT WOULD MAKE THIS FAIL: `"result": intake.get("result") or "",` --
+		# the original defect -- or any gate that is not this exact evidence
+		# flag. sourcing_my_tenders already computes `evidence =
+		# _tender_filter_evidence(...)` two lines above the row dict, and
+		# evidence["lifecycle"]["submitted"] IS `_has_submission_evidence(intake)`
+		# (tender.py: `"submitted": verified,`) -- reusing it, rather than
+		# calling _has_submission_evidence a second time, is what keeps this
+		# gate from being able to drift apart from _tender_filter_evidence's own
+		# definition of "verified".
+		body = _body(self.src, "sourcing_my_tenders")
+		self.assertRegex(
+			body,
+			r'"result":\s*intake\.get\("result"\)\s+if\s+evidence\["lifecycle"\]\["submitted"\]\s+else\s+"",',
+			'result must be gated on evidence["lifecycle"]["submitted"], not read raw',
 		)
 
 
