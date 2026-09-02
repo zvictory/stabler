@@ -15,7 +15,7 @@ import EmptyState from "../../components/EmptyState.vue";
 import TenderPage from "../tender/TenderPage.vue";
 
 const session = useSession();
-const { activeCompany, currency, user } = storeToRefs(session);
+const { activeCompany, user } = storeToRefs(session);
 const route = useRoute();
 const router = useRouter();
 useEscapeBack(null, "/sales"); // ESC → back (general app rule)
@@ -72,21 +72,32 @@ watch(activeCompany, load);
 
 const colorOf = (s) => s.color || "#6c757d";
 const boardFilters = computed(() => tenderRouteFilters(route.query));
-const filteredCards = computed(() => filterTenderRows(
-	cards.value.map((card) => ({
-		...card,
-		status: Number(card.per_delivered) >= 100 ? "delivered" : "delivery_pending",
-	})),
-	boardFilters.value,
-));
+const filteredCards = computed(() =>
+	filterTenderRows(
+		cards.value.map((card) => ({
+			...card,
+			status: Number(card.per_delivered) >= 100 ? "delivered" : "delivery_pending",
+		})),
+		boardFilters.value
+	)
+);
 const cardsByStage = computed(() => {
 	const map = {};
 	for (const s of stages.value) map[s.name] = [];
 	for (const c of filteredCards.value) (map[c.stage] || (map[c.stage] = [])).push(c);
 	return map;
 });
-const colTotal = (stageName) =>
-	(cardsByStage.value[stageName] || []).reduce((a, c) => a + (c.contract_value || 0), 0);
+// One total per currency. contract_value is in the contract's own currency and a
+// column can hold several, so there is nothing to add them into: converting would
+// need a rate and a fourth exception to .claude/rules/10-frontend.md.
+function colTotals(stageName) {
+	const sums = new Map();
+	for (const c of cardsByStage.value[stageName] || []) {
+		const ccy = c.currency || "";
+		sums.set(ccy, (sums.get(ccy) || 0) + (c.contract_value || 0));
+	}
+	return [...sums.keys()].sort().map((ccy) => ({ ccy, total: sums.get(ccy) }));
+}
 
 // ── Drag-drop cards between stages ───────────────────────────────────────────
 const dragCard = ref("");
@@ -117,17 +128,29 @@ async function addStage() {
 	const name = (window.prompt(t("New stage name")) || "").trim();
 	if (!name) return;
 	try {
-		await call("stabler.api.tender.so_stage_save", { company: activeCompany.value, stage_name: name, position: stages.value.length + 1 });
+		await call("stabler.api.tender.so_stage_save", {
+			company: activeCompany.value,
+			stage_name: name,
+			position: stages.value.length + 1,
+		});
 		await load();
 	} catch (err) {
 		toast.error(err?.message || t("Could not add stage."));
 	}
 }
 async function deleteStage(s) {
-	const ok = await confirm({ title: t("Delete stage?"), body: s.stage_name, danger: true, confirmLabel: t("Delete") });
+	const ok = await confirm({
+		title: t("Delete stage?"),
+		body: s.stage_name,
+		danger: true,
+		confirmLabel: t("Delete"),
+	});
 	if (!ok) return;
 	try {
-		await call("stabler.api.tender.so_stage_delete", { company: activeCompany.value, stage_name: s.name });
+		await call("stabler.api.tender.so_stage_delete", {
+			company: activeCompany.value,
+			stage_name: s.name,
+		});
 		await load();
 	} catch (err) {
 		toast.error(err?.message || t("Stage still has Sales Orders — move them first."));
@@ -141,7 +164,9 @@ function openSo(name) {
 <template>
 	<TenderPage :label="t('Tender')" :title="t('Contract board')">
 		<template #meta>
-			<span v-if="lastReadAt">{{ t("Last read") }} <span class="ds-mono">{{ lastReadAt }}</span></span>
+			<span v-if="lastReadAt"
+				>{{ t("Last read") }} <span class="ds-mono">{{ lastReadAt }}</span></span
+			>
 		</template>
 
 		<!-- Yazma zaten reddedileceği biliniyorsa düğme de sunulmuyor: boş
@@ -226,11 +251,26 @@ function openSo(name) {
 					<div class="card-header py-2 px-2 d-flex align-items-center gap-1">
 						<span
 							class="badge me-1"
-							:style="{ background: colorOf(s) + '22', color: colorOf(s), border: `1px solid ${colorOf(s)}55` }"
-						>{{ (cardsByStage[s.name] || []).length }}</span>
+							:style="{
+								background: colorOf(s) + '22',
+								color: colorOf(s),
+								border: `1px solid ${colorOf(s)}55`,
+							}"
+							>{{ (cardsByStage[s.name] || []).length }}</span
+						>
 						<span class="fw-semibold flex-grow-1 text-truncate">{{ s.stage_name }}</span>
-						<span class="text-secondary small font-monospace text-nowrap me-1">{{ formatMoney(colTotal(s.name), currency, user.language) }}</span>
-						<button class="btn btn-ghost-secondary btn-icon btn-sm" :title="t('Delete')" @click="deleteStage(s)">
+						<span
+							class="text-secondary small font-monospace text-nowrap me-1 d-flex flex-column align-items-end"
+						>
+							<span v-for="tot in colTotals(s.name)" :key="tot.ccy">{{
+								formatMoney(tot.total, tot.ccy, user.language)
+							}}</span>
+						</span>
+						<button
+							class="btn btn-ghost-secondary btn-icon btn-sm"
+							:title="t('Delete')"
+							@click="deleteStage(s)"
+						>
 							<i class="ti ti-trash" style="font-size: 14px"></i>
 						</button>
 					</div>
@@ -253,20 +293,35 @@ function openSo(name) {
 						<div class="card-body p-2">
 							<div class="d-flex align-items-center gap-1 mb-1">
 								<span class="fw-semibold text-truncate">{{ c.name }}</span>
-								<span v-if="c.deal" class="badge bg-purple-lt ms-auto" :title="t('From tender')"><i class="ti ti-flag"></i></span>
+								<span v-if="c.deal" class="badge bg-purple-lt ms-auto" :title="t('From tender')"
+									><i class="ti ti-flag"></i
+								></span>
 							</div>
 							<div class="text-secondary small text-truncate mb-1">{{ c.customer_name }}</div>
-							<div class="font-monospace fw-bold mb-1">{{ formatMoney(c.contract_value, c.currency, user.language) }}</div>
+							<div class="font-monospace fw-bold mb-1">
+								{{ formatMoney(c.contract_value, c.currency, user.language) }}
+							</div>
 							<div class="d-flex align-items-center gap-1 small text-secondary mb-1">
-								<i class="ti ti-calendar-event"></i>{{ c.delivery_date ? formatDate(c.delivery_date) : "—" }}
+								<i class="ti ti-calendar-event"></i
+								>{{ c.delivery_date ? formatDate(c.delivery_date) : "—" }}
 							</div>
 							<div class="mb-1">
-								<div class="d-flex justify-content-between small text-secondary"><span>{{ t("Delivered") }}</span><span>{{ Math.round(c.per_delivered) }}%</span></div>
-								<div class="progress" style="height: 4px"><div class="progress-bar bg-blue" :style="{ width: c.per_delivered + '%' }"></div></div>
+								<div class="d-flex justify-content-between small text-secondary">
+									<span>{{ t("Delivered") }}</span
+									><span>{{ Math.round(c.per_delivered) }}%</span>
+								</div>
+								<div class="progress" style="height: 4px">
+									<div class="progress-bar bg-blue" :style="{ width: c.per_delivered + '%' }"></div>
+								</div>
 							</div>
 							<div>
-								<div class="d-flex justify-content-between small text-secondary"><span>{{ t("Billed") }}</span><span>{{ Math.round(c.per_billed) }}%</span></div>
-								<div class="progress" style="height: 4px"><div class="progress-bar bg-green" :style="{ width: c.per_billed + '%' }"></div></div>
+								<div class="d-flex justify-content-between small text-secondary">
+									<span>{{ t("Billed") }}</span
+									><span>{{ Math.round(c.per_billed) }}%</span>
+								</div>
+								<div class="progress" style="height: 4px">
+									<div class="progress-bar bg-green" :style="{ width: c.per_billed + '%' }"></div>
+								</div>
 							</div>
 						</div>
 					</div>

@@ -286,7 +286,7 @@ neither is told. The freshness stamp added alongside C12 makes the staleness
 *legible* (C20); it does not make it *go away*. Design what a board with three
 writers and no refresh should do about that.
 
-### S6 — the column total adds different currencies
+### S6 — the column total adds different currencies — **FIXED 2026-09-02**
 
     "contract_value": flt(so.rounded_total or so.grand_total),   # transaction currency
     "currency": so.currency,
@@ -301,12 +301,38 @@ each in its own currency. The column header is not:
 the **session's** currency. A column holding one UZS contract and one USD
 contract prints their numeric sum under the company's currency symbol.
 
-This is the package's first **money-math** defect, as opposed to a labelling one.
-`base_grand_total` exists on the same doctype and is what every other total in
-the module uses — prompt 14's `_deal_landed`, prompt 10's *Total committed*, and
-`_deal_revenue_actual` all read the base figure. Draw the total in a way that
-cannot silently add unlike units: a base-currency sum, a per-currency breakdown,
-or no total.
+This was the package's first **money-math** defect, as opposed to a labelling one.
+
+**Fixed as a per-currency breakdown** (`colTotals`, `SalesOrderBoard.vue`): the
+header prints one line per currency present in the column, ordered by currency
+code, and nothing at all for an empty column. A single-currency column — every
+column on the seeded data — renders the same one line it rendered before.
+
+The obvious alternative was the base-currency sum, and the paragraph that used
+to stand here argued for it: `base_grand_total` exists on the same doctype and
+is what every other total in the module reads — `_deal_landed` (`tender.py:585`),
+`_deal_revenue_actual` (`:1084`), the AP/AR totals (`:972`). That argument was
+weaker than it looked here, for three reasons.
+
+- `.claude/rules/10-frontend.md` renders amounts in their own currency and grants
+  exactly **three** documented exceptions — the Sales Order footer `≈` line, the
+  Journal Entry residual, and the Sourcing workspace's *Delivered total*. Each was
+  argued for a screen that cannot do its job without the conversion. A kanban
+  column header is not that screen, so this route would have needed a fourth.
+- The module's other base-currency totals are **cross-deal aggregates**, where one
+  number is the entire product. This total sits directly above the very cards it
+  sums, each already labelled in its own currency — so a breakdown is legible in a
+  way an aggregate's would not be, and a conversion beside unconverted cards would
+  invite exactly the subtraction that does not work.
+- `so_board` does not send `base_grand_total` (`tender.py`, `so_board` fieldset):
+  it sends `currency` and the transaction-currency `contract_value`. The breakdown
+  is a client-only change; the base sum would have needed the server too.
+
+**What this does not settle.** A column holding four currencies now prints four
+lines and grows the header. That is honest and it is also noisier — if it becomes
+a real complaint on real data, the conversion route is still open, and it should
+be taken as a fourth documented exception with its reasoning written down, not as
+a quiet `× rate`.
 
 **A second, quieter disagreement.** The board applies lazy placement — an
 unplaced Sales Order is *drawn* in the first open stage — while
@@ -452,8 +478,9 @@ Artboards, 1440×900 unless stated.
    two near-identical colours, and a pale one.
 6. **Moving a card without a mouse** (S4), and the press-that-becomes-a-click
    fixed.
-7. **The column total, honest** (S6) — base-currency sum, per-currency
-   breakdown, or no total. Pick one.
+7. ~~**The column total, honest** (S6) — base-currency sum, per-currency
+   breakdown, or no total. Pick one.~~ **Done 2026-09-02** — per-currency
+   breakdown, for the three reasons under S6.
 8. **`is_won` and `is_closed`, shown** (S7) — *Paid* and *Closed* as what they
    are.
 9. **The tender flag out of the tooltip** (S7).
@@ -485,7 +512,7 @@ Keep the artboards you rejected.
 | C10 | A card can be moved between stages from the keyboard | **fails** — drag only, 0 `aria-`, 0 `role=` (S4) |
 | C11 | A press that does not move the card does not navigate away | **fails** — drag and click share the element (S4) |
 | C12 | Switching the active company reloads the board | **passes** (2026-09-02) — plus a request token, so a superseded company's answer cannot land (S5) |
-| C13 | A column total never adds two currencies | **fails** — transaction-currency sum under the session currency (S6) |
+| C13 | A column total never adds two currencies | **✔ 2026-09-02** — one line per currency, sorted by code; the session currency is no longer read by this screen (S6) |
 | C14 | The board's filter matches the number that navigated to it | **fails** — the funnel arrives without `?tender=1` (S1) |
 | C15 | *Paid* and *Closed* are distinguishable from ordinary columns | **fails** — `is_won` / `is_closed` unrendered (S7) |
 | C16 | "From tender" is legible without hovering | **fails** — icon plus `:title` (S7) |
