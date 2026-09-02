@@ -12,6 +12,61 @@
 
 ---
 
+## Corrections this file owes itself — measured 2026-09-02 while closing W9–W17
+
+Five claims below were made before the code was executed against them. None is
+deleted; each says what it said, what is true, and how that was measured.
+
+**1 · §5 and W11 said a genuinely empty pipeline renders "five column headers
+over an empty `<tbody>`". It does not, and never did.**
+`_tender_flow.step_rows` emits one row per `WORKING_STAGES` whatever the data
+(`_tender_flow.py:37-52`), so a company with nothing waiting draws **five rows**
+reading `0 · — · — · Empty`. Measured by calling `step_rows([], today)`. The
+empty `<tbody>` belongs to the other three cases only — a failed load, an
+unselected company, and never-loaded. The defect W11 names is real; its third
+case was not. The empty pipeline needed a **sentence**, not a branch, and got
+one: *"No deal is waiting in any step."*
+
+**2 · S7 and deliverable 9 said `stage_sla`, "already on the wire", is how a
+reader tells a tenant threshold from a default. It cannot be.**
+`stage_sla_for` returns `dict(DEFAULT_STAGE_SLA_DAYS)` **verbatim** when a
+company has no settings row (`stabler_settings.py:134-135`), so the payload is
+byte-identical whether the tenant configured nothing or configured the default
+numbers. Reading the key harder answers nothing. W16 was closed with a new
+per-row `sla_source` computed in the pure module — and it is a claim about the
+**value** (*matches the built-in default*), never about who typed it, because a
+tenant who enters `14` for `sourcing` is genuinely indistinguishable from one
+who enters nothing.
+
+**3 · S4 said prompt 14's board "solved" the responsive problem with
+`.board-scroll { overflow-x: auto }`. That rule, as written, does not engage.**
+`.ds-table` is `width: 100%` (`stabler-modernist.css:389`) and its cells wrap,
+so the table shrinks to whatever box it is given and the scrollbar never
+appears. Measured on `DirectorBoard.vue` at this branch's fork point: the file's
+only `min-width` is `200px` on `.board-phase-note` (`:320`), nothing on the
+table. This screen's scroller therefore carries `min-width: 680px` on the table
+inside it, and a test asserts no `min-width` escapes the scroller — a widened
+element outside it moves the page instead, which is the same defect one level
+up. **DirectorBoard is owed the same fix**; it is not this branch's to make.
+
+**4 · S4 said the counter strip has "no phone rule either". The shared layer has
+one.** `stabler-modernist.css:452-454` collapses `ds-kpis[data-cols="4"]` to two
+columns at ≤992px. What S4 measured — zero `@media` in the component's own
+`<style scoped>` — is true and is not the same statement.
+
+**5 · S4 said `<style scoped>` "contains four rules". It contained ten.**
+Counted 2026-09-02 on the pre-change file: `.flow-panel`, `.flow-state`, the
+`data-bottleneck` stripe, `.flow-step`, `.flow-note`, `.flow-dash`,
+`.flow-kpi-text`, `.flow-c-n`, `.flow-c-w`, `.flow-c-sla`. All ten were layout
+or colour, which is the point S4 was making.
+
+**And one claim that has now expired rather than been wrong.** S2 measured
+`_tender_sla.severity` and `overdue_by` as "alive in tests and dead in
+production". That was true when written. `_tender_flow.step_rows` now calls both
+— on the worst measured deal in each step — so the sentence needs a date on it.
+
+---
+
 ## 0 · What this prompt owns
 
 Prompt 15 draws the **summary strip** of this data — five cells, a count, a wait
@@ -68,10 +123,13 @@ One line: `_require_tender_view("director", company)` (`tender.py:3553`), with
 the reason written beside it — the board shows the company's whole pipeline and
 its SLA table, it is only in the director's menu, so the gate is there too.
 
-`load()` catches everything into `toast.error` and returns
-(`TenderFlow.vue:38-40`). There is no error state, no forbidden state, and
-`load()` returns early when `activeCompany` is falsy. See S3 for what that
-renders.
+~~`load()` catches everything into `toast.error` and returns
+(`TenderFlow.vue:38-40`). There is no error state, no forbidden state~~ — closed
+2026-09-02 by W11/W12: a 403 becomes its own branch naming the director view,
+anything else is written into the panel with `role="alert"`, and the toast is
+gone (it scrolled away over a table that kept claiming a pipeline). `load()`
+still returns early when `activeCompany` is falsy, which is now a branch of its
+own rather than an empty table. See S3 for what it used to render.
 
 ---
 
@@ -80,11 +138,11 @@ renders.
 | # | Mandate | Measured |
 |---|---|---|
 | 1 | House layer, not Bootstrap | **PASS** — 34 `ds-*`, 0 `badge bg-`, 0 bare `btn-`, 0 `spinner-border`, 0 `table-responsive` |
-| 2 | Every number carries its rule | **ABSENT** — four counters, `ds-kpi-note` only, **no `ds-kpi-q` anywhere** (S1) |
+| 2 | Every number carries its rule | ~~**ABSENT** — four counters, `ds-kpi-note` only, **no `ds-kpi-q` anywhere** (S1)~~ → **PASS** (W9, 2026-09-02): all four carry one |
 | 3 | Loading is skeleton, not spinner | **PASS** — `<SkeletonRows :rows="5">` |
-| 4 | Five states per region | **FAIL** — two (S3) |
+| 4 | Five states per region | ~~**FAIL** — two (S3)~~ → **PASS** for the table (W11/W12): loading · forbidden · no-company · error · table, plus a sentence for the empty pipeline. The counter strip is now two — drawn, or withheld |
 | 5 | State lives in the URL | **N/A** — the screen has no filters, sorts or selections |
-| 6 | Keyboard and screen reader reachable | **FAIL** — **zero** `aria-*`, **zero** `role=`; the only interactive element is the Refresh button |
+| 6 | Keyboard and screen reader reachable | ~~**FAIL** — **zero** `aria-*`, **zero** `role=`; the only interactive element is the Refresh button~~ → **PARTIAL** (W17): the scroller is `tabindex="0" role="region"` with a name, the panel reports `aria-busy`, both failure states carry `role="alert"`. **Rendered behaviour is unverified** — see W17 below |
 | 7 | No raw identifiers in front of a human | **PASS** — the panel foot's `crm_deal · custom_tender_stage_entered_at` is a deliberate source line, consistent with 14 and 15 |
 | 8 | Refresh is not a button | **FAIL** — a `Refresh` button and no `useAutoRefresh` |
 | 9 | Freshness is the server's | **FAIL** — no timestamp at all |
@@ -119,7 +177,11 @@ renders.
 | Region | Has | Missing |
 |---|---|---|
 | Counter strip | **1** — always renders, zeros while loading | loading, empty, error, forbidden |
-| Step table | **2** — `SkeletonRows`, then the table | error, forbidden, no-company, **empty** |
+| Step table | **2** — `SkeletonRows`, then the table | error, forbidden, no-company, ~~**empty**~~ (correction 1: an empty pipeline was never one of these) |
+
+**Closed 2026-09-02.** The strip is withheld rather than zeroed whenever there is
+no payload; the table has loading · forbidden · no-company · error · table, in
+that order, and an empty pipeline keeps its five rows and adds a sentence.
 
 The empty case is the worst rendering in the package so far: `v-else` on the
 table means a failed load, an unselected company, or a genuinely empty pipeline
@@ -198,6 +260,10 @@ Measured: the only references to either outside their own module are in
 `days_in_stage` and `sla_for`; the other two public functions are alive in tests
 and dead in production.
 
+**True on 2026-09-02 when written; no longer true the same day.** W10 closed by
+calling both from `_tender_flow.step_rows`, on the WORST measured deal in each
+step — so the column's verdict and the module's own rule are one implementation.
+
 On seed data the column is not idle decoration — every one of its four numbers
 would carry a verdict:
 
@@ -229,15 +295,23 @@ reader must see which one fell over (prompt 15 §2).
 ### S4 — five columns and not one line of responsive CSS
 
 Measured: **zero** `@media`, **zero** `overflow-x`, zero `table-responsive`.
-`<style scoped>` contains four rules, all layout.
+~~`<style scoped>` contains four rules, all layout.~~ **Ten rules** — recounted
+2026-09-02, see correction 5. All ten are layout or colour, which is the claim
+this sentence was making.
 
-Prompt 14's board has the same problem and solved it — `.board-scroll {
+Prompt 14's board has the same problem and ~~solved it~~ **wrote a container
+that does not engage** (correction 3: no `min-width` anywhere, and `.ds-table`
+is `width: 100%` with wrapping cells) — `.board-scroll {
 overflow-x: auto }`, with the comment *"Dokuz sütunlu tablo dar ekrana sığmıyor;
 sayfayı değil TABLOYU kaydır."* Scroll the table, not the page. **This screen
 scrolls the page.** Five columns is fewer than nine, which is why nobody noticed.
 
-The counter strip is `data-cols="4"` with no phone rule either — and one of the
-four holds a text value, not a number (below).
+~~The counter strip is `data-cols="4"` with no phone rule either~~ — **the
+shared layer has one** (correction 4: two columns at ≤992px,
+`stabler-modernist.css:452-454`); what is absent is a rule in this component.
+And one of the four holds a text value, not a number (below) — which W14 removed
+along with `flow-kpi-text`, by putting the ratio in the counter and the name on
+the row.
 
 ### S5 — the bottleneck is a three-pixel shadow
 
@@ -276,6 +350,11 @@ more.
 `tender_flow` returns `"stage_sla": overrides` (`tender.py:3612`). Measured:
 **zero consumers in the SPA.** The second unread payload key found in this
 module, after `generated_at` (prompt 13, correction 2).
+
+**Still zero, and correctly so — see correction 2.** Reading `stage_sla` cannot
+answer this section's own question: it is the defaults dict verbatim for a
+company with no settings row. W16 closed with a per-row `sla_source` instead.
+The key remains genuinely unread.
 
 Each row does show its own `threshold {n} days`, so nothing is *wrong* — but the
 panel foot promises *"Thresholds come from Stabler Settings, per company"* and
@@ -405,13 +484,13 @@ Keep the artboards you rejected.
 | W6 | Threshold 0 renders as *not tracked*, not as a default | passes |
 | W7 | Loading renders a skeleton | passes |
 | W8 | This screen and the overview strip name every step identically | passes — shared `flowLabels.js` |
-| W9 | Every counter states the rule that produced it | **fails** — none do (S1) |
-| W10 | `Worst` carries a state, or says why it does not need one | **fails** (S2) |
-| W11 | A failed load is distinguishable from an empty pipeline | **fails** — headers over nothing (S3) |
-| W12 | A user without the director view sees a refusal | **fails** — same branch |
-| W13 | The table scrolls on a phone; the page does not | **fails** — no responsive CSS at all (S4) |
-| W14 | The bottleneck is named in one place, in words | **fails** — a stripe and a distant counter (S5) |
-| W15 | No user-facing string is pluralised by a ternary | **fails** — `step` / `steps` (S6) |
-| W16 | A reader can tell a tenant threshold from a default | **fails** — `stage_sla` unread (S7) |
-| W17 | Any interactive element is reachable by keyboard and announced | **fails** — 0 `aria-*`, 0 `role=` |
+| W9 | Every counter states the rule that produced it | ~~**fails** — none do (S1)~~ → **passes** (2026-09-02) — four `ds-kpi-q` lines, untranslated, executed in `tenderFlowCounters.spec.js` |
+| W10 | `Worst` carries a state, or says why it does not need one | ~~**fails** (S2)~~ → **passes** — `worst_state` / `worst_over` from `_tender_sla.severity` and `overdue_by`, silent where there is no threshold or no measurement |
+| W11 | A failed load is distinguishable from an empty pipeline | ~~**fails** — headers over nothing (S3)~~ → **passes** — a failure replaces the table and withholds the strip; an empty pipeline keeps both and adds a sentence. See correction 1: the two were never the same rendering |
+| W12 | A user without the director view sees a refusal | ~~**fails** — same branch~~ → **passes at the screen**. The 403 is turned into its own branch naming the director view. **The gate itself is untested here** — `_require_tender_view` needs a bench (`test_tender_view_gates`), and this branch could not run `make test-bench` |
+| W13 | The table scrolls on a phone; the page does not | ~~**fails** — no responsive CSS at all (S4)~~ → **CSS in place, layout unverified** — `.flow-scroll` + `min-width: 680px` on the table inside it, asserted at source. No jsdom in this repository, so no test lays out a 390px viewport |
+| W14 | The bottleneck is named in one place, in words | ~~**fails** — a stripe and a distant counter (S5)~~ → **passes** — the word is on the row; the counter carries the ratio the rule is made of. The stripe stays, in the same cell as the word |
+| W15 | No user-facing string is pluralised by a ternary | ~~**fails** — `step` / `steps` (S6)~~ → **passes** — `2 / 5`, and the whole `? t(…) : t(…)` shape is banned file-wide (it caught the Refresh button too). **Not fixed:** `10 open deals` still hardcodes an English plural for `n = 1` |
+| W16 | A reader can tell a tenant threshold from a default | ~~**fails** — `stage_sla` unread (S7)~~ → **passes, with a stated limit** — see correction 2. A tenant who types the default number is indistinguishable, and the wording never claims otherwise |
+| W17 | Any interactive element is reachable by keyboard and announced | ~~**fails** — 0 `aria-*`, 0 `role=`~~ → **attributes in place, behaviour unverified** — `environment: "node"`, no jsdom, no `@vue/test-utils`: nothing here fires a key or reads a name aloud. The Refresh button was already a real `<button>` and always was reachable |
 | W18 | The screen says how fresh it is | **passes for the timestamp** (2026-09-02) — `generated_at`. The manual `Refresh` button is untouched |
