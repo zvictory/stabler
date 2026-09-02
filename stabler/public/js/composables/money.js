@@ -41,7 +41,10 @@ const CURRENCY_OVERRIDES = {
 
 export function moneySeparators(language = "en") {
 	const locale = LOCALE_MAP[language] || "en-US";
-	const parts = new Intl.NumberFormat(locale, { useGrouping: true, minimumFractionDigits: 1 }).formatToParts(12345.6);
+	const parts = new Intl.NumberFormat(locale, {
+		useGrouping: true,
+		minimumFractionDigits: 1,
+	}).formatToParts(12345.6);
 	const group = parts.find((p) => p.type === "group")?.value || ",";
 	const decimal = parts.find((p) => p.type === "decimal")?.value || ".";
 	return { group, decimal };
@@ -141,9 +144,8 @@ export function parseMoneyInput(text, language = "en") {
  */
 export function groupMoneyWhileTyping(text, language = "en", maxFractionDigits = 2) {
 	const { group: gs, decimal: ds } = moneySeparators(language);
-	const s = ds === "."
-		? String(text).replace(/[^0-9.]/g, "")
-		: String(text).replace(/[^0-9,]/g, "");
+	const s =
+		ds === "." ? String(text).replace(/[^0-9.]/g, "") : String(text).replace(/[^0-9,]/g, "");
 	const parts = s.split(ds);
 	const intp = (parts[0] || "").replace(/^0+(?=\d)/, "");
 	const grouped = intp.replace(/\B(?=(\d{3})+(?!\d))/g, gs);
@@ -240,4 +242,39 @@ export function balanceState(value) {
 	const abs = Math.abs(Number.isFinite(n) ? n : 0);
 	if (abs < 0.005) return { state: "settled", abs: 0 };
 	return n > 0 ? { state: "owes", abs } : { state: "prepaid", abs };
+}
+
+/**
+ * Sum a list of records that each carry their own currency, one total per
+ * currency, ordered by currency code.
+ *
+ * Adding two amounts is only defined within one currency. Three screens sum
+ * lists whose rows can differ — the contract board's column headers and the
+ * Tender CRM's lane headers and pipeline KPI — and all three had grown the same
+ * `reduce((a, c) => a + c.amount)` labelled with the SESSION currency, so a lane
+ * holding one USD deal and one UZS deal printed their numeric sum under the
+ * company's symbol: a figure that is neither, wearing the name of one.
+ *
+ * Converting instead would need a live rate and a fourth exception to the
+ * currency rule in .claude/rules/10-frontend.md. This needs neither, and in the
+ * ordinary single-currency case it returns the one line it replaced.
+ *
+ * A row with no currency groups under "" rather than borrowing the company's —
+ * that substitution is the defect, and formatMoney renders an unknown code as a
+ * bare number, so the figure still shows; it just claims no unit.
+ *
+ * @param {Array} rows
+ * @param {{amount?: (row: any) => any, currency?: (row: any) => any}} [accessors]
+ * @returns {{ccy: string, total: number}[]}
+ */
+export function totalsByCurrency(rows, accessors = {}) {
+	const amountOf = accessors.amount || ((r) => r.value);
+	const currencyOf = accessors.currency || ((r) => r.currency);
+	const sums = new Map();
+	for (const row of rows || []) {
+		const ccy = String(currencyOf(row) || "");
+		const n = Number(amountOf(row));
+		sums.set(ccy, (sums.get(ccy) || 0) + (Number.isFinite(n) ? n : 0));
+	}
+	return [...sums.keys()].sort().map((ccy) => ({ ccy, total: sums.get(ccy) }));
 }

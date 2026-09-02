@@ -4,7 +4,7 @@ import { storeToRefs } from "pinia";
 import { useRoute } from "vue-router";
 import { call } from "../../api/client.js";
 import { formatDate } from "../../composables/date.js";
-import { formatMoney } from "../../composables/money.js";
+import { formatMoney, totalsByCurrency } from "../../composables/money.js";
 import { t } from "../../composables/i18n.js";
 import { useConfirm } from "../../composables/useConfirm.js";
 import { useToast } from "../../composables/useToast.js";
@@ -45,9 +45,7 @@ const dragOverLane = ref("");
 /* Delete yalnız gözetim rollerinde: atama (assign_tender) ile aynı politika.
  * Backend (crm.delete_deal) _require_crm_or_tender + link kontrolleriyle korur;
  * buradaki koşul butonu gereksiz yere sourcing'e göstermemek için. */
-const canDeleteDeal = computed(
-	() => session.isAdmin || session.tenderViews.includes("director")
-);
+const canDeleteDeal = computed(() => session.isAdmin || session.tenderViews.includes("director"));
 const deleting = ref(false);
 
 function checkDealQuery() {
@@ -81,7 +79,9 @@ async function loadManagers() {
 	try {
 		const r = await call("stabler.api.tender.tender_managers", { company: activeCompany.value });
 		managers.value = r?.managers || [];
-	} catch { /* assignment is optional */ }
+	} catch {
+		/* assignment is optional */
+	}
 }
 
 async function assign(deal, user) {
@@ -108,7 +108,10 @@ onMounted(() => {
 	session.loadTenderViews().catch(() => {});
 });
 watch(activeCompany, load);
-watch(() => route.query.deal, () => checkDealQuery());
+watch(
+	() => route.query.deal,
+	() => checkDealQuery()
+);
 
 const activeKpi = ref("");
 
@@ -140,7 +143,6 @@ const filteredCards = computed(() => {
 	return list;
 });
 
-
 const cardsByLane = computed(() => {
 	const map = {};
 	for (const l of lanes.value) map[l.id] = [];
@@ -151,8 +153,13 @@ const cardsByLane = computed(() => {
 	return map;
 });
 
-const laneTotal = (laneId) =>
-	(cardsByLane.value[laneId] || []).reduce((sum, c) => sum + (c.contract_value || 0), 0);
+/* Şerit başlığı para birimi BAŞINA bir satır. Kartlar artık kendi para
+ * biriminde geliyor (crm_board intake'in currency'sini okuyor), dolayısıyla bir
+ * şerit iki para birimi tutabiliyor ve tek sayıya katlamak farklı birimleri
+ * toplamak olurdu. Çevirmek canlı kur ve 10-frontend.md'ye dördüncü bir istisna
+ * isterdi; tek para birimli şerit — olağan hâl — eskisi gibi tek satır basıyor. */
+const laneTotals = (laneId) =>
+	totalsByCurrency(cardsByLane.value[laneId] || [], { amount: (c) => c.contract_value });
 
 /* ── KPI şeridi ────────────────────────────────────────────────────────────
  * Dördü de crm_board'ın ZATEN döndürdüğü alanlardan türüyor; yeni bir çağrı
@@ -161,7 +168,7 @@ const laneTotal = (laneId) =>
  * bilmece olur. Aynı KPI'ya tekrar basmak filtreyi kaldırıyor. */
 const kpis = computed(() => {
 	const all = cards.value || [];
-	const total = all.reduce((s, c) => s + (c.contract_value || 0), 0);
+	const totals = totalsByCurrency(all, { amount: (c) => c.contract_value });
 	return [
 		{
 			key: "pipeline",
@@ -169,7 +176,7 @@ const kpis = computed(() => {
 			label: t("Pipeline"),
 			val: String(all.length),
 			cap: t("open deals"),
-			note: formatMoney(total, currency.value, user.value.language),
+			note: totals.map((t2) => formatMoney(t2.total, t2.ccy, user.value.language)).join(" · "),
 		},
 		{
 			key: "policy",
@@ -221,7 +228,14 @@ const stageLabel = (id) => {
 const quoteMarks = (count) => [0, 1, 2, 3, 4].map((i) => i < Number(count || 0));
 
 // Post-win operational stages
-const POST_WIN_LANES = new Set(["po_created", "customs", "transit", "delivered", "invoiced", "done"]);
+const POST_WIN_LANES = new Set([
+	"po_created",
+	"customs",
+	"transit",
+	"delivered",
+	"invoiced",
+	"done",
+]);
 const isPostWinLane = (id) => POST_WIN_LANES.has(id);
 
 // Drag and drop handlers
@@ -320,7 +334,9 @@ async function deleteSelectedDeal() {
 	if (!c || deleting.value) return;
 	const ok = await confirm({
 		title: t("Delete tender?"),
-		body: t("Delete this tender deal? Deletion is refused while quotations, RFQs or orders reference it."),
+		body: t(
+			"Delete this tender deal? Deletion is refused while quotations, RFQs or orders reference it."
+		),
 		danger: true,
 		confirmLabel: t("Delete"),
 	});
@@ -383,7 +399,10 @@ function riskLabel(risk) {
 			<button
 				type="button"
 				class="btn btn-primary btn-sm"
-				@click="editingTender = null; masterDrawerOpen = true"
+				@click="
+					editingTender = null;
+					masterDrawerOpen = true;
+				"
 			>
 				<i class="ti ti-plus me-1"></i>{{ t("New tender") }}
 			</button>
@@ -397,10 +416,18 @@ function riskLabel(risk) {
 				/>
 			</label>
 			<span class="ds-seg">
-				<button type="button" :aria-pressed="String(viewMode === 'kanban')" @click="viewMode = 'kanban'">
+				<button
+					type="button"
+					:aria-pressed="String(viewMode === 'kanban')"
+					@click="viewMode = 'kanban'"
+				>
 					{{ t("Kanban") }}
 				</button>
-				<button type="button" :aria-pressed="String(viewMode === 'list')" @click="viewMode = 'list'">
+				<button
+					type="button"
+					:aria-pressed="String(viewMode === 'list')"
+					@click="viewMode = 'list'"
+				>
 					{{ t("List") }}
 				</button>
 			</span>
@@ -423,7 +450,10 @@ function riskLabel(risk) {
 				@click="k.key === 'pipeline' ? (activeKpi = '') : toggleKpi(k.key)"
 			>
 				<div class="ds-label">{{ k.label }}</div>
-				<div><span class="ds-kpi-val">{{ k.val }}</span><span class="ds-kpi-cap">{{ k.cap }}</span></div>
+				<div>
+					<span class="ds-kpi-val">{{ k.val }}</span
+					><span class="ds-kpi-cap">{{ k.cap }}</span>
+				</div>
 				<div class="ds-kpi-note">{{ k.note }}</div>
 			</button>
 		</div>
@@ -457,7 +487,9 @@ function riskLabel(risk) {
 					</div>
 					<div class="ds-col-rule">
 						<span class="ds-mono crm-col-sum">
-							{{ formatMoney(laneTotal(l.id), currency, user.language) }}
+							<span v-for="tot in laneTotals(l.id)" :key="tot.ccy">{{
+								formatMoney(tot.total, tot.ccy, user.language)
+							}}</span>
 						</span>
 					</div>
 
@@ -484,9 +516,11 @@ function riskLabel(risk) {
 
 						<div class="ds-card-foot">
 							<span class="ds-mono crm-card-val">
-								{{ c.contract_value
-									? formatMoney(c.contract_value, c.currency || currency, user.language)
-									: t("no value yet") }}
+								{{
+									c.contract_value
+										? formatMoney(c.contract_value, c.currency || currency, user.language)
+										: t("no value yet")
+								}}
 							</span>
 							<span v-if="c.deadline" class="ds-mono crm-card-due" :data-sev="riskSev(c.risk)">
 								{{ formatDate(c.deadline, user.language) }}
@@ -495,9 +529,15 @@ function riskLabel(risk) {
 
 						<div class="ds-meter" :data-full="c.has_min_5 && c.has_2_countries ? '1' : null">
 							<span class="ds-meter-seg">
-								<i v-for="(on, i) in quoteMarks(c.sq_count)" :key="i" :data-on="on ? '1' : null"></i>
+								<i
+									v-for="(on, i) in quoteMarks(c.sq_count)"
+									:key="i"
+									:data-on="on ? '1' : null"
+								></i>
 							</span>
-							<span class="ds-meter-txt">{{ c.sq_count }}/{{ tenderPolicy.minQuotations || "—" }} {{ t("quotes") }}</span>
+							<span class="ds-meter-txt"
+								>{{ c.sq_count }}/{{ tenderPolicy.minQuotations || "—" }} {{ t("quotes") }}</span
+							>
 						</div>
 
 						<div class="crm-ready">
@@ -506,7 +546,11 @@ function riskLabel(risk) {
 						</div>
 						<div class="ds-progress"><i :style="{ width: c.doc_progress + '%' }"></i></div>
 
-						<div v-if="c.owner_initials" class="crm-card-owner ds-mono" :title="c.owner_name || c.owner">
+						<div
+							v-if="c.owner_initials"
+							class="crm-card-owner ds-mono"
+							:title="c.owner_name || c.owner"
+						>
 							{{ c.owner_name || c.owner_initials }}
 						</div>
 					</div>
@@ -546,12 +590,19 @@ function riskLabel(risk) {
 							<div class="ds-mono crm-list-id">{{ c.name }}</div>
 						</td>
 						<td class="crm-list-org">{{ c.organization || c.lead_name || "—" }}</td>
-						<td><span class="ds-mono crm-list-stage">{{ stageLabel(c.stage) }}</span></td>
+						<td>
+							<span class="ds-mono crm-list-stage">{{ stageLabel(c.stage) }}</span>
+						</td>
 						<td class="ds-td-num">
 							{{ formatMoney(c.contract_value, c.currency || currency, user.language) }}
 						</td>
 						<td>
-							<span class="ds-chip" :data-tone="c.has_min_5 && c.has_2_countries ? 'ok' : c.sq_count > 0 ? 'today' : 'crit'">
+							<span
+								class="ds-chip"
+								:data-tone="
+									c.has_min_5 && c.has_2_countries ? 'ok' : c.sq_count > 0 ? 'today' : 'crit'
+								"
+							>
 								{{ c.sq_count }}/{{ tenderPolicy.minQuotations || "—" }}
 							</span>
 						</td>
@@ -575,16 +626,30 @@ function riskLabel(risk) {
 		     Kart tıklanınca sayfa DEĞIŞMIYOR: kullanıcı hattın neresinde
 		     olduğunu kaybetmesin diye detay sağdan geliyor. -->
 		<template v-if="drawerOpen && selectedDeal">
-			<button class="ds-drawer-backdrop" :aria-label="t('Close panel')" tabindex="-1" @click="closeDrawer"></button>
+			<button
+				class="ds-drawer-backdrop"
+				:aria-label="t('Close panel')"
+				tabindex="-1"
+				@click="closeDrawer"
+			></button>
 			<aside class="ds-drawer" role="dialog" aria-modal="true" aria-labelledby="crm-dw-title">
 				<header class="ds-drawer-head">
 					<div class="crm-dw-head">
-						<div class="ds-drawer-kicker">{{ selectedDeal.name }} · {{ stageLabel(selectedDeal.stage) }}</div>
+						<div class="ds-drawer-kicker">
+							{{ selectedDeal.name }} · {{ stageLabel(selectedDeal.stage) }}
+						</div>
 						<div id="crm-dw-title" class="ds-drawer-title">
 							{{ selectedDeal.label || selectedDeal.name }}
 						</div>
 					</div>
-					<button type="button" class="ds-drawer-close" :aria-label="t('Close')" @click="closeDrawer">✕</button>
+					<button
+						type="button"
+						class="ds-drawer-close"
+						:aria-label="t('Close')"
+						@click="closeDrawer"
+					>
+						✕
+					</button>
 				</header>
 
 				<div class="ds-drawer-body">
@@ -598,7 +663,13 @@ function riskLabel(risk) {
 								<th>{{ t("Contract Value") }}</th>
 								<td>
 									<span v-if="selectedDeal.contract_value" class="ds-mono">
-										{{ formatMoney(selectedDeal.contract_value, selectedDeal.currency || currency, user.language) }}
+										{{
+											formatMoney(
+												selectedDeal.contract_value,
+												selectedDeal.currency || currency,
+												user.language
+											)
+										}}
 									</span>
 									<span v-else class="ds-mono crm-dash">{{ t("no value yet") }}</span>
 								</td>
@@ -606,13 +677,31 @@ function riskLabel(risk) {
 							<tr>
 								<th>{{ t("Quote set") }}</th>
 								<td>
-									<div class="ds-meter crm-dw-meter" :data-full="dealQuotations?.has_min_5 && dealQuotations?.has_2_countries ? '1' : null">
+									<div
+										class="ds-meter crm-dw-meter"
+										:data-full="
+											dealQuotations?.has_min_5 && dealQuotations?.has_2_countries ? '1' : null
+										"
+									>
 										<span class="ds-meter-seg">
-											<i v-for="(on, i) in quoteMarks(dealQuotations?.count ?? selectedDeal.sq_count)" :key="i" :data-on="on ? '1' : null"></i>
+											<i
+												v-for="(on, i) in quoteMarks(
+													dealQuotations?.count ?? selectedDeal.sq_count
+												)"
+												:key="i"
+												:data-on="on ? '1' : null"
+											></i>
 										</span>
 										<span class="ds-meter-txt">
-											{{ dealQuotations?.count ?? selectedDeal.sq_count }}/{{ tenderPolicy.minQuotations || "—" }}
-											· {{ dealQuotations?.has_min_5 && dealQuotations?.has_2_countries ? t("policy met") : t("below policy") }}
+											{{ dealQuotations?.count ?? selectedDeal.sq_count }}/{{
+												tenderPolicy.minQuotations || "—"
+											}}
+											·
+											{{
+												dealQuotations?.has_min_5 && dealQuotations?.has_2_countries
+													? t("policy met")
+													: t("below policy")
+											}}
 										</span>
 									</div>
 								</td>
@@ -621,13 +710,17 @@ function riskLabel(risk) {
 								<th>{{ t("Readiness") }}</th>
 								<td>
 									<span class="ds-mono">{{ selectedDeal.doc_progress }}%</span>
-									<div class="ds-progress"><i :style="{ width: selectedDeal.doc_progress + '%' }"></i></div>
+									<div class="ds-progress">
+										<i :style="{ width: selectedDeal.doc_progress + '%' }"></i>
+									</div>
 								</td>
 							</tr>
 							<tr v-if="selectedDeal.deadline">
 								<th>{{ t("Deadline") }}</th>
 								<td>
-									<span class="ds-mono">{{ formatDate(selectedDeal.deadline, user.language) }}</span>
+									<span class="ds-mono">{{
+										formatDate(selectedDeal.deadline, user.language)
+									}}</span>
 									<span class="ds-chip crm-dw-chip" :data-tone="riskSev(selectedDeal.risk)">
 										{{ riskLabel(selectedDeal.risk) }}
 									</span>
@@ -647,7 +740,9 @@ function riskLabel(risk) {
 										@change="assign(selectedDeal.name, $event.target.value)"
 									>
 										<option value="">— {{ t("Unassigned") }} —</option>
-										<option v-for="m in managers" :key="m.name" :value="m.name">{{ m.full_name }}</option>
+										<option v-for="m in managers" :key="m.name" :value="m.name">
+											{{ m.full_name }}
+										</option>
 									</select>
 									<div v-if="selectedDeal.assigned_to" class="xs mut mt-1">
 										{{ t("Assignment initializes document center") }}
@@ -665,7 +760,8 @@ function riskLabel(risk) {
 								:key="l.id"
 								class="ds-step"
 								:aria-current="l.id === selectedDeal.stage ? 'step' : null"
-							>{{ t(l.label) }}</span>
+								>{{ t(l.label) }}</span
+							>
 						</div>
 					</div>
 
@@ -688,14 +784,20 @@ function riskLabel(risk) {
 									<tr v-for="q in dealQuotations.rows" :key="q.name">
 										<td>
 											{{ q.supplier_name }}
-											<span v-if="q.cheapest" class="ds-chip crm-dw-chip" data-tone="ok">{{ t("Cheapest") }}</span>
+											<span v-if="q.cheapest" class="ds-chip crm-dw-chip" data-tone="ok">{{
+												t("Cheapest")
+											}}</span>
 										</td>
 										<td class="crm-list-org">{{ q.country || "—" }}</td>
-										<td class="ds-td-num">{{ formatMoney(q.grand_total, q.currency, user.language) }}</td>
+										<td class="ds-td-num">
+											{{ formatMoney(q.grand_total, q.currency, user.language) }}
+										</td>
 									</tr>
 								</tbody>
 							</table>
-							<p v-else class="crm-dw-empty">{{ t("No supplier quotations tagged to this deal yet.") }}</p>
+							<p v-else class="crm-dw-empty">
+								{{ t("No supplier quotations tagged to this deal yet.") }}
+							</p>
 						</div>
 
 						<div class="crm-dw-block">
@@ -726,17 +828,20 @@ function riskLabel(risk) {
 						class="ds-btn"
 						:to="sourcingLocation(selectedDeal.name)"
 						@click="closeDrawer"
-					>{{ t("Sourcing comparison") }}</router-link>
+						>{{ t("Sourcing comparison") }}</router-link
+					>
 					<router-link
 						class="ds-btn"
 						:to="documentsLocation(selectedDeal.name)"
 						@click="closeDrawer"
-					>{{ t("Doc Center") }}</router-link>
+						>{{ t("Doc Center") }}</router-link
+					>
 					<router-link
 						class="ds-btn"
 						:to="poControlLocation(selectedDeal.name)"
 						@click="closeDrawer"
-					>{{ t("PO Control") }}</router-link>
+						>{{ t("PO Control") }}</router-link
+					>
 					<button type="button" class="ds-btn" @click="closeDrawer">{{ t("Close") }}</button>
 					<button
 						v-if="canDeleteDeal"
@@ -744,17 +849,15 @@ function riskLabel(risk) {
 						class="ds-btn crm-dw-del"
 						:disabled="deleting"
 						@click="deleteSelectedDeal"
-					>{{ deleting ? t("Deleting…") : t("Delete") }}</button>
+					>
+						{{ deleting ? t("Deleting…") : t("Delete") }}
+					</button>
 					<span class="ds-mono crm-dw-src">crm_deal · {{ selectedDeal.name }}</span>
 				</footer>
 			</aside>
 		</template>
 
-		<TenderMasterDrawer
-			v-model:open="masterDrawerOpen"
-			:deal="editingTender"
-			@saved="load"
-		/>
+		<TenderMasterDrawer v-model:open="masterDrawerOpen" :deal="editingTender" @saved="load" />
 	</TenderPage>
 </template>
 
@@ -781,7 +884,12 @@ function riskLabel(risk) {
 	outline-offset: -1px;
 }
 
+/* Satırlar ALT ALTA: bir şerit birden çok para birimi tutabiliyor ve iki tutar
+ * yan yana ayraçsız birleşir — "15 000,00 $123 000,00 сўм" tek sayı gibi okunur. */
 .crm-col-sum {
+	display: flex;
+	flex-direction: column;
+	gap: 1px;
 	font-size: 11.5px;
 	color: var(--ds-tx2);
 }
@@ -801,8 +909,14 @@ function riskLabel(risk) {
 	color: var(--ds-tx2);
 }
 
-.crm-card-due[data-sev="crit"] { color: var(--ds-crit-tx); font-weight: 600; }
-.crm-card-due[data-sev="today"] { color: var(--ds-today-tx); font-weight: 600; }
+.crm-card-due[data-sev="crit"] {
+	color: var(--ds-crit-tx);
+	font-weight: 600;
+}
+.crm-card-due[data-sev="today"] {
+	color: var(--ds-today-tx);
+	font-weight: 600;
+}
 
 .crm-ready {
 	display: flex;

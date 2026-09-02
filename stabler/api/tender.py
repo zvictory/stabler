@@ -2917,8 +2917,18 @@ def crm_board(company: str) -> dict:
 		# zero. `annual_revenue` stays as the fallback: no Stabler code writes it,
 		# but a person can fill it in the Desk and that is worth reading.
 		value = flt(intake.get("estimated_total"))
+		# The currency comes from the same form field as the amount. The drawer has
+		# always offered the picker and `_clean_intake` has always stored it
+		# ("currency" is in _INTAKE_KEYS_STR); this read is what was missing, so a
+		# deal entered as USD 15 000 rendered "15 000,00 сўм" on the card, in the
+		# drawer, in the lane total and in the KPI strip -- and opening Edit read the
+		# company currency back into the form, cementing it on the next save.
+		ccy = str(intake.get("currency") or "").strip().upper()[:8]
 		if not value and frappe.db.has_column("CRM Deal", "annual_revenue"):
+			# annual_revenue is a base-currency CRM field, so it brings the base
+			# currency with it -- the intake's currency does not describe it.
 			value = flt(frappe.db.get_value("CRM Deal", deal, "annual_revenue"))
+			ccy = ""
 
 		# Readiness is `docs_summary`'s answer and nobody else's. The card used to
 		# count `status == "ready"` on rows that carry no `status` at all — the
@@ -2937,7 +2947,7 @@ def crm_board(company: str) -> dict:
 				"lead_name": frappe.db.get_value("CRM Deal", deal, "lead_name") or "",
 				"stage": eff_stage,
 				"contract_value": value,
-				"currency": base_ccy,
+				"currency": ccy or base_ccy,
 				"sq_count": sq_counts.get(deal, 0),
 				"country_count": country_counts.get(deal, 0),
 				"has_min_5": sq_counts.get(deal, 0) >= _policy.MIN_QUOTATIONS,
@@ -2948,6 +2958,13 @@ def crm_board(company: str) -> dict:
 				"owner": owner,
 				"owner_name": owner_name,
 				"owner_initials": owner_initials,
+				# Who is WORKING the deal, as opposed to `owner`, who created it.
+				# assign_tender has always written these into the intake and four
+				# other screens read them back; the card payload never carried them,
+				# so the drawer's picker showed the assignment until the next load
+				# and "-- Unassigned --" after it. The write was never lost.
+				"assigned_to": intake.get("assigned_to") or "",
+				"assigned_to_name": intake.get("assigned_to_name") or "",
 			}
 		)
 

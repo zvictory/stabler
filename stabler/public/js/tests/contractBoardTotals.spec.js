@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { readFileSync } from "fs";
+import { totalsByCurrency } from "../composables/money.js";
 import { dirname, resolve } from "path";
 import { fileURLToPath } from "url";
 
@@ -31,11 +32,20 @@ const src = readFileSync(resolve(here, "../pages/sales/SalesOrderBoard.vue"), "u
  * about arithmetic.
  */
 
-/** Lift `function colTotals()` and bind it to a fake cardsByStage. */
+/**
+ * Lift `function colTotals()` and bind it to a fake cardsByStage.
+ *
+ * The REAL totalsByCurrency is injected, not a stub: since 2026-09-02 the rule
+ * lives in money.js, where the CRM's lanes and KPI ask it too, and a stub here
+ * would let the board drift onto a private copy while these still passed.
+ */
 function liftColTotals(byStage) {
 	const fn = src.match(/^function colTotals\([\s\S]*?^\}/m);
 	expect(fn, "SalesOrderBoard.vue has no top-level colTotals()").not.toBeNull();
-	return new Function("cardsByStage", `${fn[0]}\nreturn colTotals;`)({ value: byStage });
+	return new Function("cardsByStage", "totalsByCurrency", `${fn[0]}\nreturn colTotals;`)(
+		{ value: byStage },
+		totalsByCurrency
+	);
 }
 
 const card = (currency, contract_value) => ({ currency, contract_value });

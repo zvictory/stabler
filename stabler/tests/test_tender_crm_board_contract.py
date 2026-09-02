@@ -37,10 +37,21 @@ def _function_body(name: str) -> str:
 def _producible_keys() -> set[str]:
 	"""_clean_intake çıktısında görünebilecek anahtarlar."""
 	keys = _tuple_keys("_INTAKE_KEYS_STR") | _tuple_keys("_INTAKE_KEYS_NUM")
-	# Damga çiftleri (`*_at` / `*_by`) döngüyle türetiliyor; hiçbir okuyucu şu an
-	# onlara dokunmuyor. Biri dokunursa bu test uyarır ve liste genişletilir —
-	# yanlış tarafa hata veren bir test, hiç hata vermeyenden iyidir.
+	# Damga çiftleri (`*_at` / `*_by`) döngüyle türetiliyor. Bu regex yalnız
+	# `out["literal"] = ...` biçimini görür.
 	keys |= set(re.findall(r'out\["([^"]+)"\]\s*=', _function_body("_clean_intake")))
+	# ...ama _clean_intake sunucu anahtarlarını `for key, limit in (...)` döngüsüyle
+	# ÖNCEKİ blob'dan taşıyor (tender.py, "Assignment defines the sourcing
+	# visibility boundary"), ve o biçim yukarıdaki regex'e görünmüyor. Kaynak bu
+	# kümeyi zaten adlandırıyor: _INTAKE_SERVER_KEYS = "Keys `_clean_intake` writes
+	# from the *prior* payload and never from the browser."
+	#
+	# 2026-09-02'de genişletildi: crm_board `assigned_to` okumaya başladı — yıllardır
+	# yazılan ama kart payload'ına hiç konmamış bir anahtar, bu yüzden atama her
+	# yenilemede kaybolmuş gibi görünüyordu. Test doğru tarafa hata verdi ve listenin
+	# genişletilmesini istedi; testin kendi yorumu bunu öngörüyordu. Genişletme
+	# demeti KAYNAKTAN okuyor, elle sayılmıyor — yoksa iki liste ayrışır.
+	keys |= _tuple_keys("_INTAKE_SERVER_KEYS")
 	return keys
 
 

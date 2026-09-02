@@ -5,7 +5,7 @@ import { useRoute, useRouter } from "vue-router";
 import { useEscapeBack } from "../../composables/useEscapeBack.js";
 import { useSession } from "../../stores/session.js";
 import { call } from "../../api/client.js";
-import { formatMoney } from "../../composables/money.js";
+import { formatMoney, totalsByCurrency } from "../../composables/money.js";
 import { formatDate, formatTime } from "../../composables/date.js";
 import { t } from "../../composables/i18n.js";
 import { useToast } from "../../composables/useToast.js";
@@ -105,14 +105,13 @@ const cardsByStage = computed(() => {
 });
 // One total per currency. contract_value is in the contract's own currency and a
 // column can hold several, so there is nothing to add them into: converting would
-// need a rate and a fourth exception to .claude/rules/10-frontend.md.
+// need a rate and a fourth exception to .claude/rules/10-frontend.md. The rule
+// itself lives in money.js — the Tender CRM's lanes and KPI ask the same question
+// and money.js is where this repo keeps money rules that more than one screen has.
 function colTotals(stageName) {
-	const sums = new Map();
-	for (const c of cardsByStage.value[stageName] || []) {
-		const ccy = c.currency || "";
-		sums.set(ccy, (sums.get(ccy) || 0) + (c.contract_value || 0));
-	}
-	return [...sums.keys()].sort().map((ccy) => ({ ccy, total: sums.get(ccy) }));
+	return totalsByCurrency(cardsByStage.value[stageName] || [], {
+		amount: (c) => c.contract_value,
+	});
 }
 
 // ── Drag-drop cards between stages ───────────────────────────────────────────
