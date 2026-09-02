@@ -6,7 +6,7 @@ import { useEscapeBack } from "../../composables/useEscapeBack.js";
 import { useSession } from "../../stores/session.js";
 import { call } from "../../api/client.js";
 import { formatMoney } from "../../composables/money.js";
-import { formatDate } from "../../composables/date.js";
+import { formatDate, formatTime } from "../../composables/date.js";
 import { t } from "../../composables/i18n.js";
 import { useToast } from "../../composables/useToast.js";
 import { useConfirm } from "../../composables/useConfirm.js";
@@ -23,8 +23,13 @@ const toast = useToast();
 const { confirm } = useConfirm();
 
 const loading = ref(false);
-const stages = ref([]);
+/* Yük SAKLANIYOR, parçalanmıyor: damga da onun bir alanı. `cards` ayrı bir
+ * ref kalıyor çünkü sürükleme onu yerinde değiştiriyor; `stages` yalnız
+ * okunuyor, o yüzden türetiliyor. */
+const board = ref(null);
+const stages = computed(() => board.value?.stages || []);
 const cards = ref([]);
+const lastReadAt = computed(() => formatTime(board.value?.generated_at));
 
 async function load() {
 	if (!activeCompany.value) return;
@@ -34,7 +39,7 @@ async function load() {
 			company: activeCompany.value,
 			tender_only: route.query.tender === "1" ? 1 : 0,
 		});
-		stages.value = r?.stages || [];
+		board.value = r;
 		cards.value = r?.cards || [];
 	} catch (err) {
 		toast.error(err?.message || t("Could not load the board."));
@@ -114,6 +119,10 @@ function openSo(name) {
 
 <template>
 	<TenderPage :label="t('Tender')" :title="t('Contract board')">
+		<template #meta>
+			<span v-if="lastReadAt">{{ t("Last read") }} <span class="ds-mono">{{ lastReadAt }}</span></span>
+		</template>
+
 		<template #actions>
 			<button type="button" class="ds-btn" @click="addStage">
 				<i class="ti ti-plus me-1"></i>{{ t("Add stage") }}

@@ -458,5 +458,5 @@ Keep the artboards you rejected.
 | M12 | A failed load is distinguishable from "no tenders match these filters" | **fails** — same `EmptyState` |
 | M13 | The row is reachable and openable from the keyboard | **fails** — bare `<tr>`, inline cursor |
 | M14 | The table scrolls on a phone; the page does not | **fails** — no responsive CSS |
-| M15 | An auto-refreshing screen says how fresh it is | **fails** — no timestamp of any kind |
+| M15 | An auto-refreshing screen says how fresh it is | **passes** (2026-09-02) — `generated_at` |
 | M16 | The landed figure shown to a sourcing user is one they can act on before the win | **fails** — it is a post-win sum, `0` on eleven of thirteen rows (§1) |

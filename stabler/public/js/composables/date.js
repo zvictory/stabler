@@ -94,6 +94,23 @@ export function formatTime(value) {
 	return "";
 }
 
+/**
+ * The earliest of several server generation stamps, ignoring the ones that are
+ * missing. A page drawing two independently fetched blocks is only as fresh as
+ * its stalest one, so the stamp it prints has to be the older.
+ *
+ * String comparison, not Date parsing, per the rule above: frappe.utils.now()
+ * emits "yyyy-mm-dd HH:MM:SS[.ffffff]", which sorts lexicographically in time
+ * order and which Safari rejects as a Date argument (space instead of T).
+ *
+ * @param {Array<string|null|undefined>} stamps
+ * @returns {string} the earliest stamp, or "" when none is known
+ */
+export function oldestStamp(stamps) {
+	const known = (stamps || []).filter(Boolean).sort();
+	return known.length ? known[0] : "";
+}
+
 // ---------------------------------------------------------------------------
 // Date-range helpers for period presets (Month-to-date, Last month, etc.)
 //

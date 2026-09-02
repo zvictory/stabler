@@ -7,7 +7,7 @@ import { useRoute, useRouter } from "vue-router";
 import { useSession } from "../../stores/session.js";
 import { call } from "../../api/client.js";
 import { formatMoney } from "../../composables/money.js";
-import { formatDate } from "../../composables/date.js";
+import { formatDate, formatTime } from "../../composables/date.js";
 import { t } from "../../composables/i18n.js";
 import { useAutoRefresh } from "../../composables/useAutoRefresh.js";
 import { useToast } from "../../composables/useToast.js";
@@ -26,6 +26,7 @@ useEscapeBack(null, "/tender/board");
 
 const loading = ref(false);
 const data = ref({ rows: [], currency: "" });
+const lastReadAt = computed(() => formatTime(data.value?.generated_at));
 
 async function load() {
 	if (!activeCompany.value) return;
@@ -95,8 +96,11 @@ function clearFilters() { router.replace({ query: {} }); }
 
 <template>
 	<TenderPage :label="t('Tender')" :title="t('My tenders')">
-		<template v-if="filterSummary.length" #meta>
-			<span>{{ filterSummary.join(" · ") }}</span>
+		<!-- Şerit KOŞULSUZ: eskiden tüm blok filtre varken çiziliyordu, o yüzden
+		     tazelik damgası da yalnız filtreliyken görünürdü. -->
+		<template #meta>
+			<span v-if="filterSummary.length">{{ filterSummary.join(" · ") }}</span>
+			<span v-if="lastReadAt">{{ t("Last read") }} <span class="ds-mono">{{ lastReadAt }}</span></span>
 		</template>
 		<template v-if="filterSummary.length" #actions>
 			<button type="button" class="ds-btn" @click="clearFilters">{{ t("Clear filters") }}</button>

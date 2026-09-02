@@ -448,5 +448,5 @@ Keep the artboards you rejected.
 | P12 | A row is reachable and openable from the keyboard | **fails** — bare `<tr>` (S4) |
 | P13 | A rejected assignment returns the select to its previous value | **fails** — keeps the refused choice (S5) |
 | P14 | Phase filter and route filters are legible together, beside the table | **fails** — raw `key: value` chip in the header (S6) |
-| P15 | The freshness stamp reflects the server's generation time | **fails** — browser clock, module-wide |
+| P15 | The freshness stamp reflects the server's generation time | **passes** (2026-09-02) — `generated_at`, folded with the funnel's own |
 | P16 | A stale board after a failed auto-refresh says it is stale | **fails** — silently keeps the last values |

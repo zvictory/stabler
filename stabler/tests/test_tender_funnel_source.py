@@ -125,8 +125,16 @@ class PanelTest(unittest.TestCase):
 		# Pano huniyi ŞERİTLE mount ediyor: chevron seçimi buraya geliyor ve
 		# aşağıdaki belge tablosunu süzüyor. Prop düşerse şerit çizilmez ve
 		# filtre sessizce ölü bir tıklamaya döner.
-		self.assertIn("<TenderFunnel pipeline-strip", board)
-		self.assertIn('@select="onPhaseSelect"', board)
+		#
+		# Etiketin İÇİNE bakılıyor, satır metnine değil. Bu iddia
+		# "<TenderFunnel pipeline-strip" dizgesiydi ve mount tek satırdı; 2026-09-02'de
+		# @loaded eklenince prettier onu üç satıra böldü (printWidth 100) ve test
+		# düştü — prop yerindeyken. Böyle yazılınca biçim serbest, ve dahası
+		# proplar artık dosyanın herhangi bir yerinde değil O ETİKETTE aranıyor.
+		mount = re.search(r"<TenderFunnel\b[^>]*>", board, re.S)
+		self.assertIsNotNone(mount, "TenderFunnel is not mounted on the director board")
+		self.assertIn("pipeline-strip", mount.group(0))
+		self.assertIn('@select="onPhaseSelect"', mount.group(0))
 
 
 if __name__ == "__main__":

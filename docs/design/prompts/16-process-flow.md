@@ -414,4 +414,4 @@ Keep the artboards you rejected.
 | W15 | No user-facing string is pluralised by a ternary | **fails** — `step` / `steps` (S6) |
 | W16 | A reader can tell a tenant threshold from a default | **fails** — `stage_sla` unread (S7) |
 | W17 | Any interactive element is reachable by keyboard and announced | **fails** — 0 `aria-*`, 0 `role=` |
-| W18 | The screen says how fresh it is | **fails** — no timestamp; a manual `Refresh` instead |
+| W18 | The screen says how fresh it is | **passes for the timestamp** (2026-09-02) — `generated_at`. The manual `Refresh` button is untouched |

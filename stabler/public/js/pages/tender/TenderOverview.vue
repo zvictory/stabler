@@ -28,6 +28,7 @@ import { computed, onMounted, ref, watch } from "vue";
 import { storeToRefs } from "pinia";
 import { useRouter } from "vue-router";
 import { call } from "../../api/client.js";
+import { formatTime, oldestStamp } from "../../composables/date.js";
 import { t } from "../../composables/i18n.js";
 import { useSession } from "../../stores/session.js";
 import TenderPage from "./TenderPage.vue";
@@ -40,6 +41,12 @@ const router = useRouter();
 
 const funnelRef = ref(null);
 const flow = ref(null);
+/* İki blok, iki istek: akış burada, huni TenderFunnel'ın içinde.
+ * Sayfa en bayat bloğu kadar taze. */
+const funnelStamp = ref("");
+const lastReadAt = computed(() =>
+	formatTime(oldestStamp([flow.value?.generated_at, funnelStamp.value]))
+);
 const flowLoading = ref(false);
 const flowError = ref(null);
 
@@ -101,6 +108,7 @@ const openPhase = (key) => {
 			<span>{{
 				t("Today's queue lives on the operations desk — this is the whole pipeline")
 			}}</span>
+			<span v-if="lastReadAt">{{ t("Last read") }} <span class="ds-mono">{{ lastReadAt }}</span></span>
 		</template>
 
 		<template #actions>
@@ -122,6 +130,7 @@ const openPhase = (key) => {
 			mode="full"
 			pipeline-strip
 			@select="openPhase"
+			@loaded="funnelStamp = $event"
 		/>
 
 		<section v-if="canFlow" class="ds-panel ov-flow">

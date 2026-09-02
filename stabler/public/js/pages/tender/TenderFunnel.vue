@@ -40,7 +40,9 @@ const props = defineProps({
 	 * ekranın durumu, huninin değil. */
 	selected: { type: String, default: "" },
 });
-const emit = defineEmits(["select"]);
+/* "loaded": bu bileşen KENDİ isteğini atıyor, o yüzden kendi üretim zamanını
+ * taşıyor. Onu çizen sayfa damgasını buna göre eskitir. */
+const emit = defineEmits(["select", "loaded"]);
 
 const loading = ref(false);
 const data = ref(null);
@@ -53,6 +55,7 @@ async function load() {
 			company: activeCompany.value,
 			days: props.days,
 		});
+		emit("loaded", data.value?.generated_at || "");
 	} catch (err) {
 		toast.error(err?.message || t("Could not load the tender funnel."));
 	} finally {

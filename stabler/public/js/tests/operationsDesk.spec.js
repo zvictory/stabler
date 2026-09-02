@@ -72,7 +72,16 @@ function leadRowBlock() {
 }
 
 describe("D12 — the freshness stamp is the server's clock, not the browser's", () => {
-	const stamp = (res) => evalInScope(rhsOf("lastReadAt.value"), { formatTime, res });
+	// The stamp is a computed over the stored payload (the idiom all six tender
+	// screens share since 2026-09-02 — see tenderFreshness.spec.js). Running it
+	// with `computed` stubbed to call its getter exercises the real expression
+	// and the real formatTime, rather than pattern-matching the source.
+	const stamp = (payload) =>
+		evalInScope(rhsOf("const lastReadAt"), {
+			computed: (fn) => fn(),
+			formatTime,
+			deskData: { value: payload },
+		});
 
 	it("renders the HH:mm of the payload's generated_at", () => {
 		// WHAT WOULD MAKE THIS FAIL: reverting to `new Date().toTimeString().slice(0, 5)`,
@@ -100,7 +109,7 @@ describe("D12 — the freshness stamp is the server's clock, not the browser's",
 		// WHAT WOULD MAKE THIS FAIL: any reintroduction of `new Date()` into the
 		// assignment — including a "helpful" `generated_at ?? new Date()` hybrid,
 		// which the two tests above would not catch on the happy path.
-		expect(rhsOf("lastReadAt.value")).not.toMatch(/\bDate\b/);
+		expect(rhsOf("const lastReadAt")).not.toMatch(/\bDate\b/);
 	});
 });
 

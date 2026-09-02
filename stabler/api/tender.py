@@ -147,7 +147,7 @@ def so_board(company: str, tender_only: int = 0) -> dict:
 				"deal": so.custom_crm_deal,
 			}
 		)
-	return {"stages": stages, "cards": cards}
+	return {"stages": stages, "cards": cards, "generated_at": now()}
 
 
 @frappe.whitelist()
@@ -2162,6 +2162,9 @@ def _tender_director_payload(company: str, *, include_rows: bool) -> dict:
 			)
 		)
 		payload["rows"] = rows
+	# Ekran kaç yaşında olduğunu söyleyebilsin diye: damga SUNUCUNUN saati.
+	# Tarayıcı saati okuyucunun cihazına göre kayar, veri kaymaz.
+	payload["generated_at"] = now()
 	return payload
 
 
@@ -2513,7 +2516,12 @@ def sourcing_my_tenders(company: str) -> dict:
 			}
 		)
 	rows.sort(key=lambda r: (_RISK_ORDER.get(r["risk"], 3), r["delivery"] or "9999-99-99"))
-	return {"currency": base_ccy, "rows": rows, "oversight": oversight}
+	return {
+		"currency": base_ccy,
+		"rows": rows,
+		"oversight": oversight,
+		"generated_at": now(),
+	}
 
 
 @frappe.whitelist()
@@ -2681,6 +2689,9 @@ def tender_funnel(company: str, days: int = 90):
 	out["so_rows"] = so_rows
 	out["days"] = days
 	out["currency"] = frappe.db.get_value("Company", company, "default_currency") or ""
+	# Ekran kaç yaşında olduğunu söyleyebilsin diye: damga SUNUCUNUN saati.
+	# Tarayıcı saati okuyucunun cihazına göre kayar, veri kaymaz.
+	out["generated_at"] = now()
 	return out
 
 
@@ -3610,4 +3621,5 @@ def tender_flow(company: str) -> dict:
 		# dayandığını gizlemek, tıkanmayı olduğundan hafif gösterir.
 		"unmeasured": sum(r["unmeasured"] for r in rows),
 		"stage_sla": overrides,
+		"generated_at": now(),
 	}

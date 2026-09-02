@@ -281,7 +281,10 @@ function collapsedToQuery(state) {
 }
 
 const collapsed = ref(collapsedFromQuery(route.query.collapsed));
-const lastReadAt = ref("");
+/* Damga VERİYİ anlatır, okuyucunun cihazını değil: `generated_at` sunucunun
+ * saatiyle yazılır (tender_desk.py:364). Sunucu damga göndermediyse boş —
+ * tarayıcı saatine düşmek gerçeğinden ayırt edilemeyen bir yalan üretirdi. */
+const lastReadAt = computed(() => formatTime(deskData.value?.generated_at));
 
 // `toISOString()` UTC verir. Taşkent UTC+5: her gece 00:00–05:00 arası masanın
 // "bugün"ü sunucunun bugününden bir gün geriye düşüyordu. Ölçüldü 2026-08-02
@@ -311,11 +314,6 @@ async function fetchDesk() {
 		if (token !== reqToken) return;
 
 		deskData.value = res;
-		// Damga VERİYİ anlatır, okuyucunun cihazını değil: `generated_at`
-		// sunucunun saatiyle yazılır (tender_desk.py:364). Sunucu damga
-		// göndermediyse hiçbir şey gösterme — tarayıcı saatine düşmek
-		// gerçeğinden ayırt edilemeyen bir yalan üretirdi.
-		lastReadAt.value = formatTime(res.generated_at);
 		if (res.view && currentView.value !== res.view) {
 			currentView.value = res.view;
 		}

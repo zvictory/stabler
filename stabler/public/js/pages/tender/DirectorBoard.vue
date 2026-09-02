@@ -11,7 +11,7 @@ import { useRoute, useRouter } from "vue-router";
 import { useSession } from "../../stores/session.js";
 import { call } from "../../api/client.js";
 import { formatMoney } from "../../composables/money.js";
-import { formatDate } from "../../composables/date.js";
+import { formatDate, formatTime, oldestStamp } from "../../composables/date.js";
 import { t } from "../../composables/i18n.js";
 import { useAutoRefresh } from "../../composables/useAutoRefresh.js";
 import { useToast } from "../../composables/useToast.js";
@@ -31,14 +31,19 @@ useEscapeBack(null, "/tender/board");
 const loading = ref(false);
 const data = ref({ rows: [], kpi: {}, currency: "" });
 const managers = ref([]);
-const lastReadAt = ref("");
+/* Bu sayfa İKİ istek çiziyor: kendi panosu ve TenderFunnel'ın kendi
+ * çağrısı. Sayfa en bayat bloğu kadar taze, o yüzden yazılan damga
+ * ikisinin ESKİ olanı. */
+const funnelStamp = ref("");
+const lastReadAt = computed(() =>
+	formatTime(oldestStamp([data.value?.generated_at, funnelStamp.value]))
+);
 
 async function load() {
 	if (!activeCompany.value) return;
 	loading.value = true;
 	try {
 		data.value = await call("stabler.api.tender.tender_director_board", { company: activeCompany.value });
-		lastReadAt.value = new Date().toTimeString().slice(0, 5);
 	} catch (err) {
 		toast.error(err?.message || t("Could not load the director board."));
 	} finally {
@@ -189,7 +194,12 @@ function clearFilters() { router.replace({ query: {} }); }
 
 		<!-- Aşama ızgarası, huni ve chevron şeridi kendi bileşeninde; şerit
 		     seçimini buraya yollayıp aşağıdaki belge tablosunu süzüyor. -->
-		<TenderFunnel pipeline-strip :selected="phase" @select="onPhaseSelect" />
+		<TenderFunnel
+			pipeline-strip
+			:selected="phase"
+			@select="onPhaseSelect"
+			@loaded="funnelStamp = $event"
+		/>
 
 		<div v-if="phaseMeta" class="board-phase" role="status">
 			<span class="ds-label board-phase-kicker">

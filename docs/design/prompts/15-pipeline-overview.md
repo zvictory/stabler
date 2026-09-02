@@ -463,4 +463,4 @@ Keep the artboards you rejected.
 | F15 | A lot appears in exactly one stage per screen | **fails** — 4305 appears in two (S5) |
 | F16 | The chevron's second layer is reachable without a pointer | **partial** — focus works, touch does not |
 | F17 | Loading renders a skeleton | **fails** — a line of text, in both blocks |
-| F18 | The screen says how fresh it is | **fails** — no timestamp, and a manual `Refresh` button instead |
+| F18 | The screen says how fresh it is | **passes for the timestamp** (2026-09-02) — the older of the flow's and the funnel's `generated_at`. The manual `Refresh` button is untouched |

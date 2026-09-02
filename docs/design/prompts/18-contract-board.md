@@ -462,4 +462,4 @@ Keep the artboards you rejected.
 | C17 | `status` is the server's classification, not the client's | **fails** — re-derived from `per_delivered` (S7) |
 | C18 | Creating a stage uses the app's own dialog | **fails** — `window.prompt` (S8) |
 | C19 | A stage colour the manager chose cannot make its own count unreadable | **fails** — raw colour on a 13 % tint of itself (S3) |
-| C20 | The board says how old it is | **fails** — no timestamp, no refresh, three writers |
+| C20 | The board says how old it is | **passes for the timestamp** (2026-09-02) — `generated_at`. It still never refreshes (C12), which is what makes the stamp worth reading |

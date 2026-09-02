@@ -17,6 +17,7 @@
 import { computed, onMounted, ref, watch } from "vue";
 import { storeToRefs } from "pinia";
 import { call } from "../../api/client.js";
+import { formatTime } from "../../composables/date.js";
 import { t } from "../../composables/i18n.js";
 import { useToast } from "../../composables/useToast.js";
 import { useSession } from "../../stores/session.js";
@@ -30,6 +31,7 @@ const toast = useToast();
 
 const loading = ref(false);
 const data = ref(null);
+const lastReadAt = computed(() => formatTime(data.value?.generated_at));
 
 async function load() {
 	if (!activeCompany.value) return;
@@ -99,6 +101,7 @@ const kpis = computed(() => {
 		<template #meta>
 			<span>{{ t("Every number is read from an ERP record") }}</span>
 			<span>{{ t("A step is late when its average wait passes the threshold set for that step") }}</span>
+			<span v-if="lastReadAt">{{ t("Last read") }} <span class="ds-mono">{{ lastReadAt }}</span></span>
 		</template>
 
 		<template #actions>
