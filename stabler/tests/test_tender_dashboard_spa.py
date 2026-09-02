@@ -23,6 +23,7 @@ _OPERATIONS_DESK = os.path.join(_ROOT, "public", "js", "pages", "tender", "Opera
 _OVERVIEW = os.path.join(_ROOT, "public", "js", "pages", "tender", "TenderOverview.vue")
 _FLOW = os.path.join(_ROOT, "public", "js", "pages", "tender", "TenderFlow.vue")
 _FLOW_LABELS = os.path.join(_ROOT, "public", "js", "pages", "tender", "flowLabels.js")
+_FUNNEL_PY = os.path.join(_ROOT, "api", "_funnel.py")
 _ROUTER = os.path.join(_ROOT, "public", "js", "router.js")
 _DELIVERY_NOTES = os.path.join(_ROOT, "public", "js", "pages", "sales", "DeliveryNotes.vue")
 
@@ -158,6 +159,56 @@ class TestTenderDashboardSpaContract(unittest.TestCase):
 					1,
 					f'expected exactly one label: stepLabel("{stage}") call site',
 				)
+
+	def test_go_step_label_names_a_decision_already_made_not_a_pending_one(self):
+		"""P1-3 (coordinator review, 2026-09-02): F12 unified the chevron, the
+		stage boxes and the flow strip onto `flowLabels.js`'s single
+		`stepLabel`, which is correct -- but the shared text it unified onto,
+		`STEP_LABELS.go = "GO / NO-GO decision"`, was itself wrong, so F12's fix
+		made the error consistent instead of removing it.
+
+		Measured against `_funnel.classify()` (api/_funnel.py): "go" is
+		reached only when `go_no_go == "go"` AND none of submitted,
+		has_pricing or sq_count > 0 are true -- the decision has ALREADY been
+		made and sourcing has not started yet. "GO / NO-GO decision" reads as
+		the decision still being pending, which is backwards; the stage box's
+		own rule line agrees with the corrected text, not the old one
+		(`rule: "go_no_go = go · SQ = 0"`, TenderFunnel.vue).
+		"""
+		labels = _read(_FLOW_LABELS)
+		self.assertRegex(
+			labels,
+			r'go:\s*"GO — awaiting sourcing"',
+			"STEP_LABELS.go no longer names the state _funnel.classify() actually reaches",
+		)
+		self.assertNotIn(
+			"GO / NO-GO decision",
+			labels,
+			"the pending-decision phrasing is still present somewhere in flowLabels.js",
+		)
+
+		# Cross-checked rather than asserted in isolation: a rewritten label
+		# that merely stops saying "decision" without matching what the
+		# classifier actually computes would still be a made-up name. Anchored
+		# on the actual `facts.get(...)` call sites, not a bare field-name
+		# substring -- the function's own docstring lists all five fact keys
+		# up front (including "sq_count") purely to document the input shape,
+		# in an order that does not promise anything about branch order.
+		funnel_py = _read(_FUNNEL_PY)
+		classify_at = funnel_py.index("def classify(")
+		classify_fn = funnel_py[classify_at : funnel_py.index("\ndef ", classify_at + 1)]
+		go_at = classify_fn.index('facts.get("go_no_go")')
+		sq_at = classify_fn.index('facts.get("sq_count")')
+		self.assertLess(
+			sq_at,
+			go_at,
+			"go_no_go is no longer checked after sq_count -- 'awaiting sourcing' may no longer hold",
+		)
+		self.assertRegex(
+			classify_fn[go_at:],
+			r'return "go"',
+			"_funnel.classify() moved or was renamed",
+		)
 
 	def test_a_manually_placed_deal_is_disclosed_not_left_unexplained(self):
 		"""F15 (docs/design/prompts/15-pipeline-overview.md, S5): `tender_funnel`
