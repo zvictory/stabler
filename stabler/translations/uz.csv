@@ -1,3 +1,6 @@
+Enter an exchange rate or clear the currency on every flagged line,Har bir belgilangan qatorda kurs kiriting yoki valyutani olib tashlang
+Missing rate,Kurs yo'q
+No rate for {ccy} — enter a rate or clear the currency,{ccy} uchun kurs yo'q — kurs kiriting yoki valyutani olib tashlang
 "The existing material request {0} could not be withdrawn, so the plan was not saved. Sort that request out first.","Mavjud {0} material so'rovini qaytarib bo'lmadi, shuning uchun reja saqlanmadi. Avval o'sha so'rovni hal qiling."
 "These materials are the other operator's to plan, not yours: {0}","Bu materiallarni boshqa operator rejalashtiradi, siz emas: {0}"
 "This order's material has already been written off per operator, but 'Allow Continuous Material Consumption' is switched off in Manufacturing Settings — finishing now would count that material a second time. Ask a manager to switch it back on.","Bu buyurtmaning materiali operator bo'yicha allaqachon hisobdan chiqarilgan, lekin Ishlab chiqarish sozlamalarida ""Allow Continuous Material Consumption"" o'chirilgan — hozir yakunlash bu materialni ikkinchi marta hisoblaydi. Rahbardan uni qayta yoqishni so'rang."
@@ -22,6 +25,7 @@
 {countries} countries met,{countries} mamlakat talabi bajarildi
 {countries} countries needed,{countries} mamlakat kerak
 31–60,31–60
+{count} charge line(s) have a currency with no exchange rate and are excluded from these totals.,{count} ta xarajat qatorida kursi yo'q valyuta bor va ular ushbu jamiga kirmaydi.
 {min} quotes met,{min} ta taklif talabi bajarildi
 {min} quotes needed,{min} ta taklif kerak
 61–90,61–90

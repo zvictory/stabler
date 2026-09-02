@@ -612,6 +612,12 @@ watch(
 								<td class="text-end font-monospace">
 									<template v-if="r.has_landed_estimate">
 										+{{ formatMoney(r.landed_charges_total, baseCcy, user.language) }}
+										<!-- ADR-605: an estimate WAS typed, so the completeness banner
+										     above stays quiet while this figure is short by whatever the
+										     unvalued lines hold. This row is where the vendor is chosen. -->
+										<div v-if="r.has_unvalued_charges" class="small text-danger">
+											<i class="ti ti-alert-triangle me-1"></i>{{ t("Missing rate") }}
+										</div>
 									</template>
 									<span v-else class="text-secondary small">—</span>
 								</td>
@@ -1026,12 +1032,17 @@ watch(
 				@saved="loadAll" />
 
 			<!-- Landed charges editor — a sibling of the drawers, not nested in any
-			     conditional wrapper: it must open from any quotation row. -->
+			     conditional wrapper: it must open from any quotation row.
+			     ADR-605: the editor gets the COMPANY currency, the one this table's
+			     delivered totals are printed in and the one the server adds these
+			     charges to. It used to get the quotation's own, so the same stored
+			     number wore two different signs on two screens; a line quoted in a
+			     supplier's currency now says so on the line itself. -->
 			<LandedChargesEditor
 				:show="landedOpen"
 				:quotation-name="landedRow?.name || ''"
 				:supplier-name="landedRow?.supplier_name || ''"
-				:currency="landedRow?.currency || 'USD'"
+				:currency="baseCcy"
 				:base-grand-total="landedRow?.base_grand_total || landedRow?.base_total || 0"
 				@close="landedOpen = false"
 				@saved="loadAll"
