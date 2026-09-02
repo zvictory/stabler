@@ -22,7 +22,10 @@ BILLABLE_ISSUE_TYPES = {"Refill", "Repair"}
 
 
 def _validation_error(message: str) -> None:
-	raise frappe.ValidationError(message)
+	# frappe.throw, not a bare `raise`: only msgprint fills frappe.local.message_log,
+	# and the response layer emits _server_messages only when that log is non-empty.
+	# A bare raise left the SPA with nothing to print but "Request failed: 417".
+	frappe.throw(message)
 
 
 def _has_field(doctype: str, fieldname: str) -> bool:
@@ -73,27 +76,27 @@ def _coerce_list(value) -> list:
 		try:
 			value = json.loads(value or "[]")
 		except Exception:
-			_validation_error("Invalid JSON payload.")
+			_validation_error(_("Invalid JSON payload."))
 	if not isinstance(value, list):
-		_validation_error("Expected a list payload.")
+		_validation_error(_("Expected a list payload."))
 	return value
 
 
 def _normalize_visit_items(items) -> list[dict]:
 	rows = _coerce_list(items)
 	if not rows:
-		_validation_error("At least one item line is required.")
+		_validation_error(_("At least one item line is required."))
 
 	normalized = []
 	for row in rows:
 		if not isinstance(row, dict):
-			_validation_error("Each item line must be an object.")
+			_validation_error(_("Each item line must be an object."))
 		item_code = (row.get("item_code") or "").strip()
 		if not item_code:
-			_validation_error("Each item line needs an item_code.")
+			_validation_error(_("Each item line needs an item_code."))
 		qty = flt(row.get("qty"))
 		if qty <= 0:
-			_validation_error("Each item line needs a positive qty.")
+			_validation_error(_("Each item line needs a positive qty."))
 		rate = row.get("rate")
 		basic_rate = row.get("basic_rate")
 		normalized.append(
