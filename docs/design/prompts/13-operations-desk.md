@@ -161,6 +161,33 @@ carry `err?.status === 403 || /role|permission/i.test(err?.message || "")`
 matches nothing, and a translated message matches nothing in any language. The
 **403 is the load-bearing half**; the wording is an English-only backstop.
 
+**Corrected 2026-09-02 in review — a 403 does not mean "this view is not yours".**
+The first fix read every 403 as the view refusal and printed *"This view is not
+yours / Your roles do not include it. Remove the view from the address to open
+your own desk."* Measured: `operations_desk` raises `frappe.PermissionError` —
+and therefore 403 — from **four** places, and only the last is about a view:
+
+| line | raised by | the reader is told |
+|---|---|---|
+| `:30` | `_assert_company_scope` | *This request belongs to a company you cannot access.* |
+| `:31` | `_require_tender` | *Not permitted* / *Tender module is not enabled for {0}.* |
+| `:36` | no view role at all | *Access denied to Operations Desk.* |
+| `:51` | `_require_tender_view` | *Not permitted* — and only reached `if view:` |
+
+The `:36` case is reachable **with no `view` in the URL**: a reader who holds the
+tender module but none of the four view roles opens `/tender/desk` and is told to
+remove a query parameter that is not there. And `err.message` — the server's own
+sentence, already translated by the time `client.js` unwraps `_server_messages` —
+was discarded, so the one line that said what was actually wrong never rendered.
+`session.canAccessModule("tender")` does not cover this: that is the company
+module map plus `allowedModules` (`stores/session.js:52-65`), not the view roles.
+
+All four are refusals, not failures, so all four keep the `forbidden` state and
+its no-`role="alert"` treatment. What changed is the wording: the panel prints
+the **server's** sentence, falls back to a generic refusal line that is true of
+all four, and offers *"Remove the view from the address…"* only when the failed
+request actually named a view.
+
 **A second, recorded gate bug — read the comment, do not repeat the bug**
 (`tender_desk.py:295-311`). The Decision box partitions one approval queue into
 "Awaiting my approval" and "Waiting others". The old predicate OR'd in
@@ -232,7 +259,21 @@ view** the reader may not open, and it arrives as a 403 on the same request that
 feeds all four regions. Two refusals, opposite recoveries — one needs the module
 enabled for the company, the other needs a role — so the chain is now
 loading · module · company · **view refusal** · error · empty, in that order,
-with `role="alert"` on the error alone.
+with `role="alert"` on the error alone. (The fourth is not *view* refusal — see
+D9's second correction: four gates raise it and only one is about a view.)
+
+**Corrected again 2026-09-02 in review — the plan panel does not keep its own
+chain.** The first D15 fix left the plan panel's inline chain in place as "the
+reference implementation" and claimed a test held the two equal. It did not: the
+test compared each chain to a hardcoded five-entry oracle and never to the other,
+so divergence past the fifth entry was invisible from both sides — and the two had
+**already** diverged. The plan panel had no `!deskData` state, so on the first
+paint the three side panels rendered skeletons while the plan panel rendered *"No
+tasks scheduled for today / All items in this view are up to date."* One screen,
+one instant, two answers to the same question. The gates now live only in
+`regionState`; every region branches on its own **content** and on nothing else,
+and the test that replaced the decorative one reads that invariant off the source
+rather than off an oracle typed into the test.
 
 **And the other three panels did not have ONE state, not four.** The doc says
 they "do not have five states"; measured, Team load and Next 7 days rendered
@@ -681,13 +722,13 @@ re-examined.
 | D6 | Loading renders `SkeletonRows`, not a spinner | passes |
 | D7 | `view` and `filter` round-trip through the URL | passes |
 | D8 | Band collapse round-trips through the URL | **passes** — `?collapsed=` (2026-09-02) |
-| D9 | A view the user lacks renders as *forbidden*, distinct from *error* | **passes** (2026-09-02) — own branch, no `role="alert"`, counters hidden |
+| D9 | A view the user lacks renders as *forbidden*, distinct from *error* | **passes** (2026-09-02) — own state, no `role="alert"`, counters hidden; corrected in review — **four** gates raise 403 and only one is about a view, so the server's own sentence is printed and the view recovery is conditional |
 | D10 | No snake_case identifier appears in rendered text | **passes** (2026-09-02) — `KIND_LABEL`; the leak was in **four** places, not three (S3) |
 | D11 | The role `<select>` shows translated labels, not ids | **passes** (2026-09-02) — `VIEW_LABEL`; the server stopped sending `label == id` |
 | D12 | The freshness stamp reflects `generated_at`, not the browser clock | **passes** (2026-09-02) — first reader of `generated_at` in the SPA |
 | D13 | An overdue item is discoverable from the calendar region | **passes** (2026-09-02) — a past-due bucket, not an earlier start date |
 | D14 | The empty plan distinguishes *nothing to do* from *could not be computed* | **passes** (2026-09-02) — three-way, and S2's premise was corrected: the silent five had *run* |
-| D15 | The Decision box, Team load and calendar each render five states | **passes** (2026-09-02) — one `regionState` for the four page-level gates, drawn in all three; the plan panel's inline chain kept as the reference and pinned equal by test |
+| D15 | The Decision box, Team load and calendar each render five states | **passes** (2026-09-02) — one `regionState` for the four page-level gates, read by **all four** regions; the plan panel's second copy was kept at first, was found already diverged in review, and is gone |
 | D16 | Team load empty-for-your-role ≠ Team load empty-of-work | **passes** (2026-09-02) — `oversight` on the payload; and empty-of-work is *no lots in the company*, not *nobody busy* (§7) |
 | D17 | The primary CTA is the focusable, hoverable control, or is not drawn as one | **passes** (2026-09-02) — the row is the control; the span is no longer painted as one |
 | D18 | Which clock produced "today" is legible to the reader | **passes** (2026-09-02) — the server sends `today`; the meta row names the clock and flags disagreement |

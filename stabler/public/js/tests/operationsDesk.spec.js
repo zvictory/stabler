@@ -87,16 +87,6 @@ function leadRowBlock() {
 }
 
 /**
- * The plan panel's state chain: the loading branch through the last state branch
- * before rows are drawn. Anchored on `:rows="6"` — the plan skeleton's own row
- * count — because `SkeletonRows` appears twice in the file and an anchor on the
- * component name alone would slice the decision box's chain instead.
- */
-function planStateChain() {
-	return src.slice(anchor('<SkeletonRows v-if="loading" :rows="6"'), rowsTemplate());
-}
-
-/**
  * Offset of the `<template v-else>` that draws the ROWS — the one at four tabs,
  * which closes the plan panel's state chain. The empty branch nests a
  * `<template v-else>` of its own at five tabs, so a plain
@@ -133,6 +123,27 @@ function scriptWithoutComments() {
 		.split("\n")
 		.filter((line) => !/^\s*(\/\/|\/\*|\*)/.test(line))
 		.join("\n");
+}
+
+/**
+ * `regionStateText` executed against a supplied state. Module scope because two
+ * describes need it: the refusal's wording is a D9 fact and a D15 fact at once.
+ */
+function regionText(state, over = {}) {
+	return new Function(
+		"computed",
+		"t",
+		"regionState",
+		"error",
+		"forbiddenMessage",
+		`${liftConst("REGION_STATE_TEXT")}\nreturn (${blockRhsOf("regionStateText")});`
+	)(
+		(fn) => fn(),
+		(key) => key,
+		{ value: state },
+		{ value: over.error || "" },
+		{ value: over.forbiddenMessage || "" }
+	);
 }
 
 describe("D12 — the freshness stamp is the server's clock, not the browser's", () => {
@@ -353,9 +364,13 @@ describe("D9 — a view the reader lacks is forbidden, not an error", () => {
 		// WHAT WOULD MAKE THIS FAIL: setting `forbidden` and never resetting it. The
 		// picker calls fetchDesk() on change, so one refused view would leave the
 		// desk refusing forever — including for the views the reader does hold.
-		const body = src.slice(anchor("async function fetchDesk("), anchor("const filteredPlan"));
+		const body = src.slice(anchor("async function fetchDesk("), anchor("const regionState"));
 		expect(body).toMatch(/error\.value = "";/);
 		expect(body).toMatch(/forbidden\.value = false;/);
+		// The two facts that describe the refusal have to be cleared with it, or the
+		// next refusal inherits the previous one's sentence and recovery advice.
+		expect(body).toMatch(/forbiddenMessage\.value = "";/);
+		expect(body).toMatch(/forbiddenView\.value = "";/);
 	});
 
 	it("routes a refusal to `forbidden` and leaves `error` empty", () => {
@@ -369,29 +384,81 @@ describe("D9 — a view the reader lacks is forbidden, not an error", () => {
 		expect(body).toMatch(/\n\t\t} else \{/);
 	});
 
-	it("draws the refusal as its own branch, ahead of the error branch", () => {
-		// WHAT WOULD MAKE THIS FAIL: rendering the refusal through `error`. The
-		// module and company gates already get their own worded branches; this is
-		// the third gate, and collapsing it into the red one throws away the
-		// distinction the other two exist to protect. Order matters because an error
-		// branch placed first would swallow the refusal on any future change that
-		// sets both.
-		const conditions = branchConditions(planStateChain());
-		expect(conditions).toContain("forbidden");
-		expect(conditions.indexOf("forbidden")).toBeLessThan(conditions.indexOf("error"));
+	it("does not announce the refusal as an alert, in any region", () => {
+		// WHAT WOULD MAKE THIS FAIL: announcing every gate. `role="alert"` is an
+		// assertive live region — it interrupts a screen reader because something
+		// went wrong. A desk you were never entitled to open is a policy outcome,
+		// not a failure, and four regions interrupting at once over one policy
+		// outcome is four interruptions for no news.
+		//
+		// The binding is READ FROM EACH PANEL and then evaluated. An earlier version
+		// of this test evaluated the ternary as a literal typed into the test, so it
+		// proved the ternary correct and the SOURCE not at all: hardcoding
+		// role="alert" back into a panel killed nothing. A test that cannot see the
+		// file it is about is decoration.
+		for (const [heading, block] of Object.entries(regionPanels())) {
+			const binding = block.match(/:role="([^"]+)"/);
+			expect(binding, `${heading}: gate branch has no :role binding`).not.toBeNull();
+			expect(block, `${heading}: a hardcoded role="alert" is back`).not.toMatch(
+				/\srole="alert"/
+			);
+			const role = (state) => evalInScope(binding[1], { regionState: state });
+			expect(role("forbidden"), heading).toBeNull();
+			expect(role("module"), heading).toBeNull();
+			expect(role("company"), heading).toBeNull();
+			expect(role("error"), heading).toBe("alert");
+		}
 	});
 
-	it("does not announce the refusal as an alert", () => {
-		// WHAT WOULD MAKE THIS FAIL: copying role="alert" onto the refusal branch.
-		// `role="alert"` is an assertive live region — it interrupts a screen reader
-		// because something went wrong. A view you were never entitled to open is a
-		// policy outcome, not a failure, and it is announced the way the other two
-		// gates are, which carry no role at all.
-		const chain = planStateChain();
-		expect(chain).toContain('v-else-if="forbidden"');
-		const branch = chain.slice(chain.indexOf('v-else-if="forbidden"'));
-		expect(branch.slice(0, branch.indexOf(">"))).not.toMatch(/role="alert"/);
-		expect(chain).toMatch(/v-else-if="error"[^>]*role="alert"/);
+	it("keeps the server's own sentence for a refusal", () => {
+		// WHAT WOULD MAKE THIS FAIL: throwing err.message away and printing one
+		// fixed sentence. Measured on tender_desk.py: FOUR gates raise
+		// frappe.PermissionError — and therefore 403 — before the view check runs,
+		// and only the last of them is about a view:
+		//   :30 _assert_company_scope  "This request belongs to a company you cannot access."
+		//   :31 _require_tender        "Not permitted" / "Tender module is not enabled for {0}."
+		//   :36 no view role at all    "Access denied to Operations Desk."
+		//   :51 _require_tender_view   "Not permitted"   (only reached `if view:`)
+		// The :36 case is reachable with NO view in the URL. All four landed in one
+		// branch reading "This view is not yours", and the server's sentence — the
+		// only text that said what was actually wrong — was discarded. It arrives
+		// already translated (client.js unwraps _server_messages), so it is printed,
+		// not re-keyed.
+		expect(regionText("forbidden", { forbiddenMessage: "Access denied to Operations Desk." })).toBe(
+			"Access denied to Operations Desk."
+		);
+		expect(regionText("forbidden", { forbiddenMessage: "" })).toMatch(/roles/i);
+	});
+
+	it("offers the view recovery only when a view was actually requested", () => {
+		// WHAT WOULD MAKE THIS FAIL: printing "Remove the view from the address"
+		// under every refusal. Three of the four have no view in the address to
+		// remove, so the one actionable sentence on the screen sends the reader
+		// after a query parameter that is not there — and the reader who most needs
+		// help (no view role at all, landing on a bare /tender/desk) is exactly the
+		// one who gets it.
+		const hint = (over) =>
+			evalInScope(rhsOf("const forbiddenHint"), {
+				computed: (fn) => fn(),
+				t: (key) => key,
+				forbidden: { value: true },
+				forbiddenView: { value: "" },
+				...over,
+			});
+		expect(hint({ forbiddenView: { value: "logist" } })).toMatch(/address/i);
+		expect(hint({})).toBe("");
+		expect(hint({ forbidden: { value: false }, forbiddenView: { value: "logist" } })).toBe("");
+	});
+
+	it("names the view the refused request asked for, not the one on screen now", () => {
+		// WHAT WOULD MAKE THIS FAIL: reading currentView inside the catch. It is
+		// reassigned by the response handler and by the picker, so the refusal would
+		// describe a view the failed request never sent. Captured beside the request
+		// token, which is the other thing that has to be pinned to one request.
+		const body = src.slice(anchor("async function fetchDesk("), anchor("const regionState"));
+		expect(body).toMatch(/const requestedView = currentView\.value \|\| "";[\s\S]*?\+\+reqToken;/);
+		expect(body).toMatch(/forbiddenView\.value = requestedView;/);
+		expect(body).toMatch(/forbiddenMessage\.value = err\?\.message \|\| "";/);
 	});
 
 	it("hides the counter strip while the view is refused", () => {
@@ -402,7 +469,7 @@ describe("D9 — a view the reader lacks is forbidden, not an error", () => {
 		// worse than either state alone.
 		const at = anchor('class="ds-kpis" data-cols="4"');
 		const tag = src.slice(src.lastIndexOf("<div", at), src.indexOf(">", at));
-		expect(tag).toMatch(/v-if="!forbidden"/);
+		expect(tag).toMatch(/v-if="regionState !== 'forbidden'"/);
 	});
 });
 
@@ -774,6 +841,23 @@ function panelOpenTag(heading) {
 
 const SIDE_PANELS = ["Decision box", "Team load", "Next 7 days"];
 
+/**
+ * All four regions' sources, keyed by heading. The plan panel is included and its
+ * heading is an `<h2>`: it is a region like the other three, and every test that
+ * treats it as a special case is a test that cannot see the two chains diverge.
+ */
+function regionPanels() {
+	const planAt = anchor('<h2>{{ t("Daily work plan") }}</h2>');
+	const out = {
+		"Daily work plan": src.slice(
+			src.lastIndexOf("<section", planAt),
+			src.indexOf("</section>", planAt) + 10
+		),
+	};
+	for (const heading of SIDE_PANELS) out[heading] = panelBlock(heading);
+	return out;
+}
+
 describe("D15 — every region renders the five states, not just the plan", () => {
 	const regionScope = () => ({
 		computed: (fn) => fn(),
@@ -785,20 +869,6 @@ describe("D15 — every region renders the five states, not just the plan", () =
 	});
 	const regionState = (over = {}) =>
 		evalInScope(blockRhsOf("regionState"), { ...regionScope(), ...over });
-
-	const regionText = (state, err = "") =>
-		new Function(
-			"computed",
-			"t",
-			"regionState",
-			"error",
-			`${liftConst("REGION_STATE_TEXT")}\nreturn (${rhsOf("const regionStateText")});`
-		)(
-			(fn) => fn(),
-			(key) => key,
-			{ value: state },
-			{ value: err }
-		);
 
 	it("resolves the gates in the plan panel's order when several are true at once", () => {
 		// WHAT WOULD MAKE THIS FAIL: reordering the gates. Each pair below has an
@@ -847,24 +917,36 @@ describe("D15 — every region renders the five states, not just the plan", () =
 		expect(regionState({ deskData: { value: null } })).toBe("loading");
 	});
 
-	it("keeps the shared gate chain identical to the plan panel's own", () => {
-		// WHAT WOULD MAKE THIS FAIL: a sixth gate added to the plan panel's inline
-		// chain and not to the computed the other three regions read (or the
-		// reverse). Two copies of one decision on one screen is how the plan comes
-		// to say "access denied" while the calendar beside it draws a week.
-		const gates = [
-			["loading", /^loading$/],
-			["module", /canAccessModule\('tender'\)/],
-			["company", /activeCompany/],
-			["forbidden", /^forbidden$/],
-			["error", /^error$/],
-		];
-		const inline = branchConditions(planStateChain()).slice(0, gates.length);
-		const shared = [...blockRhsOf("regionState").matchAll(/return "(\w+)"/g)].map((m) => m[1]);
-		gates.forEach(([name, pattern], i) => {
-			expect(inline[i], `plan panel gate ${i}`).toMatch(pattern);
-			expect(shared[i], `shared gate ${i}`).toBe(name);
-		});
+	it("leaves every page-level gate to the one computed", () => {
+		// WHAT WOULD MAKE THIS FAIL: any region deciding a gate for itself. This
+		// replaces a test that could not fail: it compared each chain to a
+		// hardcoded five-entry oracle and never to the other chain, so a sixth gate
+		// added to one side was invisible from both — and the divergence was already
+		// live. The plan panel had no `!deskData` state, so on the first paint three
+		// panels said "loading" while the fourth said "I looked, there is nothing".
+		// The oracle is now the source itself: a region may branch on its own
+		// CONTENT, never on module, company, refusal, error or payload.
+		const gate = /canAccessModule|activeCompany|\bforbidden\b|\berror\b|\bdeskData\b|\bloading\b/;
+		for (const [heading, block] of Object.entries(regionPanels())) {
+			const own = branchConditions(block).filter(
+				(c) => gate.test(c) && !c.includes("regionState")
+			);
+			expect(own, `${heading} decides a page-level gate for itself`).toEqual([]);
+		}
+	});
+
+	it("draws the shared states in all four regions, the plan panel included", () => {
+		// WHAT WOULD MAKE THIS FAIL: a region opting out — which is how the two
+		// chains came to exist in the first place. Counting call sites rather than
+		// inspecting each panel is deliberate: a fifth region added tomorrow fails
+		// this test until it reads the same computed.
+		const panels = Object.entries(regionPanels());
+		expect(panels).toHaveLength(4);
+		for (const [heading, block] of panels) {
+			const conditions = branchConditions(block);
+			expect(conditions[0], `${heading} loading`).toBe("regionState === 'loading'");
+			expect(conditions[1], `${heading} gates`).toBe("regionState !== 'ready'");
+		}
 	});
 
 	it("gives every gate that is not the error its own sentence", () => {
@@ -872,6 +954,9 @@ describe("D15 — every region renders the five states, not just the plan", () =
 		// which renders as a blank panel foot — the same nothing the reader got
 		// before any of this existed.
 		const states = [...blockRhsOf("regionState").matchAll(/return "(\w+)"/g)].map((m) => m[1]);
+		// Without this the loop passes by not running: a renamed computed or a
+		// changed return style would report five green states and check none.
+		expect(states.length, "no states extracted — the oracle went blind").toBeGreaterThan(4);
 		const worded = liftConst("REGION_STATE_TEXT");
 		for (const state of states) {
 			if (["loading", "ready", "error"].includes(state)) continue;
@@ -883,10 +968,10 @@ describe("D15 — every region renders the five states, not just the plan", () =
 		// WHAT WOULD MAKE THIS FAIL: a generic "something went wrong" in place of
 		// `error`. The message is the only diagnostic that crosses the wire; the
 		// three gate states are known in advance and read from the map instead.
-		expect(regionText("error", "Row 4: bad date")).toBe("Row 4: bad date");
+		expect(regionText("error", { error: "Row 4: bad date" })).toBe("Row 4: bad date");
 		expect(regionText("module")).toMatch(/tender module/);
 		expect(regionText("company")).toMatch(/company/i);
-		expect(regionText("forbidden")).toMatch(/not yours/i);
+		expect(regionText("forbidden")).toMatch(/roles/i);
 	});
 
 	for (const heading of SIDE_PANELS) {

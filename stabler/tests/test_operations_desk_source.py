@@ -99,8 +99,30 @@ class TestBehaviourSurvivedTheMigration(unittest.TestCase):
 		)
 
 	def test_access_gates_are_intact(self):
-		self.assertIn("canAccessModule('tender')", TEMPLATE)
-		self.assertIn("session.activeCompany", TEMPLATE)
+		"""İki kapı da duruyor — ama artık ŞABLONDA değil.
+
+		2026-09-02'ye kadar bu test kapıları `<template>` içinde arıyordu; plan
+		paneli kapıların kendi kopyasını tutuyordu ve yan sütundaki üç panel
+		hiçbirini çizmiyordu. Dört bölge tek isteği paylaştığı için karar tek
+		yere, `regionState` hesaplanmışına taşındı. Kapılar kaybolmadı; yeri
+		değişti, ve bu test onları yeni yerinde arıyor. Şablonu da kontrol
+		ediyor: bir bölge kapıyı kendi başına yeniden karara bağlarsa iki
+		zincir yeniden ayrışır.
+
+		`assertIn` DEĞİL: gövde 20 KB ve başarısızlıkta hepsini basıyordu.
+		"""
+		gate = SOURCE[SOURCE.index("const regionState = computed(") :]
+		gate = gate[: gate.index("\n});")]
+		self.assertIn('canAccessModule("tender")', gate, "module gate left regionState")
+		self.assertIn("session.activeCompany", gate, "company gate left regionState")
+		self.assertTrue(
+			"canAccessModule" not in TEMPLATE,
+			"a region decides the module gate for itself again",
+		)
+		self.assertTrue(
+			"session.activeCompany" not in TEMPLATE,
+			"a region decides the company gate for itself again",
+		)
 
 	def test_routing_targets_are_unchanged(self):
 		for route in ("/purchasing/orders/", "/purchasing/invoices/", "/tender/crm?deal="):

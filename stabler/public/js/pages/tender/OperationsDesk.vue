@@ -42,7 +42,7 @@
 		     Reddedilen görünümde HİÇ çizilmez: yük yokken kartlar 0/0/0/0
 		     yazar ve bu, sunucunun ölçmeyi reddettiği bir görünüm hakkında
 		     "hiçbir şey gecikmemiş" iddiasıdır. -->
-		<div v-if="!forbidden" class="ds-kpis" data-cols="4">
+		<div v-if="regionState !== 'forbidden'" class="ds-kpis" data-cols="4">
 			<button
 				v-for="k in kpis"
 				:key="k.filter"
@@ -71,23 +71,26 @@
 					</span>
 				</div>
 
-				<SkeletonRows v-if="loading" :rows="6" :cols="3" class="desk-pad" />
+				<SkeletonRows v-if="regionState === 'loading'" :rows="6" :cols="3" class="desk-pad" />
 
-				<div v-else-if="!session.canAccessModule('tender')" class="ds-panel-foot desk-state">
-					{{ t("Access denied to tender module.") }}
+				<!-- DÖRT bölge, TEK karar. Bu panel kapıların kendi kopyasını
+				     tutuyordu ve iki zincir çoktan ayrışmıştı: burada `!deskData`
+				     durumu yoktu, yani ilk boyamada yan sütun "yükleniyor" derken
+				     bu panel "baktım, bir şey yok" diyordu — sorulmamış soruya
+				     verilen yanlış cevap. Kapılar `regionState`te; her bölge
+				     yalnız KENDİ içeriğine dallanır. `role="alert"` sadece
+				     hatada: reddedilmek bir politika sonucu, arıza değil.
+				     Kurtarma satırı yalnız burada ve yalnız istek gerçekten bir
+				     görünüm sorduysa — dört reddin üçünde adreste kaldırılacak
+				     bir görünüm yok. -->
+				<div
+					v-else-if="regionState !== 'ready'"
+					class="ds-panel-foot desk-state"
+					:role="regionState === 'error' ? 'alert' : null"
+				>
+					<span>{{ regionStateText }}</span>
+					<span v-if="forbiddenHint">{{ forbiddenHint }}</span>
 				</div>
-				<div v-else-if="!session.activeCompany" class="ds-panel-foot desk-state">
-					{{ t("Please select an active company.") }}
-				</div>
-				<!-- Üçüncü kapı. İlk ikisi istemcide, bu sunucuda: reddedilmek
-				     bir arıza değil, bir politika sonucu — o yüzden kendi dalı
-				     var, `role="alert"` yok ve kırmızı hata dalının ÖNÜNDE
-				     duruyor. -->
-				<div v-else-if="forbidden" class="ds-panel-foot desk-state">
-					<span>{{ t("This view is not yours") }}</span>
-					<span>{{ t("Your roles do not include it. Remove the view from the address to open your own desk.") }}</span>
-				</div>
-				<div v-else-if="error" class="ds-panel-foot desk-state" role="alert">{{ error }}</div>
 				<!-- Boş olmanın ÜÇ ayrı anlamı var ve tek bir cümleye
 				     sıkıştırılmıştı. Süzgeç saklıyorsa masa boş değil; bir girdi
 				     okunamadıysa masa boş olabilir ama bunu kimse bilmiyor. "Her
@@ -393,6 +396,17 @@ const error = ref("");
  * çöpe atıyordu. İki durumun kurtarma yolu birbirinin zıttı: biri rol
  * istemek, öteki yeniden denemek. */
 const forbidden = ref(false);
+/* Sunucunun KENDİ cümlesi. Ölçüldü: görünüm denetiminden ÖNCE dört ayrı kapı
+ * `frappe.PermissionError` — yani 403 — fırlatıyor ve yalnız sonuncusu görünümle
+ * ilgili (tender_desk.py:30, :31, :36, :51). Dördü de tek dala düşüp "bu görünüm
+ * senin değil" yazıyordu; adreste hiç görünüm olmadan gelinebilen :36 dahil.
+ * Asıl kayıp metindi: ne olduğunu söyleyen tek cümle atılıyordu. İstemciye
+ * çevrilmiş geliyor (client.js `_server_messages`), o yüzden basılıyor,
+ * yeniden anahtarlanmıyor. */
+const forbiddenMessage = ref("");
+/* Reddedilen isteğin SORDUĞU görünüm; hiç sormadıysa "". Tek eyleme dönük
+ * cümlenin ("adresten görünümü kaldır") ne zaman doğru olduğunu bu belirliyor. */
+const forbiddenView = ref("");
 const deskData = ref(null);
 const currentView = ref(route.query.view || null);
 const activeFilter = ref(route.query.filter || "all");
@@ -515,10 +529,16 @@ async function fetchDesk() {
 		return;
 	}
 
+	/* İstek jetonuyla BİRLİKTE yakalanıyor: `currentView` hem yanıt işleyicisi hem
+	 * seçici tarafından değiştiriliyor, catch içinde okunsaydı reddedilen isteğin
+	 * hiç sormadığı bir görünümü adlandırabilirdi. */
+	const requestedView = currentView.value || "";
 	const token = ++reqToken;
 	loading.value = true;
 	error.value = "";
 	forbidden.value = false;
+	forbiddenMessage.value = "";
+	forbiddenView.value = "";
 
 	try {
 		const res = await call("stabler.api.tender_desk.operations_desk", {
@@ -537,6 +557,8 @@ async function fetchDesk() {
 		if (token !== reqToken) return;
 		if (isForbidden(err)) {
 			forbidden.value = true;
+			forbiddenMessage.value = err?.message || "";
+			forbiddenView.value = requestedView;
 		} else {
 			error.value = err?.message || t("Failed to load operations desk.");
 		}
@@ -570,14 +592,31 @@ const regionState = computed(() => {
 	return "ready";
 });
 
-/* Hata metni SUNUCUNUN kendi cümlesi — tel üstünden gelen tek teşhis. Diğer üç
- * durum önceden biliniyor, o yüzden burada yazılı. */
+/* İki durumun metni SUNUCUDAN gelir — hata ve reddedilme; teli geçen tek teşhis
+ * onlar. Kalan ikisi istemcide biliniyor. Reddedilme yedeği dört kapının HEPSİ
+ * için doğru olmak zorunda: eskiden "bu görünüm senin değil" yazıyordu ve
+ * dördünden yalnız biri görünümle ilgiliydi. */
 const REGION_STATE_TEXT = {
 	module: t("Access denied to tender module."),
 	company: t("Please select an active company."),
-	forbidden: t("This view is not yours"),
+	forbidden: t("This desk is not open to your roles"),
 };
-const regionStateText = computed(() => REGION_STATE_TEXT[regionState.value] || error.value);
+const regionStateText = computed(() => {
+	if (regionState.value === "forbidden") {
+		return forbiddenMessage.value || REGION_STATE_TEXT.forbidden;
+	}
+	if (regionState.value === "error") return error.value;
+	return REGION_STATE_TEXT[regionState.value] || "";
+});
+
+/* Yalnız BAZEN doğru olan kurtarma yolu. Dört reddin üçünde adreste kaldırılacak
+ * bir görünüm yok; en çok yardıma ihtiyacı olan okuyucu (hiç görünüm rolü yok,
+ * çıplak /tender/desk) tam da yanlış tavsiyeyi alan kişiydi. */
+const forbiddenHint = computed(() =>
+	forbidden.value && forbiddenView.value
+		? t("Remove the view from the address to open your own desk.")
+		: ""
+);
 
 const plan = computed(() => deskData.value?.plan || []);
 
