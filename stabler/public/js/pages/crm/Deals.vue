@@ -73,8 +73,9 @@ function paletteHex(colorName) {
 	return KANBAN_COLORS.find((c) => c.name === (colorName || "").toLowerCase())?.hex || "";
 }
 
-/** Still the raw palette hex, for the two places that show a colour SAMPLE
- *  rather than text: the dropdown swatch and the probability bar. */
+/** Still the raw palette hex, for the one place that shows a colour SAMPLE
+ *  rather than text: the probability bar, where a fill of nothing is invisible
+ *  and grey is a reasonable stand-in. */
 function colorHex(colorName) {
 	return paletteHex(colorName) || "#6b7280";
 }
@@ -900,7 +901,7 @@ watch(activeCompany, () => {
 										<i class="ti ti-pencil text-muted" style="font-size: 14px"></i>{{ t("Rename") }}
 									</button>
 									<button class="dropdown-item d-flex align-items-center gap-2" @click.stop="openColorPicker(col.status.name, $event)">
-										<span class="rounded-circle d-inline-block" :style="{ width: '12px', height: '12px', background: colorHex(col.status.color), flexShrink: 0 }"></span>
+										<span class="rounded-circle d-inline-block" :class="{ 'kanban-color-none': !paletteHex(col.status.color) }" :style="{ width: '12px', height: '12px', background: paletteHex(col.status.color), flexShrink: 0 }"></span>
 										{{ t("Color") }}
 									</button>
 									<div class="dropdown-divider"></div>
@@ -916,6 +917,18 @@ watch(activeCompany, () => {
 									style="right: 0; top: 100%; z-index: 200"
 									@click.stop
 								>
+									<!-- The colour on file is not one of the ten. Say so: the
+										 field is a Select of thirteen and this palette draws ten,
+										 so `black`, `amber` and `violet` land here too — and the
+										 grey fallback used to report all of them as `gray`, which
+										 IS one of the ten. Shown, not offered: the Select has no
+										 blank option, so there is nothing valid to write. -->
+									<span
+										v-if="!paletteHex(col.status.color)"
+										class="kanban-color-swatch kanban-color-none"
+										:title="t('Not set')"
+										:style="{ outline: '2px solid currentColor', outlineOffset: '2px' }"
+									></span>
 									<button
 										v-for="c in KANBAN_COLORS"
 										:key="c.name"
@@ -1312,6 +1325,17 @@ watch(activeCompany, () => {
 }
 .kanban-color-swatch:hover {
 	transform: scale(1.2);
+}
+/* No colour on file. `currentColor` rather than a token: this component renders
+   under App.vue's plain .page, where --ds-* is not defined. */
+.kanban-color-none {
+	background: transparent;
+	border: 1px dashed currentColor;
+	opacity: 0.5;
+}
+.kanban-color-swatch.kanban-color-none:hover {
+	transform: none;
+	cursor: default;
 }
 
 /* Cards drop zone */

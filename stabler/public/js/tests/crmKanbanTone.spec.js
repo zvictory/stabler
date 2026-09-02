@@ -216,3 +216,104 @@ describe("a status with no colour does not impersonate the grey one", () => {
 		}
 	});
 });
+
+describe("the picker shows the uncoloured state instead of claiming grey", () => {
+	/**
+	 * `CRM Deal Status.color` is a **Select**, not free text, and its options are
+	 * thirteen: black, gray, blue, green, red, pink, orange, amber, yellow, cyan,
+	 * teal, violet, purple. `KANBAN_COLORS` carries ten of them — `black`, `amber`
+	 * and `violet` are missing — so three perfectly legal values, storable from
+	 * the Frappe desk or the CRM app's own screens, resolve to nothing here.
+	 *
+	 * Which makes "no colour" a state the picker really can reach, and it was
+	 * reporting it as `gray`: `colorHex`'s fallback is `#6b7280`, the palette's own
+	 * grey. The reader saw a grey dot in the menu, opened the picker, and found no
+	 * swatch selected — two screens disagreeing about the same column, neither of
+	 * them right.
+	 *
+	 * Read from the doctype JSON on 2026-09-02. The list is NOT asserted here: it
+	 * lives in the `crm` app, outside this repository, so a test that read it would
+	 * fail on any clone without that app installed. The behaviour below holds for
+	 * any value the palette cannot draw, which is the claim that matters.
+	 */
+
+	/** The "Color" item in the column's ⋯ menu — the dot the reader sees first.
+	 *  Anchored to the CALL, not the name: `openColorPicker` alone matches the
+	 *  function declaration 600 lines above, so the slice ran over the wrong
+	 *  region and the test could not fail. */
+	function menuItem() {
+		const at = deals.indexOf('@click.stop="openColorPicker(');
+		expect(at, "the Color menu item has gone").toBeGreaterThan(-1);
+		const item = deals.slice(at, deals.indexOf("</button>", at));
+		expect(item.length, "the menu item sliced empty").toBeGreaterThan(50);
+		return item;
+	}
+
+	/** The colour picker panel's markup. */
+	function pickerBlock() {
+		const at = deals.indexOf("kanban-color-picker");
+		expect(at, "the colour picker has gone").toBeGreaterThan(-1);
+		return deals.slice(at, deals.indexOf("</div>", at));
+	}
+
+	it("does not paint the menu dot with the grey fallback", () => {
+		// WHAT WOULD MAKE THIS FAIL: the trigger going back to `colorHex(...)`. That
+		// is the whole report — a column whose colour this palette cannot draw got a
+		// grey dot, which is indistinguishable from a column somebody deliberately
+		// made grey, and grey is one of the ten the picker offers.
+		const item = menuItem();
+		expect(/colorHex\(/.test(item), "the menu dot still uses the grey fallback").toBe(false);
+		expect(/paletteHex\(col\.status\.color\)/.test(item), "the dot ignores the palette").toBe(true);
+	});
+
+	it("marks the dot as unset rather than leaving it blank", () => {
+		// WHAT WOULD MAKE THIS FAIL: dropping the background to "" and rendering
+		// nothing. An empty 12px circle is not a state, it is a rendering accident —
+		// the reader cannot tell it from a slow load. The dashed outline says the
+		// colour is absent on purpose.
+		const item = menuItem();
+		expect(/kanban-color-none/.test(item), "the unset dot has no marker class").toBe(true);
+		expect(/\.kanban-color-none\s*\{[^}]*dashed/.test(deals), "no dashed style for the unset dot").toBe(
+			true
+		);
+	});
+
+	it("shows the same state inside the picker, where the choice is made", () => {
+		// WHAT WOULD MAKE THIS FAIL: fixing only the menu dot. The picker is where
+		// the manager decides, and with none of the ten outlined it reported nothing
+		// at all — "no colour" and "a colour I cannot draw" looked identical to
+		// "the outline failed to render".
+		expect(
+			/v-if="!paletteHex\(col\.status\.color\)"/.test(pickerBlock()),
+			"the picker shows nothing when the colour does not resolve"
+		).toBe(true);
+	});
+
+	it("shows it without offering to write it", () => {
+		// WHAT WOULD MAKE THIS FAIL: making the indicator a <button> that calls
+		// updateColColor with "". The field is a Select whose thirteen options do
+		// NOT include a blank, so clearing a colour would write a value outside the
+		// column's own vocabulary — through an endpoint that validates none of it.
+		// The ask was to SHOW the state; a control that sets it is a different
+		// change, and one the doctype does not currently support.
+		const block = pickerBlock();
+		const at = block.indexOf("v-if=\"!paletteHex");
+		expect(at, "there is no unset indicator to check").toBeGreaterThan(-1);
+		const indicator = block.slice(at);
+		const upTo = indicator.indexOf(">");
+		expect(/@click/.test(indicator.slice(0, upTo)), "the unset indicator is clickable").toBe(false);
+		expect(/<span/.test(block.slice(0, block.indexOf("v-if=\"!paletteHex"))), "not a span").toBe(true);
+	});
+
+	it("leaves the ten real swatches writing real colour names", () => {
+		// WHAT WOULD MAKE THIS FAIL: the indicator displacing the v-for, or the
+		// swatches losing their handler. Everything above is about reporting a
+		// state; none of it may cost the picker its actual job.
+		const block = pickerBlock();
+		expect(/v-for="c in KANBAN_COLORS"/.test(block), "the ten swatches are gone").toBe(true);
+		expect(
+			/@click\.stop="updateColColor\(col\.status, c\.name\)"/.test(block),
+			"the swatches no longer set a colour"
+		).toBe(true);
+	});
+});

@@ -384,12 +384,30 @@ those tokens resolve inside TenderPage's `.stbl-ds` and NOT under App.vue's plai
 `.page`, where the CRM renders, and an undefined custom property invalidates the
 whole declaration silently.
 
+**The picker reported the wrong state, and that turned out to be the live half.**
+`CRM Deal Status.color` is a **Select**, not free text: thirteen options — black,
+gray, blue, green, red, pink, orange, amber, yellow, cyan, teal, violet, purple —
+with a doctype default of `gray`. `KANBAN_COLORS` draws **ten** of the thirteen,
+so `black`, `amber` and `violet` are legal, storable from the Frappe desk or the
+CRM app's own screens, and unresolvable here. They fell to `colorHex`'s grey
+fallback, which is itself one of the ten. The reader saw a grey dot in the ⋯
+menu, opened the picker, and found no swatch selected: two surfaces disagreeing
+about one column, neither of them right.
+
+Fixed 2026-09-02 on Zafar's instruction ("seçicide de renksiz durumu göster"):
+the menu dot and the picker both show a dashed hollow circle when the stored
+colour is not one the palette can draw. Shown, **not** offered — the Select has
+no blank option, so there is no valid value to write and the indicator is a
+`span`, not a button. Adding the missing three, or a real "clear colour" control,
+is a change to what the column may store and was not made.
+
+`currentColor` and not a house token, for the reason above: this component
+renders under App.vue's plain `.page`.
+
 **Still not unified, and deliberately not:** the CRM stores colour names, this
 board stores hex. Sharing one palette would need one of them to change what it
-writes to the database. Two sites in `Deals.vue` also keep the grey fallback on
-purpose — the dropdown swatch and the probability bar are colour SAMPLES, not
-text, so neither has a contrast or concatenation problem; an uncoloured status
-still shows a grey swatch there.
+writes to the database. The probability bar keeps the grey fallback on purpose —
+it is a FILL, not text, and a fill of nothing is invisible.
 
 ### S4 — a kanban that cannot be operated without a mouse — FIXED 2026-09-02
 
