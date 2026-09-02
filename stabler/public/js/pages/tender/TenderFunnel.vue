@@ -24,13 +24,11 @@ import { useRouter } from "vue-router";
 import { useSession } from "../../stores/session.js";
 import { call } from "../../api/client.js";
 import { t } from "../../composables/i18n.js";
-import { useToast } from "../../composables/useToast.js";
 import { stepLabel } from "./flowLabels.js";
 
 const session = useSession();
 const { activeCompany, tenderPolicy } = storeToRefs(session);
 const router = useRouter();
-const toast = useToast();
 
 const props = defineProps({
 	// F10 (docs/design/prompts/15-pipeline-overview.md, S1): both hosts used to
@@ -54,10 +52,17 @@ const emit = defineEmits(["select", "loaded"]);
 
 const loading = ref(false);
 const data = ref(null);
+// F13 (docs/design/prompts/15-pipeline-overview.md, S3): a failed load used to
+// report only through a transient toast. A toast fades in a few seconds; a
+// reader who looked away got no explanation, and the panel itself rendered
+// nothing at all -- `loading` is false again (see `finally` below) and `data`
+// never got set, which was a state the template had no branch for.
+const error = ref(null);
 
 async function load() {
 	if (!activeCompany.value) return;
 	loading.value = true;
+	error.value = null;
 	try {
 		data.value = await call("stabler.api.tender.tender_funnel", {
 			company: activeCompany.value,
@@ -65,7 +70,7 @@ async function load() {
 		});
 		emit("loaded", data.value?.generated_at || "");
 	} catch (err) {
-		toast.error(err?.message || t("Could not load the tender funnel."));
+		error.value = err?.message || t("Could not load the tender funnel.");
 	} finally {
 		loading.value = false;
 	}
@@ -391,6 +396,10 @@ function go(st) {
 	<div class="tender-funnel">
 		<div v-if="loading && !data" class="ds-panel funnel-loading">
 			<div class="ds-panel-foot">{{ t("Loading tender funnel…") }}</div>
+		</div>
+
+		<div v-else-if="error" class="ds-panel funnel-error">
+			<div class="ds-panel-foot" role="alert">{{ error }}</div>
 		</div>
 
 		<template v-else-if="data">
@@ -758,7 +767,8 @@ function go(st) {
 }
 
 .funnel-loading,
-.funnel-empty {
+.funnel-empty,
+.funnel-error {
 	padding: 6px 0;
 }
 
