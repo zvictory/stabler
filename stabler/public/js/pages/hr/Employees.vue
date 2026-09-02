@@ -110,6 +110,23 @@ onMounted(async () => {
 		if (r) select(r);
 	}
 });
+// `c` can now change without a remount (useListViewState watches the query), so
+// the resolution above is no longer the only way a name reaches this screen: a
+// pasted deep link moves it under a pane that is already open.
+watch(selectedName, (name) => {
+	// select() assigns selectedName itself — without this guard an ordinary click
+	// would re-enter and re-run the finance load for the employee already open.
+	if (name === (selected.value?.name || "")) return;
+	const r = name ? rows.value.find((e) => e.name === name) : null;
+	if (r) {
+		select(r);
+		return;
+	}
+	// Empty, or a name these rows do not carry. Leaving the previous employee up
+	// would put the URL and the pane in open disagreement.
+	selected.value = null;
+	fin.value = null;
+});
 watch(activeCompany, () => { selectedName.value = ""; selected.value = null; fin.value = null; loadAll(); });
 watch(statusFilter, load);
 

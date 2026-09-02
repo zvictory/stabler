@@ -99,13 +99,16 @@ class PartyCenterRaceGuardTest(unittest.TestCase):
 				self.assertIn(f"if (isCurrent()) {flag}.value = false;", body[body.index("} finally") :])
 
 	def test_every_deselect_path_retires_the_in_flight_requests(self):
-		"""Üç yol da seçimi kaldırıyor; biri unutulursa o yolda panel kendiliğinden dolar."""
+		"""Dört yol da seçimi kaldırıyor; biri unutulursa o yolda panel kendiliğinden dolar."""
 		# Pencereler bloğa göre kuruluyor: yalnız sayıya bakmak, üçünün de aynı
 		# bloğa yazılmasıyla yeşil kalırdı.
 		windows = (
 			("ESC", "useEscapeBack(() => {", "return true;"),
 			("liste yenilendi, kayıt düştü", "const fresh = rows.value.find(", "\n\t\t}"),
 			("şirket değişimi", "watch(activeCompany, () => {", "\tloadList();"),
+			# URL'deki `c` remount olmadan da değişir; adres çubuğu artık panelden
+			# BAŞKA bir kaydı gösterebiliyor, o yüzden bu da bir seçim-kaldırma yolu.
+			("URL'deki ad değişti", "watch(selectedName, (name) => {", "\n});"),
 		)
 		for label, opener, closer in windows:
 			with self.subTest(path=label):

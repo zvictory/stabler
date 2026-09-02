@@ -611,6 +611,27 @@ function selectByName(name) {
 	if (row) selectRow(row);
 }
 
+// `c` artık remount olmadan da değişebiliyor (useListViewState query'yi izliyor),
+// dolayısıyla mount'taki derin bağlantı çözümü bir adın panele ulaşmasının tek
+// yolu değil: adres çubuğu düzenlemesi ya da yapıştırılan bir bağlantı onu canlı
+// panelin altından değiştirir.
+watch(selectedName, (name) => {
+	// selectRow selectedName'i kendisi yazıyor — bu koruma olmadan her tıklama
+	// buraya yeniden girip zaten açık satır için dört yükleyiciyi tekrarlardı.
+	if (name === (selected.value?.name || "")) return;
+	const row = name ? byName.value[name] : null;
+	if (row) {
+		selectRow(row);
+		return;
+	}
+	// Boş, ya da bu listenin taşımadığı bir ad. Mount da çözülemeyen derin bağlantıyı
+	// böyle ele alıyor: seçim yok, kokpiti `watch(selected, …)` gösteriyor.
+	selected.value = null;
+	selectedDetail.value = null;
+	invalidatePartyRequests();
+	emit("select", null);
+});
+
 // Kokpit satırı liste sayfasının dışında kalmış olabilir (liste `limit` ile
 // kırpılır) — o durumda kokpitin kendi satırıyla aç.
 function selectFromCockpit(row) {

@@ -29,6 +29,8 @@ export function useListViewState(storageKey, schema) {
 
 	// Prevent the watch from firing during initial hydration.
 	let _ready = false;
+	// The route this instance belongs to, captured on mount — see the query watch.
+	let _path = "";
 
 	function coerce(raw, defaultVal) {
 		if (raw === undefined || raw === null) return defaultVal;
@@ -68,7 +70,10 @@ export function useListViewState(storageKey, schema) {
 		}
 		try {
 			localStorage.setItem(storageKey, JSON.stringify(data));
-		} catch {}
+		} catch {
+			// Private windows and disabled site data throw here. The URL already
+			// carries the state; storage is only the per-device default.
+		}
 	}
 
 	function loadFromStorage() {
@@ -102,8 +107,35 @@ export function useListViewState(storageKey, schema) {
 				router.replace({ query: buildQuery() });
 			}
 		}
+		_path = route.path;
 		_ready = true;
 	});
+
+	// The URL is the source of truth, and it can change WITHOUT a remount: an
+	// address-bar edit, a pasted deep link, a same-route navigation. Reading it
+	// once in onMounted honoured that contract only for the first render, so the
+	// address bar and the screen could disagree with no error and no empty state.
+	//
+	// A key absent from the query is not "unspecified" — buildQuery deletes a key
+	// that sits at its default, so absent means default. That is the only reading
+	// under which the URL fully describes the state.
+	//
+	// The path check is not defensive dressing. On a navigation AWAY this watch
+	// still fires on the departing component; without it every key would reset to
+	// its default and the replace below would rewrite the query of the route the
+	// user just arrived at.
+	watch(
+		() => route.query,
+		(q) => {
+			if (!_ready || route.path !== _path) return;
+			const incoming = {};
+			for (const [key, defaultVal] of Object.entries(schema)) {
+				incoming[key] = key in q ? q[key] : defaultVal;
+			}
+			applyValues(incoming);
+			saveToStorage();
+		}
+	);
 
 	// Sync every field change → URL + localStorage.
 	watch(
