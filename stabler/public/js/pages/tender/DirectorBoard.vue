@@ -429,6 +429,17 @@ function clearFilters() { router.replace({ query: {} }); }
 	overflow-x: auto;
 }
 
+/* `.ds-table` katmanda `width: 100%` (stabler-modernist.css:389) — kapsayıcı
+ * dar olunca sütunlar sıkışır, TAŞMAZ, ve yukarıdaki overflow-x'in kaydıracak
+ * hiçbir şeyi kalmaz. min-width ile width çakışmıyor (iki ayrı özellik);
+ * tarayıcı max(width, min-width) alır, o yüzden 700px'in üstünde yine
+ * width: 100% geçerli, yalnız kapsayıcı bundan darsa taban devreye giriyor —
+ * tam bir telefonda olduğu gibi. Bu, Vue'nun scoped stiliyle YALNIZ bu
+ * ekranın tablosuna uygulanıyor; katmandaki genel .ds-table dokunulmuyor. */
+.ds-table {
+	min-width: 960px;
+}
+
 .board-row {
 	cursor: pointer;
 }
