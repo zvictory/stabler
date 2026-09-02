@@ -6608,3 +6608,23 @@ The currency list could not be loaded — only your company's currency is availa
 Handled by the {role} role.,{role} rolü tarafından yürütülür.
 Remove file?,Dosya kaldırılsın mı?
 Remove {file} from {requirement}? The requirement re-opens if this was its last file.,{file} dosyası {requirement} gereksiniminden kaldırılsın mı? Bu son dosyaysa gereksinim yeniden açılır.
+Return items are required.,İade kalemleri zorunludur.
+Invalid return line.,Geçersiz iade satırı.
+Item code is required.,Ürün kodu zorunludur.
+Return quantity must be greater than zero for {0}.,{0} için iade miktarı sıfırdan büyük olmalı.
+Return rate must be greater than zero for {0}.,{0} için iade fiyatı sıfırdan büyük olmalı.
+Granularity must be day or month.,Ayrıntı düzeyi gün veya ay olmalı.
+Cart is empty.,Sepet boş.
+Invalid cart line.,Geçersiz sepet satırı.
+Quantity must be greater than zero for {0}.,{0} için miktar sıfırdan büyük olmalı.
+Insufficient shop stock for {0}. Available: {1} requested: {2}.,{0} için mağaza stoğu yetersiz. Mevcut: {1} istenen: {2}.
+Invalid JSON payload.,Geçersiz JSON verisi.
+Expected a list payload.,Liste bekleniyordu.
+At least one item line is required.,En az bir kalem satırı gerekli.
+Each item line must be an object.,Her kalem satırı bir nesne olmalı.
+Each item line needs an item_code.,Her kalem satırında item_code olmalı.
+Each item line needs a positive qty.,Her kalem satırında pozitif miktar olmalı.
+Entry kind must be Expense or Asset Purchase.,Kayıt türü Gider veya Varlık Alımı olmalı.
+Rate must be greater than zero.,Fiyat sıfırdan büyük olmalı.
+No price found for {item}. Enter the rate manually.,{item} için fiyat bulunamadı. Fiyatı elle girin.
+Could not fetch a price for {item}. Enter the rate manually.,{item} için fiyat alınamadı. Fiyatı elle girin.

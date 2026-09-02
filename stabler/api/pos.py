@@ -12,7 +12,10 @@ from stabler.api.sales import _lookup_item_price, _resolve_price_list
 
 
 def _validation_error(message: str) -> None:
-	raise frappe.ValidationError(message)
+	# frappe.throw, not a bare `raise`: only msgprint fills frappe.local.message_log,
+	# and the response layer emits _server_messages only when that log is non-empty.
+	# A bare raise left the SPA with nothing to print but "Request failed: 417".
+	frappe.throw(message)
 
 
 def _require_pos(company: str | None = None) -> None:
@@ -56,18 +59,18 @@ def _normalize_cart_items(items) -> list[dict]:
 	if isinstance(items, str):
 		items = frappe.parse_json(items) or []
 	if not isinstance(items, list) or not items:
-		_validation_error("Cart is empty.")
+		_validation_error(_("Cart is empty."))
 
 	merged: dict[str, float] = {}
 	for raw in items:
 		if not isinstance(raw, dict):
-			_validation_error("Invalid cart line.")
+			_validation_error(_("Invalid cart line."))
 		item_code = (raw.get("item_code") or "").strip()
 		qty = flt(raw.get("qty"))
 		if not item_code:
-			_validation_error("Item code is required.")
+			_validation_error(_("Item code is required."))
 		if qty <= 0:
-			_validation_error(f"Quantity must be greater than zero for {item_code}.")
+			_validation_error(_("Quantity must be greater than zero for {0}.").format(item_code))
 		merged[item_code] = flt(merged.get(item_code, 0) + qty)
 
 	return [{"item_code": item_code, "qty": qty} for item_code, qty in merged.items()]
@@ -80,7 +83,9 @@ def _assert_cart_available(items: list[dict], availability: dict[str, float]) ->
 		available = flt(availability.get(item_code, 0))
 		if requested > available:
 			_validation_error(
-				f"Insufficient shop stock for {item_code}. Available: {available}, requested: {requested}.",
+				_("Insufficient shop stock for {0}. Available: {1} requested: {2}.").format(
+					item_code, available, requested
+				),
 			)
 
 

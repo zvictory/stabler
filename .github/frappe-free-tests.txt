@@ -13,6 +13,7 @@
 
 stabler.tests.test_advance_aging
 stabler.tests.test_agreement_receivables_contract
+stabler.tests.test_api_refusals_are_not_mute
 stabler.tests.test_approval_rules
 stabler.tests.test_attendance_ingest
 stabler.tests.test_attendance_processor

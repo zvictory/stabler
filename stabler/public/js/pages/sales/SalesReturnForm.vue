@@ -8,6 +8,7 @@ import { formatMoney } from "../../composables/money.js";
 import { todayIso } from "../../composables/date.js";
 import { t } from "../../composables/i18n.js";
 import { itemSearcher } from "../../composables/items.js";
+import { useToast } from "../../composables/useToast.js";
 import DateInput from "../../components/DateInput.vue";
 import Select from "../../components/Select.vue";
 import Typeahead from "../../components/Typeahead.vue";
@@ -19,6 +20,7 @@ import { useBackdateGuard } from "../../composables/backdate.js";
 const { canBackdate, minPostingDate } = useBackdateGuard();
 
 const session = useSession();
+const toast = useToast();
 const { activeCompany, user } = storeToRefs(session);
 const router = useRouter();
 
@@ -169,10 +171,21 @@ async function pickItem(line, item) {
 		line.uom = preferred?.uom || meta.default_uom || meta.stock_uom || "";
 		line.rate = Number(meta.price_list_rate || item.standard_rate || 0);
 		if (!form.value.currency && meta.currency) form.value.currency = meta.currency;
-	} catch {
+		// item_sales_meta answers `unresolved` instead of throwing when the item
+		// carries no price in the resolved list, so the catch below never runs and
+		// the row still lands at 0 — which is exactly what the backend refuses.
+		if (!(Number(line.rate) > 0)) {
+			toast.warning(t("No price found for {item}. Enter the rate manually.", { item: line.item_code }));
+		}
+	} catch (err) {
 		line.stock_uom = item.stock_uom || "";
 		line.uom = item.stock_uom || "";
 		line.rate = Number(item.standard_rate || 0);
+		// The rate is the whole point of this call. Swallowing the failure left the
+		// row at 0 with nothing to explain it, and the credit note then died at
+		// submit on a 417 that carried no message either.
+		console.error("item_sales_meta failed", line.item_code, err);
+		toast.warning(t("Could not fetch a price for {item}. Enter the rate manually.", { item: line.item_code }));
 	}
 }
 
@@ -290,6 +303,7 @@ onMounted(async () => {
 			:currency="currency"
 			:search-items="searchItems"
 			:blank-line="blankLine"
+			require-positive-rate
 			@pick-item="handlePickItem"
 			@validity-change="handleValidityChange"
 		>

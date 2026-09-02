@@ -6613,3 +6613,23 @@ The currency list could not be loaded — only your company's currency is availa
 Handled by the {role} role.,«{role}» roli tomonidan boshqariladi.
 Remove file?,Fayl o'chirilsinmi?
 Remove {file} from {requirement}? The requirement re-opens if this was its last file.,"«{file}» fayli «{requirement}» talabidan o'chirilsinmi? Agar bu oxirgi fayl bo'lsa, talab yana ochiladi."
+Return items are required.,Qaytarish qatorlari kiritilishi shart.
+Invalid return line.,Qaytarish qatori noto'g'ri.
+Item code is required.,Mahsulot kodi kiritilishi shart.
+Return quantity must be greater than zero for {0}.,{0} uchun qaytarish miqdori noldan katta bo'lishi kerak.
+Return rate must be greater than zero for {0}.,{0} uchun qaytarish narxi noldan katta bo'lishi kerak.
+Granularity must be day or month.,Batafsillik kun yoki oy bo'lishi kerak.
+Cart is empty.,Savat bo'sh.
+Invalid cart line.,Savat qatori noto'g'ri.
+Quantity must be greater than zero for {0}.,{0} uchun miqdor noldan katta bo'lishi kerak.
+Insufficient shop stock for {0}. Available: {1} requested: {2}.,{0} uchun do'konda qoldiq yetarli emas. Mavjud: {1} so'ralgan: {2}.
+Invalid JSON payload.,JSON ma'lumoti noto'g'ri.
+Expected a list payload.,Ro'yxat kutilgan edi.
+At least one item line is required.,Kamida bitta mahsulot qatori kerak.
+Each item line must be an object.,Har bir mahsulot qatori obyekt bo'lishi kerak.
+Each item line needs an item_code.,Har bir mahsulot qatorida item_code bo'lishi kerak.
+Each item line needs a positive qty.,Har bir mahsulot qatorida musbat miqdor bo'lishi kerak.
+Entry kind must be Expense or Asset Purchase.,Yozuv turi Xarajat yoki Aktiv xaridi bo'lishi kerak.
+Rate must be greater than zero.,Narx noldan katta bo'lishi kerak.
+No price found for {item}. Enter the rate manually.,{item} uchun narx topilmadi. Narxni qo'lda kiriting.
+Could not fetch a price for {item}. Enter the rate manually.,{item} uchun narx olinmadi. Narxni qo'lda kiriting.

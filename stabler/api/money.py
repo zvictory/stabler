@@ -3010,7 +3010,7 @@ def _bank_entry_kind_sql(alias: str = "je") -> str:
 def _normalize_bank_entry_kind(entry_kind: str | None) -> str:
 	kind = (entry_kind or "Expense").strip()
 	if kind not in {"Expense", "Asset Purchase"}:
-		raise frappe.ValidationError("Entry kind must be Expense or Asset Purchase.")
+		frappe.throw(_("Entry kind must be Expense or Asset Purchase."))
 	return kind
 
 

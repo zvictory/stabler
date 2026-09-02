@@ -1897,32 +1897,35 @@ def create_sales_return(
 
 
 def _validation_error(message: str) -> None:
-	raise frappe.ValidationError(message)
+	# frappe.throw, not a bare `raise`: only msgprint fills frappe.local.message_log,
+	# and the response layer emits _server_messages only when that log is non-empty.
+	# A bare raise left the SPA with nothing to print but "Request failed: 417".
+	frappe.throw(message)
 
 
 def _normalize_direct_return_items(items) -> list[dict]:
 	if isinstance(items, str):
 		items = frappe.parse_json(items) or []
 	if not isinstance(items, list) or not items:
-		_validation_error("Return items are required.")
+		_validation_error(_("Return items are required."))
 
 	out = []
 	for raw in items:
 		if not isinstance(raw, dict):
-			_validation_error("Invalid return line.")
+			_validation_error(_("Invalid return line."))
 		item_code = (raw.get("item_code") or "").strip()
 		uom = (raw.get("uom") or "").strip()
 		qty = flt(raw.get("qty"))
 		rate = flt(raw.get("rate"))
 		if not item_code:
-			_validation_error("Item code is required.")
+			_validation_error(_("Item code is required."))
 		if qty <= 0:
-			_validation_error(f"Return quantity must be greater than zero for {item_code}.")
+			_validation_error(_("Return quantity must be greater than zero for {0}.").format(item_code))
 		if rate <= 0:
-			_validation_error(f"Return rate must be greater than zero for {item_code}.")
+			_validation_error(_("Return rate must be greater than zero for {0}.").format(item_code))
 		out.append({"item_code": item_code, "qty": qty, "rate": rate, "uom": uom or None})
 	if not out:
-		_validation_error("Return items are required.")
+		_validation_error(_("Return items are required."))
 	return out
 
 
@@ -2017,7 +2020,7 @@ def _sales_report_period_expr(granularity: str, date_field: str = "posting_date"
 		return f"DATE_FORMAT(si.{date_field}, '%%Y-%%m')"
 	if granularity == "day":
 		return f"DATE_FORMAT(si.{date_field}, '%%Y-%%m-%%d')"
-	raise frappe.ValidationError("Granularity must be day or month.")
+	frappe.throw(_("Granularity must be day or month."))
 
 
 def _sales_report_date_field(date_basis: str | None, *, alias: str = "") -> str:
