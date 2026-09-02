@@ -284,6 +284,29 @@ is counted in exactly one stage."*
 It is counted in exactly one stage **per mechanism**, and there are two
 mechanisms. Show it or reconcile it; do not let both numbers stand unexplained.
 
+**Resolution (2026-09-02, F15):** reconciling the two mechanisms was
+considered and rejected. `stage = stored or _funnel.classify(...)` is
+deliberate, not an oversight —
+`test_tender_flow_source.py::test_the_stored_stage_wins_over_the_derived_one`
+pins it explicitly ("if the user moved the card by hand, the screen should
+show that; derivation is only for deals that haven't been moved"), and
+`move_deal_stage` (`tender.py:3034-3090`) shows the mechanism it protects: a
+director's kanban drag writes `custom_tender_stage` **and**
+`custom_tender_stage_entered_at` together, and the flow's own SLA wait-time
+reads that timestamp. Forcing the flow to always re-derive would silently
+discard both the manual placement and the moment it happened — a real feature,
+not a bug standing in for one.
+
+**"Show it" was chosen instead.** `TenderOverview.vue`'s process-flow panel now
+carries a disclosure line beside the stage grid, naming the mechanism: the
+flow strip keeps a manually set stage when one exists, the chevron above
+always recomputes it, so a manually moved deal can legitimately read
+differently in the two. F15 (§11) is corrected below from "fails" to reflect
+this: the row's literal wording ("a lot appears in exactly one stage per
+screen") is still false for a manually moved lot, **on purpose** — what F15
+now measures is this section's own closing sentence, not the literal wording:
+*"show it or reconcile it; do not let both numbers stand unexplained."*
+
 ### S6 — a popover nothing announces, and a principle contradicted 170 lines later
 
 The chevron's second layer — the quote-set completeness bar, the phase note and
@@ -455,12 +478,12 @@ Keep the artboards you rejected.
 | F7 | A user with neither role gets a destination, not a blank page | passes |
 | F8 | A user without the flow role never triggers the flow request | passes |
 | F9 | Each funnel row is reachable and openable from the keyboard | passes — `role="button" tabindex="0" @keydown.enter` |
-| F10 | No two counters on one page share a label, a caption and a rule while showing different numbers | **fails** — two pairs on `/tender/portfolio` (S1) |
-| F11 | A counter's rule line describes what it counted | **fails** — `deadline < 48h` in both components; `result = null` on the board |
-| F12 | One stage has one name per screen | **fails** — three (S2) |
-| F13 | A failed funnel load renders something | **fails** — renders nothing (S3) |
-| F14 | `Not measurable` is visually distinct from `Within` | **fails** — same tone (S4) |
-| F15 | A lot appears in exactly one stage per screen | **fails** — 4305 appears in two (S5) |
+| F10 | No two counters on one page share a label, a caption and a rule while showing different numbers | **passes** — `TenderFunnel`'s `mode` default flipped `"full"` → `""`; a silent host (DirectorBoard) now gets the chevron only, TenderOverview keeps the full render by asking for `mode="full"` explicitly (fixed 2026-09-02; DirectorBoard's own six counters are prompt 14's row, not this one) |
+| F11 | A counter's rule line describes what it counted | **passes for this screen's counter** — TenderFunnel's `urgent` rule now reads `any milestone · days < 0`, matching `_milestone()`'s actual `status = "risk"` condition; no 48h threshold exists anywhere in the computation (fixed 2026-09-02). DirectorBoard carries the same fact under different wording (`worst(bid,contract,po_eta,delivery).days < 0`, prompt 14) — a convergence pass across the two screens is still open |
+| F12 | One stage has one name per screen | **passes** — the chevron (`pipeline` computed) and the stage boxes (`GROUPS` computed) both import `stepLabel` from `flowLabels.js` instead of keeping independent literals; the second copy, `PIPE_LABELS`, is deleted rather than left dead (fixed 2026-09-02) |
+| F13 | A failed funnel load renders something | **passes** — a new `error` ref, cleared at the top of every `load()` attempt, is written in the catch branch instead of a toast; a new `v-else-if="error"` panel renders it with `role="alert"` (fixed 2026-09-02) |
+| F14 | `Not measurable` is visually distinct from `Within` | **passes** — `stepTone` now returns `"mute"` for `unknown`, the same tone `empty` already gets and the same one the SLA badge already uses for this state; `edge` still gets no tone in `stepTone` (a separate, narrower gap this row does not name) (fixed 2026-09-02) |
+| F15 | A lot appears in exactly one stage per screen | **passes, disclosed not reconciled** — 4305 (and any manually moved deal) can still legitimately appear in two; the flow panel now says why instead of leaving it unexplained (S5, corrected 2026-09-02) |
 | F16 | The chevron's second layer is reachable without a pointer | **partial** — focus works, touch does not |
 | F17 | Loading renders a skeleton | **fails** — a line of text, in both blocks |
 | F18 | The screen says how fresh it is | **passes for the timestamp** (2026-09-02) — the older of the flow's and the funnel's `generated_at`. The manual `Refresh` button is untouched |

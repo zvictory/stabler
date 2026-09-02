@@ -177,6 +177,22 @@ const openPhase = (key) => {
 				</button>
 			</div>
 
+			<!-- F15 (docs/design/prompts/15-pipeline-overview.md, S5): this list
+			     reads the manually set stage first, the chevron above always
+			     recomputes it -- a deal a director moved by hand can legitimately
+			     read differently in the two. Reconciling them was rejected (it
+			     would either discard the manual placement or break the derived
+			     stage test_the_stored_stage_wins_over_the_derived_one pins as
+			     deliberate); disclosed here instead, so the two numbers do not
+			     stand unexplained. -->
+			<div class="ds-panel-foot ov-note">
+				{{
+					t(
+						"A deal moved by hand can show a different stage here than in the pipeline strip above: this list keeps the manual placement, the strip always recomputes the stage"
+					)
+				}}
+			</div>
+
 			<div class="ds-panel-foot">
 				<span>
 					{{
@@ -254,6 +270,14 @@ const openPhase = (key) => {
 .ov-state {
 	padding: 18px var(--ds-pad);
 	font-size: 13.5px;
+	color: var(--ds-tx2);
+}
+
+/* `.ds-panel-foot`'s own type is a 10.5px mono field-name footer -- too small
+ * and too technical for a sentence meant to be read, not skimmed. */
+.ov-note {
+	font-family: inherit;
+	font-size: 12px;
 	color: var(--ds-tx2);
 }
 

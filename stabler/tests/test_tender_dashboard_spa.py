@@ -130,6 +130,34 @@ class TestTenderDashboardSpaContract(unittest.TestCase):
 			with self.subTest(stage=stage):
 				self.assertIn(f'stepLabel("{stage}")', funnel)
 
+	def test_a_manually_placed_deal_is_disclosed_not_left_unexplained(self):
+		"""F15 (docs/design/prompts/15-pipeline-overview.md, S5): `tender_funnel`
+		(api/tender.py) always computes a deal's stage fresh from intake facts;
+		`tender_flow` reads the stored `custom_tender_stage` first and only
+		falls back to that same computation when nothing was ever set by hand --
+		`stage = stored or _funnel.classify(...)`. On seed data 2026-09-02,
+		UTY-2026-4305 read `go` in the flow strip below and `sourcing` in the
+		chevron above it: the same lot, the same screen, two stages at once.
+
+		Reconciling the two mechanisms was considered and rejected: `stage =
+		stored or _funnel.classify(...)` is pinned as deliberate by
+		test_tender_flow_source.py::test_the_stored_stage_wins_over_the_derived_one
+		("if the user moved the card by hand, the screen should show that;
+		derivation is only for deals that haven't been moved") -- forcing
+		agreement would either discard a director's manual kanban placement or
+		make the chevron stop matching the pipeline counters it derives its own
+		numbers from. The screen discloses the mechanism instead of reconciling
+		it, so the two numbers do not stand unexplained.
+		"""
+		overview = _read(_OVERVIEW)
+		start = overview.index('class="ds-panel ov-flow"')
+		flow_panel = overview[start : start + 3000]
+		self.assertRegex(
+			flow_panel,
+			r't\(\s*"A deal moved by hand can show a different stage here than in the pipeline strip above',
+			"the cross-mechanism disclosure is missing, moved out of the flow panel, or no longer translatable",
+		)
+
 	def test_company_disabled_tender_keeps_financial_fallback(self):
 		source = _read(_DASHBOARD)
 		self.assertIn("loadFinancial()", source)
