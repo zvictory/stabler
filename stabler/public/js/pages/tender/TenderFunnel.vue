@@ -128,11 +128,14 @@ const KPIS = computed(() => [
 		n: kpi.value.urgent ?? 0,
 		cap: t("deadline risk"),
 		note: t("needs action today — lands on the desk"),
-		// F11 (docs/design/prompts/15-pipeline-overview.md, S1): measured against
-		// _milestone() in api/tender.py -- `status = "risk"` fires on `days < 0`
-		// (a milestone already overdue), not within 48 hours of one. There is no
-		// 48h threshold anywhere in the computation this counter reads.
-		rule: "any milestone · days < 0",
+		// F11/P1-7 (docs/design/prompts/15-pipeline-overview.md, S1): measured
+		// against api/tender.py. `_milestone()` sets `status = "risk"` on
+		// `days < 0` only when NOT `done` (not within 48h of one -- there is no
+		// 48h threshold in the computation), and `urgent` itself is only
+		// computed `if stage in ("go","sourcing","priced","submitted")`. Not
+		// reconciled with DirectorBoard's own `at_risk` string: that one loops
+		// every deal with no stage filter, a different population.
+		rule: "open stage · any milestone · not done · days < 0",
 	},
 ]);
 
