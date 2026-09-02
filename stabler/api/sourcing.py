@@ -1289,12 +1289,19 @@ def get_quotation_landed(quotation, company=None):
 	return {
 		"quotation": doc.name,
 		"supplier": doc.supplier,
+		# The QUOTATION's own currency, for the header. `landed_charges_total` and
+		# `base_landed_total` below are company currency, like `base_grand_total`.
 		"currency": doc.currency,
 		"grand_total": flt(doc.grand_total),
 		"base_grand_total": base_grand_total,
 		"landed_charges_total": total_landed,
 		"base_landed_total": flt(base_grand_total + total_landed),
 		"has_landed_estimate": has_estimate,
+		# ADR-605: True when a line names a currency the rate cannot value. The
+		# estimate EXISTS, so `has_landed_estimate` stays True and the K3
+		# completeness rule sees nothing wrong -- this is the only signal that the
+		# delivered total on screen is short by whatever those lines hold.
+		"has_unvalued_charges": any(c.get("unvalued") for c in clean_charges),
 		"charges": clean_charges,
 	}
 

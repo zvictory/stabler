@@ -9,6 +9,8 @@ from __future__ import annotations
 
 import json
 
+from stabler.stabler.tender_landed_math import converted_amount
+
 
 def parse_landed_charges(raw_charges) -> tuple[float, list[dict], bool]:
 	"""Parse landed charges JSON string or list.
@@ -16,6 +18,24 @@ def parse_landed_charges(raw_charges) -> tuple[float, list[dict], bool]:
 	Returns (total_landed_amount, clean_charges_list, has_estimate).
 	Tax Rule (IAS 2 §11): Recoverable VAT (charge_type 'VAT' or is_recoverable_vat)
 	is NOT capitalized into landed cost.
+
+	ADR-605. The total is added to a company-currency `base_grand_total`, so every
+	line must reach it in company currency. A line carries the PO-line shape:
+	`amount` is always the company-currency figure and `amount_original` the figure
+	as it was typed in the line's own `currency`; an empty `currency` means the two
+	are the same, which is every line stored before ADR-605. Deriving `amount` here
+	-- the one function every read and every write of a quotation estimate passes
+	through -- is what stops the typed figure and the summed one from disagreeing,
+	the same reason `tender._parse_landed` derives a PO line here rather than in its
+	save path.
+
+	A line naming a currency with no usable rate cannot be valued at all. It is
+	marked `unvalued` and kept out of the total, never added at its raw number
+	(1 200 USD entering a so'm total as 1 200) and never as zero: both read as
+	CHEAP and hand the tender to the wrong vendor. Unlike `save_po_landed_charges`
+	the write path does not REFUSE such a line -- a pre-win estimate is typed by one
+	officer under deadline and must be saveable half-finished -- so the flag is what
+	the editor and the comparison table use to name the gap.
 	"""
 	if not raw_charges:
 		return 0.0, [], False
@@ -38,20 +58,39 @@ def parse_landed_charges(raw_charges) -> tuple[float, list[dict], bool]:
 	for c in charges:
 		if not isinstance(c, dict):
 			continue
-		amount = float(c.get("amount") or c.get("base_amount") or 0.0)
+		stored_amount = float(c.get("amount") or c.get("base_amount") or 0.0)
 		charge_type = str(c.get("charge_type") or c.get("account") or "").strip()
 		is_vat = bool(c.get("is_recoverable_vat")) or charge_type.upper() in ("VAT", "VALUE ADDED TAX", "НДС")
+		currency = str(c.get("currency") or "").strip().upper()
+		fx_rate = float(c.get("fx_rate") or 0.0)
+		# With no currency there is nothing to convert FROM but the stored figure;
+		# `amount_original` is only meaningful once one is named. A PO customs line
+		# reaches this function with a stored amount and no currency for exactly
+		# that reason, and must keep the figure the declaration carries.
+		original = float(c.get("amount_original") or 0.0) if currency else stored_amount
+		amount = converted_amount(original, currency, fx_rate)
+		unvalued = amount is None
+		if unvalued:
+			amount = 0.0
 
-		capitalized_amount = 0.0 if is_vat else amount
+		capitalized_amount = 0.0 if (is_vat or unvalued) else amount
 		total += capitalized_amount
 
 		clean_charges.append(
 			{
 				"charge_type": charge_type or "General",
 				"description": str(c.get("description") or ""),
+				# 0.0 on an unvalued line is not a figure, it is the absence of one;
+				# `unvalued` is what says so. Nothing may sum it without reading that.
 				"amount": amount,
 				"is_recoverable_vat": is_vat,
+				"currency": currency,
+				"fx_rate": fx_rate,
+				# Provenance, not arithmetic: WHICH day's quote produced `amount`.
+				"rate_date": str(c.get("rate_date") or "").strip()[:10],
+				"amount_original": original if currency else None,
 				"capitalized_amount": capitalized_amount,
+				"unvalued": unvalued,
 			}
 		)
 
@@ -73,6 +112,10 @@ def calculate_quotation_landed(quotation: dict) -> dict:
 	q["landed_charges_total"] = charges_total
 	q["base_landed_total"] = round(base_grand_total + charges_total, 6)
 	q["has_landed_estimate"] = has_estimate
+	# ADR-605: this quotation's total is SHORT by whatever the unvalued lines hold.
+	# The K3 completeness rule cannot see it -- the estimate exists, it is just
+	# incomplete -- so the flag travels with the row to whoever ranks on the total.
+	q["has_unvalued_charges"] = any(c.get("unvalued") for c in clean_charges)
 	q["clean_landed_charges"] = clean_charges
 	return q
 

@@ -288,3 +288,4 @@ stabler.tests.test_tender_crm_card_currency
 stabler.tests.test_tender_delivery_state
 stabler.tests.test_tender_stage_flags
 stabler.tests.test_tender_my_tenders_source
+stabler.tests.test_landed_charge_currency

@@ -159,6 +159,71 @@ class TestQuotationLandedApi(unittest.TestCase):
 		with self.assertRaises(PermissionError):
 			self.api.get_quotation_landed("SQ-001", company="FOREIGN")
 
+	def test_a_foreign_charge_reaches_the_total_converted(self):
+		"""ADR-605: `base_grand_total` is company currency and the charges must be too.
+
+		1 200 USD of freight summed unconverted would add 1 200 to a 10 000 total.
+		The editor labelled that same 1 200 with the QUOTATION's currency, so the
+		number was right on screen and wrong in the sum that ranks the vendors.
+		"""
+		res = self.api.update_quotation_landed(
+			"SQ-001",
+			[
+				{
+					"charge_type": "Freight",
+					"amount_original": 1200.0,
+					"currency": "USD",
+					"fx_rate": 12950.0,
+					"rate_date": "2026-09-03",
+				}
+			],
+			company="ACME",
+		)
+		self.assertEqual(res["landed_charges_total"], 15_540_000.0)
+		self.assertEqual(res["base_landed_total"], 15_550_000.0)
+		self.assertFalse(res["has_unvalued_charges"])
+
+	def test_a_charge_with_no_usable_rate_is_excluded_and_reported(self):
+		"""Excluding it silently is how a landed total quietly shrinks.
+
+		The endpoint is the only place the screen learns the estimate is short:
+		`has_landed_estimate` stays True (an estimate WAS typed), so without this
+		flag the comparison shows a confidently wrong delivered total.
+		"""
+		res = self.api.update_quotation_landed(
+			"SQ-001",
+			[
+				{"charge_type": "Freight", "amount_original": 1200.0, "currency": "USD", "fx_rate": 0},
+				{"charge_type": "Handling", "amount": 250.0},
+			],
+			company="ACME",
+		)
+		self.assertEqual(res["landed_charges_total"], 250.0)
+		self.assertTrue(res["has_landed_estimate"])
+		self.assertTrue(res["has_unvalued_charges"])
+
+	def test_the_saved_line_keeps_its_currency_and_rate(self):
+		# Round-tripping them is what lets the officer reopen the modal and see
+		# WHICH rate produced the company-currency figure, instead of a bare number.
+		self.api.update_quotation_landed(
+			"SQ-001",
+			[
+				{
+					"charge_type": "Freight",
+					"amount_original": 1200.0,
+					"currency": "USD",
+					"fx_rate": 12950.0,
+					"rate_date": "2026-09-03",
+				}
+			],
+			company="ACME",
+		)
+		stored = json.loads(self.fake.db_set_values[-1][3])
+		self.assertEqual(stored[0]["currency"], "USD")
+		self.assertEqual(stored[0]["fx_rate"], 12950.0)
+		self.assertEqual(stored[0]["rate_date"], "2026-09-03")
+		self.assertEqual(stored[0]["amount_original"], 1200.0)
+
 
 if __name__ == "__main__":
 	unittest.main()
