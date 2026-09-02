@@ -70,13 +70,19 @@ async function loadManagers() {
 		managers.value = r?.managers || [];
 	} catch { /* assignment is optional */ }
 }
-async function assign(row, user) {
+async function assign(row, user, event) {
+	const previous = row.assigned_to;
 	try {
 		const r = await call("stabler.api.tender.assign_tender", { deal: row.deal, user: user || "" });
 		row.assigned_to = r.assigned_to;
 		row.assigned_to_name = r.assigned_to_name;
 		toast.success(t("Assigned."));
 	} catch (err) {
+		/* :value tek yönlü — reddedilince row.assigned_to hiç değişmiyor, o
+		 * yüzden Vue bu bağı yeniden eşlemiyor ve <select> tarayıcının zaten
+		 * uyguladığı seçimi göstermeye devam ediyor. Tek düzeltme DOM'a
+		 * doğrudan yazmak; tepkisel olan burada geri almaz. */
+		if (event?.target) event.target.value = previous;
 		toast.error(err?.message || t("Could not assign."));
 	}
 }
@@ -291,7 +297,7 @@ function clearFilters() { router.replace({ query: {} }); }
 									class="ds-input board-select"
 									:value="r.assigned_to"
 									:aria-label="t('Manager')"
-									@change="assign(r, $event.target.value)"
+									@change="assign(r, $event.target.value, $event)"
 								>
 									<option value="">— {{ t("Unassigned") }} —</option>
 									<option v-for="m in managers" :key="m.name" :value="m.name">{{ m.full_name }}</option>
