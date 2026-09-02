@@ -1,6 +1,7 @@
 Enter an exchange rate or clear the currency on every flagged line,Ҳар бир белгиланган қаторда курс киритинг ёки валютани олиб ташланг
 Missing rate,Курс йўқ
 No rate for {ccy} — enter a rate or clear the currency,{ccy} учун курс йўқ — курс киритинг ёки валютани олиб ташланг
+Select a quotation for this lot in Sourcing,Ушбу лот учун Таъминот бўлимида таклиф танланг
 "The existing material request {0} could not be withdrawn, so the plan was not saved. Sort that request out first.","Мавжуд {0} материал сўровини қайтариб бўлмади, шунинг учун режа сақланмади. Аввал ўша сўровни ҳал қилинг."
 "These materials are the other operator's to plan, not yours: {0}","Бу материалларни бошқа оператор режалаштиради, сиз эмас: {0}"
 "This order's material has already been written off per operator, but 'Allow Continuous Material Consumption' is switched off in Manufacturing Settings — finishing now would count that material a second time. Ask a manager to switch it back on.","Бу буюртманинг материали оператор бўйича аллақачон ҳисобдан чиқарилган, лекин Ишлаб чиқариш созламаларида ""Allow Continuous Material Consumption"" ўчирилган — ҳозир якунлаш бу материални иккинчи марта ҳисоблайди. Раҳбардан уни қайта ёқишни сўранг."
@@ -22,6 +23,7 @@ No rate for {ccy} — enter a rate or clear the currency,{ccy} учун курс
 1:1 Foreign Postings,
 1C ClientBank Exchange format (.txt). Uzbek bank-client export.,1C ClientBank Exchange формати (.txt). Банк-мижоз экспорти.
 1C Sync Log,1C Синхрон журнали
+from {quotation},{quotation} дан
 {countries} countries met,{countries} мамлакат талаби бажарилди
 {countries} countries needed,{countries} мамлакат керак
 31–60,31–60

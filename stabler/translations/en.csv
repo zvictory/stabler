@@ -1,6 +1,7 @@
 Enter an exchange rate or clear the currency on every flagged line,Enter an exchange rate or clear the currency on every flagged line
 Missing rate,Missing rate
 No rate for {ccy} — enter a rate or clear the currency,No rate for {ccy} — enter a rate or clear the currency
+Select a quotation for this lot in Sourcing,Select a quotation for this lot in Sourcing
 "The existing material request {0} could not be withdrawn, so the plan was not saved. Sort that request out first.","The existing material request {0} could not be withdrawn, so the plan was not saved. Sort that request out first."
 "These materials are the other operator's to plan, not yours: {0}","These materials are the other operator's to plan, not yours: {0}"
 "This order's material has already been written off per operator, but 'Allow Continuous Material Consumption' is switched off in Manufacturing Settings — finishing now would count that material a second time. Ask a manager to switch it back on.","This order's material has already been written off per operator, but 'Allow Continuous Material Consumption' is switched off in Manufacturing Settings — finishing now would count that material a second time. Ask a manager to switch it back on."
@@ -26,6 +27,7 @@ No rate for {ccy} — enter a rate or clear the currency,No rate for {ccy} — e
 1:1 Foreign Postings,1:1 Foreign Postings
 1C ClientBank Exchange format (.txt). Uzbek bank-client export.,1C ClientBank Exchange format (.txt). Uzbek bank-client export.
 1C Sync Log,1C Sync Log
+from {quotation},from {quotation}
 {countries} countries met,{countries} countries met
 {countries} countries needed,{countries} countries needed
 2. Decide,2. Decide

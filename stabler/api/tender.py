@@ -1074,6 +1074,75 @@ def _deal_landed(deal: str, company: str) -> tuple[float, int]:
 	return planned, count
 
 
+_SOURCING_DECISION = "Tender Sourcing Decision"
+
+
+def _lot_sourcing_decision(deal: str, company: str) -> dict | None:
+	"""The decision that NAMES a quotation for this lot -- approved, else draft.
+
+	Approved first and ordered exactly like `sourcing._standing_award`
+	(`approved_at desc`), because a lot can be awarded more than once and only the
+	latest approval is in force. Inventing a second ordering here would let this
+	screen price the bid off a winner the PO gate then refuses.
+
+	A draft counts, and has to: pre-win there is at most a draft, since an approval
+	is what opens the PO route (`purchasing._assert_awarded`). Requiring one would
+	leave the field blank for the whole stage this exists to serve.
+	"""
+	for status, order in (("Approved", "approved_at desc, modified desc"), ("Draft", "modified desc")):
+		rows = frappe.get_list(
+			_SOURCING_DECISION,
+			filters={"deal": deal, "company": company, "status": status},
+			fields=["name", "status", "selected_quotation"],
+			order_by=order,
+			limit_page_length=1,
+		)
+		if rows and rows[0].get("selected_quotation"):
+			return rows[0]
+	return None
+
+
+def _quotation_landed_estimate(deal: str, company: str) -> tuple[float, str]:
+	"""Pre-win landed cost (base currency) from the quotation this lot chose.
+
+	Returns ``(amount, quotation_name)``, or ``(0.0, "")`` when no sourcing decision
+	names a quotation. Before a Purchase Order exists there is no post-win landed
+	figure at all, so `_bid_inputs` pre-filled `landed_goods` with 0 and the officer
+	priced the bid against a blank box -- at exactly the moment Zafar's pre-win rule
+	says the number must be quick (00-SETUP.md, "The pre-win costing rule").
+
+	NEVER the cheapest bid. `Tender Sourcing Decision.cheapest_quotation` sits right
+	beside `selected_quotation`, and the cheapest is a fact about the comparison,
+	not a choice -- a lot's winner is regularly dearer for a reason the comparison
+	cannot see (technical compliance, delivery, country mix). Summing it would put a
+	figure in front of the officer that nobody selected.
+	"""
+	decision = _lot_sourcing_decision(deal, company)
+	if not decision:
+		return 0.0, ""
+	quotation = decision["selected_quotation"]
+	if not frappe.has_permission("Supplier Quotation", "read", doc=quotation):
+		return 0.0, ""
+	has_landed = frappe.db.has_column("Supplier Quotation", "custom_landed_charges")
+	fields = ["base_grand_total", "grand_total"]
+	if has_landed:
+		fields.append("custom_landed_charges")
+	row = frappe.db.get_value("Supplier Quotation", quotation, fields, as_dict=True)
+	if not row:
+		return 0.0, ""
+
+	from stabler.api._landed import parse_landed_charges
+
+	# Same reader `get_quotation_landed` uses, so the estimate offered here is the
+	# number the sourcing comparison showed -- ADR-605 included, a charge line that
+	# cannot be valued is excluded from both rather than counted in one.
+	charges_total, _clean, _has_est = parse_landed_charges(
+		row.get("custom_landed_charges") if has_landed else None
+	)
+	base = flt(row.get("base_grand_total")) or flt(row.get("grand_total"))
+	return flt(base + charges_total), quotation
+
+
 def _deal_landed_estimate(deal: str) -> float:
 	"""Pre-win landed figure (base currency): the FIXED estimate a sourcing
 	officer types onto the deal's own bid pricing (CRM Deal.custom_bid_pricing
@@ -1182,16 +1251,32 @@ def _bid_inputs(deal: str, company: str) -> tuple[dict, dict]:
 				stored = {}
 	po_landed, po_count = _deal_landed(deal, company)
 	so_revenue, so_count = _deal_revenue(deal, company)
+	# ADR-605: with no PO there is no post-win landed figure, so the pre-win estimate
+	# the lot's sourcing decision already points at stands in. Only then -- once a PO
+	# exists the operational record outranks the estimate, and querying for one
+	# anyway would buy a decision read per call for a figure nothing would use.
+	quotation_landed, quotation_source = (0.0, "") if po_count else _quotation_landed_estimate(deal, company)
 	inp = dict(_BID_DEFAULTS)
 	inp.update({k: v for k, v in stored.items() if v is not None})
-	# Defaults: landed basis from the deal's POs; bid (price mode) from its SOs.
+	# Defaults: landed basis from the deal's POs, or pre-win from its chosen
+	# quotation; bid (price mode) from its SOs. A figure the officer typed is what
+	# the bid was quoted on and is never replaced -- hence the empty-only guard.
 	if inp.get("landed_goods") in (None, "", 0, 0.0):
-		inp["landed_goods"] = po_landed
+		inp["landed_goods"] = po_landed or quotation_landed
 	if inp.get("mode") == "price" and inp.get("bid_price") in (None, "", 0, 0.0):
 		inp["bid_price"] = so_revenue
 	inp["above_other"] = stored.get("above_other") or []
 	inp["below_other"] = stored.get("below_other") or []
-	return inp, {"po_landed": po_landed, "po_count": po_count, "so_revenue": so_revenue, "so_count": so_count}
+	return inp, {
+		"po_landed": po_landed,
+		"po_count": po_count,
+		"so_revenue": so_revenue,
+		"so_count": so_count,
+		# Reported even when a stored figure won, so the screen can OFFER the
+		# estimate as a link instead of forcing it over the officer's own number.
+		"quotation_landed_estimate": quotation_landed,
+		"quotation_landed_source": quotation_source,
+	}
 
 
 def _actual_block(deal: str, company: str, inp: dict, planned_pnl: dict) -> dict:

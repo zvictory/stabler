@@ -1,6 +1,7 @@
 Enter an exchange rate or clear the currency on every flagged line,Укажите курс или уберите валюту в каждой отмеченной строке
 Missing rate,Нет курса
 No rate for {ccy} — enter a rate or clear the currency,Нет курса для {ccy} — введите курс или уберите валюту
+Select a quotation for this lot in Sourcing,Выберите предложение для этого лота в разделе «Снабжение»
 "The existing material request {0} could not be withdrawn, so the plan was not saved. Sort that request out first.","Существующую заявку на материалы {0} не удалось отозвать, поэтому план не сохранён. Сначала разберитесь с этой заявкой."
 "These materials are the other operator's to plan, not yours: {0}","Эти материалы планирует другой оператор, а не вы: {0}"
 "This order's material has already been written off per operator, but 'Allow Continuous Material Consumption' is switched off in Manufacturing Settings — finishing now would count that material a second time. Ask a manager to switch it back on.","Материал этого заказа уже списан по операторам, но «Allow Continuous Material Consumption» в настройках производства выключен — завершение сейчас посчитает этот материал второй раз. Попросите руководителя включить его обратно."
@@ -23,6 +24,7 @@ No rate for {ccy} — enter a rate or clear the currency,Нет курса дл�
 1C ClientBank Exchange format (.txt). Uzbek bank-client export.,Формат 1C ClientBank Exchange (.txt). Экспорт из банк-клиента.
 1C Sync Log,Журнал синхронизации 1C
 1C:Enterprise sync log appears here.,Здесь отображается журнал синхронизации 1C:Предприятие.
+from {quotation},из {quotation}
 {countries} countries met,Требование по {countries} странам выполнено
 {countries} countries needed,Требуются поставщики из {countries} стран
 31–60,31–60
