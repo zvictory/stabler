@@ -4,6 +4,7 @@ import { storeToRefs } from "pinia";
 import { useRouter } from "vue-router";
 import { useSession } from "../../stores/session.js";
 import { call } from "../../api/client.js";
+import { stageTone } from "../../composables/color.js";
 import { formatDate } from "../../composables/date.js";
 import { formatMoney } from "../../composables/money.js";
 import { t } from "../../composables/i18n.js";
@@ -62,9 +63,29 @@ const KANBAN_COLORS = [
 	{ name: "cyan",   hex: "#0891b2" },
 ];
 
-function colorHex(colorName) {
-	return KANBAN_COLORS.find((c) => c.name === (colorName || "").toLowerCase())?.hex || "#6b7280";
+/** The hex a status colour NAME resolves to, or "" when it names none.
+ *
+ *  Separate from `colorHex` because that one substitutes `#6b7280` — which is
+ *  also the palette's own `gray`, so a column nobody coloured and a column
+ *  someone deliberately made grey rendered identically. Prompt 18's S3, problem
+ *  1, in a second file. */
+function paletteHex(colorName) {
+	return KANBAN_COLORS.find((c) => c.name === (colorName || "").toLowerCase())?.hex || "";
 }
+
+/** Still the raw palette hex, for the two places that show a colour SAMPLE
+ *  rather than text: the dropdown swatch and the probability bar. */
+function colorHex(colorName) {
+	return paletteHex(colorName) || "#6b7280";
+}
+
+/* Every coloured TEXT on this board goes through the shared tone instead. The
+ * count chip, the deal value, the owner avatar and the probability badge each
+ * printed the column's colour on a 13 % tint of itself, or on the white card,
+ * with nothing checking contrast — measured 2026-09-02: 0 of the 10 palette
+ * colours clear WCAG AA on the tint, and 6 of 10 fail on white, where the deal's
+ * money figure is. Same defect the contract board had (composables/color.js). */
+const toneOf = (col) => stageTone(paletteHex(col.status.color));
 
 // Column forecast = Σ recurring monthly volume (fallback to one-off deal value).
 function colMonthly(col) {
@@ -820,13 +841,13 @@ watch(activeCompany, () => {
 					<!-- Column header -->
 					<div
 						class="kanban-col-header card mb-2"
-						:style="{ borderTop: `3px solid ${colorHex(col.status.color)}` }"
+						:style="{ borderTop: `3px solid ${toneOf(col).line}` }"
 					>
 						<div class="card-header py-2 px-2 d-flex align-items-center gap-1">
 							<!-- Count chip -->
 							<span
 								class="badge kanban-count-chip me-1"
-								:style="{ background: colorHex(col.status.color) + '22', color: colorHex(col.status.color), border: `1px solid ${colorHex(col.status.color)}55` }"
+								:style="{ background: toneOf(col).tint, color: toneOf(col).text, border: `1px solid ${toneOf(col).border}` }"
 							>{{ col.deals.length }}</span>
 
 							<!-- Inline rename input or title -->
@@ -935,7 +956,7 @@ watch(activeCompany, () => {
 								<div
 									v-if="deal.expected_monthly_volume || deal.deal_value"
 									class="font-monospace fw-bold kanban-card-value mb-1"
-									:style="{ color: colorHex(col.status.color) }"
+									:style="{ color: toneOf(col).text }"
 								>
 									{{ formatMoney(deal.expected_monthly_volume || deal.deal_value, currency, user.language) }}
 									<span v-if="deal.expected_monthly_volume" class="text-secondary fw-normal small">/{{ t("mo") }}</span>
@@ -965,14 +986,14 @@ watch(activeCompany, () => {
 										<span
 											v-if="deal.deal_owner"
 											class="kanban-avatar"
-											:style="{ background: colorHex(col.status.color) + '22', color: colorHex(col.status.color) }"
+											:style="{ background: toneOf(col).tint, color: toneOf(col).text }"
 										>{{ (deal.deal_owner || '').split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase() }}</span>
 										<span class="text-secondary text-truncate kanban-card-owner">{{ deal.deal_owner || '—' }}</span>
 									</div>
 									<span
 										v-if="deal.probability != null && deal.probability !== ''"
 										class="badge kanban-prob-badge"
-										:style="{ background: colorHex(col.status.color) + '22', color: colorHex(col.status.color) }"
+										:style="{ background: toneOf(col).tint, color: toneOf(col).text }"
 									>{{ deal.probability }}%</span>
 								</div>
 

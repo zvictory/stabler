@@ -29,14 +29,18 @@
  * `#adb5bd` all land within 1.11:1 of *New*'s badge — 1.00 being identical. So
  * there is no grey that reads as "unset" beside *New*; only no fill does.
  *
- * House tokens rather than hexes, so this stays one definition of the app's
- * neutrals. They resolve: the board renders inside TenderPage's `.stbl-ds`.
+ * CSS-wide keywords rather than house tokens. The first version read
+ * `var(--ds-ln2)` / `var(--ds-tx2)`, which resolve for the contract board —
+ * TenderPage wraps it in `.stbl-ds`, where the tokens are defined — but not for
+ * the CRM kanban, which renders under App.vue's plain `.page`. `inherit` and
+ * `transparent` need no token and no ancestor, and they say the same thing: this
+ * column has no colour, so its count is simply text.
  */
 const UNCOLOURED = Object.freeze({
-	line: "var(--ds-ln2)",
+	line: "transparent",
 	tint: "transparent",
-	border: "var(--ds-ln)",
-	text: "var(--ds-tx2)",
+	border: "transparent",
+	text: "inherit",
 });
 
 const TINT_ALPHA = 0.13;
@@ -54,7 +58,9 @@ export function parseColor(value) {
 	if (!/^#([0-9a-f]{3}|[0-9a-f]{6}|[0-9a-f]{8})$/i.test(hex)) return null;
 	const body = hex.slice(1);
 	const pairs =
-		body.length === 3 ? [...body].map((c) => c + c) : [body.slice(0, 2), body.slice(2, 4), body.slice(4, 6)];
+		body.length === 3
+			? [...body].map((c) => c + c)
+			: [body.slice(0, 2), body.slice(2, 4), body.slice(4, 6)];
 	return pairs.map((p) => parseInt(p, 16));
 }
 
@@ -151,7 +157,12 @@ function hueOf(rgb) {
 	if (!chroma) return null;
 	const lightness = (mx + mn) / 2;
 	if (chroma / (1 - Math.abs(2 * lightness - 1)) < MIN_CHROMA) return null;
-	const h = mx === r ? (g - b) / chroma + (g < b ? 6 : 0) : mx === g ? (b - r) / chroma + 2 : (r - g) / chroma + 4;
+	const h =
+		mx === r
+			? (g - b) / chroma + (g < b ? 6 : 0)
+			: mx === g
+				? (b - r) / chroma + 2
+				: (r - g) / chroma + 4;
 	return (h * 60 + 360) % 360;
 }
 

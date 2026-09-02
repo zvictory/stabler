@@ -355,10 +355,41 @@ set of fifteen distinguishable hues to hand out — but it does mean the guarant
 is "the best colour still available", not "always distinguishable". The manager
 still cannot CHOOSE a colour from the board; that was the option not taken on
 2026-09-02, and editing an existing stage's colour remains impossible from this
-screen. And the divergence between the two kanbans stands: the CRM stores colour
-NAMES and resolves them through `KANBAN_COLORS`, the SO board stores hex. Nothing
-here unified them, and `Deals.vue:829` still carries the `+ '22'` concatenation
-that problem 2 removed from this board.
+screen.
+
+**The CRM kanban carried all three problems too — fixed 2026-09-02, same day.**
+`Deals.vue` survived this section's first pass because the two boards store
+colour differently: the CRM stores a NAME resolved through `KANBAN_COLORS`, this
+board stores hex, so nothing that repaired one touched the other. Measured before
+changing it, and it was worse here:
+
+- **Problem 3, contrast:** 0 of the 10 palette colours clear AA as their own text
+  on their own tint (yellow 2.58, purple 4.41) — the same result as this board's
+  0 of 7. AND a fourth site this board does not have: the deal's money figure is
+  printed in the column's colour on the **white card**, where 6 of 10 fail (green
+  3.30, yellow 2.94, blue and cyan 3.68). The four that pass are the dark ones, so
+  the defect was invisible to anyone whose columns happened to be red or purple.
+- **Problem 1, the fallback:** `colorHex` substitutes `#6b7280`, which is also the
+  palette's own `gray` — an uncoloured column and a deliberately grey one rendered
+  identically. Verbatim the same defect, in a second file.
+- **Problem 2, concatenation:** latent, not live. `colorHex` only ever returned a
+  six-digit hex from a closed list, so `+ '22'` did produce a valid colour. It is
+  one non-palette hex from not doing so, which is why it went.
+
+Four text sites now draw from `stageTone`; the tint is the harder surface, so the
+same darkened value clears AA on the white card too (5.12–6.34) and no second
+helper exists. One consequence for this board: the uncoloured tone was written
+with house tokens (`var(--ds-ln2)`, `var(--ds-tx2)`) and is now CSS keywords —
+those tokens resolve inside TenderPage's `.stbl-ds` and NOT under App.vue's plain
+`.page`, where the CRM renders, and an undefined custom property invalidates the
+whole declaration silently.
+
+**Still not unified, and deliberately not:** the CRM stores colour names, this
+board stores hex. Sharing one palette would need one of them to change what it
+writes to the database. Two sites in `Deals.vue` also keep the grey fallback on
+purpose — the dropdown swatch and the probability bar are colour SAMPLES, not
+text, so neither has a contrast or concatenation problem; an uncoloured status
+still shows a grey swatch there.
 
 ### S4 — a kanban that cannot be operated without a mouse — FIXED 2026-09-02
 
