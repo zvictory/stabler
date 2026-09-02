@@ -6693,3 +6693,5 @@ This board is built for the director role. Your queue for today is on the operat
 Showing every tender in the company.,Kompaniyadagi barcha tenderlar ko'rsatilmoqda.
 Showing only tenders assigned to you.,Faqat sizga biriktirilgan tenderlar ko'rsatilmoqda.
 {count} overdue,{count} ta muddati o'tgan
+This desk is not open to your roles,Bu stol sizning rollaringiz uchun ochiq emas
+Remove the view from the address to open your own desk.,O'z stolingizni ochish uchun ko'rinishni manzildan olib tashlang.

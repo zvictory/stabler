@@ -6698,3 +6698,5 @@ This board is built for the director role. Your queue for today is on the operat
 Showing every tender in the company.,Показаны все тендеры компании.
 Showing only tenders assigned to you.,Показаны только назначенные вам тендеры.
 {count} overdue,{count} просрочено
+This desk is not open to your roles,Этот стол недоступен для ваших ролей
+Remove the view from the address to open your own desk.,"Уберите режим из адреса, чтобы открыть свой стол."
