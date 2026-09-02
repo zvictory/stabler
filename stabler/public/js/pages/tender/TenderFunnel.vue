@@ -121,7 +121,11 @@ const KPIS = computed(() => [
 		n: kpi.value.urgent ?? 0,
 		cap: t("deadline risk"),
 		note: t("needs action today — lands on the desk"),
-		rule: "deadline < 48h · act_now",
+		// F11 (docs/design/prompts/15-pipeline-overview.md, S1): measured against
+		// _milestone() in api/tender.py -- `status = "risk"` fires on `days < 0`
+		// (a milestone already overdue), not within 48 hours of one. There is no
+		// 48h threshold anywhere in the computation this counter reads.
+		rule: "any milestone · days < 0",
 	},
 ]);
 
