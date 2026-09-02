@@ -6649,3 +6649,42 @@ Pink,Пушти
 Teal,Фируза
 Cyan,Ҳаворанг
 Select Tender No,Тендер рақамини танланг
+over by {n},{n} га ошган
+at the limit,чегарада
+near the limit,чегарага яқин
+of its threshold,ўз чегарасига нисбатан
+set for this company,шу компания учун белгиланган
+matches the built-in default,ўрнатилган стандарт билан бир хил
+so this step is never late,шунинг учун бу қадам ҳеч қачон кечикмайди
+No deal is waiting in any step.,Ҳеч бир қадамда битим кутмаяпти.
+The process flow is limited to the director view for this company.,Бу компанияда жараён оқими фақат директор кўринишида очиқ.
+Bid deadline approaching,Таклиф муддати яқинлашмоқда
+Quote policy gap,Котировка сиёсати бўшлиғи
+Lot without parent tender,Бош тендерсиз лот
+"Won, no purchase order","Ютилди, харид буюртмаси йўқ"
+Late delivery,Кечиккан етказиш
+Invoice payment due,Ҳисоб варақаси тўлов муддати
+Approval pending,Тасдиқлаш кутилмоқда
+Director,Директор
+No items match this filter,Бу филтрга ҳеч бир элемент мос келмади
+The plan holds {count} items; the counter above hides the rest.,Режада {count} та элемент бор; юқоридаги ҳисоблагич қолганини яширади.
+Nothing to show — and not everything could be checked,Кўрсатадиган нарса йўқ — ва ҳаммасини текшириб бўлмади
+{count} items were left out because their dates could not be read.,"{count} та элемент чиқариб ташланди, чунки уларнинг саналарини ўқиб бўлмади."
+This view is not yours,Бу кўриниш сизники эмас
+Your roles do not include it. Remove the view from the address to open your own desk.,Сизнинг ролларингиз уни қамраб олмайди. Ўз столингизни очиш учун кўринишни манзилдан олиб ташланг.
+This queue is not yours,Бу навбат сизники эмас
+"You are not an approver, so no decision here waits on you.","Сиз тасдиқловчи эмассиз, шунинг учун бу ерда сизни кутаётган қарор йўқ."
+The approval queue could not be read,Тасдиқлаш навбатини ўқиб бўлмади
+"This box is unknown, not empty.","Бу майдон номаълум, бўш эмас."
+"The approval queue could not be read, so both approval counters are unknown, not zero.","Тасдиқлаш навбатини ўқиб бўлмади, шунинг учун иккала тасдиқлаш ҳисоблагичи номаълум, нолга тенг эмас."
+This panel belongs to the director view,Бу панел директор кўринишига тегишли
+"Your roles cover your own queue, so the server does not build the team's.","Сизнинг ролларингиз ўз навбатингизни қамраб олади, шунинг учун сервер жамоаникини қурмайди."
+No lots to spread across the team,Жамоага тақсимланадиган лот йўқ
+"This company holds no tender lots yet, closed ones included.","Бу компанияда ҳали тендер лотлари йўқ, ёпилганлари ҳам."
+Nothing due in this window,Бу ойнада муддати келган нарса йўқ
+"No plan item falls in the next seven days, and none is past due.",Кейинги етти кунга ҳеч бир режа элементи тушмайди ва ҳеч бири муддати ўтган эмас.
+Plan items by due date,Режа элементлари муддати бўйича
+"already past due, before this window opens",бу ойна очилишидан олдин муддати ўтган
+server date,сервер санаси
+device date,қурилма санаси
+your device says,қурилмангиз кўрсатмоқда

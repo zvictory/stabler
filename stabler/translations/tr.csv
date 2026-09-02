@@ -6644,3 +6644,42 @@ Pink,Pembe
 Teal,Turkuaz
 Cyan,Camgöbeği
 Select Tender No,İhale numarası seçin
+over by {n},{n} fazla
+at the limit,eşikte
+near the limit,eşiğe yakın
+of its threshold,kendi eşiğine göre
+set for this company,bu şirket için belirlenmiş
+matches the built-in default,yerleşik varsayılanla aynı
+so this step is never late,bu yüzden bu adım hiç gecikmez
+No deal is waiting in any step.,Hiçbir adımda bekleyen anlaşma yok.
+The process flow is limited to the director view for this company.,Bu şirkette süreç akışı yalnızca direktör görünümünde açık.
+Bid deadline approaching,Teklif süresi yaklaşıyor
+Quote policy gap,Teklif politikası boşluğu
+Lot without parent tender,Üst ihalesi olmayan lot
+"Won, no purchase order","Kazanıldı, satın alma siparişi yok"
+Late delivery,Geciken teslimat
+Invoice payment due,Fatura ödeme vadesi
+Approval pending,Onay bekliyor
+Director,Direktör
+No items match this filter,Bu filtreye uyan öğe yok
+The plan holds {count} items; the counter above hides the rest.,Planda {count} öğe var; yukarıdaki sayaç geri kalanını gizliyor.
+Nothing to show — and not everything could be checked,Gösterilecek bir şey yok — ve her şey denetlenemedi
+{count} items were left out because their dates could not be read.,"{count} öğe dışarıda bırakıldı, çünkü tarihleri okunamadı."
+This view is not yours,Bu görünüm sizin değil
+Your roles do not include it. Remove the view from the address to open your own desk.,Rolleriniz bunu kapsamıyor. Kendi masanızı açmak için görünümü adresten çıkarın.
+This queue is not yours,Bu kuyruk sizin değil
+"You are not an approver, so no decision here waits on you.","Onaylayan değilsiniz, bu yüzden burada sizi bekleyen bir karar yok."
+The approval queue could not be read,Onay kuyruğu okunamadı
+"This box is unknown, not empty.","Bu kutu bilinmiyor, boş değil."
+"The approval queue could not be read, so both approval counters are unknown, not zero.","Onay kuyruğu okunamadı, bu yüzden iki onay sayacı da bilinmiyor, sıfır değil."
+This panel belongs to the director view,Bu panel direktör görünümüne ait
+"Your roles cover your own queue, so the server does not build the team's.","Rolleriniz kendi kuyruğunuzu kapsıyor, bu yüzden sunucu ekibinkini oluşturmuyor."
+No lots to spread across the team,Ekibe dağıtılacak lot yok
+"This company holds no tender lots yet, closed ones included.","Bu şirkette henüz ihale lotu yok, kapananlar dahil."
+Nothing due in this window,Bu pencerede vadesi gelen yok
+"No plan item falls in the next seven days, and none is past due.",Önümüzdeki yedi güne hiçbir plan öğesi düşmüyor ve hiçbiri gecikmiş değil.
+Plan items by due date,Vade tarihine göre plan öğeleri
+"already past due, before this window opens",bu pencere açılmadan önce vadesi geçmiş
+server date,sunucu tarihi
+device date,cihaz tarihi
+your device says,cihazınız şunu diyor

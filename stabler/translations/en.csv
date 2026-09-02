@@ -7043,3 +7043,42 @@ Pink,Pink
 Teal,Teal
 Cyan,Cyan
 Select Tender No,Select Tender No
+over by {n},over by {n}
+at the limit,at the limit
+near the limit,near the limit
+of its threshold,of its threshold
+set for this company,set for this company
+matches the built-in default,matches the built-in default
+so this step is never late,so this step is never late
+No deal is waiting in any step.,No deal is waiting in any step.
+The process flow is limited to the director view for this company.,The process flow is limited to the director view for this company.
+Bid deadline approaching,Bid deadline approaching
+Quote policy gap,Quote policy gap
+Lot without parent tender,Lot without parent tender
+"Won, no purchase order","Won, no purchase order"
+Late delivery,Late delivery
+Invoice payment due,Invoice payment due
+Approval pending,Approval pending
+Director,Director
+No items match this filter,No items match this filter
+The plan holds {count} items; the counter above hides the rest.,The plan holds {count} items; the counter above hides the rest.
+Nothing to show — and not everything could be checked,Nothing to show — and not everything could be checked
+{count} items were left out because their dates could not be read.,{count} items were left out because their dates could not be read.
+This view is not yours,This view is not yours
+Your roles do not include it. Remove the view from the address to open your own desk.,Your roles do not include it. Remove the view from the address to open your own desk.
+This queue is not yours,This queue is not yours
+"You are not an approver, so no decision here waits on you.","You are not an approver, so no decision here waits on you."
+The approval queue could not be read,The approval queue could not be read
+"This box is unknown, not empty.","This box is unknown, not empty."
+"The approval queue could not be read, so both approval counters are unknown, not zero.","The approval queue could not be read, so both approval counters are unknown, not zero."
+This panel belongs to the director view,This panel belongs to the director view
+"Your roles cover your own queue, so the server does not build the team's.","Your roles cover your own queue, so the server does not build the team's."
+No lots to spread across the team,No lots to spread across the team
+"This company holds no tender lots yet, closed ones included.","This company holds no tender lots yet, closed ones included."
+Nothing due in this window,Nothing due in this window
+"No plan item falls in the next seven days, and none is past due.","No plan item falls in the next seven days, and none is past due."
+Plan items by due date,Plan items by due date
+"already past due, before this window opens","already past due, before this window opens"
+server date,server date
+device date,device date
+your device says,your device says

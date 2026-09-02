@@ -6654,3 +6654,42 @@ Pink,Розовый
 Teal,Бирюзовый
 Cyan,Голубой
 Select Tender No,Выберите номер тендера
+over by {n},превышение на {n}
+at the limit,на пределе
+near the limit,близко к пределу
+of its threshold,от своего порога
+set for this company,задан для этой компании
+matches the built-in default,совпадает со встроенным значением
+so this step is never late,поэтому этот шаг никогда не опаздывает
+No deal is waiting in any step.,Ни одна сделка не ждёт ни на одном шаге.
+The process flow is limited to the director view for this company.,Поток процесса в этой компании доступен только в режиме директора.
+Bid deadline approaching,Приближается срок подачи
+Quote policy gap,Нарушение политики котировок
+Lot without parent tender,Лот без родительского тендера
+"Won, no purchase order","Выиграно, нет заказа на покупку"
+Late delivery,Просроченная доставка
+Invoice payment due,Срок оплаты счёта
+Approval pending,Ожидает согласования
+Director,Директор
+No items match this filter,Ни один элемент не подходит под этот фильтр
+The plan holds {count} items; the counter above hides the rest.,В плане {count} элементов; счётчик выше скрывает остальные.
+Nothing to show — and not everything could be checked,Нечего показать — и не всё удалось проверить
+{count} items were left out because their dates could not be read.,"{count} элементов пропущено, потому что их даты не удалось прочитать."
+This view is not yours,Это не ваш режим
+Your roles do not include it. Remove the view from the address to open your own desk.,"Ваши роли его не включают. Уберите режим из адреса, чтобы открыть свой стол."
+This queue is not yours,Эта очередь не ваша
+"You are not an approver, so no decision here waits on you.","Вы не согласующий, поэтому здесь нет решения, ожидающего вас."
+The approval queue could not be read,Очередь согласований не удалось прочитать
+"This box is unknown, not empty.","Это поле неизвестно, а не пусто."
+"The approval queue could not be read, so both approval counters are unknown, not zero.","Очередь согласований не удалось прочитать, поэтому оба счётчика согласований неизвестны, а не равны нулю."
+This panel belongs to the director view,Эта панель относится к режиму директора
+"Your roles cover your own queue, so the server does not build the team's.","Ваши роли охватывают вашу собственную очередь, поэтому сервер не строит очередь команды."
+No lots to spread across the team,Нет лотов для распределения по команде
+"This company holds no tender lots yet, closed ones included.","У этой компании пока нет тендерных лотов, включая закрытые."
+Nothing due in this window,В этом окне ничего не запланировано
+"No plan item falls in the next seven days, and none is past due.","Ни один элемент плана не попадает в ближайшие семь дней, и ни один не просрочен."
+Plan items by due date,Элементы плана по сроку
+"already past due, before this window opens","уже просрочено, до открытия этого окна"
+server date,дата сервера
+device date,дата устройства
+your device says,ваше устройство показывает

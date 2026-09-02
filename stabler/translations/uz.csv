@@ -6649,3 +6649,42 @@ Pink,Pushti
 Teal,Firuza
 Cyan,Havorang
 Select Tender No,Tender raqamini tanlang
+over by {n},{n} ga oshgan
+at the limit,chegarada
+near the limit,chegaraga yaqin
+of its threshold,o'z chegarasiga nisbatan
+set for this company,shu kompaniya uchun belgilangan
+matches the built-in default,o'rnatilgan standart bilan bir xil
+so this step is never late,shuning uchun bu qadam hech qachon kechikmaydi
+No deal is waiting in any step.,Hech bir qadamda bitim kutmayapti.
+The process flow is limited to the director view for this company.,Bu kompaniyada jarayon oqimi faqat direktor ko'rinishida ochiq.
+Bid deadline approaching,Taklif muddati yaqinlashmoqda
+Quote policy gap,Kotirovka siyosati bo'shlig'i
+Lot without parent tender,Bosh tendersiz lot
+"Won, no purchase order","Yutildi, xarid buyurtmasi yo'q"
+Late delivery,Kechikkan yetkazish
+Invoice payment due,Hisob-faktura to'lov muddati
+Approval pending,Tasdiqlash kutilmoqda
+Director,Direktor
+No items match this filter,Bu filtrga hech bir element mos kelmadi
+The plan holds {count} items; the counter above hides the rest.,Rejada {count} ta element bor; yuqoridagi hisoblagich qolganini yashiradi.
+Nothing to show — and not everything could be checked,Ko'rsatadigan narsa yo'q — va hammasini tekshirib bo'lmadi
+{count} items were left out because their dates could not be read.,"{count} ta element chiqarib tashlandi, chunki ularning sanalarini o'qib bo'lmadi."
+This view is not yours,Bu ko'rinish sizniki emas
+Your roles do not include it. Remove the view from the address to open your own desk.,Sizning rollaringiz uni qamrab olmaydi. O'z stolingizni ochish uchun ko'rinishni manzildan olib tashlang.
+This queue is not yours,Bu navbat sizniki emas
+"You are not an approver, so no decision here waits on you.","Siz tasdiqlovchi emassiz, shuning uchun bu yerda sizni kutayotgan qaror yo'q."
+The approval queue could not be read,Tasdiqlash navbatini o'qib bo'lmadi
+"This box is unknown, not empty.","Bu maydon noma'lum, bo'sh emas."
+"The approval queue could not be read, so both approval counters are unknown, not zero.","Tasdiqlash navbatini o'qib bo'lmadi, shuning uchun ikkala tasdiqlash hisoblagichi noma'lum, nolga teng emas."
+This panel belongs to the director view,Bu panel direktor ko'rinishiga tegishli
+"Your roles cover your own queue, so the server does not build the team's.","Sizning rollaringiz o'z navbatingizni qamrab oladi, shuning uchun server jamoanikini qurmaydi."
+No lots to spread across the team,Jamoaga taqsimlanadigan lot yo'q
+"This company holds no tender lots yet, closed ones included.","Bu kompaniyada hali tender lotlari yo'q, yopilganlari ham."
+Nothing due in this window,Bu oynada muddati kelgan narsa yo'q
+"No plan item falls in the next seven days, and none is past due.",Keyingi yetti kunga hech bir reja elementi tushmaydi va hech biri muddati o'tgan emas.
+Plan items by due date,Reja elementlari muddati bo'yicha
+"already past due, before this window opens",bu oyna ochilishidan oldin muddati o'tgan
+server date,server sanasi
+device date,qurilma sanasi
+your device says,qurilmangiz ko'rsatmoqda
