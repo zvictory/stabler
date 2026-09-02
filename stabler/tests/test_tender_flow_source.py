@@ -19,6 +19,18 @@ NAV = (ROOT / "public/js/pages/tender/TenderNav.vue").read_text(encoding="utf-8"
 TEMPLATE = VUE[VUE.index("<template>") : VUE.rindex("</template>")]
 FLAT = re.sub(r"\s+", " ", TEMPLATE)
 ENDPOINT = API[API.index("def tender_flow(company: str)") :]
+STYLE = re.sub(r"/\*.*?\*/", "", VUE[VUE.index("<style scoped>") : VUE.rindex("</style>")], flags=re.S)
+
+
+def opening_tag(marker: str) -> str:
+	"""The opening tag that carries `marker`.
+
+	Anchored to the marker's own position rather than to a tag name: a slice
+	that starts from a bare name can match a different element entirely, which
+	has already happened twice on this package.
+	"""
+	at = TEMPLATE.index(marker)
+	return TEMPLATE[TEMPLATE.rindex("<", 0, at) : TEMPLATE.index(">", at) + 1]
 
 
 class TestTheScreenIsWired(unittest.TestCase):
@@ -127,6 +139,157 @@ class TestTheEndpointSharesOneSourceOfTruth(unittest.TestCase):
 		"""Yama uygulanmamış sitede ekran boş değil, ölçülemez olmalı."""
 		self.assertIn('has_column("CRM Deal", "custom_tender_stage")', ENDPOINT)
 		self.assertIn('has_column("CRM Deal", "custom_tender_stage_entered_at")', ENDPOINT)
+
+
+class TestTheScreenSaysWhichStateItIsIn(unittest.TestCase):
+	"""W11 and W12 — a failed load, a refusal and a quiet pipeline were one branch.
+
+	`v-else` on the table made it the fallback for EVERYTHING, so a load that
+	fell over, a company nobody selected and a user without the director view
+	all rendered five column headers over an empty tbody, under four counters
+	reading zero — which is exactly what a healthy pipeline looks like. The only
+	other signal was a toast that scrolls away.
+
+	Corrects prompt 16 §5 on one point, measured 2026-09-02: a genuinely EMPTY
+	pipeline was never one of those cases. `step_rows` emits a row per
+	`WORKING_STAGES` whatever the data, so an empty company draws five rows
+	reading `0 · — · — · Empty`. The empty case needed a sentence, not a branch.
+	"""
+
+	def test_every_state_precedes_the_tables_fallback(self):
+		# WHAT WOULD MAKE THIS FAIL: a state added AFTER the table. The table is
+		# the `v-else`, so anything below it is unreachable — it would read as
+		# written, reviewed and shipped while never rendering once.
+		fallback = TEMPLATE.index("<template v-else>")
+		for marker in ('v-else-if="forbidden"', 'v-else-if="!activeCompany"', 'v-else-if="error"'):
+			with self.subTest(marker=marker):
+				self.assertLess(TEMPLATE.index(marker), fallback, f"{marker} is below the table")
+
+	def test_a_refusal_names_the_door_that_is_shut(self):
+		# WHAT WOULD MAKE THIS FAIL: treating a 403 as an ordinary failure. The
+		# board is gated on the director view (`tender.py`), which is not
+		# something a reader can fix by retrying; being told to retry forever is
+		# worse than being told no.
+		self.assertIn("director view", VUE)
+		self.assertRegex(VUE, r"err\?\.status === 403")
+		self.assertRegex(VUE, r"forbidden\.value = true")
+
+	def test_a_failed_load_is_written_into_the_panel(self):
+		# WHAT WOULD MAKE THIS FAIL: going back to a toast alone. A toast is
+		# gone in seconds and the panel underneath keeps claiming a pipeline;
+		# the reader who looks away at the wrong moment sees a healthy screen.
+		self.assertRegex(VUE, r"error\.value = err\?\.message")
+		self.assertRegex(FLAT, r'v-else-if="error" class="ds-panel-foot flow-state" role="alert"')
+
+	def test_the_counters_are_withheld_rather_than_zeroed(self):
+		# WHAT WOULD MAKE THIS FAIL: the strip rendering through a failure. `0 ·
+		# 0 / 5 steps · — · 0 / 0` is not a report of nothing being wrong; it is
+		# four numbers the screen does not have, and it reads as good news.
+		self.assertRegex(FLAT, r'<div v-if="data" class="ds-kpis"')
+		self.assertRegex(VUE, r"data\.value = null")
+
+	def test_an_empty_pipeline_says_so_in_words(self):
+		# WHAT WOULD MAKE THIS FAIL: five rows of `Empty` and no sentence. The
+		# rows are correct and still leave the reader asking whether the screen
+		# worked; one line separates "nothing is waiting" from "nothing loaded".
+		self.assertIn("No deal is waiting in any step.", VUE)
+		self.assertRegex(FLAT, r'v-if="!data\?\.in_process"')
+
+	def test_the_two_failure_states_are_announced(self):
+		# WHAT WOULD MAKE THIS FAIL: a refusal that only appears visually. The
+		# panel is replaced in place, far from where the reader pressed Refresh,
+		# so nothing tells a screen reader that anything changed.
+		for marker in ('v-else-if="forbidden"', 'v-else-if="error"'):
+			with self.subTest(marker=marker):
+				self.assertIn('role="alert"', opening_tag(marker))
+
+
+class TestTheTableScrollsAndThePageDoesNot(unittest.TestCase):
+	"""W13 — five columns and, until now, not one line of responsive CSS.
+
+	Corrects prompt 16 §S4 on two points, both measured 2026-09-02.
+	(1) The counter strip DOES have a phone rule: the shared layer collapses
+	`ds-kpis[data-cols="4"]` to two columns at ≤992px
+	(`stabler-modernist.css:452-454`). (2) `DirectorBoard`'s `.board-scroll` is
+	`overflow-x: auto` and nothing else, and `.ds-table` is `width: 100%` with
+	wrapping cells — so that container has nothing to scroll and prompt 14's
+	fix, as written, does not engage. The minimum width is what makes it real.
+
+	NOT VERIFIED HERE: that a phone actually scrolls the table and not the page.
+	`vitest.config.mjs` sets `environment: "node"` and there is no jsdom in this
+	repository, so no test in it can lay out a viewport. These assertions cover
+	the CSS that would have to be true for it, and nothing more.
+	"""
+
+	def test_the_table_sits_inside_a_horizontal_scroller(self):
+		# WHAT WOULD MAKE THIS FAIL: the table going back to being a direct
+		# child of the panel. Five columns with two-line cells overflow a
+		# 390px phone, and without a scroller it is the PAGE that moves —
+		# taking the counter strip and the header sideways with it.
+		self.assertRegex(FLAT, r'<div class="flow-scroll"[^>]*> <table class="ds-table">')
+		self.assertRegex(STYLE, r"\.flow-scroll\s*\{[^}]*overflow-x:\s*auto")
+
+	def test_the_scroller_has_something_to_scroll(self):
+		# WHAT WOULD MAKE THIS FAIL: `overflow-x: auto` on its own. `.ds-table`
+		# is `width: 100%` and its cells wrap, so the table shrinks to whatever
+		# box it is given and the scrollbar never appears — the container reads
+		# as a fix and behaves exactly like no fix at all.
+		self.assertRegex(STYLE, r"\.flow-scroll \.ds-table\s*\{[^}]*min-width:\s*\d+px")
+
+	def test_no_minimum_width_escapes_the_scroller(self):
+		# WHAT WOULD MAKE THIS FAIL: a min-width on an element the scroller does
+		# not contain. That is the same defect one level up — the page scrolls
+		# instead of the table — and it is the easy mistake to make when a
+		# later column needs more room.
+		rules = re.findall(r"([^{}]+)\{([^{}]*)\}", STYLE)
+		widened = [selector.strip() for selector, body in rules if "min-width" in body]
+		self.assertTrue(widened, "no rule sets a minimum width, so this test asserts nothing")
+		for selector in widened:
+			with self.subTest(selector=selector):
+				self.assertIn(".flow-scroll", selector)
+
+
+class TestWhatCanBeReachedIsAnnounced(unittest.TestCase):
+	"""W17 — the file carried zero `aria-*` and zero `role=`.
+
+	NOT VERIFIED HERE, and not verifiable in this repository: that a keyboard
+	actually reaches the scroller, that the arrow keys pan it, or that a screen
+	reader announces any of this. There is no DOM in the test environment. What
+	follows asserts the attributes are present on the element that scrolls —
+	which is necessary and is not the same as proving the behaviour.
+	"""
+
+	def test_the_scrolling_region_is_focusable_and_named(self):
+		# WHAT WOULD MAKE THIS FAIL: adding the scroller and stopping there. A
+		# region a mouse can pan and a keyboard cannot is content that some
+		# readers simply cannot see — the change would have made the screen
+		# worse for them than the page-scrolling version it replaced. The name
+		# is what stops it being announced as an unlabelled group.
+		tag = opening_tag('class="flow-scroll"')
+		self.assertIn('tabindex="0"', tag)
+		self.assertIn('role="region"', tag)
+		self.assertIn(":aria-label=", tag)
+
+	def test_the_panel_reports_when_it_is_busy(self):
+		# WHAT WOULD MAKE THIS FAIL: a refresh that changes nothing a screen
+		# reader can perceive. The button disables itself and the panel swaps to
+		# a skeleton — both invisible to a reader who is not looking at pixels.
+		self.assertIn(':aria-busy="loading"', opening_tag('class="ds-panel flow-panel"'))
+
+	def test_the_refresh_control_is_a_real_button(self):
+		# WHAT WOULD MAKE THIS FAIL: a div with a click handler. It is the one
+		# interactive control on this screen; making it a div would take the
+		# whole screen out of the tab order for the sake of styling.
+		self.assertRegex(FLAT, r'<button type="button" class="ds-btn"[^>]*@click="load"')
+
+	def test_the_bottleneck_is_not_signalled_by_colour_alone(self):
+		# WHAT WOULD MAKE THIS FAIL: the 3px stripe going back to being the only
+		# mark on the row. A box-shadow has no text, no role and no name: to a
+		# screen reader the bottleneck row was identical to every other row, and
+		# the only place the finding existed in words was a counter three
+		# regions away.
+		self.assertIn('class="flow-neck"', TEMPLATE)
+		self.assertIn('t("Bottleneck")', TEMPLATE)
 
 
 if __name__ == "__main__":
