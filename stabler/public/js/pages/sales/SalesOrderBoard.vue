@@ -6,6 +6,7 @@ import { useEscapeBack } from "../../composables/useEscapeBack.js";
 import { useSession } from "../../stores/session.js";
 import { call } from "../../api/client.js";
 import { formatMoney, totalsByCurrency } from "../../composables/money.js";
+import { stageTone } from "../../composables/color.js";
 import { formatDate, formatTime } from "../../composables/date.js";
 import { t } from "../../composables/i18n.js";
 import { useToast } from "../../composables/useToast.js";
@@ -86,7 +87,11 @@ function clearTenderOnly() {
 	router.replace({ path: route.path, query });
 }
 
-const colorOf = (s) => s.color || "#6c757d";
+/* The stage colour is a plain `Data` field, so the board treats it as user data:
+ * parsed, not concatenated, and the count darkened until it is readable on its
+ * own tint. Not one of the seven seeded colours passed WCAG AA before — see
+ * composables/color.js and prompt 18's S3. */
+const toneOf = (s) => stageTone(s.color);
 const boardFilters = computed(() => tenderRouteFilters(route.query));
 /* `status` arrives CLASSIFIED. It used to be re-derived here from
  * `per_delivered`, a second copy of a rule the server already applied — see
@@ -323,14 +328,14 @@ function openSo(name) {
 				@dragleave="dragOver = ''"
 				@drop="onDrop(s.name)"
 			>
-				<div class="card mb-2" :style="{ borderTop: `3px solid ${colorOf(s)}` }">
+				<div class="card mb-2" :style="{ borderTop: `3px solid ${toneOf(s).line}` }">
 					<div class="card-header py-2 px-2 d-flex align-items-center gap-1">
 						<span
 							class="badge me-1"
 							:style="{
-								background: colorOf(s) + '22',
-								color: colorOf(s),
-								border: `1px solid ${colorOf(s)}55`,
+								background: toneOf(s).tint,
+								color: toneOf(s).text,
+								border: `1px solid ${toneOf(s).border}`,
 							}"
 							>{{ (cardsByStage[s.name] || []).length }}</span
 						>

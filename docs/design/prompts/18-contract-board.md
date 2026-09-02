@@ -293,8 +293,36 @@ Three problems, in increasing order of consequence:
    `#adb5bd22` is already marginal; a manager choosing a pale yellow makes the
    count unreadable.
 
-The design owes a rule that survives arbitrary input: derive tone from the colour
-rather than using it raw, or constrain the picker to a token set. Say which.
+**Answered 2026-09-02: derive the tone.** `composables/color.js` parses the
+stored value (`#rgb`, `#rrggbb`, `#rrggbbaa`) and returns the four colours a
+column needs; the alpha is arithmetic, not string concatenation, so the
+shorthand and the eight-digit form work instead of silently producing a
+five-or-ten-digit non-colour. Anything it cannot read falls back **whole** to the
+neutral — the old code half worked on a CSS colour name, giving a coloured
+number on a background that failed to render, which is worse than being wrong
+consistently.
+
+**The measurement changed the design.** The plan was "use the colour unless it is
+bad". Measured against WCAG AA (4.5:1, the bar for small text, which a badge
+count is): **not one of the seven seeded colours passes** as its own text on its
+own 13 % tint. The best is *Delivery* at 4.18; *Closed* is 1.91 and *Procurement*
+1.93. S3 called `#adb5bd` "already marginal" — every column was over the line. So
+a conditional rule would have left the board exactly as it was.
+
+The colour is therefore DARKENED until it passes, one 10 % step at a time (one to
+five steps on the seeded palette; eight for near-white). Scaling all three
+channels by a single factor keeps the ratios between them exact, so the hue
+survives — `#f59f00` becomes `#915e00`, still unmistakably the orange column.
+Substituting a fixed ink would have been fewer lines and would have thrown the
+hue away on all seven columns at once; the test that fails if anyone does that is
+`stageColor.spec.js`'s "keeps the hue while it darkens".
+
+**Problem 1 is NOT fixed.** The fallback is still `#6c757d`, which is still the
+*New* stage's own colour. It matters more than it reads: `so_stage_save` takes no
+colour argument, so **every stage a manager creates through the board has no
+colour at all** and renders identically to *New*. Changing the neutral is one
+token; deciding what an uncoloured stage should look like is a design question
+this prompt did not ask, and C19 does not cover it.
 
 ### S4 — a kanban that cannot be operated without a mouse — FIXED 2026-09-02
 
@@ -650,5 +678,5 @@ Keep the artboards you rejected.
 | C16 | "From tender" is legible without hovering | **✔ 2026-09-02** — the badge reads `⚑ Tender`; icon kept, tooltip removed (S7) |
 | C17 | `status` is the server's classification, not the client's | **✔ 2026-09-02** — one rule in `_funnel.delivery_state`; `so_board` sends it, the dashboard counts by it, the client re-derives nothing (S7) |
 | C18 | Creating a stage uses the app's own dialog | **fails** — `window.prompt` (S8) |
-| C19 | A stage colour the manager chose cannot make its own count unreadable | **fails** — raw colour on a 13 % tint of itself (S3) |
+| C19 | A stage colour the manager chose cannot make its own count unreadable | **✔ 2026-09-02** — parsed, tinted with real alpha, and darkened until it clears WCAG AA on its own tint; hue preserved. None of the seven seeded colours passed before (S3) |
 | C20 | The board says how old it is | **passes for the timestamp** (2026-09-02) — `generated_at`. It still has no refresh of any kind, which is what makes the stamp worth reading (S5) |
