@@ -519,7 +519,7 @@ same order with nothing on either screen to explain it.
   Still true, and untouched: the filter this feeds has no control on this screen.
   It can only arrive in the URL.
 
-### S8 — `window.prompt()`
+### S8 — `window.prompt()` — FIXED 2026-09-02
 
     async function addStage() {
         const name = (window.prompt(t("New stage name")) || "").trim();
@@ -531,8 +531,25 @@ dialog and the creative one gets the browser's.
 `window.prompt` cannot be styled, cannot be translated below the message string
 (its OK/Cancel come from the browser locale, not the app's four), offers no
 validation before submission, no colour or position field, and is suppressed
-outright by some browsers. It is also the only place in the package where a user
-types into something the design system cannot see.
+outright by some browsers — in which case it returns null, `addStage` returns
+early, and the stage is silently never created with nothing on screen to say so.
+
+**FIXED 2026-09-02.** `useConfirm` gained a second entry point, `prompt()`, on
+the same state as `confirm()` — ConfirmHost is 130 lines of focus management,
+Escape handling and a tab trap, and a parallel PromptHost would be a second copy
+of every one of them; this repository has already measured what that costs. The
+host draws a field only when one was asked for, focuses it rather than a button
+(a native prompt puts the caret in the field), submits on Enter through the same
+path as the button, refuses a required field that is empty, and keeps the field
+in the tab cycle. `prompt()` resolves the trimmed text or **null** — cancel and
+"typed nothing" are different intentions, a distinction `window.prompt` itself
+drew and one it would be odd to lose while replacing it.
+
+**Still true of the package, and outside C18:** eleven other call sites use
+`window.prompt` — seven of them the same "Reason for the status correction:"
+across `imports/`, plus two in `hr/CorrectionsQueue.vue` whose own comment says
+"A proper note input would require a modal; here we use window.prompt for
+brevity." They now have somewhere to go. None of them was touched.
 
 ---
 
@@ -677,6 +694,6 @@ Keep the artboards you rejected.
 | C15 | *Paid* and *Closed* are distinguishable from ordinary columns | **✔ 2026-09-02** — a "Won" / "Closed" chip per flag, two independent `v-if`s, the doctype's own labels (S7) |
 | C16 | "From tender" is legible without hovering | **✔ 2026-09-02** — the badge reads `⚑ Tender`; icon kept, tooltip removed (S7) |
 | C17 | `status` is the server's classification, not the client's | **✔ 2026-09-02** — one rule in `_funnel.delivery_state`; `so_board` sends it, the dashboard counts by it, the client re-derives nothing (S7) |
-| C18 | Creating a stage uses the app's own dialog | **fails** — `window.prompt` (S8) |
+| C18 | Creating a stage uses the app's own dialog | **✔ 2026-09-02** — `useConfirm().prompt()`, the same host `deleteStage` already used; field focused, Enter submits, empty refused (S8) |
 | C19 | A stage colour the manager chose cannot make its own count unreadable | **✔ 2026-09-02** — parsed, tinted with real alpha, and darkened until it clears WCAG AA on its own tint; hue preserved. None of the seven seeded colours passed before (S3) |
 | C20 | The board says how old it is | **passes for the timestamp** (2026-09-02) — `generated_at`. It still has no refresh of any kind, which is what makes the stamp worth reading (S5) |

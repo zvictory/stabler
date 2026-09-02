@@ -7,13 +7,32 @@ const { currentConfirm } = useConfirm();
 
 const confirmButton = ref(null);
 const cancelButton = ref(null);
+const inputBox = ref(null);
+
+/* One way in for OK, whether it came from the button or from Enter. A confirm
+ * still answers `true`; a prompt answers its TEXT, and refuses while a required
+ * field is empty — `window.prompt` had no validation at all, which is why every
+ * caller had to guard afterwards. */
+function submit() {
+	const c = currentConfirm.value;
+	if (!c) return;
+	if (!c.input) return c.resolve(true);
+	const text = String(c.input.text ?? "").trim();
+	if (c.input.required && !text) return;
+	c.resolve(text);
+}
 
 watch(
 	() => currentConfirm.value,
 	async (newVal) => {
 		if (newVal) {
 			await nextTick();
-			if (newVal.danger && cancelButton.value) {
+			// The field first: a native prompt puts the caret in it, and a dialog
+			// that focuses OK instead makes the user reach for the mouse to do the
+			// one thing the dialog exists for.
+			if (newVal.input && inputBox.value) {
+				inputBox.value.focus();
+			} else if (newVal.danger && cancelButton.value) {
 				cancelButton.value.focus();
 			} else if (confirmButton.value) {
 				confirmButton.value.focus();
@@ -33,10 +52,10 @@ function handleKeyDown(e) {
 	} else if (e.key === "Enter") {
 		if (document.activeElement !== confirmButton.value && document.activeElement !== cancelButton.value) {
 			e.preventDefault();
-			currentConfirm.value.resolve(true);
+			submit();
 		}
 	} else if (e.key === "Tab") {
-		const focusables = [cancelButton.value, confirmButton.value].filter(Boolean);
+		const focusables = [inputBox.value, cancelButton.value, confirmButton.value].filter(Boolean);
 		if (focusables.length < 2) return;
 
 		const first = focusables[0];
@@ -94,7 +113,19 @@ onUnmounted(() => {
 						></i>
 						<i v-else class="ti ti-info-circle text-primary display-5 mb-2 d-block"></i>
 						<h3>{{ t(currentConfirm.title) }}</h3>
-						<div class="text-secondary">{{ t(currentConfirm.body) }}</div>
+						<div v-if="currentConfirm.body" class="text-secondary">{{ t(currentConfirm.body) }}</div>
+						<div v-if="currentConfirm.input" class="mt-3 text-start">
+							<label v-if="currentConfirm.input.label" class="form-label">{{
+								t(currentConfirm.input.label)
+							}}</label>
+							<input
+								ref="inputBox"
+								v-model="currentConfirm.input.text"
+								type="text"
+								class="form-control"
+								:placeholder="t(currentConfirm.input.placeholder)"
+							/>
+						</div>
 					</div>
 					<div class="modal-footer border-top-0 pt-0">
 						<div class="w-100">
@@ -115,7 +146,12 @@ onUnmounted(() => {
 										type="button"
 										class="btn w-100"
 										:class="currentConfirm.danger ? 'btn-danger' : 'btn-primary'"
-										@click="currentConfirm.resolve(true)"
+										:disabled="
+											!!currentConfirm.input &&
+											currentConfirm.input.required &&
+											!String(currentConfirm.input.text || '').trim()
+										"
+										@click="submit()"
 									>
 										{{ t(currentConfirm.confirmLabel) }}
 									</button>

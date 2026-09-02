@@ -21,7 +21,7 @@ const route = useRoute();
 const router = useRouter();
 useEscapeBack(null, "/sales"); // ESC → back (general app rule)
 const toast = useToast();
-const { confirm } = useConfirm();
+const { confirm, prompt } = useConfirm();
 
 const loading = ref(false);
 /* Yük SAKLANIYOR, parçalanmıyor: damga da onun bir alanı. `cards` ayrı bir
@@ -197,7 +197,16 @@ const cardLabel = (c, s) =>
 
 // ── Stage management ─────────────────────────────────────────────────────────
 async function addStage() {
-	const name = (window.prompt(t("New stage name")) || "").trim();
+	/* The app's own dialog, not the browser's. This file already used
+	 * `useConfirm` for DELETE, so the destructive action had the house dialog and
+	 * the creative one had a `window.prompt` — untranslatable below its message,
+	 * unvalidatable, and suppressed outright by some browsers, in which case it
+	 * returns null and the stage is silently never created (prompt 18, S8). */
+	const name = await prompt({
+		title: t("New stage name"),
+		placeholder: t("Stage name"),
+		confirmLabel: t("Add stage"),
+	});
 	if (!name) return;
 	try {
 		await call("stabler.api.tender.so_stage_save", {

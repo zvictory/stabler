@@ -6629,3 +6629,4 @@ Rate must be greater than zero.,Fiyat sıfırdan büyük olmalı.
 No price found for {item}. Enter the rate manually.,{item} için fiyat bulunamadı. Fiyatı elle girin.
 Could not fetch a price for {item}. Enter the rate manually.,{item} için fiyat alınamadı. Fiyatı elle girin.
 Use the arrow keys to move this card.,Bu kartı taşımak için ok tuşlarını kullanın.
+Stage name,Aşama adı

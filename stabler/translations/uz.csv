@@ -6634,3 +6634,4 @@ Rate must be greater than zero.,Narx noldan katta bo'lishi kerak.
 No price found for {item}. Enter the rate manually.,{item} uchun narx topilmadi. Narxni qo'lda kiriting.
 Could not fetch a price for {item}. Enter the rate manually.,{item} uchun narx olinmadi. Narxni qo'lda kiriting.
 Use the arrow keys to move this card.,Bu kartani ko'chirish uchun o'q tugmalaridan foydalaning.
+Stage name,Bosqich nomi
