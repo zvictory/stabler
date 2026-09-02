@@ -7027,3 +7027,4 @@ Entry kind must be Expense or Asset Purchase.,Entry kind must be Expense or Asse
 Rate must be greater than zero.,Rate must be greater than zero.
 No price found for {item}. Enter the rate manually.,No price found for {item}. Enter the rate manually.
 Could not fetch a price for {item}. Enter the rate manually.,Could not fetch a price for {item}. Enter the rate manually.
+Use the arrow keys to move this card.,Use the arrow keys to move this card.

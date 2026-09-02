@@ -6638,3 +6638,4 @@ Entry kind must be Expense or Asset Purchase.,Тип записи должен �
 Rate must be greater than zero.,Цена должна быть больше нуля.
 No price found for {item}. Enter the rate manually.,Цена для {item} не найдена. Введите её вручную.
 Could not fetch a price for {item}. Enter the rate manually.,Не удалось получить цену для {item}. Введите её вручную.
+Use the arrow keys to move this card.,"Используйте клавиши со стрелками, чтобы переместить эту карточку."

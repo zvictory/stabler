@@ -6633,3 +6633,4 @@ Entry kind must be Expense or Asset Purchase.,Ёзув тури Харажат �
 Rate must be greater than zero.,Нарх нолдан катта бўлиши керак.
 No price found for {item}. Enter the rate manually.,{item} учун нарх топилмади. Нархни қўлда киритинг.
 Could not fetch a price for {item}. Enter the rate manually.,{item} учун нарх олинмади. Нархни қўлда киритинг.
+Use the arrow keys to move this card.,Бу картани кўчириш учун ўқ тугмаларидан фойдаланинг.

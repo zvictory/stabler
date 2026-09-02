@@ -296,22 +296,69 @@ Three problems, in increasing order of consequence:
 The design owes a rule that survives arbitrary input: derive tone from the colour
 rather than using it raw, or constrain the picker to a token set. Say which.
 
-### S4 — a kanban that cannot be operated without a mouse
+### S4 — a kanban that cannot be operated without a mouse — FIXED 2026-09-02
 
-The only way to move a contract between stages is an HTML5 drag:
+The only way to move a contract between stages was an HTML5 drag:
 `draggable="true"` on the card, `@dragover.prevent` / `@drop` on the column.
 Measured on the whole file: **zero `aria-*`, zero `role=`, zero keyboard
-handlers.** There is no menu, no "move to" control, no arrow-key affordance.
+handlers.** There was no menu, no "move to" control, no arrow-key affordance.
 
-**And the card is both the drag handle and a link.** The same element carries
-`draggable="true"` and `@click="openSo(c.name)"`, with no drag-distance guard and
-no `@click.stop`. A press that begins a drag and ends where it started opens the
-Sales Order — the user tried to move a card and left the board instead.
+**And the card was both the drag handle and a link** — the same element carried
+`draggable="true"` and `@click="openSo(c.name)"` with nothing between them.
 
-The move itself is optimistic and rolls back correctly on failure
-(`card.stage = prev` plus a toast), which is the right shape. What it lacks is
-any in-place signal: the card jumps back with an explanation in a transient toast
-in a different corner of the screen.
+**What was done.**
+
+- The card is now `role="button"` + `tabindex="0"`, with Enter and Space opening
+  the order. That half is not new here: the sibling kanban
+  (`TenderCrm.vue:568-580`) already made exactly this choice, and for a stated
+  reason — Firefox will not drag a real `<button>`, so a div carries the role.
+- **← and → move the focused card one stage.** This IS new: no screen in this
+  repository had a keyboard move, and the CRM board's stage stepper is a
+  read-only `<span>` list (`TenderCrm.vue:838-848`), so there was nothing to
+  copy. The rules it follows are asserted rather than left to be inferred — one
+  stage per press, `.prevent` so the scrolling strip does not slide instead, no
+  wraparound at either end, and the focus is put back on the card where it
+  landed (`nextTick` + `querySelector` + `focus()`, the shape the item tables
+  already use, `SalesOrderFormClassic.vue:578`).
+- The drop and the two arrows now go through **one** `moveCard`. Two copies
+  would mean two rollbacks, and the one nobody exercises is the one that rots.
+- The card announces itself: `aria-label` names the order, its stage, and what
+  the arrows do. A focusable div otherwise reads as "button" and nothing else.
+
+**A correction to what this prompt claimed.** It said a press that begins a drag
+and ends where it started opens the Sales Order. That was reasoned, not
+measured, and the HTML5 drag model says the opposite: a browser does not fire
+`click` after a completed drag. The two failure modes that DO reproduce are
+different ones, and both are worse:
+
+- a press that nudges the card a few pixels never reaches the browser's drag
+  threshold, so no drag starts at all and the release arrives as an ordinary
+  click — the reader reaches for a contract and leaves the board;
+- on a touch screen `draggable` does nothing whatever, so **every** attempted
+  drag was a tap that navigated away.
+
+The guard is a pointer-distance check (6 px of slack, because a hand on a
+trackpad moves one or two on any real click) plus a flag set on `dragstart` —
+the latter guards the case the spec says cannot happen, which is one fewer
+browser behaviour this board bets on.
+
+**What this does not settle.**
+
+- **The rollback is still only a toast.** The move is optimistic and rolls back
+  correctly, but the card jumps back with its explanation in a transient message
+  in a different corner of the screen. Unchanged, and not in C10 or C11.
+- **Discoverability for a sighted keyboard user.** The arrows are announced to
+  assistive technology and nowhere else. A visible hint on every card is a
+  design change no acceptance row asks for, so it was not made.
+- **The board is still not a list or a grid to assistive technology.** The cards
+  are buttons; the columns carry no accessible name beyond their visible header,
+  and there is no announcement that a move happened.
+- **None of it is verified in a real browser.** The tests are DOM-less
+  (`vitest.config.mjs`). The one link the component's own source cannot vouch
+  for — that `.arrow-left` actually reaches `ArrowLeft` — IS measured, by
+  compiling the card's real tag with `@vue/compiler-dom` and checking Vue's
+  `hyphenate(event.key)` contract, because a modifier typo raises no error and
+  would leave every other test in the file green while the feature did nothing.
 
 ### S5 — the board never refreshes
 
@@ -563,8 +610,8 @@ Keep the artboards you rejected.
 | C7 | A failed load is distinguishable from a board with no stages | **passes** (2026-09-02) — five rungs, `!stages.length` last (S2) |
 | C8 | A user without the tender role sees a refusal | **passes** (2026-09-02) — `canAccessModule('tender')`, which mirrors the server's role-or-flag gate |
 | C9 | Loading renders a skeleton | **passes** (2026-09-02) — four column placeholders at the board's own width. Not `SkeletonRows`: its root is a `<tbody>` |
-| C10 | A card can be moved between stages from the keyboard | **fails** — drag only, 0 `aria-`, 0 `role=` (S4) |
-| C11 | A press that does not move the card does not navigate away | **fails** — drag and click share the element (S4) |
+| C10 | A card can be moved between stages from the keyboard | **✔ 2026-09-02** — `tabindex=0` + `role=button`, Enter/Space open, ← / → move one stage with no wraparound, focus restored where the card lands. Drop and arrows share one `moveCard` (S4) |
+| C11 | A press that does not move the card does not navigate away | **✔ 2026-09-02** — 6 px pointer-distance guard plus a `dragstart` flag. The reproduction this prompt originally gave was wrong; the two that do reproduce are a sub-threshold press and any touch device, where `draggable` does nothing at all (S4) |
 | C12 | Switching the active company reloads the board | **passes** (2026-09-02) — plus a request token, so a superseded company's answer cannot land (S5) |
 | C13 | A column total never adds two currencies | **✔ 2026-09-02** — one line per currency, sorted by code; the session currency is no longer read by this screen (S6) |
 | C14 | The board's filter matches the number that navigated to it | **✔ 2026-09-02, measured on real rows** — `tests/test_tender_board_funnel_integration.py` (bench) seeds four orders that separate every filter the pair applies and asserts `board(1) − funnel = ∅`, `funnel − board(1) = exactly the Closed set`, and that the chevron's number equals the list it drills to. The by-hand check earlier that day said "equal" only because the test site held **no Sales Order at all**. Per-document read permission is still unmeasured (S1) |

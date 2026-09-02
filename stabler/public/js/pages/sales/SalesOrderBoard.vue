@@ -1,5 +1,5 @@
 <script setup>
-import { computed, onMounted, ref, watch } from "vue";
+import { computed, nextTick, onMounted, ref, watch } from "vue";
 import { storeToRefs } from "pinia";
 import { useRoute, useRouter } from "vue-router";
 import { useEscapeBack } from "../../composables/useEscapeBack.js";
@@ -114,20 +114,16 @@ function colTotals(stageName) {
 	});
 }
 
-// ── Drag-drop cards between stages ───────────────────────────────────────────
+// ── Moving a card: a drop, or ← / → ──────────────────────────────────────────
 const dragCard = ref("");
 const dragOver = ref("");
-function onCardDragStart(name, e) {
-	dragCard.value = name;
-	e.dataTransfer.effectAllowed = "move";
-}
-async function onDrop(stageName) {
-	dragOver.value = "";
-	const name = dragCard.value;
-	dragCard.value = "";
-	if (!name) return;
+
+/* ONE move, three ways in. The optimistic write and its rollback live here
+ * alone: two copies means two rollbacks, and the one nobody exercises is the
+ * one that rots — a card left in a stage the server refused reads as saved. */
+async function moveCard(name, stageName) {
 	const card = cards.value.find((c) => c.name === name);
-	if (!card || card.stage === stageName) return;
+	if (!card || !stageName || card.stage === stageName) return;
 	const prev = card.stage;
 	card.stage = stageName; // optimistic
 	try {
@@ -137,6 +133,67 @@ async function onDrop(stageName) {
 		toast.error(err?.message || t("Move failed."));
 	}
 }
+
+/* ← / → move the focused card one stage (prompt 18, C10). No wraparound: a card
+ * at the last stage reappearing at the first is a change nobody asked for, and
+ * on a board wider than the screen the reader would not see where it went. */
+async function moveCardByKey(name, delta) {
+	const card = cards.value.find((c) => c.name === name);
+	if (!card) return;
+	const at = stages.value.findIndex((s) => s.name === card.stage);
+	const next = at === -1 ? null : stages.value[at + delta];
+	if (!next) return;
+	await moveCard(name, next.name);
+	/* The card is unmounted from one column's v-for and mounted in another's, so
+	 * focus falls back to <body>. Without this the reader has to tab in from the
+	 * top of the document again after every single move. Same nextTick +
+	 * querySelector + focus() shape the item tables use
+	 * (SalesOrderFormClassic.vue:578). */
+	await nextTick();
+	document.querySelector(`[data-so-card="${name.replaceAll('"', '\\"')}"]`)?.focus();
+}
+
+function onCardDragStart(name, e) {
+	dragCard.value = name;
+	suppressClick = true;
+	e.dataTransfer.effectAllowed = "move";
+}
+async function onDrop(stageName) {
+	dragOver.value = "";
+	const name = dragCard.value;
+	dragCard.value = "";
+	if (!name) return;
+	await moveCard(name, stageName);
+}
+
+/* A press that TRIED to move the card must not navigate (prompt 18, C11).
+ * Below the browser's drag threshold no dragstart fires, so the release arrives
+ * as an ordinary click and the reader who reached for a contract left the board
+ * instead. On a touch screen it is worse: `draggable` does nothing there, so
+ * EVERY attempted drag was a tap that opened the order. Six pixels of slack,
+ * because a hand on a trackpad moves one or two on any real click. */
+const CLICK_SLOP = 6;
+let pressAt = null;
+let suppressClick = false;
+function onCardPointerDown(e) {
+	pressAt = { x: e.clientX, y: e.clientY };
+	suppressClick = false;
+}
+function onCardClick(name, e) {
+	const travelled =
+		!!pressAt && Math.hypot(e.clientX - pressAt.x, e.clientY - pressAt.y) > CLICK_SLOP;
+	const blocked = suppressClick || travelled;
+	pressAt = null;
+	suppressClick = false;
+	if (blocked) return;
+	openSo(name);
+}
+
+/* The card announces WHAT it is and WHAT the arrows do. A focusable div reads
+ * as "button" and nothing else, so without this the affordance exists and
+ * nobody is told about it. */
+const cardLabel = (c, s) =>
+	`${c.name} — ${s.stage_name}. ${t("Use the arrow keys to move this card.")}`;
 
 // ── Stage management ─────────────────────────────────────────────────────────
 async function addStage() {
@@ -305,14 +362,27 @@ function openSo(name) {
 					:class="{ 'bg-primary-lt rounded': dragOver === s.name }"
 					style="min-height: 40px"
 				>
+					<!-- role="button" on a div, not a real <button>: Firefox will not
+					     drag one. Same choice, same reason, as the sibling kanban
+					     (TenderCrm.vue:568). The arrows are this board's own addition —
+					     no screen in the app had a keyboard move before. -->
 					<div
 						v-for="c in cardsByStage[s.name]"
 						:key="c.name"
+						:data-so-card="c.name"
 						class="card card-sm"
 						draggable="true"
+						role="button"
+						tabindex="0"
+						:aria-label="cardLabel(c, s)"
 						style="cursor: grab"
 						@dragstart="onCardDragStart(c.name, $event)"
-						@click="openSo(c.name)"
+						@pointerdown="onCardPointerDown($event)"
+						@click="onCardClick(c.name, $event)"
+						@keydown.enter.prevent="openSo(c.name)"
+						@keydown.space.prevent="openSo(c.name)"
+						@keydown.arrow-left.prevent="moveCardByKey(c.name, -1)"
+						@keydown.arrow-right.prevent="moveCardByKey(c.name, 1)"
 					>
 						<div class="card-body p-2">
 							<div class="d-flex align-items-center gap-1 mb-1">
