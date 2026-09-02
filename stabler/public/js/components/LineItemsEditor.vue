@@ -14,6 +14,13 @@ const props = defineProps({
 	currencySymbol: { type: String, default: "" },
 	searchItems: { type: Function, required: true },
 	blankLine: { type: Function, required: true },
+	// Opt-in, and the default stays permissive on purpose: a zero rate is a
+	// legitimate state of a DRAFT (free sample, bonus goods, price not known yet)
+	// and seven of this component's eight callers save a draft before submitting.
+	// Only the direct sales return submits in one shot, and its backend
+	// (_normalize_direct_return_items) refuses rate <= 0 — so there, and only
+	// there, the row is unsubmittable and the form must say so before the request.
+	requirePositiveRate: { type: Boolean, default: false },
 });
 
 const emit = defineEmits(["pick-item", "remove-item", "validity-change"]);
@@ -29,6 +36,8 @@ function getLineErrors(line) {
 
 	if (line.rate === undefined || line.rate === null || Number(line.rate) < 0) {
 		errors.rate = t("Rate cannot be negative.");
+	} else if (props.requirePositiveRate && !(Number(line.rate) > 0)) {
+		errors.rate = t("Rate must be greater than zero.");
 	}
 
 	return errors;
