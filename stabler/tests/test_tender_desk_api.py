@@ -261,6 +261,38 @@ class TestTenderDeskApiSource(unittest.TestCase):
 			'the payload must carry "skipped": plan_res["skipped"]',
 		)
 
+	def test_the_payload_says_whether_team_load_is_the_readers_panel(self):
+		# WHAT WOULD MAKE THIS FAIL: shipping team_load without saying who it is
+		# for. The list is built only under `if oversight:`, so a sourcing user and
+		# a director of a company with no lots receive the SAME empty list. Only
+		# the server holds the roles; the client sees the consequence, and the
+		# consequence is ambiguous. Without this flag the panel can do nothing but
+		# guess, and the guess it made was to render nothing at all -- which reads
+		# as "your colleagues are idle" to the one reader who is not entitled to
+		# know either way.
+		self.assertTrue(
+			re.search(r'^\t\t"oversight": oversight,$', self.source, re.M),
+			'the payload must carry "oversight": oversight',
+		)
+
+	def test_a_team_member_with_nothing_open_still_gets_a_row(self):
+		# WHAT WOULD MAKE THIS FAIL: moving the users_map insert under the
+		# open-lots guard. It is what makes the panel's empty state sayable: the
+		# map takes a row for EVERY deal owner and only then counts the open ones,
+		# so an empty list means the company has no lots at all -- not that nobody
+		# is busy. Move the insert and the empty state starts claiming an idle team
+		# on a company whose lots are simply all won, and the two sentences the
+		# panel now distinguishes collapse back into one.
+		body = self.source[self.source.index("\tteam_load = []") :]
+		body = body[: body.index("\n\tcurr = ")]
+		insert = body.index("users_map[owner] = {")
+		guard = body.index("if owner not in users_map:")
+		self.assertLess(guard, insert, "the row insert must be guarded by membership only")
+		self.assertTrue(
+			body.index('if result not in ("won", "lost", "cancelled"):') > insert,
+			"the open-lots count must come after the row exists, never gate it",
+		)
+
 	def test_no_sql_aggregation_functions_in_select(self):
 		lines = self.source.splitlines()
 		for idx, line in enumerate(lines, 1):

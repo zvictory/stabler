@@ -671,10 +671,14 @@ describe("D13 — an overdue item is discoverable from the calendar region", () 
 });
 
 describe("D14 — an empty plan says WHY it is empty", () => {
+	// Both readings come off the SAME payload here, so the helper cannot drift
+	// from the component: `approvalsState` is the computed the Decision box also
+	// reads (D15), and the gap list must see exactly what the panel sees.
 	const gaps = (payload) =>
 		evalInScope(blockRhsOf("gaps"), {
 			computed: (fn) => fn(),
 			deskData: { value: payload },
+			approvalsState: { value: payload?.approvals_state || "" },
 			t: (key, params) =>
 				params ? key.replace(/\{(\w+)\}/g, (_, k) => String(params[k])) : key,
 		});
@@ -749,5 +753,291 @@ describe("D14 — an empty plan says WHY it is empty", () => {
 		// `filteredPlan`'s own copy. Two readings of one list is how the panel ends
 		// up counting a different number from the one it filtered.
 		expect(scriptWithoutComments().match(/deskData\.value\?\.plan/g)).toHaveLength(1);
+	});
+});
+
+/**
+ * One panel's source: the `<section` that opens it through the `</section>` that
+ * closes it. Anchored on the panel's own heading, because all four panels carry
+ * `ds-panel` and an index-based slice would silently follow a reorder.
+ */
+function panelBlock(heading) {
+	const at = anchor(`<h3>{{ t("${heading}") }}</h3>`);
+	return src.slice(src.lastIndexOf("<section", at), src.indexOf("</section>", at) + 10);
+}
+
+/** The `<section …>` open tag of a panel — where a whole-panel `v-if` would sit. */
+function panelOpenTag(heading) {
+	const block = panelBlock(heading);
+	return block.slice(0, block.indexOf(">") + 1);
+}
+
+const SIDE_PANELS = ["Decision box", "Team load", "Next 7 days"];
+
+describe("D15 — every region renders the five states, not just the plan", () => {
+	const regionScope = () => ({
+		computed: (fn) => fn(),
+		loading: { value: false },
+		forbidden: { value: false },
+		error: { value: "" },
+		deskData: { value: {} },
+		session: { canAccessModule: () => true, activeCompany: "Mikas" },
+	});
+	const regionState = (over = {}) =>
+		evalInScope(blockRhsOf("regionState"), { ...regionScope(), ...over });
+
+	const regionText = (state, err = "") =>
+		new Function(
+			"computed",
+			"t",
+			"regionState",
+			"error",
+			`${liftConst("REGION_STATE_TEXT")}\nreturn (${rhsOf("const regionStateText")});`
+		)(
+			(fn) => fn(),
+			(key) => key,
+			{ value: state },
+			{ value: err }
+		);
+
+	it("resolves the gates in the plan panel's order when several are true at once", () => {
+		// WHAT WOULD MAKE THIS FAIL: reordering the gates. Each pair below has an
+		// opposite recovery: a refused view needs a ROLE, a failed request needs a
+		// RETRY, an unset company needs a PICKER. Whichever gate answers first is
+		// the sentence the reader acts on, so the order is the design — and while
+		// the desk boots, several of them are true at the same time.
+		const all = {
+			loading: { value: true },
+			forbidden: { value: true },
+			error: { value: "boom" },
+			session: { canAccessModule: () => false, activeCompany: "" },
+		};
+		const open = { canAccessModule: () => true, activeCompany: "Mikas" };
+		expect(regionState(all)).toBe("loading");
+		expect(regionState({ ...all, loading: { value: false } })).toBe("module");
+		expect(
+			regionState({
+				...all,
+				loading: { value: false },
+				session: { canAccessModule: () => true, activeCompany: "" },
+			})
+		).toBe("company");
+		expect(regionState({ ...all, loading: { value: false }, session: open })).toBe("forbidden");
+		expect(
+			regionState({
+				...all,
+				loading: { value: false },
+				forbidden: { value: false },
+				session: open,
+			})
+		).toBe("error");
+		expect(regionState()).toBe("ready");
+	});
+
+	it("does not call a desk that has not answered yet empty", () => {
+		// WHAT WOULD MAKE THIS FAIL: treating "no payload" as "ready". This is an
+		// invariant, not a reproduction: the first render does precede onMounted,
+		// but `loading` flips inside the same task and the reactive flush beats the
+		// paint, so nobody has SEEN the empty frame. It is pinned because every
+		// region's empty state is a claim about a payload — "nothing is due", "no
+		// decision is waiting" — and a region that has not been given one has
+		// measured nothing. Any future path that reaches these panels before the
+		// first response (a cleared payload on view change, a second entry point)
+		// inherits the answer instead of inventing one.
+		expect(regionState({ deskData: { value: null } })).toBe("loading");
+	});
+
+	it("keeps the shared gate chain identical to the plan panel's own", () => {
+		// WHAT WOULD MAKE THIS FAIL: a sixth gate added to the plan panel's inline
+		// chain and not to the computed the other three regions read (or the
+		// reverse). Two copies of one decision on one screen is how the plan comes
+		// to say "access denied" while the calendar beside it draws a week.
+		const gates = [
+			["loading", /^loading$/],
+			["module", /canAccessModule\('tender'\)/],
+			["company", /activeCompany/],
+			["forbidden", /^forbidden$/],
+			["error", /^error$/],
+		];
+		const inline = branchConditions(planStateChain()).slice(0, gates.length);
+		const shared = [...blockRhsOf("regionState").matchAll(/return "(\w+)"/g)].map((m) => m[1]);
+		gates.forEach(([name, pattern], i) => {
+			expect(inline[i], `plan panel gate ${i}`).toMatch(pattern);
+			expect(shared[i], `shared gate ${i}`).toBe(name);
+		});
+	});
+
+	it("gives every gate that is not the error its own sentence", () => {
+		// WHAT WOULD MAKE THIS FAIL: a state added to the computed with no wording,
+		// which renders as a blank panel foot — the same nothing the reader got
+		// before any of this existed.
+		const states = [...blockRhsOf("regionState").matchAll(/return "(\w+)"/g)].map((m) => m[1]);
+		const worded = liftConst("REGION_STATE_TEXT");
+		for (const state of states) {
+			if (["loading", "ready", "error"].includes(state)) continue;
+			expect(worded, `no wording for state "${state}"`).toContain(`${state}:`);
+		}
+	});
+
+	it("prints the server's own words in the error state", () => {
+		// WHAT WOULD MAKE THIS FAIL: a generic "something went wrong" in place of
+		// `error`. The message is the only diagnostic that crosses the wire; the
+		// three gate states are known in advance and read from the map instead.
+		expect(regionText("error", "Row 4: bad date")).toBe("Row 4: bad date");
+		expect(regionText("module")).toMatch(/tender module/);
+		expect(regionText("company")).toMatch(/company/i);
+		expect(regionText("forbidden")).toMatch(/not yours/i);
+	});
+
+	for (const heading of SIDE_PANELS) {
+		it(`shows "${heading}" reading rather than nothing while the desk loads`, () => {
+			// WHAT WOULD MAKE THIS FAIL: the panel rendering no skeleton. All four
+			// regions come from ONE request, so the plan alone showing a skeleton
+			// tells the reader the side column is finished when it has not started.
+			expect(panelBlock(heading)).toMatch(
+				/<SkeletonRows\s+v-if="regionState === 'loading'"/
+			);
+		});
+
+		it(`never hides "${heading}" behind the length of its own data`, () => {
+			// WHAT WOULD MAKE THIS FAIL: `v-if="teamLoad.length"` / `v-if="week.length"`
+			// coming back. A section that removes itself is the one state a reader
+			// cannot interrogate: the page is simply shorter, and a failed request,
+			// a refused view and a genuinely quiet week are all rendered as absence.
+			expect(panelOpenTag(heading)).not.toMatch(/v-if/);
+		});
+
+		it(`states the page-level gates inside "${heading}"`, () => {
+			// WHAT WOULD MAKE THIS FAIL: leaving a region silent on module denial,
+			// an unset company, a refused view or a failed load. Each of the three
+			// panels is a claim about the world; none may be drawn, or blanked,
+			// without saying which of those five things it is.
+			expect(panelBlock(heading)).toMatch(/v-else-if="regionState !== 'ready'"/);
+		});
+
+		it(`announces only the failure in "${heading}", not the refusals`, () => {
+			// WHAT WOULD MAKE THIS FAIL: a bare role="alert" on the shared branch.
+			// It is an assertive live region — it interrupts a screen reader because
+			// something BROKE. A module you do not have and a view you may not open
+			// are policy outcomes, and three panels interrupting at once over one
+			// policy outcome is three interruptions for no news.
+			expect(panelBlock(heading)).toMatch(
+				/:role="regionState === 'error' \? 'alert' : null"/
+			);
+		});
+	}
+
+	it("splits the Decision box's empty into the three things it can mean", () => {
+		// WHAT WOULD MAKE THIS FAIL: one "No pending decisions" for all of them.
+		// The box is fed by list_pending, which raises for a non-approver and can
+		// fail outright; those two produce the same empty list as a genuinely quiet
+		// queue. Only one of the three may claim nothing is pending — and it is the
+		// only one of the three the reader can safely stop thinking about.
+		const branch = panelBlock("Decision box");
+		const claim = branch.indexOf('t("No pending decisions")');
+		expect(claim).toBeGreaterThan(-1);
+		expect(branch.slice(0, claim)).toMatch(/v-if="approvalsState === 'not_yours'"/);
+		expect(branch.slice(0, claim)).toMatch(/v-else-if="approvalsState === 'unreadable'"/);
+	});
+
+	it("does not print a count over a box it just called unknown", () => {
+		// WHAT WOULD MAKE THIS FAIL: leaving `decisions.length` in the panel head.
+		// The head would then read "0" directly above "unknown, not empty" — one
+		// panel contradicting itself in two lines, and the numeral is the half a
+		// reader believes. A queue that is not YOURS is different: nothing there
+		// waits on you, so zero is the true answer and stays printed.
+		const known = (state) =>
+			evalInScope(rhsOf("const decisionsKnown"), {
+				computed: (fn) => fn(),
+				approvalsState: { value: state },
+			});
+		expect(known("unreadable")).toBe(false);
+		expect(known("not_yours")).toBe(true);
+		expect(known("read")).toBe(true);
+		expect(panelBlock("Decision box")).toMatch(/decisionsKnown \? decisions\.length : "—"/);
+	});
+
+	it("reads the approval state from one place", () => {
+		// WHAT WOULD MAKE THIS FAIL: `deskData.approvals_state` inline in the
+		// template beside the computed the plan's gap list reads. The Decision box
+		// and the empty plan describe the SAME swallowed exception; two readings is
+		// how one of them ends up reporting it and the other not.
+		expect(scriptWithoutComments().match(/deskData\.value\?\.approvals_state/g)).toHaveLength(1);
+	});
+
+	it("says the week is quiet instead of drawing seven dashes and no sentence", () => {
+		// WHAT WOULD MAKE THIS FAIL: dropping the calendar's empty state. Seven
+		// cells reading "—" over a "PAST DUE —" foot is the panel's answer for "no
+		// item is due" and for "this panel has nothing in it", and the two are the
+		// same pixels. The dates stay drawn either way: the window is the panel.
+		const branch = panelBlock("Next 7 days");
+		expect(branch).toMatch(/v-if="calendarEmpty"/);
+		expect(branch).toMatch(/ds-week/);
+		const empty = evalInScope(blockRhsOf("calendarEmpty"), {
+			computed: (fn) => fn(),
+			pastDue: { value: { count: 0 } },
+			week: { value: [{ count: 0 }, { count: 0 }] },
+		});
+		expect(empty).toBe(true);
+	});
+
+	it("does not call the week quiet while something is past due", () => {
+		// WHAT WOULD MAKE THIS FAIL: computing emptiness from the seven cells only.
+		// The past-due bucket is part of this panel (D13) and it is where the
+		// desk's loudest rows live; a week with four overdue invoices behind it is
+		// not a quiet week.
+		const empty = (pastDue, week) =>
+			evalInScope(blockRhsOf("calendarEmpty"), {
+				computed: (fn) => fn(),
+				pastDue: { value: { count: pastDue } },
+				week: { value: week },
+			});
+		expect(empty(3, [{ count: 0 }])).toBe(false);
+		expect(empty(0, [{ count: 0 }, { count: 2 }])).toBe(false);
+	});
+});
+
+describe("D16 — the two empty Team loads are not the same empty", () => {
+	it("distinguishes a panel that is not your role from a company with no lots", () => {
+		// WHAT WOULD MAKE THIS FAIL: one empty state for both. `team_load` is built
+		// only under `if oversight:` (tender_desk.py), so every non-director gets
+		// [] — and so does a director of a company that has no lots at all. Today
+		// both render as no panel. Merged, they tell a sourcing user that their
+		// colleagues are idle, which is a claim the server never made.
+		const branch = panelBlock("Team load");
+		expect(branch).toMatch(/v-else-if="!oversight"/);
+		expect(branch).toMatch(/v-else-if="!teamLoad\.length"/);
+		expect(branch.indexOf('v-else-if="!oversight"')).toBeLessThan(
+			branch.indexOf('v-else-if="!teamLoad.length"')
+		);
+	});
+
+	it("takes the role answer from the server, never from an empty list", () => {
+		// WHAT WOULD MAKE THIS FAIL: inferring "not your role" from `team_load`
+		// being empty — which is the bug, restated as its own fix. Only the server
+		// knows whether the reader holds an oversight role; the client can see
+		// nothing but the consequence, and the consequence is ambiguous.
+		expect(rhsOf("const oversight")).toMatch(/deskData\.value\?\.oversight/);
+		const value = (payload) =>
+			evalInScope(rhsOf("const oversight"), {
+				computed: (fn) => fn(),
+				deskData: { value: payload },
+			});
+		expect(value({ oversight: true, team_load: [] })).toBe(true);
+		expect(value({ oversight: false, team_load: [] })).toBe(false);
+		expect(value({ team_load: [] })).toBe(false);
+	});
+
+	it("does not tell a director that nobody has work", () => {
+		// WHAT WOULD MAKE THIS FAIL: wording the oversight empty as "no open lots".
+		// The server inserts a row for EVERY deal owner and only then counts the
+		// open ones, so a team whose lots are all won or lost still renders rows of
+		// 0. An empty list therefore means the company has no lots at all — a
+		// different sentence, and the only one this state is entitled to.
+		const branch = panelBlock("Team load");
+		const at = branch.indexOf('v-else-if="!teamLoad.length"');
+		expect(at, "no empty-of-work branch to word").toBeGreaterThan(-1);
+		const empty = branch.slice(at);
+		expect(empty.slice(0, empty.indexOf("</div>"))).not.toMatch(/open lot/i);
 	});
 });

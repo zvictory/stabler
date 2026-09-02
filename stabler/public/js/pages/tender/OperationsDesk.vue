@@ -189,11 +189,39 @@
 				<section class="ds-panel">
 					<div class="ds-panel-head">
 						<h3>{{ t("Decision box") }}</h3>
-						<span class="ds-label">{{ decisions.length }}</span>
+						<span class="ds-label">{{ decisionsKnown ? decisions.length : "—" }}</span>
 					</div>
-					<SkeletonRows v-if="loading" :rows="4" :cols="2" class="desk-pad" />
+					<SkeletonRows v-if="regionState === 'loading'" :rows="4" :cols="2" class="desk-pad" />
+					<!-- Sayfa kapıları. Dördü de tek istekten besleniyor, o yüzden
+					     karar tek yerde veriliyor (regionState); burada yalnız
+					     çizilir. `role="alert"` SADECE hatada: kesintili canlı
+					     bölge bir şeyin BOZULDUĞUNU haber verir, oysa modülün
+					     olmaması da görünümün reddedilmesi de birer politika
+					     sonucu — üç panelin aynı anda okuyucunun sözünü kesmesi
+					     tek bir haber için üç kesinti demek. -->
+					<div
+						v-else-if="regionState !== 'ready'"
+						class="ds-panel-foot desk-state"
+						:role="regionState === 'error' ? 'alert' : null"
+					>
+						{{ regionStateText }}
+					</div>
+					<!-- Boşluğun ÜÇ anlamı. Kutuyu `list_pending` besliyor: onaycı
+					     olmayana fırlatıyor, tümden de başarısız olabiliyor, ve her
+					     iki durumda sessiz bir kuyrukla AYNI boş listeyi üretiyor.
+					     Üçünden yalnız biri "bekleyen karar yok" demeye yetkili. -->
 					<div v-else-if="!decisions.length" class="ds-panel-foot desk-state">
-						{{ t("No pending decisions") }}
+						<template v-if="approvalsState === 'not_yours'">
+							<span>{{ t("This queue is not yours") }}</span>
+							<span>{{ t("You are not an approver, so no decision here waits on you.") }}</span>
+						</template>
+						<template v-else-if="approvalsState === 'unreadable'">
+							<span>{{ t("The approval queue could not be read") }}</span>
+							<span>{{ t("This box is unknown, not empty.") }}</span>
+						</template>
+						<template v-else>
+							<span>{{ t("No pending decisions") }}</span>
+						</template>
 					</div>
 					<template v-else>
 					<button
@@ -220,30 +248,57 @@
 					</template>
 				</section>
 
-				<section v-if="teamLoad.length" class="ds-panel">
+				<section class="ds-panel">
 					<div class="ds-panel-head">
 						<h3>{{ t("Team load") }}</h3>
 						<span class="ds-label">{{ t("Open lots") }}</span>
 					</div>
+					<SkeletonRows v-if="regionState === 'loading'" :rows="3" :cols="2" class="desk-pad" />
 					<div
-						v-for="member in teamLoad"
-						:key="member.user"
-						class="ds-load"
-						:data-warn="member.overdue_lots > 0 ? '1' : null"
+						v-else-if="regionState !== 'ready'"
+						class="ds-panel-foot desk-state"
+						:role="regionState === 'error' ? 'alert' : null"
 					>
-						<div class="desk-load-body">
-							<div class="ds-load-name">{{ member.user }}</div>
-							<div class="ds-load-bar"><i :style="{ width: member.pct + '%' }"></i></div>
+						{{ regionStateText }}
+					</div>
+					<!-- İKİ AYRI BOŞ. Panel `v-if="teamLoad.length"` ile duruyordu:
+					     sourcing kullanıcısı da, hiç lotu olmayan bir şirketin
+					     direktörü de aynı hiçliği görüyordu. Birleşince cümle
+					     "meslektaşların boşta" oluyor — sunucunun hiç kurmadığı bir
+					     iddia. Rol cevabı yükten geliyor, listenin boşluğundan
+					     çıkarılmıyor. -->
+					<div v-else-if="!oversight" class="ds-panel-foot desk-state">
+						<span>{{ t("This panel belongs to the director view") }}</span>
+						<span>{{ t("Your roles cover your own queue, so the server does not build the team's.") }}</span>
+					</div>
+					<!-- Sunucu HER lot sahibi için bir satır açıyor, açık sayımı
+					     ondan sonra geliyor (tender_desk.py §9) — yani boş liste
+					     "kimse meşgul değil" değil, "ortada lot yok" demek. -->
+					<div v-else-if="!teamLoad.length" class="ds-panel-foot desk-state">
+						<span>{{ t("No lots to spread across the team") }}</span>
+						<span>{{ t("This company holds no tender lots yet, closed ones included.") }}</span>
+					</div>
+					<template v-else>
+						<div
+							v-for="member in teamLoad"
+							:key="member.user"
+							class="ds-load"
+							:data-warn="member.overdue_lots > 0 ? '1' : null"
+						>
+							<div class="desk-load-body">
+								<div class="ds-load-name">{{ member.user }}</div>
+								<div class="ds-load-bar"><i :style="{ width: member.pct + '%' }"></i></div>
+							</div>
+							<span class="ds-load-n">{{ member.open_lots }}</span>
 						</div>
-						<span class="ds-load-n">{{ member.open_lots }}</span>
-					</div>
-					<div class="ds-panel-foot">
-						<span>{{ t("Bar is relative to the busiest queue") }}</span>
-						<span class="ds-mono">{{ t("red = has overdue") }}</span>
-					</div>
+						<div class="ds-panel-foot">
+							<span>{{ t("Bar is relative to the busiest queue") }}</span>
+							<span class="ds-mono">{{ t("red = has overdue") }}</span>
+						</div>
+					</template>
 				</section>
 
-				<section v-if="week.length" class="ds-panel">
+				<section class="ds-panel">
 					<div class="ds-panel-head">
 						<h3>{{ t("Next 7 days") }}</h3>
 						<!-- "Bid · delivery · due" yazıyordu. `delivery_deadline`
@@ -257,37 +312,57 @@
 						     diye test iki yönlü. -->
 						<span class="ds-label">{{ t("Plan items by due date") }}</span>
 					</div>
-					<div class="ds-week">
-						<div
-							v-for="day in week"
-							:key="day.date"
-							class="ds-week-day"
-							:data-today="day.isToday ? '1' : null"
-							:data-quiet="day.isWeekend ? '1' : null"
-							:title="day.tooltip"
-						>
-							<div class="ds-label">{{ day.dow }}</div>
-							<div class="ds-week-n">{{ day.dom }}</div>
-							<div class="ds-mono desk-week-c">{{ day.count || "—" }}</div>
-						</div>
-					</div>
-					<!-- Geçmiş kova. Bir GÜN değil: gecikme sınırsız, dolayısıyla
-					     pencereyi birkaç gün geriye almak her zaman N'den eskisini
-					     saklar — ve artık geçmişi kapsıyormuş gibi görünen bir
-					     bölgede saklar. `.ds-week` tam yedi sütun
-					     (stabler-modernist.css:361), o yüzden sekizinci hücre değil,
-					     panelin kendi altlığı; renk `data-sev` üzerinden katmandan
-					     geliyor (:307), sayfada tek bir renk kuralı yok. Denetim
-					     değil, o yüzden `.ds-band` gibi tıklanır boyanmıyor. -->
+					<SkeletonRows v-if="regionState === 'loading'" :rows="2" :cols="7" class="desk-pad" />
 					<div
-						class="ds-panel-foot"
-						:data-sev="pastDue.count ? 'crit' : null"
-						:title="pastDue.tooltip"
+						v-else-if="regionState !== 'ready'"
+						class="ds-panel-foot desk-state"
+						:role="regionState === 'error' ? 'alert' : null"
 					>
-						<span class="ds-sev"><i></i><span>{{ t("PAST DUE") }}</span></span>
-						<span>{{ t("already past due, before this window opens") }}</span>
-						<span class="ds-mono">{{ pastDue.count || "—" }}</span>
+						{{ regionStateText }}
 					</div>
+					<template v-else>
+						<div class="ds-week">
+							<div
+								v-for="day in week"
+								:key="day.date"
+								class="ds-week-day"
+								:data-today="day.isToday ? '1' : null"
+								:data-quiet="day.isWeekend ? '1' : null"
+								:title="day.tooltip"
+							>
+								<div class="ds-label">{{ day.dow }}</div>
+								<div class="ds-week-n">{{ day.dom }}</div>
+								<div class="ds-mono desk-week-c">{{ day.count || "—" }}</div>
+							</div>
+						</div>
+						<!-- Panelin BOŞ hâli. Yedi "—" ile altında "PAST DUE —", hem
+						     "vadesi gelen bir şey yok" hem "bu panele hiçbir şey ulaşmadı"
+						     demek olabilirdi; kapılar öne geçtikten sonra kalan tek
+						     belirsizlik buydu. Tarihler iki hâlde de duruyor: pencerenin
+						     kendisi panelin ta kendisi. -->
+						<div v-if="calendarEmpty" class="ds-panel-foot desk-state">
+							<span>{{ t("Nothing due in this window") }}</span>
+							<span>{{ t("No plan item falls in the next seven days, and none is past due.") }}</span>
+						</div>
+						<!-- Geçmiş kova. Bir GÜN değil: gecikme sınırsız, dolayısıyla
+						     pencereyi birkaç gün geriye almak her zaman N'den eskisini
+						     saklar — ve artık geçmişi kapsıyormuş gibi görünen bir
+						     bölgede saklar. `.ds-week` tam yedi sütun
+						     (stabler-modernist.css:361), o yüzden sekizinci hücre değil,
+						     panelin kendi altlığı; renk `data-sev` üzerinden katmandan
+						     geliyor (:307), sayfada tek bir renk kuralı yok. Denetim
+						     değil, o yüzden `.ds-band` gibi tıklanır boyanmıyor. -->
+						<div
+							v-else
+							class="ds-panel-foot"
+							:data-sev="pastDue.count ? 'crit' : null"
+							:title="pastDue.tooltip"
+						>
+							<span class="ds-sev"><i></i><span>{{ t("PAST DUE") }}</span></span>
+							<span>{{ t("already past due, before this window opens") }}</span>
+							<span class="ds-mono">{{ pastDue.count || "—" }}</span>
+						</div>
+					</template>
 				</section>
 			</div>
 		</div>
@@ -472,7 +547,43 @@ async function fetchDesk() {
 	}
 }
 
+/* BEŞ DURUM, TEK KARAR. Dört bölge TEK isteği paylaşıyor: modül, şirket,
+ * reddedilme ve hata sayfa hakkında olgular, panel hakkında değil. Yan sütunun
+ * üç paneli bunların hiçbirini çizmiyordu — ikisi kendi verisinin uzunluğuna
+ * bağlı bir `v-if` ile tamamen ortadan kayboluyor, Karar kutusu ise "bekleyen
+ * karar yok" diyordu; oysa okunmuş bir kuyruk yoktu. YOKLUK sorgulanamayan tek
+ * durum: sayfa yalnızca kısalır, okuyucuya soracak bir şey bırakmaz.
+ *
+ * Plan panelinin satır içi zinciri REFERANS uygulama (§5) ve olduğu gibi
+ * duruyor: çalışan bir işaretlemeyi yeniden yazmak bu satırın işi değildi.
+ * İkisinin AYNI kaldığı testle çivili — iki kopya, tam da bir panel "erişim
+ * yok" derken yanındakinin haftayı çizmesiyle biter. */
+const regionState = computed(() => {
+	if (loading.value) return "loading";
+	if (!session.canAccessModule("tender")) return "module";
+	if (!session.activeCompany) return "company";
+	if (forbidden.value) return "forbidden";
+	if (error.value) return "error";
+	/* İlk çizim onMounted'dan ÖNCE olur, yani ilk karede yük henüz yok. Sorulmamış
+	 * bir soruya "baktım, bir şey yok" demek boş bir cevap değil, yanlış cevap. */
+	if (!deskData.value) return "loading";
+	return "ready";
+});
+
+/* Hata metni SUNUCUNUN kendi cümlesi — tel üstünden gelen tek teşhis. Diğer üç
+ * durum önceden biliniyor, o yüzden burada yazılı. */
+const REGION_STATE_TEXT = {
+	module: t("Access denied to tender module."),
+	company: t("Please select an active company."),
+	forbidden: t("This view is not yours"),
+};
+const regionStateText = computed(() => REGION_STATE_TEXT[regionState.value] || error.value);
+
 const plan = computed(() => deskData.value?.plan || []);
+
+/* Onay kuyruğunun DURUMU tek yerden okunur. Aynı yutulmuş istisnayı hem boş plan
+ * hem Karar kutusu anlatıyor; iki okuma, birinin bildirip ötekinin susmasıdır. */
+const approvalsState = computed(() => deskData.value?.approvals_state || "");
 
 /* Neden BOŞ. "Bu görünümdeki her şey güncel" cümlesi DÜNYA hakkında bir iddia ve
  * yalnızca iki koşulda doğru: plan gerçekten boş VE masanın baktığı her şeye
@@ -485,7 +596,7 @@ const plan = computed(() => deskData.value?.plan || []);
  * çıkan bir uyarı, gerçekten çıkması gereken günü görünmez yapar. */
 const gaps = computed(() => {
 	const out = [];
-	if (deskData.value?.approvals_state === "unreadable") {
+	if (approvalsState.value === "unreadable") {
 		out.push(t("The approval queue could not be read, so both approval counters are unknown, not zero."));
 	}
 	const skipped = deskData.value?.skipped || 0;
@@ -610,9 +721,20 @@ const overdueInView = computed(
 
 const decisions = computed(() => deskData.value?.decisions || []);
 
+/* Okunamamış bir kuyruğun üstüne "0" yazmak, panelin iki satır arayla kendini
+ * yalanlamasıdır — ve okuyucunun inandığı yarı rakam olur. `not_yours` başka:
+ * onaycı değilseniz SİZİ bekleyen sıfır karar vardır, sıfır doğru cevaptır. */
+const decisionsKnown = computed(() => approvalsState.value !== "unreadable");
+
 /* Çubuk EN YOĞUN kuyruğa göre oranlanır, sabit bir tavana göre değil:
  * gerçek tavan bilinmiyor ve uydurulmuş bir tavan yükü olduğundan hafif
  * ya da ağır gösterir. */
+/* Rol cevabını SUNUCU verir. `team_load` yalnız `if oversight:` altında
+ * kuruluyor (tender_desk.py), dolayısıyla boş liste iki ayrı şey demek:
+ * "bu panel senin değil" ve "bu şirkette dağıtılacak lot yok". Listeden
+ * hangisi olduğu çıkarılamaz — çıkarmaya çalışmak hatanın kendisiydi. */
+const oversight = computed(() => Boolean(deskData.value?.oversight));
+
 const teamLoad = computed(() => {
 	const rows = deskData.value?.team_load || [];
 	const peak = Math.max(1, ...rows.map((r) => r.open_lots || 0));
@@ -651,6 +773,17 @@ const pastDue = computed(() => {
 		count: bucket.count || 0,
 		tooltip: (bucket.items || []).map((i) => i.title).join("\n"),
 	};
+});
+
+/* Panelin BOŞ durumu. Yedi hücrede "—" ve altında "PAST DUE —", "bugünlerde
+ * vadesi gelen bir şey yok" ile "bu panele hiçbir şey ulaşmadı"nın aynı
+ * pikselleri; kapılar önüne geçtikten sonra geriye kalan belirsizlik bu.
+ * Tarihler her iki halde de çiziliyor: pencerenin kendisi panelin ta kendisi.
+ * Geçmiş kova da hesaba katılıyor — arkasında dört gecikmiş fatura duran bir
+ * hafta sakin bir hafta değildir. */
+const calendarEmpty = computed(() => {
+	if (pastDue.value.count) return false;
+	return week.value.every((day) => !day.count);
 });
 
 const weekdayLabel = computed(() => t(DOW[new Date(todayStr.value + "T00:00:00").getDay()]));

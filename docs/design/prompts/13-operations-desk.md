@@ -182,12 +182,12 @@ three that fail.
 | 1 | House layer, not Bootstrap | **PASS** — 79 `ds-*`, zero `badge bg-`, zero bare `btn-` |
 | 2 | Every number carries its rule | **PASS** — all four chips print `rule` under the value |
 | 3 | Loading is skeleton, not spinner | **PASS** — `<SkeletonRows :rows="6" :cols="3">`, zero `spinner-border` |
-| 4 | Five states per region | **PASS in the plan panel only** — see §5 |
+| 4 | Five states per region | **PASS** (2026-09-02, D15) — was PASS in the plan panel only; the other three rendered nothing at all in four of the five, see §5 |
 | 5 | State lives in the URL | **PARTIAL** — `view` and `filter` yes (`:470`, `:480`); band collapse (`collapsed`, `:257`) no |
 | 6 | Keyboard and screen reader reachable | **PASS** — `aria-pressed`, `aria-label`, `aria-expanded`, `role="alert"`; every interactive thing is a real `<button>` except one (S4) |
 | 7 | No raw server identifiers in front of a human | **PASS** (2026-09-02) — was FAIL with four of them, S3 |
-| 8 | The empty state must distinguish *nothing to do* from *cannot be computed* | **FAIL** — S2 |
-| 9 | Freshness is the server's, not the browser's | **FAIL** — correction 2 above |
+| 8 | The empty state must distinguish *nothing to do* from *cannot be computed* | **PASS** (2026-09-02, D14) — three-way in the plan, three-way in the Decision box; S2's own premise was corrected in place |
+| 9 | Freshness is the server's, not the browser's | **PASS** (2026-09-02, D12) — `lastReadAt` reads `generated_at`; this row still read FAIL while the D12 acceptance row read *passes*, and was corrected on 2026-09-02 while closing D15. The D12 work itself is not mine |
 
 ---
 
@@ -224,8 +224,26 @@ implementation for the module:
 | error | `.ds-panel-foot.desk-state[role=alert]` | `:72` |
 | empty | two lines: *"No tasks scheduled for today"* / *"All items in this view are up to date."* | `:73` |
 
-**The other three panels — Decision box, Team load, Next 7 days — do not have
-five states.** Draw them. And note what the empty text asserts: *"All items in
+**Corrected 2026-09-02 while closing D15 — the plan panel renders SIX, and
+"forbidden" is two different gates.** The table above says *forbidden (module)*,
+which is the client-side module check. D9 added a second refusal that is not the
+same thing: `_require_tender_view` raises `frappe.PermissionError` for a **role
+view** the reader may not open, and it arrives as a 403 on the same request that
+feeds all four regions. Two refusals, opposite recoveries — one needs the module
+enabled for the company, the other needs a role — so the chain is now
+loading · module · company · **view refusal** · error · empty, in that order,
+with `role="alert"` on the error alone.
+
+**And the other three panels did not have ONE state, not four.** The doc says
+they "do not have five states"; measured, Team load and Next 7 days rendered
+`v-if="teamLoad.length"` / `v-if="week.length"` on the `<section>` itself, so on
+anything but a populated payload the panel was **not in the DOM at all**. That is
+worse than an unstyled empty and it is the one state a reader cannot interrogate:
+the page is simply shorter. A failed request, a module the company does not have,
+a refused view, a director's panel shown to a sourcing user and a genuinely quiet
+week were five different facts rendered as the same absence.
+
+Draw them. And note what the empty text asserts: *"All items in
 this view are up to date"* is a **claim about the world**, and §7 proves it is
 false on real data — five of eight rules cannot produce a row at all, so the
 panel says "you are up to date" when the honest sentence is "four of the eight
@@ -547,6 +565,20 @@ calendar; the loudest one is not.
 **Decision box: empty. Team load: empty for every non-director; for a director,
 built from site users.**
 
+**Corrected 2026-09-02 (D16) — from deal OWNERS, not site users.** `team_load`
+is `for d in deals: owner = assigned_to or owner or "Unassigned"`
+(`tender_desk.py` §9), so the rows are the people who hold lots, not the people
+who have accounts. On seed data the two nearly coincide, because the seeder
+assigns round-robin over the team (`seed_tender_demo.py:655`) — but the `seen`
+lots are deliberately left unassigned and fall back to the document owner, so the
+seeder gets a row of their own. A site with twelve users and four lots held by two
+of them renders two rows, and adding a user changes nothing.
+
+**Which also fixes the sentence the merged empty state would have used.** The map
+takes a row for **every** deal owner and only then counts the open lots, so a
+team whose lots are all won or lost still renders rows reading 0. `team_load ==
+[]` therefore means *the company has no lots at all* — never *nobody is busy*.
+
 **Three states you cannot exercise from this data — say so on the canvas rather
 than faking rows:**
 
@@ -604,9 +636,20 @@ Artboards. Every one at 1440×900 unless stated.
 3. **Plan panel · five states** — the four non-loading ones side by side, plus
    the sixth this screen needs: *rules that could not run* (S2).
 4. **Decision box · five states**, including the empty it actually has on real
-   data.
+   data. *Corrected 2026-09-02 (D15): its empty is THREE empties. The box is fed
+   by `list_pending`, which raises `PermissionError` for a non-approver — most
+   readers — and can fail outright; D14 split those into `not_yours` and
+   `unreadable`, and both used to render the same "No pending decisions" as a
+   genuinely quiet queue. Only the third may say it. The head counter goes to `—`
+   for `unreadable` and stays a number for `not_yours`, because zero decisions
+   waiting on you is the true answer when the queue is not yours.*
 5. **Team load · five states**, including "not your role" — which today renders
    as an empty panel indistinguishable from "nobody has any work".
+   *Corrected 2026-09-02 (D16): it renders as NO PANEL — `v-if="teamLoad.length"`
+   removes the `<section>`. And "nobody has any work" is not what the other empty
+   means either (see §7). The role answer cannot be inferred from the list at all;
+   it now ships as `oversight` on the payload, the name the rest of the tender API
+   already uses (`tender.py:2525`, `:3554`).*
 6. **Next 7 days · the S1 problem, and your answer to it.** Two artboards: what
    it does now (overdue invisible) and what it should do.
 7. **The three identifier leaks** (S3), before and after, all three in one board.
@@ -644,8 +687,8 @@ re-examined.
 | D12 | The freshness stamp reflects `generated_at`, not the browser clock | **passes** (2026-09-02) — first reader of `generated_at` in the SPA |
 | D13 | An overdue item is discoverable from the calendar region | **passes** (2026-09-02) — a past-due bucket, not an earlier start date |
 | D14 | The empty plan distinguishes *nothing to do* from *could not be computed* | **passes** (2026-09-02) — three-way, and S2's premise was corrected: the silent five had *run* |
-| D15 | The Decision box, Team load and calendar each render five states | **fails** — only the plan panel does |
-| D16 | Team load empty-for-your-role ≠ Team load empty-of-work | **fails** — same rendering |
+| D15 | The Decision box, Team load and calendar each render five states | **passes** (2026-09-02) — one `regionState` for the four page-level gates, drawn in all three; the plan panel's inline chain kept as the reference and pinned equal by test |
+| D16 | Team load empty-for-your-role ≠ Team load empty-of-work | **passes** (2026-09-02) — `oversight` on the payload; and empty-of-work is *no lots in the company*, not *nobody busy* (§7) |
 | D17 | The primary CTA is the focusable, hoverable control, or is not drawn as one | **passes** (2026-09-02) — the row is the control; the span is no longer painted as one |
 | D18 | Which clock produced "today" is legible to the reader | **passes** (2026-09-02) — the server sends `today`; the meta row names the clock and flags disagreement |
 | D19 | `delivery_deadline` is either consumed by a rule or absent from the calendar's promise | **passes** (2026-09-02) — absent from the promise; the rule was NOT invented |

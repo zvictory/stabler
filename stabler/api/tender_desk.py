@@ -397,6 +397,14 @@ def operations_desk(company: str, view: str | None = None, days: int = 7) -> dic
 		"calendar": calendar_days,
 		"calendar_past": calendar["past"],
 		"team_load": team_load,
+		# WHO team_load is for. It is built only under `if oversight:` above, so a
+		# sourcing user and a director of a company that holds no lots both receive
+		# []. The client cannot tell those apart from the list alone -- and the two
+		# sentences are opposites: one says "this panel is not yours to read", the
+		# other says "there is nothing in this company to spread". The roles live
+		# here; the flag is the only way the answer reaches the reader. Same name
+		# the rest of the tender API already ships it under (tender.py:2525, :3554).
+		"oversight": oversight,
 		"currency": curr or "USD",
 		"view": view,
 		"views": available_views,
