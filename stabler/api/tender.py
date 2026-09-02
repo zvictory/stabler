@@ -2115,10 +2115,11 @@ def _tender_director_payload(company: str, *, include_rows: bool) -> dict:
 		inp, refs = _bid_inputs(deal, company)
 		pnl = _compute_bid_pnl(inp)
 		value = flt(refs["so_revenue"]) or flt(pnl["bid_price"])
-		total_value += value
-		total_ost += flt(pnl["ostatok"])
-		if pnl["margin_on_revenue_pct"]:
-			margins.append(pnl["margin_on_revenue_pct"])
+		if has_pricing:
+			total_value += value
+			total_ost += flt(pnl["ostatok"])
+			if pnl["margin_on_revenue_pct"]:
+				margins.append(pnl["margin_on_revenue_pct"])
 		if dl["risk"] == "risk":
 			at_risk += 1
 		delivery = next((m["date"] for m in dl["milestones"] if m["key"] == "delivery"), None)
