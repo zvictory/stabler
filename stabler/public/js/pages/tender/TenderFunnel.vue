@@ -25,6 +25,7 @@ import { useSession } from "../../stores/session.js";
 import { call } from "../../api/client.js";
 import { t } from "../../composables/i18n.js";
 import { stepLabel } from "./flowLabels.js";
+import SkeletonRows from "../../components/SkeletonRows.vue";
 
 const session = useSession();
 const { activeCompany, tenderPolicy } = storeToRefs(session);
@@ -406,7 +407,11 @@ function go(st) {
 <template>
 	<div class="tender-funnel">
 		<div v-if="loading && !data" class="ds-panel funnel-loading">
-			<div class="ds-panel-foot">{{ t("Loading tender funnel…") }}</div>
+			<!-- F17 (docs/design/prompts/15-pipeline-overview.md, §3 mandate 3):
+			     a line of text painted instantly and gave no sense of shape or
+			     wait. SkeletonRows is what every other tender panel loads with
+			     (OperationsDesk.vue). -->
+			<SkeletonRows :rows="5" :cols="4" class="funnel-pad" />
 		</div>
 
 		<div v-else-if="error" class="ds-panel funnel-error">
@@ -832,6 +837,12 @@ function go(st) {
 .funnel-empty,
 .funnel-error {
 	padding: 6px 0;
+}
+
+/* F17: `.ds-panel` itself carries no padding (stabler-modernist.css) --
+ * SkeletonRows needs its own, same shape as OperationsDesk.vue's .desk-pad. */
+.funnel-pad {
+	padding: 14px 16px;
 }
 
 .ds-funnel-row[role="button"] {

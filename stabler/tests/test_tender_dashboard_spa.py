@@ -158,6 +158,53 @@ class TestTenderDashboardSpaContract(unittest.TestCase):
 			"the cross-mechanism disclosure is missing, moved out of the flow panel, or no longer translatable",
 		)
 
+	def test_loading_renders_a_skeleton_not_a_line_of_text(self):
+		"""F17 (docs/design/prompts/15-pipeline-overview.md, §3 mandate 3 "Loading
+		is skeleton, not spinner"): measured 2026-09-02, this screen's two
+		loading states -- TenderFunnel's own
+		initial load and TenderOverview's process-flow panel -- each rendered
+		one line of `t()` text ("Loading tender funnel…", "Loading…") where
+		every other loading state on the tender screens (OperationsDesk.vue,
+		test_tender_desk_spa.py's test_uses_skeleton_rows) mounts SkeletonRows
+		instead. A text line paints instantly and gives no sense of shape or
+		wait, and it reads as a cheaper, different kind of screen than the
+		panel next to it.
+		"""
+		funnel = _read(_FUNNEL)
+		self.assertIn(
+			'from "../../components/SkeletonRows.vue"',
+			funnel,
+			"TenderFunnel.vue no longer imports SkeletonRows",
+		)
+		# TenderFunnel's own branches are each a wrapper <div> carrying the
+		# v-if (matching its existing error branch, F13) -- bounded on the
+		# next sibling branch's landmark, not a fixed character window that
+		# would silently stop matching once a comment shifted the tag a few
+		# bytes further away.
+		loading_at = funnel.index('v-if="loading && !data"')
+		error_at = funnel.index('v-else-if="error"', loading_at)
+		loading_branch = funnel[loading_at:error_at]
+		# The opening tag itself, not the bare word: an explanatory comment in
+		# this branch is allowed to say "SkeletonRows" in prose, and a plain
+		# `assertIn("SkeletonRows", ...)` cannot tell that mention apart from
+		# the component actually being mounted.
+		self.assertIn("<SkeletonRows", loading_branch, "the initial-load branch is not a skeleton")
+		self.assertNotIn(
+			"Loading tender funnel", loading_branch, "the initial-load branch still renders the old text line"
+		)
+
+		overview = _read(_OVERVIEW)
+		self.assertIn(
+			'from "../../components/SkeletonRows.vue"',
+			overview,
+			"TenderOverview.vue no longer imports SkeletonRows",
+		)
+		self.assertRegex(
+			overview,
+			r'<SkeletonRows[^>]*\bv-else-if="flowLoading && !flow"',
+			"the process-flow loading branch is not a skeleton",
+		)
+
 	def test_company_disabled_tender_keeps_financial_fallback(self):
 		source = _read(_DASHBOARD)
 		self.assertIn("loadFinancial()", source)

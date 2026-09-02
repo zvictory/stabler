@@ -33,6 +33,7 @@ import { t } from "../../composables/i18n.js";
 import { useSession } from "../../stores/session.js";
 import TenderPage from "./TenderPage.vue";
 import TenderFunnel from "./TenderFunnel.vue";
+import SkeletonRows from "../../components/SkeletonRows.vue";
 import { stepLabel, stateLabel, waitState } from "./flowLabels.js";
 
 const session = useSession();
@@ -151,7 +152,10 @@ const openPhase = (key) => {
 			</div>
 
 			<div v-if="flowError" class="ov-state" role="alert">{{ flowError }}</div>
-			<div v-else-if="flowLoading && !flow" class="ov-state">{{ t("Loading…") }}</div>
+			<!-- F17 (docs/design/prompts/15-pipeline-overview.md, §3 mandate 3):
+			     a line of text painted instantly and gave no sense of shape or
+			     wait. SkeletonRows is what every other tender panel loads with. -->
+			<SkeletonRows v-else-if="flowLoading && !flow" :rows="4" :cols="5" class="ov-pad" />
 
 			<div v-else class="ds-stage-grid" data-cols="5">
 				<button
@@ -271,6 +275,13 @@ const openPhase = (key) => {
 	padding: 18px var(--ds-pad);
 	font-size: 13.5px;
 	color: var(--ds-tx2);
+}
+
+/* F17: `.ds-panel` itself carries no padding (stabler-modernist.css) --
+ * SkeletonRows needs its own, same shape as the operations desk's own
+ * equivalent local padding class. */
+.ov-pad {
+	padding: 14px 16px;
 }
 
 /* `.ds-panel-foot`'s own type is a 10.5px mono field-name footer -- too small
