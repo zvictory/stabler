@@ -5,14 +5,22 @@
  * Bu çekmece bir Tender Master YARATMAZ; bir CRM Deal yaratır (deal_type=Tender).
  * İhale doğrudan kanban Intake aşamasında belirir — parent/lot dansı yok.
  *
- * 4 bölüm:
+ * 5 bölüm (bu yorum "4 bölüm" diyordu ve E'yi hiç anmıyordu — E sonradan
+ * eklendi, özet güncellenmedi; prompt 01 tutarsızlığı ölçüp kapatılmasını
+ * istedi ve tasarım E'yi çekmecede bıraktı, ADR-206):
  *   A) Müşteri — Typeahead ile mevcut Customer seç (yoksa Sales'e yönlendir)
  *   B) İhale bilgisi — başlık, no, tarihler, tahmini tutar + currency
  *   C) İhale dosyaları — tek dropzone (snap, PDF, birden fazla)
  *   D) Talep itemları — LineItemsEditor + itemSearcher (yoksa Inventory'ye yönlendir)
+ *   E) Teklif verilsin mi — Go/No-go, alım usulü, ceza %/gün, teminat, sertifika
  *
  * Kayıt: crm.save_deal (deal_type=Tender) + tender.save_deal_intake (items + files JSON overlay).
  * Altyapı hazır: custom_tender_intake zaten CRM Deal'da var.
+ *
+ * Görsel dil: ADR-301'den beri modülün `ds-*` katmanı (stabler-modernist.css).
+ * Bu dosyanın kendine ait üçüncü lehçesi 2026-09-03'te emekli edildi. Katman
+ * `.stbl-ds` altında kapsamlı — yani bu çekmece yalnız TenderPage'in içinden
+ * monte edildiğinde giyinir; dışarıda sınıf adları hiçbir şeye karşılık gelmez.
  */
 import { reactive, ref, watch, computed } from "vue";
 import { useRouter } from "vue-router";
@@ -336,439 +344,367 @@ async function save() {
 </script>
 
 <template>
-	<div v-if="open" class="modal-backdrop fade show" @click="close"></div>
-	<div v-if="open" class="tgm-drawer fade show d-block" tabindex="-1" role="dialog">
-		<div class="tgm-drawer-dialog">
-			<div class="tgm-drawer-content">
-				<!-- Header -->
-				<div class="tgm-drawer-header">
-					<div>
-						<div class="tgm-kicker">
-							{{ form.name ? t("Edit") : t("New") }} · CRM Deal · deal_type: Tender
-						</div>
-						<h3 class="tgm-drawer-title">
-							{{ t("Tender Intake Center") }}
-						</h3>
+	<template v-if="open">
+		<button
+			class="ds-drawer-backdrop"
+			:aria-label="t('Close panel')"
+			tabindex="-1"
+			@click="close"
+		></button>
+		<aside
+			class="ds-drawer"
+			data-size="lg"
+			role="dialog"
+			aria-modal="true"
+			aria-labelledby="tender-intake-title"
+		>
+			<!-- Header -->
+			<header class="ds-drawer-head">
+				<div class="intake-head">
+					<div class="ds-drawer-kicker">
+						{{ form.name ? t("Edit") : t("New") }} · CRM Deal · deal_type: Tender
 					</div>
-					<button type="button" class="btn-close" @click="close"></button>
+					<div id="tender-intake-title" class="ds-drawer-title">
+						{{ t("Tender Intake Center") }}
+					</div>
 				</div>
+				<button type="button" class="ds-drawer-close" :aria-label="t('Close')" @click="close">
+					✕
+				</button>
+			</header>
 
-				<!-- Body -->
-				<div class="tgm-drawer-body">
-					<form @submit.prevent="save">
-						<!-- ═══ A: Customer ═══ -->
-						<div class="tgm-section">
-							<div class="tgm-sec-head">
-								<span class="tgm-sec-num">A</span>
-								{{ t("Who is the Tender From?") }}
-							</div>
-							<div class="tgm-sec-body">
-								<div class="d-flex gap-2 align-items-end">
-									<div class="flex-grow-1">
-										<label class="form-label required">{{ t("Customer / Buyer") }}</label>
-										<Typeahead
-											v-model="form.organization"
-											:search="searchCustomers"
-											:display="form.organization"
-											:placeholder="t('Search customer…')"
-											@pick="pickCustomer"
-										/>
-									</div>
-									<button
-										type="button"
-										class="btn btn-outline-secondary btn-sm whitespace-nowrap"
-										@click="goToNewCustomer"
-									>
-										+ {{ t("New") }}
-										<span class="text-muted ms-1">↗ Sales</span>
-									</button>
-								</div>
-							</div>
+			<!-- Body -->
+			<div class="ds-drawer-body">
+				<form @submit.prevent="save">
+					<!-- ═══ A: Customer ═══ -->
+					<section class="ds-form-section">
+						<div class="ds-form-section-head">
+							<span class="ds-label">A · {{ t("Who is the Tender From?") }}</span>
 						</div>
-
-						<!-- ═══ B: Tender Information ═══ -->
-						<div class="tgm-section">
-							<div class="tgm-sec-head">
-								<span class="tgm-sec-num">B</span>
-								{{ t("Tender Information") }}
-							</div>
-							<div class="tgm-sec-body">
-								<div class="mb-2">
-									<label class="form-label required">{{ t("Tender Title") }}</label>
-									<input
-										v-model="form.title"
-										type="text"
-										class="form-control"
-										placeholder="UZEX Supply Tender 2026 — Construction Materials"
-										required
+						<div class="ds-form-body">
+							<div class="d-flex gap-2 align-items-end">
+								<div class="ds-field flex-grow-1">
+									<label class="ds-label">
+										{{ t("Customer / Buyer") }} <span class="ds-field-req">*</span>
+									</label>
+									<Typeahead
+										v-model="form.organization"
+										:search="searchCustomers"
+										:display="form.organization"
+										:placeholder="t('Search customer…')"
+										@pick="pickCustomer"
 									/>
 								</div>
-								<div class="row g-2 mb-2">
-									<div class="col-6">
-										<label class="form-label">{{ t("Tender No") }}</label>
-										<input
-											v-model="form.tender_no"
-											type="text"
-											class="form-control mono"
-											placeholder="UZEX-2026-CM-042"
-										/>
-									</div>
-									<div class="col-6">
-										<label class="form-label">{{ t("Source") }}</label>
-										<select v-model="form.source" class="form-select">
-											<option value="UZEX">UZEX</option>
-											<option value="Direct">Direct</option>
-											<option value="Portal">Portal</option>
-											<option value="Other">Other</option>
-										</select>
-									</div>
-								</div>
-								<div class="row g-2 mb-2">
-									<div class="col-6">
-										<label class="form-label">{{ t("Publication Date") }}</label>
-										<DateInput v-model="form.publication_date" />
-									</div>
-									<div class="col-6">
-										<label class="form-label">{{ t("Submission Deadline") }}</label>
-										<DateInput v-model="form.submission_deadline" />
-									</div>
-								</div>
-								<div class="row g-2 align-items-end">
-									<div class="col-8">
-										<label class="form-label">{{ t("Estimated Total") }}</label>
-										<MoneyInput
-											v-model="form.estimated_total"
-											:currency="form.currency"
-											:language="user.language"
-										/>
-									</div>
-									<div class="col-4">
-										<label class="form-label">{{ t("Currency") }}</label>
-										<select v-model="form.currency" class="form-select">
-											<option v-for="c in currencies" :key="c" :value="c">{{ c }}</option>
-										</select>
-									</div>
-								</div>
+								<button
+									type="button"
+									class="btn btn-outline-secondary btn-sm whitespace-nowrap"
+									@click="goToNewCustomer"
+								>
+									+ {{ t("New") }}
+									<span class="text-muted ms-1">↗ Sales</span>
+								</button>
 							</div>
 						</div>
+					</section>
 
-						<!-- ═══ C: Tender Files ═══ -->
-						<div class="tgm-section">
-							<div class="tgm-sec-head">
-								<span class="tgm-sec-num">C</span>
-								{{ t("Tender Files") }}
-							</div>
-							<div class="tgm-sec-body">
-								<div class="tgm-file-list">
-									<div v-for="(f, i) in form.files" :key="i" class="tgm-file-chip">
-										<span>📄</span>
-										<span class="tgm-file-name font-monospace">{{ f.file_name }}</span>
-										<span class="text-muted small">{{ f.file_size || "" }}</span>
-										<button type="button" class="btn-close btn-sm" @click="removeFile(i)"></button>
-									</div>
-								</div>
-								<FileSlot :attached-to="'CRM Deal'" @uploaded="onFileUploaded" />
-							</div>
+					<!-- ═══ B: Tender Information ═══ -->
+					<section class="ds-form-section">
+						<div class="ds-form-section-head">
+							<span class="ds-label">B · {{ t("Tender Information") }}</span>
 						</div>
-
-						<!-- ═══ D: Requested Items ═══ -->
-						<div class="tgm-section">
-							<div class="tgm-sec-head">
-								<span class="tgm-sec-num">D</span>
-								{{ t("Requested Items") }}
-								<div class="ms-auto d-flex align-items-center gap-1">
-									<span class="text-muted small">{{ t("Currency") }}:</span>
-									<select
-										v-model="form.currency"
-										class="form-select form-select-sm"
-										style="width: 80px"
-									>
+						<div class="ds-form-body">
+							<div class="ds-field mb-2">
+								<label class="ds-label">
+									{{ t("Tender Title") }} <span class="ds-field-req">*</span>
+								</label>
+								<input
+									v-model="form.title"
+									type="text"
+									class="form-control"
+									placeholder="UZEX Supply Tender 2026 — Construction Materials"
+									required
+								/>
+							</div>
+							<div class="ds-form-grid" data-cols="2">
+								<div class="ds-field">
+									<label class="ds-label">{{ t("Tender No") }}</label>
+									<input
+										v-model="form.tender_no"
+										type="text"
+										class="form-control mono"
+										placeholder="UZEX-2026-CM-042"
+									/>
+								</div>
+								<div class="ds-field">
+									<label class="ds-label">{{ t("Source") }}</label>
+									<select v-model="form.source" class="form-select">
+										<option value="UZEX">UZEX</option>
+										<option value="Direct">Direct</option>
+										<option value="Portal">Portal</option>
+										<option value="Other">Other</option>
+									</select>
+								</div>
+								<div class="ds-field">
+									<label class="ds-label">{{ t("Publication Date") }}</label>
+									<DateInput v-model="form.publication_date" />
+								</div>
+								<div class="ds-field">
+									<label class="ds-label">{{ t("Submission Deadline") }}</label>
+									<DateInput v-model="form.submission_deadline" />
+								</div>
+								<div class="ds-field">
+									<label class="ds-label">{{ t("Estimated Total") }}</label>
+									<MoneyInput
+										v-model="form.estimated_total"
+										:currency="form.currency"
+										:language="user.language"
+									/>
+								</div>
+								<div class="ds-field">
+									<label class="ds-label">{{ t("Currency") }}</label>
+									<select v-model="form.currency" class="form-select">
 										<option v-for="c in currencies" :key="c" :value="c">{{ c }}</option>
 									</select>
 								</div>
 							</div>
-							<div class="tgm-sec-body">
-								<table v-if="form.items.length" class="table table-no-stripe table-sm align-middle">
-									<thead>
-										<tr>
-											<th>{{ t("Item") }}</th>
-											<th class="text-end" style="width: 80px">{{ t("Qty") }}</th>
-											<th style="width: 70px">{{ t("UOM") }}</th>
-											<th class="text-end" style="width: 100px">{{ t("Price") }}</th>
-											<th class="text-end" style="width: 110px">{{ t("Amount") }}</th>
-											<th style="width: 30px"></th>
-										</tr>
-									</thead>
-									<tbody>
-										<tr v-for="(line, i) in form.items" :key="i">
-											<td>
-												<Typeahead
-													v-model="line.item_code"
-													:search="searchItems"
-													:display="line.item_name || line.item_code"
-													:placeholder="t('Search item…')"
-													@pick="(item) => handlePickItem({ line, item })"
-													@clear="line.item_name = ''"
-												/>
-											</td>
-											<td class="text-end">
-												<input
-													v-model.number="line.qty"
-													type="number"
-													class="form-control form-control-sm text-end"
-													@input="recomputeLine(line)"
-												/>
-											</td>
-											<td>
-												<input
-													v-model="line.uom"
-													type="text"
-													class="form-control form-control-sm"
-												/>
-											</td>
-											<td class="text-end">
-												<MoneyInput
-													v-model="line.rate"
-													:currency="form.currency"
-													:language="user.language"
-													size="sm"
-													@update:model-value="recomputeLine(line)"
-												/>
-											</td>
-											<td class="text-end font-monospace fw-bold">
-												{{ line.amount.toLocaleString() }}
-											</td>
+						</div>
+					</section>
 
-											<td>
-												<button
-													type="button"
-													class="btn btn-ghost-danger btn-sm py-0"
-													@click="removeItem(i)"
-												>
-													✕
-												</button>
-											</td>
-										</tr>
-									</tbody>
-								</table>
-								<div class="d-flex justify-content-between align-items-center mt-2">
-									<div class="d-flex gap-2">
-										<button type="button" class="btn btn-ghost-primary btn-sm" @click="addItem">
-											+ {{ t("Add Item") }}
-										</button>
-										<button
-											type="button"
-											class="btn btn-outline-secondary btn-sm"
-											@click="goToNewItem"
-										>
-											{{ t("New Item") }} <span class="text-muted ms-1">↗ Inventory</span>
-										</button>
-									</div>
-									<div class="text-end">
-										<span class="text-muted small">{{ form.items.length }} item · </span>
-										<span class="font-monospace fw-bold">{{ itemTotal.toLocaleString() }}</span>
-										<span class="text-muted small ms-1">{{ form.currency }}</span>
-									</div>
+					<!-- ═══ C: Tender Files ═══ -->
+					<section class="ds-form-section">
+						<div class="ds-form-section-head">
+							<span class="ds-label">C · {{ t("Tender Files") }}</span>
+						</div>
+						<div class="ds-form-body">
+							<div class="ds-file-list" data-mode="edit">
+								<div v-for="(f, i) in form.files" :key="i" class="ds-file-row">
+									<span aria-hidden="true">📄</span>
+									<span class="ds-file-name font-monospace">{{ f.file_name }}</span>
+									<span class="ds-file-meta">{{ f.file_size || "" }}</span>
+									<button
+										type="button"
+										class="ds-cut-del"
+										:aria-label="t('Remove file')"
+										@click="removeFile(i)"
+									>
+										✕
+									</button>
 								</div>
+							</div>
+							<FileSlot :attached-to="'CRM Deal'" @uploaded="onFileUploaded" />
+						</div>
+					</section>
+
+					<!-- ═══ D: Requested Items ═══ -->
+					<section class="ds-form-section">
+						<div class="ds-form-section-head">
+							<span class="ds-label">D · {{ t("Requested Items") }}</span>
+							<div class="d-flex align-items-center gap-1">
+								<span class="ds-label">{{ t("Currency") }}:</span>
+								<select
+									v-model="form.currency"
+									class="form-select form-select-sm"
+									style="width: 80px"
+								>
+									<option v-for="c in currencies" :key="c" :value="c">{{ c }}</option>
+								</select>
 							</div>
 						</div>
-
-						<!-- ═══ E: Should We Bid? ═══ -->
-						<div class="tgm-section">
-							<div class="tgm-sec-head">
-								<span class="tgm-sec-num">E</span>
-								{{ t("Should We Bid?") }}
-							</div>
-							<div class="tgm-sec-body">
-								<div class="row g-2 mb-2">
-									<div class="col-6 col-md-4">
-										<label class="form-label">{{ t("Decision") }}</label>
-										<select v-model="form.go_no_go" class="form-select">
-											<option value="">—</option>
-											<option value="go">{{ t("Go") }}</option>
-											<option value="no_go">{{ t("No-go") }}</option>
-										</select>
-									</div>
-									<div class="col-6 col-md-4">
-										<label class="form-label">{{ t("Purchase method") }}</label>
-										<select v-model="form.purchase_method" class="form-select">
-											<option value="">—</option>
-											<option value="auction">{{ t("Auction") }}</option>
-											<option value="shop">{{ t("Shop") }}</option>
-											<option value="selection">{{ t("Selection") }}</option>
-											<option value="tender">{{ t("Tender") }}</option>
-										</select>
-									</div>
-									<div class="col-6 col-md-4">
-										<label class="form-label">{{ t("Penalty %/day") }}</label>
-										<input
-											v-model.number="form.penalty_pct_per_day"
-											type="number"
-											step="0.01"
-											class="form-control"
-										/>
-									</div>
-								</div>
-								<div class="row g-2 align-items-end">
-									<div class="col-6 col-md-4">
-										<label class="form-label">{{ t("Guarantee") }}</label>
-										<MoneyInput
-											v-model="form.guarantee_amount"
-											:currency="form.currency"
-											:language="user.language"
-										/>
-									</div>
-									<div class="col-6 col-md-4">
-										<label class="form-label">{{ t("Guarantee return") }}</label>
-										<DateInput v-model="form.guarantee_return" />
-									</div>
-									<div class="col-12 col-md-4">
-										<label class="form-check mb-2">
-											<input
-												v-model="form.cert_required"
-												type="checkbox"
-												class="form-check-input"
-												:true-value="1"
-												:false-value="0"
+						<div class="ds-form-body">
+							<table v-if="form.items.length" class="table table-no-stripe table-sm align-middle">
+								<thead>
+									<tr>
+										<th>{{ t("Item") }}</th>
+										<th class="text-end" style="width: 80px">{{ t("Qty") }}</th>
+										<th style="width: 70px">{{ t("UOM") }}</th>
+										<th class="text-end" style="width: 100px">{{ t("Price") }}</th>
+										<th class="text-end" style="width: 110px">{{ t("Amount") }}</th>
+										<th style="width: 30px"></th>
+									</tr>
+								</thead>
+								<tbody>
+									<tr v-for="(line, i) in form.items" :key="i">
+										<td>
+											<Typeahead
+												v-model="line.item_code"
+												:search="searchItems"
+												:display="line.item_name || line.item_code"
+												:placeholder="t('Search item…')"
+												@pick="(item) => handlePickItem({ line, item })"
+												@clear="line.item_name = ''"
 											/>
-											<span class="form-check-label">{{ t("Certificate required") }}</span>
-										</label>
-									</div>
+										</td>
+										<td class="text-end">
+											<input
+												v-model.number="line.qty"
+												type="number"
+												class="form-control form-control-sm text-end"
+												@input="recomputeLine(line)"
+											/>
+										</td>
+										<td>
+											<input v-model="line.uom" type="text" class="form-control form-control-sm" />
+										</td>
+										<td class="text-end">
+											<MoneyInput
+												v-model="line.rate"
+												:currency="form.currency"
+												:language="user.language"
+												size="sm"
+												@update:model-value="recomputeLine(line)"
+											/>
+										</td>
+										<td class="text-end font-monospace fw-bold">
+											{{ line.amount.toLocaleString() }}
+										</td>
+
+										<td>
+											<button
+												type="button"
+												class="btn btn-ghost-danger btn-sm py-0"
+												@click="removeItem(i)"
+											>
+												✕
+											</button>
+										</td>
+									</tr>
+								</tbody>
+							</table>
+							<div class="d-flex justify-content-between align-items-center mt-2">
+								<div class="d-flex gap-2">
+									<button type="button" class="btn btn-ghost-primary btn-sm" @click="addItem">
+										+ {{ t("Add Item") }}
+									</button>
+									<button
+										type="button"
+										class="btn btn-outline-secondary btn-sm"
+										@click="goToNewItem"
+									>
+										{{ t("New Item") }} <span class="text-muted ms-1">↗ Inventory</span>
+									</button>
+								</div>
+								<div class="text-end">
+									<span class="text-muted small">{{ form.items.length }} item · </span>
+									<span class="font-monospace fw-bold">{{ itemTotal.toLocaleString() }}</span>
+									<span class="text-muted small ms-1">{{ form.currency }}</span>
 								</div>
 							</div>
 						</div>
-					</form>
-				</div>
+					</section>
 
-				<!-- Footer -->
-				<div class="tgm-drawer-footer">
-					<button type="button" class="btn btn-ghost-secondary" :disabled="saving" @click="close">
-						{{ t("Cancel") }}
-					</button>
-					<button type="submit" class="btn btn-primary" :disabled="saving" @click="save">
-						<span v-if="saving" class="spinner-border spinner-border-sm me-1"></span>
-						{{ t("Save Tender") }}
-					</button>
-				</div>
+					<!-- ═══ E: Should We Bid? ═══ -->
+					<section class="ds-form-section">
+						<div class="ds-form-section-head">
+							<span class="ds-label">E · {{ t("Should We Bid?") }}</span>
+						</div>
+						<div class="ds-form-body">
+							<div class="ds-form-grid" data-cols="2">
+								<div class="ds-field">
+									<label class="ds-label">{{ t("Decision") }}</label>
+									<select v-model="form.go_no_go" class="form-select">
+										<option value="">—</option>
+										<option value="go">{{ t("Go") }}</option>
+										<option value="no_go">{{ t("No-go") }}</option>
+									</select>
+								</div>
+								<div class="ds-field">
+									<label class="ds-label">{{ t("Purchase method") }}</label>
+									<select v-model="form.purchase_method" class="form-select">
+										<option value="">—</option>
+										<option value="auction">{{ t("Auction") }}</option>
+										<option value="shop">{{ t("Shop") }}</option>
+										<option value="selection">{{ t("Selection") }}</option>
+										<option value="tender">{{ t("Tender") }}</option>
+									</select>
+								</div>
+								<div class="ds-field">
+									<label class="ds-label">{{ t("Penalty %/day") }}</label>
+									<input
+										v-model.number="form.penalty_pct_per_day"
+										type="number"
+										step="0.01"
+										class="form-control"
+									/>
+								</div>
+								<div class="ds-field">
+									<label class="ds-label">{{ t("Guarantee") }}</label>
+									<MoneyInput
+										v-model="form.guarantee_amount"
+										:currency="form.currency"
+										:language="user.language"
+									/>
+								</div>
+								<div class="ds-field">
+									<label class="ds-label">{{ t("Guarantee return") }}</label>
+									<DateInput v-model="form.guarantee_return" />
+								</div>
+								<!-- The checkbox carries its own label, so it is a grid cell and not a
+								     `ds-field`: a second label above it would name the same control twice. -->
+								<div class="d-flex align-items-end">
+									<label class="form-check mb-2">
+										<input
+											v-model="form.cert_required"
+											type="checkbox"
+											class="form-check-input"
+											:true-value="1"
+											:false-value="0"
+										/>
+										<span class="form-check-label">{{ t("Certificate required") }}</span>
+									</label>
+								</div>
+							</div>
+						</div>
+					</section>
+				</form>
 			</div>
-		</div>
-	</div>
+
+			<!-- Footer -->
+			<div class="ds-drawer-foot">
+				<button type="submit" class="btn btn-primary" :disabled="saving" @click="save">
+					<span v-if="saving" class="spinner-border spinner-border-sm me-1"></span>
+					{{ t("Save Tender") }}
+				</button>
+				<button type="button" class="btn btn-ghost-secondary" :disabled="saving" @click="close">
+					{{ t("Cancel") }}
+				</button>
+			</div>
+		</aside>
+	</template>
 </template>
 
 <style scoped>
-.modal-backdrop {
-	opacity: 0.5;
-	z-index: 1040;
-}
-.tgm-drawer {
-	position: fixed;
-	top: 0;
-	right: 0;
-	bottom: 0;
-	z-index: 1050;
-	width: 720px;
-	max-width: 100vw;
-	background: var(--stbl-surface, #fff);
-	box-shadow: -4px 0 24px rgba(0, 0, 0, 0.15);
-	display: flex;
-	flex-direction: column;
-}
-.tgm-drawer-dialog {
-	height: 100%;
-	display: flex;
-	flex-direction: column;
-}
-.tgm-drawer-content {
-	height: 100%;
-	display: flex;
-	flex-direction: column;
-}
+/* Layout only. Colour, border tone and typography come from the layer (.ds-*),
+ * exactly as in the board this drawer opens from (TenderCrm.vue's own block). */
 
-.tgm-drawer-header {
-	padding: 16px 24px;
-	border-bottom: 1px solid var(--stbl-border, #dbe1ea);
-	display: flex;
-	align-items: center;
-	justify-content: space-between;
-}
-.tgm-kicker {
-	font-family: var(--stbl-mono, ui-monospace, monospace);
-	font-size: 10.5px;
-	text-transform: uppercase;
-	letter-spacing: 0.05em;
-	color: var(--stbl-muted, #6c7a91);
-	font-weight: 700;
-}
-.tgm-drawer-title {
-	font-size: 18px;
-	font-weight: 800;
-	margin: 2px 0 0;
-}
-
-.tgm-drawer-body {
-	padding: 0;
-	overflow-y: auto;
+/* The head's text column. It shares the row with the close button, so a long
+ * title has to wrap rather than push the button off the edge. */
+.intake-head {
 	flex: 1;
+	min-width: 0;
 }
 
-.tgm-section {
-	border-bottom: 1px solid var(--stbl-border, #dbe1ea);
+/* Adjacent stack — settled 2026-09-01 with the alternative drawn beside it.
+ * The layer frames `.ds-form-section` as a free-standing card (border + 14px
+ * gap) because its first caller is a page-width form; five cards inside a
+ * 760px drawer spend some 60px of the scroll on separation alone, and the eye
+ * counts frames before it reads fields. So inside THIS body the sections sit
+ * flush and are divided by their own heads — which is also what the drawer
+ * looked like before the migration, so the class names change and the user
+ * sees the same form. Scoped to the drawer body: no other caller of the
+ * layer's form grammar is touched. */
+.ds-drawer-body .ds-form-section {
+	border: 0;
+	margin-bottom: 0;
 }
-.tgm-sec-head {
-	display: flex;
-	align-items: center;
-	gap: 8px;
-	padding: 10px 24px;
-	background: #f8f9fb;
-	border-bottom: 1px solid var(--stbl-border, #dbe1ea);
-	font-size: 13px;
-	font-weight: 700;
-}
-.tgm-sec-num {
-	width: 22px;
-	height: 22px;
-	border-radius: 6px;
-	background: var(--tblr-primary, #206bc4);
-	color: #fff;
-	font-size: 11px;
-	font-weight: 800;
-	display: flex;
-	align-items: center;
-	justify-content: center;
-}
-.tgm-sec-body {
-	padding: 16px 24px;
+.ds-drawer-body .ds-form-section + .ds-form-section .ds-form-section-head {
+	border-top: 1px solid var(--ds-ln);
 }
 
-.tgm-file-list {
-	margin-bottom: 8px;
-}
-.tgm-file-chip {
-	display: flex;
-	align-items: center;
-	gap: 8px;
-	padding: 6px 10px;
-	background: #fff;
-	border: 1px solid var(--stbl-border, #dbe1ea);
-	border-radius: 7px;
-	font-size: 12px;
-	margin-bottom: 5px;
-}
-.tgm-file-name {
-	flex: 1;
-	font-weight: 600;
-	overflow: hidden;
-	text-overflow: ellipsis;
-	white-space: nowrap;
-}
-
-.tgm-drawer-footer {
-	padding: 12px 24px;
-	border-top: 1px solid var(--stbl-border, #dbe1ea);
-	background: #fbfcfe;
-	display: flex;
-	justify-content: flex-end;
-	gap: 8px;
+/* A section head carries its heading and, in section D, a currency picker.
+ * Measured worst-case interface-language growth is 3.75x, so the pair wraps
+ * instead of crushing the picker. */
+.ds-drawer-body .ds-form-section-head {
+	flex-wrap: wrap;
 }
 
 .whitespace-nowrap {

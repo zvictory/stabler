@@ -591,6 +591,28 @@
 .stbl-ds .ds-input[aria-invalid="true"] { border-color: var(--ds-crit); }
 .stbl-ds textarea.ds-input { min-height: 80px; resize: vertical; }
 
+/* ── Dosya eki listesi ───────────────────────────────────────────────────────
+ * Satır anatomisi sabit: ikon · ad · üstveri · tek sondaki yuva. Yuva `mode`
+ * ile değişir — `edit`'te `ds-cut-del` (henüz kaydedilmemiş, silinebilir),
+ * `read`'te kapılı bir indirme bağlantısı (sunucu gerçeği, silinemez).
+ * 2026-09-01'de karara bağlandı: ADR-302 "yeni bileşen" diyordu, Aşama A §1.2
+ * "çoklu seçimle aynı jeton listesi" diyordu; ölçüldüğünde iki yüzeyin farkı
+ * SİLİNEBİLİRLİK ve bir izin kapısı, anatomi değil. Katmana buradan giriyor
+ * çünkü prompt 01'in göçü `tgm-file-list/-chip/-name` üçlüsünü emekli ediyor
+ * ve katmanda karşılığı yoktu — üç sınıf, kural yazılmasa isimden ibaret kalır.
+ * ------------------------------------------------------------------------- */
+.stbl-ds .ds-file-list { margin-bottom: 8px; }
+.stbl-ds .ds-file-row {
+  display: flex; align-items: center; gap: 8px; padding: 6px 10px;
+  background: var(--ds-surface); border: 1px solid var(--ds-ln);
+  font-size: 12px; margin-bottom: 5px;
+}
+.stbl-ds .ds-file-name {
+  flex: 1; min-width: 0; font-weight: 600;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.stbl-ds .ds-file-meta { font-family: var(--ds-mono); font-size: 11px; color: var(--ds-tx3); }
+
 /* ── Adet sayacı ─────────────────────────────────────────────────────────── */
 .stbl-ds .ds-stepper { display: inline-flex; border: 1px solid var(--ds-ln2); background: #fff; }
 .stbl-ds .ds-stepper button {

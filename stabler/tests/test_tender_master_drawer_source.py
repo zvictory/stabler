@@ -232,8 +232,15 @@ class TestTheEvaluationSectionLivesWhereTheDecisionIsMade(unittest.TestCase):
 	def test_the_section_is_lettered_E_after_the_existing_four(self):
 		"""The drawer numbers its sections A–D and the decision document calls
 		this one E (mockup Tab 1/Tab 2). A fifth section with no letter reads as
-		an afterthought bolted to the bottom of the form."""
-		self.assertIn('<span class="tgm-sec-num">E</span>', self.body)
+		an afterthought bolted to the bottom of the form.
+
+		The claim is unchanged; only where the letter is written moved. It used
+		to be its own badge element next to the heading and is now the head of
+		the heading string itself (`E · Should We Bid?`), because a letter in a
+		box of its own drifts from its section the first time the form is
+		reordered and a translator cannot see what it belongs to — settled with
+		the rest of the drawer's design language on 2026-09-01, applied 09-03."""
+		self.assertIn('<span class="ds-label">E · ', self.body)
 
 	def test_the_decision_stamp_is_never_sent_from_the_browser(self):
 		"""ADR-206 keeps today's behaviour: the server stamps who decided and
