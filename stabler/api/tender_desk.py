@@ -371,5 +371,16 @@ def operations_desk(company: str, view: str | None = None, days: int = 7) -> dic
 		"currency": curr or "USD",
 		"view": view,
 		"views": available_views,
+		# WHICH CALENDAR DAY this answer reasoned with. Every severity, all four
+		# counters and the calendar window come off `today_str` above -- the SITE's
+		# timezone via frappe.utils.today() -- while the client re-filtered the
+		# identical predicate with the browser's local date, because the server had
+		# never said what its own date was. Same predicate, different clock: between
+		# 00:00 and 05:00 in Tashkent (UTC+5) against a UTC host the two disagree,
+		# and the Today chip and the list it filters to then show different numbers,
+		# each half internally consistent. `today_str`, not a second read of
+		# today(): a request that straddles midnight must not ship counters computed
+		# for one day labelled with the next.
+		"today": today_str,
 		"generated_at": now(),
 	}

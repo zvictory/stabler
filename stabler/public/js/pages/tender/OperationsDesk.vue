@@ -2,9 +2,16 @@
 	<!-- Kabuk (modül çubuğu + sayfa başlığı + `stbl-ds`) TenderPage'de; bu ekran
 	     tender kabuğunun ÖLÇÜSÜ olduğu için oradaki dolgu buradan geldi. -->
 	<TenderPage :label="t('Operations desk')" :title="t('What should I do today?')">
+		<!-- Modülün tek tazelik yüzeyi. "Bugün" hangi saatten geldi — sunucudan mı
+		     cihazdan mı — okuyucu görebilmeli; ayrıştıkları gece de cihazın ne
+		     dediği yazılıyor, çünkü ekrandaki her sayı sunucununkine göre. -->
 		<template #meta>
 			<span class="ds-mono">{{ formatDate(todayStr) }}</span>
 			<span>{{ weekdayLabel }}</span>
+			<span>{{ todayClockLabel }}</span>
+			<span v-if="clockSkew" role="status">
+				{{ t("your device says") }} <span class="ds-mono">{{ formatDate(browserToday) }}</span>
+			</span>
 			<span v-if="lastReadAt">
 				{{ t("Last read") }} <span class="ds-mono">{{ lastReadAt }}</span>
 			</span>
@@ -348,13 +355,34 @@ const collapsed = ref(collapsedFromQuery(route.query.collapsed));
  * tarayıcı saatine düşmek gerçeğinden ayırt edilemeyen bir yalan üretirdi. */
 const lastReadAt = computed(() => formatTime(deskData.value?.generated_at));
 
+// Tarayıcının YEREL takvim günü — ve yalnızca bir yedek (aşağıya bakın).
 // `toISOString()` UTC verir. Taşkent UTC+5: her gece 00:00–05:00 arası masanın
 // "bugün"ü sunucunun bugününden bir gün geriye düşüyordu. Ölçüldü 2026-08-02
 // 03:53 yerel saatte: başlık 01.08.2026 Sat yazarken satırlar 02.08.2026'yı
 // TODAY işaretliyordu. Etkisi yalnız başlık değil — bu değişken TODAY süzgecini
 // (`filteredItems`), takvimin bugün hücresini ve satır rozetini de sürüyor.
 // `todayIso()` tam bu kayma için var (composables/date.js:106).
-const todayStr = todayIso();
+const browserToday = todayIso();
+
+/* İKİ SAAT, TEK KELİME. Yukarıdaki hata düzeldi ama arkasında bir dikiş kaldı:
+ * sunucu her severity'yi, dört sayacı ve takvim penceresini `frappe.utils.today()`
+ * ile — sitenin saat diliminde — hesaplıyor (tender_desk.py:48); istemci AYNI
+ * yüklemi tarayıcının tarihiyle yeniden süzüyordu. Yüklem aynı, saat değil: ikisi
+ * ayrıştığı gece "Bugün" kartı 2 yazarken süzdüğü liste 1 satır gösteriyor ve her
+ * yarı kendi içinde tutarlı. Taşkent sitesini Taşkent'ten okuyunca hep aynı çıkar
+ * — kimsenin fark etmeyeceği gün tam da bu yüzden.
+ *
+ * Masanın "bugün"ü artık SUNUCUNUN takvim günü; sunucu tarih göndermediyse
+ * (dağıtım sırasındaki eski bir sunucu, ya da ilk yanıt gelmeden) tarayıcıya
+ * düşülüyor ve hangi saatin kullanıldığı üst satırda YAZIYOR. Dikişi kapatmak
+ * yetmez: okuyucu hangi saate baktığını görebilmeli. */
+const serverToday = computed(() => deskData.value?.today || "");
+const todayStr = computed(() => serverToday.value || browserToday);
+const todayClockLabel = computed(() => (serverToday.value ? t("server date") : t("device date")));
+/* Yalnız gerçekten ayrıştıklarında uyar: her gün duran bir uyarı, önemli olduğu
+ * tek geceyi de görünmez yapar. */
+const clockSkew = computed(() => Boolean(serverToday.value) && serverToday.value !== browserToday);
+
 let reqToken = 0;
 
 /* Yük taşıyan yarı DURUM KODU: sunucu 403 döndürüyor, client.js:73 bunu
@@ -407,7 +435,7 @@ const filteredPlan = computed(() => {
 	const items = deskData.value?.plan || [];
 	if (activeFilter.value === "all") return items;
 	if (activeFilter.value === "today") {
-		return items.filter((i) => i.due === todayStr || i.severity === "today");
+		return items.filter((i) => i.due === todayStr.value || i.severity === "today");
 	}
 	if (activeFilter.value === "overdue") {
 		return items.filter((i) => i.severity === "overdue");
@@ -541,18 +569,18 @@ const week = computed(() =>
 			dow: t(DOW[dow]),
 			dom: String(d.getDate()).padStart(2, "0"),
 			count: day.count || 0,
-			isToday: day.date === todayStr,
+			isToday: day.date === todayStr.value,
 			isWeekend: dow === 0 || dow === 6,
 			tooltip: (day.items || []).map((i) => i.title).join("\n"),
 		};
 	})
 );
 
-const weekdayLabel = computed(() => t(DOW[new Date(todayStr + "T00:00:00").getDay()]));
+const weekdayLabel = computed(() => t(DOW[new Date(todayStr.value + "T00:00:00").getDay()]));
 
 function dueLabel(item) {
 	if (item.severity === "overdue") return t("PAST DUE");
-	if (item.due === todayStr) return t("TODAY");
+	if (item.due === todayStr.value) return t("TODAY");
 	return t("DUE");
 }
 

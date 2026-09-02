@@ -99,6 +99,21 @@ function interpolations() {
 	return [...template.matchAll(/\{\{[^}]*\}\}/g)].map((m) => m[0]);
 }
 
+/**
+ * The `<script setup>` block with its comments dropped, so counting call sites
+ * counts CODE. Every comment in OperationsDesk.vue sits on its own line — the
+ * block ones open the line and continue it with an asterisk, the line ones start
+ * at the indent — so dropping whole comment lines is exact here and does not need
+ * a parser that would also have to understand strings and regex literals.
+ */
+function scriptWithoutComments() {
+	return src
+		.slice(src.indexOf("<script setup>"), src.indexOf("</script>"))
+		.split("\n")
+		.filter((line) => !/^\s*(\/\/|\/\*|\*)/.test(line))
+		.join("\n");
+}
+
 describe("D12 — the freshness stamp is the server's clock, not the browser's", () => {
 	// The stamp is a computed over the stored payload (the idiom all six tender
 	// screens share since 2026-09-02 — see tenderFreshness.spec.js). Running it
@@ -478,5 +493,85 @@ describe("D11 — the role picker shows a name, not the id behind it", () => {
 			(x) => /\bdeskData\.view\b|\bv\.(id|label)\b/.test(x) && !/viewLabel\(/.test(x)
 		);
 		expect(leaks).toEqual([]);
+	});
+});
+
+describe("D18 — the reader can tell which clock said 'today'", () => {
+	// Same idiom as D12: run the real computeds with `computed` stubbed to call its
+	// getter, so the expressions are exercised rather than pattern-matched.
+	const evalWith = (expression, payload, browser = "2026-09-02") =>
+		evalInScope(expression, {
+			computed: (fn) => fn(),
+			deskData: { value: payload },
+			browserToday: browser,
+			serverToday: { value: payload?.today || "" },
+			t: (key) => key,
+		});
+
+	const today = (payload, browser) => evalWith(rhsOf("const todayStr"), payload, browser);
+	const clockLabel = (payload, browser) => evalWith(rhsOf("const todayClockLabel"), payload, browser);
+	const skew = (payload, browser) => evalWith(rhsOf("const clockSkew"), payload, browser);
+
+	it("counts with the server's calendar day, not the browser's", () => {
+		// WHAT WOULD MAKE THIS FAIL: going back to `const todayStr = todayIso()`.
+		// The server derives every severity and every counter from
+		// frappe.utils.today() in the site's timezone (tender_desk.py:48); the
+		// client re-filtered the SAME predicate with the browser's date. Identical
+		// predicate, different clock — so on a night when the two disagree the Today
+		// chip reads 2 and the list it filters to shows 1, and each half is
+		// internally consistent. On a Tashkent site read from a Tashkent browser
+		// they always agree, which is exactly why nobody would catch the day they
+		// do not.
+		expect(today({ today: "2026-09-03" }, "2026-09-02")).toBe("2026-09-03");
+	});
+
+	it("falls back to the device only when the server sent no date", () => {
+		// WHAT WOULD MAKE THIS FAIL: hard-failing (a blank header and a TODAY badge
+		// that never fires) when the key is absent — which is every request against
+		// a server deployed before this change, and every render before the first
+		// response lands.
+		expect(today({}, "2026-09-02")).toBe("2026-09-02");
+		expect(today(null, "2026-09-02")).toBe("2026-09-02");
+	});
+
+	it("names the clock it used, in both cases", () => {
+		// WHAT WOULD MAKE THIS FAIL: silently switching to the server's date. That
+		// closes the seam and leaves the acceptance row open: the reader still
+		// cannot tell which clock produced the word "today". The fallback especially
+		// has to say so — an unlabelled device date is indistinguishable from a
+		// server one and is the exact state this screen was in.
+		expect(clockLabel({ today: "2026-09-03" })).toBe("server date");
+		expect(clockLabel({})).toBe("device date");
+	});
+
+	it("flags a disagreement only when there is one to flag", () => {
+		// WHAT WOULD MAKE THIS FAIL: raising the flag whenever the server date is
+		// missing. On the ordinary day — a Tashkent site read from Tashkent — the
+		// two dates match and a permanent warning is noise that trains the reader to
+		// ignore the one night it matters.
+		expect(skew({ today: "2026-09-03" }, "2026-09-02")).toBe(true);
+		expect(skew({ today: "2026-09-02" }, "2026-09-02")).toBe(false);
+		expect(skew({}, "2026-09-02")).toBe(false);
+	});
+
+	it("reads the browser's calendar date exactly once", () => {
+		// WHAT WOULD MAKE THIS FAIL: a second `todayIso()` call left behind at one
+		// of the four sites todayStr drives (header, TODAY filter, calendar today
+		// cell, row badge). Two sources of "today" in one screen is the defect this
+		// row exists to close, and the second one would agree on every day a test
+		// is likely to be run. Comments are stripped first: this file's own comment
+		// above the fallback names `todayIso()` while explaining the UTC bug it was
+		// added for, and a test that counted that would be counting prose.
+		expect(scriptWithoutComments().match(/todayIso\(\)/g)).toHaveLength(1);
+	});
+
+	it("puts the clock's name and the disagreement in the meta row", () => {
+		// WHAT WOULD MAKE THIS FAIL: computing all of it and rendering none of it.
+		// The meta row is the module's only freshness surface; a state that exists
+		// only in the script is a state the reader does not have.
+		const meta = src.slice(anchor("<template #meta>"), anchor("<template #actions>"));
+		expect(meta).toMatch(/\{\{ todayClockLabel \}\}/);
+		expect(meta).toMatch(/v-if="clockSkew"/);
+		expect(meta).toMatch(/browserToday/);
 	});
 });

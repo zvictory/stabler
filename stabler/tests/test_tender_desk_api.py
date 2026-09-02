@@ -161,6 +161,36 @@ class TestTenderDeskApiSource(unittest.TestCase):
 		self.assertIn("self_made", helper.group(1))
 		self.assertIn("requested_by", helper.group(1))
 
+	def test_the_payload_states_the_calendar_day_it_reasoned_with(self):
+		# D18. The desk has two clocks and one word for them. Every severity, every
+		# counter and the calendar window are derived here from frappe.utils.today()
+		# in the SITE's timezone; the client re-filtered the identical predicate
+		# with the browser's local date, because the server never said what its own
+		# date was. Same predicate, different clock: between 00:00 and 05:00 in
+		# Tashkent (UTC+5) against a UTC host the two disagree, the Today chip and
+		# the list it filters to show different numbers, and each half is internally
+		# consistent. `today` is the fact the client was missing.
+		#
+		# assertTrue over assertRegex: a failure of assertRegex prints all 370 lines
+		# of tender_desk.py, which nobody reads.
+		self.assertTrue(
+			re.search(r'^\t\t"today": today_str,$', self.source, re.M),
+			'the payload must carry "today": today_str',
+		)
+
+	def test_the_stated_day_is_the_one_the_counters_were_built_with(self):
+		# WHAT WOULD MAKE THIS FAIL: stamping a second, freshly-read date onto the
+		# payload — `"today": today()`. A request that straddles midnight would then
+		# ship counters computed for one day labelled with the next, which is worse
+		# than the seam it replaced: the client would trust it and have no way to
+		# see the mismatch. One read, one variable, everything downstream from it.
+		self.assertEqual(
+			len(re.findall(r"^\ttoday_str = today\(\)$", self.source, re.M)),
+			1,
+			"today() must be read exactly once, into today_str",
+		)
+		self.assertNotIn('"today": today()', self.source)
+
 	def test_no_sql_aggregation_functions_in_select(self):
 		lines = self.source.splitlines()
 		for idx, line in enumerate(lines, 1):

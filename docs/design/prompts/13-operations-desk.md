@@ -402,6 +402,18 @@ will notice the day they do not.
 `todayStr` drives four things: the header date, the TODAY filter, the calendar's
 today cell, and the row badge. Show which clock a reader is looking at.
 
+**Fixed 2026-09-02 (D18).** The seam is closed *and* stated, because closing it
+silently would leave the acceptance row open — a reader still could not tell
+which clock. The payload now carries `"today": today_str`, the same variable the
+counters and the calendar window were already built from (not a second read of
+`today()`, which would let a request straddling midnight ship one day's counters
+under the next day's label). The client prefers it and falls back to
+`todayIso()` only when the key is absent — an older server mid-deploy, or the
+render before the first response. The meta row names the clock in both cases
+(*server date* / *device date*), and on a day the two disagree it adds what the
+device says. `todayIso()` is now called exactly once in the file, which is what
+makes "two sources of today" fail a test rather than a night.
+
 ---
 
 ## 7 · Data — derived by execution, invent nothing
@@ -548,5 +560,5 @@ re-examined.
 | D15 | The Decision box, Team load and calendar each render five states | **fails** — only the plan panel does |
 | D16 | Team load empty-for-your-role ≠ Team load empty-of-work | **fails** — same rendering |
 | D17 | The primary CTA is the focusable, hoverable control, or is not drawn as one | **passes** (2026-09-02) — the row is the control; the span is no longer painted as one |
-| D18 | Which clock produced "today" is legible to the reader | **fails** — two clocks, one word (S5) |
+| D18 | Which clock produced "today" is legible to the reader | **passes** (2026-09-02) — the server sends `today`; the meta row names the clock and flags disagreement |
 | D19 | `delivery_deadline` is either consumed by a rule or absent from the calendar's promise | **fails** — resolved, carried, unread; sublabel still says "delivery" |
