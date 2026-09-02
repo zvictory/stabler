@@ -398,8 +398,26 @@ Fixed 2026-09-02 on Zafar's instruction ("seçicide de renksiz durumu göster"):
 the menu dot and the picker both show a dashed hollow circle when the stored
 colour is not one the palette can draw. Shown, **not** offered — the Select has
 no blank option, so there is no valid value to write and the indicator is a
-`span`, not a button. Adding the missing three, or a real "clear colour" control,
-is a change to what the column may store and was not made.
+`span`, not a button.
+
+**Then the three were added** ("eksik üç rengi de ekle"), so the picker now draws
+all thirteen: `amber` `#d97706` and `violet` `#7c3aed` — Tailwind 600, which is
+what the CRM app's own `parseColor` renders (`text-${color}-600`) — and `black`
+`#111827`, gray-900, because that app maps black to its darkest ink token rather
+than to pure black and this palette is Tailwind throughout.
+
+Adding them **costs separation, measured**: purple/violet reads ΔE 10.6 on the
+darkened count colour and yellow/amber 13.2, against the palette's previous
+worst pair, orange/red, at 21.2 — and under about 10 is where two colours stop
+being tellable apart. It is still right, because the alternative was never
+"keep them apart": all three were rendering AS GREY, a separation of zero from a
+colour already on the board. And 600 is the widest shade available, not merely
+the faithful one — violet-700 reads 9.1 and amber-700 drops to 9.0 against
+orange. `amber` is squeezed between yellow and orange by definition; that is
+what the name means on this wheel.
+
+The uncoloured indicator stays: an empty colour is still reachable, and it is
+now the only thing it reports.
 
 `currentColor` and not a house token, for the reason above: this component
 renders under App.vue's plain `.page`.

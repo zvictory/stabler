@@ -50,14 +50,27 @@ function statusClass(color) {
 }
 
 // Hex values for the Kanban column stripe and color picker.
+/* The thirteen values `CRM Deal Status.color` accepts — it is a Select, not free
+ * text, and the palette held only ten until 2026-09-02, so `black`, `amber` and
+ * `violet` fell through to the grey fallback and rendered as `gray`.
+ *
+ * Tailwind 600, which is what the CRM app's own parseColor renders
+ * (`text-${color}-600`); `black` is gray-900 because that app maps it to its
+ * darkest ink token rather than to pure black, and this palette is Tailwind
+ * throughout. Both cost separation — purple/violet reads ΔE 10.6 against the
+ * palette's previous worst pair at 21.2 — and 600 is nonetheless the widest
+ * available: violet-700 reads 9.1, amber-700 drops to 9.0 against orange. */
 const KANBAN_COLORS = [
 	{ name: "gray",   hex: "#6b7280" },
+	{ name: "black",  hex: "#111827" },
 	{ name: "blue",   hex: "#3b82f6" },
 	{ name: "green",  hex: "#16a34a" },
 	{ name: "yellow", hex: "#ca8a04" },
+	{ name: "amber",  hex: "#d97706" },
 	{ name: "orange", hex: "#ea580c" },
 	{ name: "red",    hex: "#dc2626" },
 	{ name: "purple", hex: "#9333ea" },
+	{ name: "violet", hex: "#7c3aed" },
 	{ name: "pink",   hex: "#db2777" },
 	{ name: "teal",   hex: "#0d9488" },
 	{ name: "cyan",   hex: "#0891b2" },

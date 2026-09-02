@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { readFileSync } from "fs";
+import { existsSync, readFileSync } from "fs";
 import { dirname, resolve } from "path";
 import { fileURLToPath } from "url";
 import { contrastRatio, parseColor, stageTone, tintOver } from "../composables/color.js";
@@ -38,7 +38,11 @@ function paletteColours() {
 		m[1],
 		m[2],
 	]);
-	expect(rows.length, "no palette colours parsed").toBe(10);
+	// Not a literal count: the parse must account for every entry in the block,
+	// so an entry whose shape the regex cannot read reports instead of vanishing.
+	const declared = (block[1].match(/hex:/g) || []).length;
+	expect(rows.length, `parsed ${rows.length} of ${declared} palette entries`).toBe(declared);
+	expect(declared, "the palette is empty").toBeGreaterThan(0);
 	return rows;
 }
 
@@ -50,6 +54,11 @@ function channels(css) {
 }
 
 const WHITE = [255, 255, 255];
+/** The ten the palette held on 2026-09-02, before `black`, `amber` and `violet`
+ *  were added. The two measurements below are records of that day and are scoped
+ *  to it: one that silently re-scopes itself as the palette grows is a record of
+ *  nothing. */
+const THEN = ["gray", "blue", "green", "yellow", "orange", "red", "purple", "pink", "teal", "cyan"];
 /** `22` is the alpha the old code concatenated: 0x22 / 0xff. */
 const OLD_ALPHA = 34 / 255;
 
@@ -62,7 +71,11 @@ describe("the measurements that made this worth changing", () => {
 		//
 		// So "use the colour unless it is bad" would have changed nothing, exactly
 		// as on the board. The colour has to be darkened.
-		for (const [name, hex] of paletteColours()) {
+		//
+		// `black`, added later, is the one colour that always read on its own tint
+		// (13.56) — it was broken the OTHER way, rendering as grey because the
+		// palette carried no entry for it at all.
+		for (const [name, hex] of paletteColours().filter(([n]) => THEN.includes(n))) {
 			const rgb = parseColor(hex);
 			const ratio = contrastRatio(rgb, tintOver(rgb, OLD_ALPHA));
 			expect(ratio, `${name} (${hex}) read ${ratio.toFixed(2)}:1 on its own tint`).toBeLessThan(
@@ -81,7 +94,13 @@ describe("the measurements that made this worth changing", () => {
 		// Recorded as a set rather than a count, because the interesting fact is
 		// WHICH ones: the four that pass are the dark ones, so the defect was
 		// invisible to anyone whose columns happened to be red, purple or pink.
+		//
+		// Scoped to the ten the palette held that day. It has thirteen now, and a
+		// measurement that silently re-scopes itself as the palette grows is not a
+		// record of anything. (`amber`, added later, reads 3.19 and would have been
+		// a seventh.)
 		const failing = paletteColours()
+			.filter(([name]) => THEN.includes(name))
 			.filter(([, hex]) => contrastRatio(parseColor(hex), WHITE) < 4.5)
 			.map(([name]) => name);
 		expect(failing).toEqual(["blue", "green", "yellow", "orange", "teal", "cyan"]);
@@ -315,5 +334,98 @@ describe("the picker shows the uncoloured state instead of claiming grey", () =>
 			/@click\.stop="updateColColor\(col\.status, c\.name\)"/.test(block),
 			"the swatches no longer set a colour"
 		).toBe(true);
+	});
+});
+
+describe("the palette draws every colour the column may hold", () => {
+	/** The thirteen `CRM Deal Status.color` Select options, read 2026-09-02. */
+	const RECORDED = [
+		"black", "gray", "blue", "green", "red", "pink", "orange",
+		"amber", "yellow", "cyan", "teal", "violet", "purple",
+	];
+
+	/** The doctype's own options when the `crm` app is beside this one, else the
+	 *  recorded list. Both branches assert — this never passes by omission, the
+	 *  way `make check`'s own eslint gate says a gate must not. */
+	function selectOptions() {
+		const at = resolve(
+			here,
+			"../../../../../crm/crm/fcrm/doctype/crm_deal_status/crm_deal_status.json"
+		);
+		if (!existsSync(at)) return RECORDED;
+		const field = JSON.parse(readFileSync(at, "utf8")).fields.find((f) => f.fieldname === "color");
+		expect(field, "CRM Deal Status has no colour field any more").toBeTruthy();
+		return String(field.options || "").split("\n").filter(Boolean);
+	}
+
+	it("carries a hex for every option, so none can fall through to grey", () => {
+		// WHAT WOULD MAKE THIS FAIL: the palette drifting behind the doctype again.
+		// It held ten of thirteen — `black`, `amber` and `violet` were legal,
+		// storable from the Frappe desk or the CRM app's own screens, and resolved
+		// to nothing here, so all three rendered as the grey fallback: the palette's
+		// own `gray`. A column really coloured violet and a column nobody coloured
+		// at all looked identical.
+		const known = new Set(paletteColours().map(([name]) => name));
+		const missing = selectOptions().filter((o) => !known.has(o));
+		expect(missing, `the column may be ${missing.join(", ")} and the picker cannot draw it`).toEqual(
+			[]
+		);
+	});
+
+	it("offers nothing the column cannot actually hold", () => {
+		// WHAT WOULD MAKE THIS FAIL: adding a swatch for a colour the Select refuses.
+		// save_deal_status validates none of this, so an invalid value would reach
+		// doc.save and throw there — a picker whose swatches sometimes error.
+		const legal = new Set(selectOptions());
+		const extra = paletteColours().map(([name]) => name).filter((n) => !legal.has(n));
+		expect(extra, `the picker offers ${extra.join(", ")}, which the field rejects`).toEqual([]);
+	});
+
+	it("renders the three the way the CRM app itself does", () => {
+		// WHAT WOULD MAKE THIS FAIL: inventing hexes. crm's own parseColor is
+		// `text-${color}-600`, with black on its darkest ink token and gray/green on
+		// 700 — so the same status is one colour on the CRM app's screens and another
+		// here unless these match. `black` is gray-900 rather than #000000: the app
+		// does not use pure black either, and the palette is Tailwind throughout.
+		const hexes = Object.fromEntries(paletteColours());
+		expect(hexes.amber, "amber is not Tailwind amber-600").toBe("#d97706");
+		expect(hexes.violet, "violet is not Tailwind violet-600").toBe("#7c3aed");
+		expect(hexes.black, "black is not Tailwind gray-900").toBe("#111827");
+	});
+
+	it("records that the three tighten the palette, and why that is still right", () => {
+		// WHAT WOULD MAKE THIS FAIL: nothing in the source. Kept because it is the
+		// argument AGAINST this change, measured rather than waved away.
+		//
+		// `amber` sits between yellow and orange by definition and `violet` beside
+		// purple, so adding them costs separation: purple/violet reads ΔE 10.6 and
+		// yellow/amber 13.2 against the previous worst pair, orange/red at 21.2.
+		// Under ~10 is where two colours stop being tellable apart.
+		//
+		// It is still the right trade, because the alternative was not "keep them
+		// apart" — it was rendering all three AS GREY, a separation of exactly zero
+		// from a colour already in the palette. And 600 is the best available shade,
+		// not merely the faithful one: violet-700 reads 9.1 and amber-700 drops to
+		// 9.0 against orange, both worse than what shipped.
+		const hexes = Object.fromEntries(paletteColours());
+		const de = (a, b) => {
+			const f = (t) => (t > 0.008856 ? Math.cbrt(t) : 7.787 * t + 16 / 116);
+			const lab = (rgb) => {
+				const [r, g, b] = rgb.map((v) => {
+					v /= 255;
+					return v <= 0.04045 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4;
+				});
+				const X = (0.4124 * r + 0.3576 * g + 0.1805 * b) / 0.95047;
+				const Y = 0.2126 * r + 0.7152 * g + 0.0722 * b;
+				const Z = (0.0193 * r + 0.1192 * g + 0.9505 * b) / 1.08883;
+				return [116 * f(Y) - 16, 500 * (f(X) - f(Y)), 200 * (f(Y) - f(Z))];
+			};
+			const [la, lb] = [lab(channels(stageTone(a).text)), lab(channels(stageTone(b).text))];
+			return Math.hypot(...la.map((v, i) => v - lb[i]));
+		};
+		expect(de(hexes.purple, hexes.violet)).toBeGreaterThan(10);
+		expect(de(hexes.yellow, hexes.amber)).toBeGreaterThan(10);
+		// The state they came from: identical to a colour already on the board.
+		expect(de(hexes.gray, "#6b7280")).toBe(0);
 	});
 });
