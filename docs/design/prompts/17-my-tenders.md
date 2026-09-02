@@ -450,13 +450,13 @@ Keep the artboards you rejected.
 | M4 | Loading renders a skeleton | passes |
 | M5 | A non-oversight user sees only tenders assigned to them | passes — server-side |
 | M6 | Arriving with `?funnel_stage=sourcing` lists exactly the three deals the funnel counted | passes **when the second request succeeds** (S2) |
-| M7 | The screen uses the house layer | **fails** — 1 `ds-*` in 125 lines |
-| M8 | The active-stage chip is shown only while that filter is in effect | **fails** — shown before and after failure (S2) |
-| M9 | The screen says whether it is showing everything or only your assignments | **fails** — `oversight` unread (S3) |
-| M10 | Two rows tied on risk and delivery have a defined order | **fails** — set iteration (S4) |
-| M11 | A won or lost tender is distinguishable from an open one | **fails** — `result` unrendered (S6) |
-| M12 | A failed load is distinguishable from "no tenders match these filters" | **fails** — same `EmptyState` |
+| M7 | The screen uses the house layer | **passes** (2026-09-02) — `ds-panel`/`ds-table`/`ds-chip` throughout, same risk-tone map DirectorBoard uses (`MyTenders.vue:138`) |
+| M8 | The active-stage chip is shown only while that filter is in effect | **passes** (2026-09-02) — `stageChipLabel` (`MyTenders.vue:104`) keys off `funnelDeals` (resolved), not `funnelStage` (intent) alone, so it is silent before the second request answers and after it fails (S2) |
+| M9 | The screen says whether it is showing everything or only your assignments | **passes** (2026-09-02) — `scopeSentence` (`MyTenders.vue:64`) reads the endpoint's own `oversight` field (`tender.py:2557`); says nothing until the first load answers. 2 new strings have no catalogue rows yet — `make check`'s i18n gate is red until a maintainer adds them (see report) |
+| M10 | Two rows tied on risk and delivery have a defined order | **passes** (2026-09-02) — sort key now `(risk, delivery, deal)` (`tender.py:2553`), same 3-key convention `_tender_director_payload` already uses for the identical row shape (S4) |
+| M11 | A won or lost tender is distinguishable from an open one | **passes** (2026-09-02) — `resultTone`/`resultLabel` (`MyTenders.vue:147`) render a chip guarded on `r.result`, same tone convention as DirectorBoard's `RESULT_TONE` minus the "pending" case this endpoint never returns (S6) |
+| M12 | A failed load is distinguishable from "no tenders match these filters" | **passes** (2026-09-02) — `load()` now records the failure on `error` (not only the toast) and clears it before the next attempt; the empty-state region renders one message for a failed load and a different one for an honest empty result |
 | M13 | The row is reachable and openable from the keyboard | **passes** (2026-09-02) — `role="button" tabindex="0"`, Enter and Space. The inline `cursor:pointer` is untouched (M7) |
-| M14 | The table scrolls on a phone; the page does not | **fails** — no responsive CSS |
+| M14 | The table scrolls on a phone; the page does not | **passes** (2026-09-02) — `.mt-scroll` wraps the table with `overflow-x: auto` (`MyTenders.vue:226`), but that alone does not scroll: `.ds-table` is `width: 100%` (`stabler-modernist.css:389`, shared, not edited), so with nothing to overflow the table just shrinks — measured live against `DirectorBoard.vue`'s identical `.board-scroll`, which does not scroll. Fix is a `min-width` on each `<th>` (700px total), not `.ds-table` itself. Source-level only; no jsdom in this repo, so rendered/phone behaviour is **not** verified (see report) |
 | M15 | An auto-refreshing screen says how fresh it is | **passes** (2026-09-02) — `generated_at` |
-| M16 | The landed figure shown to a sourcing user is one they can act on before the win | **fails** — it is a post-win sum, `0` on eleven of thirteen rows (§1) |
+| M16 | The landed figure shown to a sourcing user is one they can act on before the win | **passes** (2026-09-02) — `rowLanded` (`MyTenders.vue:132`) shows the post-win PO sum once one exists, else the pre-win estimate a sourcing officer types onto the deal's own bid pricing (`_deal_landed_estimate`, `tender.py:1077`, reading `CRM Deal.custom_bid_pricing.landed_goods` — Zafar's pre-win costing rule, `00-SETUP.md`). Source-level proof only; real seeded-data correctness needs `make test-bench` (see report) |
