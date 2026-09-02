@@ -6618,3 +6618,23 @@ The currency list could not be loaded — only your company's currency is availa
 Handled by the {role} role.,Обрабатывается ролью «{role}».
 Remove file?,Удалить файл?
 Remove {file} from {requirement}? The requirement re-opens if this was its last file.,"Удалить «{file}» из «{requirement}»? Если это был последний файл, требование снова станет невыполненным."
+Return items are required.,Нужно указать позиции возврата.
+Invalid return line.,Некорректная строка возврата.
+Item code is required.,Нужно указать код товара.
+Return quantity must be greater than zero for {0}.,Количество возврата для {0} должно быть больше нуля.
+Return rate must be greater than zero for {0}.,Цена возврата для {0} должна быть больше нуля.
+Granularity must be day or month.,Детализация должна быть «день» или «месяц».
+Cart is empty.,Корзина пуста.
+Invalid cart line.,Некорректная строка корзины.
+Quantity must be greater than zero for {0}.,Количество для {0} должно быть больше нуля.
+Insufficient shop stock for {0}. Available: {1} requested: {2}.,Недостаточно товара в магазине для {0}. Доступно: {1} запрошено: {2}.
+Invalid JSON payload.,Некорректные данные JSON.
+Expected a list payload.,Ожидался список.
+At least one item line is required.,Нужна хотя бы одна строка позиции.
+Each item line must be an object.,Каждая строка позиции должна быть объектом.
+Each item line needs an item_code.,В каждой строке позиции нужен item_code.
+Each item line needs a positive qty.,В каждой строке позиции нужно положительное количество.
+Entry kind must be Expense or Asset Purchase.,Тип записи должен быть «Расход» или «Покупка актива».
+Rate must be greater than zero.,Цена должна быть больше нуля.
+No price found for {item}. Enter the rate manually.,Цена для {item} не найдена. Введите её вручную.
+Could not fetch a price for {item}. Enter the rate manually.,Не удалось получить цену для {item}. Введите её вручную.

@@ -7007,3 +7007,23 @@ The currency list could not be loaded — only your company's currency is availa
 Handled by the {role} role.,Handled by the {role} role.
 Remove file?,Remove file?
 Remove {file} from {requirement}? The requirement re-opens if this was its last file.,Remove {file} from {requirement}? The requirement re-opens if this was its last file.
+Return items are required.,Return items are required.
+Invalid return line.,Invalid return line.
+Item code is required.,Item code is required.
+Return quantity must be greater than zero for {0}.,Return quantity must be greater than zero for {0}.
+Return rate must be greater than zero for {0}.,Return rate must be greater than zero for {0}.
+Granularity must be day or month.,Granularity must be day or month.
+Cart is empty.,Cart is empty.
+Invalid cart line.,Invalid cart line.
+Quantity must be greater than zero for {0}.,Quantity must be greater than zero for {0}.
+Insufficient shop stock for {0}. Available: {1} requested: {2}.,Insufficient shop stock for {0}. Available: {1} requested: {2}.
+Invalid JSON payload.,Invalid JSON payload.
+Expected a list payload.,Expected a list payload.
+At least one item line is required.,At least one item line is required.
+Each item line must be an object.,Each item line must be an object.
+Each item line needs an item_code.,Each item line needs an item_code.
+Each item line needs a positive qty.,Each item line needs a positive qty.
+Entry kind must be Expense or Asset Purchase.,Entry kind must be Expense or Asset Purchase.
+Rate must be greater than zero.,Rate must be greater than zero.
+No price found for {item}. Enter the rate manually.,No price found for {item}. Enter the rate manually.
+Could not fetch a price for {item}. Enter the rate manually.,Could not fetch a price for {item}. Enter the rate manually.

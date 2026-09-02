@@ -6613,3 +6613,23 @@ The currency list could not be loaded — only your company's currency is availa
 Handled by the {role} role.,«{role}» роли томонидан бошқарилади.
 Remove file?,Файл ўчирилсинми?
 Remove {file} from {requirement}? The requirement re-opens if this was its last file.,"«{file}» файли «{requirement}» талабидан ўчирилсинми? Агар бу охирги файл бўлса, талаб яна очилади."
+Return items are required.,Қайтариш қаторлари киритилиши шарт.
+Invalid return line.,Қайтариш қатори нотўғри.
+Item code is required.,Маҳсулот коди киритилиши шарт.
+Return quantity must be greater than zero for {0}.,{0} учун қайтариш миқдори нолдан катта бўлиши керак.
+Return rate must be greater than zero for {0}.,{0} учун қайтариш нархи нолдан катта бўлиши керак.
+Granularity must be day or month.,Батафсиллик кун ёки ой бўлиши керак.
+Cart is empty.,Сават бўш.
+Invalid cart line.,Сават қатори нотўғри.
+Quantity must be greater than zero for {0}.,{0} учун миқдор нолдан катта бўлиши керак.
+Insufficient shop stock for {0}. Available: {1} requested: {2}.,{0} учун дўконда қолдиқ етарли эмас. Мавжуд: {1} сўралган: {2}.
+Invalid JSON payload.,JSON маълумоти нотўғри.
+Expected a list payload.,Рўйхат кутилган эди.
+At least one item line is required.,Камида битта маҳсулот қатори керак.
+Each item line must be an object.,Ҳар бир маҳсулот қатори объект бўлиши керак.
+Each item line needs an item_code.,Ҳар бир маҳсулот қаторида item_code бўлиши керак.
+Each item line needs a positive qty.,Ҳар бир маҳсулот қаторида мусбат миқдор бўлиши керак.
+Entry kind must be Expense or Asset Purchase.,Ёзув тури Харажат ёки Актив хариди бўлиши керак.
+Rate must be greater than zero.,Нарх нолдан катта бўлиши керак.
+No price found for {item}. Enter the rate manually.,{item} учун нарх топилмади. Нархни қўлда киритинг.
+Could not fetch a price for {item}. Enter the rate manually.,{item} учун нарх олинмади. Нархни қўлда киритинг.
