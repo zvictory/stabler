@@ -2968,7 +2968,28 @@ def crm_board(company: str) -> dict:
 			}
 		)
 
-	return {"lanes": lanes, "cards": cards}
+	# The base-currency companion line (.claude/rules/10-frontend.md, fourth
+	# documented exception). A deal carries no stored base figure the way a ledger
+	# account does, so the figure has to be converted -- and the rule's conditions
+	# come with it: a live rate, never a literal, stated ONCE on the page with the
+	# date it was read, and NOTHING rendered when no rate is available.
+	#
+	# cbu_rate_on_or_before is the same reader validate_exchange_rate measures
+	# every real document against; a screen hint disagreeing with the ledger's own
+	# validator would be a second answer to one question. One query per distinct
+	# foreign currency on the board, not per card.
+	from stabler.api._fx_rates import cbu_rate_on_or_before
+
+	rates: dict[str, dict] = {}
+	for seen in sorted({c["currency"] for c in cards if c["currency"] and c["currency"] != base_ccy}):
+		rate, rate_date = cbu_rate_on_or_before(seen, base_ccy, today())
+		# Absent, not zero: the client renders no converted figure when the key is
+		# missing. A 0 would print "= 0" and a 1.0 would print the foreign number
+		# under the base symbol -- the defect this whole change removes.
+		if rate and flt(rate) > 0:
+			rates[seen] = {"rate": flt(rate), "date": str(rate_date or "")}
+
+	return {"lanes": lanes, "cards": cards, "base_currency": base_ccy, "rates": rates}
 
 
 def _record_tender_stage_event(name, company, from_stage, to_stage, moved_at) -> None:

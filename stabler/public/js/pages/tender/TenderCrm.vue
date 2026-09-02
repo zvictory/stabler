@@ -28,6 +28,11 @@ const viewMode = ref("kanban"); // 'kanban' | 'list'
 const searchQuery = ref("");
 const lanes = ref([]);
 const cards = ref([]);
+/* Şirketin para birimi ve kur tablosu SUNUCUDAN: oturumun `currency`'si yalnız
+ * ilk yükleme öncesi yedek. Kur tablosunda anahtarı olmayan para birimi için
+ * hiçbir çevrilmiş rakam basılmıyor. */
+const baseCurrency = ref(currency.value);
+const rates = ref({});
 const masterDrawerOpen = ref(false);
 const editingTender = ref(null); // null = yeni ihale; dolu object = düzenleme
 
@@ -64,6 +69,8 @@ async function load() {
 		const res = await call("stabler.api.tender.crm_board", { company: activeCompany.value });
 		lanes.value = res?.lanes || [];
 		cards.value = res?.cards || [];
+		baseCurrency.value = res?.base_currency || currency.value;
+		rates.value = res?.rates || {};
 		checkDealQuery();
 	} catch (err) {
 		toast.error(err?.message || t("Could not load Tender CRM."));
@@ -161,6 +168,54 @@ const cardsByLane = computed(() => {
 const laneTotals = (laneId) =>
 	totalsByCurrency(cardsByLane.value[laneId] || [], { amount: (c) => c.contract_value });
 
+/* ── Şirket para birimindeki eş satır ─────────────────────────────────────
+ * 10-frontend.md'nin DÖRDÜNCÜ belgeli istisnası. COA'nın görünümü kopyalanıyor
+ * (ana satır kendi biriminde, altında `≈ base`, yalnız ikisi farklıysa) ama
+ * MEKANİZMASI değil: COA'nınki defterde SAKLI ikinci bir rakam, hiçbir şey
+ * çevirmiyor. Deal'ın saklı base rakamı yok, bu yüzden burada kur uygulanıyor —
+ * ve kuralın şartları da geliyor: canlı kur, sayfada BİR KEZ okunduğu tarihle
+ * birlikte, işlem-para-birimi rakamının yerine asla, ve kur yoksa hiçbir şey.
+ *
+ * Kur sunucudan: crm_board `cbu_rate_on_or_before` okuyor, yani her gerçek
+ * belgeyi doğrulayan `validate_exchange_rate` ile aynı kaynak. */
+function toBase(amount, ccy) {
+	if (!ccy || ccy === baseCurrency.value) return Number(amount) || 0;
+	const rate = rates.value[ccy]?.rate;
+	// null, 0 değil: 0 gerçek bir sözleşmenin üstüne "≈ 0,00 сўм" basar, 1 ise
+	// yabancı rakamı base sembolüyle gösterir — bu işin başlangıcındaki kusur.
+	if (!rate || rate <= 0) return null;
+	return Number(amount) * rate;
+}
+
+/* Hepsi ya da hiçbiri: çevrilemeyen bir satırı atlayıp kalanı toplamak, eksik
+ * olduğu görünmeyen bir toplam üretir — hiç toplam olmamasından kötüdür. */
+function baseTotal(totals) {
+	let sum = 0;
+	for (const { ccy, total } of totals) {
+		const converted = toBase(total, ccy);
+		if (converted === null) return null;
+		sum += converted;
+	}
+	return sum;
+}
+
+/* Zaten şirket para birimindeyse eş satır aynı sayıyı ikinci kez basardı —
+ * COA'nın kendi yorumunun uyardığı şey. */
+function isBaseOnly(totals) {
+	return totals.every((tot) => !tot.ccy || tot.ccy === baseCurrency.value);
+}
+
+/* Kur bir kez, bölüm başında, okunduğu tarihle. Satır başına asla (kural). */
+const rateNote = computed(() =>
+	Object.entries(rates.value)
+		.sort(([a], [b]) => (a < b ? -1 : 1))
+		.map(
+			([ccy, r]) =>
+				`1 ${ccy} = ${formatMoney(r.rate, baseCurrency.value, user.value.language)} · ${formatDate(r.date)}`
+		)
+		.join("   ")
+);
+
 /* ── KPI şeridi ────────────────────────────────────────────────────────────
  * Dördü de crm_board'ın ZATEN döndürdüğü alanlardan türüyor; yeni bir çağrı
  * yok. Sayı göstermekle kalmayıp filtreliyorlar: bir sayıya bakıp "hangileri?"
@@ -177,6 +232,7 @@ const kpis = computed(() => {
 			val: String(all.length),
 			cap: t("open deals"),
 			note: totals.map((t2) => formatMoney(t2.total, t2.ccy, user.value.language)).join(" · "),
+			sub: baseTotal(totals),
 		},
 		{
 			key: "policy",
@@ -439,6 +495,9 @@ function riskLabel(risk) {
 		<!-- KPI şeridi · her biri aynı zamanda filtre.
 		     "Hat" filtrelenebilir bir alt küme değil, tümü demek — ona basmak
 		     filtreyi temizliyor. -->
+		<!-- Kur BİR KEZ burada, okunduğu tarihle. Kural per-row ipucunu yasaklıyor
+		     ve Sourcing workspace'in per-row ipuçları bu yüzden kaldırılmıştı. -->
+		<div v-if="rateNote" class="crm-rate-note ds-mono">{{ rateNote }}</div>
 		<div class="ds-kpis" data-cols="4">
 			<button
 				v-for="k in kpis"
@@ -455,6 +514,9 @@ function riskLabel(risk) {
 					><span class="ds-kpi-cap">{{ k.cap }}</span>
 				</div>
 				<div class="ds-kpi-note">{{ k.note }}</div>
+				<div v-if="k.sub !== null && k.sub !== undefined" class="ds-kpi-note crm-base-hint">
+					≈ {{ formatMoney(k.sub, baseCurrency, user.language) }}
+				</div>
 			</button>
 		</div>
 
@@ -490,6 +552,15 @@ function riskLabel(risk) {
 							<span v-for="tot in laneTotals(l.id)" :key="tot.ccy">{{
 								formatMoney(tot.total, tot.ccy, user.language)
 							}}</span>
+							<span
+								v-if="
+									laneTotals(l.id).length &&
+									baseTotal(laneTotals(l.id)) !== null &&
+									!isBaseOnly(laneTotals(l.id))
+								"
+								class="crm-base-hint"
+								>≈ {{ formatMoney(baseTotal(laneTotals(l.id)), baseCurrency, user.language) }}</span
+							>
 						</span>
 					</div>
 
@@ -521,6 +592,18 @@ function riskLabel(risk) {
 										? formatMoney(c.contract_value, c.currency || currency, user.language)
 										: t("no value yet")
 								}}
+								<span
+									v-if="
+										c.contract_value &&
+										toBase(c.contract_value, c.currency) !== null &&
+										c.currency !== baseCurrency
+									"
+									class="crm-base-hint"
+									>≈
+									{{
+										formatMoney(toBase(c.contract_value, c.currency), baseCurrency, user.language)
+									}}</span
+								>
 							</span>
 							<span v-if="c.deadline" class="ds-mono crm-card-due" :data-sev="riskSev(c.risk)">
 								{{ formatDate(c.deadline, user.language) }}
@@ -886,6 +969,18 @@ function riskLabel(risk) {
 
 /* Satırlar ALT ALTA: bir şerit birden çok para birimi tutabiliyor ve iki tutar
  * yan yana ayraçsız birleşir — "15 000,00 $123 000,00 сўм" tek sayı gibi okunur. */
+.crm-base-hint {
+	color: var(--ds-tx3);
+	font-size: 10.5px;
+}
+
+/* Kur notu: şeridin üstünde tek satır. */
+.crm-rate-note {
+	margin-bottom: 6px;
+	color: var(--ds-tx3);
+	font-size: 10.5px;
+}
+
 .crm-col-sum {
 	display: flex;
 	flex-direction: column;

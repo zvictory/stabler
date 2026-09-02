@@ -107,6 +107,73 @@ class TestDealCardCarriesWhatTheIntakeStores(unittest.TestCase):
 					f"crm_board's card payload must carry {key} from the intake",
 				)
 
+	def test_the_board_states_the_base_currency_and_its_rates(self):
+		# WHAT WOULD MAKE THIS FAIL: dropping either key from the response. The
+		# client cannot convert without both, and it deliberately renders NO
+		# converted figure rather than a guessed one — so a missing key silently
+		# removes the whole base-currency companion line instead of breaking.
+		self.assertTrue(
+			re.search(r'"base_currency": base_ccy', self.board),
+			"crm_board must name the currency its rates convert TO",
+		)
+		self.assertTrue(
+			re.search(r'"rates": rates', self.board),
+			"crm_board must return the rate table the companion line needs",
+		)
+
+	def test_the_rate_is_the_cbu_rate_the_ledger_already_uses(self):
+		# WHAT WOULD MAKE THIS FAIL: a hardcoded rate, or a second rate source.
+		# .claude/rules/10-frontend.md requires a live rate and never a literal, and
+		# _cbu_rate_on_or_before is what validate_exchange_rate measures every real
+		# document against — a screen hint disagreeing with the ledger's own
+		# validator would be a second answer to one question.
+		self.assertIn("cbu_rate_on_or_before", self.board)
+		# ...and it is the SAME function, not a second copy that could drift: the
+		# body moved to _fx_rates on 2026-09-02 (because _accounts imports erpnext at
+		# module level and crm_board has to be reachable from the frappe-free suite),
+		# and _accounts re-exports it under the name its six callers already use.
+		with open(os.path.join(HERE, "..", "api", "_accounts.py"), encoding="utf-8") as fh:
+			accounts = fh.read()
+		self.assertIn(
+			"from stabler.api._fx_rates import cbu_rate_on_or_before as _cbu_rate_on_or_before",
+			accounts,
+			"_accounts must re-export the moved reader, or validate_exchange_rate and this "
+			"screen are measuring against two different rates",
+		)
+		self.assertNotIn(
+			"def _cbu_rate_on_or_before(",
+			accounts,
+			"a second copy of the rate reader is back in _accounts",
+		)
+		self.assertFalse(
+			re.search(r"\b1[0-9]{4}(\.[0-9]+)?\b", self.board),
+			"a five-digit literal in crm_board reads like a hardcoded UZS rate",
+		)
+
+	def test_a_currency_with_no_rate_is_simply_absent(self):
+		# WHAT WOULD MAKE THIS FAIL: writing a 0 or a 1.0 placeholder into the table.
+		# The client renders nothing when the key is missing; a 0 would render
+		# "≈ 0,00 сўм" and a 1.0 would render the foreign figure with the base
+		# symbol — the exact defect this whole change exists to remove.
+		m = re.search(r"rates: dict\[str, dict\] = \{\}([\s\S]*?)\n\treturn \{", self.board)
+		self.assertIsNotNone(m, "the rate-table block has moved")
+		block = m.group(1)
+		self.assertTrue(
+			re.search(r"if rate and flt\(rate\) > 0:", block),
+			f"the rate table must only carry a positive rate: {block[-200:]}",
+		)
+		self.assertNotIn("or 1.0", block)
+		self.assertNotIn('"rate": 0', block)
+
+	def test_the_base_currency_needs_no_rate(self):
+		# WHAT WOULD MAKE THIS FAIL: looking up base -> base. It is 1 by definition,
+		# CBU stores no such row, so the lookup returns nothing and every card in the
+		# company's own currency would lose its total.
+		self.assertTrue(
+			re.search(r"!=\s*base_ccy", self.board),
+			"crm_board must skip the company's own currency when building rates",
+		)
+
 	def test_owner_is_still_reported_separately(self):
 		# WHAT WOULD MAKE THIS FAIL: "fixing" the assignment by renaming owner. They
 		# are different facts — owner is who created the deal, assigned_to is who is

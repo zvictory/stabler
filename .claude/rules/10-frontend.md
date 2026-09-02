@@ -137,6 +137,33 @@ sessions. Original: `docs/archive/CLAUDE.md.2026-08-15.bak`.
   `Landed estimate` as a standalone base column (it is a sub-line of the delivered cell); and
   any per-row rate hint.
 
+- **Documented exception:** the Tender CRM shows one `≈ <company currency>` line beside each
+  deal's own figure — on the card, on the lane header and under the pipeline KPI. It exists
+  because a tender's estimated total is entered in whatever currency the tender is quoted in
+  (`TenderMasterDrawer.vue`'s picker, stored as the intake's `currency`) while every reader of
+  this board is judging a pipeline denominated in so'm: `15 000,00 $` beside `123 000 000,00 сўм`
+  carries no ordering, and the smaller number is the larger deal. Added 2026-09-02 at Zafar's
+  explicit instruction, after `crm_board` was found stamping the company currency onto every
+  card regardless of what the deal was entered in — the fix made each figure honest and left
+  the reader unable to compare two of them.
+  **The shape is the Chart of Accounts'**, deliberately: main line in the deal's own currency,
+  `≈ base` underneath, and only when the two differ (`Accounts.vue`, `showBaseHint`). **The
+  mechanism is not.** The COA's hint is a SECOND STORED ledger figure and converts nothing,
+  which is why it needs no exception here; a CRM deal has no stored base figure, so this line
+  applies a rate and takes on every condition the three exceptions above carry — plus the
+  Sourcing workspace's two.
+  **The rate is the ledger's own**: `_cbu_rate_on_or_before` (`_accounts.py`), the same reader
+  `validate_exchange_rate` measures every real document against — never a literal, and never a
+  second rate source that could disagree with the documents. **It is stated once**, above the
+  KPI strip, with the date it was read (a CBU rate is a rate *as of* a date, and on a weekend
+  or a gap it is several days old) — **never per row**. **It never replaces** the
+  transaction-currency figures: the lane header keeps one line per currency and the `≈` sits
+  under them. **Nothing renders when there is no rate**: `toBase` returns `null` rather than
+  falling back to 0 or 1, and a mixed total refuses to convert when ANY of its currencies is
+  missing a rate — a base total that silently drops one contract is worse than no total,
+  because it looks complete. And **base-to-base is never converted**, which would print the
+  same number twice on the ordinary all-so'm board.
+
 ### Centralized status codes
 - All status badges and labels must be resolved centrally using `getStatusBadgeClass` from `composables/status.js`. No per-page status mappings.
 

@@ -64,29 +64,12 @@ def resolve_party_account(party_type: str, party: str, company: str, currency: s
 	return matching[0]
 
 
-def _cbu_rate_on_or_before(doc_currency: str, company_currency: str, posting_date):
-	"""Latest CBU rate (doc_currency -> company_currency) on/before posting_date.
-	CBU stores each pair one-way, so if the direct pair is missing we fall back to
-	the inverse pair and return its reciprocal. Returns (rate, date) or (None, None).
-	"""
-
-	def _latest(frm, to):
-		rows = frappe.get_all(
-			"Currency Exchange",
-			filters={"from_currency": frm, "to_currency": to, "date": ("<=", posting_date)},
-			fields=["exchange_rate", "date"],
-			order_by="date desc",
-			limit=1,
-		)
-		return rows[0] if rows else None
-
-	direct = _latest(doc_currency, company_currency)
-	if direct and flt(direct.exchange_rate) > 0:
-		return flt(direct.exchange_rate), direct.date
-	inv = _latest(company_currency, doc_currency)
-	if inv and flt(inv.exchange_rate) > 0:
-		return 1.0 / flt(inv.exchange_rate), inv.date
-	return None, None
+# Re-export, not a second copy: the body lives in `_fx_rates`, which does not
+# import erpnext, so `crm_board` can reach the same reader from the frappe-free
+# test path (moved 2026-09-02). Every existing caller keeps importing this name
+# from here, and `validate_exchange_rate` below still measures documents against
+# exactly the rate the Tender CRM's companion line shows.
+from stabler.api._fx_rates import cbu_rate_on_or_before as _cbu_rate_on_or_before
 
 
 def validate_exchange_rate(company: str, doc_currency: str, conversion_rate: float, posting_date) -> None:
