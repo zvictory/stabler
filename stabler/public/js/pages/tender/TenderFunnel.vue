@@ -253,11 +253,22 @@ const GROUPS = computed(() => {
 
 const groupTotal = (g) => g.stages.reduce((sum, st) => sum + (st.n || 0), 0);
 
+// P1-2 (coordinator review, 2026-09-02): this is a fourth, independent stage
+// vocabulary that F12's audit missed -- it draws the conversion-funnel rows
+// below, unconditionally on every host, and its `go` text drifted out of
+// agreement with the chevron/stage-box text once F12 and P1-3 corrected
+// those two to "GO — awaiting sourcing". Not a fourth `stepLabel("go")` call
+// site: a funnel rung counts every deal that REACHED at least this stage
+// (`_funnel.FUNNEL_STEPS`, cumulative -- a lost deal still counts at
+// `submitted`), not deals currently sitting in it, so it needs its own words
+// and "Reached ..." makes that difference impossible to mistake for the
+// stage box's point-in-time state next to it. `won` is a result, not a rung
+// reached in passing, and keeps its own word.
 const FUNNEL_LABELS = {
-	seen: () => t("Lots seen"),
-	go: () => t("GO decision"),
-	sourcing: () => t("Sourcing started"),
-	submitted: () => t("Bid submitted"),
+	seen: () => t("Reached intake"),
+	go: () => t("Reached GO"),
+	sourcing: () => t("Reached sourcing"),
+	submitted: () => t("Reached submission"),
 	won: () => t("Won"),
 };
 

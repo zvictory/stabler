@@ -210,6 +210,72 @@ class TestTenderDashboardSpaContract(unittest.TestCase):
 			"_funnel.classify() moved or was renamed",
 		)
 
+	def test_funnel_rungs_read_as_reached_not_as_the_stage_boxs_current_state(self):
+		"""P1-2 (coordinator review, 2026-09-02): S2's original audit (below)
+		compared three vocabularies -- chevron, stage box, flow strip -- and
+		missed a fourth: `FUNNEL_LABELS`, which names the conversion-funnel
+		rows beneath the stage grid and renders unconditionally on every host,
+		independently of `mode`.
+
+		Before F12, `PIPE_LABELS.go` and `FUNNEL_LABELS.go` both said "GO
+		decision" and agreed by accident. F12 unified the chevron and the
+		stage box onto `stepLabel("go")`; P1-3 then corrected that shared text
+		to "GO — awaiting sourcing". `FUNNEL_LABELS.go` was never touched by
+		either change, so the funnel row still reads "GO decision" while the
+		chevron and stage box 400px above it now read "GO — awaiting
+		sourcing" -- a NEW disagreement, worse than the one F12 fixed.
+
+		The resolution is not a fourth `stepLabel("go")` call site: a funnel
+		rung counts every deal that reached AT LEAST this stage on its way
+		through (`_funnel.FUNNEL_STEPS`, "reached at least this stage" -- lost
+		deals still count at `submitted`), while a stage box counts only deals
+		CURRENTLY sitting in that stage. Two different quantities sharing one
+		word ("GO") is what drifted into disagreement in the first place; the
+		fix names the rungs so their cumulativeness cannot be mistaken for the
+		box's point-in-time state.
+		"""
+		funnel = _read(_FUNNEL)
+		for stage in ("seen", "go", "sourcing", "submitted"):
+			with self.subTest(stage=stage):
+				pattern = rf'{stage}:\s*\(\)\s*=>\s*t\("Reached [^"]+"\)'
+				self.assertRegex(
+					funnel,
+					pattern,
+					f'FUNNEL_LABELS.{stage} does not read "Reached ..." -- lost the cumulative framing',
+				)
+				self.assertEqual(
+					len(re.findall(pattern, funnel)),
+					1,
+					f"expected exactly one FUNNEL_LABELS.{stage} call site",
+				)
+		# `won` is a result, not a rung reached along the way -- left as-is,
+		# on purpose, not swept into the same rename.
+		self.assertRegex(funnel, r'won:\s*\(\)\s*=>\s*t\("Won"\)')
+
+		# The two vocabularies stay deliberately separate: the funnel rows
+		# read FUNNEL_LABELS, not stepLabel -- unifying them would be
+		# re-introducing the same bug P1-2 found, one level up.
+		funnel_labels_at = funnel.index("const FUNNEL_LABELS")
+		funnel_computed_at = funnel.index("const funnel = computed")
+		funnel_computed_fn = funnel[funnel_computed_at : funnel.index("\nconst ", funnel_computed_at + 1)]
+		self.assertIn("FUNNEL_LABELS[r.key]", funnel_computed_fn)
+		self.assertNotIn("stepLabel", funnel_computed_fn)
+		self.assertLess(
+			funnel_labels_at,
+			funnel_computed_at,
+			"FUNNEL_LABELS moved after its own consumer -- re-check by hand, this test's anchors assume the old order",
+		)
+
+		# Cross-checked against api/_funnel.py rather than asserted from the
+		# Vue file alone: "Reached" is only the right word if the server-side
+		# rung really is a cumulative "at least this far" count.
+		funnel_py = _read(_FUNNEL_PY)
+		self.assertRegex(
+			funnel_py,
+			r'#:\s*Funnel rungs\s*—\s*"reached at least this stage"',
+			"_funnel.py no longer documents FUNNEL_STEPS as a cumulative reached-count",
+		)
+
 	def test_a_manually_placed_deal_is_disclosed_not_left_unexplained(self):
 		"""F15 (docs/design/prompts/15-pipeline-overview.md, S5): `tender_funnel`
 		(api/tender.py) always computes a deal's stage fresh from intake facts;
