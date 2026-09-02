@@ -19,7 +19,8 @@ alt-ajanlarına devredilir.
 
 Alan okuması: "smes" = **смесь** (karışım). Dondurma karışımı kendi iş emriyle üretilen bir
 alt-montajdır; bitmiş ürünün iş emri karışımı **tek satır** olarak istemeli, içindeki süt/şeker
-satırlarına açmamalı. `use_multi_level_bom=1` tam olarak bu açmayı yapar (`work_order.py:1603`).
+satırlarına açmamalı. `use_multi_level_bom=1` tam olarak bu açmayı yapar (`work_order.py:1558-1560`
+→ `bom.py:1427`, `BOM Explosion Item`).
 
 ## Kanıt rejimi
 
@@ -72,9 +73,10 @@ satırlarına açmamalı. `use_multi_level_bom=1` tam olarak bu açmayı yapar (
 
 ### 1.2 Mekanizma (ERPNext v16.17.0 / Frappe)
 
-- `work_order.json` varsayılan 1. `work_order.py:1603` `table = "exploded_items" if
-  use_multi_level_bom else "items"`; `:1559` `fetch_exploded=self.use_multi_level_bom` —
-  `get_items_and_operations_from_bom()` **çağrıldığı anda** okunur; `:405-406` yeni kayıtta
+- `work_order.json` varsayılan 1. `work_order.py:1558-1560`
+  `get_bom_items_as_dict(..., fetch_exploded=self.use_multi_level_bom)` → `bom.py:1427`
+  `if cint(fetch_exploded)` → `BOM Explosion Item` tablosu (yaprak malzemeler) yerine `BOM Item`
+  (alt-montajın kendisi). Bayrak `get_items_and_operations_from_bom()` **çağrıldığı anda** okunur; `:405-406` yeni kayıtta
   `reset_use_multi_level_bom` erken döner, `insert()` yeniden türetmez. Atama bu yüzden
   BOM okunmadan önce durmalı.
 - Desk diyaloğu `bom.py:232-241`: `Property Setter {doc_type: Work Order, field_name:
@@ -218,8 +220,8 @@ P2 ve P3 dosya kesişmez: P2 `TenderMasterDrawer.vue` + testleri; P3 `_landed.py
 | D4: `ds-*` sayısı stil değil; 09-01 ölçütleri bileşik; #8 delta CSS'e bağlı; 1b düzeltmesi yeniden ölçümü alıntılamalı | `test_design_layer_contract.py:65`; delta başlığı; `907caf7` gövdesi | **Kazandı.** ADR-604 ölçütleri harfiyen devralır; #8 kapsam dışı; §3 alıntı |
 | D5: paket başına yönlendirme tetiği adlandırılmalı | rubrik | Kabul: tabloda tetik sütunu; opus seçimi Zafar talimatı |
 
-Skeptic'in kendi hatası: "Frappe 16.17.5" sürüm ibaresi bu oturumda ölçülmedi (unverified —
-Skeptic raporu); karar sürüme bağlı değil.
+Skeptic'in "Frappe 16.17.5" ibaresi yerel bench'te doğrulandı (`bench --site stabler list-apps`);
+prod sürümü ölçülmedi. Karar sürüme bağlı değil.
 
 ## 6. Çıktı sözleşmesi
 
@@ -307,5 +309,11 @@ CORRECTIONS
   - Zafar'ın "işaretin kaldırılması" talebi: Desk'te kutu kaldırılmıyor, varsayılanı değişiyor
     (kaldırmak çekirdeği forklar); Stabler tarafında kutu hiç yoktu — sorun kontrolsüz 1'di.
   - 2026-08-28 dokümanının "1b ÖLÜ" satırı yanlış eksende ölçülmüştü (§3).
-  - Skeptic'in "Frappe 16.17.5" sürümü ölçülmedi (unverified).
+  - Skeptic'in "Frappe 16.17.5" sürümü: yerel bench'te `bench --site stabler list-apps` → frappe
+    16.17.5, erpnext 16.17.0 (2026-09-03). Prod sürümü bu oturumda ölçülmedi.
+  - Kurulun hatası (inceleyici yakaladı): ilk sürüm mekanizmayı `work_order.py:1603` diye
+    alıntılıyordu; o satır `update_transferred_qty_for_required_items`. `"exploded_items" if`
+    satırı `bom.py:1603`'te ve Stock Entry maliyetlemesinde (ikincil etki). Gerçek mekanizma
+    `work_order.py:1558-1560` → `bom.py:1427`. Sıkıştırma öncesinden taşınan, yeniden
+    ölçülmemiş bir alıntıydı — Rule 0 ihlali.
 ```
