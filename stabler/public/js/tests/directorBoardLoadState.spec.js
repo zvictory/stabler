@@ -164,6 +164,47 @@ describe("P10 — a failed load is an error, not a quiet empty board", () => {
 	});
 });
 
+describe("P10 follow-up (coordinator review, 2026-09-02) — the ensureTenderViews round-trip is not a hole in P10", () => {
+	it("loading is true for the whole ensureTenderViews round-trip, and a rejection there is not silent", async () => {
+		// WHAT WOULD MAKE THIS FAIL: `await session.ensureTenderViews()` sitting
+		// OUTSIDE the try, with `loading.value = true` moved to after it — this
+		// file's own regression from the P10/P16 commit, caught on review.
+		// `ensureTenderViews()` returns the raw call(...) chain (session.js) and
+		// rejects when stabler.api.tender.tender_views fails; load() would then
+		// throw before error/everLoaded/loading are ever touched, landing on the
+		// exact "No tenders match these filters." defect P10 exists to close —
+		// reachable on every cold load, not just a background refresh. And for
+		// the whole round-trip beforehand, loading read false with zero rows,
+		// which .claude/rules/10-frontend.md calls worse than the spinner it
+		// bans: a false empty state, not even a spinner in a void.
+		let ensureReject;
+		const ensureTenderViews = () => new Promise((_resolve, reject) => { ensureReject = reject; });
+		const scope = {
+			activeCompany: { value: "A" },
+			data: { value: { rows: [], kpi: {}, currency: "" } },
+			loading: { value: false },
+			error: { value: "" },
+			everLoaded: { value: false },
+			canDirector: { value: true },
+			session: { ensureTenderViews },
+			t: (s) => s,
+			call: () => {
+				throw new Error("call() must not run before ensureTenderViews settles");
+			},
+		};
+		const load = liftLoad(scope);
+		const run = load();
+		expect(scope.loading.value, "loading must already be true, synchronously, before the first await").toBe(
+			true
+		);
+		ensureReject(new Error("Tender module is not enabled for A."));
+		await run;
+		expect(scope.error.value).toBe("Tender module is not enabled for A.");
+		expect(scope.everLoaded.value).toBe(false);
+		expect(scope.loading.value).toBe(false);
+	});
+});
+
 describe("P16 — a stale board after a failed auto-refresh says it is stale", () => {
 	it("is false on the very first, never-succeeded load", () => {
 		// WHAT WOULD MAKE THIS FAIL: computing staleness from `error` alone.

@@ -46,10 +46,10 @@ const forbidden = computed(() => session.tenderViewsLoaded && !canDirector.value
 
 async function load() {
 	if (!activeCompany.value) return;
-	await session.ensureTenderViews();
-	if (!canDirector.value) return;
 	loading.value = true;
 	try {
+		await session.ensureTenderViews();
+		if (!canDirector.value) return;
 		data.value = await call("stabler.api.tender.tender_director_board", { company: activeCompany.value });
 		error.value = "";
 		everLoaded.value = true;
