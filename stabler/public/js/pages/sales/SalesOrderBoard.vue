@@ -30,6 +30,10 @@ const board = ref(null);
 const stages = computed(() => board.value?.stages || []);
 const cards = ref([]);
 const lastReadAt = computed(() => formatTime(board.value?.generated_at));
+/* Hata TOAST'ta değil panonun yerinde duruyor: kaybolan bir bildirimin
+ * ardından ekranda kalan şey "aşama ekleyin" davetiydi — okuyucu neyin
+ * olduğunu değil, ne yapması gerektiğini sanılan şeyi görüyordu. */
+const error = ref("");
 
 /* Şirket değişince İKİ istek havada olabilir. Bu pano modülde YAZAN tek
  * pano — kart taşıyor, aşama ekliyor/siliyor ve sürükleme sırasında
@@ -42,6 +46,7 @@ async function load() {
 	if (!activeCompany.value) return;
 	const token = ++reqToken;
 	loading.value = true;
+	error.value = "";
 	try {
 		const r = await call("stabler.api.tender.so_board", {
 			company: activeCompany.value,
@@ -52,7 +57,7 @@ async function load() {
 		cards.value = r?.cards || [];
 	} catch (err) {
 		if (token !== reqToken) return;
-		toast.error(err?.message || t("Could not load the board."));
+		error.value = err?.message || t("Could not load the board.");
 	} finally {
 		if (token === reqToken) {
 			loading.value = false;
@@ -139,13 +144,43 @@ function openSo(name) {
 			<span v-if="lastReadAt">{{ t("Last read") }} <span class="ds-mono">{{ lastReadAt }}</span></span>
 		</template>
 
-		<template #actions>
+		<!-- Yazma zaten reddedileceği biliniyorsa düğme de sunulmuyor: boş
+		     durumun davetini kaldırıp düğmeyi bırakmak aynı kusuru dört parmak
+		     yukarı taşımak olurdu. `error`da duruyor — geçici bir yükleme hatası
+		     okuyucunun aşama ekleme hakkını kaldırmaz. -->
+		<template v-if="session.canAccessModule('tender') && activeCompany" #actions>
 			<button type="button" class="ds-btn" @click="addStage">
 				<i class="ti ti-plus me-1"></i>{{ t("Add stage") }}
 			</button>
 		</template>
 
 		<div v-if="loading" class="text-center py-5"><span class="spinner-border text-primary"></span></div>
+		<!-- Beş durum, ve ilk DOĞRU olan kazanıyor. `!stages.length` beşinin
+		     hepsinde doğru, o yüzden en sonda sorulur; yukarı taşınırsa diğer
+		     dördü ölü işaretlemeye döner. İstemci kapısı sunucununkinin birebir
+		     aynadaki hali: `_require_tender` role VEYA şirketin enable_tender
+		     bayrağına takılır (api/tender.py:41), `canAccessModule` tam o ikisini
+		     VE'ler (stores/session.js:52-64). -->
+		<EmptyState
+			v-else-if="!session.canAccessModule('tender')"
+			icon="ti-lock"
+			tone="warning"
+			:title="t('Access denied to tender module.')"
+		/>
+		<EmptyState
+			v-else-if="!activeCompany"
+			icon="ti-building"
+			tone="warning"
+			:title="t('Please select an active company.')"
+		/>
+		<EmptyState
+			v-else-if="error"
+			role="alert"
+			icon="ti-alert-triangle"
+			tone="danger"
+			:title="t('Could not load the board.')"
+			:subtitle="error"
+		/>
 		<EmptyState
 			v-else-if="!stages.length"
 			icon="ti-layout-kanban"

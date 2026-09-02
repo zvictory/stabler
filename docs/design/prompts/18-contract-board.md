@@ -132,7 +132,10 @@ worst instance of a defect this package has now found on five screens.
 | Board | **2** — `spinner-border`, then `EmptyState` **or** the columns | error, forbidden, no-company |
 | A column | **1** — cards, or 40 px of nothing | empty |
 
-### S2 — a failed load invites the user to create a stage
+### S2 — a failed load invited the user to create a stage · FIXED 2026-09-02
+
+**Kept as measured, because it is the sharpest defect the package found and the
+shape of the fix follows from the measurement.** As it stood:
 
     <div v-if="loading">…spinner…</div>
     <EmptyState v-else-if="!stages.length"
@@ -142,22 +145,35 @@ worst instance of a defect this package has now found on five screens.
 
 `stages` is `[]` in five different situations: the request failed, the user lacks
 the tender role, the company has `enable_tender` off, no company was selected
-yet, or the board genuinely has no stages. **All five render the same invitation
+yet, or the board genuinely has no stages. **All five rendered the same invitation
 to add a stage.**
 
 Every other screen in the package fails into a sentence that is merely wrong
-("No tenders match these filters"). This one fails into a **call to action for a
-write the user is probably not entitled to perform** — and if they take it,
-`so_stage_save` will reject them with a toast, which is the same channel that
+("No tenders match these filters"). This one failed into a **call to action for a
+write the user is probably not entitled to perform** — and if they took it,
+`so_stage_save` rejected them with a toast, which is the same channel that had
 swallowed the original failure.
 
-There is a race that reaches it without any failure at all: `load()` returns
-early when `activeCompany` is falsy, and there is **no `watch`** (S5), so a
-session that resolves its company after mount leaves the board permanently on
-this screen.
+A race reached it without any failure at all: `load()` returns early when
+`activeCompany` is falsy and there was no `watch` (S5), so a session resolving
+its company after mount sat here permanently.
 
-Draw the four states this needs, and note the ordering trap: `v-else-if` on
-`!stages.length` means every new state must come before it.
+**What landed (C7, C8):** the ladder is OperationsDesk's — module gate, company
+gate, error, then empty — with `!stages.length` asked **last**, because it is
+true in all five situations and any rung below it is dead markup. The client gate
+mirrors the server's exactly: `_require_tender` (`tender.py:41`) fails on the
+role **or** the company's `enable_tender` flag, and `canAccessModule` ANDs those
+same two (`session.js:52-64`). The failure moved off the toast onto the board
+itself, tone `danger` against the gates' `warning`, with `role="alert"`. The
+*Add stage* button in the header is hidden on the two states where the write is
+already known to be refused — removing the invitation from the empty state while
+leaving the button beside the title would have moved the defect four inches up.
+It stays on `error`: a transient load failure does not remove the right to add a
+stage. The S5 race is closed separately (C12).
+
+**What this does not settle:** the refusal names the module, not the reason.
+A reader without the role and a reader on a company with tender switched off see
+the same sentence, and neither is told who can change it.
 
 ---
 
@@ -428,8 +444,9 @@ Artboards, 1440×900 unless stated.
    and *Invoicing*, correct totals, five empty columns.
 2. **Where this file lives** (§0) — one artboard arguing the decision: tender
    contract board or sales kanban, and what the Escape target should be.
-3. **The four missing states** (S2) — error, forbidden, no-company, and a genuine
-   empty — with the "add a stage" invitation appearing only in the last.
+3. ~~**The four missing states** (S2)~~ — landed 2026-09-02. What is still open:
+   the refusal says only that the module is denied, not whether the role or the
+   company flag denied it, nor who can change either.
 4. **An empty column** — 40 px of nothing is not a state.
 5. **A stage colour system that survives user input** (S3) — including no colour,
    two near-identical colours, and a pale one.
@@ -462,8 +479,8 @@ Keep the artboards you rejected.
 | C4 | A rejected move returns the card to its previous stage | passes |
 | C5 | Deleting a stage that still holds orders is refused | passes — server-side |
 | C6 | Orders with status *Closed* or *Cancelled* never appear | passes |
-| C7 | A failed load is distinguishable from a board with no stages | **fails** — both invite a write (S2) |
-| C8 | A user without the tender role sees a refusal | **fails** — same branch |
+| C7 | A failed load is distinguishable from a board with no stages | **passes** (2026-09-02) — five rungs, `!stages.length` last (S2) |
+| C8 | A user without the tender role sees a refusal | **passes** (2026-09-02) — `canAccessModule('tender')`, which mirrors the server's role-or-flag gate |
 | C9 | Loading renders a skeleton | **fails** — spinner, while the eight sibling boards use `SkeletonRows` |
 | C10 | A card can be moved between stages from the keyboard | **fails** — drag only, 0 `aria-`, 0 `role=` (S4) |
 | C11 | A press that does not move the card does not navigate away | **fails** — drag and click share the element (S4) |

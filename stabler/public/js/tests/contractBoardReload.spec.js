@@ -63,11 +63,13 @@ function harness() {
 	const loading = { value: false };
 	const errors = [];
 	const inflight = {};
+	const error = { value: "" };
 	const scope = {
 		activeCompany,
 		board,
 		cards,
 		loading,
+		error,
 		route: { query: {} },
 		toast: { error: (m) => errors.push(m) },
 		t: (s) => s,
@@ -149,11 +151,70 @@ describe("C12 — the board follows the active company", () => {
 		expect(h.loading.value).toBe(false);
 	});
 
-	it("does not toast an error from a request nobody is waiting for", async () => {
-		// WHAT WOULD MAKE THIS FAIL: an unguarded catch. Switching company while
-		// the previous request is failing would raise "Could not load the board."
-		// over a board that loaded perfectly well — an error about a company the
-		// reader has already left.
+	it("still reports a failure of the request that is current", async () => {
+		// WHAT WOULD MAKE THIS FAIL: swallowing every error while guarding the
+		// stale ones. The board would fail into its empty state in silence, which
+		// is the C7 defect this change must not make worse.
+		//
+		// The failure is recorded on `error`, not on the toast: C7 moved it there
+		// so the account of what happened stays where the board would have been.
+		// This spec's own toast collector is asserted empty for that reason.
+		const h = harness();
+		h.activeCompany.value = "A";
+		const only = h.load();
+		h.inflight.A.reject(new Error("nope"));
+		await only;
+		expect(h.error.value).toBe("nope");
+		expect(h.errors).toEqual([]);
+		expect(h.loading.value).toBe(false);
+	});
+});
+
+/**
+ * C7's behavioural half. It lives here rather than in contractBoardStates.spec.js
+ * because it is a claim about what load() DOES, and the harness that drives load()
+ * against a controllable `call` is above. The ladder those states render through
+ * is asserted there.
+ */
+describe("C7 — load() records the failure it used to only toast", () => {
+	it("puts the server's message where the board would have been", async () => {
+		// WHAT WOULD MAKE THIS FAIL: going back to toast-only. The board would fall
+		// through to !stages.length and tell the reader to add a stage, while the
+		// only account of what actually happened expired in a corner of the screen.
+		const h = harness();
+		h.activeCompany.value = "A";
+		const only = h.load();
+		h.inflight.A.reject(new Error("Tender module is not enabled for A."));
+		await only;
+		expect(h.error.value).toBe("Tender module is not enabled for A.");
+	});
+
+	it("clears a previous failure before the next attempt can be judged", async () => {
+		// WHAT WOULD MAKE THIS FAIL: setting error and never resetting it. The
+		// error rung sits ABOVE the board in the ladder, so a stale message would
+		// keep a perfectly loaded board off the screen for the rest of the session.
+		const h = harness();
+		h.activeCompany.value = "A";
+		const failed = h.load();
+		h.inflight.A.reject(new Error("nope"));
+		await failed;
+		expect(h.error.value).toBe("nope");
+
+		h.activeCompany.value = "B";
+		const ok = h.load();
+		h.inflight.B.resolve(payload("B"));
+		await ok;
+		expect(h.error.value).toBe("");
+	});
+
+	it("does not show an error belonging to a company the reader has left", async () => {
+		// WHAT WOULD MAKE THIS FAIL: an unguarded catch — the same race C12's token
+		// closes, reached through the error path. A superseded failure would blank a
+		// board that had loaded correctly and blame it on the wrong company.
+		//
+		// This replaces C12's "does not toast an error from a request nobody is
+		// waiting for", which asserted an empty toast list — vacuous once C7 moved
+		// failures off the toast, because nothing fills that list any more.
 		const h = harness();
 		h.activeCompany.value = "A";
 		const first = h.load();
@@ -165,20 +226,7 @@ describe("C12 — the board follows the active company", () => {
 		h.inflight.B.resolve(payload("B"));
 		await second;
 
-		expect(h.errors).toEqual([]);
+		expect(h.error.value).toBe("");
 		expect(h.cards.value).toEqual([{ name: "B" }]);
-	});
-
-	it("still reports a failure of the request that is current", async () => {
-		// WHAT WOULD MAKE THIS FAIL: swallowing every error while guarding the
-		// stale ones. The board would fail into its empty state in silence, which
-		// is the C7 defect this change must not make worse.
-		const h = harness();
-		h.activeCompany.value = "A";
-		const only = h.load();
-		h.inflight.A.reject(new Error("nope"));
-		await only;
-		expect(h.errors).toEqual(["nope"]);
-		expect(h.loading.value).toBe(false);
 	});
 });
