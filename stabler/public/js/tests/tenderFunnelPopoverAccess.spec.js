@@ -109,17 +109,37 @@ describe("F16 — the template wires a real, independent tap target", () => {
 		// WHAT WOULD MAKE THIS FAIL: dropping aria-expanded -- a screen reader
 		// would have no way to tell whether activating this button opens or
 		// closes the popover.
-		//
-		// NOT covered here: an aria-label. `test_tender_dashboard_i18n.py`'s
-		// test_every_dashboard_copy_key_has_a_nonempty_translation requires every
-		// new t() key in this file to already have a non-empty entry in all five
-		// translations/*.csv, and editing those is out of scope for this change
-		// (see the final report) -- so the button ships with its visible glyph
-		// as its only accessible name, not a translated phrase.
 		const infoAt = src.indexOf('class="pipe-info"');
 		const infoButton = src.slice(infoAt, infoAt + 300);
-		expect(infoButton, "no aria-expanded -- a screen reader can't tell if the popover is open").toMatch(
-			/:aria-expanded="String\(hovered === c\.key\)"/
+		expect(
+			infoButton,
+			"no aria-expanded -- a screen reader can't tell if the popover is open"
+		).toMatch(/:aria-expanded="String\(hovered === c\.key\)"/);
+	});
+
+	it("names which cell's details this opens, and what it controls", () => {
+		// F16 ruling (coordinator review, 2026-09-02): the bare ℹ glyph is
+		// suppressed by a screen reader at default verbosity, and aria-expanded
+		// with no aria-controls does not say WHAT it expands -- neither gap is
+		// closed by aria-expanded alone (the test above).
+		//
+		// WHAT WOULD MAKE THIS FAIL: the aria-label reverting to a fixed string
+		// ("Details") that does not distinguish cells, "Show details for
+		// {label}" (rejected: "Show" contradicts aria-expanded="true" once open,
+		// and "for {label}" needs case agreement the t() layer cannot do -- see
+		// the CSS comment above .pipe-info), or aria-controls pointing at an id
+		// the popover span itself does not carry.
+		const infoAt = src.indexOf('class="pipe-info"');
+		const infoButton = src.slice(infoAt, infoAt + 400);
+		expect(infoButton).toMatch(/:aria-label="t\('Details: \{label\}', \{ label: c\.label \}\)"/);
+		expect(infoButton, 'aria-label reads "Show ... for" instead of "Details:"').not.toMatch(/Show/);
+		expect(infoButton).toMatch(/:aria-controls="'pipe-pop-' \+ c\.key"/);
+
+		const popAt = src.indexOf('class="pipe-pop"');
+		expect(popAt, ".pipe-pop not found").toBeGreaterThan(-1);
+		const popTag = src.slice(Math.max(0, popAt - 120), popAt);
+		expect(popTag, ".pipe-pop carries no id for aria-controls to point at").toMatch(
+			/:id="'pipe-pop-' \+ c\.key"/
 		);
 	});
 });

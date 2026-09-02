@@ -464,23 +464,27 @@ function go(st) {
 						</button>
 						<!-- F16: independent of the chevron button above -- opens/closes the
 						     same popover, never selects or navigates. Its own tap target, so
-						     touch (no hover) and keyboard (native button) both reach it. -->
-						<!-- No aria-label: `test_tender_dashboard_i18n.py`'s
-						     `test_every_dashboard_copy_key_has_a_nonempty_translation`
-						     requires every new t() key in this file to already have a
-						     non-empty entry in all five translations/*.csv, and editing
-						     those files is out of scope here. The glyph is the button's
-						     only accessible name until that key is added (see the
-						     final report). -->
+						     touch (no hover) and keyboard (native button) both reach it.
+						     aria-label names WHICH cell's details this opens -- the glyph
+						     alone is invisible to a screen reader at default verbosity, and
+						     aria-expanded with no aria-controls does not say what it expands.
+						     "Details: {label}", not "Show details for {label}": aria-expanded
+						     already flips to "true" while this is open, so "Show" would read
+						     backwards at exactly the state that matters, and "for {label}"
+						     needs case agreement Russian's «для» + genitive breaks with no
+						     case support in the t() layer (see "1 days over", same day, same
+						     assumption). Mirrors TenderOverview.vue's "Bottleneck: {step}". -->
 						<button
 							type="button"
 							class="pipe-info"
 							:aria-expanded="String(hovered === c.key)"
+							:aria-controls="'pipe-pop-' + c.key"
+							:aria-label="t('Details: {label}', { label: c.label })"
 							@click="toggleDetails(c)"
 						>
 							ℹ
 						</button>
-						<span v-if="hovered === c.key" class="pipe-pop">
+						<span v-if="hovered === c.key" :id="'pipe-pop-' + c.key" class="pipe-pop">
 							<span class="pipe-bar"
 								><i :style="{ width: c.pct + '%' }" :data-full="c.pct >= 100 ? '1' : null"></i
 							></span>
@@ -712,15 +716,25 @@ function go(st) {
 	filter: brightness(1.12);
 }
 
-/* F16: top-right, not centred -- the chevron's own clip-path cuts the cell's
- * right edge into a point (see the polygon above), so anything placed near
- * that edge has to stay clear of it. The top corner is flat on every cell,
- * first or not; verified against the real clip-path values before landing
- * this, not eyeballed against the compiled page. */
+/* F16 (coordinator review, 2026-09-02): top-right, not centred -- the
+ * chevron's own clip-path cuts the cell's right edge to a point (see the
+ * polygon above: `(100% - 18px, 0) -> (100%, 50%)` on top). That cut is
+ * IDENTICAL whether or not `data-first` is set -- `data-first="1"` removes
+ * the LEFT-edge notch (the interlocking point at `18px 50%`) so the first
+ * cell's left side reads flat instead, and has no effect on this corner. A
+ * prior version of this comment claimed the top corner was flat "first or
+ * not"; measured against the polygon values above, the top-right corner is
+ * never flat in either case -- it is this same diagonal cut in both.
+ * `right: 3px` put most of the button's own top row, and the glyph's visual
+ * center, past that diagonal -- on the clipped-away side, sitting over the
+ * panel behind a partially transparent fill rather than the chevron itself.
+ * `right: 18px` is the button's own width: at exactly that offset its right
+ * edge sits ON the cut regardless of cell height, since the cut only moves
+ * further right as height grows. `right: 26px` clears it with margin. */
 .pipe-info {
 	position: absolute;
 	top: 3px;
-	right: 3px;
+	right: 26px;
 	z-index: 5;
 	width: 18px;
 	height: 18px;
