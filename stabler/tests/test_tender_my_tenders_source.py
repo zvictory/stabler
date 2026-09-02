@@ -1,19 +1,21 @@
-"""`sourcing_my_tenders` (prompt 17, "My tenders") — two source-level defects.
+"""`sourcing_my_tenders` (prompt 17, "My tenders") — source-level defects.
 
-Acceptance rows M10 and M16. Both are about the ONE endpoint behind
-`/tender/my-tenders`, so they share this file the way test_tender_board_filter.py
-covers one endpoint's C14. Source-level on purpose, same idiom: the claims below
-are about what the FUNCTION BODY does (which key it sorts on, which field it
-reads), and comparing source text needs no database. The DB-backed half --
-that this actually orders/labels real seeded rows -- is `make test-bench`
-territory and is NOT claimed here.
+Acceptance rows M10 and M16, plus a P1-3 evidence-gate regression the
+coordinator's review caught later (TestMyTendersResultGate, below). All three
+are about the ONE endpoint behind `/tender/my-tenders`, so they share this file
+the way test_tender_board_filter.py covers one endpoint's C14. Source-level on
+purpose, same idiom: the claims below are about what the FUNCTION BODY does
+(which key it sorts on, which field it reads), and comparing source text needs
+no database. The DB-backed half -- that this actually orders/labels real
+seeded rows -- is `make test-bench` territory and is NOT claimed here.
 
 Registration note: this file imports nothing from `frappe` and passes under
 `python3 -m unittest stabler.tests.test_tender_my_tenders_source`, so it
 qualifies for `.github/frappe-free-tests.txt` by the header comment's own rule.
-It is NOT added there -- that file is off-limits in this change (a parallel
-agent owns it) -- so `make check` / `make test` do not run it yet. Verified
-manually instead; a maintainer needs to add the one line.
+It is now added there (2026-09-02, coordinator review) -- an earlier claim that
+a parallel agent already owned that registration did not hold, and the gap was
+not cosmetic: with this file outside `make check`, the docstring-vacuity defect
+below (P1-5) stayed invisible to the push gate for an entire review round.
 
 M10 -- the sort. `_tender_deal_names` returns a `set` (no `sorted()`), and the
 existing sort key was two-wide: (risk, delivery). Measured against
@@ -75,11 +77,16 @@ class TestMyTendersSort(unittest.TestCase):
 			self.src = fh.read()
 
 	def _sort_key(self) -> str:
-		body = _body(self.src, "sourcing_my_tenders")
+		# _code, not _body (P1-5 follow-up, coordinator review, 2026-09-02): the
+		# coordinator's own mutation proved this class of bug isn't confined to
+		# one function -- sourcing_my_tenders carries a real docstring, so a
+		# _body-based search over it is exposed the same way _deal_landed_estimate
+		# was, docstring prose and all.
+		code = _code(self.src, "sourcing_my_tenders")
 		# Greedy .+ bounded to end-of-line, not [^)]* -- the risk key itself is a
 		# call with its own `)` (`_RISK_ORDER.get(r["risk"], 3)`), so a
 		# non-`)`-class stops at the WRONG paren and never sees delivery or deal.
-		m = re.search(r"rows\.sort\(key=lambda r: \((.+)\)\)\s*$", body, re.M)
+		m = re.search(r"rows\.sort\(key=lambda r: \((.+)\)\)\s*$", code, re.M)
 		self.assertIsNotNone(
 			m,
 			"sourcing_my_tenders no longer sorts rows with one `rows.sort(key=lambda r: (...))` "
@@ -125,9 +132,13 @@ class TestMyTendersSort(unittest.TestCase):
 		# formatted across four).
 		# tender_director_board itself only delegates (`_tender_director_payload`,
 		# include_rows=True) -- the sort lives in the payload builder it calls.
+		# _code, not _body: _tender_director_payload has no docstring as of this
+		# writing, but nothing pins that down -- switching anyway is the same
+		# P1-5 hygiene the coordinator asked applied everywhere in this file,
+		# not just where a docstring happens to exist today.
 		mine = re.sub(r"\s+", " ", self._sort_key()).strip().rstrip(",")
-		payload_body = re.sub(r"\s+", " ", _body(self.src, "_tender_director_payload"))
-		m = re.search(r"key=lambda r: \( (.+?) \)\s*\)", payload_body)
+		payload_code = re.sub(r"\s+", " ", _code(self.src, "_tender_director_payload"))
+		m = re.search(r"key=lambda r: \( (.+?) \)\s*\)", payload_code)
 		self.assertIsNotNone(
 			m,
 			"_tender_director_payload's own sort key has moved -- re-anchor before comparing",
@@ -206,14 +217,23 @@ class TestMyTendersLandedEstimate(unittest.TestCase):
 		# WHAT WOULD MAKE THIS FAIL: the helper landing unused. Anchored to
 		# sourcing_my_tenders' own body (not a bare string search) so a same-named
 		# call somewhere unrelated in the file cannot pass this test by accident.
-		body = _body(self.src, "sourcing_my_tenders")
+		#
+		# _code, not _body (P1-5 follow-up, coordinator review, 2026-09-02): this
+		# was one of the two tests the coordinator named directly. sourcing_my_tenders
+		# carries a real docstring ("""Sourcing window: ...""", tender.py:2506), and
+		# the coordinator proved it exploitable in this worktree: deleted the real
+		# `landed_estimate = _deal_landed_estimate(deal)` call, replaced it with
+		# `landed_estimate = None`, and added a second docstring line naming
+		# "_deal_landed_estimate(deal)" in prose -- `_body` (docstring included)
+		# left this test green with the helper gone from the executable code.
+		code = _code(self.src, "sourcing_my_tenders")
 		self.assertIn(
 			"_deal_landed_estimate(deal)",
-			body,
+			code,
 			"sourcing_my_tenders never calls _deal_landed_estimate",
 		)
 		self.assertRegex(
-			body,
+			code,
 			r'"landed_estimate":\s*landed_estimate,',
 			"the row dict has no landed_estimate key wired to the helper's result",
 		)
@@ -224,10 +244,16 @@ class TestMyTendersLandedEstimate(unittest.TestCase):
 		# lots' `landed` at 1 769 000 000 / 1 182 000 000 -- both are Σ PO sums,
 		# and this change must add a second figure beside them, not replace the
 		# first.
-		body = _body(self.src, "sourcing_my_tenders")
+		#
+		# _code, not _body (P1-5 follow-up, coordinator review, 2026-09-02): the
+		# other of the two tests the coordinator named directly -- the same
+		# mutation (helper call deleted, docstring extended with the literal
+		# `"landed": po_landed,` text) left this one green too, for the same
+		# reason: `_body` includes sourcing_my_tenders' own docstring.
+		code = _code(self.src, "sourcing_my_tenders")
 		self.assertIn(
 			'"landed": po_landed,',
-			body,
+			code,
 			"the landed field must stay sourced from po_landed (_deal_landed) -- M1 depends on it",
 		)
 
@@ -260,9 +286,15 @@ class TestMyTendersResultGate(unittest.TestCase):
 		# calling _has_submission_evidence a second time, is what keeps this
 		# gate from being able to drift apart from _tender_filter_evidence's own
 		# definition of "verified".
-		body = _body(self.src, "sourcing_my_tenders")
+		#
+		# _code, not _body (P1-5 follow-up, coordinator review, 2026-09-02): this
+		# test was added in the same round as the docstring-vacuity fix and still
+		# read the docstring-bearing sourcing_my_tenders through _body -- exactly
+		# the class of gap the coordinator flagged, just not one of the two
+		# instances they demonstrated by hand.
+		code = _code(self.src, "sourcing_my_tenders")
 		self.assertRegex(
-			body,
+			code,
 			r'"result":\s*intake\.get\("result"\)\s+if\s+evidence\["lifecycle"\]\["submitted"\]\s+else\s+"",',
 			'result must be gated on evidence["lifecycle"]["submitted"], not read raw',
 		)
