@@ -47,7 +47,14 @@ async function load() {
 		 * scrolls away over five column headers and four counters reading zero,
 		 * which is exactly what a healthy pipeline looks like. The failure is
 		 * written into the panel instead, and the counters are withheld rather
-		 * than zeroed. */
+		 * than zeroed.
+		 *
+		 * AND THE PAYLOAD IS DROPPED, WHICH IS NOT FREE: a transient blip on
+		 * Refresh loses a table the reader was looking at, and they press it
+		 * again. Kept anyway — `lastReadAt` reads `data.generated_at`, so
+		 * holding the old payload would print a pre-failure timestamp beside a
+		 * panel saying nothing could be read, and the error branch replaces the
+		 * table either way, so keeping it buys invisible state. */
 		if (err?.status === 403 || /permission|permitted/i.test(err?.message || "")) {
 			forbidden.value = true;
 		} else {

@@ -230,21 +230,37 @@ class TestTheWorstDealCarriesItsOwnVerdict(unittest.TestCase):
 		self.assertEqual(row["worst_state"], "info")
 		self.assertEqual(row["worst_over"], 0)
 
-	def test_the_verdict_is_the_one_the_sla_module_already_defines(self):
-		# WHAT WOULD MAKE THIS FAIL: a second copy of the severity thresholds
-		# living here. Two copies of "the last quarter, floored at one day"
-		# drift, and the one nobody exercises is the one that rots — which is
-		# how `severity` came to be dead in production in the first place.
+	def test_the_four_verdicts_are_the_ones_the_thresholds_produce(self):
+		# WHAT WOULD MAKE THIS FAIL: a copy of the severity rule here that has
+		# DRIFTED from `_tender_sla`'s. All four boundaries are pinned as
+		# literals, so the values move only when someone means them to: `priced`
+		# at 2 of 3 days is `soon` ONLY because the last quarter is floored at
+		# one day — drop the floor and it reads `info`, silently, on every short
+		# threshold on the screen.
+		#
+		# It does NOT catch a byte-faithful copy, and nothing behavioural can:
+		# such a copy is identical by definition. The first version asserted
+		# `row["worst_state"] == sla.severity(...)` and its comment claimed to
+		# catch duplication; it evaluated the implementation's own expression
+		# and would have passed against any copy at all, drifted or not.
+		verdicts = {}
 		for stage, entered in (
 			("seen", "2026-07-29"),
 			("go", "2026-07-27"),
 			("sourcing", "2026-07-01"),
 			("priced", "2026-07-30"),
 		):
-			with self.subTest(stage=stage):
-				row = rows_for([{"stage": stage, "entered_at": entered}])[stage]
-				self.assertEqual(row["worst_state"], sla.severity(stage, entered, TODAY))
-				self.assertEqual(row["worst_over"], sla.overdue_by(stage, entered, TODAY))
+			row = rows_for([{"stage": stage, "entered_at": entered}])[stage]
+			verdicts[stage] = (row["worst_days"], row["sla_days"], row["worst_state"], row["worst_over"])
+		self.assertEqual(
+			verdicts,
+			{
+				"seen": (3, 3, "today", 0),
+				"go": (5, 5, "today", 0),
+				"sourcing": (31, 14, "crit", 17),
+				"priced": (2, 3, "soon", 0),
+			},
+		)
 
 
 class TestAThresholdSaysWhereItCameFrom(unittest.TestCase):
@@ -285,13 +301,29 @@ class TestAThresholdSaysWhereItCameFrom(unittest.TestCase):
 		# value ("matches the built-in default"), never about provenance.
 		self.assertEqual(rows_for([], overrides={"seen": 3})["seen"]["sla_source"], "default")
 
-	def test_every_working_step_can_answer_the_question(self):
-		# WHAT WOULD MAKE THIS FAIL: a stage reaching the table with no source
-		# word, which would render as a blank line under one threshold and read
-		# as a rendering bug rather than as missing information.
-		for row in flow.step_rows([], TODAY):
-			with self.subTest(stage=row["stage"]):
-				self.assertIn(row["sla_source"], ("default", "tenant", "off"))
+	def test_all_three_words_can_appear_on_one_screen(self):
+		# WHAT WOULD MAKE THIS FAIL: a source word that is right in isolation
+		# and wrong beside its neighbours. A director reads five rows at once,
+		# and the question they are asking — "which of these did we choose?" —
+		# is only answerable if the three words separate on ONE table.
+		# `sourcing` is the case that matters: 14 is a tenant value AND the
+		# built-in one, and it must read `default`, because the payload cannot
+		# prove otherwise.
+		#
+		# The first version asserted `sla_source in ("default","tenant","off")`
+		# over rows built with no overrides at all. Every path in `_sla_source`
+		# returns one of those three, so it was true by construction.
+		rows = rows_for([], overrides={"seen": 0, "go": 9, "sourcing": 14})
+		self.assertEqual(
+			{stage: rows[stage]["sla_source"] for stage in flow.WORKING_STAGES},
+			{
+				"seen": "off",
+				"go": "tenant",
+				"sourcing": "default",
+				"priced": "default",
+				"submitted": "default",
+			},
+		)
 
 
 if __name__ == "__main__":

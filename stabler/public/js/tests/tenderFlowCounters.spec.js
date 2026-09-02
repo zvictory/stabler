@@ -164,6 +164,13 @@ describe("no counter's wording depends on how many things it counted", () => {
 		// this assertion is red against the FIXED component, because the fix's
 		// own comment quotes the ternary it removed.
 		expect(/\?\s*t\([^)]*\)\s*:\s*t\(/.test(code), "a t() string is picked by a ternary").toBe(false);
+
+		// And the shape one level in — `t(n === 1 ? "step" : "steps")` — which
+		// is the MORE idiomatic way to write the same defect and which the
+		// first version of this ban missed entirely. Both spellings produce a
+		// key chosen at runtime; a catalogue cannot hold a plural rule either
+		// way, so both are banned rather than the one that happened to ship.
+		expect(/\bt\(\s*[^)]*\?[^)]*:/.test(code), "a t() key is chosen by a ternary").toBe(false);
 	});
 });
 

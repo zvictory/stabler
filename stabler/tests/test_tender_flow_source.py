@@ -170,9 +170,33 @@ class TestTheScreenSaysWhichStateItIsIn(unittest.TestCase):
 		# board is gated on the director view (`tender.py`), which is not
 		# something a reader can fix by retrying; being told to retry forever is
 		# worse than being told no.
-		self.assertIn("director view", VUE)
+		#
+		# Anchored to the forbidden BRANCH and to a `t()` literal inside it. The
+		# first version was `assertIn("director view", VUE)` over the raw file,
+		# and the catch block's own comment says "gated on the director view" —
+		# so it passed with the user-facing sentence replaced by "Something went
+		# wrong." Measured 2026-09-02 by doing exactly that. The same trap
+		# `tenderFlowCounters.spec.js` strips comments to avoid.
+		branch = TEMPLATE[
+			TEMPLATE.index('v-else-if="forbidden"') : TEMPLATE.index('v-else-if="!activeCompany"')
+		]
+		self.assertRegex(branch, r't\("[^"]*director view[^"]*"\)')
 		self.assertRegex(VUE, r"err\?\.status === 403")
 		self.assertRegex(VUE, r"forbidden\.value = true")
+
+	def test_a_failed_load_leaves_no_timestamp_it_cannot_stand_behind(self):
+		# WHAT WOULD MAKE THIS FAIL: keeping the last good payload through a
+		# failure. `Last read` is derived from `data.generated_at`, so a
+		# retained payload would print a timestamp from before the failure
+		# beside a panel saying the screen could not read anything.
+		#
+		# THE COST IS DELIBERATE AND IS NOT FREE: a transient blip on Refresh
+		# discards a payload the director was reading, and they have to press
+		# Refresh again. The table is replaced by the error branch either way,
+		# so retaining it would buy invisible state and sell a visible lie. This
+		# test exists so the trade is a decision rather than an accident.
+		self.assertRegex(VUE, r"data\.value = null")
+		self.assertRegex(VUE, r"formatTime\(data\.value\?\.generated_at\)")
 
 	def test_a_failed_load_is_written_into_the_panel(self):
 		# WHAT WOULD MAKE THIS FAIL: going back to a toast alone. A toast is
@@ -234,7 +258,26 @@ class TestTheTableScrollsAndThePageDoesNot(unittest.TestCase):
 		# is `width: 100%` and its cells wrap, so the table shrinks to whatever
 		# box it is given and the scrollbar never appears — the container reads
 		# as a fix and behaves exactly like no fix at all.
-		self.assertRegex(STYLE, r"\.flow-scroll \.ds-table\s*\{[^}]*min-width:\s*\d+px")
+		#
+		# The bound is DERIVED, from the column widths the style declares and
+		# the number of headers the template gives each of them. The first
+		# version matched `min-width:\s*\d+px`, so `1px` satisfied it and the
+		# very defect above came back green.
+		widths = {name: int(px) for name, px in re.findall(r"\.(flow-c-\w+) \{ width: (\d+)px", STYLE)}
+		self.assertTrue(widths, "no fixed column widths parsed, so the bound below means nothing")
+		head = TEMPLATE[TEMPLATE.index("<thead>") : TEMPLATE.index("</thead>")]
+		fixed = sum(widths[cls] for cls in re.findall(r"flow-c-\w+", head))
+
+		found = re.search(r"\.flow-scroll \.ds-table\s*\{[^}]*min-width:\s*(\d+)px", STYLE)
+		self.assertIsNotNone(found, "the table inside the scroller has no minimum width")
+		minimum = int(found.group(1))
+
+		# The Step column is what is left over, and it holds the longest text on
+		# the row — it cannot be narrower than the widest column that is fixed.
+		self.assertGreaterEqual(minimum - fixed, max(widths.values()))
+		# And the whole thing must exceed the phone this rule exists for
+		# (deliverable 6: 390x844). A minimum inside the viewport never scrolls.
+		self.assertGreater(minimum, 390)
 
 	def test_no_minimum_width_escapes_the_scroller(self):
 		# WHAT WOULD MAKE THIS FAIL: a min-width on an element the scroller does
