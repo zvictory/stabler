@@ -138,9 +138,26 @@ class TestTenderDashboardSpaContract(unittest.TestCase):
 		# from the shared source, not a literal re-typed in this file. `won` and
 		# `lost` are excluded on purpose -- S2 compares the five open phases the
 		# chevron and the flow strip both walk, not the two terminal outcomes.
+		#
+		# P1-5 (coordinator review, 2026-09-02): a bare `assertIn(f'stepLabel("{stage}")',
+		# funnel)` searches the WHOLE FILE for that substring, not the stage box's own
+		# `label:` call site -- it is satisfied just as well by a comment mentioning
+		# `stepLabel("seen")` while the box itself reverted to a hardcoded literal.
+		# Reproduced independently: reverting all five stage-box labels to their
+		# pre-F12 literals and adding one comment line naming the five stepLabel(...)
+		# calls left the old assertion green. Anchored on `label:` immediately before
+		# the call (matching the chevron's own assertion above), and counted -- not
+		# just "found somewhere" -- so a second, coexisting literal for the same
+		# stage cannot hide next to a lone genuine call elsewhere in the file.
 		for stage in ("seen", "go", "sourcing", "priced", "submitted"):
 			with self.subTest(stage=stage):
-				self.assertIn(f'stepLabel("{stage}")', funnel)
+				pattern = rf'label:\s*stepLabel\("{stage}"\)'
+				self.assertRegex(funnel, pattern)
+				self.assertEqual(
+					len(re.findall(pattern, funnel)),
+					1,
+					f'expected exactly one label: stepLabel("{stage}") call site',
+				)
 
 	def test_a_manually_placed_deal_is_disclosed_not_left_unexplained(self):
 		"""F15 (docs/design/prompts/15-pipeline-overview.md, S5): `tender_funnel`
