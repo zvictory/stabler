@@ -389,8 +389,27 @@ left unassigned, so the `— Unassigned —` option is reachable on exactly two 
 
 Measured: one media query (`:378`) hiding `.board-ord`, the row-number column,
 below 768px — matched by `hide-first-on-mobile` on the skeleton. Everything else
-is `.board-scroll { overflow-x: auto }`: **the table scrolls, the page does
+was `.board-scroll { overflow-x: auto }`: **the table scrolls, the page does
 not** (`:325`, and the comment says exactly that).
+
+**Corrected 2026-09-02 (agent, prompt-14 branch — forwarded from the prompt 15
+agent, which hit the identical pattern in its own file, and verified
+independently here).** That line described `.board-scroll`'s own rule
+accurately and stopped one step short of the table inside it. `.ds-table`
+carries `width: 100%` (`stabler-modernist.css:389`, shared, not this file's to
+touch) and nothing in DirectorBoard.vue overrode it. A `width: 100%` table
+inside `overflow-x: auto` never overflows its container — the nine columns
+compress instead, and the scroller has nothing to scroll. `.board-scroll` was
+real; a narrow screen never actually triggered it. Fixed with `min-width:
+960px` on `.ds-table` in this file's own `<style scoped>` block (Vue scopes
+that selector to elements this component renders, so the shared `.ds-table`
+rule is untouched) — `min-width` and `width` are different properties, not a
+cascade/specificity contest: the browser takes `max(width, min-width)`, so
+`width: 100%` still governs above the floor and the floor only bites once the
+container is narrower than it. **Not verified**: no jsdom in this repo, so
+nothing proves a phone actually scrolls now — only that the pieces needed for
+it to are present (`directorBoardTableScroll.spec.js`, source-level, with a
+vacuity guard on the min-width match).
 
 So on a phone the director gets eight columns of horizontal scroll, six KPI
 cards at `data-cols="3"`, and a nine-column table whose most important cells —
@@ -441,12 +460,26 @@ Keep the artboards you rejected.
 | P5 | Loading renders `SkeletonRows`, not a spinner | passes |
 | P6 | The phase filter states what it filtered, in a live region | passes |
 | P7 | The `unverified` warning is hidden at 0 rather than printing a zero | passes |
-| P8 | **Every** counter's rule line describes the query that produced it | **fails** — 3 of 6 (S1) |
-| P9 | *Not yet priced* is distinguishable from *zero* | **fails** — 6 rows (S2) |
-| P10 | A failed load renders as an error, not as "no tenders match these filters" | **fails** — toast only (S3) |
-| P11 | A user without the director view sees a refusal, not an empty board | **fails** — same branch |
+| P8 | **Every** counter's rule line describes the query that produced it | **passes** (2026-09-02) — all six `rule:` strings now name the actual query (`count`, `at_risk`, `total_value` corrected); `directorBoardRuleLines.spec.js`, cross-file against `_tender_director_payload`, mutation-tested |
+| P9 | *Not yet priced* is distinguishable from *zero* | **passes** (2026-09-02) — server sends `priced` per row (same `has_pricing_col`/`has_pricing` idiom used three other places in `tender.py`); the four money/percent cells and the Tender-cell chip read it instead of inferring from a number; `directorBoardPricedState.spec.js`, mutation-tested |
+| P10 | A failed load renders as an error, not as "no tenders match these filters" | **passes** (2026-09-02) — `error`/`everLoaded` refs, a dedicated panel-foot branch ahead of the empty-filters one, printing the server's own message with zero new `t()` calls; `directorBoardLoadState.spec.js`, mutation-tested |
+| P11 | A user without the director view sees a refusal, not an empty board | **passes** (2026-09-02) — `forbidden` (waits for `tenderViewsLoaded`) gates the KPI strip, `TenderFunnel`, the phase bar and the table behind `TenderOverview.vue`'s own refusal panel, cited rather than redesigned; `directorBoardForbidden.spec.js`, mutation-tested |
 | P12 | A row is reachable and openable from the keyboard | **passes** (2026-09-02) — `role="button" tabindex="0"`, Enter and Space, `.self`-guarded so the manager `<select>` does not fire it |
-| P13 | A rejected assignment returns the select to its previous value | **fails** — keeps the refused choice (S5) |
-| P14 | Phase filter and route filters are legible together, beside the table | **fails** — raw `key: value` chip in the header (S6) |
+| P13 | A rejected assignment returns the select to its previous value | **passes** (2026-09-02) — `assign()` captures the previous value before the request and writes it directly onto the DOM element the change event carries (necessarily imperative — `:value` is one-way, so nothing reactive changing on failure gives Vue a reason to re-patch it); `directorBoardAssignRevert.spec.js`, mutation-tested |
+| P14 | Phase filter and route filters are legible together, beside the table | **passes** (2026-09-02) — `filterLabel()` maps all seven `tenderBoardFilters.js` keys to existing catalogue labels; a second bar reuses the phase bar's own `board-phase`/`role="status"` shape verbatim, directly beside it and the table; the raw `key: value` header chip is removed; `directorBoardFilterLegibility.spec.js`, mutation-tested |
 | P15 | The freshness stamp reflects the server's generation time | **passes** (2026-09-02) — `generated_at`, folded with the funnel's own |
-| P16 | A stale board after a failed auto-refresh says it is stale | **fails** — silently keeps the last values |
+| P16 | A stale board after a failed auto-refresh says it is stale | **passes** (2026-09-02) — `stale` computed (true only once a load has succeeded and the next one fails, never on a first load), marker beside the freshness stamp in `#meta`; `directorBoardLoadState.spec.js`, mutation-tested |
+
+**P8–P11, P13, P14, P16 verified at source/logic level only** (this repo has no
+jsdom; `new Function`-lifted logic and TEMPLATE source-regex per the existing
+idiom in `contractBoardReload.spec.js` / `stageColor.spec.js`) — no live-bench
+or rendered-browser verification was performed for any of them. Three new
+`t()` keys were added in the process (*Not yet priced*; *Refresh failed —
+showing the last known numbers*; *This board is built for the director role.
+Your queue for today is on the operations desk.*) and are **not yet** in the
+five translation catalogues — `stabler/translations/*.csv` was out of scope
+for the branch that added them. `make test` fails
+`test_tender_dashboard_i18n.py`'s completeness check on exactly these three
+keys, across all five locales, until they are translated; every other check
+(`lint`, `compile`, `guards`, the other 274 frappe-free modules, `test-js`)
+passes. See the implementing agent's final report for the full breakdown.
