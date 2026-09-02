@@ -63,22 +63,36 @@ function harness() {
 	const loading = { value: false };
 	const errors = [];
 	const inflight = {};
+	const sent = [];
 	const error = { value: "" };
+	// C14's server-side filter. load() closes over it, so the harness has to
+	// supply it: without the binding every call throws a ReferenceError INSIDE
+	// load()'s own try, which the catch then reports as a load failure — the
+	// request never leaves and every test here goes green-then-red for a reason
+	// that has nothing to do with what it asserts.
+	const tenderOnly = { value: false };
 	const scope = {
 		activeCompany,
 		board,
 		cards,
 		loading,
 		error,
-		route: { query: {} },
+		tenderOnly,
 		toast: { error: (m) => errors.push(m) },
 		t: (s) => s,
-		call: (_method, args) => (inflight[args.company] = deferred()).promise,
+		call: (_method, args) => {
+			sent.push(args);
+			return (inflight[args.company] = deferred()).promise;
+		},
 	};
-	return { ...scope, errors, inflight, load: liftLoad(scope) };
+	return { ...scope, errors, inflight, sent, load: liftLoad(scope) };
 }
 
-const payload = (tag) => ({ stages: [{ name: tag }], cards: [{ name: tag }], generated_at: `2026-09-02 0${tag.length}:00:00` });
+const payload = (tag) => ({
+	stages: [{ name: tag }],
+	cards: [{ name: tag }],
+	generated_at: `2026-09-02 0${tag.length}:00:00`,
+});
 
 describe("C12 — the board follows the active company", () => {
 	it("re-fetches when the company changes", () => {
@@ -87,8 +101,12 @@ describe("C12 — the board follows the active company", () => {
 		// company's contracts — with that company's money totals under the new
 		// company's header — until the reader happened to navigate away.
 		// (boolean form: a failing toMatch here would print the whole component.)
-		expect(/watch\(activeCompany, load\)/.test(src), "no watch on activeCompany").toBe(true);
-		expect(/import \{[^}]*\bwatch\b[^}]*\} from "vue"/.test(src), "watch is not imported").toBe(true);
+		// Anchored to line start for the reason given in contractBoardTenderFilter
+		// .spec.js: unanchored, this passed over a commented-out watch.
+		expect(/^watch\(activeCompany, load\);$/m.test(src), "no watch on activeCompany").toBe(true);
+		expect(/import \{[^}]*\bwatch\b[^}]*\} from "vue"/.test(src), "watch is not imported").toBe(
+			true
+		);
 	});
 
 	it("loads once the session finally resolves a company", async () => {
@@ -228,5 +246,36 @@ describe("C7 — load() records the failure it used to only toast", () => {
 
 		expect(h.error.value).toBe("");
 		expect(h.cards.value).toEqual([{ name: "B" }]);
+	});
+});
+
+/**
+ * C14's behavioural half. It lives here, beside the harness that drives load()
+ * against a controllable `call`, for the same reason C7's does above: the source
+ * assertion in contractBoardTenderFilter.spec.js can show that the flag is
+ * WRITTEN into the request, and only this can show that it ARRIVES.
+ */
+describe("C14 — the request carries the filter the board is showing", () => {
+	it("asks for the tender-only set when the URL says tender_only=1", async () => {
+		// WHAT WOULD MAKE THIS FAIL: reading the flag into a computed and then
+		// hardcoding the argument. The badge would say the board is filtered while
+		// the server returned everything — a filter that lies is worse than the
+		// missing one it replaced, because the reader now counts the cards and
+		// believes the disagreement is in the funnel.
+		const h = harness();
+		h.activeCompany.value = "A";
+		h.tenderOnly.value = true;
+		h.load();
+		expect(h.sent).toEqual([{ company: "A", tender_only: 1 }]);
+	});
+
+	it("asks for everything when it is not", async () => {
+		// WHAT WOULD MAKE THIS FAIL: sending 1 unconditionally — the mirror defect.
+		// The board would quietly hide every contract not tagged to a deal, with no
+		// badge to say so, on the ordinary navigation that most readers arrive by.
+		const h = harness();
+		h.activeCompany.value = "A";
+		h.load();
+		expect(h.sent).toEqual([{ company: "A", tender_only: 0 }]);
 	});
 });

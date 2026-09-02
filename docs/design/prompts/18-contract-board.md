@@ -99,7 +99,7 @@ worst instance of a defect this package has now found on five screens.
 | 2 | Every number carries its rule | **N/A** — no counters; the column header count and total carry no rule |
 | 3 | Loading is skeleton, not spinner | **PASS since 2026-09-02** (C9) — a board-shaped skeleton in Bootstrap `placeholder` utilities. As measured it was `<span class="spinner-border text-primary">`, the only *board* among the four tender screens that spun; **three still do** — `BidPricing`, `TenderIntake`, `TenderDocumentsPanel`, none of them a board |
 | 4 | Five states per region | **FAIL** — two, and one of them is wrong (S2) |
-| 5 | State lives in the URL | **PARTIAL** — `?tender=1` and `tenderRouteFilters` are read; nothing is ever written back, and the funnel arrives without either (S1) |
+| 5 | State lives in the URL | **PARTIAL, better since 2026-09-02** — `?tender_only=1` now arrives with the funnel click, is shown as a badge and can be cleared (which writes the URL). `tenderRouteFilters` is still read-only: stage/period/risk/due/status/dates are never written back (S1) |
 | 6 | Keyboard and screen reader reachable | **FAIL, hardest in the package** — zero `aria-*`, zero `role=`; the only way to move a card is an HTML5 drag (S4) |
 | 7 | No raw identifiers in front of a human | **PASS** — the card title is the Sales Order id, which is what a user calls it |
 | 8 | Refresh is not a button | **PASS by omission** — and worse: there is no refresh at all, and no `watch(activeCompany)` either (S5) |
@@ -195,7 +195,7 @@ Clicking a card leaves for `/sales/orders/<name>`.
 
 ---
 
-### S1 — the number you click and the list you get are filtered differently
+### S1 — the number you click and the list you get are filtered differently — **FIXED 2026-09-02**
 
 `so_board` takes `tender_only`, and the flag does two things at once:
 
@@ -204,19 +204,59 @@ Clicking a card leaves for `/sales/orders/<name>`.
 | `0` (default) | **`docstatus: 1`** — submitted only | none — every Sales Order in the company |
 | `1` | **`docstatus < 2`** — **drafts included** | `custom_crm_deal` must be set |
 
-Two surprises in one parameter. The "tender only" mode is **narrower on one axis
-and wider on the other**, and nothing on the client says so — the flag is read
-from `route.query.tender === "1"` and never written, so there is no control for
+Two surprises in one parameter. The "tender only" mode was **narrower on one axis
+and wider on the other**, and nothing on the client said so — the flag was read
+from `route.query.tender === "1"` and never written, so there was no control for
 it at all.
 
 And the funnel's execution buckets — which count `docstatus: 1` Sales Orders
-**tagged to a deal** — navigate here with a bare `router.push("/tender/board")`,
-no query. So a user clicking a box reading *Procurement (PO) 1* lands on a board
+**tagged to a deal** — navigated here with a bare `router.push("/tender/board")`,
+no query. So a user clicking a box reading *Procurement (PO) 1* landed on a board
 showing every submitted contract in the company, tender-linked or not.
 
 `TenderFunnel.vue:358-360` states the intent in a comment: execution buckets
-open the contract board, *"whose columns ARE that list."* They are not. The
-columns are a different query, and the filter does not travel with the click.
+open the contract board, *"whose columns ARE that list."* They were not. The
+columns were a different query, and the filter did not travel with the click.
+
+**Fixed 2026-09-02 — three separate breaks, not one.** The acceptance row read
+"the funnel arrives without `?tender=1`", which was true and not sufficient:
+
+1. The funnel now pushes `{ path: "/tender/board", query: { tender_only: "1" } }`.
+2. The board reads **`tender_only`**, not `tender`. Every other tender drill-down
+   in the SPA — six list pages plus the router's own access guard, which grants
+   tender-role users those pages *because* the query says `tender_only=1` — used
+   that name already. The board was alone on its own spelling, so even a reader
+   who typed the module's usual parameter got the unfiltered board in silence.
+3. `so_board`'s flag is now **one axis**: it narrows to deal-linked orders and
+   nothing else. The `{"docstatus": ["<", 2]}` branch is gone, so turning the
+   filter on no longer ADDS the drafts. Fixing 1 and 2 alone would have landed
+   the reader on a board holding rows the number never counted.
+
+And because the funnel click now produces a mode nothing produced before, the
+board says it is in one: the `bg-blue-lt` **Tender records** badge the six
+sibling drill-downs already wear, plus a *Clear filter* control they do not have.
+They can afford to omit it — each sits in a `ListToolbar` full of controls the
+reader can already change. This board has no toolbar, so a badge alone would be a
+filter you can enter and cannot leave except by editing the address bar.
+
+**What this does not settle.** Two axes still separate the two queries, and both
+are deliberate on the side that has them:
+
+- **Closed contracts.** The board skips `status in ("Closed", "Cancelled")`; the
+  funnel counts a submitted, deal-tagged order whatever its status — `bucket_so`
+  says so on purpose (`_funnel.py:184-186`: hiding one "would silently shrink the
+  serving number"). So a closed contract is still counted in the box and absent
+  from the board. Reconciling it means changing one screen's deliberate
+  behaviour, which is prompt 15's call, not this one's.
+- **Permission scope.** The board filters per document with
+  `frappe.has_permission`; the funnel reads through `frappe.get_all`, which does
+  not. A reader who may not read an order sees it in the count and not on the
+  board. The board is the correct side here; the funnel's count is the defect,
+  and it is a permission question rather than a filter one.
+
+Neither is visible on the seed data. Both are `make test-bench` territory — the
+server change is a query change, and `make check` cannot prove what rows come
+back.
 
 ### S3 — the palette is user data, concatenated as hex
 
@@ -443,7 +483,7 @@ constructed.
 | **lazy placement** | a Sales Order with no `custom_board_stage` is drawn in the first non-closed stage without being written there |
 | **contract value** | `rounded_total or grand_total`, in the order's **own** currency (S6) |
 | **Delivered / Billed** | `per_delivered` / `per_billed`, ERPNext percentages |
-| **tender_only** | drafts **in**, non-tender orders **out** — one flag, two axes, no control (S1) |
+| **tender_only** | non-tender orders **out**, and nothing else — one flag, one axis since 2026-09-02. Arrives from the funnel, shown as a badge, clearable. It was two axes: drafts **in** as well (S1) |
 | **`is_won` · `is_closed`** | *Paid* and *Closed* by default; on the wire, rendered nowhere |
 
 ---
@@ -513,7 +553,7 @@ Keep the artboards you rejected.
 | C11 | A press that does not move the card does not navigate away | **fails** — drag and click share the element (S4) |
 | C12 | Switching the active company reloads the board | **passes** (2026-09-02) — plus a request token, so a superseded company's answer cannot land (S5) |
 | C13 | A column total never adds two currencies | **✔ 2026-09-02** — one line per currency, sorted by code; the session currency is no longer read by this screen (S6) |
-| C14 | The board's filter matches the number that navigated to it | **fails** — the funnel arrives without `?tender=1` (S1) |
+| C14 | The board's filter matches the number that navigated to it | **✔ 2026-09-02, for the filter** — funnel passes `tender_only=1`, board reads the module's parameter name, server narrows on one axis. Two documented divergences remain, both deliberate on the other side: Closed contracts and per-document read permission (S1) |
 | C15 | *Paid* and *Closed* are distinguishable from ordinary columns | **fails** — `is_won` / `is_closed` unrendered (S7) |
 | C16 | "From tender" is legible without hovering | **fails** — icon plus `:title` (S7) |
 | C17 | `status` is the server's classification, not the client's | **fails** — re-derived from `per_delivered` (S7) |

@@ -26,6 +26,10 @@ const loading = ref(false);
 /* Yük SAKLANIYOR, parçalanmıyor: damga da onun bir alanı. `cards` ayrı bir
  * ref kalıyor çünkü sürükleme onu yerinde değiştiriyor; `stages` yalnız
  * okunuyor, o yüzden türetiliyor. */
+/* Modülün ortak süzgeç adı: altı liste sayfası ve router'ın erişim muhafızı
+ * `tender_only` okuyor. Pano yalnız başına `tender` okuyordu, o yüzden huninin
+ * — ve elle yazılan bir bağlantının — süzgeci sessizce düşüyordu. */
+const tenderOnly = computed(() => route.query.tender_only === "1");
 const board = ref(null);
 const stages = computed(() => board.value?.stages || []);
 const cards = ref([]);
@@ -50,7 +54,7 @@ async function load() {
 	try {
 		const r = await call("stabler.api.tender.so_board", {
 			company: activeCompany.value,
-			tender_only: route.query.tender === "1" ? 1 : 0,
+			tender_only: tenderOnly.value ? 1 : 0,
 		});
 		if (token !== reqToken) return;
 		board.value = r;
@@ -69,6 +73,18 @@ onMounted(load);
  * mount'tan SONRA çözerse tetikleyen de bu — `load()` boş şirkette erken
  * dönüyor, yoksa pano "aşama ekleyin" davetinde takılı kalırdı. */
 watch(activeCompany, load);
+/* Bu süzgeci sunucu uyguluyor: adres çubuğundan düşürmek URL'i ve rozeti
+ * değiştirir ama kartları değiştirmez. O yüzden yeniden çekiliyor. */
+watch(tenderOnly, load);
+
+/* Yalnız BU süzgeç kaldırılıyor: pano stage/period/risk/due/status/from_date/
+ * to_date'i de URL'den okuyor (tenderBoardFilters.js), sorguyu boşaltmak
+ * kullanıcının başka yerde kurduğu süzgeçleri sessizce silerdi. */
+function clearTenderOnly() {
+	const query = { ...route.query };
+	delete query.tender_only;
+	router.replace({ path: route.path, query });
+}
 
 const colorOf = (s) => s.color || "#6c757d";
 const boardFilters = computed(() => tenderRouteFilters(route.query));
@@ -167,6 +183,15 @@ function openSo(name) {
 			<span v-if="lastReadAt"
 				>{{ t("Last read") }} <span class="ds-mono">{{ lastReadAt }}</span></span
 			>
+			<span v-if="tenderOnly" class="badge bg-blue-lt text-blue">{{ t("Tender records") }}</span>
+			<button
+				v-if="tenderOnly"
+				type="button"
+				class="btn btn-link btn-sm p-0"
+				@click="clearTenderOnly"
+			>
+				{{ t("Clear filter") }}
+			</button>
 		</template>
 
 		<!-- Yazma zaten reddedileceği biliniyorsa düğme de sunulmuyor: boş

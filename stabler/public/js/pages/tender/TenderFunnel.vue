@@ -362,7 +362,10 @@ function go(st) {
 	// open My Tenders filtered to the exact classified set (funnel_stage);
 	// execution buckets open the contract board, whose columns ARE that list.
 	if (st.kind === "so") {
-		router.push("/tender/board");
+		// The filter travels with the click: this bucket counts deal-linked
+		// contracts, so the board has to be narrowed to the same set or the number
+		// and the columns are two different queries (prompt 18, C14).
+		router.push({ path: "/tender/board", query: { tender_only: "1" } });
 		return;
 	}
 	router.push({ path: "/tender/my-tenders", query: { funnel_stage: st.key } });
@@ -421,7 +424,11 @@ function go(st) {
 				</div>
 				<div class="ds-panel-foot">
 					<span class="ds-mono">{{ PIPE_SOURCE }}</span>
-					<span>{{ t("bar: share of lots that satisfy the {min}-quote rule", { min: tenderPolicy.minQuotations }) }}</span>
+					<span>{{
+						t("bar: share of lots that satisfy the {min}-quote rule", {
+							min: tenderPolicy.minQuotations,
+						})
+					}}</span>
 				</div>
 			</section>
 

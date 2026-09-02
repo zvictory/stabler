@@ -97,11 +97,12 @@ def so_board(company: str, tender_only: int = 0) -> dict:
 		(s["name"] for s in stages if not s["is_closed"]), stages[0]["name"] if stages else None
 	)
 
-	so_filters = (
-		{"company": company, "docstatus": ["<", 2]}
-		if int(tender_only or 0)
-		else {"company": company, "docstatus": 1}
-	)
+	# ONE axis. `tender_only` narrows to deal-linked orders (per row, below) and
+	# nothing else. It used to swap in {"docstatus": ["<", 2]} as well, so turning
+	# the filter ON added rows -- the drafts -- and the funnel bucket that navigates
+	# here, which counts docstatus 1, could never match it. See
+	# tests/test_tender_board_filter.py.
+	so_filters = {"company": company, "docstatus": 1}
 	sos = frappe.get_list(
 		"Sales Order",
 		filters=so_filters,
