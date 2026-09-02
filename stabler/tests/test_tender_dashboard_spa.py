@@ -9,6 +9,7 @@ dashboard contract executable without adding a browser-only dependency.
 from __future__ import annotations
 
 import os
+import re
 import unittest
 
 _ROOT = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
@@ -148,7 +149,18 @@ class TestTenderDashboardSpaContract(unittest.TestCase):
 		source = _read(_SALES_BOARD)
 		self.assertIn("useRoute", source)
 		self.assertIn("tenderRouteFilters", source)
-		self.assertIn("delivery_pending", source)
+		# `delivery_pending` was asserted here as a stand-in for "the board
+		# speaks the dashboard's status vocabulary". It stopped being present on
+		# 2026-09-02 without the board losing that capability: the word moved to
+		# the server (`_funnel.delivery_state`, prompt 18's C17) and the client
+		# stopped re-deriving a fact the server already knew. Kept, not deleted,
+		# and pointed at what this test's name actually claims — that the
+		# route's filters REACH the filter. The literal never checked that: it
+		# passed even when `filterTenderRows` was called with no filters at all.
+		self.assertTrue(
+			re.search(r"filterTenderRows\(cards\.value, boardFilters\.value\)", source),
+			"the board no longer passes the route's filters to filterTenderRows",
+		)
 
 
 if __name__ == "__main__":

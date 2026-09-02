@@ -453,12 +453,27 @@ same order with nothing on either screen to explain it.
   contract came from a tender, on the tender module's own board, is reachable
   only by hovering. **Fourth instance in the package**, after prompt 11's *Red
   Channel*, prompt 12's `freight_booking_status`, and prompt 10's evidence line.
-- **`per_delivered` drives a filter nobody can see.** `filteredCards` derives
-  `status: per_delivered >= 100 ? "delivered" : "delivery_pending"` on the client
-  and feeds it to `filterTenderRows` — a client-side re-derivation of a server
-  fact, which is the exact defect commit `26481f1` removed from the customs queue
-  one screen earlier. Here it survives, and the filter it feeds has no control on
-  this screen at all: it can only arrive in the URL.
+- **`per_delivered` drove a filter nobody can see — FIXED 2026-09-02.**
+  `filteredCards` derived `status: per_delivered >= 100 ? "delivered" :
+  "delivery_pending"` on the client and fed it to `filterTenderRows`. The rule
+  was not wrong: `tender_dashboard` applied the identical `flt(so.per_delivered)
+  >= 100` in Python, which is the whole point — two copies of one rule, in two
+  languages, with nothing holding them together, the same defect commit
+  `26481f1` removed from the customs queue one screen earlier. It now lives once,
+  in `_funnel.delivery_state`, beside the module's other pure classifications;
+  `so_board` sends the word and both the board and the dashboard read it from
+  there.
+
+  Writing it cost a lesson worth recording. `tender.py` imports `_funnel`
+  **locally, inside four separate functions**, and has no module-level import at
+  all. The first version of this change called `_funnel.delivery_state` from two
+  more functions and every source-text assertion stayed green while BOTH
+  endpoints raised `NameError` on the first request. A regex cannot see scope, so
+  the guard that catches it parses the AST instead
+  (`tests/test_tender_delivery_state.py`).
+
+  Still true, and untouched: the filter this feeds has no control on this screen.
+  It can only arrive in the URL.
 
 ### S8 — `window.prompt()`
 
@@ -617,7 +632,7 @@ Keep the artboards you rejected.
 | C14 | The board's filter matches the number that navigated to it | **✔ 2026-09-02, measured on real rows** — `tests/test_tender_board_funnel_integration.py` (bench) seeds four orders that separate every filter the pair applies and asserts `board(1) − funnel = ∅`, `funnel − board(1) = exactly the Closed set`, and that the chevron's number equals the list it drills to. The by-hand check earlier that day said "equal" only because the test site held **no Sales Order at all**. Per-document read permission is still unmeasured (S1) |
 | C15 | *Paid* and *Closed* are distinguishable from ordinary columns | **fails** — `is_won` / `is_closed` unrendered (S7) |
 | C16 | "From tender" is legible without hovering | **fails** — icon plus `:title` (S7) |
-| C17 | `status` is the server's classification, not the client's | **fails** — re-derived from `per_delivered` (S7) |
+| C17 | `status` is the server's classification, not the client's | **✔ 2026-09-02** — one rule in `_funnel.delivery_state`; `so_board` sends it, the dashboard counts by it, the client re-derives nothing (S7) |
 | C18 | Creating a stage uses the app's own dialog | **fails** — `window.prompt` (S8) |
 | C19 | A stage colour the manager chose cannot make its own count unreadable | **fails** — raw colour on a 13 % tint of itself (S3) |
 | C20 | The board says how old it is | **passes for the timestamp** (2026-09-02) — `generated_at`. It still has no refresh of any kind, which is what makes the stamp worth reading (S5) |

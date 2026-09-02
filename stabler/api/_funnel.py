@@ -187,6 +187,26 @@ def bucket_so(stage: str) -> str:
 	return SO_BUCKETS.get(str(stage or ""), "contract")
 
 
+def delivery_state(per_delivered) -> str:
+	"""Has the customer had the whole order yet?
+
+	The module's shared vocabulary: the director dashboard counts under these two
+	keys and `tenderBoardFilters.js` matches `row.status` against them. It lived
+	in two places until 2026-09-02 — inline in `tender_dashboard` and again as a
+	ternary in `SalesOrderBoard.vue` — which is two copies of one rule in two
+	languages with nothing holding them together (prompt 18, C17).
+
+	Anything that is not a number reads as nothing delivered: a row with no
+	`per_delivered` is an order the customer is still waiting for, and throwing
+	here would take the whole board down over a missing figure.
+	"""
+	try:
+		done = float(per_delivered or 0)
+	except (TypeError, ValueError):
+		done = 0.0
+	return "delivered" if done >= 100 else "delivery_pending"
+
+
 def summarise_so(stages: list[str]) -> dict:
 	out = {"contract": 0, "procurement": 0, "delivery": 0, "done": 0}
 	for s in stages:

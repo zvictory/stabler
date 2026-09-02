@@ -88,15 +88,10 @@ function clearTenderOnly() {
 
 const colorOf = (s) => s.color || "#6c757d";
 const boardFilters = computed(() => tenderRouteFilters(route.query));
-const filteredCards = computed(() =>
-	filterTenderRows(
-		cards.value.map((card) => ({
-			...card,
-			status: Number(card.per_delivered) >= 100 ? "delivered" : "delivery_pending",
-		})),
-		boardFilters.value
-	)
-);
+/* `status` arrives CLASSIFIED. It used to be re-derived here from
+ * `per_delivered`, a second copy of a rule the server already applied — see
+ * _funnel.delivery_state and prompt 18's C17. */
+const filteredCards = computed(() => filterTenderRows(cards.value, boardFilters.value));
 const cardsByStage = computed(() => {
 	const map = {};
 	for (const s of stages.value) map[s.name] = [];

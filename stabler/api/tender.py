@@ -87,6 +87,8 @@ def _stages() -> list[dict]:
 @frappe.whitelist()
 def so_board(company: str, tender_only: int = 0) -> dict:
 	"""Stages + the submitted Sales Orders parked on each (kanban feed)."""
+	from stabler.api import _funnel
+
 	_assert_company_scope(company)  # tenant isolation: reject a foreign company arg
 	_require_tender(company)
 	_require_company(company)
@@ -143,7 +145,7 @@ def so_board(company: str, tender_only: int = 0) -> dict:
 				"contract_value": flt(so.rounded_total or so.grand_total),
 				"per_delivered": flt(so.per_delivered),
 				"per_billed": flt(so.per_billed),
-				"status": so.status,
+				"status": _funnel.delivery_state(so.per_delivered),
 				"stage": stage,
 				"deal": so.custom_crm_deal,
 			}
@@ -3263,6 +3265,8 @@ def tender_dashboard(
 	with a result but no server submission audit remains ``unverified_history``;
 	it never silently raises submitted, won, or lost participation counts.
 	"""
+	from stabler.api import _funnel
+
 	_require_company(company)
 	_require_tender(company)
 	_assert_company_scope(company)
@@ -3452,10 +3456,7 @@ def tender_dashboard(
 			continue
 		execution["sales_orders"] += 1
 		contract_total += flt(so.base_grand_total)
-		if flt(so.per_delivered) >= 100:
-			execution["delivered"] += 1
-		else:
-			execution["delivery_pending"] += 1
+		execution[_funnel.delivery_state(so.per_delivered)] += 1
 
 	po_by_deal: dict[str, list] = {}
 	for po in po_rows:
