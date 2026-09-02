@@ -114,7 +114,14 @@ function clearPhase() {
 }
 
 const filters = computed(() => tenderRouteFilters(route.query));
-const filterSummary = computed(() => activeTenderFilters(filters.value).map(([key, value]) => `${key}: ${value}`));
+/* tenderBoardFilters.js'nin yedi anahtarı hep BÖYLE anlaşılıyor; burada
+ * yeniden icat edilmiyor, yalnız okunaklı hale getiriliyor (S6). Bilinmeyen
+ * bir anahtar sessizce yutulmak yerine kendi adını gösteriyor. */
+const filterLabel = (key) => ({
+	stage: t("Stage"), period: t("Period"), risk: t("Risk"), due: t("Deadline"),
+	status: t("Result"), from_date: t("From"), to_date: t("To"),
+}[key] || key);
+const filterSummary = computed(() => activeTenderFilters(filters.value).map(([key, value]) => `${filterLabel(key)}: ${value}`));
 const filteredRows = computed(() => {
 	const base = filterTenderRows(rows.value, filters.value);
 	if (!phaseDeals.value) return base;
@@ -195,11 +202,6 @@ function clearFilters() { router.replace({ query: {} }); }
 			<span v-if="stale" class="ds-chip" data-tone="crit">{{ t("Refresh failed — showing the last known numbers") }}</span>
 		</template>
 
-		<template v-if="filterSummary.length" #actions>
-			<span class="ds-chip" data-tone="soon">{{ filterSummary.join(" · ") }}</span>
-			<button type="button" class="ds-btn" @click="clearFilters">{{ t("Clear filters") }}</button>
-		</template>
-
 		<template v-if="!forbidden">
 		<div class="ds-kpis" data-cols="3">
 			<div v-for="k in kpis" :key="k.key" class="ds-kpi" :data-sev="k.sev">
@@ -230,6 +232,17 @@ function clearFilters() { router.replace({ query: {} }); }
 			<span class="board-phase-note">{{ phaseMeta.note }}</span>
 			<button type="button" class="ds-btn board-phase-clear" @click="clearPhase">
 				{{ t("Clear filter") }}
+			</button>
+		</div>
+
+		<!-- Aynı bar, ikinci bir sebep için: rota filtreleri de tabloyu süzüyor
+		     ama hiç açıklamıyordu (S6) — üstteki fazın çözümü zaten hazır,
+		     burada yeniden tasarlanmıyor. -->
+		<div v-if="filterSummary.length" class="board-phase" role="status">
+			<span class="ds-label board-phase-kicker">{{ t("Filters") }}</span>
+			<span class="board-phase-note">{{ filterSummary.join(" · ") }}</span>
+			<button type="button" class="ds-btn board-phase-clear" @click="clearFilters">
+				{{ t("Clear filters") }}
 			</button>
 		</div>
 
