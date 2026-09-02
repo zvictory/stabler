@@ -16,9 +16,38 @@ CSS = (ROOT / "public/css/stabler-modernist.css").read_text(encoding="utf-8")
 ROUTER = (ROOT / "public/js/router.js").read_text(encoding="utf-8")
 NAV = (ROOT / "public/js/pages/tender/TenderNav.vue").read_text(encoding="utf-8")
 
-TEMPLATE = VUE[VUE.index("<template>") : VUE.rindex("</template>")]
+#: The screen with every comment removed — JS block, JS line, and HTML.
+#:
+#: EVERY assertion below reads this, never the raw file. Twice now a claim about
+#: the screen has been satisfied by a comment ABOUT the screen: `assertIn(
+#: "director view", VUE)` passed with the user-facing sentence replaced by
+#: "Something went wrong.", and the test written to close that trap
+#: reintroduced it one commit later — deleting `data.value = null` from the
+#: catch kept 31 tests green as long as the paragraph above it mentioned the
+#: line. A source test's subject is the code; the prose beside it is not
+#: evidence for it.
+CODE = re.sub(r"/\*.*?\*/|<!--.*?-->|//[^\n]*", "", VUE, flags=re.S)
+
+TEMPLATE = CODE[CODE.index("<template>") : CODE.rindex("</template>")]
 FLAT = re.sub(r"\s+", " ", TEMPLATE)
+STYLE = CODE[CODE.index("<style scoped>") : CODE.rindex("</style>")]
+#: The catch block on its own. A claim about what a failure does must be met by
+#: the failure path, not by the explanation printed above it.
+CATCH = CODE[CODE.index("} catch (err) {") : CODE.index("} finally {")]
+#: The company watcher on its own, for the same reason.
+WATCHER = CODE[CODE.index("watch(activeCompany") : CODE.index("const steps =")]
 ENDPOINT = API[API.index("def tender_flow(company: str)") :]
+
+
+def opening_tag(marker: str) -> str:
+	"""The opening tag that carries `marker`.
+
+	Anchored to the marker's own position rather than to a tag name: a slice
+	that starts from a bare name can match a different element entirely, which
+	has already happened twice on this package.
+	"""
+	at = TEMPLATE.index(marker)
+	return TEMPLATE[TEMPLATE.rindex("<", 0, at) : TEMPLATE.index(">", at) + 1]
 
 
 class TestTheScreenIsWired(unittest.TestCase):
@@ -44,7 +73,7 @@ class TestTheScreenIsWired(unittest.TestCase):
 		self.assertIn('to="/tender/flow"', NAV)
 
 	def test_it_calls_the_one_endpoint(self):
-		self.assertIn("stabler.api.tender.tender_flow", VUE)
+		self.assertIn("stabler.api.tender.tender_flow", CODE)
 
 
 class TestTheScreenDoesNotFlatterTheNumbers(unittest.TestCase):
@@ -58,11 +87,11 @@ class TestTheScreenDoesNotFlatterTheNumbers(unittest.TestCase):
 		"""Bir ortalamanın neye dayandığını gizlemek, sayının kendisinden
 		kötüdür."""
 		self.assertRegex(FLAT, r'v-if="row\.unmeasured"')
-		self.assertIn("without a stage stamp — not averaged", VUE)
+		self.assertIn("without a stage stamp — not averaged", CODE)
 
 	def test_the_screen_reports_the_unmeasured_total_as_a_kpi(self):
-		self.assertRegex(VUE, r'key: "unmeasured"')
-		self.assertIn("moved before the stage clock existed", VUE)
+		self.assertRegex(CODE, r'key: "unmeasured"')
+		self.assertIn("moved before the stage clock existed", CODE)
 
 	def test_empty_and_unknown_are_different_words(self):
 		"""Boş adımda bekleyen iş yok; damgasız adımda var ama süresi
@@ -127,6 +156,225 @@ class TestTheEndpointSharesOneSourceOfTruth(unittest.TestCase):
 		"""Yama uygulanmamış sitede ekran boş değil, ölçülemez olmalı."""
 		self.assertIn('has_column("CRM Deal", "custom_tender_stage")', ENDPOINT)
 		self.assertIn('has_column("CRM Deal", "custom_tender_stage_entered_at")', ENDPOINT)
+
+
+class TestTheScreenSaysWhichStateItIsIn(unittest.TestCase):
+	"""W11 and W12 — a failed load, a refusal and a quiet pipeline were one branch.
+
+	`v-else` on the table made it the fallback for EVERYTHING, so a load that
+	fell over, a company nobody selected and a user without the director view
+	all rendered five column headers over an empty tbody, under four counters
+	reading zero — which is exactly what a healthy pipeline looks like. The only
+	other signal was a toast that scrolls away.
+
+	Corrects prompt 16 §5 on one point, measured 2026-09-02: a genuinely EMPTY
+	pipeline was never one of those cases. `step_rows` emits a row per
+	`WORKING_STAGES` whatever the data, so an empty company draws five rows
+	reading `0 · — · — · Empty`. The empty case needed a sentence, not a branch.
+	"""
+
+	def test_every_state_precedes_the_tables_fallback(self):
+		# WHAT WOULD MAKE THIS FAIL: a state added AFTER the table. The table is
+		# the `v-else`, so anything below it is unreachable — it would read as
+		# written, reviewed and shipped while never rendering once.
+		fallback = TEMPLATE.index("<template v-else>")
+		for marker in ('v-else-if="forbidden"', 'v-else-if="!activeCompany"', 'v-else-if="error"'):
+			with self.subTest(marker=marker):
+				self.assertLess(TEMPLATE.index(marker), fallback, f"{marker} is below the table")
+
+	def test_a_refusal_names_the_door_that_is_shut(self):
+		# WHAT WOULD MAKE THIS FAIL: treating a 403 as an ordinary failure. The
+		# board is gated on the director view (`tender.py`), which is not
+		# something a reader can fix by retrying; being told to retry forever is
+		# worse than being told no.
+		#
+		# Anchored to the forbidden BRANCH and to a `t()` literal inside it. The
+		# first version was `assertIn("director view", VUE)` over the raw file,
+		# and the catch block's own comment says "gated on the director view" —
+		# so it passed with the user-facing sentence replaced by "Something went
+		# wrong." Measured 2026-09-02 by doing exactly that. The same trap
+		# `tenderFlowCounters.spec.js` strips comments to avoid.
+		branch = TEMPLATE[
+			TEMPLATE.index('v-else-if="forbidden"') : TEMPLATE.index('v-else-if="!activeCompany"')
+		]
+		self.assertRegex(branch, r't\("[^"]*director view[^"]*"\)')
+		self.assertRegex(CODE, r"err\?\.status === 403")
+		self.assertRegex(CODE, r"forbidden\.value = true")
+
+	def test_a_failed_load_leaves_no_timestamp_it_cannot_stand_behind(self):
+		# WHAT WOULD MAKE THIS FAIL: keeping the last good payload through a
+		# failure. `Last read` is derived from `data.generated_at`, so a
+		# retained payload would print a timestamp from before the failure
+		# beside a panel saying the screen could not read anything.
+		#
+		# THE COST IS DELIBERATE AND IS NOT FREE: a transient blip on Refresh
+		# discards a payload the director was reading, and they have to press
+		# Refresh again. Retaining it would put four stale counters and a stale
+		# `Last read` — both of which live OUTSIDE the panel, so the error
+		# branch does not replace them — above a panel saying nothing could be
+		# read. This test exists so the trade is a decision, not an accident.
+		#
+		# Anchored to the catch block. Read over the raw file, this assertion
+		# passed with the line deleted, because the comment above it names the
+		# line: measured by doing exactly that, 31 tests OK.
+		self.assertIn("data.value = null", CATCH)
+		self.assertRegex(
+			CODE, r"const lastReadAt = computed\(\(\) => formatTime\(data\.value\?\.generated_at\)\)"
+		)
+
+	def test_switching_company_drops_the_previous_company_s_numbers(self):
+		# WHAT WOULD MAKE THIS FAIL: `watch(activeCompany, load)`, which is what
+		# shipped. The counter strip and `Last read` live OUTSIDE the panel and
+		# outside the loading branch, so for the whole round trip company B's
+		# header sat above company A's four counters and A's timestamp, over a
+		# skeleton. That is worse than the zeros the withholding rule rejects,
+		# because plausible numbers for the wrong company do not look wrong.
+		self.assertIn("data.value = null", WATCHER)
+
+	def test_a_manual_refresh_does_not_blank_the_table_before_it_starts(self):
+		# WHAT WOULD MAKE THIS FAIL: moving that null into `load()`. It would
+		# also fire on every Refresh press, throwing away a table the reader is
+		# looking at in order to redraw the same numbers — the cost W11
+		# deliberately declined for a SUCCESSFUL load. The company watcher is
+		# the only place the payload is known to be for the wrong company.
+		head = CODE[CODE.index("async function load()") : CODE.index("} catch (err) {")]
+		self.assertNotIn("data.value = null", head)
+
+	def test_a_failed_load_is_written_into_the_panel(self):
+		# WHAT WOULD MAKE THIS FAIL: going back to a toast alone. A toast is
+		# gone in seconds and the panel underneath keeps claiming a pipeline;
+		# the reader who looks away at the wrong moment sees a healthy screen.
+		self.assertRegex(CATCH, r"error\.value = err\?\.message")
+		self.assertRegex(FLAT, r'v-else-if="error" class="ds-panel-foot flow-state" role="alert"')
+
+	def test_the_counters_are_withheld_rather_than_zeroed(self):
+		# WHAT WOULD MAKE THIS FAIL: the strip rendering through a failure. `0 ·
+		# 0 / 5 steps · — · 0 / 0` is not a report of nothing being wrong; it is
+		# four numbers the screen does not have, and it reads as good news.
+		self.assertRegex(FLAT, r'<div v-if="data" class="ds-kpis"')
+		self.assertIn("data.value = null", CATCH)
+
+	def test_an_empty_pipeline_says_so_in_words(self):
+		# WHAT WOULD MAKE THIS FAIL: five rows of `Empty` and no sentence. The
+		# rows are correct and still leave the reader asking whether the screen
+		# worked; one line separates "nothing is waiting" from "nothing loaded".
+		self.assertIn("No deal is waiting in any step.", TEMPLATE)
+		self.assertRegex(FLAT, r'v-if="!data\?\.in_process"')
+
+	def test_the_two_failure_states_are_announced(self):
+		# WHAT WOULD MAKE THIS FAIL: a refusal that only appears visually. The
+		# panel is replaced in place, far from where the reader pressed Refresh,
+		# so nothing tells a screen reader that anything changed.
+		for marker in ('v-else-if="forbidden"', 'v-else-if="error"'):
+			with self.subTest(marker=marker):
+				self.assertIn('role="alert"', opening_tag(marker))
+
+
+class TestTheTableScrollsAndThePageDoesNot(unittest.TestCase):
+	"""W13 — five columns and, until now, not one line of responsive CSS.
+
+	Corrects prompt 16 §S4 on two points, both measured 2026-09-02.
+	(1) The counter strip DOES have a phone rule: the shared layer collapses
+	`ds-kpis[data-cols="4"]` to two columns at ≤992px
+	(`stabler-modernist.css:452-454`). (2) `DirectorBoard`'s `.board-scroll` is
+	`overflow-x: auto` and nothing else, and `.ds-table` is `width: 100%` with
+	wrapping cells — so that container has nothing to scroll and prompt 14's
+	fix, as written, does not engage. The minimum width is what makes it real.
+
+	NOT VERIFIED HERE: that a phone actually scrolls the table and not the page.
+	`vitest.config.mjs` sets `environment: "node"` and there is no jsdom in this
+	repository, so no test in it can lay out a viewport. These assertions cover
+	the CSS that would have to be true for it, and nothing more.
+	"""
+
+	def test_the_table_sits_inside_a_horizontal_scroller(self):
+		# WHAT WOULD MAKE THIS FAIL: the table going back to being a direct
+		# child of the panel. Five columns with two-line cells overflow a
+		# 390px phone, and without a scroller it is the PAGE that moves —
+		# taking the counter strip and the header sideways with it.
+		self.assertRegex(FLAT, r'<div class="flow-scroll"[^>]*> <table class="ds-table">')
+		self.assertRegex(STYLE, r"\.flow-scroll\s*\{[^}]*overflow-x:\s*auto")
+
+	def test_the_scroller_has_something_to_scroll(self):
+		# WHAT WOULD MAKE THIS FAIL: `overflow-x: auto` on its own. `.ds-table`
+		# is `width: 100%` and its cells wrap, so the table shrinks to whatever
+		# box it is given and the scrollbar never appears — the container reads
+		# as a fix and behaves exactly like no fix at all.
+		#
+		# The bound is DERIVED, from the column widths the style declares and
+		# the number of headers the template gives each of them. The first
+		# version matched `min-width:\s*\d+px`, so `1px` satisfied it and the
+		# very defect above came back green.
+		widths = {name: int(px) for name, px in re.findall(r"\.(flow-c-\w+) \{ width: (\d+)px", STYLE)}
+		self.assertTrue(widths, "no fixed column widths parsed, so the bound below means nothing")
+		head = TEMPLATE[TEMPLATE.index("<thead>") : TEMPLATE.index("</thead>")]
+		fixed = sum(widths[cls] for cls in re.findall(r"flow-c-\w+", head))
+
+		found = re.search(r"\.flow-scroll \.ds-table\s*\{[^}]*min-width:\s*(\d+)px", STYLE)
+		self.assertIsNotNone(found, "the table inside the scroller has no minimum width")
+		minimum = int(found.group(1))
+
+		# The Step column is what is left over, and it holds the longest text on
+		# the row — it cannot be narrower than the widest column that is fixed.
+		self.assertGreaterEqual(minimum - fixed, max(widths.values()))
+		# And the whole thing must exceed the phone this rule exists for
+		# (deliverable 6: 390x844). A minimum inside the viewport never scrolls.
+		self.assertGreater(minimum, 390)
+
+	def test_no_minimum_width_escapes_the_scroller(self):
+		# WHAT WOULD MAKE THIS FAIL: a min-width on an element the scroller does
+		# not contain. That is the same defect one level up — the page scrolls
+		# instead of the table — and it is the easy mistake to make when a
+		# later column needs more room.
+		rules = re.findall(r"([^{}]+)\{([^{}]*)\}", STYLE)
+		widened = [selector.strip() for selector, body in rules if "min-width" in body]
+		self.assertTrue(widened, "no rule sets a minimum width, so this test asserts nothing")
+		for selector in widened:
+			with self.subTest(selector=selector):
+				self.assertIn(".flow-scroll", selector)
+
+
+class TestWhatCanBeReachedIsAnnounced(unittest.TestCase):
+	"""W17 — the file carried zero `aria-*` and zero `role=`.
+
+	NOT VERIFIED HERE, and not verifiable in this repository: that a keyboard
+	actually reaches the scroller, that the arrow keys pan it, or that a screen
+	reader announces any of this. There is no DOM in the test environment. What
+	follows asserts the attributes are present on the element that scrolls —
+	which is necessary and is not the same as proving the behaviour.
+	"""
+
+	def test_the_scrolling_region_is_focusable_and_named(self):
+		# WHAT WOULD MAKE THIS FAIL: adding the scroller and stopping there. A
+		# region a mouse can pan and a keyboard cannot is content that some
+		# readers simply cannot see — the change would have made the screen
+		# worse for them than the page-scrolling version it replaced. The name
+		# is what stops it being announced as an unlabelled group.
+		tag = opening_tag('class="flow-scroll"')
+		self.assertIn('tabindex="0"', tag)
+		self.assertIn('role="region"', tag)
+		self.assertIn(":aria-label=", tag)
+
+	def test_the_panel_reports_when_it_is_busy(self):
+		# WHAT WOULD MAKE THIS FAIL: a refresh that changes nothing a screen
+		# reader can perceive. The button disables itself and the panel swaps to
+		# a skeleton — both invisible to a reader who is not looking at pixels.
+		self.assertIn(':aria-busy="loading"', opening_tag('class="ds-panel flow-panel"'))
+
+	def test_the_refresh_control_is_a_real_button(self):
+		# WHAT WOULD MAKE THIS FAIL: a div with a click handler. It is the one
+		# interactive control on this screen; making it a div would take the
+		# whole screen out of the tab order for the sake of styling.
+		self.assertRegex(FLAT, r'<button type="button" class="ds-btn"[^>]*@click="load"')
+
+	def test_the_bottleneck_is_not_signalled_by_colour_alone(self):
+		# WHAT WOULD MAKE THIS FAIL: the 3px stripe going back to being the only
+		# mark on the row. A box-shadow has no text, no role and no name: to a
+		# screen reader the bottleneck row was identical to every other row, and
+		# the only place the finding existed in words was a counter three
+		# regions away.
+		self.assertIn('class="flow-neck"', TEMPLATE)
+		self.assertIn('t("Bottleneck")', TEMPLATE)
 
 
 if __name__ == "__main__":

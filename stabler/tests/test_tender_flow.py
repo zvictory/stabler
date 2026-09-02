@@ -8,9 +8,12 @@ tıkanmış (veya tersi) göstermek. Bu dosya ikisini de kapatıyor.
 import unittest
 
 from stabler.api import _tender_flow as flow
+from stabler.api import _tender_sla as sla
+
+TODAY = "2026-08-01"
 
 
-def rows_for(deals, today="2026-08-01", overrides=None):
+def rows_for(deals, today=TODAY, overrides=None):
 	return {r["stage"]: r for r in flow.step_rows(deals, today, overrides)}
 
 
@@ -153,6 +156,174 @@ class TestTheTableShape(unittest.TestCase):
 		from stabler.api._tender_sla import DEFAULT_STAGE_SLA_DAYS
 
 		self.assertEqual(set(flow.WORKING_STAGES), set(DEFAULT_STAGE_SLA_DAYS))
+
+
+class TestTheWorstDealCarriesItsOwnVerdict(unittest.TestCase):
+	"""A step's average being inside its threshold is not the same as no deal in
+	that step being late — and finding late work is the only reason this screen
+	exists. `worst_days` was the one number on the table with no verdict beside
+	it, while the two functions that would judge it (`_tender_sla.severity` and
+	`overdue_by`) were written, documented and called by nothing outside their
+	own tests. Measured 2026-09-02: on seed data all four measurable worsts
+	carry one — two `crit`, two exactly `today`.
+	"""
+
+	def test_a_step_whose_average_is_inside_can_hold_a_deal_that_is_over(self):
+		# WHAT WOULD MAKE THIS FAIL: reusing the row's `state` for the worst
+		# number. `state` is computed from the AVERAGE, so the reader would be
+		# told this step is at the edge while one of its two deals is eight days
+		# past the threshold. That deal is exactly what the screen is for.
+		row = rows_for(
+			[
+				{"stage": "sourcing", "entered_at": "2026-07-30"},
+				{"stage": "sourcing", "entered_at": "2026-07-10"},
+			]
+		)["sourcing"]
+		self.assertEqual(row["avg_days"], 12.0)
+		self.assertEqual(row["state"], "edge")
+		self.assertEqual(row["worst_days"], 22)
+		self.assertEqual(row["worst_state"], "crit")
+		self.assertEqual(row["worst_over"], 8)
+
+	def test_a_deal_sitting_exactly_on_its_threshold_is_not_yet_over_it(self):
+		# WHAT WOULD MAKE THIS FAIL: `>=` where `>` belongs. Two of the five
+		# seeded steps sit exactly on their limit (3 of 3, 5 of 5); calling
+		# those `crit` would put two permanent red marks on a healthy pipeline
+		# and teach the reader to ignore the colour.
+		row = rows_for([{"stage": "seen", "entered_at": "2026-07-29"}])["seen"]
+		self.assertEqual(row["worst_days"], 3)
+		self.assertEqual(row["worst_state"], "today")
+		self.assertEqual(row["worst_over"], 0)
+
+	def test_the_verdict_follows_the_worst_deal_and_not_the_average(self):
+		# WHAT WOULD MAKE THIS FAIL: judging the average and labelling it as the
+		# worst. Here the average is comfortably `in` and the worst deal is
+		# already `soon`; a verdict computed from the average would say nothing
+		# is happening in a step where something is.
+		row = rows_for(
+			[
+				{"stage": "priced", "entered_at": "2026-08-01"},
+				{"stage": "priced", "entered_at": "2026-07-30"},
+			]
+		)["priced"]
+		self.assertEqual(row["avg_days"], 1.0)
+		self.assertEqual(row["state"], "in")
+		self.assertEqual(row["worst_days"], 2)
+		self.assertEqual(row["worst_state"], "soon")
+
+	def test_a_step_with_nothing_measurable_invents_no_verdict(self):
+		# WHAT WOULD MAKE THIS FAIL: treating a missing stamp as zero days and
+		# calling it healthy — the exact lie this module exists to refuse. There
+		# is no worst deal here because no deal in this step has a clock.
+		row = rows_for([{"stage": "submitted", "entered_at": None}])["submitted"]
+		self.assertIsNone(row["worst_days"])
+		self.assertEqual(row["worst_state"], "info")
+		self.assertEqual(row["worst_over"], 0)
+
+	def test_a_switched_off_step_can_never_produce_a_late_verdict(self):
+		# WHAT WOULD MAKE THIS FAIL: falling back to the built-in default when
+		# an administrator clears the field. A step with no threshold has no
+		# patience to exceed; marking a six-year-old deal `crit` there would
+		# silently undo the decision to stop tracking it.
+		row = rows_for([{"stage": "seen", "entered_at": "2020-01-01"}], overrides={"seen": 0})["seen"]
+		self.assertIsNone(row["sla_days"])
+		self.assertEqual(row["worst_state"], "info")
+		self.assertEqual(row["worst_over"], 0)
+
+	def test_the_four_verdicts_are_the_ones_the_thresholds_produce(self):
+		# WHAT WOULD MAKE THIS FAIL: a copy of the severity rule here that has
+		# DRIFTED from `_tender_sla`'s. All four boundaries are pinned as
+		# literals, so the values move only when someone means them to: `priced`
+		# at 2 of 3 days is `soon` ONLY because the last quarter is floored at
+		# one day — drop the floor and it reads `info`, silently, on every short
+		# threshold on the screen.
+		#
+		# It does NOT catch a byte-faithful copy, and nothing behavioural can:
+		# such a copy is identical by definition. The first version asserted
+		# `row["worst_state"] == sla.severity(...)` and its comment claimed to
+		# catch duplication; it evaluated the implementation's own expression
+		# and would have passed against any copy at all, drifted or not.
+		verdicts = {}
+		for stage, entered in (
+			("seen", "2026-07-29"),
+			("go", "2026-07-27"),
+			("sourcing", "2026-07-01"),
+			("priced", "2026-07-30"),
+		):
+			row = rows_for([{"stage": stage, "entered_at": entered}])[stage]
+			verdicts[stage] = (row["worst_days"], row["sla_days"], row["worst_state"], row["worst_over"])
+		self.assertEqual(
+			verdicts,
+			{
+				"seen": (3, 3, "today", 0),
+				"go": (5, 5, "today", 0),
+				"sourcing": (31, 14, "crit", 17),
+				"priced": (2, 3, "soon", 0),
+			},
+		)
+
+
+class TestAThresholdSaysWhereItCameFrom(unittest.TestCase):
+	"""The panel foot promises *"Thresholds come from Stabler Settings, per
+	company"* and nothing on screen distinguished a tenant's number from the
+	built-in one.
+
+	Measured 2026-09-02: the `stage_sla` key already on the wire CANNOT answer
+	this. `stage_sla_for` returns `dict(DEFAULT_STAGE_SLA_DAYS)` verbatim when a
+	company has no settings row (`stabler_settings.py:134-135`), so the payload
+	is byte-identical whether the tenant configured nothing or configured the
+	default numbers. What the data can honestly support is a statement about the
+	VALUE, not about who typed it — and the words on screen say only that.
+	"""
+
+	def test_an_untouched_step_reads_as_the_built_in_number(self):
+		self.assertEqual(rows_for([])["sourcing"]["sla_source"], "default")
+
+	def test_a_number_the_tenant_changed_is_distinguishable_from_the_default(self):
+		# WHAT WOULD MAKE THIS FAIL: shipping `stage_sla` alone and asking the
+		# screen to work it out. A director reading `threshold 14 days` cannot
+		# tell whether their company chose it, and the foot's promise makes them
+		# assume it did.
+		self.assertEqual(rows_for([], overrides={"sourcing": 21})["sourcing"]["sla_source"], "tenant")
+
+	def test_a_step_switched_off_is_not_a_step_nobody_configured(self):
+		# WHAT WOULD MAKE THIS FAIL: rendering both as *not tracked*. A
+		# threshold of 0 is an administrator switching a step off; showing that
+		# identically to an unconfigured step hides a deliberate decision.
+		row = rows_for([], overrides={"seen": 0})["seen"]
+		self.assertIsNone(row["sla_days"])
+		self.assertEqual(row["sla_source"], "off")
+
+	def test_a_tenant_number_equal_to_the_default_is_not_claimed_as_a_choice(self):
+		# WHAT WOULD MAKE THIS FAIL: promising more than the wire can prove.
+		# This case is INDISTINGUISHABLE from an unconfigured company, so the
+		# row reports `default` and the screen's wording is a claim about the
+		# value ("matches the built-in default"), never about provenance.
+		self.assertEqual(rows_for([], overrides={"seen": 3})["seen"]["sla_source"], "default")
+
+	def test_all_three_words_can_appear_on_one_screen(self):
+		# WHAT WOULD MAKE THIS FAIL: a source word that is right in isolation
+		# and wrong beside its neighbours. A director reads five rows at once,
+		# and the question they are asking — "which of these did we choose?" —
+		# is only answerable if the three words separate on ONE table.
+		# `sourcing` is the case that matters: 14 is a tenant value AND the
+		# built-in one, and it must read `default`, because the payload cannot
+		# prove otherwise.
+		#
+		# The first version asserted `sla_source in ("default","tenant","off")`
+		# over rows built with no overrides at all. Every path in `_sla_source`
+		# returns one of those three, so it was true by construction.
+		rows = rows_for([], overrides={"seen": 0, "go": 9, "sourcing": 14})
+		self.assertEqual(
+			{stage: rows[stage]["sla_source"] for stage in flow.WORKING_STAGES},
+			{
+				"seen": "off",
+				"go": "tenant",
+				"sourcing": "default",
+				"priced": "default",
+				"submitted": "default",
+			},
+		)
 
 
 if __name__ == "__main__":
