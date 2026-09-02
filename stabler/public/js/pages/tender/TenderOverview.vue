@@ -92,6 +92,15 @@ const bottleneck = computed(() => flow.value?.bottleneck || null);
 const stepTone = (row) => {
 	if (row.state === "out") return "crit";
 	if (row.state === "empty") return "mute";
+	// F14 (docs/design/prompts/15-pipeline-overview.md, S4): `unknown` used to
+	// fall through to the same `null` as `in`, so a step with open work and no
+	// measurable average rendered in the exact colour of a healthy step. `mute`
+	// matches what the SLA badge already does for this state on purpose
+	// (stabler-modernist.css: .ds-sla[data-state="unknown"] and [="empty"] both
+	// read --ds-tx3) -- neither unknown nor empty is a warning, both mark the
+	// edge of what is known, and a warning colour would flag a line with no
+	// problem.
+	if (row.state === "unknown") return "mute";
 	return null;
 };
 
