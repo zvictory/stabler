@@ -1,5 +1,5 @@
 <script setup>
-import { computed, onMounted, ref } from "vue";
+import { computed, onMounted, ref, watch } from "vue";
 import { storeToRefs } from "pinia";
 import { useRoute, useRouter } from "vue-router";
 import { useEscapeBack } from "../../composables/useEscapeBack.js";
@@ -31,23 +31,39 @@ const stages = computed(() => board.value?.stages || []);
 const cards = ref([]);
 const lastReadAt = computed(() => formatTime(board.value?.generated_at));
 
+/* Şirket değişince İKİ istek havada olabilir. Bu pano modülde YAZAN tek
+ * pano — kart taşıyor, aşama ekliyor/siliyor ve sürükleme sırasında
+ * `cards`i yerinde değiştiriyor. Geç gelen eski yanıt burada yalnız bayat
+ * değil: okuyucu sürüklerken panoyu altından değiştirir. Aynı kalıp
+ * OperationsDesk.vue'da. */
+let reqToken = 0;
+
 async function load() {
 	if (!activeCompany.value) return;
+	const token = ++reqToken;
 	loading.value = true;
 	try {
 		const r = await call("stabler.api.tender.so_board", {
 			company: activeCompany.value,
 			tender_only: route.query.tender === "1" ? 1 : 0,
 		});
+		if (token !== reqToken) return;
 		board.value = r;
 		cards.value = r?.cards || [];
 	} catch (err) {
+		if (token !== reqToken) return;
 		toast.error(err?.message || t("Could not load the board."));
 	} finally {
-		loading.value = false;
+		if (token === reqToken) {
+			loading.value = false;
+		}
 	}
 }
 onMounted(load);
+/* Modüldeki her ekran bunu yapıyordu; bu pano yapmıyordu. Oturum şirketini
+ * mount'tan SONRA çözerse tetikleyen de bu — `load()` boş şirkette erken
+ * dönüyor, yoksa pano "aşama ekleyin" davetinde takılı kalırdı. */
+watch(activeCompany, load);
 
 const colorOf = (s) => s.color || "#6c757d";
 const boardFilters = computed(() => tenderRouteFilters(route.query));

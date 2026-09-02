@@ -243,19 +243,32 @@ The move itself is optimistic and rolls back correctly on failure
 any in-place signal: the card jumps back with an explanation in a transient toast
 in a different corner of the screen.
 
-### S5 — the board never refreshes, and does not notice a company switch
+### S5 — the board never refreshes
+
+**Half of this section was fixed on 2026-09-02 and the correction is recorded
+here rather than deleted.** As measured, the file read:
 
     import { computed, onMounted, ref } from "vue";   // no `watch`
     onMounted(load);
 
 No `useAutoRefresh`, no refresh button, and — alone among the tender screens —
-**no `watch(activeCompany, load)`**. Every other board in the module re-fetches
-when the active company changes. This one keeps rendering the previous company's
-contracts until the user navigates away and back.
+**no `watch(activeCompany, load)`**. Switching company kept the previous
+company's contracts on screen; a session that resolved its company *after* mount
+never loaded at all, because `load()` returns early on a falsy company, and the
+board sat on the S2 empty state telling the reader to add a stage.
 
-Combined with three mutations and multi-user drag-and-drop, a stale board is not
-a cosmetic problem: two people moving cards see divergent boards until one of
-them reloads by hand, and neither is told.
+That half is closed (C12). The board now watches the active company, and carries
+a request token the four read-only siblings do not: it is the only board in the
+module that writes, and it mutates `cards` in place during an optimistic drag, so
+a late answer from the previous company would repopulate the board underneath the
+reader's hand.
+
+**What stands:** there is still no `useAutoRefresh` and no refresh control of any
+kind, and the board still has three mutations and multi-user drag-and-drop. Two
+people moving cards see divergent boards until one of them reloads by hand, and
+neither is told. The freshness stamp added alongside C12 makes the staleness
+*legible* (C20); it does not make it *go away*. Design what a board with three
+writers and no refresh should do about that.
 
 ### S6 — the column total adds different currencies
 
@@ -429,8 +442,8 @@ Artboards, 1440×900 unless stated.
 9. **The tender flag out of the tooltip** (S7).
 10. **Add stage, in the house dialog** (S8) — name, position and colour in one
     form, replacing `window.prompt`.
-11. **Staleness** (S5) — what a board with three writers and no refresh should
-    say about how old it is.
+11. **Staleness** (S5) — the board now says how old it is; it still has no
+    refresh and three writers. What should it do when the stamp goes cold?
 12. **Mobile, 390×844** — or the explicit read-only decision.
 13. **An annotation board** carrying §7's six unreachable states, since this
     screen has more of them than any other in the package.
@@ -454,7 +467,7 @@ Keep the artboards you rejected.
 | C9 | Loading renders a skeleton | **fails** — spinner, while the eight sibling boards use `SkeletonRows` |
 | C10 | A card can be moved between stages from the keyboard | **fails** — drag only, 0 `aria-`, 0 `role=` (S4) |
 | C11 | A press that does not move the card does not navigate away | **fails** — drag and click share the element (S4) |
-| C12 | Switching the active company reloads the board | **fails** — no `watch` (S5) |
+| C12 | Switching the active company reloads the board | **passes** (2026-09-02) — plus a request token, so a superseded company's answer cannot land (S5) |
 | C13 | A column total never adds two currencies | **fails** — transaction-currency sum under the session currency (S6) |
 | C14 | The board's filter matches the number that navigated to it | **fails** — the funnel arrives without `?tender=1` (S1) |
 | C15 | *Paid* and *Closed* are distinguishable from ordinary columns | **fails** — `is_won` / `is_closed` unrendered (S7) |
@@ -462,4 +475,4 @@ Keep the artboards you rejected.
 | C17 | `status` is the server's classification, not the client's | **fails** — re-derived from `per_delivered` (S7) |
 | C18 | Creating a stage uses the app's own dialog | **fails** — `window.prompt` (S8) |
 | C19 | A stage colour the manager chose cannot make its own count unreadable | **fails** — raw colour on a 13 % tint of itself (S3) |
-| C20 | The board says how old it is | **passes for the timestamp** (2026-09-02) — `generated_at`. It still never refreshes (C12), which is what makes the stamp worth reading |
+| C20 | The board says how old it is | **passes for the timestamp** (2026-09-02) — `generated_at`. It still has no refresh of any kind, which is what makes the stamp worth reading (S5) |
