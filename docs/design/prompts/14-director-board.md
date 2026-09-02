@@ -325,6 +325,21 @@ data**, and neither does the `Unverified` chip.
 `days < 0 → risk`; `days <= 7 → warn`; else `good`. A deal's risk is the worst
 of bid · contract · PO ETA · delivery.
 
+**Corrected 2026-09-02 (coordinator review, P1-3):** that is incomplete two
+ways, and both are why the P8 fix (below) first landed on a rule string that
+was itself wrong. `_deal_deadlines` appends a **fifth** milestone,
+`guarantee`, whenever `intake.guarantee_return` is set (`tender.py:1711-1715`)
+— none of the 13 seeded deals happens to set it, which is why no worked
+example below ever needed it, not because it does not exist. And "worst" is
+not a magnitude comparison over dates; it is `for m in milestones: if
+m["status"] == "risk": break` — the first **not-done** milestone whose days
+are negative, full stop. A done milestone reads `good` regardless of how
+overdue it was (4314's own walkthrough below is exactly this: bid is done,
+so bid's lateness does not count — only the still-open PO ETA does). The
+accurate statement is: **any milestone, not done, days < 0** — which is what
+`directorBoardRuleLines.spec.js`'s at_risk case now asserts structurally,
+not just as a string.
+
 - **4305** — bid deadline was yesterday (`DEADLINE_OFFSETS: -1`), not done → **risk**
 - **4314** — bid done (won); PO ETA is Hebei Rail Parts at **−6 days** with 0%
   received → **risk**
@@ -483,3 +498,65 @@ for the branch that added them. `make test` fails
 keys, across all five locales, until they are translated; every other check
 (`lint`, `compile`, `guards`, the other 274 frappe-free modules, `test-js`)
 passes. See the implementing agent's final report for the full breakdown.
+
+**Closed 2026-09-02, on `main`:** the three keys above are translated in all
+five catalogues (`5330668`, out of this branch's scope, landed independently).
+`make check` is fully green on this branch as of the P1 fixes below, rebased
+onto that commit.
+
+**Corrected again, 2026-09-02 (coordinator re-review found four P1s in P8,
+P9, P10 and P13's own fixes):**
+
+- **P9 follow-up.** `has_pricing` was read for the row-level fix but not for
+  the header: `total_value`, `total_ost` and `margins.append` ran
+  unconditionally, so an unpriced deal's row correctly showed "—" (P9) while
+  still moving Portfolio value / Остаток / Avg margin by a `_BID_DEFAULTS`
+  back-solved figure nobody entered. Now gated on `has_pricing`
+  (`tender.py:2118-2122`), which also makes Avg margin's note ("average
+  across tenders that have pricing") true rather than aspirational, with no
+  wording change. Two residuals are **not** fixed by this: the Sales Order
+  set behind `so_revenue` is `docstatus < 2` (DRAFT SOs still count toward
+  Portfolio value), and `value = so_revenue or bid_price` resolves per-deal,
+  not per-SO as the rule line's `sum(...)` phrasing reads. Tracked
+  separately, not by this file. `directorBoardPricedState.spec.js`,
+  mutation-tested.
+- **P10 follow-up.** `await session.ensureTenderViews()` sat outside `load()`'s
+  try block, so a genuine rejection there threw before `error` / `everLoaded`
+  / `loading` were touched — reproducing P10's own defect ("No tenders match
+  these filters.") on every cold load, plus `forbidden` staying false since
+  `tenderViewsLoaded` never gets set. `loading.value = true` had also
+  regressed to sit after that await, so the whole round-trip showed a
+  false-empty table instead of `SkeletonRows`. Both moved inside/before the
+  try (`DirectorBoard.vue:49-52`). `directorBoardLoadState.spec.js`,
+  mutation-tested.
+- **P8 follow-up.** The rule string this file's own §7 correction above
+  explains: `"worst(bid,contract,po_eta,delivery).days < 0"` omitted the
+  `guarantee` milestone, omitted "not done", and named a function that
+  returns a status string, not an object with `.days`. Corrected to
+  `"any milestone · not done · days < 0"` (`DirectorBoard.vue:156`), the
+  predicate `_deal_deadlines` actually evaluates. `TenderFunnel.vue:117`
+  carries the identical stale string and is deliberately untouched — owned by
+  the prompt-15 branch, converged separately. `directorBoardRuleLines.spec.js`
+  now asserts the string **and**, structurally, that `_deal_deadlines` still
+  appends `guarantee` and still walks the full milestone list and that
+  `_milestone` still checks `done` before `days` — so backend drift on any of
+  the three original defects re-fails this test, not just a string edit.
+  Mutation-tested three ways (string revert; guarantee-append removed;
+  done/days order reversed).
+- **P13 follow-up.** `assign()`'s revert captured `previous = row.assigned_to`
+  per call and wrote it onto `event.target.value` on rejection — but two
+  changes on one `<select>` share one DOM node, so both calls capture
+  `previous` before either settles. A late rejection could overwrite a value
+  a different, already-successful call had established, showing a manager
+  who is not actually assigned server-side — worse than the pre-P13 bug,
+  which at least left the user's own last choice on screen. The revert now
+  only writes while the select still shows exactly what THIS call submitted
+  (`event.target.value === user`, `DirectorBoard.vue:90`); the four original
+  single-request cases are unaffected. `directorBoardAssignRevert.spec.js`,
+  new two-in-flight-request case, mutation-tested two ways (guard dropped;
+  guard compared against the wrong variable).
+
+All four verified the same way as the rows above — source/logic level, no
+live bench. Full suite green (`npx vitest run stabler/public/js/tests/`,
+111 files / 1343 tests) and `make check` clean, both after rebasing this
+branch onto `main` at `3e3579a`.
