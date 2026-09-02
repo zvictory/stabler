@@ -8,7 +8,7 @@
 			<span v-if="lastReadAt">
 				{{ t("Last read") }} <span class="ds-mono">{{ lastReadAt }}</span>
 			</span>
-			<span v-if="deskData?.view">{{ t(deskData.view) }}</span>
+			<span v-if="deskData?.view">{{ viewLabel(deskData.view) }}</span>
 		</template>
 
 		<template #actions>
@@ -21,7 +21,7 @@
 				@change="onViewChange"
 			>
 				<option v-for="v in deskData.views" :key="v.id" :value="v.id">
-					{{ t(v.label || v.id) }}
+					{{ viewLabel(v.id) }}
 				</option>
 			</select>
 			<button type="button" class="ds-btn" :disabled="loading" @click="fetchDesk">
@@ -102,7 +102,7 @@
 							</div>
 							<div class="ds-row-title desk-lead-title">{{ leadItem.title }}</div>
 							<div v-if="leadItem.why" class="ds-row-why">{{ leadItem.why }}</div>
-							<div v-if="leadItem.kind" class="ds-row-ev">{{ leadItem.kind }}</div>
+							<div v-if="kindLabel(leadItem.kind)" class="ds-row-ev">{{ kindLabel(leadItem.kind) }}</div>
 						</div>
 						<div class="ds-row-right">
 							<div class="ds-row-owner" :data-unassigned="String(!leadItem.owner)">
@@ -136,7 +136,7 @@
 								<div>
 									<div class="ds-row-title">{{ item.title }}</div>
 									<div v-if="item.why" class="ds-row-why">{{ item.why }}</div>
-									<div v-if="item.kind" class="ds-row-ev">{{ item.kind }}</div>
+									<div v-if="kindLabel(item.kind)" class="ds-row-ev">{{ kindLabel(item.kind) }}</div>
 								</div>
 								<div class="ds-row-right">
 									<div class="ds-row-owner" :data-unassigned="String(!item.owner)">
@@ -277,6 +277,49 @@ const activeFilter = ref(route.query.filter || "all");
  * türetilmiş bir alan — burada yeniden hesaplanmıyor, sadece gruplanıyor. */
 const SEVERITY_ORDER = ["overdue", "today", "soon", "info"];
 const SEVERITY_TO_SEV = { overdue: "crit", today: "today", soon: "soon", info: "info" };
+
+/* `kind` kuralın İÇ adı (bid_due, policy_gap, …) ve satırın kanıt satırında ham
+ * basılıyordu: makinenin sözlüğü, tam da "kimseye sormana gerek kalmayacak"
+ * diye var olan bir yüzeyde. Anahtarlar HARFİ HARFİNE — t() kaynak taranarak
+ * toplanıyor, hesaplanmış bir anahtar hiçbir dilde çevrilmez
+ * (aynı deyim: TenderDocumentsPanel.vue:29).
+ *
+ * Bilinmeyen bir kind için karşılık YOK: kanıt satırı `v-if` ile hiç çizilmiyor.
+ * Boş bir satır kaybolur, ham bir id okuyucuya bulaşır. Sekiz kuralın
+ * eksiksizliği derleme zamanında test_operations_desk_source.py'de kilitli —
+ * gürültü orada, kullanıcıda değil. */
+const KIND_LABEL = {
+	bid_due: t("Bid deadline"),
+	bid_soon: t("Bid deadline approaching"),
+	policy_gap: t("Quote policy gap"),
+	no_parent: t("Lot without parent tender"),
+	won_no_po: t("Won, no purchase order"),
+	po_late: t("Late delivery"),
+	invoice_due: t("Invoice payment due"),
+	approval_pending: t("Approval pending"),
+};
+
+/* Görünüm kimlikleri de sunucunun sözlüğü. Sunucu bir `label` alanı
+ * gönderiyordu ama içeriği kimliğin ta kendisiydi (tender_desk.py:40) — bir
+ * etiket bir kimlik değildir — ve dört kimliğin hiçbiri hiçbir katalogda
+ * anahtar olmadığı için `t()` onları olduğu gibi geri veriyordu. */
+const VIEW_LABEL = {
+	sourcing: t("Sourcing"),
+	declarant: t("Declarant"),
+	logist: t("Logistics"),
+	director: t("Director"),
+};
+
+function kindLabel(kind) {
+	return KIND_LABEL[kind] || "";
+}
+
+/* Burada kimliğe geri düşmek DOĞRU: seçicideki boş bir `<option>`, adı kötü
+ * yazılmış bir görünümden beterdir — okuyucu seçebildiği ama adlandıramadığı
+ * bir satır görür. Beşinci bir görünüm eklenirse test kırılır. */
+function viewLabel(id) {
+	return VIEW_LABEL[id] || id || "";
+}
 
 /* Bant katlaması da `view` ve `filter` gibi URL'de yaşar: masa insanların
  * birbirine yapıştırdığı bir bağlantı, gönderenin neyi KAPATTIĞI da

@@ -37,7 +37,17 @@ def operations_desk(company: str, view: str | None = None, days: int = 7) -> dic
 	if not raw_views:
 		frappe.throw(_("Access denied to Operations Desk."), frappe.PermissionError)
 
-	available_views = [{"id": v, "label": v} for v in raw_views]
+	# A label is not an id. This list was `{"id": v, "label": v}` -- the key said
+	# "label" and held the id, so the desk's role picker rendered `logist` at the
+	# user and `t()` handed it straight back, because none of the four ids is a key
+	# in any catalogue (measured 2026-09-02: en.csv has `Sourcing` and `Declarant`
+	# capitalised, and no `logist` or `director` in any case). A field that lies
+	# about what it holds invites the next screen to render it too, and this one had
+	# exactly one consumer, so the id now travels alone. Display names live in the
+	# client's literal-keyed VIEW_LABEL map (OperationsDesk.vue, the same idiom as
+	# TenderDocumentsPanel.vue:29) -- literal because t() is harvested by scanning
+	# the source, so a name computed here could never be translated there.
+	available_views = [{"id": v} for v in raw_views]
 
 	if view:
 		_require_tender_view(view, company)

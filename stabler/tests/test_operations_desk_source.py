@@ -17,6 +17,16 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 SOURCE = (ROOT / "stabler/public/js/pages/tender/OperationsDesk.vue").read_text(encoding="utf-8")
 TEMPLATE = SOURCE[SOURCE.index("<template>") : SOURCE.index("<script setup>")]
+RULES_SOURCE = (ROOT / "stabler/api/_desk_rules.py").read_text(encoding="utf-8")
+TENDER_SOURCE = (ROOT / "stabler/api/tender.py").read_text(encoding="utf-8")
+DESK_API_SOURCE = (ROOT / "stabler/api/tender_desk.py").read_text(encoding="utf-8")
+
+
+def _js_map(name: str) -> set[str]:
+	"""The keys of a top-level `const NAME = { … };` object literal in the .vue."""
+	start = SOURCE.index(f"const {name} = {{")
+	body = SOURCE[start : SOURCE.index("\n};", start)]
+	return set(re.findall(r"^\t([a-z_]+):", body, re.M))
 
 
 class TestDesignLayerIsSwitchedOn(unittest.TestCase):
@@ -150,6 +160,59 @@ class TestNoInventedData(unittest.TestCase):
 
 	def test_meters_are_not_rendered_without_a_data_source(self):
 		self.assertNotIn("ds-meter", TEMPLATE)
+
+
+class TestMachineVocabularyStaysOnTheWire(unittest.TestCase):
+	"""D10/D11. The desk's promise is that the reader will not have to ask anyone
+	what a number means; printing the engine's own identifiers at them breaks it
+	on the most prominent row of the page.
+
+	These are the CROSS-FILE half. The Vue file holds two literal-keyed label maps
+	(the TenderDocumentsPanel.vue:29 idiom -- literal because t() is harvested by
+	scanning the source, so a computed key ships untranslated). Nothing in the .vue
+	can notice when Python grows a ninth rule or a fifth role view, and the label
+	maps deliberately do NOT fall back to the raw id for a rule kind. So the
+	failure has to be reported here, at build time, rather than to a user."""
+
+	def test_every_rule_kind_the_engine_emits_has_a_human_label(self):
+		# WHAT WOULD MAKE THIS FAIL: adding a rule to _desk_rules.py without a
+		# label. The evidence line is `v-if`-guarded on the label, so an unlabelled
+		# kind renders NOTHING -- the new rule's rows would silently lose the one
+		# line that says which query produced them, and no screen would look broken.
+		emitted = set(re.findall(r'"kind": "([a-z_]+)"', RULES_SOURCE))
+		self.assertTrue(emitted, "no rule kinds found in _desk_rules.py -- has it moved?")
+		missing = sorted(emitted - _js_map("KIND_LABEL"))
+		self.assertEqual(missing, [], f"KIND_LABEL in OperationsDesk.vue has no entry for: {missing}")
+
+	def test_no_label_is_kept_for_a_rule_that_no_longer_exists(self):
+		# WHAT WOULD MAKE THIS FAIL: deleting a rule and leaving its label behind.
+		# A label with no rule is a translated string nobody can reach, and it makes
+		# the map read as a list of what the desk checks when it is not one.
+		emitted = set(re.findall(r'"kind": "([a-z_]+)"', RULES_SOURCE))
+		stale = sorted(_js_map("KIND_LABEL") - emitted)
+		self.assertEqual(stale, [], f"KIND_LABEL names rules _desk_rules.py cannot emit: {stale}")
+
+	def test_every_role_view_the_server_offers_has_a_human_label(self):
+		# WHAT WOULD MAKE THIS FAIL: adding a fifth view to _TENDER_VIEW_ROLES. The
+		# picker falls back to the raw id there -- an <option> with empty text is a
+		# blank row the reader can select and cannot name, so the fallback is the
+		# lesser evil and this test is what stops it being the outcome.
+		block = TENDER_SOURCE[TENDER_SOURCE.index("_TENDER_VIEW_ROLES = {") :]
+		block = block[: block.index("\n}\n")]
+		views = set(re.findall(r'^\t"([a-z]+)":', block, re.M))
+		self.assertEqual(len(views), 4, f"expected the four documented views, found {sorted(views)}")
+		missing = sorted(views - _js_map("VIEW_LABEL"))
+		self.assertEqual(missing, [], f"VIEW_LABEL in OperationsDesk.vue has no entry for: {missing}")
+
+	def test_the_desk_endpoint_does_not_ship_an_id_dressed_as_a_label(self):
+		# WHAT WOULD MAKE THIS FAIL: restoring `{"id": v, "label": v}`
+		# (tender_desk.py:40). The key said "label" and held the id, so the one
+		# consumer rendered `logist` at the user and t() returned it unchanged --
+		# none of the four ids is a key in any catalogue. A field that lies about
+		# what it holds invites the next screen to render it too.
+		line = re.search(r"^\tavailable_views = .*$", DESK_API_SOURCE, re.M)
+		self.assertIsNotNone(line, "available_views is gone from tender_desk.py")
+		self.assertNotIn('"label"', line.group(0), "a label is not an id; the client names the views")
 
 
 if __name__ == "__main__":

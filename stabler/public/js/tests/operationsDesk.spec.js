@@ -43,11 +43,15 @@ function liftConst(name) {
  * from, and a test that hardcoded ["crit","today","soon","info"] would keep
  * passing after the source grew a second, divergent list.
  */
-function liftFunction(name, deps = []) {
+function liftFunction(name, deps = [], scope = {}) {
 	const m = src.match(new RegExp(`^function ${name}\\([\\s\\S]*?^\\}`, "m"));
 	expect(m, `top-level function ${name}() not found in OperationsDesk.vue`).not.toBeNull();
 	const preamble = deps.map(liftConst).join("\n");
-	return new Function(`${preamble}\n${m[0]}; return ${name};`)();
+	const keys = Object.keys(scope);
+	return new Function(
+		...keys,
+		`${preamble}\n${m[0]}; return ${name};`
+	)(...keys.map((k) => scope[k]));
 }
 
 /** The right-hand side of the first `target = ...;` assignment in the source. */
@@ -85,6 +89,14 @@ function planStateChain() {
 /** The `v-if`/`v-else-if` conditions of a branch chain, in source order. */
 function branchConditions(block) {
 	return [...block.matchAll(/v-(?:else-)?if="([^"]+)"/g)].map((m) => m[1]);
+}
+
+/** Everything between `<template>` and `<script setup>` — the rendered markup. */
+const template = src.slice(src.indexOf("<template>"), src.indexOf("<script setup>"));
+
+/** Every `{{ … }}` interpolation in the template: what the reader actually sees. */
+function interpolations() {
+	return [...template.matchAll(/\{\{[^}]*\}\}/g)].map((m) => m[0]);
 }
 
 describe("D12 — the freshness stamp is the server's clock, not the browser's", () => {
@@ -355,5 +367,116 @@ describe("D9 — a view the reader lacks is forbidden, not an error", () => {
 		const at = anchor('class="ds-kpis" data-cols="4"');
 		const tag = src.slice(src.lastIndexOf("<div", at), src.indexOf(">", at));
 		expect(tag).toMatch(/v-if="!forbidden"/);
+	});
+});
+
+describe("D10 — the rule's internal name never reaches the reader", () => {
+	const stubT = { t: (key) => key };
+	const kindLabel = (...a) => liftFunction("kindLabel", ["KIND_LABEL"], stubT)(...a);
+
+	// The eight kinds `_desk_rules.build_plan` can emit. Restated here rather than
+	// scraped because a JS test cannot import Python; the two lists are held equal
+	// by test_operations_desk_source.py, which reads _desk_rules.py directly. If
+	// that pairing is ever broken, THAT test is the one that says so.
+	const KINDS = [
+		"bid_due",
+		"bid_soon",
+		"policy_gap",
+		"no_parent",
+		"won_no_po",
+		"po_late",
+		"invoice_due",
+		"approval_pending",
+	];
+
+	it("gives every rule a sentence a person would say out loud", () => {
+		// WHAT WOULD MAKE THIS FAIL: labelling some kinds and leaving the rest to
+		// fall through. The evidence line sits on the most prominent row of a screen
+		// whose whole promise is that the reader will not have to ask anyone what it
+		// means; `won_no_po` is the machine asking the reader to ask someone.
+		for (const kind of KINDS) {
+			expect(kindLabel(kind), kind).toMatch(/^[A-Z][A-Za-z ,]+$/);
+		}
+	});
+
+	it("keeps the eight labels distinct", () => {
+		// WHAT WOULD MAKE THIS FAIL: giving bid_due and bid_soon one label. They are
+		// different rules with different severities — "deadline passed" and "deadline
+		// in two days" — and one word for both makes the evidence line decorative:
+		// the reader still cannot tell which query produced the row.
+		const labels = KINDS.map(kindLabel);
+		expect(new Set(labels).size).toBe(KINDS.length);
+	});
+
+	it("renders nothing at all for a kind it does not know", () => {
+		// WHAT WOULD MAKE THIS FAIL: a `|| kind` fallback. That is the leak coming
+		// straight back the first time the server grows a ninth rule — and the
+		// evidence line is optional (`v-if`), so dropping it costs a line while
+		// printing `shipment_stuck` costs the screen's credibility. The loud failure
+		// belongs in CI, where test_operations_desk_source.py compares the map
+		// against _desk_rules.py.
+		expect(kindLabel("shipment_stuck")).toBe("");
+		expect(kindLabel(undefined)).toBe("");
+	});
+
+	it("never interpolates a raw `kind` in the template", () => {
+		// WHAT WOULD MAKE THIS FAIL: reverting either call site — or adding a third.
+		// Measured 2026-09-02: there were TWO, not the one S3 lists. The lead row
+		// printed `bid_due` once; the band rows printed `bid_due`, `policy_gap` and
+		// `bid_soon` on every other row of the seed's four. Anchoring on the shape of
+		// the leak instead of on two line numbers is what makes a third one fail.
+		const leaks = interpolations().filter((x) => /\.kind\b/.test(x) && !/kindLabel\(/.test(x));
+		expect(leaks).toEqual([]);
+	});
+});
+
+describe("D11 — the role picker shows a name, not the id behind it", () => {
+	const stubT = { t: (key) => key };
+	const viewLabel = (...a) => liftFunction("viewLabel", ["VIEW_LABEL"], stubT)(...a);
+
+	// The four view ids _TENDER_VIEW_ROLES defines (tender.py:1863). Same pairing
+	// note as KINDS above: test_operations_desk_source.py holds this equal to the
+	// Python.
+	const VIEWS = ["sourcing", "declarant", "logist", "director"];
+
+	it("names all four role views", () => {
+		// WHAT WOULD MAKE THIS FAIL: going back to `t(v.label || v.id)`. The server
+		// built `{"id": v, "label": v}` — the label WAS the id — so the option text
+		// was `logist`, and t() returned it unchanged because none of the four ids is
+		// a key in any catalogue (measured: en.csv has `Sourcing` and `Declarant`,
+		// capitalised, and neither `logist` nor `director` in any case).
+		for (const view of VIEWS) {
+			expect(viewLabel(view), view).toMatch(/^[A-Z][A-Za-z]+$/);
+		}
+	});
+
+	it("does not print `logist` under a different name", () => {
+		// WHAT WOULD MAKE THIS FAIL: mapping an id to itself to satisfy the shape
+		// test above — `logist: t("logist")` passes nothing and looks like a fix.
+		for (const view of VIEWS) {
+			expect(viewLabel(view)).not.toBe(view);
+		}
+	});
+
+	it("falls back to the id for a view it does not know", () => {
+		// WHAT WOULD MAKE THIS FAIL: returning "" here, the way kindLabel does. The
+		// two are not the same case: the evidence line is optional and vanishes, but
+		// an <option> with empty text is a blank row in a picker — a view the reader
+		// can select and cannot name is worse than one named badly. A fifth view
+		// added server-side fails test_operations_desk_source.py, which is where a
+		// missing label should be reported.
+		expect(viewLabel("procurement")).toBe("procurement");
+		expect(viewLabel(undefined)).toBe("");
+	});
+
+	it("routes both view renderings through the label map", () => {
+		// WHAT WOULD MAKE THIS FAIL: fixing the picker and leaving the meta row, or
+		// the reverse. They are two different mechanisms with one result — the
+		// machine's vocabulary in front of a human — and the header line is the one
+		// a reader sees without opening anything.
+		const leaks = interpolations().filter(
+			(x) => /\bdeskData\.view\b|\bv\.(id|label)\b/.test(x) && !/viewLabel\(/.test(x)
+		);
+		expect(leaks).toEqual([]);
 	});
 });

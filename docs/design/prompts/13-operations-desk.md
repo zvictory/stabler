@@ -185,7 +185,7 @@ three that fail.
 | 4 | Five states per region | **PASS in the plan panel only** — see §5 |
 | 5 | State lives in the URL | **PARTIAL** — `view` and `filter` yes (`:470`, `:480`); band collapse (`collapsed`, `:257`) no |
 | 6 | Keyboard and screen reader reachable | **PASS** — `aria-pressed`, `aria-label`, `aria-expanded`, `role="alert"`; every interactive thing is a real `<button>` except one (S4) |
-| 7 | No raw server identifiers in front of a human | **FAIL** — three of them, S3 |
+| 7 | No raw server identifiers in front of a human | **PASS** (2026-09-02) — was FAIL with four of them, S3 |
 | 8 | The empty state must distinguish *nothing to do* from *cannot be computed* | **FAIL** — S2 |
 | 9 | Freshness is the server's, not the browser's | **FAIL** — correction 2 above |
 
@@ -338,18 +338,37 @@ Your deliverable is not the missing rule. It is the state that tells the truth:
 a plan panel that can say *"4 rules ran · 4 could not"* instead of *"All items in
 this view are up to date."*
 
-### S3 — three raw server identifiers are printed at the user
+### S3 — ~~three~~ **four** raw server identifiers are printed at the user
+
+**Corrected 2026-09-02 while closing D10.** This section said *three*; measured,
+there are **four** sites, and the missing one is the higher-volume of the two
+`kind` leaks. Method: every `{{ … }}` interpolation in the template was extracted
+and read (58 of them), rather than the three the first pass happened to find.
 
 | Where | Renders | Value on real data |
 |---|---|---|
 | `:11` | `{{ t(deskData.view) }}` | `sourcing` / `declarant` / `logist` / `director` — **none is a key**; 0 hits in `en.csv`, so `t()` returns the id |
-| `:24` | `{{ t(v.label || v.id) }}` | the server builds `available_views = [{"id": v, "label": v}]` (`:40`) — **the label *is* the id**, so the option text is `logist` |
+| `:24` | `{{ t(v.label \|\| v.id) }}` | the server builds `available_views = [{"id": v, "label": v}]` (`:40`) — **the label *is* the id**, so the option text is `logist` |
 | `:96` | `<div class="ds-row-ev">{{ leadItem.kind }}</div>` | `bid_due`, `policy_gap`, `won_no_po`, `approval_pending` — snake_case internals, unlabelled, in the most prominent row on the page |
+| **`:128`** | `<div class="ds-row-ev">{{ item.kind }}</div>` | **the same leak in every ordinary band row.** On the seed's four rows the lead row leaks `bid_due` once and this one leaks `bid_due`, `policy_gap` and `bid_soon` — three of the four |
 
-Three different mechanisms, one result: the machine's vocabulary on a surface
-whose whole promise is *you will not need to ask anyone*. Fix all three — and
-note that the second one is a **server** fix (a label is not an id), which the
-design must state even though the design cannot make it.
+Four different mechanisms, one result: the machine's vocabulary on a surface
+whose whole promise is *you will not need to ask anyone*.
+
+**Fixed 2026-09-02 (D10, D11).** Two literal-keyed maps in the component —
+`KIND_LABEL` (eight rules) and `VIEW_LABEL` (four views) — the same idiom as
+`TenderDocumentsPanel.vue:29`. Literal because `t()` is harvested by scanning
+source, so a key computed anywhere (including on the server) can never be
+translated. The **server fix was made too**: `available_views` is now
+`[{"id": v}]` — the field had exactly one consumer, and a key called `label`
+holding an id invites the next screen to render it.
+The two fallbacks differ **on purpose**: an unknown `kind` renders nothing (the
+evidence line is `v-if`-guarded, so it vanishes rather than leaking), while an
+unknown view falls back to its id (an `<option>` with empty text is a row the
+reader can select and cannot name). Completeness of both maps against
+`_desk_rules.py` and `_TENDER_VIEW_ROLES` is asserted in
+`test_operations_desk_source.py`, so a ninth rule or a fifth view fails the build
+instead of reaching a user.
 
 ### S4 — the primary action is not a control
 
@@ -453,7 +472,7 @@ Words this screen owns. Use them; do not synonymise.
 | **Next up** | the first row of the highest-severity band — derived, never set |
 | **rule** | the one-line query printed under a counter, e.g. *due date passed, still open* |
 | **band** | a collapsible severity group: Overdue · Today · Soon · Info |
-| **kind** | the internal rule name (`bid_due`, `policy_gap`, …) — currently leaking to the user, S3 |
+| **kind** | the internal rule name (`bid_due`, `policy_gap`, …) — never rendered; `KIND_LABEL` names it for the reader (S3) |
 | **why** | the server's sentence for *why this row is here*, e.g. *3/5 quotes collected* |
 | **view** | the role lens: sourcing · declarant · logist · director |
 | **oversight** | director; the only role with Team load |
@@ -521,8 +540,8 @@ re-examined.
 | D7 | `view` and `filter` round-trip through the URL | passes |
 | D8 | Band collapse round-trips through the URL | **passes** — `?collapsed=` (2026-09-02) |
 | D9 | A view the user lacks renders as *forbidden*, distinct from *error* | **passes** (2026-09-02) — own branch, no `role="alert"`, counters hidden |
-| D10 | No snake_case identifier appears in rendered text | **fails** — three (S3) |
-| D11 | The role `<select>` shows translated labels, not ids | **fails** — server sends `label == id` |
+| D10 | No snake_case identifier appears in rendered text | **passes** (2026-09-02) — `KIND_LABEL`; the leak was in **four** places, not three (S3) |
+| D11 | The role `<select>` shows translated labels, not ids | **passes** (2026-09-02) — `VIEW_LABEL`; the server stopped sending `label == id` |
 | D12 | The freshness stamp reflects `generated_at`, not the browser clock | **passes** (2026-09-02) — first reader of `generated_at` in the SPA |
 | D13 | An overdue item is discoverable from the calendar region | **fails** — window starts today (S1) |
 | D14 | The empty plan distinguishes *nothing to do* from *could not be computed* | **fails** — asserts "up to date" while 5 of 8 rules were silent |
