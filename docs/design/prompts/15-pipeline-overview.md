@@ -208,6 +208,37 @@ collision. **Prevent it.** Options to draw and choose between: scope stated in
 each counter, one strip instead of two on the shared page, or a host that tells
 the funnel not to draw counters (which is what `mode` was for, before it died).
 
+**Resolution (2026-09-02, F10):** the last option was chosen — `mode`'s
+default flipped `"full"` → `""` — but the first pass over-corrected. The
+single `v-if="props.mode === 'full'"` gate wrapped the KPI counters (the
+actual collision above) **and** the whole stage-grid section beneath them,
+which DirectorBoard has no copy of and still needs — its own mount comment
+already said so (`DirectorBoard.vue:195`):
+
+> Aşama ızgarası, huni ve chevron şeridi kendi bileşeninde; şerit seçimini
+> buraya yollayıp aşağıdaki belge tablosunu süzüyor.
+
+*("The stage grid, funnel and chevron strip live in their own component; it
+sends the strip selection up here, which filters the document table
+below.")* A silent host lost the stage boxes, their rule lines, the
+submitted/urgent chip and the `go()` drill-down along with the counters it
+was supposed to lose, and no test caught it — `tenderFunnelModeDefault.spec.js`
+proved the gate existed, not what it was scoped to. The gate is now two
+things: `.ds-kpis` stays behind `mode === 'full'`, the pipeline section below
+it renders unconditionally again.
+
+**Resolution (2026-09-02, F11):** the first correction — `any milestone ·
+days < 0` — dropped the 48h claim but was still incomplete on two counts
+measured against the server. `_milestone()` checks `if done` **before**
+`days < 0`, so a completed milestone never counts no matter how overdue its
+own date is; the rule now says `not done`. And `urgent` itself is computed
+only `if stage in ("go", "sourcing", "priced", "submitted")` — a scope the
+first pass dropped entirely, which is also why this row stays "passes for
+this screen's counter": DirectorBoard's `at_risk` loops every deal with no
+stage filter, a different population under a similarly-named counter on
+another screen, and naming the funnel's own scope (`open stage`) rather than
+reconciling the two strings is the fix, not a remaining gap.
+
 ### S2 — three names for the same five stages, on one page
 
 `flowLabels.js` exists specifically so two screens cannot name a step
@@ -227,6 +258,40 @@ Three of the five differ in all three places, **within one scroll**. Decide
 whether the difference carries meaning (the chevron is a phase, the box is a
 state, the flow step is a queue) or is drift. If it carries meaning, the design
 must show that it does. If it is drift, one vocabulary wins.
+
+**Resolution (2026-09-02, F12):** drift, not meaning — the chevron and the
+stage box now both call `stepLabel` from `flowLabels.js`; `PIPE_LABELS` is
+deleted rather than left dead. `STEP_LABELS.go` itself needed a second
+correction first: it read `"GO / NO-GO decision"`, decision-pending phrasing
+for a stage `_funnel.classify()` reaches only once `go_no_go == "go"`
+already — the decision is made, sourcing has not started. Corrected to `"GO
+— awaiting sourcing"`, the text the stage box already carried in this table
+before F12 merged onto the flow strip's wrong one instead of the box's right
+one.
+
+**A fourth vocabulary, missed by this table (P1-2, coordinator review,
+2026-09-02):** `FUNNEL_LABELS` names the conversion-funnel rows drawn beneath
+the stage grid, independently of `mode` — every host gets it, not only
+`mode="full"` ones. Before F12, `PIPE_LABELS.go` and `FUNNEL_LABELS.go` both
+read `"GO decision"` and agreed by accident; once the chevron and the stage
+box were corrected to `"GO — awaiting sourcing"`, `FUNNEL_LABELS.go`, never
+touched by either change, was left disagreeing with both — worse than
+before, since F12 had just taught the reader these numbers agree.
+
+Unifying a fourth call site onto `stepLabel` would not have fixed this: a
+funnel rung and a stage box count two different quantities that happen to
+share a stage's name. A rung is cumulative — *reached at least this stage*
+(`_funnel.FUNNEL_STEPS`; a lost deal still counts at `submitted`, so the
+funnel never undercounts participation) — while a stage box counts only
+deals sitting in that stage **right now**. `go` on the box means "the
+decision is made, nothing else has happened yet"; `go` on the funnel means
+"at some point this deal passed through GO," true of every deal at
+`sourcing` or later too. One word, two populations — the same shape of bug
+S1 found in the KPI strip, one level up. `FUNNEL_LABELS` now reads `Reached
+intake` / `Reached GO` / `Reached sourcing` / `Reached submission` (`won` is
+a result, not a rung passed through, and keeps its own word) — the
+cumulative reading is in the word itself rather than left for the reader to
+infer from context two vocabularies over.
 
 ### S3 — the funnel's failure state is to not exist
 
@@ -321,16 +386,37 @@ it is keyboard-reachable on its own (Tab + Enter/Space), and being a separate
 tap target from the chevron button — whose own `@click="pick(c)"` already
 selects and navigates in the same gesture — it gives a touchscreen a path in
 that carries no navigation side effect. `aria-expanded` reports open/closed.
-One piece is still short of "announces": the button carries no `aria-label`,
-because the only text that would describe it is a *new* `t()` key, and
-`test_tender_dashboard_i18n.py`'s completeness guard requires a new key to
-already be translated in all five `translations/*.csv` before landing — out of
-scope for this change. The glyph (ℹ) is its only accessible name until that
-key is added.
+
+**Closed (2026-09-02, coordinator review):** the button now carries
+`:aria-label="t('Details: {label}', { label: c.label })"` and
+`:aria-controls`, pointing at an `:id` added to `.pipe-pop` itself — the
+glyph alone is suppressed by a screen reader at default verbosity, and
+`aria-expanded` with no `aria-controls` does not say *what* it expands.
+`"Details: {label}"`, not `"Show details for {label}"`: `aria-expanded`
+already flips to `"true"` while this is open, so `"Show"` would read
+backwards at exactly the state that matters, and `"for {label}"` needs case
+agreement Russian's «для» + genitive breaks — this repo shipped `1 days
+over` the same day on exactly that assumption. Mirrors
+`TenderOverview.vue`'s `t("Bottleneck: {step}", { step: stepLabel(bottleneck) })`.
+The new key is reported, not landed here: `test_tender_dashboard_i18n.py`'s
+completeness guard requires a new key to already be translated in all five
+`translations/*.csv` before it can pass, and editing those catalogues is out
+of scope for this change (see the final report for the exact string).
+
+A second, unrelated gap surfaced in the same review: `.pipe-info` sat at
+`right: 3px`, inside the chevron's own clip-path cut (`polygon(0 0, calc(100%
+- 18px) 0, 100% 50%, ...)` on `.pipe-chev`) — most of the button's own top
+row, and the glyph's visual center, fell on the clipped-away side, over the
+panel behind a partially transparent fill rather than the chevron. `right:
+18px` is the button's own width and sits exactly on the cut regardless of
+cell height; `right: 26px` clears it with margin. A comment on this rule had
+also claimed the top corner was flat "first or not" — measured against the
+polygon values, it never is in either case; `data-first` changes the
+opposite (left) corner instead. Both are corrected alongside the aria fix.
 
 And `PIPE_SOURCE` is carried as data with a careful comment — a source name is
 not a translatable sentence, and bare text trips the guard that requires every
-text node to pass through `t()`. Then `TenderFunnel.vue:478` writes
+text node to pass through `t()`. Then `TenderFunnel.vue:568` writes
 `tender_lot · quotation · sales_order · purchase_order` **as bare template text**
 in the very next panel.
 
@@ -492,12 +578,12 @@ Keep the artboards you rejected.
 | F7 | A user with neither role gets a destination, not a blank page | passes |
 | F8 | A user without the flow role never triggers the flow request | passes |
 | F9 | Each funnel row is reachable and openable from the keyboard | passes — `role="button" tabindex="0" @keydown.enter` |
-| F10 | No two counters on one page share a label, a caption and a rule while showing different numbers | **passes** — `TenderFunnel`'s `mode` default flipped `"full"` → `""`; a silent host (DirectorBoard) now gets the chevron only, TenderOverview keeps the full render by asking for `mode="full"` explicitly (fixed 2026-09-02; DirectorBoard's own six counters are prompt 14's row, not this one) |
-| F11 | A counter's rule line describes what it counted | **passes for this screen's counter** — TenderFunnel's `urgent` rule now reads `any milestone · days < 0`, matching `_milestone()`'s actual `status = "risk"` condition; no 48h threshold exists anywhere in the computation (fixed 2026-09-02). DirectorBoard carries the same fact under different wording (`worst(bid,contract,po_eta,delivery).days < 0`, prompt 14) — a convergence pass across the two screens is still open |
-| F12 | One stage has one name per screen | **passes** — the chevron (`pipeline` computed) and the stage boxes (`GROUPS` computed) both import `stepLabel` from `flowLabels.js` instead of keeping independent literals; the second copy, `PIPE_LABELS`, is deleted rather than left dead (fixed 2026-09-02) |
+| F10 | No two counters on one page share a label, a caption and a rule while showing different numbers | **passes** — `TenderFunnel`'s `mode` default flipped `"full"` → `""`; a silent host (DirectorBoard) now gets the chevron and the stage-grid pipeline it already expected, but not the KPI counter strip, TenderOverview keeps the full render by asking for `mode="full"` explicitly (fixed 2026-09-02; corrected 2026-09-02 — the gate first wrapped the stage grid too, silently dropping it from DirectorBoard until split; see S1. DirectorBoard's own six counters are prompt 14's row, not this one) |
+| F11 | A counter's rule line describes what it counted | **passes for this screen's counter** — TenderFunnel's `urgent` rule now reads `open stage · any milestone · not done · days < 0`, matching `_milestone()`'s actual `status = "risk"` condition (which a `done` milestone never reaches) and `urgent`'s own stage-scoped computation (fixed 2026-09-02, corrected 2026-09-02 — the first pass said `any milestone · days < 0` and still omitted both; see S1). DirectorBoard carries the same fact under different wording and a different, unscoped population (`worst(bid,contract,po_eta,delivery).days < 0`, prompt 14) — deliberately not reconciled, not merely left open; a shared rule string would claim one population for two different counts |
+| F12 | One stage has one name per screen | **passes for the chevron and the stage box, corrected once more** — both (`pipeline` and `GROUPS` computed) import `stepLabel` from `flowLabels.js` instead of keeping independent literals; the second copy, `PIPE_LABELS`, is deleted rather than left dead (fixed 2026-09-02). The audit that produced this row compared three vocabularies and missed a fourth, `FUNNEL_LABELS` — corrected 2026-09-02 under P1-2; see S2 |
 | F13 | A failed funnel load renders something | **passes** — a new `error` ref, cleared at the top of every `load()` attempt, is written in the catch branch instead of a toast; a new `v-else-if="error"` panel renders it with `role="alert"` (fixed 2026-09-02) |
 | F14 | `Not measurable` is visually distinct from `Within` | **passes** — `stepTone` now returns `"mute"` for `unknown`, the same tone `empty` already gets and the same one the SLA badge already uses for this state; `edge` still gets no tone in `stepTone` (a separate, narrower gap this row does not name) (fixed 2026-09-02) |
 | F15 | A lot appears in exactly one stage per screen | **passes, disclosed not reconciled** — 4305 (and any manually moved deal) can still legitimately appear in two; the flow panel now says why instead of leaving it unexplained (S5, corrected 2026-09-02) |
-| F16 | The chevron's second layer is reachable without a pointer | **passes, one gap noted** — a second, independent `.pipe-info` button (native `<button>`, wired to its own `toggleDetails(row)`) opens and closes `.pipe-pop` without ever calling `pick()` or emitting `select`, so touch and keyboard both reach it on their own tap target; `aria-expanded` reports open/closed. No `aria-label`: `test_tender_dashboard_i18n.py`'s `test_every_dashboard_copy_key_has_a_nonempty_translation` requires a new `t()` key to already carry a non-empty entry in all five `translations/*.csv`, out of scope for this change — the visible glyph (ℹ) is the button's only accessible name until that key is added (fixed 2026-09-02) |
+| F16 | The chevron's second layer is reachable without a pointer | **passes** — a second, independent `.pipe-info` button (native `<button>`, wired to its own `toggleDetails(row)`) opens and closes `.pipe-pop` without ever calling `pick()` or emitting `select`, so touch and keyboard both reach it on their own tap target; `aria-expanded` reports open/closed, `aria-controls` points `.pipe-pop`'s own `id`, and `aria-label` names which cell's details the button opens (`"Details: {label}"`) since the glyph alone is suppressed by a screen reader at default verbosity (fixed 2026-09-02, closed 2026-09-02 — see S6). The button also moved clear of the chevron's own clip-path cut, which it had visually overlapped |
 | F17 | Loading renders a skeleton | **passes** — both blocks (TenderFunnel's own initial load, TenderOverview's process-flow panel) mount `SkeletonRows` in place of the old `t()` text line, each with its own small local padding class (`.funnel-pad` / `.ov-pad`, `14px 16px`) since `.ds-panel` itself carries none; matches the shape already established for panel-mounted (non-table) loading (`OperationsDesk.vue`, `test_tender_desk_spa.py::test_uses_skeleton_rows`) (fixed 2026-09-02) |
 | F18 | The screen says how fresh it is | **passes for the timestamp** (2026-09-02) — the older of the flow's and the funnel's `generated_at`. The manual `Refresh` button is untouched |
