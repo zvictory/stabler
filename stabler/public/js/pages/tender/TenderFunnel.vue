@@ -12,10 +12,12 @@
 //    was already computed for the legend but sat as a small "· −7"; the
 //    biggest drop IS the finding, so it gets the space.
 //
-// `mode` stays: "full" draws the counter strip and the stage pipeline as well;
-// anything else draws the conversion funnel and its losses only. Both callers
-// ask for "full" today -- the Director board and the dashboard overview -- and
-// the contract is also specified in test_tender_dashboard_spa.
+// `mode="full"` draws the counter strip and the stage pipeline as well; the
+// default draws the conversion funnel and its losses only. Only the dashboard
+// overview asks for "full", explicitly (test_tender_dashboard_spa pins it) --
+// the director board mounts TenderFunnel for its chevron strip and does not
+// ask for the rest, so it no longer gets a second copy of the overview's own
+// counters (docs/design/prompts/15-pipeline-overview.md, F10/S1).
 import { computed, onMounted, ref, watch } from "vue";
 import { storeToRefs } from "pinia";
 import { useRouter } from "vue-router";
@@ -30,7 +32,12 @@ const router = useRouter();
 const toast = useToast();
 
 const props = defineProps({
-	mode: { type: String, default: "full" },
+	// F10 (docs/design/prompts/15-pipeline-overview.md, S1): both hosts used to
+	// resolve to "full" -- TenderOverview by passing it explicitly, DirectorBoard
+	// by doing nothing -- so a silent host got the counters/stage-boxes block it
+	// never asked for, and their labels collided with DirectorBoard's own six
+	// counters. The default now means "just the strip"; a host asks for the rest.
+	mode: { type: String, default: "" },
 	days: { type: Number, default: 90 },
 	/* Chevron şeridi. Varsayılan kapalı: şerit ALTINDA filtreleyebileceği bir
 	 * belge tablosu olan ekranlar için var, her yerde çizilmesi için değil. */
