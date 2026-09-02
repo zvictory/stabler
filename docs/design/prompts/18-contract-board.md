@@ -254,9 +254,23 @@ are deliberate on the side that has them:
   board. The board is the correct side here; the funnel's count is the defect,
   and it is a permission question rather than a filter one.
 
-Neither is visible on the seed data. Both are `make test-bench` territory — the
-server change is a query change, and `make check` cannot prove what rows come
-back.
+The first of the two is now MEASURED, and the way it was measured is the point:
+`tests/test_tender_board_funnel_integration.py` seeds a submitted deal-linked
+order, a submitted unlinked one, a draft and a Closed one, then asserts
+`funnel − board = exactly the Closed set` — so the gap is pinned in both
+directions. A board that starts showing closed contracts turns that test red, and
+so does a NEW divergence growing beside it, which is the half worth having.
+
+The second is not. Observing it needs a restricted-user fixture, and
+`_require_any_tender_view` may refuse such a user before the divergence is even
+reachable — so it belongs in its own module rather than smuggled into that one.
+
+Neither was visible on the seed data, and the reason is worth writing down: on
+2026-09-02 both endpoints were called by hand against `genesis-test.local` and
+returned the same answer, which was taken as agreement. The site held **no Sales
+Order at all**. Two empty sets are equal no matter what either filter says — the
+check could not have failed, so it proved nothing. `make check` cannot prove what
+rows come back; neither can a run against a site with no rows.
 
 ### S3 — the palette is user data, concatenated as hex
 
@@ -553,7 +567,7 @@ Keep the artboards you rejected.
 | C11 | A press that does not move the card does not navigate away | **fails** — drag and click share the element (S4) |
 | C12 | Switching the active company reloads the board | **passes** (2026-09-02) — plus a request token, so a superseded company's answer cannot land (S5) |
 | C13 | A column total never adds two currencies | **✔ 2026-09-02** — one line per currency, sorted by code; the session currency is no longer read by this screen (S6) |
-| C14 | The board's filter matches the number that navigated to it | **✔ 2026-09-02, for the filter** — funnel passes `tender_only=1`, board reads the module's parameter name, server narrows on one axis. Two documented divergences remain, both deliberate on the other side: Closed contracts and per-document read permission (S1) |
+| C14 | The board's filter matches the number that navigated to it | **✔ 2026-09-02, measured on real rows** — `tests/test_tender_board_funnel_integration.py` (bench) seeds four orders that separate every filter the pair applies and asserts `board(1) − funnel = ∅`, `funnel − board(1) = exactly the Closed set`, and that the chevron's number equals the list it drills to. The by-hand check earlier that day said "equal" only because the test site held **no Sales Order at all**. Per-document read permission is still unmeasured (S1) |
 | C15 | *Paid* and *Closed* are distinguishable from ordinary columns | **fails** — `is_won` / `is_closed` unrendered (S7) |
 | C16 | "From tender" is legible without hovering | **fails** — icon plus `:title` (S7) |
 | C17 | `status` is the server's classification, not the client's | **fails** — re-derived from `per_delivered` (S7) |
