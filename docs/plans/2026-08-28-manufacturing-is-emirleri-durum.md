@@ -15,7 +15,7 @@ gerektiriyordu. Buradaki her satır 27–28 Ağustos'ta ya kodda ya prod'da öl�
 | Yön | Durum | Kanıt |
 |---|---|---|
 | **1a** Yoğun vardiya defteri | KISMEN | `WorkOrders.vue:361` — tek filtre: durum. Tarih / hat / operatör filtresi yok, yoğunlaştırma uygulanmadı. |
-| **1b** Kanban panosu | YOK | `pages/manufacturing/` altında kanban dosyası yok. |
+| **1b** Kanban panosu | ~~YOK~~ → **VAR** (düzeltme 2026-09-03) | 28.08'de dosya yoktu; `907caf7` + `c27e643` (29.08) ile `WorkOrders.vue` içinde pano yerleşimi olarak geldi — bkz. "Düzeltme — 2026-09-03". |
 | **1c** Hat × zaman planlama | **YOK** | Backend kayıtlı (`hooks.py:429` → `manufacturing.create_material_request_for_tomorrow_wo`) ama **hiç kayıt üretmemiş** — aşağıya bakınız. Planlama ekranı da yok. |
 | **1d** Tam sayfa sipariş detayı | KISMEN | `WorkOrderDetail.vue` var (`4bc87d6`). Soyağacı tek blok: `:462-484` parti no + tüketilen malzeme listesi — **ağaç görünümü yok**. `suggest_wo_batch` bu sayfada değil, yalnız kioskta (`ManufacturingOperatorBoard.vue:644`). |
 | **1e** Operatör kiosk 2.0 | VAR | `ManufacturingOperatorBoard.vue` (1 652 satır), numpad `292574a`. |
@@ -220,7 +220,7 @@ burada yalnız kayıt yok.
 | 1a | **BİTTİ** (`f227f62`) | — |
 | 1d | **BİTTİ** — parti yakalama + dürüst köken | ağaç, parti kaydı birikene kadar |
 | 1c planlama | **BİTTİ** — hat × gün panosu | Zafar'ın hook kararı (aşağıya bakınız) |
-| 1b kanban | **ÖLÜ** — ölçümle iptal | — |
+| 1b kanban | ~~ÖLÜ~~ → **BİTTİ** (`907caf7`, `c27e643`, 2026-08-29; düzeltme 2026-09-03) | — |
 | Fire/duruş | **ENGELLİ** | Zafar: duruş sebep listesi + model seçimi |
 
 ### Uygulanan — malzeme talebi kapısı (`5bea879`)
@@ -359,3 +359,32 @@ Kalan iş kod değil, **bu fabrikanın gerçeği**: hattın Workstation olarak a
 ve bir dondurma hattının hangi sebeplerle durduğu. İkisini de ben uyduramam — uydurulmuş
 bir sebep listesi, katalog kılığında kurgudur, ve operatör "Other"ı seçmeye başladığı an
 katalog ölür. Zafar'a sorulan soru dokümanın sonunda.
+
+## Düzeltme — 2026-09-03 (tasarım kurulu, ADR-607)
+
+Bu dokümanın iki satırı bayattı: yukarıdaki envanter tablosunda "1b Kanban panosu | YOK" ve
+"Kalan iş" tablosunda "1b kanban | ÖLÜ — ölçümle iptal". Her ikisi 28.08 itibarıyla doğruydu
+ve ertesi gün geçersizleşti: `907caf7` ve `c27e643` (2026-08-29) 1b'yi ayrı bir rota değil,
+kaydın bir **yerleşimi** olarak `WorkOrders.vue`'ya getirdi. Satırlar silinmedi, üstü çizildi.
+
+"ÖLÜ" kararı neden yanlıştı — `907caf7` gövdesinden: 28.08 ölçümü ERPNext'in `status` alanına
+karşı yapılmıştı (onaydan sonra salt-okunur; anjan'ın %99,1'i tek değerde). Tasarımın
+kolonları ise türetilmiş durumlardır (taslak / hazır / malzeme verildi / çalışıyor / durdu /
+bitti) ve kartlar sürükleme kulpu değil düğme taşır. Yanlış eksen.
+
+2026-08-29 yeniden ölçümü (anjan, salt-okunur, `907caf7`):
+
+| Kolon | Kayıt |
+|---|---|
+| Completed / Closed | 3 757 |
+| Draft | 8 |
+| hiç transfer yok | 33 |
+| tam transfer | 2 |
+| kısmi transfer | 0 |
+| üretildi, bitmedi | 0 |
+| Stabler Line Stop satırı | 0 |
+| saat içinde tamamlanan | 3 631 / 3 755 |
+
+Üç kolon bugün boş — türetilemediği için değil, adımlar kaydedilmediği için; boş kolonlar
+bu yüzden çizilir, gizlenmez. Kararın tamamı:
+`docs/plans/2026-09-03-tender-ve-is-emri-tasarim-denetimi-tasarim-kurulu-karari.md` §3.
