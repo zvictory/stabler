@@ -338,6 +338,24 @@ Your deliverable is not the missing rule. It is the state that tells the truth:
 a plan panel that can say *"4 rules ran · 4 could not"* instead of *"All items in
 this view are up to date."*
 
+**D19 resolved 2026-09-02, and one more thing measured.** The rule was *not*
+invented (§4 forbids it); the calendar's sublabel stopped promising it, and now
+reads *"Plan items by due date"*. Measured while doing it: even the one
+delivery-flavoured rule that does exist, `po_late`, can never reach that calendar
+— its severity is unconditionally `overdue` (`_desk_rules.py:186`, `sched_date <
+today_date`), so it is always outside a window that begins today. "delivery" was
+impossible in that region twice over. The fact stays on the wire and stays
+unread; `test_operations_desk_source.py` now ties the promise and the engine
+together **in both directions**, so writing a delivery rule and forgetting to
+re-advertise it fails too.
+
+**And the second half of the sublabel was also measured.** The header said
+*"Next 7 days · Bid · delivery · due"*. Of the eight rules, only `bid_due`
+(today), `bid_soon` and `policy_gap` can ever produce a future-dated row; every
+other kind's `due` is `today_str` or a past date. The seven cells therefore show
+bid deadlines and a pile of today — which is what the new sublabel claims and the
+old one did not.
+
 ### S3 — ~~three~~ **four** raw server identifiers are printed at the user
 
 **Corrected 2026-09-02 while closing D10.** This section said *three*; measured,
@@ -561,4 +579,4 @@ re-examined.
 | D16 | Team load empty-for-your-role ≠ Team load empty-of-work | **fails** — same rendering |
 | D17 | The primary CTA is the focusable, hoverable control, or is not drawn as one | **passes** (2026-09-02) — the row is the control; the span is no longer painted as one |
 | D18 | Which clock produced "today" is legible to the reader | **passes** (2026-09-02) — the server sends `today`; the meta row names the clock and flags disagreement |
-| D19 | `delivery_deadline` is either consumed by a rule or absent from the calendar's promise | **fails** — resolved, carried, unread; sublabel still says "delivery" |
+| D19 | `delivery_deadline` is either consumed by a rule or absent from the calendar's promise | **passes** (2026-09-02) — absent from the promise; the rule was NOT invented |

@@ -231,7 +231,16 @@
 				<section v-if="week.length" class="ds-panel">
 					<div class="ds-panel-head">
 						<h3>{{ t("Next 7 days") }}</h3>
-						<span class="ds-label">{{ t("Bid · delivery · due") }}</span>
+						<!-- "Bid · delivery · due" yazıyordu. `delivery_deadline`
+						     intake'ten çözülüyor ve `lots_fact`e taşınıyor
+						     (tender_desk.py:140, :277) ama _desk_rules.py'de SIFIR
+						     kez okunuyor: teslim kuralı yok. Tek teslim kokan kural
+						     `po_late` ve o her zaman `overdue`, yani bugünle
+						     başlayan bir pencereye zaten hiç düşemez. Motorun
+						     hesaplamadığı bir boyutu vaat etmeyi bıraktık; kuralı
+						     UYDURMADIK (§4). Söz ile motor birlikte hareket etsin
+						     diye test iki yönlü. -->
+						<span class="ds-label">{{ t("Plan items by due date") }}</span>
 					</div>
 					<div class="ds-week">
 						<div

@@ -215,5 +215,59 @@ class TestMachineVocabularyStaysOnTheWire(unittest.TestCase):
 		self.assertNotIn('"label"', line.group(0), "a label is not an id; the client names the views")
 
 
+class TestTheCalendarPromisesOnlyWhatTheEngineComputes(unittest.TestCase):
+	"""D19. `delivery_deadline` is resolved out of the intake JSON
+	(tender_desk.py:140), carried into `lots_fact` (:277) and read by NOTHING:
+	measured 2026-09-02, `_desk_rules.py` contains zero occurrences of it. The
+	calendar's own sublabel meanwhile read "Bid · delivery · due".
+
+	The deliverable is not the missing rule -- the prompt's hard rules forbid
+	inventing one -- it is that the screen stops advertising a dimension the engine
+	does not compute."""
+
+	@staticmethod
+	def _calendar_sublabel() -> str:
+		"""What the calendar's panel head RENDERS -- markup comments stripped.
+
+		Anchored on the panel's own heading, not on the word "delivery": a slice
+		taken by searching for the promise cannot notice the promise is gone. And
+		the comments have to go, or the note explaining WHY delivery was dropped
+		would itself read as the promise being kept."""
+		head = TEMPLATE.index('<h3>{{ t("Next 7 days") }}</h3>')
+		block = TEMPLATE[head : TEMPLATE.index("</div>", head)]
+		return re.sub(r"<!--.*?-->", "", block, flags=re.S)
+
+	def test_the_word_delivery_appears_exactly_when_a_rule_consumes_it(self):
+		# WHAT WOULD MAKE THIS FAIL, in both directions. Putting "delivery" back in
+		# the sublabel while no rule reads delivery_deadline: the screen promises a
+		# dimension no row can ever carry, on the one region a reader scans to plan
+		# a week. And -- the other direction, which a one-sided assertNotIn would
+		# have frozen -- writing a delivery rule and forgetting to say so: this test
+		# then demands the word back, so the promise and the engine move together
+		# rather than drifting apart again.
+		consumed = "delivery_deadline" in RULES_SOURCE
+		promised = "delivery" in self._calendar_sublabel().lower()
+		self.assertEqual(
+			promised,
+			consumed,
+			"the calendar sublabel and _desk_rules.py disagree about delivery: "
+			f"promised={promised}, consumed={consumed}",
+		)
+
+	def test_the_unread_fact_still_reaches_the_engine(self):
+		# WHAT WOULD MAKE THIS FAIL: deleting delivery_deadline from `lots_fact` to
+		# "tidy up" an unread key. The gap is the finding -- the intake holds a
+		# delivery date, the desk resolves it correctly after a real bug fix, and no
+		# rule asks for it. Removing it would erase the evidence that a delivery rule
+		# is writable at all, and the next reader would have to rediscover the field.
+		#
+		# Anchored on the `lots_fact` block, not on the file: `delivery_deadline`
+		# also appears in the intake fallback and in comments, so a whole-file
+		# assertIn passes with the fact deleted from the only place the engine reads.
+		facts = DESK_API_SOURCE[DESK_API_SOURCE.index("\tlots_fact = [") :]
+		facts = facts[: facts.index("\n\tfacts = {")]
+		self.assertIn('"delivery_deadline":', facts, "the engine no longer receives the delivery date")
+
+
 if __name__ == "__main__":
 	unittest.main()

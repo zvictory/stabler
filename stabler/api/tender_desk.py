@@ -274,6 +274,14 @@ def operations_desk(company: str, view: str | None = None, days: int = 7) -> dic
 			"lot_no": d.get("custom_lot_no"),
 			"stage": d.get("custom_tender_stage"),
 			"bid_deadline": str(d.get("custom_bid_deadline")) if d.get("custom_bid_deadline") else None,
+			# CARRIED AND UNREAD, on purpose. Measured 2026-09-02: _desk_rules.py
+			# contains zero occurrences of delivery_deadline -- there is no delivery
+			# rule, and the calendar used to advertise one ("Bid · delivery · due").
+			# The screen stopped promising it (D19); the fact stays because it is
+			# resolved correctly after a real bug fix and it is the evidence that a
+			# delivery rule is writable at all. Write that rule and the sublabel may
+			# say "delivery" again -- test_operations_desk_source.py asserts the two
+			# move together, in both directions.
 			"delivery_deadline": str(d.get("custom_delivery_deadline"))
 			if d.get("custom_delivery_deadline")
 			else None,
