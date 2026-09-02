@@ -53,9 +53,15 @@ def step_rows(deals, today, overrides=None) -> list[dict]:
 				# THE AVERAGE CANNOT JUDGE THE WORST DEAL. A step whose average
 				# sits inside its threshold can still hold one deal that is past
 				# it, and that deal is the whole reason for this screen. The
-				# verdict is asked of `_tender_sla` rather than recomputed here:
-				# two copies of "the last quarter, floored at one day" drift, and
-				# the copy nobody exercises is the one that rots.
+				# verdict is asked of `_tender_sla` rather than written out again
+				# here — which is also how `severity` stopped being dead in
+				# production.
+				#
+				# NOT a claim that the rule lives in one place. `_state` below
+				# mirrors "the last quarter, floored at one day" character for
+				# character, deliberately: it judges the AVERAGE, where
+				# `severity` judges one deal, and it says so at its own site.
+				# Two copies, both documented. This line adds no third.
 				"worst_state": sla.severity(stage, worst_at, today, overrides),
 				"worst_over": sla.overdue_by(stage, worst_at, today, overrides),
 				"sla_days": limit,

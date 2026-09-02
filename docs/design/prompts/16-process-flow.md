@@ -60,6 +60,19 @@ Counted 2026-09-02 on the pre-change file: `.flow-panel`, `.flow-state`, the
 `.flow-kpi-text`, `.flow-c-n`, `.flow-c-w`, `.flow-c-sla`. All ten were layout
 or colour, which is the point S4 was making.
 
+**6 · W15 said "three instances, not one", and named what was left. There were
+four, and the fourth was in the diff that made the claim.** The unmeasured
+counter read `{unmeasured} / {in_process} deals`, so a company with a single open
+deal — the state every new tenant starts in — rendered **`1 / 1 deals`**. The
+count in front of the noun is a ratio, not a quantity, and no plural rule can be
+written for it; the caption is now the partitive *of the open deals*, which
+agrees with nothing. Measured 2026-09-02 by calling `counters` with
+`{in_process: 1, unmeasured: 1}`, now pinned in `tenderFlowCounters.spec.js`
+("survives a company with exactly one open deal"). What W15's *Still not fixed*
+list named — `10 open deals` and the three `{{ t("days") }}` sites
+(`TenderFlow.vue:120,305,311,321`) — was accurate; the list's implication that
+everything outside it had been cleared was not.
+
 **And one claim that has now expired rather than been wrong.** S2 measured
 `_tender_sla.severity` and `overdue_by` as "alive in tests and dead in
 production". That was true when written. `_tender_flow.step_rows` now calls both
@@ -495,7 +508,7 @@ Keep the artboards you rejected.
 | W12 | A user without the director view sees a refusal | ~~**fails** — same branch~~ → **passes at the screen**. The 403 is turned into its own branch naming the director view. **The gate itself is untested here** — `_require_tender_view` needs a bench (`test_tender_view_gates`), and this branch could not run `make test-bench` |
 | W13 | The table scrolls on a phone; the page does not | ~~**fails** — no responsive CSS at all (S4)~~ → **CSS in place, layout unverified** — `.flow-scroll` + `min-width: 680px` on the table inside it, asserted at source. No jsdom in this repository, so no test lays out a 390px viewport |
 | W14 | The bottleneck is named in one place, in words | ~~**fails** — a stripe and a distant counter (S5)~~ → **passes** — the word is on the row; the counter carries the ratio the rule is made of. The stripe stays, in the same cell as the word |
-| W15 | No user-facing string is pluralised by a ternary | ~~**fails** — `step` / `steps` (S6)~~ → **passes** — `2 / 5`, and the whole `? t(…) : t(…)` shape is banned file-wide (it caught the Refresh button too). **Three instances, not one.** The first pass shipped a third in the fix itself — `Worst`'s verdict read `{n} days over`, i.e. **"1 days over"** for any deal a single day past its threshold, which is the routine value of `overdue_by` when the state is `crit`. Found in review, corrected to `over by {n}`: nothing that has to agree may follow the count. **Still not fixed:** `10 open deals` and the screen's three `{n} days` sites hardcode an English plural for `n = 1`; they are the file's pre-existing convention and this row does not cover them |
+| W15 | No user-facing string is pluralised by a ternary | ~~**fails** — `step` / `steps` (S6)~~ → **passes** — `2 / 5`, and the whole `? t(…) : t(…)` shape is banned file-wide (it caught the Refresh button too). **Four instances, not one — and this row twice miscounted them** (correction 6). The first pass shipped a third in the fix itself — `Worst`'s verdict read `{n} days over`, i.e. **"1 days over"** for any deal a single day past its threshold, which is the routine value of `overdue_by` when the state is `crit`. The second pass shipped a fourth: the unmeasured counter's `{u} / {n} deals` renders **`1 / 1 deals`** for a company with one open deal. Both found in review, corrected to `over by {n}` and to the partitive *of the open deals*: **nothing that has to agree with a number may follow it**, and a count that is one half of a ratio can never be pluralised at all. **Still not fixed:** `10 open deals` (`TenderFlow.vue:120`) and the three `{{ t("days") }}` sites (`:305,311,321`) hardcode an English plural for `n = 1`; they are the file's pre-existing convention and this row does not cover them. That list is what remains, not proof that nothing else was missed — it was accurate and still sat beside a live fourth instance |
 | W16 | A reader can tell a tenant threshold from a default | ~~**fails** — `stage_sla` unread (S7)~~ → **passes, with a stated limit** — see correction 2. A tenant who types the default number is indistinguishable, and the wording never claims otherwise |
 | W17 | Any interactive element is reachable by keyboard and announced | ~~**fails** — 0 `aria-*`, 0 `role=`~~ → **attributes in place, behaviour unverified** — `environment: "node"`, no jsdom, no `@vue/test-utils`: nothing here fires a key or reads a name aloud. The Refresh button was already a real `<button>` and always was reachable |
 | W18 | The screen says how fresh it is | **passes for the timestamp** (2026-09-02) — `generated_at`. The manual `Refresh` button is untouched |

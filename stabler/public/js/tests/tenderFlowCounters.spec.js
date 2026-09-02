@@ -52,10 +52,16 @@ function fnSrc(name) {
 /** Lift the named functions into one scope with fakes for what they close over. */
 function lift(names) {
 	const scope = {
-		// Models `composables/i18n.js`: an untranslated key falls back to the
-		// source string, and `{name}` placeholders are filled. The fallback is
-		// not a simplification — it is what every one of these keys does today,
-		// because none of them is in a catalogue yet.
+		// Models `composables/i18n.js` on its FALLBACK path: a key with no
+		// catalogue row returns the source string, and `{name}` placeholders
+		// are filled either way. Asserting the English source is therefore
+		// asserting what the screen renders when a locale is missing a row —
+		// not a claim that these keys are untranslated. Measured 2026-09-02
+		// against all five catalogues: of the twelve this branch introduces,
+		// eleven are landed and `of the open deals` is not yet, so that one
+		// really does render its source string in every locale today. Which
+		// is the case this stub models, and it is temporary — do not read the
+		// English here as the shipped Russian.
 		t: (s, params) =>
 			params
 				? Object.entries(params).reduce((out, [k, v]) => out.replaceAll(`{${k}}`, String(v)), s)
@@ -154,6 +160,27 @@ describe("no counter's wording depends on how many things it counted", () => {
 		expect(unmeasured.val).toBe("2 / 10");
 	});
 
+	it("survives a company with exactly one open deal", () => {
+		// WHAT WOULD MAKE THIS FAIL: `cap: t("deals")` on the unmeasured
+		// counter, which is what shipped. The `stuck` counter is safe because
+		// its denominator is `rows.length` — always the five working stages —
+		// but this denominator is `in_process`, and a company with one open
+		// deal that has no stage stamp renders "1 / 1 deals".
+		//
+		// That is finding 1's defect a second time, in the same diff that fixed
+		// it, and it reached the review's "still not fixed" list as a claim
+		// that it was fine. A partitive caption agrees with nothing: "1 / 1 of
+		// the open deals" is grammatical, and so is the Russian genitive plural
+		// that follows the same shape.
+		const { counters, bottleneckCounter } = lift(["counters", "bottleneckCounter"]);
+		void bottleneckCounter;
+		const lone = counters({ in_process: 1, unmeasured: 1, bottleneck: null }, SEED).find(
+			(k) => k.key === "unmeasured"
+		);
+		expect(lone.val).toBe("1 / 1");
+		expect(lone.cap).toBe("of the open deals");
+	});
+
 	it("never chooses a user-facing string with a ternary, anywhere in the file", () => {
 		// WHAT WOULD MAKE THIS FAIL: the shape returning somewhere else — the
 		// Refresh button's label was the second instance and would have survived
@@ -244,12 +271,29 @@ describe("the worst deal carries a verdict, and none where there is nothing to j
 		// on the row this screen is for.
 		//
 		// The repair is the counter's repair: nothing that has to agree may
-		// follow the number. The second assertion is the general form of that
-		// rule, so the next person to append a unit here fails rather than ships.
+		// follow the number.
 		const { worstNote } = lift(["worstNote"]);
-		const one = worstNote(row({ worst_state: "crit", worst_over: 1, worst_days: 4, sla_days: 3 }));
-		expect(one).toBe("over by 1");
-		expect(one, "a word follows the count and would have to agree with it").not.toMatch(/\d+\s+\w/);
+		expect(worstNote(row({ worst_state: "crit", worst_over: 1, worst_days: 4, sla_days: 3 }))).toBe(
+			"over by 1"
+		);
+	});
+
+	it("puts no word after the count at any magnitude", () => {
+		// WHAT WOULD MAKE THIS FAIL: a wording that varies with the size of the
+		// count — `over by 1` for small numbers and `12 days over` for large
+		// ones, or a unit appended only past some threshold.
+		//
+		// HONEST SCOPE: the two assertions above already pin the strings at 1
+		// and 12, so this cannot fire on a uniform implementation. It exists
+		// for the non-uniform one, which those two cannot see. An earlier
+		// version of this claim was a bare `not.toMatch` sitting directly under
+		// a `toBe` on the same value — decoration that no mutation could reach.
+		const { worstNote } = lift(["worstNote"]);
+		for (const over of [1, 2, 3, 9, 10, 11, 21, 100, 101]) {
+			const text = worstNote(row({ worst_state: "crit", worst_over: over, worst_days: 4, sla_days: 3 }));
+			expect(text, `"${text}" puts a word after the count`).not.toMatch(/\d+\s+\w/);
+			expect(text, `"${text}" does not carry the count`).toContain(String(over));
+		}
 	});
 
 	it("marks a deal sitting exactly on its threshold", () => {
@@ -279,10 +323,17 @@ describe("the worst deal carries a verdict, and none where there is nothing to j
 		expect(worstNote(row({ worst_days: 900, worst_state: "info", sla_days: null }))).toBe("");
 	});
 
-	it("renders the verdict beside the number it judges", () => {
+	it("renders the verdict inside the Worst cell, not merely somewhere in the table", () => {
 		// WHAT WOULD MAKE THIS FAIL: the helper landing and the Worst cell
 		// staying a bare number, with every assertion above still green.
-		const cell = src.slice(src.indexOf('<th class="ds-td-num flow-c-w">{{ t("Worst")'), src.indexOf("</tbody>"));
+		//
+		// The slice is the CELL. The first version ran from the Worst header to
+		// `</tbody>`, which is every cell of every column — the reviewer moved
+		// the verdict block into the Step cell and all 19 tests passed. A
+		// verdict two columns away from the number it judges is not the fix.
+		const at = src.indexOf('v-if="row.worst_days !== null"');
+		expect(at, "the Worst cell has moved").toBeGreaterThan(-1);
+		const cell = src.slice(src.lastIndexOf("<td", at), src.indexOf("</td>", at) + 5);
 		expect(cell).toMatch(/worstNote\(row\)/);
 		expect(cell).toMatch(/:data-sev="row\.worst_state"/);
 	});
@@ -294,21 +345,19 @@ describe("a threshold says whether it is the tenant's or the box's", () => {
 		// from Stabler Settings, per company" while every row renders
 		// identically. A director reading `threshold 14 days` could not tell
 		// whether their company chose it.
-		const { slaNote } = lift(["slaNote"]);
-		expect(slaNote(row({ sla_source: "tenant" }))).toBe("set for this company");
-		expect(slaNote(row({ sla_source: "default" }))).toBe("matches the built-in default");
-	});
-
-	it("claims only what the wire can prove", () => {
-		// WHAT WOULD MAKE THIS FAIL: wording that asserts provenance. Measured
-		// 2026-09-02: `stage_sla_for` returns the DEFAULT dict verbatim for a
+		//
+		// The `default` string is pinned here rather than banned by pattern
+		// elsewhere, and the pinning IS the guard on its wording: measured
+		// 2026-09-02, `stage_sla_for` returns the DEFAULT dict verbatim for a
 		// company with no settings row, so a tenant who typed the built-in
 		// number is indistinguishable from one who typed nothing. "matches the
 		// built-in default" is true either way; "not configured" would not be.
+		// A separate `not.toMatch(/configur|unset/)` test used to sit beside
+		// this one and could never fail independently of it — the same value
+		// was already pinned by the line below.
 		const { slaNote } = lift(["slaNote"]);
-		expect(slaNote(row({ sla_source: "default" })), "the wording claims provenance").not.toMatch(
-			/configur|never set|unset/i
-		);
+		expect(slaNote(row({ sla_source: "tenant" }))).toBe("set for this company");
+		expect(slaNote(row({ sla_source: "default" }))).toBe("matches the built-in default");
 	});
 
 	it("says what a missing threshold MEANS without claiming who caused it", () => {
@@ -324,12 +373,12 @@ describe("a threshold says whether it is the tenant's or the box's", () => {
 		//
 		// What is true in every case is the consequence, and it is the rule the
 		// reader actually needs: a step with no threshold can never be late.
+		//
+		// Pinned, not banned by pattern: a `not.toMatch(/switched|.../)` used to
+		// sit under this line and could never fail on its own, because the
+		// equality above fixed the value it read.
 		const { slaNote } = lift(["slaNote"]);
-		const off = slaNote(row({ sla_source: "off", sla_days: null }));
-		expect(off).toBe("so this step is never late");
-		expect(off, "the wording claims a person did something").not.toMatch(
-			/switched|administrator|cleared|turned off|disabled/i
-		);
+		expect(slaNote(row({ sla_source: "off", sla_days: null }))).toBe("so this step is never late");
 	});
 
 	it("renders it under every threshold, not only the overridden ones", () => {

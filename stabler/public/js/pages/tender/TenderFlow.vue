@@ -51,10 +51,12 @@ async function load() {
 		 *
 		 * AND THE PAYLOAD IS DROPPED, WHICH IS NOT FREE: a transient blip on
 		 * Refresh loses a table the reader was looking at, and they press it
-		 * again. Kept anyway — `lastReadAt` reads `data.generated_at`, so
-		 * holding the old payload would print a pre-failure timestamp beside a
-		 * panel saying nothing could be read, and the error branch replaces the
-		 * table either way, so keeping it buys invisible state. */
+		 * again. Kept anyway, because retaining it would leave STALE VISIBLE
+		 * STATE, not merely unused state: the counter strip and `Last read`
+		 * both sit outside this panel, so the error branch does not replace
+		 * them. Four plausible counters and a pre-failure timestamp would stand
+		 * above a panel saying nothing could be read — exactly what withholding
+		 * the strip exists to prevent. */
 		if (err?.status === 403 || /permission|permitted/i.test(err?.message || "")) {
 			forbidden.value = true;
 		} else {
@@ -67,7 +69,21 @@ async function load() {
 }
 
 onMounted(load);
-watch(activeCompany, load);
+
+/* A COMPANY SWITCH INVALIDATES THE PAYLOAD IMMEDIATELY, not when the reply
+ * arrives. The counter strip and `Last read` sit outside the panel and outside
+ * the loading branch, so `watch(activeCompany, load)` left company B's header
+ * above company A's four counters and A's timestamp for the whole round trip.
+ * Plausible numbers for the wrong company are worse than the zeros the
+ * withholding rule already rejects, because nothing about them looks wrong.
+ *
+ * Here and NOT in `load()`: nulling there would also fire on every manual
+ * Refresh and blank a table the reader is looking at, which is the cost W11
+ * deliberately declined for a successful reload. */
+watch(activeCompany, () => {
+	data.value = null;
+	load();
+});
 
 const steps = computed(() => data.value?.steps || []);
 
@@ -120,7 +136,11 @@ function counters(d, rows) {
 			sev: d.unmeasured ? "soon" : "ok",
 			label: t("Not measurable"),
 			val: `${d.unmeasured ?? 0} / ${d.in_process ?? 0}`,
-			cap: t("deals"),
+			// PARTITIVE, because this denominator is not a constant. `stuck` can
+			// say "steps" beside `rows.length`, which is always the five working
+			// stages; `in_process` can be 1, and "1 / 1 deals" is the same
+			// agreement defect this counter was rewritten to remove.
+			cap: t("of the open deals"),
 			note: t("moved before the stage clock existed — left out of the averages"),
 			rule: "count(entered_at is null)",
 		},

@@ -16,10 +16,27 @@ CSS = (ROOT / "public/css/stabler-modernist.css").read_text(encoding="utf-8")
 ROUTER = (ROOT / "public/js/router.js").read_text(encoding="utf-8")
 NAV = (ROOT / "public/js/pages/tender/TenderNav.vue").read_text(encoding="utf-8")
 
-TEMPLATE = VUE[VUE.index("<template>") : VUE.rindex("</template>")]
+#: The screen with every comment removed — JS block, JS line, and HTML.
+#:
+#: EVERY assertion below reads this, never the raw file. Twice now a claim about
+#: the screen has been satisfied by a comment ABOUT the screen: `assertIn(
+#: "director view", VUE)` passed with the user-facing sentence replaced by
+#: "Something went wrong.", and the test written to close that trap
+#: reintroduced it one commit later — deleting `data.value = null` from the
+#: catch kept 31 tests green as long as the paragraph above it mentioned the
+#: line. A source test's subject is the code; the prose beside it is not
+#: evidence for it.
+CODE = re.sub(r"/\*.*?\*/|<!--.*?-->|//[^\n]*", "", VUE, flags=re.S)
+
+TEMPLATE = CODE[CODE.index("<template>") : CODE.rindex("</template>")]
 FLAT = re.sub(r"\s+", " ", TEMPLATE)
+STYLE = CODE[CODE.index("<style scoped>") : CODE.rindex("</style>")]
+#: The catch block on its own. A claim about what a failure does must be met by
+#: the failure path, not by the explanation printed above it.
+CATCH = CODE[CODE.index("} catch (err) {") : CODE.index("} finally {")]
+#: The company watcher on its own, for the same reason.
+WATCHER = CODE[CODE.index("watch(activeCompany") : CODE.index("const steps =")]
 ENDPOINT = API[API.index("def tender_flow(company: str)") :]
-STYLE = re.sub(r"/\*.*?\*/", "", VUE[VUE.index("<style scoped>") : VUE.rindex("</style>")], flags=re.S)
 
 
 def opening_tag(marker: str) -> str:
@@ -56,7 +73,7 @@ class TestTheScreenIsWired(unittest.TestCase):
 		self.assertIn('to="/tender/flow"', NAV)
 
 	def test_it_calls_the_one_endpoint(self):
-		self.assertIn("stabler.api.tender.tender_flow", VUE)
+		self.assertIn("stabler.api.tender.tender_flow", CODE)
 
 
 class TestTheScreenDoesNotFlatterTheNumbers(unittest.TestCase):
@@ -70,11 +87,11 @@ class TestTheScreenDoesNotFlatterTheNumbers(unittest.TestCase):
 		"""Bir ortalamanın neye dayandığını gizlemek, sayının kendisinden
 		kötüdür."""
 		self.assertRegex(FLAT, r'v-if="row\.unmeasured"')
-		self.assertIn("without a stage stamp — not averaged", VUE)
+		self.assertIn("without a stage stamp — not averaged", CODE)
 
 	def test_the_screen_reports_the_unmeasured_total_as_a_kpi(self):
-		self.assertRegex(VUE, r'key: "unmeasured"')
-		self.assertIn("moved before the stage clock existed", VUE)
+		self.assertRegex(CODE, r'key: "unmeasured"')
+		self.assertIn("moved before the stage clock existed", CODE)
 
 	def test_empty_and_unknown_are_different_words(self):
 		"""Boş adımda bekleyen iş yok; damgasız adımda var ama süresi
@@ -181,8 +198,8 @@ class TestTheScreenSaysWhichStateItIsIn(unittest.TestCase):
 			TEMPLATE.index('v-else-if="forbidden"') : TEMPLATE.index('v-else-if="!activeCompany"')
 		]
 		self.assertRegex(branch, r't\("[^"]*director view[^"]*"\)')
-		self.assertRegex(VUE, r"err\?\.status === 403")
-		self.assertRegex(VUE, r"forbidden\.value = true")
+		self.assertRegex(CODE, r"err\?\.status === 403")
+		self.assertRegex(CODE, r"forbidden\.value = true")
 
 	def test_a_failed_load_leaves_no_timestamp_it_cannot_stand_behind(self):
 		# WHAT WOULD MAKE THIS FAIL: keeping the last good payload through a
@@ -192,17 +209,42 @@ class TestTheScreenSaysWhichStateItIsIn(unittest.TestCase):
 		#
 		# THE COST IS DELIBERATE AND IS NOT FREE: a transient blip on Refresh
 		# discards a payload the director was reading, and they have to press
-		# Refresh again. The table is replaced by the error branch either way,
-		# so retaining it would buy invisible state and sell a visible lie. This
-		# test exists so the trade is a decision rather than an accident.
-		self.assertRegex(VUE, r"data\.value = null")
-		self.assertRegex(VUE, r"formatTime\(data\.value\?\.generated_at\)")
+		# Refresh again. Retaining it would put four stale counters and a stale
+		# `Last read` — both of which live OUTSIDE the panel, so the error
+		# branch does not replace them — above a panel saying nothing could be
+		# read. This test exists so the trade is a decision, not an accident.
+		#
+		# Anchored to the catch block. Read over the raw file, this assertion
+		# passed with the line deleted, because the comment above it names the
+		# line: measured by doing exactly that, 31 tests OK.
+		self.assertIn("data.value = null", CATCH)
+		self.assertRegex(
+			CODE, r"const lastReadAt = computed\(\(\) => formatTime\(data\.value\?\.generated_at\)\)"
+		)
+
+	def test_switching_company_drops_the_previous_company_s_numbers(self):
+		# WHAT WOULD MAKE THIS FAIL: `watch(activeCompany, load)`, which is what
+		# shipped. The counter strip and `Last read` live OUTSIDE the panel and
+		# outside the loading branch, so for the whole round trip company B's
+		# header sat above company A's four counters and A's timestamp, over a
+		# skeleton. That is worse than the zeros the withholding rule rejects,
+		# because plausible numbers for the wrong company do not look wrong.
+		self.assertIn("data.value = null", WATCHER)
+
+	def test_a_manual_refresh_does_not_blank_the_table_before_it_starts(self):
+		# WHAT WOULD MAKE THIS FAIL: moving that null into `load()`. It would
+		# also fire on every Refresh press, throwing away a table the reader is
+		# looking at in order to redraw the same numbers — the cost W11
+		# deliberately declined for a SUCCESSFUL load. The company watcher is
+		# the only place the payload is known to be for the wrong company.
+		head = CODE[CODE.index("async function load()") : CODE.index("} catch (err) {")]
+		self.assertNotIn("data.value = null", head)
 
 	def test_a_failed_load_is_written_into_the_panel(self):
 		# WHAT WOULD MAKE THIS FAIL: going back to a toast alone. A toast is
 		# gone in seconds and the panel underneath keeps claiming a pipeline;
 		# the reader who looks away at the wrong moment sees a healthy screen.
-		self.assertRegex(VUE, r"error\.value = err\?\.message")
+		self.assertRegex(CATCH, r"error\.value = err\?\.message")
 		self.assertRegex(FLAT, r'v-else-if="error" class="ds-panel-foot flow-state" role="alert"')
 
 	def test_the_counters_are_withheld_rather_than_zeroed(self):
@@ -210,13 +252,13 @@ class TestTheScreenSaysWhichStateItIsIn(unittest.TestCase):
 		# 0 / 5 steps · — · 0 / 0` is not a report of nothing being wrong; it is
 		# four numbers the screen does not have, and it reads as good news.
 		self.assertRegex(FLAT, r'<div v-if="data" class="ds-kpis"')
-		self.assertRegex(VUE, r"data\.value = null")
+		self.assertIn("data.value = null", CATCH)
 
 	def test_an_empty_pipeline_says_so_in_words(self):
 		# WHAT WOULD MAKE THIS FAIL: five rows of `Empty` and no sentence. The
 		# rows are correct and still leave the reader asking whether the screen
 		# worked; one line separates "nothing is waiting" from "nothing loaded".
-		self.assertIn("No deal is waiting in any step.", VUE)
+		self.assertIn("No deal is waiting in any step.", TEMPLATE)
 		self.assertRegex(FLAT, r'v-if="!data\?\.in_process"')
 
 	def test_the_two_failure_states_are_announced(self):
