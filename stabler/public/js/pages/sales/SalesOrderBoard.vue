@@ -6,7 +6,7 @@ import { useEscapeBack } from "../../composables/useEscapeBack.js";
 import { useSession } from "../../stores/session.js";
 import { call } from "../../api/client.js";
 import { formatMoney, totalsByCurrency } from "../../composables/money.js";
-import { stageTone } from "../../composables/color.js";
+import { nextStageColor, stageTone } from "../../composables/color.js";
 import { formatDate, formatTime } from "../../composables/date.js";
 import { t } from "../../composables/i18n.js";
 import { useToast } from "../../composables/useToast.js";
@@ -213,6 +213,10 @@ async function addStage() {
 			company: activeCompany.value,
 			stage_name: name,
 			position: stages.value.length + 1,
+			/* The endpoint has always accepted a colour and this caller never sent
+			 * one, so every stage created here came out uncoloured — and the
+			 * fallback WAS *New*'s own colour (prompt 18, S3). */
+			color: nextStageColor(stages.value.map((s) => s.color)),
 		});
 		await load();
 	} catch (err) {

@@ -272,7 +272,7 @@ Order at all**. Two empty sets are equal no matter what either filter says — t
 check could not have failed, so it proved nothing. `make check` cannot prove what
 rows come back; neither can a run against a site with no rows.
 
-### S3 — the palette is user data, concatenated as hex
+### S3 — the palette is user data, concatenated as hex — FIXED 2026-09-02
 
     const colorOf = (s) => s.color || "#6c757d";
     :style="{ borderTop: `3px solid ${colorOf(s)}` }"
@@ -317,12 +317,48 @@ Substituting a fixed ink would have been fewer lines and would have thrown the
 hue away on all seven columns at once; the test that fails if anyone does that is
 `stageColor.spec.js`'s "keeps the hue while it darkens".
 
-**Problem 1 is NOT fixed.** The fallback is still `#6c757d`, which is still the
-*New* stage's own colour. It matters more than it reads: `so_stage_save` takes no
-colour argument, so **every stage a manager creates through the board has no
-colour at all** and renders identically to *New*. Changing the neutral is one
-token; deciding what an uncoloured stage should look like is a design question
-this prompt did not ask, and C19 does not cover it.
+**Problem 1, answered 2026-09-02 — and the paragraph that stood here was wrong.**
+
+It said `so_stage_save` "takes no colour argument". It does, and always has:
+`so_stage_save(company, stage_name, position=0, color="", …)` with
+`doc.color = color or doc.color`. The endpoint was never the missing half — the
+BOARD never sent one. The consequence was the same and the diagnosis was not, so
+the sentence is corrected rather than deleted.
+
+**Measured first, and the measurement changed the fix again.** The obvious repair
+is to swap the neutral for a grey that is not *New*'s. It does nothing. The badge
+is a 13 % tint over white, so two greys converge: measured against *New*'s badge,
+`--ds-info` (#8b95a5) reads 1.04:1, `--ds-tx3` 1.04, `--ds-ln2` 1.11 and *Closed*
+1.08 — 1.00 being identical. There is no grey that reads as "unset" beside *New*.
+Only **no fill** does, so an uncoloured stage is now rendered as uncoloured:
+`transparent` badge, `--ds-ln2` rule, `--ds-tx2` count. That also deletes the
+literal hex, which is what problem 1 actually complained about.
+
+**And the real repair is upstream: a new stage is born with a colour.** The board
+now sends one, generated rather than picked from a list — because a list cannot
+clear the bar the board already sets for itself. Of the ten colours in the CRM's
+own kanban palette (`Deals.vue`), **nine sit within 18° of a seeded stage's hue**
+— `cyan` is 4° from *Invoicing*, `gray` 0° from *New*, `yellow` 2° from
+*Procurement* — while the seeded seven are 40° apart at their own tightest
+(*Invoicing* 188° / *Delivery* 228°). So `nextStageColor` puts each new stage in
+the middle of the widest unused arc, at the median saturation and lightness of
+the five chromatic seeded stages (81 % / 48 %), and ignores greys, which occupy
+no hue: *New* is 7 % saturated and *Closed* 11 %.
+
+On a full default board the eighth stage lands **55° from every seeded hue** —
+better than the palette's own spacing — and the generator keeps working after a
+stage is deleted or recoloured, which a fixed list stops doing on the first edit.
+
+**What this does not settle.** The gap shrinks as the wheel fills: 55°, 46°, 30°,
+28°. That is not a defect to fix later — on a board of fifteen stages there is no
+set of fifteen distinguishable hues to hand out — but it does mean the guarantee
+is "the best colour still available", not "always distinguishable". The manager
+still cannot CHOOSE a colour from the board; that was the option not taken on
+2026-09-02, and editing an existing stage's colour remains impossible from this
+screen. And the divergence between the two kanbans stands: the CRM stores colour
+NAMES and resolves them through `KANBAN_COLORS`, the SO board stores hex. Nothing
+here unified them, and `Deals.vue:829` still carries the `+ '22'` concatenation
+that problem 2 removed from this board.
 
 ### S4 — a kanban that cannot be operated without a mouse — FIXED 2026-09-02
 
@@ -651,8 +687,10 @@ Artboards, 1440×900 unless stated.
    the refusal says only that the module is denied, not whether the role or the
    company flag denied it, nor who can change either.
 4. **An empty column** — 40 px of nothing is not a state.
-5. **A stage colour system that survives user input** (S3) — including no colour,
-   two near-identical colours, and a pale one.
+5. ~~**A stage colour system that survives user input** (S3) — including no
+   colour, two near-identical colours, and a pale one.~~ **Done 2026-09-02** —
+   parsed not concatenated, darkened to WCAG AA, uncoloured rendered as
+   uncoloured, and new stages generated into the widest unused hue arc.
 6. **Moving a card without a mouse** (S4), and the press-that-becomes-a-click
    fixed.
 7. ~~**The column total, honest** (S6) — base-currency sum, per-currency
