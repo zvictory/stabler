@@ -286,3 +286,4 @@ stabler.tests.test_tender_generated_at
 stabler.tests.test_tender_board_filter
 stabler.tests.test_tender_crm_card_currency
 stabler.tests.test_tender_delivery_state
+stabler.tests.test_tender_stage_flags

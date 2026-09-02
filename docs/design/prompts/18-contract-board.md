@@ -445,14 +445,30 @@ same order with nothing on either screen to explain it.
 
 ### S7 — three things the payload says and the board does not
 
-- **`is_won` / `is_closed`** — returned by `_stages()`, rendered nowhere. The
-  *Paid* column means won and the *Closed* column means dead; both look like
-  ordinary columns.
-- **The tender link is an icon in a tooltip.** `<span class="badge bg-purple-lt"
-  :title="t('From tender')"><i class="ti ti-flag"></i></span>` — the fact that a
-  contract came from a tender, on the tender module's own board, is reachable
-  only by hovering. **Fourth instance in the package**, after prompt 11's *Red
-  Channel*, prompt 12's `freight_booking_status`, and prompt 10's evidence line.
+- **`is_won` / `is_closed` — FIXED 2026-09-02.** Returned by `_stages()` and
+  rendered nowhere: the *Paid* column meant won and the *Closed* column meant
+  dead, and both looked like the five ordinary ones between them. The header now
+  carries a chip for each, in words — "Won" and "Closed", which are the doctype's
+  own labels rather than a second vocabulary invented for the screen. Two
+  separate `v-if`s, not a `v-else`: both are Check fields a manager can set
+  together, and an alternative would hide one of the two facts with no sign it
+  had. Nothing had pinned the payload either; `tests/test_tender_stage_flags.py`
+  now does, including that the default seven still exercise both flags — a
+  default set where nothing is won means the chips are never drawn and C15 is
+  satisfied only in principle.
+
+  Accepted, not solved: on the default board this renders "Closed [Closed]". The
+  alternative is suppressing a chip when it matches the stage's NAME, which is a
+  rule that stops working the moment either is translated.
+- **The tender link was an icon in a tooltip — FIXED 2026-09-02.** `<span
+  class="badge bg-purple-lt" :title="t('From tender')"><i class="ti ti-flag">
+  </i></span>` — the fact that a contract came from a tender, on the tender
+  module's own board, was reachable only by hovering, which on a touch device
+  means not at all. It was the **fourth instance in the package**, after prompt
+  11's *Red Channel*, prompt 12's `freight_booking_status`, and prompt 10's
+  evidence line. The badge now reads `⚑ Tender`. The icon stays — beside a word
+  it helps scanning, instead of one it is a puzzle — and the `:title` goes,
+  because a second wording of the same fact is the one that drifts.
 - **`per_delivered` drove a filter nobody can see — FIXED 2026-09-02.**
   `filteredCards` derived `status: per_delivered >= 100 ? "delivered" :
   "delivery_pending"` on the client and fed it to `filterTenderRows`. The rule
@@ -630,8 +646,8 @@ Keep the artboards you rejected.
 | C12 | Switching the active company reloads the board | **passes** (2026-09-02) — plus a request token, so a superseded company's answer cannot land (S5) |
 | C13 | A column total never adds two currencies | **✔ 2026-09-02** — one line per currency, sorted by code; the session currency is no longer read by this screen (S6) |
 | C14 | The board's filter matches the number that navigated to it | **✔ 2026-09-02, measured on real rows** — `tests/test_tender_board_funnel_integration.py` (bench) seeds four orders that separate every filter the pair applies and asserts `board(1) − funnel = ∅`, `funnel − board(1) = exactly the Closed set`, and that the chevron's number equals the list it drills to. The by-hand check earlier that day said "equal" only because the test site held **no Sales Order at all**. Per-document read permission is still unmeasured (S1) |
-| C15 | *Paid* and *Closed* are distinguishable from ordinary columns | **fails** — `is_won` / `is_closed` unrendered (S7) |
-| C16 | "From tender" is legible without hovering | **fails** — icon plus `:title` (S7) |
+| C15 | *Paid* and *Closed* are distinguishable from ordinary columns | **✔ 2026-09-02** — a "Won" / "Closed" chip per flag, two independent `v-if`s, the doctype's own labels (S7) |
+| C16 | "From tender" is legible without hovering | **✔ 2026-09-02** — the badge reads `⚑ Tender`; icon kept, tooltip removed (S7) |
 | C17 | `status` is the server's classification, not the client's | **✔ 2026-09-02** — one rule in `_funnel.delivery_state`; `so_board` sends it, the dashboard counts by it, the client re-derives nothing (S7) |
 | C18 | Creating a stage uses the app's own dialog | **fails** — `window.prompt` (S8) |
 | C19 | A stage colour the manager chose cannot make its own count unreadable | **fails** — raw colour on a 13 % tint of itself (S3) |

@@ -335,6 +335,16 @@ function openSo(name) {
 							>{{ (cardsByStage[s.name] || []).length }}</span
 						>
 						<span class="fw-semibold flex-grow-1 text-truncate">{{ s.stage_name }}</span>
+						<!-- Two SEPARATE v-ifs, not a v-else: both are Check fields a manager
+						     can set together, and hiding one would leave no sign it was set.
+						     "Closed [Closed]" on the default stage is redundant and kept
+						     anyway — the words are the doctype's own labels, and suppressing
+						     a chip because it happens to match the stage's NAME is a rule
+						     that stops working the moment either is translated. -->
+						<span v-if="s.is_won" class="badge bg-green-lt flex-shrink-0">{{ t("Won") }}</span>
+						<span v-if="s.is_closed" class="badge bg-secondary-lt flex-shrink-0">{{
+							t("Closed")
+						}}</span>
 						<span
 							class="text-secondary small font-monospace text-nowrap me-1 d-flex flex-column align-items-end"
 						>
@@ -382,9 +392,15 @@ function openSo(name) {
 						<div class="card-body p-2">
 							<div class="d-flex align-items-center gap-1 mb-1">
 								<span class="fw-semibold text-truncate">{{ c.name }}</span>
-								<span v-if="c.deal" class="badge bg-purple-lt ms-auto" :title="t('From tender')"
-									><i class="ti ti-flag"></i
-								></span>
+								<!-- The word, not just the icon. Which contract came from a
+								     tender is this board's whole subject, and it was reachable
+								     only by hovering — on a touch device, not at all. The icon
+								     stays: beside a word it helps scanning, instead of one it is
+								     a puzzle. No :title, because a second wording of the same
+								     fact is the one that drifts. -->
+								<span v-if="c.deal" class="badge bg-purple-lt ms-auto flex-shrink-0"
+									><i class="ti ti-flag me-1"></i>{{ t("Tender") }}</span
+								>
 							</div>
 							<div class="text-secondary small text-truncate mb-1">{{ c.customer_name }}</div>
 							<div class="font-monospace fw-bold mb-1">
