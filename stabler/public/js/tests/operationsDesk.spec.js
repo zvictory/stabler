@@ -71,6 +71,22 @@ function leadRowBlock() {
 	return src.slice(open, close + "</button>".length);
 }
 
+/**
+ * The plan panel's state chain: the loading branch through the last state branch
+ * before rows are drawn. Anchored on `:rows="6"` — the plan skeleton's own row
+ * count — because `SkeletonRows` appears twice in the file and an anchor on the
+ * component name alone would slice the decision box's chain instead.
+ */
+function planStateChain() {
+	const from = anchor('<SkeletonRows v-if="loading" :rows="6"');
+	return src.slice(from, anchor("<template v-else>", from));
+}
+
+/** The `v-if`/`v-else-if` conditions of a branch chain, in source order. */
+function branchConditions(block) {
+	return [...block.matchAll(/v-(?:else-)?if="([^"]+)"/g)].map((m) => m[1]);
+}
+
 describe("D12 — the freshness stamp is the server's clock, not the browser's", () => {
 	// The stamp is a computed over the stored payload (the idiom all six tender
 	// screens share since 2026-09-02 — see tenderFreshness.spec.js). Running it
@@ -242,5 +258,102 @@ describe("D17 — the lead row's call to action is the control, not a painted sp
 		// is for this page to override the layer's own grid.
 		const children = leadRowBlock().match(/^\t{6}<(?!\/)/gm) ?? [];
 		expect(children).toHaveLength(2);
+	});
+});
+
+describe("D9 — a view the reader lacks is forbidden, not an error", () => {
+	const isForbidden = (...a) => liftFunction("isForbidden")(...a);
+
+	it("reads the server's 403 as a refusal", () => {
+		// WHAT WOULD MAKE THIS FAIL: dropping the status check. Gate 3 is the only
+		// one of this screen's three gates that lives on the server —
+		// `_require_tender_view` throws frappe.PermissionError (tender.py:1893),
+		// Frappe answers 403, and client.js:73 puts that on `err.status`. Without
+		// this read the refusal lands in `error` and a person who typed a view they
+		// do not hold is told the desk broke, which sends them to support instead of
+		// to whoever grants roles.
+		//
+		// The message here is the Uzbek for "not permitted" on purpose: `_()` is
+		// translated server-side, so on three of the four shipped languages the
+		// wording half of the check matches nothing. Asserting with the English
+		// text would let a status-blind implementation pass this test and fail in
+		// production for most of the users.
+		expect(isForbidden({ status: 403, message: "Ruxsat berilmagan" })).toBe(true);
+	});
+
+	it("does not read an ordinary failure as a refusal", () => {
+		// WHAT WOULD MAKE THIS FAIL: widening the test to any error. The two states
+		// have opposite recoveries — a refusal is answered by asking for a role, a
+		// failure by retrying — so calling a 500 "forbidden" is exactly as wrong as
+		// calling a 403 "error", and it hides real breakage behind a policy message.
+		expect(isForbidden({ status: 500, message: "Internal Server Error" })).toBe(false);
+		expect(isForbidden({ message: "Failed to fetch" })).toBe(false);
+		expect(isForbidden(undefined)).toBe(false);
+	});
+
+	it("matches the refusal wording Frappe actually sends, not just the word 'permission'", () => {
+		// WHAT WOULD MAKE THIS FAIL: copying the repo's other five call sites
+		// verbatim — `/role|permission/i` (UnbilledReceipts.vue:235). Measured: the
+		// throw on this path is _("Not permitted") (tender.py:1893), and "permitted"
+		// does not contain "permission", so that regex matches nothing here. The
+		// status code is the load-bearing half; this fallback only has to stop being
+		// decorative.
+		expect(isForbidden({ message: "Not permitted" })).toBe(true);
+	});
+
+	it("clears the refusal at the start of every fetch, the way the error is cleared", () => {
+		// WHAT WOULD MAKE THIS FAIL: setting `forbidden` and never resetting it. The
+		// picker calls fetchDesk() on change, so one refused view would leave the
+		// desk refusing forever — including for the views the reader does hold.
+		const body = src.slice(anchor("async function fetchDesk("), anchor("const filteredPlan"));
+		expect(body).toMatch(/error\.value = "";/);
+		expect(body).toMatch(/forbidden\.value = false;/);
+	});
+
+	it("routes a refusal to `forbidden` and leaves `error` empty", () => {
+		// WHAT WOULD MAKE THIS FAIL: setting both. The template renders the first
+		// matching branch, so setting both would still look right today and would
+		// break silently the moment the branches are reordered — and any reader of
+		// the state would see a screen claiming to be broken AND refused at once.
+		const at = anchor("} catch (err) {");
+		const body = src.slice(at, src.indexOf("} finally {", at));
+		expect(body).toMatch(/if \(isForbidden\(err\)\) \{[\s\S]*?forbidden\.value = true;/);
+		expect(body).toMatch(/\n\t\t} else \{/);
+	});
+
+	it("draws the refusal as its own branch, ahead of the error branch", () => {
+		// WHAT WOULD MAKE THIS FAIL: rendering the refusal through `error`. The
+		// module and company gates already get their own worded branches; this is
+		// the third gate, and collapsing it into the red one throws away the
+		// distinction the other two exist to protect. Order matters because an error
+		// branch placed first would swallow the refusal on any future change that
+		// sets both.
+		const conditions = branchConditions(planStateChain());
+		expect(conditions).toContain("forbidden");
+		expect(conditions.indexOf("forbidden")).toBeLessThan(conditions.indexOf("error"));
+	});
+
+	it("does not announce the refusal as an alert", () => {
+		// WHAT WOULD MAKE THIS FAIL: copying role="alert" onto the refusal branch.
+		// `role="alert"` is an assertive live region — it interrupts a screen reader
+		// because something went wrong. A view you were never entitled to open is a
+		// policy outcome, not a failure, and it is announced the way the other two
+		// gates are, which carry no role at all.
+		const chain = planStateChain();
+		expect(chain).toContain('v-else-if="forbidden"');
+		const branch = chain.slice(chain.indexOf('v-else-if="forbidden"'));
+		expect(branch.slice(0, branch.indexOf(">"))).not.toMatch(/role="alert"/);
+		expect(chain).toMatch(/v-else-if="error"[^>]*role="alert"/);
+	});
+
+	it("hides the counter strip while the view is refused", () => {
+		// WHAT WOULD MAKE THIS FAIL: leaving the four chips drawn. With no payload
+		// they render 0 / 0 / 0 / 0 under their rules ("due date passed, still
+		// open"), which reads as "nothing is overdue" — a measurement of a view the
+		// server just declined to measure. Four confident zeros beside a refusal is
+		// worse than either state alone.
+		const at = anchor('class="ds-kpis" data-cols="4"');
+		const tag = src.slice(src.lastIndexOf("<div", at), src.indexOf(">", at));
+		expect(tag).toMatch(/v-if="!forbidden"/);
 	});
 });

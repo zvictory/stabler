@@ -31,8 +31,11 @@
 
 		<!-- Sayaç şeridi. Dördü de API'nin döndüğü sayaçlar — filtreleri de
 		     bunlar sürüyor, o yüzden görsel dil değişti ama HANGİ dört sayı
-		     gösterildiği değişmedi. Alt satır sayının kuralını yazar. -->
-		<div class="ds-kpis" data-cols="4">
+		     gösterildiği değişmedi. Alt satır sayının kuralını yazar.
+		     Reddedilen görünümde HİÇ çizilmez: yük yokken kartlar 0/0/0/0
+		     yazar ve bu, sunucunun ölçmeyi reddettiği bir görünüm hakkında
+		     "hiçbir şey gecikmemiş" iddiasıdır. -->
+		<div v-if="!forbidden" class="ds-kpis" data-cols="4">
 			<button
 				v-for="k in kpis"
 				:key="k.filter"
@@ -68,6 +71,14 @@
 				</div>
 				<div v-else-if="!session.activeCompany" class="ds-panel-foot desk-state">
 					{{ t("Please select an active company.") }}
+				</div>
+				<!-- Üçüncü kapı. İlk ikisi istemcide, bu sunucuda: reddedilmek
+				     bir arıza değil, bir politika sonucu — o yüzden kendi dalı
+				     var, `role="alert"` yok ve kırmızı hata dalının ÖNÜNDE
+				     duruyor. -->
+				<div v-else-if="forbidden" class="ds-panel-foot desk-state">
+					<span>{{ t("This view is not yours") }}</span>
+					<span>{{ t("Your roles do not include it. Remove the view from the address to open your own desk.") }}</span>
 				</div>
 				<div v-else-if="error" class="ds-panel-foot desk-state" role="alert">{{ error }}</div>
 				<div v-else-if="filteredPlan.length === 0" class="ds-panel-foot desk-state">
@@ -251,6 +262,14 @@ const session = useSession();
 
 const loading = ref(false);
 const error = ref("");
+/* Reddedilme AYRI bir durum, hatanın bir çeşidi değil. Ekranın üç kapısı var:
+ * modül (istemci), aktif şirket (istemci) ve rol görünümü (sunucu). Üçüncüsü
+ * `_require_tender_view` içinde `frappe.PermissionError` fırlatıyor
+ * (tender.py:1893) ve `error`a düşünce "bu görünüm senin değil" refüzü "masa
+ * bozuldu" diye okunuyordu — ilk iki kapının koruduğu ayrımı tam da üçüncüsü
+ * çöpe atıyordu. İki durumun kurtarma yolu birbirinin zıttı: biri rol
+ * istemek, öteki yeniden denemek. */
+const forbidden = ref(false);
 const deskData = ref(null);
 const currentView = ref(route.query.view || null);
 const activeFilter = ref(route.query.filter || "all");
@@ -295,6 +314,15 @@ const lastReadAt = computed(() => formatTime(deskData.value?.generated_at));
 const todayStr = todayIso();
 let reqToken = 0;
 
+/* Yük taşıyan yarı DURUM KODU: sunucu 403 döndürüyor, client.js:73 bunu
+ * `err.status`e koyuyor. Metin yarısı yalnızca İngilizce bir yedek — repo'nun
+ * diğer beş çağrı yeri `/role|permission/i` yazıyor (UnbilledReceipts.vue:235)
+ * ama bu yoldaki gerçek metin `_("Not permitted")`, ve "permitted" içinde
+ * "permission" geçmiyor; çevrilmiş bir mesaj ise hiçbir dilde eşleşmez. */
+function isForbidden(err) {
+	return err?.status === 403 || /permission|not permitted/i.test(err?.message || "");
+}
+
 async function fetchDesk() {
 	if (!session.canAccessModule("tender") || !session.activeCompany) {
 		return;
@@ -303,6 +331,7 @@ async function fetchDesk() {
 	const token = ++reqToken;
 	loading.value = true;
 	error.value = "";
+	forbidden.value = false;
 
 	try {
 		const res = await call("stabler.api.tender_desk.operations_desk", {
@@ -319,7 +348,11 @@ async function fetchDesk() {
 		}
 	} catch (err) {
 		if (token !== reqToken) return;
-		error.value = err?.message || t("Failed to load operations desk.");
+		if (isForbidden(err)) {
+			forbidden.value = true;
+		} else {
+			error.value = err?.message || t("Failed to load operations desk.");
+		}
 	} finally {
 		if (token === reqToken) {
 			loading.value = false;

@@ -148,6 +148,19 @@ error.* A person who picked a view they are not entitled to sees a red-flavoured
 failure, not "this view isn't yours". Two of three gates are exemplary; the third
 throws away the distinction the other two protect.
 
+**Fixed 2026-09-02 (D9), and one thing measured on the way.** The refusal is now
+its own branch ahead of the error branch, without `role="alert"` — an assertive
+live region is for a failure, and being refused a view you never held is a policy
+outcome. The counter strip is hidden while refused: with no payload the four chips
+render `0 / 0 / 0 / 0` under rules like *due date passed, still open*, i.e. a
+measurement of the very view the server declined to measure.
+**The repo's standard forbidden test would not have worked here.** Five screens
+carry `err?.status === 403 || /role|permission/i.test(err?.message || "")`
+(`UnbilledReceipts.vue:235`). This path throws `_("Not permitted")`
+(`tender.py:1893`) — *permitted* does not contain *permission*, so that regex
+matches nothing, and a translated message matches nothing in any language. The
+**403 is the load-bearing half**; the wording is an English-only backstop.
+
 **A second, recorded gate bug — read the comment, do not repeat the bug**
 (`tender_desk.py:295-311`). The Decision box partitions one approval queue into
 "Awaiting my approval" and "Waiting others". The old predicate OR'd in
@@ -507,7 +520,7 @@ re-examined.
 | D6 | Loading renders `SkeletonRows`, not a spinner | passes |
 | D7 | `view` and `filter` round-trip through the URL | passes |
 | D8 | Band collapse round-trips through the URL | **passes** — `?collapsed=` (2026-09-02) |
-| D9 | A view the user lacks renders as *forbidden*, distinct from *error* | **fails** — collapses into `error` |
+| D9 | A view the user lacks renders as *forbidden*, distinct from *error* | **passes** (2026-09-02) — own branch, no `role="alert"`, counters hidden |
 | D10 | No snake_case identifier appears in rendered text | **fails** — three (S3) |
 | D11 | The role `<select>` shows translated labels, not ids | **fails** — server sends `label == id` |
 | D12 | The freshness stamp reflects `generated_at`, not the browser clock | **passes** (2026-09-02) — first reader of `generated_at` in the SPA |
