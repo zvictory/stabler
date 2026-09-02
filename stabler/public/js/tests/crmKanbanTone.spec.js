@@ -429,3 +429,107 @@ describe("the palette draws every colour the column may hold", () => {
 		expect(de(hexes.gray, "#6b7280")).toBe(0);
 	});
 });
+
+describe("the picker's colour names reach the catalogues", () => {
+	/**
+	 * The swatch tooltip was `:title="t(c.name)"` — a key computed at runtime.
+	 *
+	 * Dynamic `t()` is not a defect in itself and this SPA uses it in roughly two
+	 * hundred places; it works whenever the key is a literal SOMEWHERE, because the
+	 * harvester (`stabler.translations.harvest.run`) scans source for literal
+	 * `t("…")` and appends what it finds. These thirteen were a literal nowhere.
+	 *
+	 * Measured 2026-09-02: all thirteen names absent from all five catalogues, in
+	 * both casings — 13 of 13 — so every swatch tooltip rendered in English
+	 * whatever language the user had picked. The palette grew from ten to thirteen
+	 * that same day and the gap grew with it.
+	 */
+
+	const LANGS = ["en", "ru", "uz", "uzc", "tr"];
+
+	/**
+	 * `{key: translation}` for one catalogue.
+	 *
+	 * A real CSV scan, not a split on the first comma: the catalogues quote
+	 * conditionally (261-399 of ~6 600 rows carry a quote, measured 2026-09-02), so
+	 * a naive split turns `"Foo, bar",…` into the key `"Foo` — which would report a
+	 * key as missing that is present, or worse, silently pass over one that is not.
+	 */
+	function catalogue(lang) {
+		const raw = readFileSync(resolve(here, `../../../translations/${lang}.csv`), "utf8");
+		const out = {};
+		let row = [];
+		let cell = "";
+		let quoted = false;
+		for (let i = 0; i < raw.length; i++) {
+			const ch = raw[i];
+			if (quoted) {
+				if (ch !== '"') cell += ch;
+				else if (raw[i + 1] === '"') (cell += '"'), i++;
+				else quoted = false;
+			} else if (ch === '"') quoted = true;
+			else if (ch === ",") (row.push(cell), (cell = ""));
+			else if (ch === "\n") {
+				row.push(cell);
+				if (row[0]) out[row[0]] = row[1] ?? "";
+				(row = []), (cell = "");
+			} else if (ch !== "\r") cell += ch;
+		}
+		if (cell || row.length) {
+			row.push(cell);
+			if (row[0]) out[row[0]] = row[1] ?? "";
+		}
+		return out;
+	}
+
+	it("names each colour with a literal key, not one computed at runtime", () => {
+		// WHAT WOULD MAKE THIS FAIL: `t(c.name)` coming back, under any spelling.
+		// The harvester cannot see a computed key, so the string never reaches a
+		// catalogue and no amount of translating fixes it — the tooltip stays
+		// English in all four other languages, silently, forever.
+		const block = deals.match(/const KANBAN_COLORS = \[([\s\S]*?)\n\];/);
+		expect(block, "KANBAN_COLORS has moved").not.toBeNull();
+		const labels = [...block[1].matchAll(/label: t\("([^"]+)"\)/g)].map((m) => m[1]);
+		expect(labels.length, "not every palette entry carries a literal label").toBe(
+			(block[1].match(/hex:/g) || []).length
+		);
+	});
+
+	it("uses that label in the picker rather than recomputing the key", () => {
+		// WHAT WOULD MAKE THIS FAIL: the labels landing and the template still
+		// calling t(c.name) — the fix present, wired to nothing, and the test above
+		// still green because it only reads the array.
+		const at = deals.indexOf("kanban-color-swatch");
+		expect(at, "the swatches have gone").toBeGreaterThan(-1);
+		const swatch = deals.slice(at, deals.indexOf("</button>", at));
+		expect(/:title="c\.label"/.test(swatch), "the swatch does not use the literal label").toBe(true);
+		expect(/t\(c\.name\)/.test(deals), "a colour name is still translated by a computed key").toBe(
+			false
+		);
+	});
+
+	it("carries every one of those keys in all five catalogues, translated", () => {
+		// WHAT WOULD MAKE THIS FAIL: adding a colour and not translating it — which
+		// is exactly how the palette reached thirteen untranslated names. The rule
+		// this encodes is the i18n skill's: a feature does not land with a
+		// user-facing string missing from any of the five.
+		//
+		// `en` is the source catalogue, so its target equals its key; the other four
+		// must be non-empty and DIFFERENT from the English, or the row is a
+		// placeholder someone appended and never filled — the state `Not set` was in
+		// until today.
+		const block = deals.match(/const KANBAN_COLORS = \[([\s\S]*?)\n\];/);
+		const labels = [...block[1].matchAll(/label: t\("([^"]+)"\)/g)].map((m) => m[1]);
+		expect(labels.length, "no labels to check").toBeGreaterThan(0);
+		for (const lang of LANGS) {
+			const cat = catalogue(lang);
+			const missing = labels.filter((k) => !cat[k]);
+			expect(missing, `${lang}.csv is missing ${missing.join(", ")}`).toEqual([]);
+			if (lang === "en") continue;
+			const untranslated = labels.filter((k) => cat[k] === k);
+			expect(untranslated, `${lang}.csv still shows English for ${untranslated.join(", ")}`).toEqual(
+				[]
+			);
+		}
+	});
+});

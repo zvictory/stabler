@@ -61,19 +61,19 @@ function statusClass(color) {
  * palette's previous worst pair at 21.2 — and 600 is nonetheless the widest
  * available: violet-700 reads 9.1, amber-700 drops to 9.0 against orange. */
 const KANBAN_COLORS = [
-	{ name: "gray",   hex: "#6b7280" },
-	{ name: "black",  hex: "#111827" },
-	{ name: "blue",   hex: "#3b82f6" },
-	{ name: "green",  hex: "#16a34a" },
-	{ name: "yellow", hex: "#ca8a04" },
-	{ name: "amber",  hex: "#d97706" },
-	{ name: "orange", hex: "#ea580c" },
-	{ name: "red",    hex: "#dc2626" },
-	{ name: "purple", hex: "#9333ea" },
-	{ name: "violet", hex: "#7c3aed" },
-	{ name: "pink",   hex: "#db2777" },
-	{ name: "teal",   hex: "#0d9488" },
-	{ name: "cyan",   hex: "#0891b2" },
+	{ name: "gray",   hex: "#6b7280", label: t("Gray") },
+	{ name: "black",  hex: "#111827", label: t("Black") },
+	{ name: "blue",   hex: "#3b82f6", label: t("Blue") },
+	{ name: "green",  hex: "#16a34a", label: t("Green") },
+	{ name: "yellow", hex: "#ca8a04", label: t("Yellow") },
+	{ name: "amber",  hex: "#d97706", label: t("Amber") },
+	{ name: "orange", hex: "#ea580c", label: t("Orange") },
+	{ name: "red",    hex: "#dc2626", label: t("Red") },
+	{ name: "purple", hex: "#9333ea", label: t("Purple") },
+	{ name: "violet", hex: "#7c3aed", label: t("Violet") },
+	{ name: "pink",   hex: "#db2777", label: t("Pink") },
+	{ name: "teal",   hex: "#0d9488", label: t("Teal") },
+	{ name: "cyan",   hex: "#0891b2", label: t("Cyan") },
 ];
 
 /** The hex a status colour NAME resolves to, or "" when it names none.
@@ -946,7 +946,7 @@ watch(activeCompany, () => {
 										v-for="c in KANBAN_COLORS"
 										:key="c.name"
 										class="kanban-color-swatch"
-										:title="t(c.name)"
+										:title="c.label"
 										:style="{ background: c.hex, outline: col.status.color === c.name ? `2px solid ${c.hex}` : 'none', outlineOffset: '2px' }"
 										@click.stop="updateColColor(col.status, c.name)"
 									></button>

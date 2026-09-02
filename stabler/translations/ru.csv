@@ -6640,3 +6640,16 @@ No price found for {item}. Enter the rate manually.,Цена для {item} не 
 Could not fetch a price for {item}. Enter the rate manually.,Не удалось получить цену для {item}. Введите её вручную.
 Use the arrow keys to move this card.,"Используйте клавиши со стрелками, чтобы переместить эту карточку."
 Stage name,Название этапа
+Gray,Серый
+Black,Чёрный
+Blue,Синий
+Green,Зелёный
+Yellow,Жёлтый
+Amber,Янтарный
+Orange,Оранжевый
+Red,Красный
+Purple,Пурпурный
+Violet,Фиолетовый
+Pink,Розовый
+Teal,Бирюзовый
+Cyan,Голубой

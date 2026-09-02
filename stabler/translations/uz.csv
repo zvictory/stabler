@@ -6635,3 +6635,16 @@ No price found for {item}. Enter the rate manually.,{item} uchun narx topilmadi.
 Could not fetch a price for {item}. Enter the rate manually.,{item} uchun narx olinmadi. Narxni qo'lda kiriting.
 Use the arrow keys to move this card.,Bu kartani ko'chirish uchun o'q tugmalaridan foydalaning.
 Stage name,Bosqich nomi
+Gray,Kulrang
+Black,Qora
+Blue,Ko'k
+Green,Yashil
+Yellow,Sariq
+Amber,Kahrabo
+Orange,To'q sariq
+Red,Qizil
+Purple,Siyohrang
+Violet,Binafsha
+Pink,Pushti
+Teal,Firuza
+Cyan,Havorang
