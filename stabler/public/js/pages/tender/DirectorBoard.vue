@@ -81,8 +81,13 @@ async function assign(row, user, event) {
 		/* :value tek yönlü — reddedilince row.assigned_to hiç değişmiyor, o
 		 * yüzden Vue bu bağı yeniden eşlemiyor ve <select> tarayıcının zaten
 		 * uyguladığı seçimi göstermeye devam ediyor. Tek düzeltme DOM'a
-		 * doğrudan yazmak; tepkisel olan burada geri almaz. */
-		if (event?.target) event.target.value = previous;
+		 * doğrudan yazmak; tepkisel olan burada geri almaz.
+		 *
+		 * Aynı <select> üzerinde iki değişiklik aynı DOM düğümünü paylaşır, bu
+		 * yüzden yalnızca BU çağrının gönderdiği değer hâlâ ekranda duruyorsa
+		 * geri al — aksi halde geç gelen bir ret, arada başarıyla tamamlanmış
+		 * farklı bir çağrının sonucunu ezer. */
+		if (event?.target && event.target.value === user) event.target.value = previous;
 		toast.error(err?.message || t("Could not assign."));
 	}
 }

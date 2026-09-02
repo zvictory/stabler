@@ -131,3 +131,42 @@ describe("P13 — a rejected assignment visibly reverts", () => {
 		expect(TEMPLATE).toMatch(/@change="assign\(r, \$event\.target\.value, \$event\)"/);
 	});
 });
+
+describe("P13 follow-up (coordinator review, 2026-09-02) — two in-flight requests on the same select must not stomp each other", () => {
+	it("a late rejection does not overwrite a value a different, already-successful call established", async () => {
+		// WHAT WOULD MAKE THIS FAIL: today's unconditional `event.target.value =
+		// previous` in the catch block. Two changes on the same <select> share
+		// one DOM node, so both calls capture `previous` ("alice") before either
+		// settles. The first pick (bob) succeeds — row.assigned_to moves to
+		// "bob", and in a real mount Vue's one-way :value binding re-patches the
+		// live DOM to "bob" the instant that reactive value changes. A LATE
+		// rejection of the second pick (carol) must not blindly write "alice"
+		// back over that: it would show a manager who is not actually assigned
+		// server-side, which is strictly worse than the pre-P13 bug (that at
+		// least left the user's own last choice on screen). The fix only
+		// permits the revert while the select still shows exactly what THIS
+		// call itself set — i.e. nothing else has touched it since.
+		const h = harness();
+		const row = { deal: "D1", assigned_to: "alice", assigned_to_name: "Alice" };
+		const target = { value: "bob" }; // browser already applied the first pick natively
+		const runA = h.assign(row, "bob", { target });
+
+		target.value = "carol"; // browser applies the user's second pick before A settles
+		const runB = h.assign(row, "carol", { target });
+
+		h.pending[0].resolve({ assigned_to: "bob", assigned_to_name: "Bob" });
+		await runA;
+		expect(row.assigned_to).toBe("bob");
+		// Vue's :value binding re-patches the live DOM the instant row.assigned_to
+		// changes reactively — that is what a real mount does here. The lifted
+		// function has no Vue attached, so the patch is applied by hand.
+		target.value = "bob";
+
+		h.pending[1].reject(new Error("Not permitted"));
+		await runB;
+
+		expect(target.value, "a late rejection must not stomp a newer, successful assignment").toBe("bob");
+		expect(row.assigned_to).toBe("bob");
+		expect(h.toasts.error.length).toBe(1);
+	});
+});
