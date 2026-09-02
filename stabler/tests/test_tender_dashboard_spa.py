@@ -32,6 +32,18 @@ def _read(path: str) -> str:
 		return source.read()
 
 
+def _without_comments(source: str) -> str:
+	"""Strip Vue-template HTML comments (`<!-- ... -->`) before a structural scan.
+
+	P1-4 (coordinator review, 2026-09-02): an assertion anchored on a literal
+	tag-open substring like `"<SkeletonRows"` still matches inside a comment
+	that merely TALKS ABOUT the tag -- `<!-- we mount <SkeletonRows here -->`
+	stayed green with the real mount replaced by a `<div>`. Call this on any
+	source string before searching it for a call site a comment could impersonate.
+	"""
+	return re.sub(r"<!--.*?-->", "", source, flags=re.DOTALL)
+
+
 class TestTenderDashboardSpaContract(unittest.TestCase):
 	def test_dashboard_uses_capability_gate_and_delegates_to_the_overview(self):
 		"""On a tender company the dashboard redirects to /tender/portfolio."""
@@ -181,9 +193,18 @@ class TestTenderDashboardSpaContract(unittest.TestCase):
 		# next sibling branch's landmark, not a fixed character window that
 		# would silently stop matching once a comment shifted the tag a few
 		# bytes further away.
+		#
+		# P1-4 (coordinator review, 2026-09-02): anchoring on the literal tag-open
+		# substring "<SkeletonRows" was NOT enough on its own -- a comment inside
+		# this same branch can contain that exact substring too. Reproduced: the
+		# reviewer swapped the real mount for `<div>{{ t("Please wait…") }}</div>`
+		# and wrote the comment as `<!-- F17: we mount <SkeletonRows here … -->`,
+		# and the old assertion (below, before this fix) still passed. Scanning
+		# the comment-stripped branch closes that hole rather than papering over
+		# this one instance of it.
 		loading_at = funnel.index('v-if="loading && !data"')
 		error_at = funnel.index('v-else-if="error"', loading_at)
-		loading_branch = funnel[loading_at:error_at]
+		loading_branch = _without_comments(funnel[loading_at:error_at])
 		# The opening tag itself, not the bare word: an explanatory comment in
 		# this branch is allowed to say "SkeletonRows" in prose, and a plain
 		# `assertIn("SkeletonRows", ...)` cannot tell that mention apart from
@@ -200,7 +221,7 @@ class TestTenderDashboardSpaContract(unittest.TestCase):
 			"TenderOverview.vue no longer imports SkeletonRows",
 		)
 		self.assertRegex(
-			overview,
+			_without_comments(overview),
 			r'<SkeletonRows[^>]*\bv-else-if="flowLoading && !flow"',
 			"the process-flow loading branch is not a skeleton",
 		)
