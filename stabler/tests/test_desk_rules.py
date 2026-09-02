@@ -1,6 +1,6 @@
 import unittest
 
-from stabler.api._desk_rules import SEVERITY, build_plan
+from stabler.api._desk_rules import SEVERITY, build_calendar, build_plan
 
 
 class TestDeskRules(unittest.TestCase):
@@ -198,6 +198,121 @@ class TestDeskRules(unittest.TestCase):
 		}
 		res = build_plan(facts, "2026-07-30")
 		self.assertEqual(res["skipped"], 1)
+
+
+class TestCalendarPartition(unittest.TestCase):
+	"""D13. A day cell counts `due == that day` and the window began at today, so
+	nothing overdue -- whose due date is in the past by definition -- could ever
+	appear in it. On seed data the desk's loudest row, a bid deadline that passed
+	yesterday, was absent from all seven cells while the Overdue counter above them
+	read 1: two regions of one screen, describing the same four items, unable to
+	agree by construction.
+
+	The input below is not a fixture of the calendar's expected output -- it is
+	build_plan's own output from seed-shaped lots, so the plan and the calendar
+	cannot drift apart in this file."""
+
+	TODAY = "2026-09-02"
+
+	def _seed_plan(self):
+		"""The four rows seed_tender_demo produces: overdue, today, today, soon."""
+		return build_plan(
+			{
+				"lots": [
+					# UTY-2026-4305: deadline passed yesterday -> overdue
+					{
+						"deal": "d1",
+						"label": "LOT-4305",
+						"stage": "go",
+						"bid_deadline": "2026-09-01",
+						"sq_count": 1,
+					},
+					# UTY-2026-4308: deadline today
+					{
+						"deal": "d2",
+						"label": "LOT-4308",
+						"stage": "sourcing",
+						"bid_deadline": "2026-09-02",
+						"sq_count": 5,
+					},
+					# UTY-2026-4309: 3/5 quotes, deadline 25 days out -> policy gap
+					{
+						"deal": "d3",
+						"label": "LOT-4309",
+						"stage": "sourcing",
+						"bid_deadline": "2026-09-27",
+						"sq_count": 3,
+					},
+					# UTY-2026-4310: deadline in 2 days
+					{
+						"deal": "d4",
+						"label": "LOT-4310",
+						"stage": "priced",
+						"bid_deadline": "2026-09-04",
+						"sq_count": 6,
+					},
+				]
+			},
+			self.TODAY,
+		)["items"]
+
+	def test_the_row_the_desk_is_loudest_about_is_visible_in_the_calendar(self):
+		# WHAT WOULD MAKE THIS FAIL: going back to seven cells and nothing else.
+		# The Overdue chip reads 1 and the seven cells summed to 2 of the 4 items,
+		# with the one that actually needed doing today missing from both regions
+		# that claim to show the week.
+		cal = build_calendar(self._seed_plan(), self.TODAY, 7)
+		self.assertEqual(cal["past"]["count"], 1)
+		self.assertIn("LOT-4305", cal["past"]["items"][0]["title"])
+
+	def test_the_seven_days_still_count_what_they_counted(self):
+		# WHAT WOULD MAKE THIS FAIL: solving the invisibility by widening a day's
+		# predicate (`due <= that day`), which would smear every overdue item onto
+		# every remaining cell. The bucket exists so the DAYS can stay exact.
+		cal = build_calendar(self._seed_plan(), self.TODAY, 7)
+		self.assertEqual([d["count"] for d in cal["days"]], [1, 0, 1, 0, 0, 0, 0])
+		self.assertEqual(cal["days"][0]["date"], "2026-09-02")
+		self.assertEqual(cal["days"][6]["date"], "2026-09-08")
+
+	def test_nothing_is_counted_in_both_the_bucket_and_a_day(self):
+		# WHAT WOULD MAKE THIS FAIL: `due <= today` for the bucket. Today's bid
+		# deadline would then appear in the past pile AND in the today cell, so the
+		# region's own numbers would add up to more work than the plan holds --
+		# which is the same class of defect as hiding a row, with the opposite sign.
+		cal = build_calendar(self._seed_plan(), self.TODAY, 7)
+		in_days = sum(d["count"] for d in cal["days"])
+		self.assertEqual(cal["past"]["count"] + in_days, 3, "3 of the 4 rows fall inside the window")
+
+	def test_the_bucket_holds_an_item_older_than_any_lead_in_would_reach(self):
+		# WHAT WOULD MAKE THIS FAIL: "fixing" S1 by starting the window a few days
+		# earlier. Overdue is unbounded -- an invoice can be four months past due --
+		# so every N-day lead-in still hides whatever is older than N, and it hides
+		# it in a region that now looks like it covers the past. A bucket cannot.
+		ancient = [{"kind": "invoice_due", "title": "Invoice payment due: PI-1", "due": "2025-05-04"}]
+		cal = build_calendar(ancient, self.TODAY, 7)
+		self.assertEqual(cal["past"]["count"], 1)
+
+	def test_an_item_with_no_due_date_is_not_invented_into_the_past(self):
+		# WHAT WOULD MAKE THIS FAIL: treating a missing due date as "" and letting
+		# "" < today sort it into the pile. An item nobody dated is not late; the
+		# calendar has nothing to say about it and must say nothing.
+		cal = build_calendar([{"kind": "no_parent", "title": "Orphan lot", "due": None}], self.TODAY, 7)
+		self.assertEqual(cal["past"]["count"], 0)
+		self.assertEqual(sum(d["count"] for d in cal["days"]), 0)
+
+	def test_every_dated_row_is_in_the_bucket_a_day_or_beyond_the_window(self):
+		# WHAT WOULD MAKE THIS FAIL: any future partition that loses a row silently.
+		# This is the property S1 broke -- not "the overdue one is missing", but
+		# "the region's accounting does not add up to the plan" -- so it is asserted
+		# as a partition rather than as three example counts.
+		plan = self._seed_plan()
+		cal = build_calendar(plan, self.TODAY, 7)
+		window = {d["date"] for d in cal["days"]}
+		beyond = [i for i in plan if i["due"] and i["due"] > max(window)]
+		self.assertEqual(
+			cal["past"]["count"] + sum(d["count"] for d in cal["days"]) + len(beyond),
+			len([i for i in plan if i.get("due")]),
+		)
 
 
 if __name__ == "__main__":

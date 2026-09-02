@@ -307,6 +307,27 @@ items, that cannot agree by construction.
 
 Draw the fix. A seven-day window that begins today is a choice, not a law.
 
+**Fixed 2026-09-02 (D13) — and the fix is not an earlier start date.** Overdue is
+unbounded (an invoice can be four months past due), so any N-day lead-in still
+hides whatever is older than N, *and hides it in a region that now looks like it
+covers the past*. The calendar gained a **past-due bucket**: everything with
+`due < today`, however old, as one pile — complete by construction. The boundary
+is strict, so today's deadline is counted in the today cell and not in both.
+The partition moved to `_desk_rules.build_calendar`, which is Frappe-free, so the
+property that matters — *no dated plan row disappears between the regions* — is
+now **executed** by `test_desk_rules.py` against `build_plan`'s own output rather
+than pattern-matched in a module that imports frappe.
+It is drawn as the panel's own `.ds-panel-foot` under the seven cells, not as an
+eighth cell: `.ds-week` is `repeat(7, minmax(0,1fr))`
+(`stabler-modernist.css:361`), and the bucket is not a day. Its colour comes from
+`data-sev="crit"` through the layer's `.ds-sev` rules (`:307-308`) — no colour
+rule was added to this page. It is **not** a control: `.ds-band` would have
+painted it as one, and the past bucket counts by *due date* while the Overdue
+chip counts by *severity*, which are not the same set (a `policy_gap` on a lot
+whose bid deadline has passed is dated in the past and has severity `today`), so
+wiring it to the overdue filter would have created a fresh disagreement of
+exactly the kind S1 is about.
+
 ### S2 — five of the eight rules cannot produce a row, and the screen claims otherwise
 
 `_desk_rules.build_plan` emits exactly eight kinds. Executed against the seed:
@@ -573,7 +594,7 @@ re-examined.
 | D10 | No snake_case identifier appears in rendered text | **passes** (2026-09-02) — `KIND_LABEL`; the leak was in **four** places, not three (S3) |
 | D11 | The role `<select>` shows translated labels, not ids | **passes** (2026-09-02) — `VIEW_LABEL`; the server stopped sending `label == id` |
 | D12 | The freshness stamp reflects `generated_at`, not the browser clock | **passes** (2026-09-02) — first reader of `generated_at` in the SPA |
-| D13 | An overdue item is discoverable from the calendar region | **fails** — window starts today (S1) |
+| D13 | An overdue item is discoverable from the calendar region | **passes** (2026-09-02) — a past-due bucket, not an earlier start date |
 | D14 | The empty plan distinguishes *nothing to do* from *could not be computed* | **fails** — asserts "up to date" while 5 of 8 rules were silent |
 | D15 | The Decision box, Team load and calendar each render five states | **fails** — only the plan panel does |
 | D16 | Team load empty-for-your-role ≠ Team load empty-of-work | **fails** — same rendering |

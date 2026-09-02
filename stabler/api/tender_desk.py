@@ -6,8 +6,6 @@ derived deterministically from source documents without manual task records.
 
 from __future__ import annotations
 
-import datetime
-
 import frappe
 from frappe import _
 from frappe.utils import now, today
@@ -56,7 +54,6 @@ def operations_desk(company: str, view: str | None = None, days: int = 7) -> dic
 
 	oversight = _is_tender_oversight(user)
 	today_str = today()
-	today_date = datetime.date.fromisoformat(today_str)
 	try:
 		days_cnt = int(days)
 	except (ValueError, TypeError):
@@ -338,13 +335,16 @@ def operations_desk(company: str, view: str | None = None, days: int = 7) -> dic
 		"waiting_others": len(waiting_others),
 	}
 
-	# 8. Build 7-day calendar
-	calendar_days = []
-	for d_offset in range(max(1, days_cnt)):
-		dt_cur = today_date + datetime.timedelta(days=d_offset)
-		dt_str = dt_cur.isoformat()
-		day_items = [i for i in plan_items if i.get("due") == dt_str]
-		calendar_days.append({"date": dt_str, "count": len(day_items), "items": day_items[:2]})
+	# 8. Build the calendar: a past-due bucket, then the seven days.
+	#
+	# The partition is _desk_rules.build_calendar -- pure date arithmetic over the
+	# plan, so it lives with the rules and can be executed by a frappe-free test.
+	# Why the bucket exists at all is documented there; the short version is that a
+	# day's count is `due == that day`, everything overdue is dated in the past, and
+	# the window began at today, so the desk's loudest row could never appear in the
+	# region a reader scans to plan the week.
+	calendar = _desk_rules.build_calendar(plan_items, today_str, days_cnt)
+	calendar_days = calendar["days"]
 
 	# 9. Team Load (Oversight role only)
 	team_load = []
@@ -375,6 +375,7 @@ def operations_desk(company: str, view: str | None = None, days: int = 7) -> dic
 		"plan": plan_items,
 		"decisions": decisions,
 		"calendar": calendar_days,
+		"calendar_past": calendar["past"],
 		"team_load": team_load,
 		"currency": curr or "USD",
 		"view": view,

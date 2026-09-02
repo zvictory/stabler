@@ -61,6 +61,17 @@ function rhsOf(target) {
 	return src.slice(at + `${target} = `.length, end);
 }
 
+/**
+ * The right-hand side of a MULTI-LINE `const NAME = computed(() => { … });`.
+ * `rhsOf` cannot be used for these: it stops at the first `;`, which inside a
+ * block body is a statement terminator, not the end of the declaration.
+ */
+function blockRhsOf(name) {
+	const m = src.match(new RegExp(`^const ${name} = ([\\s\\S]*?^\\}\\));$`, "m"));
+	expect(m, `multi-line const ${name} not found in OperationsDesk.vue`).not.toBeNull();
+	return m[1];
+}
+
 /** Evaluate an expression against a supplied scope. */
 function evalInScope(expression, scope) {
 	const keys = Object.keys(scope);
@@ -573,5 +584,78 @@ describe("D18 — the reader can tell which clock said 'today'", () => {
 		expect(meta).toMatch(/\{\{ todayClockLabel \}\}/);
 		expect(meta).toMatch(/v-if="clockSkew"/);
 		expect(meta).toMatch(/browserToday/);
+	});
+});
+
+describe("D13 — an overdue item is discoverable from the calendar region", () => {
+	// The calendar panel: its heading through the end of the section.
+	const calendarPanel = () => {
+		const at = anchor('<h3>{{ t("Next 7 days") }}</h3>');
+		return src.slice(at, anchor("</section>", at));
+	};
+
+	const bucket = (payload) =>
+		evalInScope(blockRhsOf("pastDue"), { computed: (fn) => fn(), deskData: { value: payload } });
+
+	it("reads the count the server partitioned, and does not re-derive it", () => {
+		// WHAT WOULD MAKE THIS FAIL: counting overdue rows on the client instead.
+		// The plan the client holds is already filtered by the chip, so a client
+		// count would fall to 0 the moment the reader pressed Today — the calendar
+		// would then say "nothing is past due" because of a filter, which is the
+		// hard rule this screen states outright: severity is derived server-side and
+		// the client groups it, never re-decides it.
+		expect(bucket({ calendar_past: { count: 3, items: [] } }).count).toBe(3);
+		expect(blockRhsOf("pastDue")).toMatch(/calendar_past/);
+		expect(blockRhsOf("pastDue")).not.toMatch(/filteredPlan|severity/);
+	});
+
+	it("names the past-due items in the same tooltip the day cells use", () => {
+		// WHAT WOULD MAKE THIS FAIL: a bare count. The seven cells carry up to two
+		// titles in `title` — the only place those titles appear anywhere on this
+		// screen — and a bucket that says "3" without saying which three is a worse
+		// version of the region that said nothing at all.
+		const b = bucket({ calendar_past: { count: 2, items: [{ title: "Bid due: A" }, { title: "Late: B" }] } });
+		expect(b.tooltip).toBe("Bid due: A\nLate: B");
+	});
+
+	it("survives a server that does not send the bucket", () => {
+		// WHAT WOULD MAKE THIS FAIL: reading .count off undefined. An older server
+		// mid-deploy would blank the whole desk rather than the one new cell.
+		expect(bucket({}).count).toBe(0);
+		expect(bucket(null).tooltip).toBe("");
+	});
+
+	it("draws the bucket inside the calendar panel", () => {
+		// WHAT WOULD MAKE THIS FAIL: putting it anywhere else. The acceptance row is
+		// specifically that the overdue item is discoverable FROM THE CALENDAR
+		// REGION — the region a reader scans to plan a week, and the one that could
+		// not agree with the Overdue chip directly above it.
+		//
+		// The count itself, not merely the name: an earlier draft asserted
+		// /pastDue\.count/ and passed against a bucket stripped down to its label,
+		// because the `:data-sev` binding mentions the count too. A bucket that
+		// says "PAST DUE" and no number is the region saying nothing again.
+		expect(calendarPanel()).toMatch(/\{\{ pastDue\.count/);
+	});
+
+	it("does not put an eighth cell in a seven-column grid", () => {
+		// WHAT WOULD MAKE THIS FAIL: adding the bucket as another .ds-week-day. The
+		// layer gives .ds-week `grid-template-columns: repeat(7, minmax(0,1fr))`
+		// (stabler-modernist.css:361), so an eighth child wraps onto a second row as
+		// a lone cell — and it would be claiming to be a day, which is the one thing
+		// the bucket is not.
+		const cells = [...calendarPanel().matchAll(/<div[^>]*class="ds-week-day"[^>]*>/g)];
+		expect(cells).toHaveLength(1);
+		expect(cells[0][0]).toMatch(/v-for="day in week"/);
+	});
+
+	it("takes its colour from the layer, not from this page", () => {
+		// WHAT WOULD MAKE THIS FAIL: styling the bucket red in the scoped block.
+		// The file's own rule is that colour, type, border and spacing all come from
+		// stabler-modernist.css; `data-sev="crit"` on any ancestor already turns
+		// .ds-sev red (:307-308), so the bucket needs no rule of its own.
+		expect(calendarPanel()).toMatch(/:data-sev="pastDue\.count \? 'crit' : null"/);
+		const style = src.slice(anchor("<style scoped>"));
+		expect(style).not.toMatch(/desk-week-past/);
 	});
 });

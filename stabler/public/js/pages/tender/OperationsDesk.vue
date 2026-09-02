@@ -256,6 +256,23 @@
 							<div class="ds-mono desk-week-c">{{ day.count || "—" }}</div>
 						</div>
 					</div>
+					<!-- Geçmiş kova. Bir GÜN değil: gecikme sınırsız, dolayısıyla
+					     pencereyi birkaç gün geriye almak her zaman N'den eskisini
+					     saklar — ve artık geçmişi kapsıyormuş gibi görünen bir
+					     bölgede saklar. `.ds-week` tam yedi sütun
+					     (stabler-modernist.css:361), o yüzden sekizinci hücre değil,
+					     panelin kendi altlığı; renk `data-sev` üzerinden katmandan
+					     geliyor (:307), sayfada tek bir renk kuralı yok. Denetim
+					     değil, o yüzden `.ds-band` gibi tıklanır boyanmıyor. -->
+					<div
+						class="ds-panel-foot"
+						:data-sev="pastDue.count ? 'crit' : null"
+						:title="pastDue.tooltip"
+					>
+						<span class="ds-sev"><i></i><span>{{ t("PAST DUE") }}</span></span>
+						<span>{{ t("already past due, before this window opens") }}</span>
+						<span class="ds-mono">{{ pastDue.count || "—" }}</span>
+					</div>
 				</section>
 			</div>
 		</div>
@@ -584,6 +601,19 @@ const week = computed(() =>
 		};
 	})
 );
+
+/* Yedi hücre `due == o gün` sayıyor ve pencere bugünle başlıyor; gecikmiş her
+ * şeyin son tarihi TANIM GEREĞİ geçmişte, yani masanın en yüksek sesle
+ * bağırdığı satır haftayı planlamak için bakılan bölgede hiç görünemiyordu.
+ * Kova sunucuda kuruluyor (_desk_rules.build_calendar) — istemci saymıyor,
+ * sadece çiziyor. */
+const pastDue = computed(() => {
+	const bucket = deskData.value?.calendar_past || {};
+	return {
+		count: bucket.count || 0,
+		tooltip: (bucket.items || []).map((i) => i.title).join("\n"),
+	};
+});
 
 const weekdayLabel = computed(() => t(DOW[new Date(todayStr.value + "T00:00:00").getDay()]));
 

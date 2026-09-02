@@ -191,6 +191,32 @@ class TestTenderDeskApiSource(unittest.TestCase):
 		)
 		self.assertNotIn('"today": today()', self.source)
 
+	def test_the_calendar_partition_is_delegated_to_the_frappe_free_engine(self):
+		# D13. The seven-day window used to be built inline here, which meant the
+		# one property that matters -- that no dated plan row disappears between the
+		# regions -- could only be pattern-matched, never executed: this module
+		# imports frappe, so no frappe-free test can call it. The partition is pure
+		# date arithmetic over the plan, so it moved to _desk_rules, where
+		# test_desk_rules.py runs it against build_plan's own output.
+		self.assertTrue(
+			re.search(
+				r"^\tcalendar = _desk_rules\.build_calendar\(plan_items, today_str, days_cnt\)$",
+				self.source,
+				re.M,
+			),
+			"the calendar must be built by _desk_rules.build_calendar(plan_items, today_str, days_cnt)",
+		)
+
+	def test_the_payload_carries_the_past_due_bucket(self):
+		# WHAT WOULD MAKE THIS FAIL: computing the bucket and not sending it. The
+		# seven cells would look identical to the day the overdue row was invisible,
+		# and the engine's test would still be green -- the exact shape of a fix
+		# that is real in the code and absent on the screen.
+		self.assertTrue(
+			re.search(r'^\t\t"calendar_past": calendar\["past"\],$', self.source, re.M),
+			'the payload must carry "calendar_past"',
+		)
+
 	def test_no_sql_aggregation_functions_in_select(self):
 		lines = self.source.splitlines()
 		for idx, line in enumerate(lines, 1):
