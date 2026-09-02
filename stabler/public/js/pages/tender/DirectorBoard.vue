@@ -148,7 +148,7 @@ const kpis = computed(() => {
 		{
 			key: "at_risk", sev: "crit", label: t("Risk"),
 			value: String(k.at_risk || 0), caption: t("deadline risk"),
-			note: t("needs action today — lands on the desk"), rule: "worst(bid,contract,po_eta,delivery).days < 0",
+			note: t("needs action today — lands on the desk"), rule: "any milestone · not done · days < 0",
 		},
 		{
 			key: "total_value", sev: "neutral", label: t("Portfolio value"),

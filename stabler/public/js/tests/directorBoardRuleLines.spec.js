@@ -29,6 +29,20 @@ const api = readFileSync(resolve(here, "../../../api/tender.py"), "utf8");
  * The other three rules (`result in (won, lost)`, `avg(margin_on_revenue_pct)`,
  * `value − landed − collected`) were already honest per S1 and stay untouched.
  *
+ * Corrected again 2026-09-02 (coordinator review, verified independently):
+ * this file's own first-pass fix for Risk, `worst(bid,contract,po_eta,
+ * delivery).days < 0`, was itself still not the query — three problems.
+ * `worst(...)` returns a status STRING ("good"/"warn"/"risk"), not an object
+ * with `.days`. The four-milestone list omits a fifth, conditional one:
+ * `_deal_deadlines` (tender.py:1711-1715) appends `guarantee` whenever
+ * `intake.guarantee_return` is set, a live user-editable date — a lot whose
+ * only overdue date is the guarantee return was counted at_risk while the
+ * rule said it could not be. And it had no "not done" term: `_milestone`
+ * (tender.py:1650-1653) returns "risk" only when the milestone is NOT done —
+ * a done milestone is "good" however far past its date — so by the printed
+ * rule a delivered lot with an overdue bid deadline read as at risk while the
+ * code said it was not. New string: `any milestone · not done · days < 0`.
+ *
  * DOM-less per vitest.config.mjs. Reads both the Vue source (the printed
  * claim) and the Python source (the code behind it) — the same cross-file
  * shape stageColor.spec.js uses reading tender.py from a vitest file — for
@@ -80,17 +94,36 @@ describe("P8 — every counter's rule line describes the query that produced it"
 		expect(resultCheckAt, "the won/lost/pending branch not found").toBeGreaterThan(incAt);
 	});
 
-	it("Risk no longer claims a 48-hour threshold _milestone does not have", () => {
-		// WHAT WOULD MAKE THIS FAIL: reverting to "deadline < 48h · act_now", or
-		// changing _milestone's own threshold without updating this string — the
-		// second half of this test reads _milestone directly, so the two cannot
-		// drift apart silently.
+	it("Risk states the actual predicate: any milestone, not done, days < 0", () => {
+		// WHAT WOULD MAKE THIS FAIL: reverting to either string this rule line
+		// has already carried and both measured false — "deadline < 48h ·
+		// act_now" (S1) and "worst(bid,contract,po_eta,delivery).days < 0"
+		// (this row's own first pass). worst(...) is a status STRING, not an
+		// object with .days; the four-name list omits `guarantee`, a fifth
+		// milestone _deal_deadlines appends whenever intake.guarantee_return is
+		// set; and neither string says "not done", so a delivered lot with an
+		// overdue bid deadline would read as at risk by the rule while the code
+		// (done -> "good", unconditionally) says it is not.
 		const entry = kpiEntry("at_risk");
 		expect(entry).not.toMatch(/rule:\s*"deadline < 48h · act_now"/);
-		expect(entry).toMatch(/rule:\s*"worst\(bid,contract,po_eta,delivery\)\.days < 0"/);
+		expect(entry).not.toMatch(/rule:\s*"worst\(bid,contract,po_eta,delivery\)\.days < 0"/);
+		expect(entry).toMatch(/rule:\s*"any milestone · not done · days < 0"/);
 
+		// "any milestone": the rollup walks whatever _deal_deadlines built, and
+		// that list is not a fixed four — guarantee is a fifth, conditional
+		// entry, appended in the same function the rollup itself lives in.
+		const deadlines = api.slice(api.indexOf("def _deal_deadlines"), api.indexOf("def deal_intake"));
+		expect(deadlines, "guarantee is no longer a conditional fifth milestone").toMatch(
+			/milestones\.append\(\s*_milestone\("guarantee"/
+		);
+		expect(deadlines, "the risk rollup no longer walks the whole milestones list").toMatch(
+			/for m in milestones:\s*if m\["status"\] == "risk":/
+		);
+
+		// "not done · days < 0": a true `done` reaches "good" through the `if`
+		// and short-circuits before days is ever compared in the `elif`.
 		const milestone = api.slice(api.indexOf("def _milestone"), api.indexOf("def _deal_deadlines"));
-		expect(milestone).toMatch(/elif days < 0:\s*\n\s*status = "risk"/);
+		expect(milestone).toMatch(/if done:\s*status = "good"\s*elif days < 0:\s*status = "risk"/);
 		expect(milestone, "48 (hours) appears in _milestone's own logic").not.toMatch(/48/);
 	});
 
