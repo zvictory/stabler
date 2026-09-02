@@ -445,7 +445,7 @@ Keep the artboards you rejected.
 | P9 | *Not yet priced* is distinguishable from *zero* | **fails** — 6 rows (S2) |
 | P10 | A failed load renders as an error, not as "no tenders match these filters" | **fails** — toast only (S3) |
 | P11 | A user without the director view sees a refusal, not an empty board | **fails** — same branch |
-| P12 | A row is reachable and openable from the keyboard | **fails** — bare `<tr>` (S4) |
+| P12 | A row is reachable and openable from the keyboard | **passes** (2026-09-02) — `role="button" tabindex="0"`, Enter and Space, `.self`-guarded so the manager `<select>` does not fire it |
 | P13 | A rejected assignment returns the select to its previous value | **fails** — keeps the refused choice (S5) |
 | P14 | Phase filter and route filters are legible together, beside the table | **fails** — raw `key: value` chip in the header (S6) |
 | P15 | The freshness stamp reflects the server's generation time | **passes** (2026-09-02) — `generated_at`, folded with the funnel's own |

@@ -236,7 +236,16 @@ function clearFilters() { router.replace({ query: {} }); }
 					</thead>
 					<tbody>
 						<SkeletonRows v-if="loading" :cols="9" :rows="6" hide-first-on-mobile />
-						<tr v-for="(r, index) in filteredRows" :key="r.deal" class="board-row" @click="openDeal(r.deal)">
+						<tr
+							v-for="(r, index) in filteredRows"
+							:key="r.deal"
+							class="board-row"
+							role="button"
+							tabindex="0"
+							@click="openDeal(r.deal)"
+							@keydown.enter.self="openDeal(r.deal)"
+							@keydown.space.self.prevent="openDeal(r.deal)"
+						>
 							<td class="ds-td-num board-ord">{{ index + 1 }}</td>
 							<td>
 								<div class="board-tender">

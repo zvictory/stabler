@@ -114,7 +114,16 @@ function clearFilters() { router.replace({ query: {} }); }
 				</tr></thead>
 				<tbody>
 					<SkeletonRows v-if="loading" :cols="5" :rows="6" />
-					<tr v-for="r in filteredRows" :key="r.deal" style="cursor:pointer" @click="openDeal(r.deal)">
+					<tr
+						v-for="r in filteredRows"
+						:key="r.deal"
+						style="cursor:pointer"
+						role="button"
+						tabindex="0"
+						@click="openDeal(r.deal)"
+						@keydown.enter="openDeal(r.deal)"
+						@keydown.space.prevent="openDeal(r.deal)"
+					>
 						<td class="fw-semibold">{{ r.label }}</td>
 						<td class="text-end font-monospace">{{ fm(r.landed) }}</td>
 						<td class="text-end">{{ r.po_count }}</td>

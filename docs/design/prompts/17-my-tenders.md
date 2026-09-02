@@ -456,7 +456,7 @@ Keep the artboards you rejected.
 | M10 | Two rows tied on risk and delivery have a defined order | **fails** — set iteration (S4) |
 | M11 | A won or lost tender is distinguishable from an open one | **fails** — `result` unrendered (S6) |
 | M12 | A failed load is distinguishable from "no tenders match these filters" | **fails** — same `EmptyState` |
-| M13 | The row is reachable and openable from the keyboard | **fails** — bare `<tr>`, inline cursor |
+| M13 | The row is reachable and openable from the keyboard | **passes** (2026-09-02) — `role="button" tabindex="0"`, Enter and Space. The inline `cursor:pointer` is untouched (M7) |
 | M14 | The table scrolls on a phone; the page does not | **fails** — no responsive CSS |
 | M15 | An auto-refreshing screen says how fresh it is | **passes** (2026-09-02) — `generated_at` |
 | M16 | The landed figure shown to a sourcing user is one they can act on before the win | **fails** — it is a post-win sum, `0` on eleven of thirteen rows (§1) |
