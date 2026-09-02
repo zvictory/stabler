@@ -31,6 +31,17 @@ const api = readFileSync(resolve(here, "../../../api/tender.py"), "utf8");
  * DOM-less per vitest.config.mjs.
  */
 
+/** The file with every comment blanked out — line count and numbering preserved. */
+function withoutComments(src) {
+	const blank = (m) => m.replace(/[^\n]/g, " ");
+	return src
+		.replace(/<!--[\s\S]*?-->/g, blank)
+		.replace(/\/\*[\s\S]*?\*\//g, blank)
+		.split("\n")
+		.map((line) => (/^\s*\/\//.test(line) ? "" : line))
+		.join("\n");
+}
+
 /** Source of one top-level Python function, docstring stripped. */
 function pyBody(name) {
 	const m = new RegExp(`^def ${name}\\(`, "m").exec(api);
@@ -58,7 +69,16 @@ describe("the urgent chip states the rule the server actually applies", () => {
 		// conflict on the line its review is actively judging, so it stays theirs.
 		// Written as an allow-list rather than a count so it passes at zero — when
 		// that branch lands, this test needs no edit.
-		const offenders = funnel
+		//
+		// Comments are blanked before the scan. Not indulgence either: the FIRST
+		// thing that branch did was write two lines explaining that no 48-hour
+		// threshold exists in the computation, and this ban — whose own title says
+		// "anything the reader reads as prose" — turned main red on the merge for
+		// the explanation of the very falsehood it exists to prevent. A `//` line
+		// is never read by a user. Everything else stays banned, including a 48
+		// that is not user-facing at all: over-banning fails loud and is fixed by
+		// one allow-list entry, under-banning ships the lie again.
+		const offenders = withoutComments(funnel)
 			.split("\n")
 			.map((line, i) => [i + 1, line])
 			.filter(([, line]) => /\b48\s*h?\b/i.test(line))
