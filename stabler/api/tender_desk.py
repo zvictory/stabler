@@ -257,10 +257,30 @@ def operations_desk(company: str, view: str | None = None, days: int = 7) -> dic
 	# iterate the dict, i.e. its three KEYS, so the desk showed three phantom
 	# "Approval required: Document requests / total / can_approve" rows while every
 	# real pending approval was silently dropped (measured 2026-08-01 on mikas).
+	#
+	# Three outcomes, three names -- because the desk's empty state is a claim
+	# about the WORLD ("All items in this view are up to date") and one of its
+	# inputs used to be `except Exception: all_pending_approvals = []`. A failure
+	# and a quiet queue rendered identically: two counters at 0, an empty Decision
+	# box, and a plan asserting everything was current. Four confident statements
+	# out of a swallowed exception.
+	#
+	# `not_yours` is the common case, not an edge one: list_pending() throws
+	# PermissionError for anyone who is not an approver (approvals.py:119-121),
+	# which is most of this desk's readers. That is an ANSWER -- the queue exists
+	# and it is not mine, so a plan without it is complete for me -- and it must
+	# not be reported as a gap, or the real gap would be invisible under a warning
+	# that fires every day.
 	try:
 		all_pending_approvals = list_pending(company=company).get("requests") or []
+	except frappe.PermissionError:
+		all_pending_approvals = []
+		approvals_state = "not_yours"
 	except Exception:
 		all_pending_approvals = []
+		approvals_state = "unreadable"
+	else:
+		approvals_state = "read"
 
 	# Map facts for _desk_rules
 	lots_fact = [
@@ -391,5 +411,12 @@ def operations_desk(company: str, view: str | None = None, days: int = 7) -> dic
 		# today(): a request that straddles midnight must not ship counters computed
 		# for one day labelled with the next.
 		"today": today_str,
+		# WHY A NUMBER MIGHT BE MISSING RATHER THAN ZERO. Both of these already
+		# existed and both were thrown away: `skipped` is build_plan's own count of
+		# the rows it had to drop because a date would not parse, and the caller
+		# read only ["items"], so a lot with a malformed deadline vanished from the
+		# plan and the panel then said the view was up to date.
+		"approvals_state": approvals_state,
+		"skipped": plan_res["skipped"],
 		"generated_at": now(),
 	}

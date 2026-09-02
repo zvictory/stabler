@@ -93,8 +93,18 @@ function leadRowBlock() {
  * component name alone would slice the decision box's chain instead.
  */
 function planStateChain() {
-	const from = anchor('<SkeletonRows v-if="loading" :rows="6"');
-	return src.slice(from, anchor("<template v-else>", from));
+	return src.slice(anchor('<SkeletonRows v-if="loading" :rows="6"'), rowsTemplate());
+}
+
+/**
+ * Offset of the `<template v-else>` that draws the ROWS — the one at four tabs,
+ * which closes the plan panel's state chain. The empty branch nests a
+ * `<template v-else>` of its own at five tabs, so a plain
+ * `indexOf("<template v-else>")` stops inside the empty state instead of after
+ * it. A newline plus exactly four tabs is what tells the two apart.
+ */
+function rowsTemplate() {
+	return anchor("\n\t\t\t\t<template v-else>");
 }
 
 /** The `v-if`/`v-else-if` conditions of a branch chain, in source order. */
@@ -657,5 +667,87 @@ describe("D13 — an overdue item is discoverable from the calendar region", () 
 		expect(calendarPanel()).toMatch(/:data-sev="pastDue\.count \? 'crit' : null"/);
 		const style = src.slice(anchor("<style scoped>"));
 		expect(style).not.toMatch(/desk-week-past/);
+	});
+});
+
+describe("D14 — an empty plan says WHY it is empty", () => {
+	const gaps = (payload) =>
+		evalInScope(blockRhsOf("gaps"), {
+			computed: (fn) => fn(),
+			deskData: { value: payload },
+			t: (key, params) =>
+				params ? key.replace(/\{(\w+)\}/g, (_, k) => String(params[k])) : key,
+		});
+
+	/** The empty-plan branch: its `v-else-if` through the `<template v-else>` that draws rows. */
+	const emptyBranch = () =>
+		src.slice(anchor('v-else-if="filteredPlan.length === 0"'), rowsTemplate());
+
+	it("names an approval queue that could not be read", () => {
+		// WHAT WOULD MAKE THIS FAIL: dropping the signal. Measured: the desk's
+		// approval read was wrapped in a bare `except Exception` that produced an
+		// empty list, so a failure and a quiet queue rendered identically — two
+		// counters at 0, an empty Decision box, and a plan asserting the view was
+		// up to date. Four confident statements out of one swallowed exception.
+		expect(gaps({ approvals_state: "unreadable" })).toHaveLength(1);
+		expect(gaps({ approvals_state: "unreadable" })[0]).toMatch(/approval/i);
+	});
+
+	it("counts the rows the engine could not date", () => {
+		// WHAT WOULD MAKE THIS FAIL: ignoring `skipped`. build_plan has always
+		// counted the rows it dropped for an unparseable date and the caller threw
+		// the number away, so a lot with a malformed deadline disappeared and the
+		// panel then said everything was up to date. The number must say how many.
+		expect(gaps({ skipped: 2 })[0]).toMatch(/\b2\b/);
+	});
+
+	it("treats an approval queue that is not yours as an answer, not a gap", () => {
+		// WHAT WOULD MAKE THIS FAIL: folding "you are not an approver" in with "the
+		// query failed". Most of this desk's readers are not approvers; a plan that
+		// omits approvals they could never act on is COMPLETE for them, and marking
+		// it incomplete every single day would make the real gap invisible.
+		expect(gaps({ approvals_state: "not_yours" })).toEqual([]);
+		expect(gaps({ approvals_state: "read" })).toEqual([]);
+		expect(gaps({})).toEqual([]);
+	});
+
+	it("reports both gaps when both happened", () => {
+		// WHAT WOULD MAKE THIS FAIL: an if/else that reports the first gap only.
+		// The reader needs to know everything that was not checked, not the first
+		// thing that was not checked.
+		expect(gaps({ approvals_state: "unreadable", skipped: 3 })).toHaveLength(2);
+	});
+
+	it("keeps 'up to date' behind BOTH the filter and the gap check", () => {
+		// WHAT WOULD MAKE THIS FAIL: the sentence escaping into a general empty
+		// state. "All items in this view are up to date" is a claim about the world.
+		// It is only true when the plan is genuinely empty AND everything the desk
+		// checks was checkable — never when a counter is merely hiding the rows, and
+		// never when an input could not be read.
+		const branch = emptyBranch();
+		const claim = branch.indexOf('t("All items in this view are up to date.")');
+		expect(claim).toBeGreaterThan(-1);
+		expect(branch.slice(0, claim)).toMatch(/v-if="plan\.length"/);
+		expect(branch.slice(0, claim)).toMatch(/v-else-if="gaps\.length"/);
+		expect(branch.lastIndexOf("<template v-else>", claim)).toBeGreaterThan(
+			branch.lastIndexOf('v-else-if="gaps.length"', claim)
+		);
+	});
+
+	it("says the filter is what is hiding the rows, when it is", () => {
+		// WHAT WOULD MAKE THIS FAIL: leaving the filtered-empty case reading "No
+		// tasks scheduled for today". Pressing Overdue on a day with three today
+		// items would then report an empty desk — the single most reachable way to
+		// make this screen lie, one click from the default view.
+		const filtered = emptyBranch().slice(0, emptyBranch().indexOf('v-else-if="gaps.length"'));
+		expect(filtered).toMatch(/\{ count: plan\.length \}/);
+		expect(filtered).not.toMatch(/up to date/);
+	});
+
+	it("reads the plan from one place", () => {
+		// WHAT WOULD MAKE THIS FAIL: `deskData.plan` inline in the branch beside
+		// `filteredPlan`'s own copy. Two readings of one list is how the panel ends
+		// up counting a different number from the one it filtered.
+		expect(scriptWithoutComments().match(/deskData\.value\?\.plan/g)).toHaveLength(1);
 	});
 });

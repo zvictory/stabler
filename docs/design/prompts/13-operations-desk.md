@@ -347,6 +347,54 @@ exactly the kind S1 is about.
 cannot populate from demo data. On the boards it was lanes. Here it is the
 reasoning itself.
 
+---
+
+**Corrected 2026-09-02 while closing D14 — this section's premise is wrong, and
+the row it motivates is right for a different reason.**
+
+This section is headed *"five of the eight rules **cannot produce a row**"* and
+asks for a panel that says *"4 rules ran · 4 could not"* (a count that also
+contradicts its own table, which is 3 fire / 5 do not). Measured against the
+table's own "why not" column, **all eight rules run on seed data.** Five of them
+find nothing because there is nothing of that kind in the data, which is an
+answer, not a failure — and this file says so itself, rule by rule: both won lots
+*have* POs; every PO is a draft, and an unsubmitted PO cannot be late; the seed
+creates no Purchase Invoice; it creates no Approval Request; and with no parent
+tender anywhere *"the lots are not orphaned, the site simply files tenders flat."*
+A rule that ran and found nothing is *nothing to do*. **"Did not fire" is not
+"could not be checked."**
+
+So the deliverable as written — a coverage report over eight rules — would have
+manufactured a warning where there was none. **The row is still real**, because
+this screen does have *could not be computed* states, and both were already in
+the code and both were being thrown away:
+
+1. **A swallowed exception.** `list_pending` was wrapped in a bare
+   `except Exception: all_pending_approvals = []`. It throws
+   `frappe.PermissionError` for anyone who is not an approver
+   (`approvals.py:119-121`) — most of this desk's readers — and can throw for any
+   other reason too. Both produced an empty list, so a failure and a quiet queue
+   rendered identically: two counters at 0, an empty Decision box, and the plan
+   asserting *"All items in this view are up to date"*. **Four confident
+   statements out of one swallowed exception.**
+2. **A discarded count.** `build_plan` returns `skipped` — the rows it had to drop
+   because a date would not parse — and the caller read only `["items"]`. A lot
+   with a malformed bid deadline vanished from the plan and the panel then said
+   the view was up to date.
+
+The fix names three approval outcomes (`read` / `not_yours` / `unreadable`) and
+ships `skipped`. `not_yours` is deliberately **not** a gap: the queue exists and
+is not yours, so a plan without it is complete *for you*, and a warning that fires
+every day for most users would bury the one that matters.
+
+**A third meaning of empty was found and closed at the same time**, and it is the
+most reachable of all: `filteredPlan` is empty whenever a counter chip hides every
+row. One click from the default view, on a desk with three items due today,
+pressing **Overdue** made the panel say *"No tasks scheduled for today · All items
+in this view are up to date."* The empty state is now three-way — the filter, the
+gap, and the genuine all-clear — and the world-claim sentence survives only in the
+third.
+
 **And one fact is resolved, carried, and never read.** `tender_desk.py:100-107`
 resolves `delivery_deadline` out of the intake JSON — with a long comment about
 the bug that made it unconditionally `None` — passes it into `lots_fact` as
@@ -595,7 +643,7 @@ re-examined.
 | D11 | The role `<select>` shows translated labels, not ids | **passes** (2026-09-02) — `VIEW_LABEL`; the server stopped sending `label == id` |
 | D12 | The freshness stamp reflects `generated_at`, not the browser clock | **passes** (2026-09-02) — first reader of `generated_at` in the SPA |
 | D13 | An overdue item is discoverable from the calendar region | **passes** (2026-09-02) — a past-due bucket, not an earlier start date |
-| D14 | The empty plan distinguishes *nothing to do* from *could not be computed* | **fails** — asserts "up to date" while 5 of 8 rules were silent |
+| D14 | The empty plan distinguishes *nothing to do* from *could not be computed* | **passes** (2026-09-02) — three-way, and S2's premise was corrected: the silent five had *run* |
 | D15 | The Decision box, Team load and calendar each render five states | **fails** — only the plan panel does |
 | D16 | Team load empty-for-your-role ≠ Team load empty-of-work | **fails** — same rendering |
 | D17 | The primary CTA is the focusable, hoverable control, or is not drawn as one | **passes** (2026-09-02) — the row is the control; the span is no longer painted as one |

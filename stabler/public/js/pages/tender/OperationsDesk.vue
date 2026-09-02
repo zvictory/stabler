@@ -88,9 +88,24 @@
 					<span>{{ t("Your roles do not include it. Remove the view from the address to open your own desk.") }}</span>
 				</div>
 				<div v-else-if="error" class="ds-panel-foot desk-state" role="alert">{{ error }}</div>
+				<!-- Boş olmanın ÜÇ ayrı anlamı var ve tek bir cümleye
+				     sıkıştırılmıştı. Süzgeç saklıyorsa masa boş değil; bir girdi
+				     okunamadıysa masa boş olabilir ama bunu kimse bilmiyor. "Her
+				     şey güncel" cümlesi yalnızca üçüncü dalda, yani plan gerçekten
+				     boşken VE bakılan her şeye bakılabilmişken kalıyor. -->
 				<div v-else-if="filteredPlan.length === 0" class="ds-panel-foot desk-state">
-					<span>{{ t("No tasks scheduled for today") }}</span>
-					<span>{{ t("All items in this view are up to date.") }}</span>
+					<template v-if="plan.length">
+						<span>{{ t("No items match this filter") }}</span>
+						<span>{{ t("The plan holds {count} items; the counter above hides the rest.", { count: plan.length }) }}</span>
+					</template>
+					<template v-else-if="gaps.length">
+						<span>{{ t("Nothing to show — and not everything could be checked") }}</span>
+						<span v-for="gap in gaps" :key="gap">{{ gap }}</span>
+					</template>
+					<template v-else>
+						<span>{{ t("No tasks scheduled for today") }}</span>
+						<span>{{ t("All items in this view are up to date.") }}</span>
+					</template>
 				</div>
 
 				<template v-else>
@@ -457,8 +472,31 @@ async function fetchDesk() {
 	}
 }
 
+const plan = computed(() => deskData.value?.plan || []);
+
+/* Neden BOŞ. "Bu görünümdeki her şey güncel" cümlesi DÜNYA hakkında bir iddia ve
+ * yalnızca iki koşulda doğru: plan gerçekten boş VE masanın baktığı her şeye
+ * bakılabilmiş. İkisi de ölçüldü ve ikisi de zaten kodda vardı, atılıyordu:
+ * `skipped` motorun tarihini çözemediği satır sayısı, `approvals_state` ise
+ * yutulmuş bir istisnanın yerine geçen ad.
+ *
+ * `not_yours` bir BOŞLUK DEĞİL, bir cevap: onaycı değilseniz o kuyruk sizin
+ * değildir, dolayısıyla onu içermeyen bir plan sizin için eksiksizdir. Her gün
+ * çıkan bir uyarı, gerçekten çıkması gereken günü görünmez yapar. */
+const gaps = computed(() => {
+	const out = [];
+	if (deskData.value?.approvals_state === "unreadable") {
+		out.push(t("The approval queue could not be read, so both approval counters are unknown, not zero."));
+	}
+	const skipped = deskData.value?.skipped || 0;
+	if (skipped) {
+		out.push(t("{count} items were left out because their dates could not be read.", { count: skipped }));
+	}
+	return out;
+});
+
 const filteredPlan = computed(() => {
-	const items = deskData.value?.plan || [];
+	const items = plan.value;
 	if (activeFilter.value === "all") return items;
 	if (activeFilter.value === "today") {
 		return items.filter((i) => i.due === todayStr.value || i.severity === "today");

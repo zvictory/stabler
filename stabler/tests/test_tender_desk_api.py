@@ -217,6 +217,50 @@ class TestTenderDeskApiSource(unittest.TestCase):
 			'the payload must carry "calendar_past"',
 		)
 
+	def test_a_failed_approval_read_is_not_swallowed_into_an_empty_queue(self):
+		# D14, and the measurement that made this row real. The desk claimed "All
+		# items in this view are up to date" -- a statement about the WORLD -- and
+		# one of its inputs was:
+		#
+		#     except Exception:
+		#         all_pending_approvals = []
+		#
+		# list_pending() throws frappe.PermissionError for anyone who is not an
+		# approver (approvals.py:119-121), which on a real site is most of the
+		# desk's readers. So the two approval counters read 0, the Decision box read
+		# "No pending decisions" and the plan read "up to date" -- four confident
+		# statements produced by a swallowed exception, indistinguishable from a
+		# genuinely quiet queue.
+		#
+		# Three outcomes, three names: read, not_yours (the queue exists and is not
+		# mine), unreadable (nobody knows). The first two are answers; only the third
+		# is a gap.
+		# assertTrue, not assertNotIn: a failing assertNotIn against this module
+		# prints all 400 lines of it, which nobody reads.
+		self.assertTrue(
+			"\texcept Exception:\n\t\tall_pending_approvals = []\n\n" not in self.source,
+			"a bare except that empties the queue makes a failure look like an answer",
+		)
+		for state in ("read", "not_yours", "unreadable"):
+			with self.subTest(state=state):
+				self.assertIn(f'approvals_state = "{state}"', self.source)
+		self.assertIn(
+			"except frappe.PermissionError:",
+			self.source,
+			"not being an approver is a scope answer, not a computation failure",
+		)
+
+	def test_the_rows_the_engine_could_not_date_reach_the_payload(self):
+		# WHAT WOULD MAKE THIS FAIL: going back to reading only ["items"].
+		# build_plan already counts every row it had to drop because a date would
+		# not parse -- and the caller discarded that number, so a lot with a
+		# malformed bid deadline vanished from the plan and the panel then asserted
+		# the view was up to date. The count existed; nothing carried it.
+		self.assertTrue(
+			re.search(r'^\t\t"skipped": plan_res\["skipped"\],$', self.source, re.M),
+			'the payload must carry "skipped": plan_res["skipped"]',
+		)
+
 	def test_no_sql_aggregation_functions_in_select(self):
 		lines = self.source.splitlines()
 		for idx, line in enumerate(lines, 1):
