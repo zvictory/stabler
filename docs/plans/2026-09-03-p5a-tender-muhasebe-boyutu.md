@@ -475,3 +475,47 @@ the fix away and watching that exact assertion go red.
 - `stabler.tests.test_crm_analytics` was bench-only because `stabler.api.crm` reaches the real
   `organization` → `www.stabler` → `frappe.sessions`. One stubbed module put it in `make check`,
   where the cockpit regression can actually be caught. (R9)
+
+### Round 2 review — 2026-09-04
+
+No P0. One P1 and three P2, all measured live, all landed on
+`feat/adr-609-tender-dimension`, one commit each. Round 2 was the last
+correction cycle.
+
+| # | P | What was wrong | Commit |
+|---|---|---|---|
+| R15 | P1 | correcting an expense re-sent its own tender and was refused for it | `835f141` |
+| R16 | P2 | "shared by every CRM Deal reader" was true of two readers out of five | `78dccc8` |
+| R17 | P2 | the operations desk counted the bucket as somebody's open lot | `4712f07` |
+| R18 | P2 | a failed tender lookup left the purchase invoice with an empty menu | `5c72077` |
+
+**The P1 is the one worth remembering.** `Expenses.vue` puts the STORED deal into every
+edit payload, so an amendment arrives naming the tender the voucher already carries.
+`submit_expense_entry` asserted it as a fresh choice, which made the ONE operation that
+corrects a posted expense impossible the moment its tender was finished — and the throw
+lands AFTER `amend_expense_entry` has cancelled the source, so only the HTTP rollback saved
+the user from a cancelled voucher with no replacement. The rule is now the same one
+`purchasing._apply_tender` already followed: **assert a value that is CHANGING, never a value
+that is being re-sent**. Any future writer that accepts a tender inherits that rule.
+
+**What R16 says about testing.** The claim "shared by every CRM Deal reader" had been pinned
+by `assertIn("exclude_overhead_deals(filters)", crm.py)`. One caller satisfied the string for
+all of them, so the assertion stayed green while `crm_metrics` and
+`crm_automation.run_crm_automation_rules` had never called the helper — and `crm_metrics`
+answered `deal_count` 553 beside a board answering 552. A declaration-satisfiable assertion is
+not coverage. Each reader is now DRIVEN in `stabler/tests/test_overhead_deal_readers.py`, with
+a per-module call count so a new reader cannot appear without the filter.
+
+**Test-site hygiene, measured and fixed.** Submitting a voucher commits from inside frappe, so
+the document outlived the framework's end-of-class rollback while the per-test cleanup did not.
+Six `ADR-609 bench` Journal Entries had accumulated on `genesis-test.local` across this task's
+runs; the naming series then reissued a name one leftover still pointed at, and an amendment
+test died on "This entry has already been amended" instead of the tender check it was about.
+`_erase_voucher` commits now, the six were removed by hand, and two consecutive full runs of
+the bench module are green and leave the site empty.
+
+**Verified clean by the reviewer this round, unchanged here:** both P0 fixes live (the hook
+fires once per save; flag-off posting lands on GENEL GİDER with the cash leg NULL), the GL hook
+costs 4 queries on row 1 and 0 on rows 2–20, every round-1 and round-2 mutation killed, the
+money invariant (29 GL columns identical flag-on vs flag-off), tenant isolation, the patch
+re-running all zeros, and the catalogues LF-only with no existing row changed.
