@@ -104,8 +104,10 @@ no dimension detail row, no defaulting, no mandatory check, GL rows byte-identic
   Receipt (`:233`), Journal Entry (`:269`); none for GL Entry, Supplier Quotation, Request for
   Quotation, Stabler Company Modules. `stabler_company_modules.py` has no controller methods.
 - Patch conventions: `stabler/patches/v<N>_<topic>.py` + a line in `stabler/patches.txt` (last:
-  `stabler.patches.v102_work_order_multi_level_bom_default`); `patches.txt` has NO
-  `[post_model_sync]` marker, so patches run before the doctype sync — guard with
+  `stabler.patches.v102_work_order_multi_level_bom_default`); `patches.txt` carries a
+  `[post_model_sync]` marker at line 41 (measured 2026-09-03; the first draft of this
+  contract said "NO marker", copied unmeasured from the orchestrator skill — see Log);
+  v103 is appended below it and runs after the doctype sync — guard anyway with
   `frappe.db.has_column` / `frappe.db.exists`; idempotent; the docstring states WHY with
   measurements (read `v102_work_order_multi_level_bom_default.py` for the style). Patch tests:
   a frappe-free source-reading module (`stabler/tests/test_crm_deal_company_scope_patch.py`)
@@ -414,3 +416,4 @@ measurement that forced it; anything you could not verify, stated as such.
 ## Log
 
 - 2026-09-03 evening: contract frozen by the orchestrator after measuring every path above.
+- 2026-09-03 evening, correction (orchestrator's own error): the contract stated as *measured* that `patches.txt` has no `[post_model_sync]` marker. It has one at line 41 since 2026-07-08 (`22f70e7`); 38 patches sit above it, 64 below. The sentence was copied from `.claude/skills/stabler-orchestrator/SKILL.md:316`, which was wrong and contradicted `.claude/rules/20-backend-migrations.md:15`. The implementer found the truth independently and wrote it into v103's docstring. Both texts corrected in this commit. Consequence for P5a: none — the guards are required either way.
