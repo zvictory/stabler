@@ -20,6 +20,7 @@ import { formatMoney } from "../composables/money.js";
 import { todayIso } from "../composables/date.js";
 import { t } from "../composables/i18n.js";
 import { convertedPreview, unvaluedReason } from "../composables/landedLine.js";
+import { chargeTypeLabel, chargeTypes, loadChargeTypes } from "../composables/landedChargeTypes.js";
 import { useToast } from "../composables/useToast.js";
 import MoneyInput from "./MoneyInput.vue";
 import DateInput from "./DateInput.vue";
@@ -39,47 +40,147 @@ const props = defineProps({
 const emit = defineEmits(["close", "saved"]);
 
 const loading = ref(false);
+// Non-empty while the modal could not load. The estimate is REPLACED on save, so
+// an editor that failed to read must not offer to write — see `load`.
+const loadError = ref("");
 const saving = ref(false);
 const charges = ref([]);
 const baseTotal = ref(props.baseGrandTotal);
 
-const CHARGE_TYPES = [
-	{ value: "Freight", label: t("Freight & Logistics") },
-	{ value: "Customs Duty", label: t("Customs Duty & Tariff") },
-	{ value: "Handling & Terminal", label: t("Handling & Terminal Fees") },
-	{ value: "Insurance", label: t("Cargo Insurance") },
-	{ value: "VAT", label: t("Import VAT (Recoverable)") },
-	{ value: "Other", label: t("Other Charge") },
-];
-// The same list the PO landed editor offers (PoControlBoard.vue:47) — a forwarder
-// or a declarant quotes in one of these, and an empty pick means company currency.
+// The currencies a landed charge is realistically quoted in for an Uzbek
+// importer. The empty option is company currency — which is every line stored
+// before ADR-605, and stays the default. Same shape as remittanceCurrencies.js.
 const CHARGE_CURRENCIES = ["USD", "EUR", "RUB", "CNY", "TRY"];
+
+// ADR-606, and the review's P0. The row carries TWO type keys and they are not
+// the same fact: `charge_type` is what is on disk ("Freight", "VAT", "General",
+// or free text like "Local Delivery") and what `savedChargeLine` hands back;
+// `charge_type_canonical` is what the <select> shows, since none of those
+// spellings has an option of its own any more. Loading the canonical key into
+// the field the save sends was a rewrite of stored data BY THE CLIENT —
+// `update_quotation_landed` replaces the whole array, so pressing Save for any
+// reason renamed every legacy line. Only `onTypeChange` moves a line.
+//
+// Named rather than inlined in `load()` so it can be exercised —
+// `landedChargeTypes.spec.js` composes it, the way `PoControlBoard`'s
+// `editorLine` is composed.
+function loadedLine(c) {
+	return {
+		charge_type: c.charge_type || "",
+		charge_type_canonical: c.charge_type_canonical || "transport",
+		// An unrecognised type is the officer's own words, handed back rather
+		// than swallowed into "Other". They are SHOWN — as the description's
+		// placeholder — and not seeded into the model: `description` is a field
+		// `savedChargeLine` sends, so seeding it wrote "Local Delivery" into the
+		// description of a line that had none, on the next save made for an
+		// unrelated reason. Same mistake as loading the canonical key into
+		// `charge_type`, one column across.
+		charge_type_unmapped: c.charge_type_unmapped || "",
+		description: c.description || "",
+		amount: Number(c.amount || 0),
+		currency: c.currency || "",
+		fx_rate: Number(c.fx_rate || 0),
+		rate_date: c.rate_date || "",
+		amount_original: c.amount_original == null ? null : Number(c.amount_original),
+		fx_source: "",
+		is_recoverable_vat: Boolean(c.is_recoverable_vat),
+		// Derived, read-only, never sent back as themselves. `is_recoverable_vat`
+		// above is the MERGED flag — what the checkbox shows — and these two say
+		// where it came from: whether the STORED spelling is a VAT alias, and
+		// what the flag was on disk before that forced it. `onVatChange` reads
+		// the first, `savedChargeLine` the second.
+		charge_type_is_vat: Boolean(c.charge_type_is_vat),
+		is_recoverable_vat_stored: Boolean(c.is_recoverable_vat_stored),
+	};
+}
+
+// ADR-606: `other` is the only type that names no cost by itself. Flagged, never
+// blocked — the same stance the unvalued-line warning takes, for the same reason.
+// Reads the DISPLAYED type: the officer is being asked about the option in front
+// of them, not about the spelling the row happens to hold on disk.
+//
+// The unmapped text counts as an answer. A line stored "Local Delivery" resolves
+// to `other` and its words live in the placeholder now, so asking it to say what
+// it is would be demanding a name it already has, on disk.
+function needsChargeLabel(line) {
+	if (line.charge_type_canonical !== "other") return false;
+	return !String(line.description || "").trim() && !String(line.charge_type_unmapped || "").trim();
+}
+
+// The one thing that renames a stored line: the officer choosing another type.
+// Everything else — an amount, a currency, a rate — leaves `charge_type` exactly
+// as it was read. See `loadedLine`.
+//
+// Renaming an alias-spelled line also RETIRES the alias fact, because the
+// forcing that produced it is about to stop applying: none of the nine canonical
+// keys is a VAT spelling, so once the type moves the server will never turn the
+// flag on again. Leaving `charge_type_is_vat` true was a P0 — `savedChargeLine`
+// went on sending the disk's flag while the checkbox showed the forced one, so
+// renaming a stored "VAT" line to Freight saved a charge that capitalizes 300
+// into `base_landed_total` while the footer in front of the officer still read
+// 0. That is the total `rank_quotations_landed` ranks and `_snapshot_rows`
+// freezes: an award decided against a figure nobody was shown.
+//
+// The flag follows the disk rather than the display, and the officer watches the
+// box un-tick. Sending the displayed `true` instead would persist the alias
+// table's invented flag onto a line that can never be re-forced — the drift made
+// permanent rather than removed. If the charge really is recoverable VAT, the
+// box is one click away and that click is the officer's, not the table's.
+function onTypeChange(line) {
+	line.charge_type = line.charge_type_canonical;
+	if (line.charge_type_is_vat) {
+		line.is_recoverable_vat = Boolean(line.is_recoverable_vat_stored);
+		line.charge_type_is_vat = false;
+	}
+}
+
+// …and the one exception, because here leaving `charge_type` alone is what
+// discards the edit. The server forces `is_recoverable_vat` ON for every line
+// whose STORED spelling is a VAT alias (`_landed.py`, `charge_type_is_vat`), so
+// clearing the box on a legacy "VAT" line and sending "VAT" back means the flag
+// returns on the next read: the footer here gains the amount while
+// `base_landed_total` — the figure that ranks the vendors — does not, and the
+// box is ticked again when the modal reopens. Moving the stored type onto the
+// canonical key (`other`, for every VAT spelling) is what makes the un-tick
+// true. The row is then flagged for a description, which is the right question:
+// a charge that is not recoverable VAT has to say what it is.
+//
+// Only on the un-tick. Ticking the box back on renames nothing — a recoverable
+// line needs no type change, and rewriting on both edges would rename lines
+// nobody renamed.
+function onVatChange(line) {
+	if (line.is_recoverable_vat || !line.charge_type_is_vat) return;
+	line.charge_type = line.charge_type_canonical;
+	line.charge_type_is_vat = false;
+}
 
 async function load() {
 	if (!props.show || !props.quotationName) return;
 	loading.value = true;
+	loadError.value = "";
 	try {
+		// Sequential, and in ONE try, so either failure blocks the editor. That
+		// includes the type list: a <select> with no options cannot be used, so
+		// an editor that could not read the nine types must not offer to save
+		// over the array it would replace. Both failures land in `loadError` —
+		// the review's P1: `Promise.all` put them in a catch that toasted and
+		// left Save enabled over an EMPTY row array, and this save REPLACES the
+		// stored array, so one press after a transient failure wiped the
+		// estimate.
+		await loadChargeTypes();
 		const res = await call("stabler.api.sourcing.get_quotation_landed", {
 			quotation: props.quotationName,
 			company: activeCompany.value,
 		});
 		baseTotal.value = res.base_grand_total || props.baseGrandTotal;
-		charges.value = (res.charges || []).map((c) => ({
-			charge_type: c.charge_type || "Freight",
-			description: c.description || "",
-			amount: Number(c.amount || 0),
-			currency: c.currency || "",
-			fx_rate: Number(c.fx_rate || 0),
-			rate_date: c.rate_date || "",
-			amount_original: c.amount_original == null ? null : Number(c.amount_original),
-			fx_source: "",
-			is_recoverable_vat: Boolean(c.is_recoverable_vat),
-		}));
+		charges.value = (res.charges || []).map(loadedLine);
 		if (!charges.value.length) {
 			addChargeLine();
 		}
 	} catch (err) {
-		toast.error(err?.message || t("Could not load landed charges."));
+		loadError.value = err?.message || t("Could not load landed charges.");
+		charges.value = [];
+		toast.error(loadError.value);
 	} finally {
 		loading.value = false;
 	}
@@ -89,7 +190,11 @@ watch([() => props.show, () => props.quotationName], load, { immediate: true });
 
 function addChargeLine() {
 	charges.value.push({
-		charge_type: "Freight",
+		charge_type: "transport",
+		charge_type_canonical: "transport",
+		charge_type_unmapped: "",
+		charge_type_is_vat: false,
+		is_recoverable_vat_stored: false,
 		description: "",
 		amount: 0,
 		currency: "",
@@ -105,12 +210,6 @@ function removeChargeLine(idx) {
 	charges.value.splice(idx, 1);
 }
 
-function onTypeChange(line) {
-	if (line.charge_type === "VAT") {
-		line.is_recoverable_vat = true;
-	}
-}
-
 // `null` means the line cannot be valued at all. Counting those is the whole
 // point: adding them as zero is how a total silently shrinks.
 function priceLines(lines) {
@@ -121,7 +220,10 @@ function priceLines(lines) {
 		if (value === null) unvalued += 1;
 		// IAS 2 §11 and the currency rule are independent: a VAT line is still
 		// converted for display, it just never reaches the capitalized total.
-		else if (!(line.is_recoverable_vat || line.charge_type === "VAT")) total += value;
+		// ADR-606: the flag is the whole rule now — VAT stopped being a type, and
+		// the server turns the flag ON for every line that was stored as one, so
+		// a legacy VAT line arrives here with the checkbox already ticked.
+		else if (!line.is_recoverable_vat) total += value;
 	}
 	return { total, unvalued };
 }
@@ -194,29 +296,59 @@ const totalDeliveredCost = computed(() => {
 	return (Number(baseTotal.value) || 0) + landedChargesTotal.value;
 });
 
+// The inverse of `loadedLine`: what a row becomes on the wire. Named so the round
+// trip can be exercised — a read must hand the editor something the editor can
+// hand back unchanged, and `charge_type` is the half the review's P0 was about.
+function savedChargeLine(c) {
+	return {
+		// The STORED spelling, never the one the <select> displayed. `onTypeChange`
+		// is what moves it, and only when the officer picks another type.
+		charge_type: c.charge_type,
+		description: c.description,
+		// Both figures travel because they are two different facts, not one
+		// fact twice: `amount` is what was typed in company currency and
+		// `amount_original` what was typed in the line's own. The server
+		// stores exactly what it is given and derives the company-currency
+		// value on every read, so sending only `amount_original` would drop
+		// the so'm figure of a half-switched line — the evidence that the
+		// line is unfinished, and the only thing left to fix it with.
+		amount: Number(c.amount || 0),
+		amount_original: c.currency ? Number(c.amount_original || 0) : null,
+		currency: c.currency || "",
+		fx_rate: Number(c.fx_rate) || 0,
+		rate_date: c.rate_date || "",
+		// The last stored key a no-edit save still moved. On a line whose stored
+		// spelling is a VAT alias the server FORCES this flag on, so sending the
+		// displayed value back wrote the alias table's verdict into the evidence
+		// field: `{"charge_type": "VAT", "is_recoverable_vat": false}` on disk
+		// became true after one save made for an unrelated reason.
+		//
+		// So the same rule `charge_type` follows — hand back what was loaded
+		// unless the officer changed it. No "touched" tracking is needed to know
+		// that, because `charge_type_is_vat` IS the tracking: it says the flag on
+		// screen is the alias table's answer and not the officer's, and BOTH
+		// edits that can make it the officer's retire it — the un-tick, in
+		// `onVatChange`, and a type change, in `onTypeChange`. After either, the
+		// displayed flag is what travels. (Round 4 recorded the un-tick as the
+		// only such edit. It was not: the <select> is right beside the box, and
+		// missing it cost a P0.) `flag && !charge_type_is_vat` would not do
+		// either — it merely inverts the drift, normalising to false the rows an
+		// older editor had already persisted as true.
+		is_recoverable_vat: c.charge_type_is_vat
+			? Boolean(c.is_recoverable_vat_stored)
+			: Boolean(c.is_recoverable_vat),
+	};
+}
+
 async function save() {
 	if (saving.value) return;
+	// The button is already disabled; this is the guarantee behind it. A save
+	// after a failed load posts an empty array over an estimate that read fine
+	// yesterday.
+	if (loadError.value) return;
 	saving.value = true;
 	try {
-		const validCharges = charges.value
-			.filter((c) => !isBlankLine(c))
-			.map((c) => ({
-				charge_type: c.charge_type,
-				description: c.description,
-				// Both figures travel because they are two different facts, not one
-				// fact twice: `amount` is what was typed in company currency and
-				// `amount_original` what was typed in the line's own. The server
-				// stores exactly what it is given and derives the company-currency
-				// value on every read, so sending only `amount_original` would drop
-				// the so'm figure of a half-switched line — the evidence that the
-				// line is unfinished, and the only thing left to fix it with.
-				amount: Number(c.amount || 0),
-				amount_original: c.currency ? Number(c.amount_original || 0) : null,
-				currency: c.currency || "",
-				fx_rate: Number(c.fx_rate) || 0,
-				rate_date: c.rate_date || "",
-				is_recoverable_vat: c.is_recoverable_vat || c.charge_type === "VAT",
-			}));
+		const validCharges = charges.value.filter((c) => !isBlankLine(c)).map(savedChargeLine);
 
 		await call("stabler.api.sourcing.update_quotation_landed", {
 			quotation: props.quotationName,
@@ -252,6 +384,14 @@ async function save() {
 				<div class="modal-body">
 					<div v-if="loading" class="py-4 text-center text-secondary">
 						{{ t("Loading landed charges…") }}
+					</div>
+
+					<!-- Not an empty table: this estimate is REPLACED on save, and a table
+					     with no rows is indistinguishable from a quotation that has no
+					     estimate at all. -->
+					<div v-else-if="loadError" class="alert alert-danger mb-0">
+						<i class="ti ti-alert-triangle me-1"></i>{{ loadError }}
+						<div class="small text-secondary mt-1">{{ t("Close this and open it again — nothing has been changed.") }}</div>
 					</div>
 
 					<template v-else>
@@ -303,9 +443,11 @@ async function save() {
 								<tbody>
 									<tr v-for="(line, idx) in charges" :key="idx">
 										<td>
-											<select v-model="line.charge_type" class="form-select form-select-sm" @change="onTypeChange(line)">
-												<option v-for="opt in CHARGE_TYPES" :key="opt.value" :value="opt.value">
-													{{ opt.label }}
+											<!-- Binds the DISPLAY key; `onTypeChange` is what writes the
+											     officer's pick into the stored `charge_type`. See `loadedLine`. -->
+											<select v-model="line.charge_type_canonical" class="form-select form-select-sm" @change="onTypeChange(line)">
+												<option v-for="opt in chargeTypes" :key="opt.key" :value="opt.key">
+													{{ chargeTypeLabel(opt.key) }}
 												</option>
 											</select>
 										</td>
@@ -314,8 +456,14 @@ async function save() {
 												v-model="line.description"
 												type="text"
 												class="form-control form-control-sm"
-												:placeholder="t('Optional details (e.g. FOB shipping, duty rate)')"
+												:class="{ 'is-invalid': needsChargeLabel(line) }"
+												:placeholder="line.charge_type_unmapped || t('Optional details (e.g. FOB shipping, duty rate)')"
 											/>
+											<!-- ADR-606: "Other" names no cost on its own. Flagged, not
+											     blocked — the save still goes through, like an unvalued line. -->
+											<div v-if="needsChargeLabel(line)" class="small text-danger mt-1">
+												{{ t("Say what this charge is.") }}
+											</div>
 										</td>
 										<td>
 											<!-- ADR-605: typed in the line's OWN currency and shown converted
@@ -386,11 +534,15 @@ async function save() {
 											<div v-if="line.fx_source" class="small text-secondary text-end">{{ line.fx_source }}</div>
 										</td>
 										<td class="text-center">
+											<!-- Clearing this on a line whose STORED type is a VAT spelling
+											     also moves the type, or the server flags it again on the
+											     next read and the edit never happened. See `onVatChange`. -->
 											<input
 												v-model="line.is_recoverable_vat"
 												type="checkbox"
 												class="form-check-input"
 												:title="t('IAS 2 §11: Recoverable VAT is excluded from capitalized landed cost')"
+												@change="onVatChange(line)"
 											/>
 										</td>
 										<td class="text-center">
@@ -428,7 +580,7 @@ async function save() {
 					<button
 						type="button"
 						class="btn btn-primary"
-						:disabled="saving || loading"
+						:disabled="saving || loading || Boolean(loadError)"
 						@click="save"
 					>
 						<i class="ti ti-check me-1"></i>{{ saving ? t("Saving…") : t("Save estimate") }}

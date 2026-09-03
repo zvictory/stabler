@@ -151,6 +151,7 @@ Receivable as of {0},Дебиторская задолженность на {0}
 Refresh the rate for this date,Обновить курс на эту дату
 Remittance engine,Движок переводов
 Same as your last transfer,Как в прошлом переводе
+Say what this charge is.,"Укажите, что это за расход."
 Select at least one Work Order.,Выберите хотя бы один производственный заказ.
 Select Warehouse,Выберите склад
 Selected work orders: {0},Выбрано заказов: {0}
@@ -649,7 +650,6 @@ Balanced,Сбалансировано
 "Balances, advances and payments appear here.",
 "Balances, salaries, advances and payments appear here.","Здесь показываются балансы, зарплаты, авансы и выплаты."
 Bank,Банк
-Bank / transfer,Банк / перевод
 Bank account,Банковский счёт
 Bank Account '{0}' not found.,
 Bank account does not belong to company '{0}'.,
@@ -658,6 +658,7 @@ Bank Agreed,Банк (договорено)
 Bank Agreed + Cash Agreed must equal Agreed Total.,Банк + наличные (договорено) должны равняться итоговой сумме.
 Bank amount,Сумма в банке
 Bank and cash amounts are not equal — recorded as entered.,
+Bank charges,Банковские расходы
 Bank due,К оплате (банк)
 Bank paid,Оплачено банком
 Bank Payment,Оплата через банк
@@ -764,7 +765,6 @@ Boxes × box weight ≠ quantity,Коробки × вес коробки ≠ к�
 Branch,
 Brand,Бренд
 Break minutes,
-Broker,Брокер
 BRV Multiplier,Множитель БРВ
 BRV used,Использованный БРВ
 BRV Used (UZS),Использованный БРВ (UZS)
@@ -859,7 +859,6 @@ Car / Item,Авто / Товар
 Car item is required.,Товар (автомобиль) обязателен.
 Card not recognized,Карта не распознана
 Cargo,Груз
-Cargo Insurance,Страхование груза
 Carrier,Перевозчик
 Carrier & Driver,Перевозчик и водитель
 Carrier / carrier invoice,Перевозчик / инвойс перевозчика
@@ -1002,6 +1001,7 @@ Close & release,
 Close & release reserved stock,
 Close panel,Закрыть панель
 Close Sales Order,
+Close this and open it again — nothing has been changed.,Закройте и откройте снова — ничего не изменено.
 Close this Work Order? This finalizes it.,Закрыть этот производственный заказ? Это финальное действие.
 Close Visit,Закрыть выезд
 Close visit,Закрыть выезд
@@ -1401,6 +1401,7 @@ Customer receivables grouped by aging buckets.,
 "Customer, item, trend, and salesperson reports from submitted invoices.",
 Customers,Клиенты
 Customs,Таможня
+Customs broker / declarant,Таможенный брокер / декларант
 Customs charges,Таможенные расходы
 Customs clearance,Таможенное оформление
 Customs Clearance Date,Дата таможенной очистки
@@ -1415,7 +1416,7 @@ Customs declaration {name} exists — an official declaration is never deleted f
 Customs Declarations,
 Customs declarations,Таможенные декларации
 Customs declarations pending,Ожидающие ГТД
-Customs Duty & Tariff,Таможенная пошлина
+Customs duty,Таможенная пошлина
 Customs fee applied.,Таможенный сбор применён.
 Customs Fee Multiplier,Множитель таможенного сбора
 Customs Fee Override (UZS),Переопределение таможенного сбора (UZS)
@@ -2283,8 +2284,8 @@ Freezer pending,Ожидают морозильник
 Freezer push,Морозильники
 Freezer ROI,ROI морозильников
 Freight,Фрахт
-Freight & Logistics,Фрахт и логистика
 Freight & Transport,Фрахт + транспорт
+Freight / transport,Фрахт / транспорт
 Freight Booking,Бронирование перевозки
 Freight booking,Бронирование перевозки
 Freight Booking {0} belongs to another company.,Бронирование перевозки {0} принадлежит другой компании.
@@ -2414,7 +2415,6 @@ half-day,полдня
 Half-day & Presence,
 Half-day threshold (min),
 Handling,Обработка
-Handling & Terminal Fees,Терминальные и погрузочные расходы
 Header,Заголовок
 Header Details,Данные шапки
 Heavy conditions,
@@ -2475,7 +2475,6 @@ Import Orders,
 Import orders,Импортные заказы
 Import outlet locations,Импорт геолокаций точек
 Import Truck,Импортная фура
-Import VAT (Recoverable),Импортный НДС (Зачетный)
 Import {0} lines,Импортировать {0} строк
 Imported,Импортировано
 Imported {0} of {1} lines ({2} duplicates skipped).,Импортировано {0} из {1} строк ({2} дубликатов пропущено).
@@ -2806,7 +2805,6 @@ List rate,Прейскурантная цена
 Load Available Lines,Загрузить доступные строки
 Loaded,Загружено
 Loading,Загрузка
-Loading / unloading,Погрузка / разгрузка
 Loading FX account balances…,
 Loading imports flow…,Загрузка процесса импорта…
 Loading invoices,
@@ -3700,7 +3698,6 @@ OT flag,
 OT method,
 OT threshold (min),
 Other,Другое
-Other Charge,Прочие расходы
 Other cost,Прочие расходы
 Other costs (before profit),Прочие расходы (до прибыли)
 Other expenses,Прочие расходы
@@ -5106,6 +5103,7 @@ Stop,Остановить
 Stop this Work Order? You can resume it later.,Остановить этот производственный заказ? Можно будет возобновить позже.
 Stop Work Order,Остановить заказ
 Storage,Хранение
+Storage / terminal / handling,Хранение / терминал / погрузка
 Storefront,Витрина
 Stream,Поток
 Stuck (min),Завис (мин)

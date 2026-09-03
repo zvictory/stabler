@@ -150,6 +150,7 @@ Receivable as of {0},{0} санасидаги дебиторлик қарзи
 Refresh the rate for this date,Ушбу санага курсни янгилаш
 Remittance engine,Ўтказма механизми
 Same as your last transfer,Охирги ўтказмангиздаги каби
+Say what this charge is.,Бу қандай харажат эканини ёзинг.
 Select at least one Work Order.,Камида битта ишлаб чиқариш буюртмасини танланг.
 Select Warehouse,Омборни танланг
 Selected work orders: {0},Танланган буюртмалар: {0}
@@ -645,7 +646,6 @@ Balanced,Баланс муштаси
 "Balances, advances and payments appear here.",
 "Balances, salaries, advances and payments appear here.","Бу ерда баланслар, ойликлар, аванслар ва тўловлар кўринади."
 Bank,Банк
-Bank / transfer,Банк / ўтказма
 Bank account,Банк ҳисоби
 Bank Account '{0}' not found.,
 Bank account does not belong to company '{0}'.,
@@ -654,6 +654,7 @@ Bank Agreed,Банк (келишилган)
 Bank Agreed + Cash Agreed must equal Agreed Total.,Банк + нақд (келишилган) жами келишилган суммага тенг бўлиши керак.
 Bank amount,Банк суммаси
 Bank and cash amounts are not equal — recorded as entered.,
+Bank charges,Банк харажатлари
 Bank due,Банк бўйича тўлов
 Bank paid,Банк орқали тўланди
 Bank Payment,Банк тўлови
@@ -760,7 +761,6 @@ Boxes × box weight ≠ quantity,Қутилар × қути вазни ≠ ми�
 Branch,
 Brand,Брэнд
 Break minutes,
-Broker,Брокер
 BRV Multiplier,БҲМ кўпайтувчиси
 BRV used,Ишлатилган БҲМ
 BRV Used (UZS),Ишлатилган БҲМ (UZS)
@@ -855,7 +855,6 @@ Car / Item,Автомобил / Маҳсулот
 Car item is required.,Маҳсулот (автомобил) мажбурий.
 Card not recognized,Карта танилмади
 Cargo,Юк
-Cargo Insurance,Юк суғуртаси
 Carrier,Ташувчи
 Carrier & Driver,Ташувчи ва ҳайдовчи
 Carrier / carrier invoice,Ташувчи / ташувчи ҳисоб-фатураси
@@ -997,6 +996,7 @@ Close & release,
 Close & release reserved stock,
 Close panel,Панелни ёпиш
 Close Sales Order,
+Close this and open it again — nothing has been changed.,"Ёпиб, қайтадан очинг — ҳеч нарса ўзгартирилмади."
 Close this Work Order? This finalizes it.,Бу буюртмани ёпасизми? Бу якуний ҳаракат.
 Close Visit,Ташрифни ёпиш
 Close visit,Ташрифни ёпиш
@@ -1396,6 +1396,7 @@ Customer receivables grouped by aging buckets.,
 "Customer, item, trend, and salesperson reports from submitted invoices.",
 Customers,Мижозлар
 Customs,Божхона
+Customs broker / declarant,Божхона брокери / декларант
 Customs charges,Божхона харажатлари
 Customs clearance,Божхона расмийлаштируви
 Customs Clearance Date,Божхона расмийлаштируви санаси
@@ -1410,7 +1411,7 @@ Customs declaration {name} exists — an official declaration is never deleted f
 Customs Declarations,
 Customs declarations,Божхона декларациялари
 Customs declarations pending,Кутилаётган GTD
-Customs Duty & Tariff,Божхона тўлови
+Customs duty,Божхона божи
 Customs fee applied.,Божхона йиғими қўлланилди.
 Customs Fee Multiplier,Божхона йиғими кўпайтувчиси
 Customs Fee Override (UZS),Божхона йиғимини бекор қилиш (UZS)
@@ -2278,8 +2279,8 @@ Freezer pending,Музлатгич кутилмоқда
 Freezer push,Музлатгичлар
 Freezer ROI,Музлатгич ROI
 Freight,Фрахт
-Freight & Logistics,Ташиш ва логистика
 Freight & Transport,Кира & Транспорт
+Freight / transport,Фрахт / транспорт
 Freight Booking,Юк ташиш бронлаши
 Freight booking,Юк ташиш бронлаши
 Freight Booking {0} belongs to another company.,{0} юк ташиш бронлаши бошқа компанияга тегишли.
@@ -2409,7 +2410,6 @@ half-day,ярим кун
 Half-day & Presence,
 Half-day threshold (min),
 Handling,Юк ишлаш
-Handling & Terminal Fees,Терминал ва юклаш харажатлари
 Header,Сарлавҳа
 Header Details,Сарлавҳа маълумотлари
 Heavy conditions,
@@ -2470,7 +2470,6 @@ Import Orders,
 Import orders,Импорт буюртмалари
 Import outlet locations,Нуқта жойлашувларини импорт қилиш
 Import Truck,Импорт юк машинаси
-Import VAT (Recoverable),Импорт ҚҚС (Ҳисобга олинадиган)
 Import {0} lines,{0} қаторни импорт қилиш
 Imported,Импорт қилинди
 Imported {0} of {1} lines ({2} duplicates skipped).,{1} қатордан {0} импорт қилинди ({2} дубликат ўтказиб юборилди).
@@ -2801,7 +2800,6 @@ List rate,Рўйхат нарх
 Load Available Lines,Мавжуд қаторларни юклаш
 Loaded,Юклангани
 Loading,Юкланмоқда
-Loading / unloading,Юклаш / тушириш
 Loading FX account balances…,
 Loading imports flow…,Импорт жараёни юкланмоқда…
 Loading invoices,
@@ -3695,7 +3693,6 @@ OT flag,
 OT method,
 OT threshold (min),
 Other,Бошқа
-Other Charge,Бошқа харажатлар
 Other cost,Бошқа харажат
 Other costs (before profit),Бошқа харажатлар (фойдадан олдин)
 Other expenses,Бошқа харажатлар
@@ -5101,6 +5098,7 @@ Stop,Тўхтатиш
 Stop this Work Order? You can resume it later.,Бу буюртмани тўхтатасизми? Кейин давом эттирса бўлади.
 Stop Work Order,Буюртмани тўхтатиш
 Storage,Сақлаш
+Storage / terminal / handling,Сақлаш / терминал / юклаш
 Storefront,Дўкон саҳнаси
 Stream,Оқим
 Stuck (min),Осилган (дақ)

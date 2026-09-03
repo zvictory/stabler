@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import json
 
+from stabler.api._landed_charge_types import is_vat_charge_type, resolve_charge_type
 from stabler.stabler.tender_landed_math import line_value
 
 
@@ -87,8 +88,8 @@ def parse_landed_charges(raw_charges) -> tuple[float, list[dict], bool]:
 	"""READ-ONLY derivation: the VALUED SHAPE of every line, and what they add up to.
 
 	Returns (total_landed_amount, clean_charges_list, has_estimate).
-	Tax Rule (IAS 2 §11): Recoverable VAT (charge_type 'VAT' or is_recoverable_vat)
-	is NOT capitalized into landed cost.
+	Tax Rule (IAS 2 §11): Recoverable VAT (a line stored under the type VAT used to
+	be, or is_recoverable_vat) is NOT capitalized into landed cost.
 
 	NOTHING PERSISTS WHAT THIS RETURNS. It is derived fresh on every read, and the
 	write path stores `sanitize_charge_lines`' RAW shape instead -- see
@@ -100,6 +101,15 @@ def parse_landed_charges(raw_charges) -> tuple[float, list[dict], bool]:
 	  `company_amount`     DERIVED: what the line is worth in company currency
 	  `capitalized_amount` DERIVED: `company_amount` unless VAT or unvalued
 	  `unvalued`           DERIVED: whether it could be valued at all
+	  `charge_type_canonical` DERIVED: ADR-606's one list (`_landed_charge_types`)
+	  `charge_type_unmapped`  DERIVED: the text that list did not recognise
+	  `charge_type_is_vat`    DERIVED: whether the STORED spelling is a VAT alias
+	  `is_recoverable_vat_stored` DERIVED: the flag AS STORED, before the forcing
+
+	ADR-606. `charge_type` itself is left EXACTLY as stored -- "Freight", "VAT",
+	"Local Delivery" -- and the canonical key sits beside it, because this is a
+	read: rewriting the stored string here would put a derivation where the
+	evidence was, which is the mistake `raw_charge_line` above exists to prevent.
 
 	`amount` and `company_amount` are deliberately two keys and not one. They differ
 	on exactly the lines that matter -- a currency line, where the officer types into
@@ -133,7 +143,13 @@ def parse_landed_charges(raw_charges) -> tuple[float, list[dict], bool]:
 	for c in rows:
 		raw = raw_charge_line(c)
 		charge_type = raw["charge_type"]
-		is_vat = raw["is_recoverable_vat"] or charge_type.upper() in ("VAT", "VALUE ADDED TAX", "НДС")
+		# ADR-606: VAT stopped being a type and became the flag, so the alias
+		# table is what recognises a legacy VAT line now -- and it forces the flag
+		# rather than merely renaming the line, or recoverable input tax would
+		# start capitalizing into the landed cost of the goods.
+		canonical, unmapped = resolve_charge_type(charge_type)
+		stored_is_vat = is_vat_charge_type(charge_type)
+		is_vat = raw["is_recoverable_vat"] or stored_is_vat
 		# One rule, stated once, shared with `tender._parse_landed` — see
 		# `tender_landed_math.line_value`. A PO customs line reaches this function
 		# with a stored amount and no currency, and keeps the figure the ГТД
@@ -154,6 +170,27 @@ def parse_landed_charges(raw_charges) -> tuple[float, list[dict], bool]:
 			dict(
 				raw,
 				is_recoverable_vat=is_vat,
+				# ADR-606: which of the nine types this line is, and -- when the
+				# stored string was none of them -- the words it was written in,
+				# so the editor can keep them instead of showing a bare "Other".
+				charge_type_canonical=canonical,
+				charge_type_unmapped=unmapped,
+				# Whether the STORED spelling is one of the VAT aliases -- not
+				# whether this line is recoverable, which `is_recoverable_vat`
+				# above already says. The editor needs the difference: clearing
+				# the checkbox on a line still spelled "VAT" is an edit this
+				# function would undo on the next read, so the editor answers it
+				# by moving the stored type as well. It may not work that out
+				# for itself without keeping a copy of the alias table, which is
+				# the duplication ADR-606 exists to remove -- so the fact is
+				# stated here, where the table lives.
+				charge_type_is_vat=stored_is_vat,
+				# The flag AS STORED, beside the merged one above. The editor
+				# sends this back on a line it did not edit, or a save made for
+				# an unrelated reason persists the alias table's verdict into
+				# the evidence field: a row stored `{"charge_type": "VAT",
+				# "is_recoverable_vat": false}` comes back true and stays true.
+				is_recoverable_vat_stored=raw["is_recoverable_vat"],
 				# 0.0 on an unvalued line is not a figure, it is the absence of one;
 				# `unvalued` is what says so. Nothing may sum it without reading that.
 				company_amount=company_amount,

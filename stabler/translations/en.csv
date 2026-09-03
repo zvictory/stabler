@@ -453,6 +453,7 @@ Reversed,Reversed
 Sales Detail,Sales Detail
 Same as your last transfer,Same as your last transfer
 Saving is blocked until the {count} item(s) above are fixed.,Saving is blocked until the {count} item(s) above are fixed.
+Say what this charge is.,Say what this charge is.
 Scorecards,Scorecards
 "Search by remittance id, client reference, sender or receiver name.","Search by remittance id, client reference, sender or receiver name."
 Select a company,Select a company
@@ -1063,7 +1064,6 @@ Balanced,Balanced
 "Balances, advances and payments appear here.","Balances, advances and payments appear here."
 "Balances, salaries, advances and payments appear here.","Balances, salaries, advances and payments appear here."
 Bank,Bank
-Bank / transfer,Bank / transfer
 Bank account,Bank account
 Bank Account '{0}' not found.,Bank Account '{0}' not found.
 Bank account does not belong to company '{0}'.,Bank account does not belong to company '{0}'.
@@ -1072,6 +1072,7 @@ Bank Agreed,Bank Agreed
 Bank Agreed + Cash Agreed must equal Agreed Total.,Bank Agreed + Cash Agreed must equal Agreed Total.
 Bank amount,Bank amount
 Bank and cash amounts are not equal — recorded as entered.,Bank and cash amounts are not equal — recorded as entered.
+Bank charges,Bank charges
 Bank due,Bank due
 Bank paid,Bank paid
 Bank Payment,Bank Payment
@@ -1178,7 +1179,6 @@ Boxes × box weight ≠ quantity,Boxes × box weight ≠ quantity
 Branch,Branch
 Brand,Brand
 Break minutes,Break minutes
-Broker,Broker
 BRV Multiplier,BRV Multiplier
 BRV used,BRV used
 BRV Used (UZS),BRV Used (UZS)
@@ -1273,7 +1273,6 @@ Car / Item,Car / Item
 Car item is required.,Car item is required.
 Card not recognized,Card not recognized
 Cargo,Cargo
-Cargo Insurance,Cargo Insurance
 Carrier,Carrier
 Carrier & Driver,Carrier & Driver
 Carrier / carrier invoice,Carrier / carrier invoice
@@ -1415,6 +1414,7 @@ Close & release,Close & release
 Close & release reserved stock,Close & release reserved stock
 Close panel,Close panel
 Close Sales Order,Close Sales Order
+Close this and open it again — nothing has been changed.,Close this and open it again — nothing has been changed.
 Close this Work Order? This finalizes it.,Close this Work Order? This finalizes it.
 Close Visit,Close Visit
 Close visit,Close visit
@@ -1814,6 +1814,7 @@ Customer receivables grouped by aging buckets.,Customer receivables grouped by a
 "Customer, item, trend, and salesperson reports from submitted invoices.","Customer, item, trend, and salesperson reports from submitted invoices."
 Customers,Customers
 Customs,Customs
+Customs broker / declarant,Customs broker / declarant
 Customs charges,Customs charges
 Customs clearance,Customs clearance
 Customs Clearance Date,Customs Clearance Date
@@ -1828,7 +1829,7 @@ Customs declaration {name} exists — an official declaration is never deleted f
 Customs Declarations,Customs Declarations
 Customs declarations,Customs declarations
 Customs declarations pending,Customs declarations pending
-Customs Duty & Tariff,Customs Duty & Tariff
+Customs duty,Customs duty
 Customs fee applied.,Customs fee applied.
 Customs Fee Multiplier,Customs Fee Multiplier
 Customs Fee Override (UZS),Customs Fee Override (UZS)
@@ -2694,8 +2695,8 @@ Freezer pending,Freezer pending
 Freezer push,Freezer push
 Freezer ROI,Freezer ROI
 Freight,Freight
-Freight & Logistics,Freight & Logistics
 Freight & Transport,Freight & Transport
+Freight / transport,Freight / transport
 Freight Booking,Freight Booking
 Freight booking,Freight booking
 Freight Booking {0} belongs to another company.,Freight Booking {0} belongs to another company.
@@ -2826,7 +2827,6 @@ half-day,half-day
 Half-day & Presence,Half-day & Presence
 Half-day threshold (min),Half-day threshold (min)
 Handling,Handling
-Handling & Terminal Fees,Handling & Terminal Fees
 Header,Header
 Header Details,Header Details
 Heavy conditions,Heavy conditions
@@ -2887,7 +2887,6 @@ Import Orders,Import Orders
 Import orders,Import orders
 Import outlet locations,Import outlet locations
 Import Truck,Import Truck
-Import VAT (Recoverable),Import VAT (Recoverable)
 Import {0} lines,Import {0} lines
 Imported,Imported
 Imported {0} of {1} lines ({2} duplicates skipped).,Imported {0} of {1} lines ({2} duplicates skipped).
@@ -3219,7 +3218,6 @@ List rate,List rate
 Load Available Lines,Load Available Lines
 Loaded,Loaded
 Loading,Loading
-Loading / unloading,Loading / unloading
 Loading FX account balances…,Loading FX account balances…
 Loading imports flow…,Loading imports flow…
 Loading invoices,Loading invoices
@@ -4113,7 +4111,6 @@ OT flag,OT flag
 OT method,OT method
 OT threshold (min),OT threshold (min)
 Other,Other
-Other Charge,Other Charge
 Other cost,Other cost
 Other costs (before profit),Other costs (before profit)
 Other expenses,Other expenses
@@ -5517,6 +5514,7 @@ Stop,Stop
 Stop this Work Order? You can resume it later.,Stop this Work Order? You can resume it later.
 Stop Work Order,Stop Work Order
 Storage,Storage
+Storage / terminal / handling,Storage / terminal / handling
 Storefront,Storefront
 Stream,Stream
 Stuck (min),Stuck (min)

@@ -20,6 +20,12 @@ from frappe.utils import add_months, cint, flt, getdate, now, today
 from stabler.api import _procurement_policy as _policy
 from stabler.api._bid_package import assemble_bid_package, build_bid_docx
 from stabler.api._common import _require_company
+from stabler.api._landed_charge_types import (
+	CHARGE_TYPES,
+	FALLBACK_CHARGE_TYPE,
+	canonical_charge_type,
+	is_stored_po_charge_type,
+)
 from stabler.api.approvals import _assert_company_scope
 from stabler.api.organization import _can_access_module
 from stabler.stabler.tender_landed_math import line_value
@@ -240,22 +246,12 @@ def _po_lane(docstatus: int, per_received: float) -> str:
 	return "to_receive"
 
 
-# Planned landed-cost charge types (for grouping/iconography in the SPA). The
-# `label` is free text so the plan can hold literally any cost item; `type` only
-# drives the icon/colour. Stored per-PO as a JSON array in `custom_landed_charges`.
-_CHARGE_TYPES = (
-	"transport",
-	"customs",
-	"certification",
-	"insurance",
-	"storage",
-	"declarant",
-	"legal",
-	"broker",
-	"loading",
-	"bank",
-	"other",
-)
+# Planned landed-cost charge types live in `api._landed_charge_types` and nowhere
+# else (ADR-606) -- this module used to carry its own eleven-key tuple while
+# `LandedChargesEditor.vue` carried six different names for the same costs. A PO
+# line's `label` is still free text so the plan can hold literally any cost item;
+# `type` is the key, and it drives the icon and the shared list. Stored per-PO as
+# a JSON array in `custom_landed_charges`.
 
 
 def _raw_landed_lines(raw) -> list[dict]:
@@ -281,9 +277,24 @@ def _raw_landed_lines(raw) -> list[dict]:
 	for it in data if isinstance(data, list) else []:
 		if not isinstance(it, dict):
 			continue
-		ctype = str(it.get("type") or "other")
-		if ctype not in _CHARGE_TYPES:
-			ctype = "other"
+		# ADR-606: the membership check is the eleven a PO can STORE -- the
+		# canonical nine plus `broker` and `loading`, which the decision renames
+		# on READ. Not the canonical nine: this is a write path, so narrowing it
+		# would rewrite those two to "other" the first time anything re-saved the
+		# PO, turning a broker cost into an unnamed one. And not the alias table
+		# either, which also admits the QUOTATION spellings and the VAT ones --
+		# values no board can produce, and `"vat"` in particular is one
+		# `lcv_math.is_vat_component` matches on a substring, so a POST could put
+		# a line on disk that quietly leaves the landed cost voucher. Stored data
+		# is never rewritten; the reader maps it (see `_parse_landed`).
+		# Lower-cased because a PO `type` is a KEY, not a label: every value ever
+		# stored here is already lower-case (the old check saw to that), and three
+		# behaviours -- the conversion skip below, the refusal in
+		# `save_po_landed_charges` and the recoverable-VAT figure in
+		# `po_landed_charges` -- test it with `== "customs"`.
+		ctype = str(it.get("type") or "other").strip().lower()[:40]
+		if not is_stored_po_charge_type(ctype):
+			ctype = FALLBACK_CHARGE_TYPE
 		ccy = str(it.get("currency") or "").strip().upper()[:8]
 		amount_ccy = flt(it.get("amount_original"))
 		out.append(
@@ -365,6 +376,19 @@ def _parse_landed(raw) -> list[dict]:
 		# here rather than in the raw builder: a stored verdict can only go stale.
 		line["unvalued"] = False
 		line["amount_given"] = line["amount"]
+		# ADR-606: which of the nine types this line is, BESIDE the stored key
+		# rather than over it. `type` still says `broker` / `loading`, because
+		# that is what is on disk and a read may not rewrite it -- and because
+		# `api.lcv` falls back to `type` for an LCV row description, where a
+		# renamed line stops matching the descriptions already consumed and the
+		# charge is offered a second time. The editor reads `type_canonical`; a
+		# re-save by the officer is what moves a line to the new key.
+		#
+		# No `type_unmapped` twin to the quotation reader's: `_raw_landed_lines`
+		# has always bounded what reaches this field to a known key, so there is
+		# no unrecognised text here to hand back. Quotation charge types are free
+		# text on disk, which is why that side needs one.
+		line["type_canonical"] = canonical_charge_type(line["type"])
 		# The actual is ALREADY company currency, on every line, and is never
 		# converted -- ADR-605 fourth review, P1. It has two writers and both produce
 		# a base-currency figure, so there was nothing for a conversion to do; what it
@@ -404,6 +428,25 @@ def _parse_landed(raw) -> list[dict]:
 		# unreadable; the invoice was still paid, and its figure is still company
 		# currency. Zeroing it with the plan understates what was actually spent.
 	return out
+
+
+def _transport_figure(charges: list[dict]) -> float:
+	"""The freight figure `logist_board` prints for one Purchase Order.
+
+	CANONICAL transport only (Zafar, 2026-09-03, after ADR-606). It used to sum
+	`type in ("transport", "loading")` off the STORED key; under the one list
+	`loading` is terminal handling and resolves to `storage`, so those lines now
+	leave this figure. That is the decision: a board whose freight number counts
+	something the officer cannot pick as freight describes a different freight
+	than the editor does.
+
+	Reads `type_canonical`, never the stored `type` -- the stored key stays on
+	disk untouched (ADR-606) and every other consumer keeps reading it; this is
+	the one figure that asks what the line MEANS rather than how it was spelled.
+	A function rather than an expression inline in the loop so the test that
+	fixes this decision sums the same thing the board does.
+	"""
+	return sum(c["amount"] for c in charges if c["type_canonical"] == "transport")
 
 
 _ACTUAL_VOUCHER_TYPES = ("Purchase Invoice", "Payment Entry", "Journal Entry")
@@ -499,6 +542,23 @@ def hs_rate_lookup(hs_code: str, company: str) -> dict:
 		"vat_pct": flt(r.vat_pct) or 12.0,
 		"effective_from": str(r.effective_from) if r.effective_from else None,
 	}
+
+
+@frappe.whitelist()
+def landed_charge_types() -> dict:
+	"""The one predetermined landed-charge list (ADR-606), for both editors.
+
+	`PoControlBoard.vue` (a PO's landed plan) and `LandedChargesEditor.vue` (a
+	Supplier Quotation's estimate) both read it from here, so the estimate and
+	the plan describe the same costs under the same names and can be compared at
+	all. Neither component may carry a list of its own again -- that is what the
+	two divergent lists measured on 2026-09-03 were.
+
+	No company argument and no module gate on purpose: this is a constant, the
+	same nine strings for every tenant, and it exposes nothing about any of them.
+	Labels are English; the SPA translates them with `t()` at render time.
+	"""
+	return {"charge_types": [dict(entry) for entry in CHARGE_TYPES]}
 
 
 @frappe.whitelist()
@@ -2616,7 +2676,7 @@ def logist_board(company: str) -> dict:
 
 	for p in pos:
 		charges = _parse_landed(p.get("custom_landed_charges")) if has_landed else []
-		transport = sum(c["amount"] for c in charges if c["type"] in ("transport", "loading"))
+		transport = _transport_figure(charges)
 		received = flt(p.per_received) >= 100
 		eta = getdate(p.schedule_date) if p.schedule_date else None
 		deal = p.custom_crm_deal

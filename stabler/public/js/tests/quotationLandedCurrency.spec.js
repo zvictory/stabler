@@ -79,6 +79,14 @@ const UNVALUED = { currency: "USD", fx_rate: 0, amount_original: 1200, amount: n
 const LEGACY = { currency: "", fx_rate: 0, amount_original: null, amount: 3200000, is_recoverable_vat: false };
 /** Recoverable VAT: capitalized nowhere, IAS 2 §11. */
 const VAT = { currency: "USD", fx_rate: 12950, amount_original: 100, amount: null, is_recoverable_vat: true, charge_type: "VAT" };
+/** Spelled VAT, flag cleared. `priceLines` must count it: the exclusion is the
+ *  FLAG, and reading the stored spelling here is the second alias table
+ *  ADR-606 exists to prevent. The editor moves the type on the un-tick so this
+ *  shape does not reach the wire — but the rule this asserts does not depend on
+ *  the editor upholding it. */
+const VAT_UNTICKED = { ...VAT, is_recoverable_vat: false };
+/** What `onVatChange` actually hands the footer: the stored type moved too. */
+const VAT_MOVED = { ...VAT_UNTICKED, charge_type: "other" };
 
 describe("the editor's footer adds up what its own rows are showing", () => {
 	it("values a foreign line at the rate on that line, not at its typed figure", () => {
@@ -104,10 +112,20 @@ describe("the editor's footer adds up what its own rows are showing", () => {
 		expect(unvalued).toBe(1);
 	});
 
-	it("keeps recoverable VAT out of the capitalized total", () => {
-		// WHAT WOULD MAKE THIS FAIL: the currency rule swallowing the IAS 2 §11
-		// rule — a converted VAT line re-entering the landed total.
+	it("keeps recoverable VAT out of the capitalized total, and only while it is recoverable", () => {
+		// Both halves, because each fails on its own and the old assertion —
+		// one ticked line, excluded — could not tell them apart. Excluding the
+		// ticked line is IAS 2 §11. COUNTING the un-ticked one is the client
+		// staying out of the alias business: the exclusion is the flag, never
+		// the stored spelling. A `charge_type === "VAT"` test added here would
+		// make the officer's un-tick unclickable on screen while the server,
+		// which is told about it through `charge_type`, capitalized the line
+		// anyway — the two totals disagreeing again, from the other side.
+		// WHAT WOULD MAKE THIS FAIL: dropping `!line.is_recoverable_vat`, or
+		// adding a stored-spelling test beside it.
 		expect(priceLines([FOREIGN, VAT]).total).toBe(15540000);
+		expect(priceLines([FOREIGN, VAT_UNTICKED]).total).toBe(16835000);
+		expect(priceLines([FOREIGN, VAT_MOVED]).total).toBe(16835000);
 	});
 });
 
@@ -253,14 +271,17 @@ describe("clearing the currency keeps the number", () => {
 });
 
 describe("the line's currency and its rate travel together to the server", () => {
-	const save = editor.slice(editor.indexOf("async function save()"));
+	// ADR-606 review: the row -> wire mapping moved out of `save()` into the
+	// named `savedChargeLine`, so that the round trip `loadedLine` -> row ->
+	// `savedChargeLine` can be exercised. Same claim, read where it now lives.
+	const save = extractFunction(editor, "savedChargeLine");
 
 	it("sends the three quote fields with every line", () => {
 		// WHAT WOULD MAKE THIS FAIL: dropping any one. Without `currency` the
 		// server cannot convert; without `fx_rate` it cannot value; without
 		// `rate_date` nobody can tell which day's quote produced the figure.
 		for (const field of ["currency", "fx_rate", "rate_date"]) {
-			expect(save, `save() drops ${field}`).toMatch(new RegExp(`${field}:`));
+			expect(save, `savedChargeLine() drops ${field}`).toMatch(new RegExp(`${field}:`));
 		}
 	});
 

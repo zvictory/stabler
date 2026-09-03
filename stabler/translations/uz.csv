@@ -150,6 +150,7 @@ Receivable as of {0},{0} sanasidagi debitorlik qarzi
 Refresh the rate for this date,Ushbu sanaga kursni yangilash
 Remittance engine,O'tkazma mexanizmi
 Same as your last transfer,Oxirgi o'tkazmangizdagi kabi
+Say what this charge is.,Bu qanday xarajat ekanini yozing.
 Select at least one Work Order.,Kamida bitta ishlab chiqarish buyurtmasini tanlang.
 Select Warehouse,Omborni tanlang
 Selected work orders: {0},Tanlangan buyurtmalar: {0}
@@ -645,7 +646,6 @@ Balanced,Muvozanatli
 "Balances, advances and payments appear here.",
 "Balances, salaries, advances and payments appear here.","Bu yerda balanslar, oyliklar, avanslar va to'lovlar ko'rinadi."
 Bank,Bank
-Bank / transfer,Bank / o‘tkazma
 Bank account,Bank hisobi
 Bank Account '{0}' not found.,
 Bank account does not belong to company '{0}'.,
@@ -654,6 +654,7 @@ Bank Agreed,Bank (kelishilgan)
 Bank Agreed + Cash Agreed must equal Agreed Total.,Bank + naqd (kelishilgan) jami kelishilgan summaga teng bo'lishi kerak.
 Bank amount,Bank summası
 Bank and cash amounts are not equal — recorded as entered.,
+Bank charges,Bank xarajatlari
 Bank due,Bank bo'yicha to'lov
 Bank paid,Bank orqali to'landi
 Bank Payment,Bank to'lovi
@@ -760,7 +761,6 @@ Boxes × box weight ≠ quantity,Qutilar × quti vazni ≠ miqdor
 Branch,
 Brand,Brend
 Break minutes,
-Broker,Broker
 BRV Multiplier,BHM ko'paytuvchisi
 BRV used,Ishlatilgan BHM
 BRV Used (UZS),Ishlatilgan BHM (UZS)
@@ -855,7 +855,6 @@ Car / Item,Avtomobil / Mahsulot
 Car item is required.,Mahsulot (avtomobil) majburiy.
 Card not recognized,Karta tanilmadi
 Cargo,Yuk
-Cargo Insurance,Yuk sugʻurtasi
 Carrier,Tashuvchi
 Carrier & Driver,Tashuvchi va haydovchi
 Carrier / carrier invoice,Tashuvchi / tashuvchi hisob-faturasi
@@ -997,6 +996,7 @@ Close & release,
 Close & release reserved stock,
 Close panel,Panelni yopish
 Close Sales Order,
+Close this and open it again — nothing has been changed.,"Yopib, qaytadan oching — hech narsa o'zgartirilmadi."
 Close this Work Order? This finalizes it.,Bu buyurtmani yopasizmi? Bu yakuniy harakat.
 Close Visit,Tashrifni yopish
 Close visit,Tashrifni yopish
@@ -1396,6 +1396,7 @@ Customer receivables grouped by aging buckets.,
 "Customer, item, trend, and salesperson reports from submitted invoices.",
 Customers,Mijozlar
 Customs,Bojxona
+Customs broker / declarant,Bojxona brokeri / deklarant
 Customs charges,Bojxona xarajatlari
 Customs clearance,Bojxona rasmiylashtiruvi
 Customs Clearance Date,Bojxona rasmiylashtiruvi sanasi
@@ -1410,7 +1411,7 @@ Customs declaration {name} exists — an official declaration is never deleted f
 Customs Declarations,
 Customs declarations,Bojxona deklaratsiyalari
 Customs declarations pending,Kutilayotgan GTD
-Customs Duty & Tariff,Bojxona toʻlovi
+Customs duty,Bojxona boji
 Customs fee applied.,Bojxona yig‘imi qo‘llanildi.
 Customs Fee Multiplier,Bojxona yig'imi ko'paytuvchisi
 Customs Fee Override (UZS),Bojxona yig'imini bekor qilish (UZS)
@@ -2278,8 +2279,8 @@ Freezer pending,Muzlatgich kutilmoqda
 Freezer push,Muzlatgichlar
 Freezer ROI,Muzlatgich ROI
 Freight,Fraxt
-Freight & Logistics,Tashish va logistika
 Freight & Transport,Kira & Transport
+Freight / transport,Fraxt / transport
 Freight Booking,Yuk tashish bronlashi
 Freight booking,Yuk tashish bronlashi
 Freight Booking {0} belongs to another company.,{0} yuk tashish bronlashi boshqa kompaniyaga tegishli.
@@ -2409,7 +2410,6 @@ half-day,yarim kun
 Half-day & Presence,
 Half-day threshold (min),
 Handling,Yuk ishlash
-Handling & Terminal Fees,Terminal va yuklash xarajatlari
 Header,Sarlavha
 Header Details,Sarlavha ma’lumotlari
 Heavy conditions,
@@ -2470,7 +2470,6 @@ Import Orders,
 Import orders,Import buyurtmalari
 Import outlet locations,Nuqta joylashuvlarini import qilish
 Import Truck,Import yuk mashinasi
-Import VAT (Recoverable),Import QQS (Hisobga olinadigan)
 Import {0} lines,{0} qatorni import qilish
 Imported,Import qilindi
 Imported {0} of {1} lines ({2} duplicates skipped).,{1} qatordan {0} import qilindi ({2} dublikat o'tkazib yuborildi).
@@ -2801,7 +2800,6 @@ List rate,Ro'yxat narxi
 Load Available Lines,Mavjud qatorlarni yuklash
 Loaded,Yuklandi
 Loading,Yuklanmoqda
-Loading / unloading,Yuklash / tushirish
 Loading FX account balances…,
 Loading imports flow…,Import jarayoni yuklanmoqda…
 Loading invoices,
@@ -3695,7 +3693,6 @@ OT flag,
 OT method,
 OT threshold (min),
 Other,Boshqa
-Other Charge,Boshqa xarajatlar
 Other cost,Boshqa xarajat
 Other costs (before profit),Boshqa xarajatlar (foydadan oldin)
 Other expenses,Boshqa xarajatlar
@@ -5101,6 +5098,7 @@ Stop,To'xtatish
 Stop this Work Order? You can resume it later.,Bu buyurtmani to'xtatasizmi? Keyin davom ettirsa bo'ladi.
 Stop Work Order,Buyurtmani to'xtatish
 Storage,Saqlash
+Storage / terminal / handling,Saqlash / terminal / yuklash
 Storefront,Do'kon ko'rinishi
 Stream,Oqim
 Stuck (min),Osilgan (daq)
