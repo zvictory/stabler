@@ -1557,6 +1557,17 @@ def _assert_not_already_amended(source: str) -> None:
 		)
 
 
+def _amended_from_deal(source: str | None) -> str | None:
+	"""The tender the voucher being replaced already carried, or None.
+
+	`None` for a plain create, so the normal path asserts every value it is
+	given; only a re-send of what the ledger already says is let through.
+	"""
+	if not source or not frappe.get_meta("Journal Entry").has_field("custom_crm_deal"):
+		return None
+	return frappe.db.get_value("Journal Entry", source, "custom_crm_deal") or None
+
+
 def _resolve_amended_from(amended_from: str | None, company: str) -> str | None:
 	"""The amendment link to write, or None if this one may not be written.
 
@@ -3366,7 +3377,14 @@ def submit_expense_entry(
 		# writer runs. The rows themselves are stamped by `stamp_tender`.
 		if not frappe.db.exists("CRM Deal", deal):
 			frappe.throw("Unknown deal.")
-		assert_selectable_tender(deal, company)
+		# R15: assert only a value that is CHANGING, the way `_apply_tender` does
+		# on the purchase side. `Expenses.vue` puts the STORED deal into every edit
+		# payload, so a correction arrives naming the tender the voucher already
+		# carries — treating that as a fresh choice makes the one operation that
+		# fixes a posted voucher impossible once the tender is finished, and the
+		# throw lands after `amend_expense_entry` has already cancelled the source.
+		if deal != _amended_from_deal(_amend_link):
+			assert_selectable_tender(deal, company)
 		if frappe.get_meta("Journal Entry").has_field("custom_crm_deal"):
 			doc.custom_crm_deal = deal
 	if commercial_invoice:

@@ -48,7 +48,7 @@ except ImportError:  # newer frappe
 	from frappe.tests import IntegrationTestCase as FrappeTestCase
 
 from stabler.api.crm import list_deals
-from stabler.api.money import submit_expense_entry
+from stabler.api.money import amend_expense_entry, submit_expense_entry
 from stabler.api.purchasing import (
 	create_purchase_invoice,
 	create_purchase_invoice_from_po,
@@ -60,6 +60,7 @@ from stabler.api.tender_dimension import (
 	clear_dimension_cache,
 	dimension_fieldname,
 	ensure_company_setup,
+	is_active_tender,
 	overhead_deal,
 	tender_enabled,
 )
@@ -228,10 +229,18 @@ class _Fixture(FrappeTestCase):
 		return name
 
 	def _erase_voucher(self, doctype: str, name: str) -> None:
-		"""Cancel, delete, and take the ledger rows with it.
+		"""Cancel, delete, take the ledger rows with it, and make it stick.
 
 		`delete_linked_ledger_entries` is off on this site, so `delete_doc` alone
 		leaves the GL rows standing and the next run measures them.
+
+		The `commit` is not decoration. Submitting a voucher commits from inside
+		frappe, so the document outlives the framework's end-of-class rollback
+		while THIS cleanup — a per-test one, running inside the transaction —
+		does not. Measured: six `ADR-609 bench` Journal Entries were left on the
+		test site across earlier runs, and the naming series then reissued a name
+		one of the leftovers still pointed at, so an amendment test died on "This
+		entry has already been amended" instead of the tender check it was about.
 		"""
 		if not frappe.db.exists(doctype, name):
 			return
@@ -241,6 +250,7 @@ class _Fixture(FrappeTestCase):
 			doc.cancel()
 		frappe.delete_doc(doctype, name, force=True, ignore_permissions=True)
 		frappe.db.delete("GL Entry", {"voucher_type": doctype, "voucher_no": name})
+		frappe.db.commit()
 
 
 class TestPatchLanded(_Fixture):
@@ -341,6 +351,63 @@ class TestExpenseEntry(_Fixture):
 			[None] * len(bs),
 			"the cash leg was tagged; every tender's cost would be counted twice",
 		)
+
+	def _amend(self, source: str, deal: str, amount: float = 1234.0) -> dict:
+		return amend_expense_entry(
+			source_name=source,
+			modified=frappe.db.get_value("Journal Entry", source, "modified"),
+			company=self.company,
+			posting_date=today(),
+			payment_from=self.cash,
+			lines=[{"account": self.expense, "amount": amount, "memo": "ADR-609 bench amend"}],
+			deal=deal,
+			submit=1,
+		)
+
+	def test_an_expense_on_a_tender_that_has_since_been_lost_can_still_be_corrected(self):
+		"""R15. An amendment re-sends the value the voucher already carries.
+
+		`Expenses.vue` puts the STORED deal into every edit payload, so the
+		correction arrives naming the same tender the original was posted
+		against. Treating that as a fresh choice makes the ONE operation that
+		fixes a posted voucher impossible the moment the tender is finished — and
+		the throw lands AFTER `source.cancel()`, so the user is left with a
+		cancelled expense and no replacement, saved only by the HTTP rollback.
+		`tender_dimension` already promises the opposite: a document that carries
+		a tender which has since been lost stays readable and SAVABLE.
+		"""
+		live = self._make_deal("Tender")
+		name = self._expense_entry(deal=live)
+		frappe.db.set_value(DIMENSION_DOCTYPE, live, "custom_tender_stage", "lost")
+		clear_dimension_cache()
+		self.assertFalse(is_active_tender(live, self.company), "the fixture did not finish the tender")
+
+		result = self._amend(name, live)
+		self.addCleanup(self._erase_voucher, "Journal Entry", result["name"])
+
+		self.assertEqual(result["amended_from"], name)
+		pl = [
+			r
+			for r in _gl_rows("Journal Entry", result["name"], self.fieldname)
+			if _report_type(r["account"]) == "Profit and Loss"
+		]
+		self.assertTrue(pl, "the replacement booked no expense row")
+		self.assertEqual(
+			{r[self.fieldname] for r in pl},
+			{live},
+			"the correction lost the attribution the original voucher had",
+		)
+
+	def test_amending_onto_a_DIFFERENT_dead_tender_is_still_refused(self):
+		"""The other half: a value that CHANGES is a new choice and is asserted.
+
+		Without this the R15 fix would read as "amendments skip the check", and a
+		user could move a posted cost onto a lost tender by editing the voucher.
+		"""
+		name = self._expense_entry(deal=self.tender)
+		with self.assertRaises(frappe.ValidationError) as caught:
+			self._amend(name, self.lost)
+		self.assertIn("active tender", str(caught.exception))
 
 	def test_a_lost_tender_is_refused(self):
 		with self.assertRaises(frappe.ValidationError) as caught:
