@@ -292,3 +292,4 @@ stabler.tests.test_work_order_multi_level_default
 stabler.tests.test_landed_charge_currency
 stabler.tests.test_landed_charge_types
 stabler.tests.test_tender_prewin_landed_estimate
+stabler.tests.test_tender_dimension

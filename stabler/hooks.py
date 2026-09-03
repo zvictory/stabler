@@ -144,6 +144,7 @@ doc_events = {
 			"stabler.api._accounts.validate_sales_invoice",
 			"stabler.api.dimensions_hook.apply_dimensional_qty",
 			"stabler.api._diag.on_txn_validate",
+			"stabler.api.tender_dimension.stamp_tender",
 		],
 		"validate": [
 			"stabler.api.period_close.enforce_on_validate",
@@ -174,6 +175,7 @@ doc_events = {
 			"stabler.api._accounts.validate_purchase_invoice",
 			"stabler.api.dimensions_hook.apply_dimensional_qty",
 			"stabler.api._diag.on_txn_validate",
+			"stabler.api.tender_dimension.stamp_tender",
 		],
 		"validate": [
 			"stabler.api.period_close.enforce_on_validate",
@@ -188,6 +190,7 @@ doc_events = {
 		"before_validate": [
 			"stabler.api.dimensions_hook.apply_dimensional_qty",
 			"stabler.api._diag.on_txn_validate",
+			"stabler.api.tender_dimension.stamp_tender",
 		],
 		"before_submit": [
 			"stabler.api.approvals.before_submit_gate",
@@ -200,6 +203,7 @@ doc_events = {
 			"stabler.api.desk_write_guard.assert_write_via_stabler",
 			"stabler.api.dimensions_hook.apply_dimensional_qty",
 			"stabler.api._diag.on_txn_validate",
+			"stabler.api.tender_dimension.stamp_tender",
 		],
 		"before_update_after_submit": [
 			"stabler.api.desk_write_guard.assert_write_via_stabler",
@@ -216,6 +220,7 @@ doc_events = {
 			# Guard first — fail fast before diag/validation runs.
 			"stabler.api.desk_write_guard.assert_write_via_stabler",
 			"stabler.api._diag.on_txn_validate",
+			"stabler.api.tender_dimension.stamp_tender",
 		],
 		"validate": [
 			"stabler.api.valuation_guard.check_incoming_rate_currency",
@@ -233,9 +238,37 @@ doc_events = {
 	"Purchase Receipt": {
 		"before_validate": [
 			"stabler.api._diag.on_txn_validate",
+			"stabler.api.tender_dimension.stamp_tender",
 		],
 		"before_submit": [
 			"stabler.api.sod_enforce.assert_no_sod_conflict",
+		],
+	},
+	# ADR-609: Supplier Quotation and Request for Quotation carry `custom_crm_deal`
+	# (patches v30/v34) and nothing else — these blocks exist only to carry the
+	# tender stamp onto the dimension field.
+	"Supplier Quotation": {
+		"before_validate": [
+			"stabler.api.tender_dimension.stamp_tender",
+		],
+	},
+	"Request for Quotation": {
+		"before_validate": [
+			"stabler.api.tender_dimension.stamp_tender",
+		],
+	},
+	# ADR-609 B5. GL rows are inserted one by one as documents (general_ledger.py
+	# make_entry → new_doc → submit), so before_validate runs on every ledger row —
+	# the only place that can catch a writer P5a does not own (Stock Entry, Landed
+	# Cost Voucher, Payment Entry, a repost) before the mandatory check sees it.
+	"GL Entry": {
+		"before_validate": [
+			"stabler.api.tender_dimension.default_gl_tender",
+		],
+	},
+	"Stabler Company Modules": {
+		"on_update": [
+			"stabler.api.tender_dimension.on_company_modules_update",
 		],
 	},
 	"Payment Entry": {
@@ -272,6 +305,7 @@ doc_events = {
 			"stabler.api.desk_write_guard.assert_write_via_stabler",
 			"stabler.api.fx_balance.auto_balance_fx_residual",
 			"stabler.api._diag.on_txn_validate",
+			"stabler.api.tender_dimension.stamp_tender",
 		],
 		"validate": [
 			"stabler.api._accounts.validate_journal_entry",
