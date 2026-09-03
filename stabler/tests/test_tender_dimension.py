@@ -280,6 +280,16 @@ def _get_all(site: _Site, doctype: str, **kwargs):
 				rows = [r for r in rows if r.get(field) in value]
 			continue
 		rows = [r for r in rows if r.get(field) == wanted]
+	# `start` then `limit_page_length`, the order SQL applies OFFSET and LIMIT.
+	# Modelled because `list_active_tenders` pages a set it also filters in
+	# Python: a double that ignored the LIMIT would report a green suite for a
+	# picker whose page 2 skips rows the filter had already removed.
+	start = int(kwargs.get("start") or 0)
+	if start:
+		rows = rows[start:]
+	limit = kwargs.get("limit_page_length")
+	if limit:
+		rows = rows[: int(limit)]
 	pluck = kwargs.get("pluck")
 	if pluck:
 		return [r.get(pluck) for r in rows]
@@ -1203,13 +1213,14 @@ class TestListActiveTenders(unittest.TestCase):
 	def test_the_overhead_deal_comes_first_and_is_labelled(self):
 		# It is first because it is the answer for most expenses, and it is marked
 		# so the screen can say GENEL GİDER instead of a CRM autoname.
-		rows = self.mod.list_active_tenders("_Test Company", self.FIELDS)
+		rows, _total = self.mod.list_active_tenders("_Test Company", self.FIELDS)
 		self.assertEqual(rows[0]["name"], "OVERHEAD-1")
 		self.assertEqual(rows[0]["organization"], "GENEL GİDER")
 		self.assertEqual(rows[0]["is_overhead"], 1)
 
 	def test_excludes_a_lost_tender(self):
-		names = [r["name"] for r in self.mod.list_active_tenders("_Test Company", self.FIELDS)]
+		rows, _total = self.mod.list_active_tenders("_Test Company", self.FIELDS)
+		names = [r["name"] for r in rows]
 		self.assertIn("T-OPEN", names)
 		self.assertNotIn("T-LOST", names)
 
@@ -1219,7 +1230,8 @@ class TestListActiveTenders(unittest.TestCase):
 		self.site.lists["CRM Deal"].append(
 			{"name": "STD-1", "organization": "Shop", "deal_type": "Standard", "company": "_Test Company"}
 		)
-		names = [r["name"] for r in self.mod.list_active_tenders("_Test Company", self.FIELDS)]
+		rows, _total = self.mod.list_active_tenders("_Test Company", self.FIELDS)
+		names = [r["name"] for r in rows]
 		self.assertNotIn("STD-1", names)
 
 	def test_asks_the_database_for_tenders_rather_than_filtering_552_deals(self):
@@ -1247,12 +1259,53 @@ class TestListActiveTenders(unittest.TestCase):
 		# The empty state still has to be usable: every expense needs SOME value,
 		# and GENEL GİDER is the honest one when no tender is running.
 		self.site.lists["CRM Deal"] = []
-		rows = self.mod.list_active_tenders("_Test Company", self.FIELDS)
+		rows, _total = self.mod.list_active_tenders("_Test Company", self.FIELDS)
 		self.assertEqual([r["name"] for r in rows], ["OVERHEAD-1"])
+
+	def test_the_page_is_cut_after_the_filter_and_not_by_the_query(self):
+		"""R11. `is_active_tender` is a rule SQL cannot express, so SQL must not page.
+
+		With the LIMIT on the query the engine hands back the first `page_length`
+		RAW deals and the filter then removes some of them. Two things break at
+		once: page 2 skips raw rows rather than shown ones, so a live tender the
+		filter dropped on page 1 takes a real tender's place off the end of the
+		list; and the overhead bucket is prepended to EVERY page. A picker that
+		cannot show a running tender sends that cost to GENEL GİDER instead, and
+		the expense lands under the wrong dimension for good.
+		"""
+		self.site.lists["CRM Deal"] = []
+		for index in range(4):
+			name = f"T-{index}"
+			self.site.lists["CRM Deal"].append(
+				{
+					"name": name,
+					"organization": f"Lot {index}",
+					"deal_type": "Tender",
+					"company": "_Test Company",
+				}
+			)
+			self.site.values[("CRM Deal", name)] = {
+				"company": "_Test Company",
+				"deal_type": "Tender",
+				# T-1 is lost: the row SQL returns and the filter has to remove.
+				"custom_tender_stage": "lost" if index == 1 else "priced",
+			}
+
+		first, total = self.mod.list_active_tenders("_Test Company", self.FIELDS, page_length=2)
+		second, second_total = self.mod.list_active_tenders(
+			"_Test Company", self.FIELDS, page_length=2, start=2
+		)
+
+		self.assertEqual([r["name"] for r in first], ["OVERHEAD-1", "T-0"])
+		self.assertEqual([r["name"] for r in second], ["T-2", "T-3"])
+		# Not 2 (a page) and not 5 (what the query counted before the filter):
+		# the picker's footer has to name what the user may actually pick.
+		self.assertEqual(total, 4)
+		self.assertEqual(second_total, 4)
 
 	def test_returns_nothing_extra_for_a_company_with_no_overhead_deal(self):
 		self.site.singles.pop(("CRM Deal", (("company", "_Test Company"), ("deal_type", "Overhead"))))
-		rows = self.mod.list_active_tenders("_Test Company", self.FIELDS)
+		rows, _total = self.mod.list_active_tenders("_Test Company", self.FIELDS)
 		self.assertEqual([r["name"] for r in rows], ["T-OPEN"])
 
 

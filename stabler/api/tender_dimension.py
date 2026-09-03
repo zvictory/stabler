@@ -373,7 +373,7 @@ def tender_label(deal: str, company: str) -> str:
 
 def list_active_tenders(
 	company: str, fields: list[str], search: str = "", page_length: int = 50, start: int = 0
-) -> list[dict]:
+) -> tuple[list[dict], int]:
 	"""What a tender picker may offer: GENEL GİDER first, then live tenders.
 
 	The overhead deal leads and is offered unconditionally — including when the
@@ -381,6 +381,14 @@ def list_active_tenders(
 	expense needs SOME value and this is the honest one. `fields` is passed in by
 	the caller so the row shape stays defined in `api/crm.py` beside the board
 	that already reads it, and the RULE for which deals qualify stays here.
+
+	Paged in PYTHON, and the page is cut AFTER `is_active_tender` has spoken.
+	That rule reads the deal's stage and its lot, which no SQL filter here can
+	express, so a LIMIT on the query pages the UNFILTERED set: page 2 would skip
+	raw rows instead of shown ones and drop live tenders off the end, and the
+	total would be the size of a page. The query is capped at 500 — the ceiling
+	`_crm_list` already uses — so the picker still cannot become an unbounded
+	read. Returns the page and how many tenders the user may actually pick.
 	"""
 	rows: list[dict] = []
 	overhead = overhead_deal(company)
@@ -392,14 +400,13 @@ def list_active_tenders(
 		row["is_overhead"] = 1
 		rows.append(row)
 	if not frappe.db.has_column(DIMENSION_DOCTYPE, "deal_type"):
-		return rows
+		return _page(rows, page_length, start)
 
 	kwargs = {
 		"filters": {"company": company, "deal_type": "Tender"},
 		"fields": fields,
 		"order_by": "modified desc",
-		"limit_page_length": min(max(int(page_length or 50), 1), 500),
-		"start": max(int(start or 0), 0),
+		"limit_page_length": 500,
 	}
 	if search:
 		kwargs["or_filters"] = [[field, "like", f"%{search}%"] for field in ("organization", "lead_name")]
@@ -410,7 +417,14 @@ def list_active_tenders(
 		row = dict(row)
 		row["is_overhead"] = 0
 		rows.append(row)
-	return rows
+	return _page(rows, page_length, start)
+
+
+def _page(rows: list[dict], page_length: int, start: int) -> tuple[list[dict], int]:
+	"""One page of an already-filtered list, and the size of the whole list."""
+	offset = max(int(start or 0), 0)
+	size = min(max(int(page_length or 50), 1), 500)
+	return rows[offset : offset + size], len(rows)
 
 
 # ---------------------------------------------------------------------------

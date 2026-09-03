@@ -446,8 +446,8 @@ def list_deals(
 	if cint(active_tenders):
 		if not tender_enabled(company):
 			frappe.throw(_("Not permitted"), frappe.PermissionError)
-		rows = list_active_tenders(company, _DEAL_LIST_FIELDS, search, page_length, start)
-		return {"deals": rows, "total": len(rows)}
+		rows, total = list_active_tenders(company, _DEAL_LIST_FIELDS, search, page_length, start)
+		return {"deals": rows, "total": total}
 	extra_filters = {}
 	if deal_type:
 		extra_filters["deal_type"] = deal_type
