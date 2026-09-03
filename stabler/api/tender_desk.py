@@ -21,6 +21,7 @@ from stabler.api.tender import (
 	_require_tender_view,
 	_tender_views,
 )
+from stabler.api.tender_dimension import exclude_overhead_deals
 
 
 @frappe.whitelist()
@@ -81,15 +82,20 @@ def operations_desk(company: str, view: str | None = None, days: int = 7) -> dic
 		if frappe.db.has_column("CRM Deal", fld):
 			deal_fields.append(fld)
 
-	# ADR-609: this desk means TENDERS, the same set `tender.py` and
-	# `tender_master.py` read. Without the filter the GENEL GİDER bucket arrives
-	# as work: `assigned_to` falls back to `owner` and the result falls back to
-	# `status`, so it sits in `team_load` as an open lot that never closes, on
-	# whoever happens to own the CRM Deal. `has_column` for the same reason the
-	# field list above uses it — a site may predate v60.
-	deal_filters = {"company": company}
-	if frappe.db.has_column("CRM Deal", "deal_type"):
-		deal_filters["deal_type"] = "Tender"
+	# ADR-609: exclude the GENEL GİDER bucket and NOTHING else. Without it the
+	# bucket arrives as work — `assigned_to` falls back to `owner` and the result
+	# falls back to `status`, so it sits in `team_load` as an open lot that never
+	# closes, on whoever happens to own the CRM Deal.
+	#
+	# Not `deal_type == "Tender"`, which is how this reader was briefly narrowed:
+	# `_tender_deal_names` (tender.py) unions FIVE criteria and that is the last
+	# of them, because `save_deal_intake` never sets `deal_type` and v103 stamped
+	# every NULL to `Standard` for good. Measured on genesis-test.local: 484 deals
+	# carry `custom_tender_intake` and not one is typed Tender, so the narrow
+	# filter took `team_load` from 553 to 1 — and `deals_raw` feeds the whole
+	# desk, so bid_due, delivery_due, orphan_lots, won_without_po, the plan, the
+	# decisions and the calendar would all have emptied out with it, silently.
+	deal_filters = exclude_overhead_deals({"company": company})
 
 	deals_raw = frappe.get_all("CRM Deal", filters=deal_filters, fields=deal_fields, limit_page_length=0)
 

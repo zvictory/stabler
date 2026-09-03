@@ -251,11 +251,17 @@ def exclude_overhead_deals(filters: dict) -> dict:
 	can work — one extra on the board, one permanently ageing row in stage aging,
 	one phantom on a rep's workload, an SLA alert nobody can clear.
 
-	Called by all five CRM Deal readers — `crm._crm_list` (the boards),
-	`crm.crm_metrics`, `crm_analytics.get_manager_cockpit_metrics` and
-	`crm_automation.run_crm_automation_rules` — so no two screens can disagree
-	about what counts as a deal. They did: `crm_metrics` answered `deal_count`
-	553 while the board beside it answered 552.
+	Called by the five readers that COUNT or LIST deals as work: `crm._crm_list`
+	(every board), `crm.crm_metrics`, `crm_analytics.get_manager_cockpit_metrics`,
+	`crm_automation.run_crm_automation_rules` and `tender_desk.operations_desk`.
+	No two of them may disagree about what a deal is, and they did: `crm_metrics`
+	answered `deal_count` 553 while the board beside it answered 552.
+
+	The other twelve `CRM Deal` list sites in `stabler/api` need nothing: they
+	either resolve deals the caller already named (`name in [...]`, for labels) or
+	are already narrowed by a filter the bucket cannot satisfy — `linked_customer
+	is set`, an `email_id`, a `custom_parent_tender`, or `deal_type = "Tender"`.
+	Adding the filter there would be noise, not safety.
 
 	`!=` and not `not in`: MariaDB drops NULL rows on `!=`, which is why v103
 	backfills a NULL `deal_type` to `Standard` before this filter is ever

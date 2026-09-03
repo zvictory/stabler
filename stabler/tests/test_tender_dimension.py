@@ -1392,7 +1392,12 @@ class TestWriterWiring(unittest.TestCase):
 		readers = self.crm.count('"CRM Deal",')
 		self.assertGreater(readers, 0, "crm.py no longer reads CRM Deal by name")
 		self.assertIn('["!=", OVERHEAD_DEAL_TYPE]', _code_only(_read("api", "tender_dimension.py")))
-		for module, expected in (("crm.py", 2), ("crm_analytics.py", 1), ("crm_automation.py", 1)):
+		for module, expected in (
+			("crm.py", 2),
+			("crm_analytics.py", 1),
+			("crm_automation.py", 1),
+			("tender_desk.py", 1),
+		):
 			code = _code_only(_read("api", module))
 			self.assertEqual(
 				code.count("exclude_overhead_deals("),

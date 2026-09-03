@@ -206,6 +206,21 @@ class _OperationsDesk(unittest.TestCase):
 			owner="rep1@acme.com",
 			docstatus=0,
 		)
+		# R19. A lot made through the tender screens. `save_deal_intake` never sets
+		# `deal_type`, and v103 stamped every NULL to `Standard` for good, so this
+		# is what a real tender lot looks like on the site: Standard, identified by
+		# its intake. Measured on genesis-test.local — 484 deals carry
+		# `custom_tender_intake` and NOT ONE of them is typed Tender.
+		self.fake.docs[("CRM Deal", "LOT-INTAKE")] = _Doc(
+			name="LOT-INTAKE",
+			doctype="CRM Deal",
+			company=COMPANY,
+			organization="City Water Authority",
+			deal_type="Standard",
+			custom_tender_intake=json.dumps({"lot_no": "LOT-77", "assigned_to": "sourcing@acme.com"}),
+			owner="rep1@acme.com",
+			docstatus=0,
+		)
 		self.fake.docs[("CRM Deal", "DEAL-OVERHEAD")] = _Doc(
 			name="DEAL-OVERHEAD",
 			doctype="CRM Deal",
@@ -214,6 +229,26 @@ class _OperationsDesk(unittest.TestCase):
 			deal_type="Overhead",
 			owner="Administrator",
 			docstatus=0,
+		)
+
+	def test_a_lot_identified_only_by_its_intake_is_still_on_the_desk(self):
+		"""R19. The desk is narrowed by what is NOT a lot, never by `deal_type`.
+
+		`_tender_deal_names` unions five criteria — a tagged SO/PO/quotation, an
+		intake, a bid pricing plan, a parent tender, and only then
+		`deal_type == "Tender"`. Narrowing this reader to the last of them drops
+		every lot the tender screens made: measured on genesis-test.local,
+		`team_load` fell from 553 to 1, and `deals_raw` feeds the whole desk —
+		bid_due, delivery_due, orphan_lots, won_without_po, the plan, the
+		decisions and the calendar all empty out with it, silently. A tender
+		tenant loses its bid-deadline board and nothing says so.
+		"""
+		result = self.desk.operations_desk(company=COMPANY)
+
+		self.assertIn(
+			"sourcing@acme.com",
+			[row["user"] for row in result["team_load"]],
+			"a lot carrying an intake vanished from the desk",
 		)
 
 	def test_the_bucket_is_not_a_lot_on_anybodys_desk(self):
@@ -230,10 +265,10 @@ class _OperationsDesk(unittest.TestCase):
 
 		self.assertEqual(
 			[row["user"] for row in result["team_load"]],
-			["rep1@acme.com"],
+			["rep1@acme.com", "sourcing@acme.com"],
 			"the GENEL GİDER bucket was counted as somebody's open lot",
 		)
-		self.assertEqual([row["open_lots"] for row in result["team_load"]], [1])
+		self.assertEqual([row["open_lots"] for row in result["team_load"]], [1, 1])
 
 
 if __name__ == "__main__":
