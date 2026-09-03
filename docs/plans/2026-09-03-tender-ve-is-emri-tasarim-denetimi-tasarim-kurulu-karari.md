@@ -277,9 +277,9 @@ ACCEPTANCE
    - make check yeşil; doctype JSON ve patches.txt değişmez (JSON alanı).
 
 NOT DECIDED
-  - "Sabit masraf kalemleri" (00-SETUP.md:559-562): önceden belirlenmiş liste mi, götürü tutar
-    mı? Zafar tek satırla. Ölçüm tetiği: ≥20 teklif masraf taşıdığında lot içinde aynı set
-    kaç kez yazılmış.
+  - ~~"Sabit masraf kalemleri" (00-SETUP.md:559-562): önceden belirlenmiş liste mi, götürü tutar
+    mı?~~ → **KARAR 2026-09-03 (Zafar): önceden belirlenmiş liste** (§8). Liste içeriği ve
+    hesap eşlemesi hâlâ açık (§8 soru 3).
   - Yalnız mlb=1 ile üretilen 7 ürün gerçekten çok seviyeli mi? Desk kutusu kaldığı için
     yetenek kaybolmaz; Stabler modalı 1 üretemez (Zafar'ın talimatı).
   - Delta CSS'in uygulanması (ACCEPTANCE #8) — asama-a §10 Zafar kararları.
@@ -376,3 +376,76 @@ sitesinde `migrate` + `bench restart`; deploy sonrası taze işçi sürecinde
 `frappe.new_doc("Work Order").use_multi_level_bom == 0`; sinyal: günlük mlb=1 sayısı → 0.
 `82f9001` deploy'u da hâlâ Zafar'da. Karar verilmeyenler §6'daki gibi durur (ADR-606, delta
 CSS, kanvas "Новый заказ" akışı).
+
+## 8. ADR-606 kararı ve ADR-609 önerisi (2026-09-03, akşam)
+
+### ADR-606 — KARAR (Zafar, 2026-09-03): önceden belirlenmiş liste
+Sabit masraf seti götürü tutar değil, **önceden belirlenmiş liste** olacak. Ölçülen bugünkü
+durum: iki ayrı istemci listesi var ve örtüşmüyor — `PoControlBoard.vue:50` `CHARGE_TYPES`
+= transport, customs, certification, insurance, storage, declarant, legal, broker, loading,
+bank, other (PO/landed satırı `type`); `LandedChargesEditor.vue:46` `CHARGE_TYPES` = Freight,
+Customs Duty, Handling & Terminal, Insurance, VAT, Other (teklif satırı `charge_type`).
+Sunucu `_landed.py:55-57` boş tipi "General" yapar ve `:136` VAT'ı ada göre tanır. Karar
+gereği tek liste sunucuda tanımlanır, iki editör de onu okur; liste içeriği Zafar'dan
+(aşağıdaki soru 3). Uygulama ayrı pakette (P4), bu doküman yalnız kararı kaydeder.
+
+### ADR-609 — ÖNERİ (onay bekliyor): tender, muhasebe boyutu olsun
+Talep (Zafar, 2026-09-03): "sistemdeki aktif tender seçilebilsin, masraf ona uygulansın;
+QuickBooks'taki Class gibi; tender bazlı P&L'i profesyonel görebilmek; genel giderler ayrı
+P&L." ERPNext'te Class'ın karşılığı **Accounting Dimension**'dır. Ölçüldü (ERPNext 16, yerel):
+
+- `Accounting Dimension` alanları: `label, fieldname, document_type, disabled,
+  dimension_defaults`; şirket başına `Accounting Dimension Detail`: `company,
+  reference_document, default_dimension, mandatory_for_bs, mandatory_for_pl,
+  automatically_post_balancing_accounting_entry, offsetting_account`.
+- Zorunluluk GL'de uygulanır: `erpnext/accounts/general_ledger.py:635-650`, kayıt
+  `report_type == "Profit and Loss"` bir hesaba düşüyor ve `mandatory_for_pl` işaretliyse
+  boyutsuz GL satırı reddedilir. **Bu, "her gider ya bir tender'a ya genel gidere yazılır"
+  kuralını veritabanı seviyesinde zorlar.**
+- P&L raporu boyuta göre filtrelenir: `financial_statements.py:594-640`
+  `get_accounting_dimensions` → her boyut bir filtre. Tender seçilince tender P&L'i,
+  "GENEL" değeri seçilince genel gider P&L'i, filtresiz konsolide.
+- Boyut alanı `accounting_dimension_doctypes` kancasındaki 52 belgeye eklenir
+  (`erpnext/hooks.py`): GL Entry, Payment Ledger Entry, Sales Invoice, Purchase Invoice, Payment Entry, Asset, Stock Entry, Budget, Delivery Note, Sales Invoice Item, Purchase Invoice Item, Purchase Order Item, Sales Order Item, Journal Entry Account, Journal Entry Template Account, Material Request Item, Delivery Note Item, Purchase Receipt Item, Stock Entry Detail, Payment Entry Deduction, Sales Taxes and Charges, Purchase Taxes and Charges, Shipping Rule, Landed Cost Item, Asset Value Adjustment, Asset Repair, Asset Capitalization, Loyalty Program, Stock Reconciliation, POS Profile, Opening Invoice Creation Tool, Opening Invoice Creation Tool Item, Subscription, Subscription Plan, POS Invoice, POS Invoice Item, Purchase Order, Purchase Receipt, Sales Order, Subcontracting Order, Subcontracting Order Item, Subcontracting Receipt, Subcontracting Receipt Item, Account Closing Balance, Supplier Quotation, Supplier Quotation Item, Payment Reconciliation, Payment Reconciliation Allocation, Payment Request, Asset Movement Item, Asset Depreciation Schedule, Advance Taxes and Charges.
+
+Stabler'ın bugünkü durumu (ölçüldü): **Accounting Dimension hiç kullanılmıyor** (grep boş).
+Tender bağı `custom_crm_deal` özel alanıyla belge düzeyinde: yamalarda Supplier Quotation,
+Purchase Order, Sales Order, RFQ, Journal Entry; `tender.py` ayrıca Sales Invoice, Customs
+Declaration, Freight Booking üzerinde okuyor. Gerçekleşen P&L (`_actual_block`,
+`tender.py:1397`) üç kaynaktan derleniyor: landed satırlarının `actual`'ı, deal'e bağlı
+Sales Invoice geliri (`_deal_revenue_actual`), deal'e bağlı Journal Entry gider borçları
+(`_deal_kassa_actual`, `root_type = 'Expense'`, `tender.py:1305-1330`). Yani bugünkü tender
+P&L'i GL'den değil belgelerden hesaplanır; Purchase Invoice ve Expense Claim üzerinden gelen
+tender gideri, stok çıkışının COGS'u ve boyutsuz JE bu P&L'e girmez. Talep tam bu boşluğu
+tarif ediyor.
+
+Öneri:
+1. `Tender` adlı bir Accounting Dimension (`document_type` = tender kaydının doctype'ı —
+   soru 1), her şirkette `mandatory_for_pl = 1`; genel giderler için her şirkette tek bir
+   "GENEL GİDER" değeri (boyut boş bırakılamaz, açıkça seçilir).
+2. Stabler'ın gider yazan ekranları (Expenses/kasa, PI, Expense Claim, LCV) boyut alanını
+   **aktif tender listesinden** doldurur; kapalı tender seçilemez.
+3. Tender P&L ekranı GL'den okur (boyut filtresi): gelir, COGS (stok çıkışı boyutla
+   damgalanır), landed, tender giderleri; `_actual_block` bununla mutabakat edilir,
+   fark satır satır gösterilir (geçiş döneminde iki kaynak yan yana).
+4. Kapatma: tender kapandığında boyut değeri seçilemez olur; sonrası yazımlar reddedilir
+   (ERPNext'in boyutu kapatma mekanizması yok — Stabler tarafında kural, ölçülecek).
+5. Veri geçişi: mevcut `custom_crm_deal` taşıyan JE/SI/PO satırlarından boyutu geriye
+   dönük doldur (yama, idempotent, her sitede migrate).
+
+Açık sorular (cevapları işi değiştirir):
+1. Boyutun `document_type`'ı: doğrudan **CRM Deal** mi (bugünkü tender kaydı), yoksa
+   yalnız tender'ları taşıyan ayrı bir **Tender** doctype'ı mı? CRM Deal'de tender olmayan
+   deal'ler de var; boyut listesinde onlar da görünür.
+2. Hangi belgeler zorunlu: yalnız P&L hesabına düşenler (öneri) mi, bilanço kalemleri de
+   (avans, stok) mi? `mandatory_for_bs` ayrı bayrak.
+3. Sabit masraf listesinin içeriği (ADR-606): PO listesi mi (11 tip), teklif listesi mi
+   (6 tip), birleşimi mi? Muhasebe hesabı eşlemesi de listeye girsin mi (tip → Expense
+   hesabı), tender P&L'inde satır başlıkları o hesaplardan gelsin?
+4. COGS: tender bazlı stok çıkışı hangi belgeyle oluyor (Delivery Note / Sales Invoice
+   update_stock)? Boyut o belgeye damgalanınca `Stock Ledger`→GL COGS satırı boyutu taşır;
+   üretimden (anjan) gelen maliyet bu kapsamda mı?
+5. Genel gider P&L'i tek "GENEL GİDER" değeri mi, alt kırılım (idari, satış, finans) mı?
+
+Karar Zafar'da; onay gelince ADR-609 kesinleşir ve P4/P5 paketleri açılır (P4 = tek liste,
+P5 = boyut + geriye dönük yama + GL'den okuyan P&L; P5 DB yaması → `make test-bench`).
