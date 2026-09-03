@@ -417,3 +417,61 @@ measurement that forced it; anything you could not verify, stated as such.
 
 - 2026-09-03 evening: contract frozen by the orchestrator after measuring every path above.
 - 2026-09-03 evening, correction (orchestrator's own error): the contract stated as *measured* that `patches.txt` has no `[post_model_sync]` marker. It has one at line 41 since 2026-07-08 (`22f70e7`); 38 patches sit above it, 64 below. The sentence was copied from `.claude/skills/stabler-orchestrator/SKILL.md:316`, which was wrong and contradicted `.claude/rules/20-backend-migrations.md:15`. The implementer found the truth independently and wrote it into v103's docstring. Both texts corrected in this commit. Consequence for P5a: none — the guards are required either way.
+
+### Round 1 review — 2026-09-04
+
+Fourteen adjudicated findings, all landed on `feat/adr-609-tender-dimension`, one commit each
+(R2 and R4 share `2abccf0`: both rewrote the same gate in `default_gl_tender`). Every item was
+proved by watching the test fail first, or — where the test came after the code — by mutating
+the fix away and watching that exact assertion go red.
+
+**Two lines of this contract were wrong, and the code follows the measurement, not the text:**
+
+1. **B7, last bullet** — "`Stabler Company Modules` `on_update` → `on_company_modules_update`".
+   `Stabler Company Modules` is a CHILD table, and Frappe persists child rows with `db_update()`
+   inside `Document.update_child_table` (`document.py:616-648`); their document methods are never
+   run. The handler fired **zero** times, so turning `enable_tender` on through the SPA set no
+   company up. The hook belongs on the `Stabler Settings` SINGLE, as
+   `on_settings_update(doc, method=None)`, with a re-entry guard: `get_company_module_row` saves
+   the single when a company has no row, which re-enters the same `on_update`. (R1, `06e0ed6`)
+2. **Line 55** — Request for Quotation is listed among the doctypes that receive the dimension
+   field. It is absent from erpnext's `accounting_dimension_doctypes`
+   (`erpnext/hooks.py:529`); Supplier Quotation is there, RFQ never was. Its `before_validate`
+   block set a value on a field that does not exist and Frappe dropped it on save, and its
+   `_LEGACY_PARENTS` entry pointed the backfill at a column `_column_exists` then silently
+   refused. Both removed. (R10, `5a5ec2b`)
+
+**The findings, in the order they were fixed:**
+
+| # | P | What was wrong | Commit |
+|---|---|---|---|
+| R1 | P0 | the module-toggle hook was on a child table and fired zero times | `06e0ed6` |
+| R2 | P0 | the GL hook gated on the stabler flag while erpnext reads the detail row | `2abccf0` |
+| R4 | P1 | that gate cost 7.0 uncached queries per ledger row | `2abccf0` |
+| R3 | P1 | the patch asserted a fieldname it had not created | `622413d` |
+| R5 | P1 | Period Closing Voucher booked every tender's P&L onto GENEL GİDER | `6678a00` |
+| R6 | P2 | a `frappe.throw` string was in no catalogue | `226299e` |
+| R7 | P2 | both screens kept the previous company's overhead deal after a switch | `be98ada` |
+| R8 | P2 | `save_deal` accepted the reserved `Overhead` type; the bucket was read unordered | `45ce6a1` |
+| R9 | P2 | the manager cockpit counted the bucket as a deal | `5a056ab` |
+| R10 | P3 | Request for Quotation was stamped and backfilled for nothing | `5a5ec2b` |
+| R11 | P3 | the tender picker paged in SQL and filtered in Python | `f546a00` |
+| R12 | P3 | "balance-sheet rows are left alone" was true of the hook, not of the ledger | `342b2a1` |
+| R13 | P2 | a bill's tender could be replaced but never cleared | `7cd8fc9` |
+| R14 | P3 | `ensure_company_setup` left a stale "not mandatory" behind the row it wrote | `2230a5d` |
+
+**Measurements worth keeping.**
+
+- The ledger DOES carry tender values on balance-sheet accounts. `default_gl_tender` never adds
+  one, but erpnext copies a document-level dimension onto EVERY GL row a tagged voucher posts:
+  measured on `genesis-test.local`, a tagged Purchase Invoice tags Creditors as well as the
+  expense account, and a Sales Invoice made from a tagged Sales Order tags Debtors as well as
+  Sales. **P5b must sum profit-and-loss accounts only**, or every tagged document is counted
+  twice. Now pinned by a bench test rather than by prose. (R12)
+- `list_active_tenders` cannot page in SQL: `is_active_tender` reads the deal's stage and its
+  lot, which the query cannot express. Measured with four tenders, one lost: page 2 of size 2
+  returned `['T-3']` where it owed `['T-2', 'T-3']` — a live tender fell off the end of the
+  picker, and its cost would have gone to GENEL GİDER. (R11)
+- `stabler.tests.test_crm_analytics` was bench-only because `stabler.api.crm` reaches the real
+  `organization` → `www.stabler` → `frappe.sessions`. One stubbed module put it in `make check`,
+  where the cockpit regression can actually be caught. (R9)
