@@ -146,7 +146,8 @@ def parse_landed_charges(raw_charges) -> tuple[float, list[dict], bool]:
 		# rather than merely renaming the line, or recoverable input tax would
 		# start capitalizing into the landed cost of the goods.
 		canonical, unmapped = resolve_charge_type(charge_type)
-		is_vat = raw["is_recoverable_vat"] or is_vat_charge_type(charge_type)
+		stored_is_vat = is_vat_charge_type(charge_type)
+		is_vat = raw["is_recoverable_vat"] or stored_is_vat
 		# One rule, stated once, shared with `tender._parse_landed` — see
 		# `tender_landed_math.line_value`. A PO customs line reaches this function
 		# with a stored amount and no currency, and keeps the figure the ГТД
@@ -172,6 +173,16 @@ def parse_landed_charges(raw_charges) -> tuple[float, list[dict], bool]:
 				# so the editor can keep them instead of showing a bare "Other".
 				charge_type_canonical=canonical,
 				charge_type_unmapped=unmapped,
+				# Whether the STORED spelling is one of the VAT aliases -- not
+				# whether this line is recoverable, which `is_recoverable_vat`
+				# above already says. The editor needs the difference: clearing
+				# the checkbox on a line still spelled "VAT" is an edit this
+				# function would undo on the next read, so the editor answers it
+				# by moving the stored type as well. It may not work that out
+				# for itself without keeping a copy of the alias table, which is
+				# the duplication ADR-606 exists to remove -- so the fact is
+				# stated here, where the table lives.
+				charge_type_is_vat=stored_is_vat,
 				# 0.0 on an unvalued line is not a figure, it is the absence of one;
 				# `unvalued` is what says so. Nothing may sum it without reading that.
 				company_amount=company_amount,

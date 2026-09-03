@@ -4,6 +4,9 @@ import { dirname, resolve } from "path";
 import { fileURLToPath } from "url";
 
 import { chargeTypeLabel, chargeTypes } from "../composables/landedChargeTypes.js";
+// The real conversion rule, injected into the extracted `priceLines` — a total
+// computed with a stub is not the total the footer shows.
+import { convertedPreview } from "../composables/landedLine.js";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const editor = readFileSync(resolve(here, "../components/LandedChargesEditor.vue"), "utf8");
@@ -160,10 +163,14 @@ describe("a legacy line shows the type the server resolved it to", () => {
 		expect(line.type_canonical).toBe("declarant");
 	});
 
-	it("keeps the words off an unrecognised quotation type", () => {
+	it("keeps the words of an unrecognised quotation type on screen", () => {
 		// Quotation charge types are free text on disk ("Local Delivery"). The
-		// server maps them to `other` and hands back what it could not recognise;
-		// dropping that here leaves a line reading "Other" and nothing else.
+		// server maps them to `other` and hands back what it could not
+		// recognise; dropping that here leaves a line reading "Other" and
+		// nothing else. The claim is unchanged; where the words go is not. They
+		// used to be seeded into `description`, which is a field the save sends
+		// — so a line with no description grew one. They ride their own key now
+		// and the template shows them as the placeholder.
 		const loaded = load(editor, "loadedLine")({
 			charge_type: "Local Delivery",
 			charge_type_canonical: "other",
@@ -171,7 +178,8 @@ describe("a legacy line shows the type the server resolved it to", () => {
 			description: "",
 		});
 		expect(loaded.charge_type_canonical).toBe("other");
-		expect(loaded.description).toBe("Local Delivery");
+		expect(loaded.charge_type_unmapped).toBe("Local Delivery");
+		expect(loaded.description).toBe("");
 	});
 
 	it("never overwrites a description the officer already wrote", () => {
@@ -246,6 +254,32 @@ describe("opening a plan and saving it does not rename what is on disk", () => {
 		}
 	});
 
+	it("does not turn the unrecognised type into a description", () => {
+		// The server hands back the words it could not map (`charge_type_unmapped`)
+		// so the officer can still read them. Seeding the DESCRIPTION with them
+		// was the same mistake as seeding `charge_type` with the canonical key:
+		// the field is what `savedChargeLine` sends, so a line stored as
+		// `{charge_type: "Local Delivery", description: ""}` grew a description
+		// on the next save made for an unrelated reason. The words are a
+		// placeholder now — visible, and not something the officer wrote.
+		// WHAT WOULD MAKE THIS FAIL: `description: c.description || c.charge_type_unmapped`.
+		const row = load(editor, "loadedLine")({
+			charge_type: "Local Delivery",
+			charge_type_canonical: "other",
+			charge_type_unmapped: "Local Delivery",
+			description: "",
+			amount: 100,
+		});
+		const sent = load(editor, "savedChargeLine")(row);
+		expect(sent.description).toBe("");
+		expect(sent.charge_type).toBe("Local Delivery");
+		// Still shown, just not as data: the template reads it as the placeholder.
+		expect(row.charge_type_unmapped).toBe("Local Delivery");
+		expect(editor.slice(editor.indexOf("<template>"))).toMatch(
+			/:placeholder="line\.charge_type_unmapped \|\|/,
+		);
+	});
+
 	it("writes the new key only when the officer picks one", () => {
 		// The other half: a rename the officer ASKED for must reach the disk.
 		// WHAT WOULD MAKE THIS FAIL: dropping `onTypeChange`, which would leave
@@ -270,6 +304,98 @@ describe("opening a plan and saving it does not rename what is on disk", () => {
 		expect(editor).toMatch(
 			/<select v-model="line\.charge_type_canonical"[\s\S]{0,120}@change="onTypeChange\(line\)"/,
 		);
+	});
+});
+
+describe("un-ticking recoverable VAT is an edit, and has to reach the store", () => {
+	// The review's P1, and the one place where NOT rewriting the stored type is
+	// the bug. `_landed.py` forces `is_recoverable_vat` ON for any line whose
+	// STORED `charge_type` is a VAT spelling, and never rewrites that spelling.
+	// So an officer who un-ticks the box on a legacy "VAT" line watched the
+	// modal's total gain the 300 while `base_landed_total` — the figure that
+	// ranks the vendors — kept the old one, and on reopen the box was ticked
+	// again. The edit was discarded silently, and the two totals disagreed in
+	// between.
+	//
+	// The fix is not a client-side alias list (a second copy of the table, which
+	// is the defect ADR-606 exists to remove). The server states the fact:
+	// `charge_type_is_vat` rides beside `charge_type_canonical`, and the
+	// checkbox handler reads it.
+	const untick = (row) => {
+		row.is_recoverable_vat = false;
+		load(editor, "onVatChange")(row);
+		return row;
+	};
+
+	const legacyVatRow = () =>
+		load(editor, "loadedLine")({
+			charge_type: "VAT",
+			charge_type_canonical: "other",
+			charge_type_is_vat: true,
+			is_recoverable_vat: true,
+			amount: 300,
+		});
+
+	it("moves the stored type off the VAT spelling the server would re-flag", () => {
+		// WHAT WOULD MAKE THIS FAIL: leaving `charge_type` alone — the save
+		// posts "VAT" again, `_landed.py:149` turns the flag back on, and the
+		// officer's edit never happened.
+		const sent = load(editor, "savedChargeLine")(untick(legacyVatRow()));
+		expect(sent.charge_type).toBe("other");
+		expect(sent.is_recoverable_vat).toBe(false);
+	});
+
+	it("counts the line the officer just made ordinary", () => {
+		const priceLines = new Function(
+			"convertedPreview",
+			`${extractFunction(editor, "priceLines")}\nreturn priceLines;`,
+		)(convertedPreview);
+		expect(priceLines([legacyVatRow()]).total).toBe(0);
+		expect(priceLines([untick(legacyVatRow())]).total).toBe(300);
+	});
+
+	it("asks what the charge is, now that it is no longer VAT", () => {
+		// `other` with nothing beside it. The prompt is the right one: a line
+		// that stopped being recoverable VAT has to say what it is instead.
+		expect(load(editor, "needsChargeLabel")(untick(legacyVatRow()))).toBe(true);
+	});
+
+	it("rewrites nothing when the box is ticked back on", () => {
+		// Only the un-tick is an edit the server cannot infer. Rewriting on both
+		// edges would rename lines nobody renamed — the P0 again, one checkbox
+		// further along.
+		// WHAT WOULD MAKE THIS FAIL: an unconditional `charge_type = canonical`.
+		const row = legacyVatRow();
+		row.is_recoverable_vat = true;
+		load(editor, "onVatChange")(row);
+		expect(load(editor, "savedChargeLine")(row).charge_type).toBe("VAT");
+	});
+
+	it("leaves an ordinary line alone when its box is cleared", () => {
+		// A `transport` line whose officer ticked the box by mistake and cleared
+		// it again: nothing about it was ever VAT, so nothing may move.
+		const row = load(editor, "loadedLine")({
+			charge_type: "Freight",
+			charge_type_canonical: "transport",
+			charge_type_is_vat: false,
+			is_recoverable_vat: true,
+			amount: 300,
+		});
+		expect(load(editor, "savedChargeLine")(untick(row)).charge_type).toBe("Freight");
+	});
+
+	it("wires the handler to the checkbox", () => {
+		expect(editor.slice(editor.indexOf("<template>"))).toMatch(
+			/v-model="line\.is_recoverable_vat"[\s\S]{0,200}@change="onVatChange\(line\)"/,
+		);
+	});
+
+	it("takes the fact from the server, and does not keep a list of its own", () => {
+		// WHAT WOULD MAKE THIS FAIL: any VAT spelling appearing in the component.
+		// One list, on the server — that is the whole ADR.
+		expect(extractFunction(editor, "onVatChange")).toMatch(/charge_type_is_vat/);
+		expect(editor).not.toMatch(/["']value added tax["']/i);
+		expect(editor).not.toMatch(/["']НДС["']/i);
 	});
 });
 
@@ -307,11 +433,27 @@ describe("a failed load never becomes an empty save", () => {
 		expect(extractFunction(editor, "save")).toMatch(/if \(loadError\.value\) return;/);
 	});
 
-	it("fetches the constant list separately from the PO's own data", () => {
-		// WHAT WOULD MAKE THIS FAIL: `Promise.all([charges, loadChargeTypes()])`
-		// coming back — a rejected constant then aborts the read of real data.
-		expect(board).not.toMatch(/Promise\.all\(\[[\s\S]{0,200}loadChargeTypes\(\)/);
-		expect(editor).not.toMatch(/Promise\.all\(\[[\s\S]{0,200}loadChargeTypes\(\)/);
+	it("treats a missing type list as a failed load, not a usable editor", () => {
+		// The two awaits are sequential and share ONE try, so a rejected type
+		// list DOES abort the charge read — deliberately. A <select> with no
+		// options cannot be used, so an editor that cannot offer the nine types
+		// must not offer to save over the array it is about to replace. (This
+		// spec was called "fetches the constant list separately" and its comment
+		// claimed a rejected constant must not abort the data read. It does
+		// abort it, and should; the name and the reason were both wrong.)
+		// WHAT WOULD MAKE THIS FAIL: `Promise.all([...])` coming back, whose
+		// rejection landed in a catch that toasted and left Save enabled over
+		// zero rows; or the list fetch moving out of the try that sets the error.
+		for (const [src, fn] of [
+			[board, "openEditor"],
+			[editor, "load"],
+		]) {
+			const body = extractFunction(src, fn);
+			expect(body).not.toMatch(/Promise\.all\(\[[\s\S]{0,200}loadChargeTypes\(\)/);
+			expect(body).toMatch(/try \{/);
+			expect(body.indexOf("await loadChargeTypes()")).toBeGreaterThan(body.indexOf("try {"));
+			expect(body.indexOf("call(")).toBeGreaterThan(body.indexOf("await loadChargeTypes()"));
+		}
 	});
 });
 
@@ -338,10 +480,43 @@ describe("`other` is the one type that has to be named", () => {
 	});
 
 	it("says so on the row, and does not disable Save", () => {
-		expect(editor).toMatch(/needsChargeLabel\(line\)/);
-		expect(board).toMatch(/needsChargeLabel\(l\)/);
+		// Asserted on the RENDERING. `toMatch(/needsChargeLabel\(line\)/)` over
+		// the whole file was satisfied by the function DECLARATION, so deleting
+		// every use in both templates left this green — the predicate existed
+		// and nothing drew it.
+		// WHAT WOULD MAKE THIS FAIL: removing the invalid-state class or the
+		// hint from either template.
+		const quotationTemplate = editor.slice(editor.indexOf("<template>"));
+		expect(quotationTemplate).toMatch(/:class="\{ 'is-invalid': needsChargeLabel\(line\) \}"/);
+		expect(quotationTemplate).toMatch(/v-if="needsChargeLabel\(line\)"/);
+
+		const boardTemplate = board.slice(board.indexOf("<template>"));
+		expect(boardTemplate).toMatch(/:class="\{ 'is-invalid': needsChargeLabel\(l\) \}"/);
+		expect(boardTemplate).toMatch(/v-if="needsChargeLabel\(l\)"/);
+
 		const saveButton = editor.slice(editor.indexOf('class="btn btn-primary"'));
 		expect(saveButton.slice(0, 200)).not.toMatch(/needsChargeLabel/);
+	});
+
+	it("does not ask a line that already says what it is", () => {
+		// A legacy line stored "Local Delivery" resolves to `other`, and its
+		// words now live in the placeholder rather than the description — so the
+		// naive predicate would paint every such row red and demand a name it
+		// has already got, on disk. The question is whether the cost is NAMED,
+		// not which field names it.
+		// WHAT WOULD MAKE THIS FAIL: dropping the `charge_type_unmapped` half.
+		const quotation = load(editor, "needsChargeLabel");
+		expect(
+			quotation({
+				charge_type: "Local Delivery",
+				charge_type_canonical: "other",
+				charge_type_unmapped: "Local Delivery",
+				description: "",
+			}),
+		).toBe(false);
+		expect(
+			quotation({ charge_type: "General", charge_type_canonical: "other", charge_type_unmapped: "", description: "" }),
+		).toBe(true);
 	});
 });
 

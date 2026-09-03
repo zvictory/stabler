@@ -68,10 +68,15 @@ function loadedLine(c) {
 	return {
 		charge_type: c.charge_type || "",
 		charge_type_canonical: c.charge_type_canonical || "transport",
-		// An unrecognised type is the officer's own words. The server hands them
-		// back rather than swallowing them into "Other"; they belong in the box
-		// that holds words, and only when it is empty.
-		description: c.description || c.charge_type_unmapped || "",
+		// An unrecognised type is the officer's own words, handed back rather
+		// than swallowed into "Other". They are SHOWN — as the description's
+		// placeholder — and not seeded into the model: `description` is a field
+		// `savedChargeLine` sends, so seeding it wrote "Local Delivery" into the
+		// description of a line that had none, on the next save made for an
+		// unrelated reason. Same mistake as loading the canonical key into
+		// `charge_type`, one column across.
+		charge_type_unmapped: c.charge_type_unmapped || "",
+		description: c.description || "",
 		amount: Number(c.amount || 0),
 		currency: c.currency || "",
 		fx_rate: Number(c.fx_rate || 0),
@@ -79,6 +84,9 @@ function loadedLine(c) {
 		amount_original: c.amount_original == null ? null : Number(c.amount_original),
 		fx_source: "",
 		is_recoverable_vat: Boolean(c.is_recoverable_vat),
+		// Derived, read-only, never sent back: whether the STORED spelling is a
+		// VAT alias. `onVatChange` is its only reader.
+		charge_type_is_vat: Boolean(c.charge_type_is_vat),
 	};
 }
 
@@ -86,8 +94,13 @@ function loadedLine(c) {
 // blocked — the same stance the unvalued-line warning takes, for the same reason.
 // Reads the DISPLAYED type: the officer is being asked about the option in front
 // of them, not about the spelling the row happens to hold on disk.
+//
+// The unmapped text counts as an answer. A line stored "Local Delivery" resolves
+// to `other` and its words live in the placeholder now, so asking it to say what
+// it is would be demanding a name it already has, on disk.
 function needsChargeLabel(line) {
-	return line.charge_type_canonical === "other" && !String(line.description || "").trim();
+	if (line.charge_type_canonical !== "other") return false;
+	return !String(line.description || "").trim() && !String(line.charge_type_unmapped || "").trim();
 }
 
 // The one thing that renames a stored line: the officer choosing another type.
@@ -97,17 +110,39 @@ function onTypeChange(line) {
 	line.charge_type = line.charge_type_canonical;
 }
 
+// …and the one exception, because here leaving `charge_type` alone is what
+// discards the edit. The server forces `is_recoverable_vat` ON for every line
+// whose STORED spelling is a VAT alias (`_landed.py`, `charge_type_is_vat`), so
+// clearing the box on a legacy "VAT" line and sending "VAT" back means the flag
+// returns on the next read: the footer here gains the amount while
+// `base_landed_total` — the figure that ranks the vendors — does not, and the
+// box is ticked again when the modal reopens. Moving the stored type onto the
+// canonical key (`other`, for every VAT spelling) is what makes the un-tick
+// true. The row is then flagged for a description, which is the right question:
+// a charge that is not recoverable VAT has to say what it is.
+//
+// Only on the un-tick. Ticking the box back on renames nothing — a recoverable
+// line needs no type change, and rewriting on both edges would rename lines
+// nobody renamed.
+function onVatChange(line) {
+	if (line.is_recoverable_vat || !line.charge_type_is_vat) return;
+	line.charge_type = line.charge_type_canonical;
+	line.charge_type_is_vat = false;
+}
+
 async function load() {
 	if (!props.show || !props.quotationName) return;
 	loading.value = true;
 	loadError.value = "";
 	try {
-		// Fetched one after the other, not with `Promise.all`: the list is a
-		// constant and the charges are this quotation's own data, and a rejected
-		// constant must not abort the read of the data. Either failure lands in
-		// `loadError` — the review's P1: the catch used to toast and leave Save
-		// enabled over an EMPTY row array, and this save REPLACES the stored
-		// array, so one press after a transient failure wiped the estimate.
+		// Sequential, and in ONE try, so either failure blocks the editor. That
+		// includes the type list: a <select> with no options cannot be used, so
+		// an editor that could not read the nine types must not offer to save
+		// over the array it would replace. Both failures land in `loadError` —
+		// the review's P1: `Promise.all` put them in a catch that toasted and
+		// left Save enabled over an EMPTY row array, and this save REPLACES the
+		// stored array, so one press after a transient failure wiped the
+		// estimate.
 		await loadChargeTypes();
 		const res = await call("stabler.api.sourcing.get_quotation_landed", {
 			quotation: props.quotationName,
@@ -133,6 +168,8 @@ function addChargeLine() {
 	charges.value.push({
 		charge_type: "transport",
 		charge_type_canonical: "transport",
+		charge_type_unmapped: "",
+		charge_type_is_vat: false,
 		description: "",
 		amount: 0,
 		currency: "",
@@ -376,7 +413,7 @@ async function save() {
 												type="text"
 												class="form-control form-control-sm"
 												:class="{ 'is-invalid': needsChargeLabel(line) }"
-												:placeholder="t('Optional details (e.g. FOB shipping, duty rate)')"
+												:placeholder="line.charge_type_unmapped || t('Optional details (e.g. FOB shipping, duty rate)')"
 											/>
 											<!-- ADR-606: "Other" names no cost on its own. Flagged, not
 											     blocked — the save still goes through, like an unvalued line. -->
@@ -453,11 +490,15 @@ async function save() {
 											<div v-if="line.fx_source" class="small text-secondary text-end">{{ line.fx_source }}</div>
 										</td>
 										<td class="text-center">
+											<!-- Clearing this on a line whose STORED type is a VAT spelling
+											     also moves the type, or the server flags it again on the
+											     next read and the edit never happened. See `onVatChange`. -->
 											<input
 												v-model="line.is_recoverable_vat"
 												type="checkbox"
 												class="form-check-input"
 												:title="t('IAS 2 §11: Recoverable VAT is excluded from capitalized landed cost')"
+												@change="onVatChange(line)"
 											/>
 										</td>
 										<td class="text-center">

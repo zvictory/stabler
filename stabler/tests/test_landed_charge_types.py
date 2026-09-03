@@ -291,6 +291,50 @@ class TestLegacyVatIsStillExcluded(unittest.TestCase):
 		_total, line = self._total_of("Freight")
 		self.assertFalse(line["is_recoverable_vat"])
 
+	def test_the_valued_line_says_whether_the_STORED_type_was_vat(self):
+		# The editor has to be able to tell "ticked because the officer ticked
+		# it" from "ticked because the stored spelling is a VAT alias", and it
+		# may not keep an alias table of its own to do it -- one list, on the
+		# server, is the whole ADR. So the fact rides on the valued line beside
+		# `charge_type_canonical`, and it is the STORED spelling's fact alone:
+		# an ordinary line the officer merely ticked is not a VAT line.
+		# WHAT WOULD MAKE THIS FAIL: setting it from the merged `is_vat`.
+		_total, line = self._total_of("VAT")
+		self.assertTrue(line["charge_type_is_vat"])
+
+		_total, plain = parse_landed_charges(
+			[{"charge_type": "Freight", "amount": 300.0, "is_recoverable_vat": True}]
+		)[:2]
+		self.assertTrue(plain[0]["is_recoverable_vat"])
+		self.assertFalse(plain[0]["charge_type_is_vat"])
+
+	def test_un_ticking_the_box_actually_lowers_nothing_and_raises_the_total(self):
+		# The review's P1, closed on the server's side. The editor answers an
+		# un-tick on a legacy VAT line by writing the canonical key into the
+		# stored one -- because the server forces the flag back on for any line
+		# still SPELLED as VAT, so sending "VAT" with the box cleared is an edit
+		# that silently does not happen: the modal shows 1300 while
+		# `base_landed_total` stays 1000 and the box is ticked again on reopen.
+		# This is that saved shape, read back.
+		# WHAT WOULD MAKE THIS FAIL: the editor leaving `charge_type` as "VAT".
+		untouched, _clean, _has = parse_landed_charges(
+			[
+				{"charge_type": "VAT", "amount": 300.0, "is_recoverable_vat": False},
+				{"charge_type": "Freight", "amount": 1000.0},
+			]
+		)
+		self.assertEqual(untouched, 1000.0, "a line still spelled VAT is still VAT")
+
+		total, clean, _has = parse_landed_charges(
+			[
+				{"charge_type": "other", "amount": 300.0, "is_recoverable_vat": False},
+				{"charge_type": "Freight", "amount": 1000.0},
+			]
+		)
+		self.assertEqual(total, 1300.0)
+		self.assertFalse(clean[0]["is_recoverable_vat"])
+		self.assertFalse(clean[0]["charge_type_is_vat"])
+
 	def test_only_the_spellings_that_were_vat_before_are_vat_now(self):
 		# The alias table decides whether a stored line capitalizes, so widening
 		# it by one plausible-looking string silently restates a company's landed

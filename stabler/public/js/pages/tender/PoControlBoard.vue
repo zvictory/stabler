@@ -192,12 +192,13 @@ async function openEditor(card) {
 	editorLines.value = [];
 	editorError.value = "";
 	try {
-		// Fetched one after the other, not with `Promise.all`: the list is a
-		// constant and the charges are this PO's own data, and a rejected constant
-		// must not abort the read of the data. Either failure lands in
-		// `editorError` — the review's P1: the catch used to toast and leave Save
-		// enabled over an EMPTY row array, and this save REPLACES the stored
-		// array, so one press after a transient failure wiped the plan.
+		// Sequential, and in ONE try, so either failure blocks the editor. That
+		// includes the type list: a <select> with no options cannot be used, so
+		// an editor that could not read the nine types must not offer to save
+		// over the array it would replace. Both failures land in `editorError` —
+		// the review's P1: `Promise.all` put them in a catch that toasted and
+		// left Save enabled over an EMPTY row array, and this save REPLACES the
+		// stored array, so one press after a transient failure wiped the plan.
 		await loadChargeTypes();
 		const r = await call("stabler.api.tender.po_landed_charges", { po: card.name });
 		editorBase.value = r?.base_total || 0;
