@@ -54,8 +54,16 @@ CHARGE_TYPE_KEYS: tuple[str, ...] = tuple(entry["key"] for entry in CHARGE_TYPES
 FALLBACK_CHARGE_TYPE = "other"
 
 # Recoverable VAT as it was stored when it was still a type. Matched
-# case-insensitively; `_landed.py` used to carry this tuple inline.
-_VAT_ALIASES = frozenset({"vat", "value added tax", "import vat", "ндс"})
+# case-insensitively; `_landed.py:136` used to carry this set inline as
+# `charge_type.upper() in ("VAT", "VALUE ADDED TAX", "НДС")`.
+#
+# These three and no more. Membership here decides whether a stored line
+# capitalizes, so an alias added because it READS like VAT restates a company's
+# landed cost: "Import VAT" was an ordinary charge before this module existed,
+# and flagging it drops its amount out of `base_landed_total` -- possibly out of
+# `cheapest_landed`, which decides a tender. A spelling joins this set only on
+# evidence that the stored data meant recoverable VAT.
+_VAT_ALIASES = frozenset({"vat", "value added tax", "ндс"})
 
 # Every value that can be on disk today -> the canonical key it means. Keys are
 # lower-cased; lookups lower-case and strip. Anything not here is an unknown
@@ -70,14 +78,20 @@ _ALIASES: dict[str, str] = {
 	"freight": "transport",
 	"customs duty": "customs",
 	"handling & terminal": "storage",
-	# The server's own empty sentinel (`raw_charge_line` writes "General" when a
-	# line names no type at all) and its emptier twin. Neither is a cost, and
-	# neither is an unknown string worth preserving as a description.
+	# The server's own empty sentinel: `raw_charge_line` writes "General" when a
+	# line names no type at all. It is not a cost and not an unknown string worth
+	# preserving as a description. The empty string is deliberately NOT here --
+	# `is_known_charge_type` is what write paths gate on, and answering True for
+	# "" let a whitespace-only type persist as "" rather than fall back.
 	"general": FALLBACK_CHARGE_TYPE,
-	"": FALLBACK_CHARGE_TYPE,
 	# VAT is the flag now, and the line is an ordinary charge under `other`.
 	**dict.fromkeys(_VAT_ALIASES, FALLBACK_CHARGE_TYPE),
 }
+
+# What a Purchase Order's landed line may hold on disk: the nine, plus the two
+# keys the board itself once wrote and the decision renames on READ. See
+# `is_stored_po_charge_type` for why this is not the alias table.
+PO_CHARGE_TYPE_KEYS: frozenset[str] = frozenset(CHARGE_TYPE_KEYS) | {"broker", "loading"}
 
 
 def _normalise(value) -> str:
@@ -92,6 +106,23 @@ def canonical_charge_type(value) -> str:
 def is_known_charge_type(value) -> bool:
 	"""True when the alias table recognises the stored string."""
 	return _normalise(value) in _ALIASES
+
+
+def is_stored_po_charge_type(value) -> bool:
+	"""True when a Purchase Order landed line may PERSIST `value` as its `type`.
+
+	Narrower than `is_known_charge_type` on purpose. That answers "does the
+	reader understand this?" and takes the whole alias table -- including the
+	quotation spellings ("Freight", "Handling & Terminal") and the VAT ones,
+	which are values only a Supplier Quotation ever stored. A PO `type` is a KEY
+	and this is the WRITE path behind a whitelisted endpoint, so it decides what
+	a POST can put on disk: gating it on the alias table let a caller persist
+	`"vat"`, which no board can produce and which `lcv_math.is_vat_component`
+	matches on a substring, quietly dropping the line from the landed cost
+	voucher. The nine, plus the two legacy keys `PoControlBoard.vue` itself
+	wrote -- exactly the eleven `tender._CHARGE_TYPES` held before ADR-606.
+	"""
+	return _normalise(value) in PO_CHARGE_TYPE_KEYS
 
 
 def is_vat_charge_type(value) -> bool:

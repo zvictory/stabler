@@ -33,6 +33,7 @@ from __future__ import annotations
 import csv
 import importlib
 import json
+import re
 import types
 import unittest
 from pathlib import Path
@@ -41,6 +42,7 @@ from stabler.api._landed import parse_landed_charges, raw_charge_line, sanitize_
 from stabler.api._landed_charge_types import (
 	CHARGE_TYPES,
 	canonical_charge_type,
+	is_known_charge_type,
 	is_vat_charge_type,
 	resolve_charge_type,
 )
@@ -197,9 +199,20 @@ class TestEveryStoredValueLands(unittest.TestCase):
 	def test_matching_is_case_insensitive_and_ignores_padding(self):
 		# The two lists disagreed about case ("Freight" vs "transport"), and
 		# hand-edited JSON disagrees about whitespace. Neither is a new type.
-		for stored in ("FREIGHT", "freight", "  Freight  ", "Customs DUTY"):
+		# One expected key per input, deliberately: this assertion read
+		# `assertIn(..., ("transport", "customs"))` and passed just as happily
+		# with "FREIGHT" resolving to customs -- which is the one thing a
+		# case-folding test exists to catch.
+		cases = {
+			"FREIGHT": "transport",
+			"freight": "transport",
+			"  Freight  ": "transport",
+			"Customs DUTY": "customs",
+			"\tBROKER\n": "declarant",
+		}
+		for stored, expected in cases.items():
 			with self.subTest(stored=stored):
-				self.assertIn(canonical_charge_type(stored), ("transport", "customs"))
+				self.assertEqual(canonical_charge_type(stored), expected)
 
 	def test_the_servers_own_empty_sentinel_lands_on_other(self):
 		# `raw_charge_line` writes "General" when a line names no type at all
@@ -207,6 +220,13 @@ class TestEveryStoredValueLands(unittest.TestCase):
 		self.assertEqual(canonical_charge_type("General"), "other")
 		self.assertEqual(canonical_charge_type(""), "other")
 		self.assertEqual(canonical_charge_type(None), "other")
+		# Empty is not a RECOGNISED value, though, and the difference is not
+		# academic: write paths gate on `is_known_charge_type`, so answering True
+		# for "" let a whitespace-only `type` persist as "" rather than "other".
+		# WHAT WOULD MAKE THIS FAIL: putting "" back in the alias table.
+		self.assertFalse(is_known_charge_type(""))
+		self.assertFalse(is_known_charge_type("   "))
+		self.assertTrue(is_known_charge_type("General"))
 
 
 class TestAnUnknownTypeKeepsItsText(unittest.TestCase):
@@ -271,6 +291,25 @@ class TestLegacyVatIsStillExcluded(unittest.TestCase):
 		_total, line = self._total_of("Freight")
 		self.assertFalse(line["is_recoverable_vat"])
 
+	def test_only_the_spellings_that_were_vat_before_are_vat_now(self):
+		# The alias table decides whether a stored line capitalizes, so widening
+		# it by one plausible-looking string silently restates a company's landed
+		# cost. Main matched exactly three spellings (`_landed.py:136`,
+		# `charge_type.upper() in ("VAT", "VALUE ADDED TAX", "НДС")`), which
+		# makes "Import VAT" an ORDINARY charge there: flagging it here drops its
+		# 300.00 out of `base_landed_total` and can change which bid is cheapest.
+		# An alias earns its place because the stored data meant VAT, never
+		# because the words read like it.
+		# WHAT WOULD MAKE THIS FAIL: any new member of `_VAT_ALIASES`.
+		for stored in ("VAT", "Value Added Tax", "НДС"):
+			with self.subTest(stored=stored, on_main="VAT"):
+				self.assertTrue(is_vat_charge_type(stored))
+				self.assertEqual(self._total_of(stored)[0], 1000.0)
+		for stored in ("Import VAT", "VAT recoverable", "Freight"):
+			with self.subTest(stored=stored, on_main="an ordinary charge"):
+				self.assertFalse(is_vat_charge_type(stored))
+				self.assertEqual(self._total_of(stored)[0], 1300.0)
+
 
 class TestStoredDataIsNeverRewritten(unittest.TestCase):
 	"""Store -> dump -> compare. The RAW shape is what reaches the disk."""
@@ -303,6 +342,23 @@ class TestStoredDataIsNeverRewritten(unittest.TestCase):
 			[{"type": "broker", "amount": 100.0}, {"type": "loading", "amount": 200.0}]
 		)
 		self.assertEqual([line["type"] for line in lines], ["broker", "loading"])
+
+	def test_the_po_write_path_admits_only_what_a_po_can_store(self):
+		# `_raw_landed_lines` is a WRITE path fed by a whitelisted endpoint, so
+		# its membership check decides what a POST can put on disk. Asking the
+		# full alias table -- which also carries the QUOTATION spellings and the
+		# VAT ones -- let a caller persist `"vat"` as a PO charge type: a value
+		# no board can produce, and one `lcv_math.is_vat_component` matches on a
+		# substring, so the line would quietly leave the landed cost voucher. A
+		# blank one fared worse and persisted as "" -- neither a type nor a
+		# fallback. Main stored all of these as "other" (eleven keys), and so
+		# does this: the nine, plus the two legacy keys the board itself wrote.
+		# WHAT WOULD MAKE THIS FAIL: gating on `is_known_charge_type` again.
+		tender = _load_tender()
+		for posted in ("vat", "VAT", "freight", "Handling & Terminal", "General", "  ", "\t"):
+			with self.subTest(posted=posted):
+				lines = tender._raw_landed_lines([{"type": posted, "amount": 10.0}])
+				self.assertEqual(lines[0]["type"], "other")
 
 	def test_a_po_line_survives_the_editors_round_trip(self):
 		# The review's P0, from the server's side. `save_po_landed_charges`
@@ -415,3 +471,25 @@ class TestEveryLabelIsTranslated(unittest.TestCase):
 			for entry in CHARGE_TYPES:
 				with self.subTest(lang=lang, label=entry["label"]):
 					self.assertIn(entry["label"], msgids)
+
+	def test_removing_a_label_did_not_un_translate_another_screen(self):
+		# The same rename deleted ten msgids whose last landed-charge caller was
+		# gone. A msgid's callers are not all literals, though: `t()` is called
+		# on VALUES too -- `ImportExpenses.vue` maps its own category list
+		# through `t(c)` -- so a live caller can exist that no grep for
+		# `t("Storage")` will ever find. "Storage" was one of those, and dropping
+		# it left the imports expense filter rendering English in four languages
+		# with nothing red to say so. Removal is safe only when EVERY caller is
+		# gone, including the dynamic ones.
+		# WHAT WOULD MAKE THIS FAIL: dropping any of these rows again.
+		src = (_ROOT / "public" / "js" / "pages" / "imports" / "ImportExpenses.vue").read_text(
+			encoding="utf-8"
+		)
+		listed = re.search(r"const CATEGORIES = \[(.*?)\];", src, re.S)
+		self.assertIsNotNone(listed, "ImportExpenses.vue no longer lists its categories inline")
+		categories = re.findall(r'"([^"]+)"', listed.group(1))
+		self.assertIn("Storage", categories)
+		for lang in _LANGS:
+			msgids = self._msgids(lang)
+			missing = [category for category in categories if category not in msgids]
+			self.assertEqual(missing, [], f"{lang} lost a msgid ImportExpenses.vue still translates")

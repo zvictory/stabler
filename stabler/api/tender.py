@@ -24,7 +24,7 @@ from stabler.api._landed_charge_types import (
 	CHARGE_TYPES,
 	FALLBACK_CHARGE_TYPE,
 	canonical_charge_type,
-	is_known_charge_type,
+	is_stored_po_charge_type,
 )
 from stabler.api.approvals import _assert_company_scope
 from stabler.api.organization import _can_access_module
@@ -277,11 +277,15 @@ def _raw_landed_lines(raw) -> list[dict]:
 	for it in data if isinstance(data, list) else []:
 		if not isinstance(it, dict):
 			continue
-		# ADR-606: the membership check asks the ALIAS table, not the canonical
-		# nine. `broker` and `loading` are stored values that the decision renames
-		# to `declarant` and `storage` -- and this is a write path, so narrowing it
-		# to the nine would rewrite them to "other" the first time anything
-		# re-saved the PO, turning a broker cost into an unnamed one. Stored data
+		# ADR-606: the membership check is the eleven a PO can STORE -- the
+		# canonical nine plus `broker` and `loading`, which the decision renames
+		# on READ. Not the canonical nine: this is a write path, so narrowing it
+		# would rewrite those two to "other" the first time anything re-saved the
+		# PO, turning a broker cost into an unnamed one. And not the alias table
+		# either, which also admits the QUOTATION spellings and the VAT ones --
+		# values no board can produce, and `"vat"` in particular is one
+		# `lcv_math.is_vat_component` matches on a substring, so a POST could put
+		# a line on disk that quietly leaves the landed cost voucher. Stored data
 		# is never rewritten; the reader maps it (see `_parse_landed`).
 		# Lower-cased because a PO `type` is a KEY, not a label: every value ever
 		# stored here is already lower-case (the old check saw to that), and three
@@ -289,7 +293,7 @@ def _raw_landed_lines(raw) -> list[dict]:
 		# `save_po_landed_charges` and the recoverable-VAT figure in
 		# `po_landed_charges` -- test it with `== "customs"`.
 		ctype = str(it.get("type") or "other").strip().lower()[:40]
-		if not is_known_charge_type(ctype):
+		if not is_stored_po_charge_type(ctype):
 			ctype = FALLBACK_CHARGE_TYPE
 		ccy = str(it.get("currency") or "").strip().upper()[:8]
 		amount_ccy = flt(it.get("amount_original"))

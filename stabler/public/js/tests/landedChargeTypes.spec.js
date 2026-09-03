@@ -51,8 +51,20 @@ function extractFunction(src, name) {
 	return src.slice(at, braceStart) + braceMatched(src, braceStart);
 }
 
+/** Same trick for a module-level object literal, so a spec can read its keys. */
+function extractConst(src, name) {
+	const at = src.indexOf(`const ${name} = `);
+	expect(at, `${name} is gone — has it moved or been renamed?`).toBeGreaterThan(-1);
+	return `const ${name} = ${braceMatched(src, src.indexOf("{", at))};`;
+}
+
+const extractDecl = (src, name) =>
+	src.includes(`function ${name}(`) ? extractFunction(src, name) : extractConst(src, name);
+
 const load = (src, name, ...deps) =>
-	new Function(`${[...deps, name].map((n) => extractFunction(src, n)).join("\n")}\nreturn ${name};`)();
+	new Function(`${[...deps, name].map((n) => extractDecl(src, n)).join("\n")}\nreturn ${name};`)();
+
+const loadConst = (src, name) => new Function(`${extractConst(src, name)}\nreturn ${name};`)();
 
 /** `addLine`/`addChargeLine` push into a component ref; hand them a stand-in. */
 function addedLine(src, name, refName) {
@@ -334,12 +346,21 @@ describe("`other` is the one type that has to be named", () => {
 });
 
 describe("the icons stay client-side, and cover every type", () => {
-	it("gives all nine types an icon", () => {
+	it("keys the icon map by exactly the nine the server ships", () => {
 		// The ADR allows the iconography to stay in the component — it is not the
 		// list, it is a presentation of it. The risk it carries instead: a type
-		// added on the server renders with a blank or a fallback icon nobody
-		// notices. WHAT WOULD MAKE THIS FAIL: a tenth type, or a renamed key.
-		const chargeIcon = load(board, "chargeIcon");
+		// added on the server renders with the fallback icon and nobody notices.
+		//
+		// So this reads the MAP's own keys. Calling `chargeIcon(key)` and
+		// checking the answer looks like `ti-…` cannot fail at all: the function
+		// ends in `|| "ti-dots"`, so a tenth type — the exact thing this spec
+		// exists to catch — would have passed it wearing the `other` icon.
+		// WHAT WOULD MAKE THIS FAIL: a tenth type, or a renamed key.
+		expect(Object.keys(loadConst(board, "CHARGE_ICONS"))).toEqual(CANONICAL.map((c) => c.key));
+	});
+
+	it("still answers with a real icon for every one of them", () => {
+		const chargeIcon = load(board, "chargeIcon", "CHARGE_ICONS");
 		for (const { key } of CANONICAL) {
 			expect(chargeIcon(key), `${key} has no icon`).toMatch(/^ti-\S+$/);
 		}

@@ -52,12 +52,17 @@ const CHARGE_CURRENCIES = ["USD", "EUR", "RUB", "CNY", "TRY"];
 // iconography, which is a presentation of that list and not a second copy of it:
 // keyed by canonical key, and `landedChargeTypes.spec.js` requires an icon for
 // every key the server ships, so a tenth type cannot render blank.
+// Named, and not an object literal inside the function, so the spec can read the
+// map's own KEYS. Asking `chargeIcon(key)` whether the answer looks like an icon
+// cannot fail — the fallback below always answers — so a tenth type would have
+// rendered as `other` with a green test.
+const CHARGE_ICONS = {
+	transport: "ti-truck", customs: "ti-building-bank", declarant: "ti-file-invoice",
+	certification: "ti-certificate", insurance: "ti-shield", storage: "ti-building-warehouse",
+	bank: "ti-cash", legal: "ti-scale", other: "ti-dots",
+};
 function chargeIcon(v) {
-	return {
-		transport: "ti-truck", customs: "ti-building-bank", declarant: "ti-file-invoice",
-		certification: "ti-certificate", insurance: "ti-shield", storage: "ti-building-warehouse",
-		bank: "ti-cash", legal: "ti-scale", other: "ti-dots",
-	}[v] || "ti-dots";
+	return CHARGE_ICONS[v] || "ti-dots";
 }
 // ADR-606: `other` is the only type that names no cost by itself. Flagged, never
 // blocked — the same stance the unvalued-line warning takes, for the same reason.
