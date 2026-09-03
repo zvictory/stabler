@@ -312,8 +312,12 @@ Do not paraphrase these loosely into a prompt — quote them.
 - Never branch on tenant name — gate on module + `Stabler Company Modules`.
 - Every module parent route carries `meta: { module: "<key>" }`; register the
   module in `_MODULE_ROLES` (`stabler/api/organization.py`). New modules default OFF.
-- Patches are idempotent and guard with `has_column` — `patches.txt` has no
-  `[post_model_sync]` marker, so patches run before the DDL sync.
+- Patches are idempotent and guard with `has_column`. `patches.txt` carries a
+  `[post_model_sync]` marker (line 41, added 2026-07-08 in 22f70e7; every patch from
+  v81 on sits below it and runs AFTER the doctype sync). This line said "no marker"
+  until 2026-09-03 and contradicted `.claude/rules/20-backend-migrations.md:15`; the
+  rules file was right. Guard either way — the half a patch sits in is not a reason
+  to skip `has_column`.
 - Money maths is deterministic and tested; currency and allocation rules are
   enforced server-side.
 
