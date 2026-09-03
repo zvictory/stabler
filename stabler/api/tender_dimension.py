@@ -249,8 +249,13 @@ def exclude_overhead_deals(filters: dict) -> dict:
 	The bucket is a ledger row wearing a CRM Deal: no owner, no close date, and
 	it never leaves its stage. Every list that counts it reports a deal nobody
 	can work — one extra on the board, one permanently ageing row in stage aging,
-	one phantom on a rep's workload. Shared by every CRM Deal reader so the
-	boards and the manager cockpit cannot drift apart on what counts as a deal.
+	one phantom on a rep's workload, an SLA alert nobody can clear.
+
+	Called by all five CRM Deal readers — `crm._crm_list` (the boards),
+	`crm.crm_metrics`, `crm_analytics.get_manager_cockpit_metrics` and
+	`crm_automation.run_crm_automation_rules` — so no two screens can disagree
+	about what counts as a deal. They did: `crm_metrics` answered `deal_count`
+	553 while the board beside it answered 552.
 
 	`!=` and not `not in`: MariaDB drops NULL rows on `!=`, which is why v103
 	backfills a NULL `deal_type` to `Standard` before this filter is ever

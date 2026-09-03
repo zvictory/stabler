@@ -390,7 +390,11 @@ class _FakeFrappe:
 		limit = kwargs.get("limit_page_length")
 		if limit:
 			rows = rows[: int(limit)]
-		return [dict(row) for row in rows]
+		# `_Doc`, not `dict`: frappe hands list rows back as `_dict`, and readers
+		# use attribute access on them (`d.expected_monthly_volume` in
+		# `crm.crm_metrics`). A double that returned plain dicts would make those
+		# readers untestable — an AttributeError instead of a measurement.
+		return [_Doc(row) for row in rows]
 
 	def _matches(self, row, field, operator, operand):
 		if operator == "in":

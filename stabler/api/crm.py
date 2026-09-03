@@ -1098,6 +1098,10 @@ def crm_metrics(company="") -> dict:
 	lost = {s.name for s in statuses if (s.type or "").lower() == "lost"} | {"Lost"}
 
 	deal_filters: dict = {"company": company}
+	# ADR-609: the bucket is never won, so counting it drags `activation_rate`
+	# down by a deal that was never winnable, and makes `deal_count` disagree
+	# with the board's own total on the same screen (measured: 553 vs 552).
+	exclude_overhead_deals(deal_filters)
 
 	deals = frappe.get_list(
 		"CRM Deal",

@@ -1379,13 +1379,26 @@ class TestWriterWiring(unittest.TestCase):
 		):
 			self.assertIn(contract, self.purchasing, f"purchasing.py is missing {contract}")
 
-	def test_the_deal_list_excludes_the_overhead_bucket(self):
-		# GENEL GİDER is a ledger bucket, not a deal. On the CRM board it would sit
-		# in Qualification forever and be counted in every pipeline figure. R9: the
-		# filter itself lives in `exclude_overhead_deals`, shared with the manager
-		# cockpit, so the two readers cannot drift apart on what counts as a deal.
-		self.assertIn("exclude_overhead_deals(filters)", self.crm)
+	def test_no_crm_deal_reader_is_left_without_the_overhead_filter(self):
+		"""R16. The readers are DRIVEN in `test_overhead_deal_readers`; this pins
+		the other half — that no new one appears without the filter.
+
+		The predecessor asserted `assertIn("exclude_overhead_deals(filters)")`
+		against the whole file, which one caller satisfied for all of them: it
+		stayed green while three of the five readers had never called the helper.
+		Counting the `get_list("CRM Deal"` sites against the calls is the thing a
+		string search can honestly answer.
+		"""
+		readers = self.crm.count('"CRM Deal",')
+		self.assertGreater(readers, 0, "crm.py no longer reads CRM Deal by name")
 		self.assertIn('["!=", OVERHEAD_DEAL_TYPE]', _code_only(_read("api", "tender_dimension.py")))
+		for module, expected in (("crm.py", 2), ("crm_analytics.py", 1), ("crm_automation.py", 1)):
+			code = _code_only(_read("api", module))
+			self.assertEqual(
+				code.count("exclude_overhead_deals("),
+				expected,
+				f"{module} gained or lost a CRM Deal reader without the overhead filter",
+			)
 
 	def test_the_deal_list_offers_the_active_tender_mode(self):
 		self.assertIn("active_tenders", self.crm)

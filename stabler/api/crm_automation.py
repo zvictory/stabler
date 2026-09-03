@@ -11,6 +11,7 @@ from frappe import _
 from frappe.utils import date_diff, getdate, nowdate
 
 from stabler.api.crm import _require_crm, _require_crm_company
+from stabler.api.tender_dimension import exclude_overhead_deals
 
 
 def _require_crm_manager(company: str) -> None:
@@ -118,9 +119,16 @@ def run_crm_automation_rules(company: str, dry_run: bool = False) -> dict:
 	today = getdate(nowdate())
 	today_str = str(today)
 
+	# ADR-609: the GENEL GİDER bucket is a ledger row wearing a CRM Deal. It has
+	# no owner who can act and no stage it will ever leave, so an SLA or stale
+	# alert about it is a page nobody can clear. Inert today only because the
+	# bucket happens to carry neither `deadline` nor `last_activity_date` — one
+	# CRM import away from being wrong.
+	deal_filters = exclude_overhead_deals({"company": company})
+
 	deals = frappe.get_list(
 		"CRM Deal",
-		filters={"company": company},
+		filters=deal_filters,
 		fields=[
 			"name",
 			"organization",
