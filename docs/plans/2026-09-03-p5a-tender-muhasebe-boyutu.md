@@ -417,3 +417,157 @@ measurement that forced it; anything you could not verify, stated as such.
 
 - 2026-09-03 evening: contract frozen by the orchestrator after measuring every path above.
 - 2026-09-03 evening, correction (orchestrator's own error): the contract stated as *measured* that `patches.txt` has no `[post_model_sync]` marker. It has one at line 41 since 2026-07-08 (`22f70e7`); 38 patches sit above it, 64 below. The sentence was copied from `.claude/skills/stabler-orchestrator/SKILL.md:316`, which was wrong and contradicted `.claude/rules/20-backend-migrations.md:15`. The implementer found the truth independently and wrote it into v103's docstring. Both texts corrected in this commit. Consequence for P5a: none — the guards are required either way.
+
+### Round 1 review — 2026-09-04
+
+Fourteen adjudicated findings, all landed on `feat/adr-609-tender-dimension`, one commit each
+(R2 and R4 share `2abccf0`: both rewrote the same gate in `default_gl_tender`). Every item was
+proved by watching the test fail first, or — where the test came after the code — by mutating
+the fix away and watching that exact assertion go red.
+
+**Two lines of this contract were wrong, and the code follows the measurement, not the text:**
+
+1. **B7, last bullet** — "`Stabler Company Modules` `on_update` → `on_company_modules_update`".
+   `Stabler Company Modules` is a CHILD table, and Frappe persists child rows with `db_update()`
+   inside `Document.update_child_table` (`document.py:616-648`); their document methods are never
+   run. The handler fired **zero** times, so turning `enable_tender` on through the SPA set no
+   company up. The hook belongs on the `Stabler Settings` SINGLE, as
+   `on_settings_update(doc, method=None)`, with a re-entry guard: `get_company_module_row` saves
+   the single when a company has no row, which re-enters the same `on_update`. (R1, `06e0ed6`)
+2. **Line 55** — Request for Quotation is listed among the doctypes that receive the dimension
+   field. It is absent from erpnext's `accounting_dimension_doctypes`
+   (`erpnext/hooks.py:529`); Supplier Quotation is there, RFQ never was. Its `before_validate`
+   block set a value on a field that does not exist and Frappe dropped it on save, and its
+   `_LEGACY_PARENTS` entry pointed the backfill at a column `_column_exists` then silently
+   refused. Both removed. (R10, `5a5ec2b`)
+
+**The findings, in the order they were fixed:**
+
+| # | P | What was wrong | Commit |
+|---|---|---|---|
+| R1 | P0 | the module-toggle hook was on a child table and fired zero times | `06e0ed6` |
+| R2 | P0 | the GL hook gated on the stabler flag while erpnext reads the detail row | `2abccf0` |
+| R4 | P1 | that gate cost 7.0 uncached queries per ledger row | `2abccf0` |
+| R3 | P1 | the patch asserted a fieldname it had not created | `622413d` |
+| R5 | P1 | Period Closing Voucher booked every tender's P&L onto GENEL GİDER | `6678a00` |
+| R6 | P2 | a `frappe.throw` string was in no catalogue | `226299e` |
+| R7 | P2 | both screens kept the previous company's overhead deal after a switch | `be98ada` |
+| R8 | P2 | `save_deal` accepted the reserved `Overhead` type; the bucket was read unordered | `45ce6a1` |
+| R9 | P2 | the manager cockpit counted the bucket as a deal | `5a056ab` |
+| R10 | P3 | Request for Quotation was stamped and backfilled for nothing | `5a5ec2b` |
+| R11 | P3 | the tender picker paged in SQL and filtered in Python | `f546a00` |
+| R12 | P3 | "balance-sheet rows are left alone" was true of the hook, not of the ledger | `342b2a1` |
+| R13 | P2 | a bill's tender could be replaced but never cleared | `7cd8fc9` |
+| R14 | P3 | `ensure_company_setup` left a stale "not mandatory" behind the row it wrote | `2230a5d` |
+
+**Measurements worth keeping.**
+
+- The ledger DOES carry tender values on balance-sheet accounts. `default_gl_tender` never adds
+  one, but erpnext copies a document-level dimension onto EVERY GL row a tagged voucher posts:
+  measured on `genesis-test.local`, a tagged Purchase Invoice tags Creditors as well as the
+  expense account, and a Sales Invoice made from a tagged Sales Order tags Debtors as well as
+  Sales. **P5b must sum profit-and-loss accounts only**, or every tagged document is counted
+  twice. Now pinned by a bench test rather than by prose. (R12)
+- `list_active_tenders` cannot page in SQL: `is_active_tender` reads the deal's stage and its
+  lot, which the query cannot express. Measured with four tenders, one lost: page 2 of size 2
+  returned `['T-3']` where it owed `['T-2', 'T-3']` — a live tender fell off the end of the
+  picker, and its cost would have gone to GENEL GİDER. (R11)
+- `stabler.tests.test_crm_analytics` was bench-only because `stabler.api.crm` reaches the real
+  `organization` → `www.stabler` → `frappe.sessions`. One stubbed module put it in `make check`,
+  where the cockpit regression can actually be caught. (R9)
+
+### Round 2 review — 2026-09-04
+
+No P0. One P1 and three P2, all measured live, all landed on
+`feat/adr-609-tender-dimension`, one commit each. Round 2 was the last
+correction cycle.
+
+| # | P | What was wrong | Commit |
+|---|---|---|---|
+| R15 | P1 | correcting an expense re-sent its own tender and was refused for it | `835f141` |
+| R16 | P2 | "shared by every CRM Deal reader" was true of two readers out of five | `78dccc8` |
+| R17 | P2 | the operations desk counted the bucket as somebody's open lot | `4712f07` |
+| R18 | P2 | a failed tender lookup left the purchase invoice with an empty menu | `5c72077` |
+
+**The P1 is the one worth remembering.** `Expenses.vue` puts the STORED deal into every
+edit payload, so an amendment arrives naming the tender the voucher already carries.
+`submit_expense_entry` asserted it as a fresh choice, which made the ONE operation that
+corrects a posted expense impossible the moment its tender was finished — and the throw
+lands AFTER `amend_expense_entry` has cancelled the source, so only the HTTP rollback saved
+the user from a cancelled voucher with no replacement. The rule is now the same one
+`purchasing._apply_tender` already followed: **assert a value that is CHANGING, never a value
+that is being re-sent**. Any future writer that accepts a tender inherits that rule.
+
+**What R16 says about testing.** The claim "shared by every CRM Deal reader" had been pinned
+by `assertIn("exclude_overhead_deals(filters)", crm.py)`. One caller satisfied the string for
+all of them, so the assertion stayed green while `crm_metrics` and
+`crm_automation.run_crm_automation_rules` had never called the helper — and `crm_metrics`
+answered `deal_count` 553 beside a board answering 552. A declaration-satisfiable assertion is
+not coverage. Each reader is now DRIVEN in `stabler/tests/test_overhead_deal_readers.py`, with
+a per-module call count so a new reader cannot appear without the filter.
+
+**Test-site hygiene.** Six `ADR-609 bench` Journal Entries had accumulated on
+`genesis-test.local` across this task's runs; the naming series then reissued a name one
+leftover still pointed at, and an amendment test died on "This entry has already been amended"
+instead of the tender check it was about. The six were removed by hand.
+
+*Corrected in Round 3 (R20).* The explanation written here — "submitting a voucher commits
+from inside frappe" — was wrong: `money.py` has no `db.commit` on any write path, and a
+submitted voucher disappears on `frappe.db.rollback()`. What made the leftovers durable was the
+class-level `addClassCleanup(frappe.db.commit)`, which commits whatever the per-test cleanups
+failed to erase. The `frappe.db.commit()` this paragraph credited in `_erase_voucher` was
+therefore both unnecessary and harmful, and has been removed — see the Round 3 entry.
+
+"Two consecutive full runs leave the site empty" was also false. Eight of nine measured doctype
+counts are unchanged by a green run; `Stock Ledger Entry` grows by 2 (6416 -> 6418 -> 6420 ->
+6422 across four runs), because `_erase_voucher` deletes the voucher's GL rows and not the
+stock ledger rows the Delivery Note fixture writes. Recorded, not fixed: Round 3 was scoped to
+R19-R21 exactly.
+
+**Verified clean by the reviewer this round, unchanged here:** both P0 fixes live (the hook
+fires once per save; flag-off posting lands on GENEL GİDER with the cash leg NULL), the GL hook
+costs 4 queries on row 1 and 0 on rows 2–20, every round-1 and round-2 mutation killed, the
+money invariant (29 GL columns identical flag-on vs flag-off), tenant isolation, the patch
+re-running all zeros, and the catalogues LF-only with no existing row changed.
+
+### Round 3 review — 2026-09-04
+
+One P0, one P2, one P3. The last correction cycle the orchestration rules allow.
+
+| # | P | What was wrong | Commit |
+|---|---|---|---|
+| R19 | P0 | the operations desk was narrowed by `deal_type`, which is not what a lot is | `ebafc19` |
+| R20 | P2 | the bench cleanup committed, on a claim that was not true | `8e741bc` |
+| R21 | P3 | "this is an amendment" was something the caller could assert | `38d9599` |
+
+**R19 was the orchestrator's own instruction, not the implementer's invention.** Round 2's R17
+said to filter `{"deal_type": "Tender"}` "as `tender.py` and `tender_master.py` already do".
+They do not: `_tender_deal_names` (`tender.py:2295`) UNIONS five criteria — a tagged
+SO/PO/quotation, `custom_tender_intake`, `custom_bid_pricing`, `custom_parent_tender`, and only
+then `deal_type == "Tender"` — because `save_deal_intake` never sets `deal_type` and v103
+stamped every NULL to `Standard` for good. Measured on `genesis-test.local`: **484 deals carry
+`custom_tender_intake` and not one of them is typed Tender**; exactly one deal on the site is.
+So the instruction took `operations_desk` `team_load` from 553 to 1, and `deals_raw` feeds the
+whole desk — orphan_lots, bid_due, delivery_due, won_without_po, sq_counts, the plan, the
+decisions and the calendar would all have emptied out with it, silently, on a tender tenant.
+
+The rule the code now carries: **narrow this reader by what is NOT a lot (the GENEL GİDER
+bucket), never by what a lot is said to be.** `exclude_overhead_deals`'s docstring names the
+five readers that count or list deals as work, and says why the other twelve `CRM Deal` list
+sites in `stabler/api` need nothing — they resolve deals the caller already named, or are
+already narrowed by a filter the bucket cannot satisfy.
+
+**R20 — a suite must not change the site it measures.** Round 2 added `frappe.db.commit()` to
+`_erase_voucher` on the claim that submitting a voucher commits. It does not: `money.py` has no
+`db.commit` on any write path. The cleanup stack is LIFO, so that commit ran BEFORE
+`_set_flag(1)` in `TestModuleFlagOff` and persisted `enable_tender = 0` on the real
+`_Test Company` row. Removed, and the invariant is now pinned by
+`TestSuiteHygiene.test_a_per_test_cleanup_never_commits` rather than described in a comment.
+The one commit the suite still makes is the class-level one, which is needed because creating a
+Company commits from inside ERPNext's chart of accounts.
+
+**R21 — a client can set any parameter a whitelisted signature declares.** R15's relaxation
+keyed off `amended_from`, so naming a cancelled voucher that carried a finished tender bought a
+new expense against it. The relaxation is now carried on `frappe.local`, raised by
+`amend_expense_entry` alone. The general rule: *permission to skip a check may never travel in
+the payload that the check is protecting against.*

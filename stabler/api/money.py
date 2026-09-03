@@ -17,6 +17,7 @@ from frappe.utils import cint, flt, formatdate, getdate, today
 from stabler.api._money import money_epsilon
 from stabler.api.approvals import _assert_company_scope
 from stabler.api.supplier_payment_guard import assert_supplier_payment_currency
+from stabler.api.tender_dimension import assert_selectable_tender
 
 EXPORT_FORMATS = {"Excel", "CSV"}
 
@@ -1554,6 +1555,38 @@ def _assert_not_already_amended(source: str) -> None:
 				"This entry has already been amended ({0}). Open that correction instead of creating a second one."
 			).format(existing)
 		)
+
+
+#: Set by `amend_expense_entry` for the length of one re-post, and by nothing
+#: else. Request-local because `amended_from` is a DECLARED kwarg of the
+#: whitelisted `submit_expense_entry`, and frappe hands a client every parameter
+#: a signature declares — so "this is an amendment" cannot be something the
+#: caller asserts. `frappe.local` is per-request state a client cannot set.
+_AMENDING_SOURCE = "stabler_expense_amending_source"
+
+
+def _amended_from_deal(source: str | None) -> str | None:
+	"""The tender the voucher being replaced already carried, or None.
+
+	`None` for a plain create, so the normal path asserts every value it is
+	given; only a re-send of what the ledger already says is let through.
+	"""
+	if not source or not frappe.get_meta("Journal Entry").has_field("custom_crm_deal"):
+		return None
+	return frappe.db.get_value("Journal Entry", source, "custom_crm_deal") or None
+
+
+def _is_reamending(amend_link: str | None, deal: str) -> bool:
+	"""True only inside `amend_expense_entry`, re-sending that voucher's own tender.
+
+	Both halves are required. Without the marker, naming any cancelled,
+	not-yet-amended voucher of one's own company that carries a finished tender
+	would post a BRAND NEW expense against it. Without the value check, an
+	amendment could move a posted cost onto any tender it liked.
+	"""
+	if not amend_link or getattr(frappe.local, _AMENDING_SOURCE, None) != amend_link:
+		return False
+	return deal == _amended_from_deal(amend_link)
 
 
 def _resolve_amended_from(amended_from: str | None, company: str) -> str | None:
@@ -3357,11 +3390,24 @@ def submit_expense_entry(
 	)
 	doc.multi_currency = 1 if _any_foreign else 0
 	if deal:
-		# Tender attribution (WP-K2). Validate existence only — the deal is a
-		# company-scoped tag, not a permission boundary; GL access is already
-		# enforced by the JE itself.
+		# Tender attribution (WP-K2, tightened by ADR-609). Existence alone is no
+		# longer enough: the deal is now an ACCOUNTING DIMENSION on every P&L row
+		# this voucher writes, so a lost tender, a Standard deal or another
+		# company's tender would all post real money under a value that has to
+		# mean one thing. `assert_selectable_tender` is the same check every other
+		# writer runs. The rows themselves are stamped by `stamp_tender`.
 		if not frappe.db.exists("CRM Deal", deal):
 			frappe.throw("Unknown deal.")
+		# R15: assert only a value that is CHANGING, the way `_apply_tender` does
+		# on the purchase side. `Expenses.vue` puts the STORED deal into every edit
+		# payload, so a correction arrives naming the tender the voucher already
+		# carries — treating that as a fresh choice makes the one operation that
+		# fixes a posted voucher impossible once the tender is finished, and the
+		# throw lands after `amend_expense_entry` has already cancelled the source.
+		# R21: and the relaxation is granted by `amend_expense_entry`'s own
+		# request-local marker, never by the client-settable `amended_from`.
+		if not _is_reamending(_amend_link, deal):
+			assert_selectable_tender(deal, company)
 		if frappe.get_meta("Journal Entry").has_field("custom_crm_deal"):
 			doc.custom_crm_deal = deal
 	if commercial_invoice:
@@ -3522,7 +3568,14 @@ def amend_expense_entry(source_name: str, modified: str | None = None, **kwargs)
 		return submit_expense_entry(**kwargs)
 	else:
 		frappe.throw("Cancelled Bank Entries cannot be amended.")
-	result = submit_expense_entry(amended_from=source_name, **kwargs)
+	# The marker, not the kwarg, is what says "this is a correction" — see
+	# `_is_reamending`. try/finally because a throw inside the re-post must not
+	# leave the relaxation standing for whatever this request does next.
+	setattr(frappe.local, _AMENDING_SOURCE, source_name)
+	try:
+		result = submit_expense_entry(amended_from=source_name, **kwargs)
+	finally:
+		setattr(frappe.local, _AMENDING_SOURCE, None)
 	result["amended_from"] = source_name
 	return result
 

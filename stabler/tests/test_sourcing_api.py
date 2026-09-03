@@ -390,7 +390,11 @@ class _FakeFrappe:
 		limit = kwargs.get("limit_page_length")
 		if limit:
 			rows = rows[: int(limit)]
-		return [dict(row) for row in rows]
+		# `_Doc`, not `dict`: frappe hands list rows back as `_dict`, and readers
+		# use attribute access on them (`d.expected_monthly_volume` in
+		# `crm.crm_metrics`). A double that returned plain dicts would make those
+		# readers untestable — an AttributeError instead of a measurement.
+		return [_Doc(row) for row in rows]
 
 	def _matches(self, row, field, operator, operand):
 		if operator == "in":
@@ -399,6 +403,13 @@ class _FakeFrappe:
 			return int(row.get(field) or 0) < operand
 		if operator == "=":
 			return row.get(field) == operand
+		if operator == "!=":
+			# Modelled the way MariaDB behaves, NULL drop included: `NULL != 'x'`
+			# is NULL, not TRUE, so an unset column does NOT survive this filter.
+			# A double that answered TRUE there would hide the reason v103
+			# backfills `deal_type` before the CRM reads start excluding the
+			# GENEL GİDER bucket with `!=`.
+			return row.get(field) is not None and row.get(field) != operand
 		if operator == "like":
 			return str(operand).strip("%").lower() in str(row.get(field) or "").lower()
 		if operator == "is":

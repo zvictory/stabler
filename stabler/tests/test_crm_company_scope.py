@@ -101,6 +101,11 @@ class _FakeDB:
 			return name in {"Open", "Qualified", "Won", "Lost"}
 		return (doctype, name) in self.docs
 
+	def has_column(self, doctype, column):
+		# `deal_type` is a Custom Field (patch v60) that every CRM site carries;
+		# `_crm_list` reads it to keep the GENEL GİDER bucket off the board.
+		return (doctype, column) == ("CRM Deal", "deal_type")
+
 	def get_value(self, doctype, name, field):
 		if doctype == "CRM Deal Status" and field == "type":
 			return {"Won": "Won", "Lost": "Lost"}.get(name, "Open")
@@ -154,6 +159,9 @@ def _load_crm(db: _FakeDB):
 	frappe.clear_last_message = lambda: None
 
 	utils = types.ModuleType("frappe.utils")
+	# `list_deals` reads its `active_tenders` flag through cint (ADR-609): the flag
+	# arrives from the SPA as a string, so plain truthiness would read "0" as on.
+	utils.cint = lambda value=0: int(float(value or 0))
 	utils.flt = lambda value: float(value or 0)
 	utils.get_first_day = lambda _value: "2026-07-01"
 	utils.getdate = lambda value: date.fromisoformat(str(value)[:10])
@@ -526,6 +534,23 @@ class TestCrmCompanyScope(unittest.TestCase):
 
 		with self.assertRaisesRegex(Exception, "owner"):
 			self.crm.validate_crm_deal_hygiene(deal)
+
+	def test_save_deal_refuses_the_reserved_overhead_deal_type(self):
+		"""R8 (ADR-609). `Overhead` is a LEDGER role, not a CRM classification.
+
+		`deal_type` is in `_DEAL_MUTABLE_FIELDS`, so the SPA can send anything the
+		Select offers. A user choosing `Overhead` gives the company a second GENEL
+		GİDER bucket, and `_crm_list` excludes that type — so the deal disappears
+		from every board while continuing to collect ledger rows against it.
+		"""
+		with self.assertRaises(Exception) as caught:
+			self.crm.save_deal({"name": "DEAL-MIKAS", "deal_type": "Overhead"}, "Mikas")
+		self.assertIn("GENEL", str(caught.exception).upper())
+
+	def test_save_deal_still_lets_a_user_classify_a_deal(self):
+		# The guard must name ONE reserved value, not take the field away: `Tender`
+		# and `Standard` are the user's to choose and the tender boards read them.
+		self.assertIn("deal_type", self.crm._DEAL_MUTABLE_FIELDS)
 
 	def test_save_deal_routes_kanban_status_through_transition_history(self):
 		"""Kanban's existing save_deal payload must not silently discard status."""

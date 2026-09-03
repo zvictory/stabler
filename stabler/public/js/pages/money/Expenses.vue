@@ -477,12 +477,70 @@ function lineCurrencyMismatch(line) {
 async function searchDeals(q) {
 	// Şirket zorunlu: `_require_crm_company` yoksa 417 atıyor ve Typeahead hatayı
 	// yutup boş liste gösteriyor.
-	const r = await call("stabler.api.crm.list_deals", {
-		company: activeCompany.value,
-		search: q,
-		page_length: 8,
-	});
-	return (r?.deals || []).map((d) => ({ name: d.name, label: d.organization || d.lead_name || d.name }));
+	//
+	// ADR-609: `active_tenders` is not a filter on the board's list, it is a
+	// different question — which values the LEDGER will accept today. The plain
+	// list returns every Standard deal on the company (551 of 552 on the test
+	// site); each of them saved fine and then meant nothing as a dimension. The
+	// server answers with GENEL GİDER first, then the tenders that can still take
+	// cost.
+	try {
+		const r = await call("stabler.api.crm.list_deals", {
+			company: activeCompany.value,
+			search: q,
+			active_tenders: 1,
+			page_length: 8,
+		});
+		return (r?.deals || []).map((d) => ({
+			name: d.name,
+			label: d.organization || d.lead_name || d.name,
+			is_overhead: d.is_overhead ? 1 : 0,
+		}));
+	} catch (err) {
+		// The form still has to be postable: the entry needs SOME attribution and
+		// the user cannot fix a lookup outage. Say so, and keep offering the one
+		// value that is always valid — an empty menu would leave the user unable to
+		// state where the money is going on a field the ledger will fill anyway.
+		toast.error(err?.message || t("Could not load tenders"));
+		const cached = overheadDeal.value;
+		if (!cached) return [];
+		return [
+			{
+				name: cached.name,
+				label: cached.organization || cached.lead_name || cached.name,
+				is_overhead: 1,
+			},
+		];
+	}
+}
+
+// The company's GENEL GİDER bucket, fetched once. A new entry starts on it
+// because the server will book an untagged P&L row there anyway — leaving the
+// field blank does not leave the ledger blank, it only stops the screen from
+// admitting where the money is going.
+const overheadDeal = ref(null);
+
+async function loadOverheadDeal() {
+	if (overheadDeal.value) return overheadDeal.value;
+	if (!tenderOn.value || !activeCompany.value) return null;
+	try {
+		const r = await call("stabler.api.crm.list_deals", {
+			company: activeCompany.value,
+			active_tenders: 1,
+			page_length: 1,
+		});
+		overheadDeal.value = (r?.deals || []).find((d) => d.is_overhead) || null;
+	} catch (err) {
+		overheadDeal.value = null;
+	}
+	return overheadDeal.value;
+}
+
+async function defaultOverheadDeal() {
+	const row = await loadOverheadDeal();
+	if (!row) return;
+	form.value.deal = row.name;
+	dealLabel.value = row.organization || row.name;
 }
 
 function pickDeal(item) {
@@ -616,6 +674,9 @@ async function openCreate() {
 	createOpen.value = true;
 	if (!payAccounts.value.length || !expAccounts.value.length || !assetAccounts.value.length) await loadOptions();
 	await fetchExchangeRate();
+	// Before markFormPristine, so the default the ledger would apply anyway does
+	// not count as an unsaved edit the user has to be warned about.
+	if (tenderOn.value) await defaultOverheadDeal();
 	markFormPristine();
 }
 
@@ -967,6 +1028,11 @@ watch(activeCompany, () => {
 	expAccounts.value = [];
 	assetAccounts.value = [];
 	equityAccounts.value = [];
+	// ADR-609: the bucket belongs to a company. `loadOverheadDeal` short-circuits
+	// on this ref, so keeping it across a switch pre-fills a new entry with the
+	// PREVIOUS company's GENEL GİDER deal — which the server then refuses, on a
+	// field the user never touched.
+	overheadDeal.value = null;
 	load();
 	loadOptions();
 });
@@ -1280,10 +1346,17 @@ watch(activeCompany, () => {
 								:display="dealLabel"
 								:search="searchDeals"
 								:placeholder="t('Search a tender deal…')"
+								:no-results-text="t('No active tenders')"
+								open-on-focus
 								@pick="pickDeal"
 								@clear="clearDeal"
 							>
-								<template #option="{ item }">{{ item.label }}</template>
+								<template #option="{ item }">
+									{{ item.label }}
+									<span v-if="item.is_overhead" class="small text-secondary ms-1">
+										· {{ t("General overhead") }}
+									</span>
+								</template>
 							</Typeahead>
 						</div>
 						<div v-if="importsOn" class="col-md-4">

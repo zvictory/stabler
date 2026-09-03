@@ -6703,3 +6703,12 @@ Reached intake,Yeni girişe ulaşan
 Reached GO,GO kararına ulaşan
 Reached sourcing,Tedariğe ulaşan
 Reached submission,Teklif sunumuna ulaşan
+Set by the purchase order,Satın alma siparişi tarafından belirlendi
+No active tenders,Aktif ihale yok
+General overhead,Genel gider
+Could not load tenders,İhaleler yüklenemedi
+Search a tender…,İhale ara…
+Only an active tender or GENEL GİDER can be selected.,Yalnızca aktif bir ihale veya GENEL GİDER seçilebilir.
+GENEL GİDER deal is missing for {0}; save Stabler Settings or run patch v103.,{0} için GENEL GİDER kaydı yok; Stabler Settings'i kaydedin veya v103 yamasını çalıştırın.
+Refusing to build SQL for dimension fieldname {0}.,{0} boyut alanı için SQL oluşturulmadı.
+The GENEL GİDER deal type is set by the system and cannot be chosen here.,"GENEL GİDER kayıt türünü sistem belirler, buradan seçilemez."

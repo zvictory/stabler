@@ -344,22 +344,31 @@ class ThePatchWritesTheKeyErpnextReads(unittest.TestCase):
 
 
 class ThePatchIsRegistered(unittest.TestCase):
-	def test_patches_txt_ends_with_the_new_entry(self):
+	def test_patches_txt_appends_the_new_entry(self):
 		"""A patch module that nothing in patches.txt names never runs, on any
 		site, ever — and leaves no trace of not having run. Appending at the end
 		is also the only edit `test_patches_pin.py` allows: Frappe keys Patch Log
 		by dotted module path, so renaming or reordering an existing line makes
 		every tenant re-run that patch on its next migrate.
+
+		This asserted `entries[-1]` until 2026-09-03, which was true only while
+		v102 WAS the newest patch: the next patch appended — v103, the tender
+		accounting dimension — turned it red by doing exactly what this docstring
+		tells the next author to do. What the guard is actually for is that the
+		entry EXISTS and sits after its predecessor rather than being spliced into
+		the middle of the file; the "is the last line" half was a fact about the
+		day it was written, not a rule anyone can keep.
 		"""
 		entries = [
 			line.strip()
 			for line in _PATCHES_TXT.read_text(encoding="utf-8").splitlines()
 			if line.strip() and not line.strip().startswith("[")
 		]
+		self.assertIn(_PATCH_ENTRY, entries, f"{_PATCH_ENTRY!r} is not in stabler/patches.txt")
 		self.assertEqual(
-			entries[-1],
-			_PATCH_ENTRY,
-			f"expected {_PATCH_ENTRY!r} as the last entry of stabler/patches.txt, found {entries[-1]!r}",
+			entries.index(_PATCH_ENTRY),
+			entries.index("stabler.patches.v101_seed_stop_reasons") + 1,
+			f"{_PATCH_ENTRY!r} was moved out of its appended position",
 		)
 
 
