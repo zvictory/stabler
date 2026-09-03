@@ -429,6 +429,42 @@ class TestExpenseEntry(_Fixture):
 			"the correction lost the attribution the original voucher had",
 		)
 
+	def test_naming_a_cancelled_voucher_does_not_buy_a_new_expense_on_a_dead_tender(self):
+		"""R21. The relaxation may not key off `amended_from` alone.
+
+		`amended_from` is a DECLARED kwarg of the whitelisted
+		`submit_expense_entry`, and frappe passes a client any parameter the
+		signature declares. So "this is an amendment" cannot be something the
+		caller asserts: naming any cancelled, not-yet-amended voucher of one's own
+		company that carries a finished tender would post a BRAND NEW expense
+		against it. The relaxation belongs to `amend_expense_entry`'s request, and
+		`frappe.local` is the only thing a client cannot set.
+		"""
+		dead = self._make_deal("Tender")
+		source = self._expense_entry(deal=dead)
+		frappe.db.set_value(DIMENSION_DOCTYPE, dead, "custom_tender_stage", "lost")
+		clear_dimension_cache()
+		doc = frappe.get_doc("Journal Entry", source)
+		doc.flags.ignore_permissions = True
+		doc.cancel()
+
+		created = {}
+		try:
+			with self.assertRaises(frappe.ValidationError) as caught:
+				created["name"] = submit_expense_entry(
+					company=self.company,
+					posting_date=today(),
+					payment_from=self.cash,
+					lines=[{"account": self.expense, "amount": 55.0, "memo": "ADR-609 bench forged"}],
+					deal=dead,
+					amended_from=source,
+					submit=1,
+				)["name"]
+		finally:
+			if created.get("name"):
+				self._erase_voucher("Journal Entry", created["name"])
+		self.assertIn("active tender", str(caught.exception))
+
 	def test_amending_onto_a_DIFFERENT_dead_tender_is_still_refused(self):
 		"""The other half: a value that CHANGES is a new choice and is asserted.
 
