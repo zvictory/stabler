@@ -86,6 +86,24 @@ def _an_item(company: str) -> str | None:
 	return rows[0] if rows else None
 
 
+def _a_warehouse(company: str) -> str | None:
+	"""The warehouse the product itself would pick for a buying row on this company.
+
+	Same query as `stabler.api._common._company_default_warehouse`, which is what
+	`sourcing._resolve_warehouse` puts on every Supplier Quotation / RFQ line the app
+	writes -- deliberately WITHOUT that helper's second half, which creates a
+	`Stores - <abbr>` when the company has none. A fixture may not leave a Warehouse
+	behind on a site it did not find one on; absent, this module says so and skips.
+
+	Needed because `_an_item` picks a STOCK item on purpose, and
+	`erpnext/buying/utils.py::validate_stock_item_warehouse` throws for a stock row
+	with no warehouse -- in `Supplier Quotation.validate` AND `Purchase Order.validate`,
+	both via `validate_for_items`. Without it every class here died in `setUpClass`
+	and the module reported `Ran 0 tests`.
+	"""
+	return frappe.db.get_value("Warehouse", {"company": company, "is_group": 0}, "name")
+
+
 class _TenderFixture(FrappeTestCase):
 	"""A deal, two quotations and the decisions that name one of them.
 
@@ -102,6 +120,7 @@ class _TenderFixture(FrappeTestCase):
 		cls.company = _tender_company()
 		cls.supplier = _a_supplier()
 		cls.item = _an_item(cls.company) if cls.company else None
+		cls.warehouse = _a_warehouse(cls.company) if cls.company else None
 		# `CRM Deal.company` is a Stabler CUSTOM field (patch v56) — frappe-crm ships
 		# no company on the deal at all. Without it every tender endpoint here is
 		# scoped to nothing, so say that rather than failing on a NULL.
@@ -111,7 +130,7 @@ class _TenderFixture(FrappeTestCase):
 		# on 4 of the 7 stabler sites. On the other three this must read as "not
 		# applicable", not as an error in setUpClass.
 		cls.deal_scoped = frappe.db.table_exists("CRM Deal") and frappe.db.has_column("CRM Deal", "company")
-		cls.ready = bool(cls.company and cls.supplier and cls.item and cls.deal_scoped)
+		cls.ready = bool(cls.company and cls.supplier and cls.item and cls.warehouse and cls.deal_scoped)
 		if not cls.ready:
 			return
 		cls.has_landed_field = frappe.db.has_column("Supplier Quotation", "custom_landed_charges")
@@ -151,7 +170,9 @@ class _TenderFixture(FrappeTestCase):
 				"custom_crm_deal": cls.deal
 				if frappe.db.has_column("Supplier Quotation", "custom_crm_deal")
 				else None,
-				"items": [{"item_code": cls.item, "qty": 1, "rate": amount}],
+				# `warehouse` is not optional decoration: the item is a stock item and
+				# erpnext refuses the row without it (`validate_stock_item_warehouse`).
+				"items": [{"item_code": cls.item, "qty": 1, "rate": amount, "warehouse": cls.warehouse}],
 			}
 		).insert(ignore_permissions=True)
 		return cls._track("Supplier Quotation", doc.name)
@@ -209,8 +230,8 @@ class _TenderFixture(FrappeTestCase):
 	def setUp(self):
 		if not self.ready:
 			self.skipTest(
-				"site has no tender-enabled Company, Supplier, Item, or no CRM Deal.company "
-				"custom field (run migrate)"
+				"site has no tender-enabled Company, Supplier, stock Item, non-group "
+				"Warehouse for that company, or no CRM Deal.company custom field (run migrate)"
 			)
 		frappe.set_user("Administrator")
 
@@ -452,8 +473,18 @@ class TestTheEndpointBidPricingActuallyCalls(_TenderFixture):
 				"transaction_date": today(),
 				"schedule_date": today(),
 				"custom_crm_deal": self.deal,
+				# Purchase Order runs the SAME `validate_for_items`
+				# (purchase_order.py:205), so the warehouse is mandatory here too --
+				# this row would have been the next thing to fail once the quotation
+				# stopped failing first.
 				"items": [
-					{"item_code": self.item, "qty": 1, "rate": 500_000_000.0, "schedule_date": today()}
+					{
+						"item_code": self.item,
+						"qty": 1,
+						"rate": 500_000_000.0,
+						"schedule_date": today(),
+						"warehouse": self.warehouse,
+					}
 				],
 			}
 		).insert(ignore_permissions=True)

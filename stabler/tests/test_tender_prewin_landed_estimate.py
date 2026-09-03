@@ -467,3 +467,56 @@ class TestTheBenchFixtureCanActuallyInsert(unittest.TestCase):
 			"that role cannot read Tender Sourcing Decision — the denied test would die "
 			"on the decision query instead of the quotation read",
 		)
+
+	def test_every_buying_row_the_fixture_builds_carries_a_warehouse(self):
+		"""`_an_item` picks a STOCK item, and erpnext makes warehouse mandatory for one.
+
+		`erpnext/buying/utils.py::validate_stock_item_warehouse` throws when
+		`item.is_stock_item == 1 and row.qty and not row.warehouse and not
+		row.delivered_by_supplier`, and both `Supplier Quotation.validate` and
+		`Purchase Order.validate` call it through `validate_for_items`. The first
+		draft of the bench module built every row without a warehouse, so
+		`setUpClass` died on the first quotation and all four classes reported
+		`Ran 0 tests` -- coverage that had never once reached an assertion.
+
+		Scanned across the whole module rather than named per method, so a row added
+		later is held to the same rule.
+		"""
+		self.assertRegex(
+			self.bench,
+			r'"is_stock_item":\s*1',
+			"the fixture no longer pins a stock item — if it now picks a non-stock "
+			"item this rule is moot and the test should be retired, not weakened",
+		)
+		rows = self.bench.split('"item_code"')[1:]
+		self.assertTrue(rows, "the bench module builds no buying rows at all — renamed?")
+		for i, row in enumerate(rows, 1):
+			self.assertIn(
+				'"warehouse"',
+				row[:400],
+				f"buying row #{i} carries no warehouse — erpnext refuses it for a stock "
+				"item, and the refusal happens in setUpClass where it takes the whole "
+				"class down before a single test runs",
+			)
+
+	def test_every_precondition_it_looks_up_is_one_it_will_skip_on(self):
+		"""A lookup that is not in `cls.ready` fails LOUDLY instead of skipping.
+
+		`cls.warehouse` was folded into the ready check for exactly this reason: on a
+		site with no non-group Warehouse the fixture would otherwise build a row with
+		`warehouse: None` and die inside erpnext's validator, which reads as "the code
+		is broken" when it means "this site cannot host the fixture". Every `_a*`
+		lookup in `setUpClass` has to be a spoken precondition, not just a variable.
+		"""
+		body = self._method_body(self.bench, "setUpClass", code_only=True)
+		ready = re.search(r"cls\.ready = bool\((.*?)\)\n", body, re.S)
+		self.assertIsNotNone(ready, "setUpClass no longer computes cls.ready")
+		looked_up = set(re.findall(r"cls\.(\w+) = _\w+\(", body))
+		self.assertTrue(looked_up, "setUpClass looks nothing up — has the fixture moved?")
+		for name in sorted(looked_up):
+			self.assertIn(
+				f"cls.{name}",
+				ready.group(1),
+				f"cls.{name} is looked up but absent from cls.ready — its absence would "
+				"crash the fixture instead of skipping with a reason",
+			)
