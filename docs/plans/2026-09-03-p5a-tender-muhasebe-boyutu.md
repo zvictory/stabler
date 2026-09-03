@@ -529,3 +529,45 @@ fires once per save; flag-off posting lands on GENEL GİDER with the cash leg NU
 costs 4 queries on row 1 and 0 on rows 2–20, every round-1 and round-2 mutation killed, the
 money invariant (29 GL columns identical flag-on vs flag-off), tenant isolation, the patch
 re-running all zeros, and the catalogues LF-only with no existing row changed.
+
+### Round 3 review — 2026-09-04
+
+One P0, one P2, one P3. The last correction cycle the orchestration rules allow.
+
+| # | P | What was wrong | Commit |
+|---|---|---|---|
+| R19 | P0 | the operations desk was narrowed by `deal_type`, which is not what a lot is | `ebafc19` |
+| R20 | P2 | the bench cleanup committed, on a claim that was not true | `8e741bc` |
+| R21 | P3 | "this is an amendment" was something the caller could assert | `38d9599` |
+
+**R19 was the orchestrator's own instruction, not the implementer's invention.** Round 2's R17
+said to filter `{"deal_type": "Tender"}` "as `tender.py` and `tender_master.py` already do".
+They do not: `_tender_deal_names` (`tender.py:2295`) UNIONS five criteria — a tagged
+SO/PO/quotation, `custom_tender_intake`, `custom_bid_pricing`, `custom_parent_tender`, and only
+then `deal_type == "Tender"` — because `save_deal_intake` never sets `deal_type` and v103
+stamped every NULL to `Standard` for good. Measured on `genesis-test.local`: **484 deals carry
+`custom_tender_intake` and not one of them is typed Tender**; exactly one deal on the site is.
+So the instruction took `operations_desk` `team_load` from 553 to 1, and `deals_raw` feeds the
+whole desk — orphan_lots, bid_due, delivery_due, won_without_po, sq_counts, the plan, the
+decisions and the calendar would all have emptied out with it, silently, on a tender tenant.
+
+The rule the code now carries: **narrow this reader by what is NOT a lot (the GENEL GİDER
+bucket), never by what a lot is said to be.** `exclude_overhead_deals`'s docstring names the
+five readers that count or list deals as work, and says why the other twelve `CRM Deal` list
+sites in `stabler/api` need nothing — they resolve deals the caller already named, or are
+already narrowed by a filter the bucket cannot satisfy.
+
+**R20 — a suite must not change the site it measures.** Round 2 added `frappe.db.commit()` to
+`_erase_voucher` on the claim that submitting a voucher commits. It does not: `money.py` has no
+`db.commit` on any write path. The cleanup stack is LIFO, so that commit ran BEFORE
+`_set_flag(1)` in `TestModuleFlagOff` and persisted `enable_tender = 0` on the real
+`_Test Company` row. Removed, and the invariant is now pinned by
+`TestSuiteHygiene.test_a_per_test_cleanup_never_commits` rather than described in a comment.
+The one commit the suite still makes is the class-level one, which is needed because creating a
+Company commits from inside ERPNext's chart of accounts.
+
+**R21 — a client can set any parameter a whitelisted signature declares.** R15's relaxation
+keyed off `amended_from`, so naming a cancelled voucher that carried a finished tender bought a
+new expense against it. The relaxation is now carried on `frappe.local`, raised by
+`amend_expense_entry` alone. The general rule: *permission to skip a check may never travel in
+the payload that the check is protecting against.*
