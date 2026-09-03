@@ -128,6 +128,7 @@ class _Site:
 		self.lists = {}  # doctype -> list of rows
 		self.reads = []  # every frappe.db.get_value(doctype, name, ...) call
 		self.filter_reads = []  # every frappe.db.get_value(doctype, {filters}, ...) call
+		self.order_bys = []  # the order_by each of those asked for
 		self.module_reads = []  # every module_map_for(company) call
 		self.inserted = []
 		self.dimension = "tender"
@@ -174,6 +175,7 @@ def _load(site: _Site):
 			where = tuple(sorted(name_or_filters.items()))
 			field_key = fields if isinstance(fields, str) else tuple(fields or ())
 			site.filter_reads.append((doctype, where, field_key))
+			site.order_bys.append((doctype, _kwargs.get("order_by")))
 			if (doctype, where, field_key) in site.singles:
 				return site.singles[(doctype, where, field_key)]
 			return site.singles.get((doctype, where))
@@ -803,6 +805,21 @@ class TestEnsureCompanySetup(unittest.TestCase):
 		self.assertEqual(row["mandatory_for_pl"], 1)
 		self.assertEqual(row["mandatory_for_bs"], 0)
 		self.assertEqual(row["reference_document"], "CRM Deal")
+
+	def test_the_overhead_deal_is_read_in_a_defined_order(self):
+		"""R8. Two buckets must not make attribution depend on the engine's mood.
+
+		`deal_type` is client-writable through `save_deal`, so a company CAN end up
+		with a second Overhead deal. An unordered `get_value` would then answer with
+		either one, and the same untagged expense could be attributed differently
+		between two requests — two buckets that never reconcile. Ordering by
+		creation makes the answer the FIRST bucket, always.
+		"""
+		self.site.order_bys.clear()
+		self.mod.clear_dimension_cache()
+		self.mod.overhead_deal("_Test Company")
+		asked = [order for doctype, order in self.site.order_bys if doctype == "CRM Deal"]
+		self.assertEqual(asked, ["creation asc"])
 
 	def test_a_created_overhead_deal_is_visible_to_the_next_reader(self):
 		"""The read is cached per request; the CREATE happens in that same request.

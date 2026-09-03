@@ -14,7 +14,7 @@ from stabler.api.organization import (
 	_can_access_module,
 	_user_allowed_companies,
 )
-from stabler.api.tender_dimension import list_active_tenders, tender_enabled
+from stabler.api.tender_dimension import OVERHEAD_DEAL_TYPE, list_active_tenders, tender_enabled
 
 
 def _require_crm():
@@ -500,6 +500,12 @@ def save_deal(data: str | dict, company=""):
 	requested_status = str(payload.get("status") or "").strip()
 	is_existing = bool(payload.get("name"))
 	updates = _mutable_payload(payload, _DEAL_MUTABLE_FIELDS)
+	# ADR-609: `Overhead` is a LEDGER role the server owns, not a classification a
+	# CRM user picks. A second one gives the company a second GENEL GİDER bucket,
+	# and `_crm_list` hides the type — so the deal would vanish from every board
+	# while still collecting ledger rows.
+	if str(updates.get("deal_type") or "") == OVERHEAD_DEAL_TYPE:
+		frappe.throw(_("The GENEL GİDER deal type is set by the system and cannot be chosen here."))
 	if "organization" in updates:
 		updates["organization"] = _resolve_crm_organization(updates["organization"])
 	if updates.get("source"):

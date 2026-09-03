@@ -210,8 +210,15 @@ def overhead_deal(company: str, create: bool = False) -> str | None:
 	if company in cache:
 		name = cache[company]
 	else:
+		# `order_by` is not decoration: `deal_type` is client-writable, so a company
+		# CAN acquire a second Overhead deal, and an unordered read would attribute
+		# the same untagged expense to either of them from one request to the next.
+		# The FIRST bucket is the answer, always.
 		name = frappe.db.get_value(
-			DIMENSION_DOCTYPE, {"company": company, "deal_type": OVERHEAD_DEAL_TYPE}, "name"
+			DIMENSION_DOCTYPE,
+			{"company": company, "deal_type": OVERHEAD_DEAL_TYPE},
+			"name",
+			order_by="creation asc",
 		)
 		cache[company] = name or None
 	if name or not create:

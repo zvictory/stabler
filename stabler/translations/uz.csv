@@ -6716,3 +6716,4 @@ Search a tender…,Tender qidirish…
 Only an active tender or GENEL GİDER can be selected.,Faqat faol tender yoki GENEL GİDER tanlanishi mumkin.
 GENEL GİDER deal is missing for {0}; save Stabler Settings or run patch v103.,{0} uchun GENEL GİDER bitimi yo‘q; Stabler Settings’ni saqlang yoki v103 patchini ishga tushiring.
 Refusing to build SQL for dimension fieldname {0}.,{0} o‘lchov maydoni uchun SQL tuzishdan bosh tortildi.
+The GENEL GİDER deal type is set by the system and cannot be chosen here.,"GENEL GİDER bitim turini tizim belgilaydi, bu yerdan tanlanmaydi."

@@ -535,6 +535,23 @@ class TestCrmCompanyScope(unittest.TestCase):
 		with self.assertRaisesRegex(Exception, "owner"):
 			self.crm.validate_crm_deal_hygiene(deal)
 
+	def test_save_deal_refuses_the_reserved_overhead_deal_type(self):
+		"""R8 (ADR-609). `Overhead` is a LEDGER role, not a CRM classification.
+
+		`deal_type` is in `_DEAL_MUTABLE_FIELDS`, so the SPA can send anything the
+		Select offers. A user choosing `Overhead` gives the company a second GENEL
+		GİDER bucket, and `_crm_list` excludes that type — so the deal disappears
+		from every board while continuing to collect ledger rows against it.
+		"""
+		with self.assertRaises(Exception) as caught:
+			self.crm.save_deal({"name": "DEAL-MIKAS", "deal_type": "Overhead"}, "Mikas")
+		self.assertIn("GENEL", str(caught.exception).upper())
+
+	def test_save_deal_still_lets_a_user_classify_a_deal(self):
+		# The guard must name ONE reserved value, not take the field away: `Tender`
+		# and `Standard` are the user's to choose and the tender boards read them.
+		self.assertIn("deal_type", self.crm._DEAL_MUTABLE_FIELDS)
+
 	def test_save_deal_routes_kanban_status_through_transition_history(self):
 		"""Kanban's existing save_deal payload must not silently discard status."""
 		result = self.crm.save_deal({"name": "DEAL-MIKAS", "status": "Qualified"}, "Mikas")
