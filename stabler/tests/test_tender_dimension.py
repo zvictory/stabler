@@ -30,6 +30,7 @@ rather than asserted from the source text:
 from __future__ import annotations
 
 import importlib
+import json
 import os
 import re
 import types
@@ -1142,7 +1143,109 @@ class TestHooksRegistration(unittest.TestCase):
 		self.assertIn("before_validate", gl[1].split("\n\t},", 1)[0])
 
 	def test_turning_the_module_on_sets_the_company_up(self):
-		self.assertIn("stabler.api.tender_dimension.on_company_modules_update", self.hooks)
+		"""Registered on the SINGLE, not on its rows.
+
+		The first draft hooked `Stabler Company Modules`. That doctype is a child
+		table (`"istable": 1`), and frappe persists child rows with `db_update()` in
+		`Document.update_child_table` — their document methods are never run. A
+		reviewer replaced the handler with a probe, flipped `enable_tender` on and
+		saved: it fired zero times. So the flag could be turned on from the
+		organization screen and the company would get no GENEL GIDER deal and no
+		detail row, while `default_gl_tender` told the user to save the very screen
+		that does nothing.
+		"""
+		self.assertIn("stabler.api.tender_dimension.on_settings_update", self.hooks)
+		block = self.hooks.split('"Stabler Settings": {', 1)
+		self.assertEqual(len(block), 2, "Stabler Settings has no doc_events block")
+		self.assertIn("stabler.api.tender_dimension.on_settings_update", block[1].split("\n\t},", 1)[0])
+		self.assertNotIn(
+			"on_company_modules_update", self.hooks, "the dead child-table hook is still registered"
+		)
+
+	def test_no_doc_event_is_registered_on_a_child_table(self):
+		"""The general form of the bug above, over every stabler doctype in hooks.
+
+		A child table's handlers never run, so registering one is not a subtle
+		mistake — it is a handler that silently does not exist. Only doctypes this
+		repository owns can be checked; those are exactly the ones a stabler change
+		can get wrong.
+		"""
+		offenders = []
+		for doctype in re.findall(r'^\t"([A-Z][^"]*)": \{', self.hooks, re.MULTILINE):
+			slug = doctype.lower().replace(" ", "_")
+			schema = os.path.join(_ROOT, "stabler", "doctype", slug, f"{slug}.json")
+			if not os.path.exists(schema):
+				continue
+			with open(schema, encoding="utf-8") as handle:
+				if json.load(handle).get("istable"):
+					offenders.append(doctype)
+		self.assertEqual(offenders, [], f"doc_events registered on child tables: {offenders}")
+
+
+class TestSettingsHook(unittest.TestCase):
+	"""`on_settings_update` — what the parent save is allowed to do."""
+
+	def setUp(self):
+		self.site = _tender_site()
+		self.mod = _load(self.site)
+		self.calls = []
+		self.mod.ensure_company_setup = lambda company: self.calls.append(company)
+
+	def _settings(self, *rows):
+		doc = _Doc("Stabler Settings")
+		doc["company_modules"] = [_Row(row) for row in rows]
+		return doc
+
+	def test_sets_up_only_the_companies_whose_flag_is_on(self):
+		self.mod.on_settings_update(
+			self._settings(
+				{"company": "_Test Company", "enable_tender": 1},
+				{"company": "Plain Co", "enable_tender": 0},
+			)
+		)
+		self.assertEqual(self.calls, ["_Test Company"])
+
+	def test_does_nothing_on_a_site_without_the_dimension(self):
+		_drop_dimension(self.site)
+		self.mod.clear_dimension_cache()
+		self.mod.on_settings_update(self._settings({"company": "_Test Company", "enable_tender": 1}))
+		self.assertEqual(self.calls, [], "a site that never ran v103 was set up by a settings save")
+
+	def test_re_reads_rather_than_trusting_what_it_cached_before_the_save(self):
+		"""The caches answer from BEFORE the save this hook is reacting to.
+
+		Primed here the way a real request primes them: something asked earlier in
+		the same request, when the site had no dimension yet. If the hook trusts
+		that answer it returns immediately and the company it was called to set up
+		is never set up.
+		"""
+		_drop_dimension(self.site)
+		self.assertIsNone(self.mod.dimension_fieldname())
+		self.site.singles[("Accounting Dimension", _ENABLED_DIMENSION, "fieldname")] = "tender"
+		self.mod.on_settings_update(self._settings({"company": "_Test Company", "enable_tender": 1}))
+		self.assertEqual(
+			self.calls,
+			["_Test Company"],
+			"the settings hook answered from the cache it was called to invalidate",
+		)
+
+	def test_a_nested_save_does_not_run_the_setup_twice(self):
+		"""`ensure_company_setup` can save Stabler Settings itself.
+
+		`tender_enabled` -> `module_map_for` -> `get_company_module_row` appends a
+		default row and saves when a company has none, which re-enters this hook.
+		Without the guard the setup runs once per nesting level, and a company whose
+		row is being created is set up while its row is half-written.
+		"""
+		settings = self._settings({"company": "_Test Company", "enable_tender": 1})
+
+		def _reenter(company):
+			self.calls.append(company)
+			self.mod.on_settings_update(settings)
+
+		self.mod.ensure_company_setup = _reenter
+		self.mod.on_settings_update(settings)
+		self.assertEqual(self.calls, ["_Test Company"], "the nested save ran the setup again")
 
 
 if __name__ == "__main__":

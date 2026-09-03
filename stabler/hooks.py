@@ -266,9 +266,13 @@ doc_events = {
 			"stabler.api.tender_dimension.default_gl_tender",
 		],
 	},
-	"Stabler Company Modules": {
+	# ADR-609. On the SINGLE, never on `Stabler Company Modules`: that doctype is a
+	# child table, and frappe persists child rows with `db_update()` in
+	# `Document.update_child_table` — their document methods are never run, so a
+	# handler registered there fires zero times (measured).
+	"Stabler Settings": {
 		"on_update": [
-			"stabler.api.tender_dimension.on_company_modules_update",
+			"stabler.api.tender_dimension.on_settings_update",
 		],
 	},
 	"Payment Entry": {

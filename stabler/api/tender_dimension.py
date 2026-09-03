@@ -45,6 +45,9 @@ _SOURCE_CACHE = "stabler_tender_dimension_sources"
 _VOUCHER_CACHE = "stabler_tender_dimension_vouchers"
 _MISS = object()
 
+#: Re-entry guard for `on_settings_update`; see that function.
+_SETTINGS_HOOK_FLAG = "stabler_tender_settings_hook_running"
+
 #: How a voucher's rows name the document the tender came from. Delivery Note
 #: items carry `against_sales_order`, not `sales_order` — measured. It is the
 #: FALLBACK, not the usual path: erpnext's mapper copies the order's own tender
@@ -511,9 +514,7 @@ def default_gl_tender(doc, method=None):
 		# inside somebody's submit, and a half-written deal would outlive a rolled
 		# back posting. Name the company and the action that repairs it instead.
 		frappe.throw(
-			_("GENEL GİDER deal is missing for {0}; save Stabler Company Modules or run patch v103.").format(
-				company
-			)
+			_("GENEL GİDER deal is missing for {0}; save Stabler Settings or run patch v103.").format(company)
 		)
 	doc.set(fieldname, value)
 
@@ -670,12 +671,33 @@ def _from_parent(parent: str, child: str, fieldname: str, source_field: str) -> 
 # ---------------------------------------------------------------------------
 
 
-def on_company_modules_update(doc, method=None):
+def on_settings_update(doc, method=None):
 	"""Turning the tender module on sets the company up; turning it off removes nothing.
 
-	Deleting the detail row would leave the company's historical GL rows carrying a
-	dimension nothing declares any more, and re-enabling would not bring them back.
+	Registered on `Stabler Settings`, the SINGLE. `Stabler Company Modules` is a
+	child table and frappe never runs a child row's document methods
+	(`Document.update_child_table` writes them with `db_update()`), so the obvious
+	registration fires zero times — measured, with a probe, by flipping
+	`enable_tender` and saving.
+
+	Deleting a detail row when the flag goes off is deliberately NOT done: the
+	company's historical GL rows would carry a dimension nothing declares any more,
+	and re-enabling would not bring them back.
 	"""
-	if not doc.get("enable_tender") or not dimension_fieldname():
+	if getattr(frappe.local, _SETTINGS_HOOK_FLAG, False):
+		# `ensure_company_setup` -> `tender_enabled` -> `module_map_for` ->
+		# `get_company_module_row` saves Stabler Settings for a company that has no
+		# row yet, which re-enters this hook. One save must run the setup once.
 		return
-	ensure_company_setup(doc.get("company"))
+	# The caches answer from before this save; the flag it changed is exactly what
+	# the setup is about to read.
+	clear_dimension_cache()
+	if not dimension_fieldname():
+		return
+	setattr(frappe.local, _SETTINGS_HOOK_FLAG, True)
+	try:
+		for row in doc.get("company_modules") or []:
+			if row.get("enable_tender"):
+				ensure_company_setup(row.get("company"))
+	finally:
+		setattr(frappe.local, _SETTINGS_HOOK_FLAG, False)
