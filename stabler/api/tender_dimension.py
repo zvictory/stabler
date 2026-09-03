@@ -246,6 +246,57 @@ def assert_selectable_tender(deal: str, company: str) -> None:
 	frappe.throw(_("Only an active tender or GENEL GİDER can be selected."))
 
 
+def tender_label(deal: str, company: str) -> str:
+	"""What a screen shows for a stored value — never the CRM autoname."""
+	if not deal:
+		return ""
+	if deal == overhead_deal(company):
+		return OVERHEAD_ORGANIZATION
+	return frappe.db.get_value(DIMENSION_DOCTYPE, deal, "organization") or deal
+
+
+def list_active_tenders(
+	company: str, fields: list[str], search: str = "", page_length: int = 50, start: int = 0
+) -> list[dict]:
+	"""What a tender picker may offer: GENEL GİDER first, then live tenders.
+
+	The overhead deal leads and is offered unconditionally — including when the
+	search matches nothing and when no tender is running at all — because every
+	expense needs SOME value and this is the honest one. `fields` is passed in by
+	the caller so the row shape stays defined in `api/crm.py` beside the board
+	that already reads it, and the RULE for which deals qualify stays here.
+	"""
+	rows: list[dict] = []
+	overhead = overhead_deal(company)
+	if overhead:
+		row = frappe.db.get_value(DIMENSION_DOCTYPE, overhead, fields, as_dict=True) or {}
+		row = dict(row)
+		row["name"] = overhead
+		row["organization"] = OVERHEAD_ORGANIZATION
+		row["is_overhead"] = 1
+		rows.append(row)
+	if not frappe.db.has_column(DIMENSION_DOCTYPE, "deal_type"):
+		return rows
+
+	kwargs = {
+		"filters": {"company": company, "deal_type": "Tender"},
+		"fields": fields,
+		"order_by": "modified desc",
+		"limit_page_length": min(max(int(page_length or 50), 1), 500),
+		"start": max(int(start or 0), 0),
+	}
+	if search:
+		kwargs["or_filters"] = [[field, "like", f"%{search}%"] for field in ("organization", "lead_name")]
+	# `get_list`, not `get_all`: role and user permissions belong inside the query.
+	for row in frappe.get_list(DIMENSION_DOCTYPE, **kwargs):
+		if not is_active_tender(row["name"], company):
+			continue
+		row = dict(row)
+		row["is_overhead"] = 0
+		rows.append(row)
+	return rows
+
+
 # ---------------------------------------------------------------------------
 # B4 — the document hook
 # ---------------------------------------------------------------------------

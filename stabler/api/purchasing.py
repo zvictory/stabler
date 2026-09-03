@@ -20,6 +20,12 @@ from stabler.api._common import (
 from stabler.api._money import money_epsilon
 from stabler.api._pricing import net_rate
 from stabler.api.approvals import _assert_company_scope
+from stabler.api.tender_dimension import (
+	assert_selectable_tender,
+	dimension_fieldname,
+	tender_enabled,
+	tender_label,
+)
 from stabler.stabler.doctype.stabler_settings.stabler_settings import (
 	imports_supplier_groups_for,
 	module_map_for,
@@ -737,7 +743,17 @@ def purchase_invoice_detail(name: str):
 			return ""
 		return frappe.get_cached_value("Item", code, "custom_dimension_mode") or ""
 
+	# ADR-609. `tender_locked` is not a permission — it says the value was DERIVED
+	# from the purchase order rather than chosen here, so the form can explain why
+	# the picker is disabled instead of silently ignoring a change.
+	_tender_field = dimension_fieldname()
+	_tender = (doc.get(_tender_field) or "") if _tender_field else ""
+	_tender_locked = 1 if (_tender and any(it.purchase_order for it in (doc.items or []))) else 0
+
 	return {
+		"tender": _tender,
+		"tender_label": tender_label(_tender, doc.company),
+		"tender_locked": _tender_locked,
 		"name": doc.name,
 		"modified": str(doc.modified),
 		"posting_date": str(doc.posting_date) if doc.posting_date else None,
@@ -1279,6 +1295,7 @@ def _apply_invoice_payload(
 	import_truck: str | None = None,
 	import_container: str | None = None,
 	purchase_receipt: str | None = None,
+	tender: str | None = None,
 ):
 	"""Write validated PI fields + item/tax rows onto `doc` (new or draft)."""
 	# ERPNext discards `posting_date` unless this flag is set: validate_posting_time
@@ -1361,6 +1378,8 @@ def _apply_invoice_payload(
 		except Exception:
 			pass
 
+	_apply_tender(doc, tender)
+
 	doc.set("taxes", [])
 	doc.taxes_and_charges = taxes_template or None
 	if taxes_template:
@@ -1368,6 +1387,30 @@ def _apply_invoice_payload(
 
 		for tax_row in get_taxes_and_charges("Purchase Taxes and Charges Template", taxes_template):
 			doc.append("taxes", tax_row)
+
+
+def _apply_tender(doc, tender: str | None) -> None:
+	"""Put an explicitly chosen tender on the bill and every one of its lines.
+
+	`None` is not "clear it": it means the SPA did not send a tender, and the
+	value is then left to the hooks — a PO-linked line derives its tender from the
+	order, and a bill with no order at all ends on GENEL GİDER at GL time. Called
+	AFTER the rows are rebuilt, because `doc.set("items", [])` above would
+	otherwise drop what we just wrote.
+	"""
+	if tender is None or not doc.company or not tender_enabled(doc.company):
+		return
+	fieldname = dimension_fieldname()
+	if not fieldname or not frappe.get_meta("Purchase Invoice").has_field(fieldname):
+		return
+	tender = (tender or "").strip()
+	if tender == (doc.get(fieldname) or ""):
+		return
+	assert_selectable_tender(tender, doc.company)
+	doc.set(fieldname, tender or None)
+	if frappe.get_meta("Purchase Invoice Item").has_field(fieldname):
+		for line in doc.items or []:
+			line.set(fieldname, tender or None)
 
 
 @frappe.whitelist()
@@ -1390,6 +1433,7 @@ def create_purchase_invoice(
 	import_truck: str | None = None,
 	import_container: str | None = None,
 	purchase_receipt: str | None = None,
+	tender: str | None = None,
 ):
 	"""Create a Purchase Invoice as Draft (docstatus=0).
 
@@ -1446,6 +1490,7 @@ def create_purchase_invoice(
 		import_truck,
 		import_container,
 		purchase_receipt,
+		tender,
 	)
 	doc.insert(ignore_permissions=False)
 	return {
@@ -1475,6 +1520,7 @@ def update_purchase_invoice(
 	commercial_invoice: str | None = None,
 	import_truck: str | None = None,
 	import_container: str | None = None,
+	tender: str | None = None,
 ):
 	"""Replace a draft Purchase Invoice's fields and rows (full-row replace).
 
@@ -1519,6 +1565,8 @@ def update_purchase_invoice(
 		commercial_invoice,
 		import_truck,
 		import_container,
+		None,
+		tender,
 	)
 	doc.save(ignore_permissions=False)
 	return {

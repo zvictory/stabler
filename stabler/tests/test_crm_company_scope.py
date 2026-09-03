@@ -101,6 +101,11 @@ class _FakeDB:
 			return name in {"Open", "Qualified", "Won", "Lost"}
 		return (doctype, name) in self.docs
 
+	def has_column(self, doctype, column):
+		# `deal_type` is a Custom Field (patch v60) that every CRM site carries;
+		# `_crm_list` reads it to keep the GENEL GİDER bucket off the board.
+		return (doctype, column) == ("CRM Deal", "deal_type")
+
 	def get_value(self, doctype, name, field):
 		if doctype == "CRM Deal Status" and field == "type":
 			return {"Won": "Won", "Lost": "Lost"}.get(name, "Open")
@@ -154,6 +159,9 @@ def _load_crm(db: _FakeDB):
 	frappe.clear_last_message = lambda: None
 
 	utils = types.ModuleType("frappe.utils")
+	# `list_deals` reads its `active_tenders` flag through cint (ADR-609): the flag
+	# arrives from the SPA as a string, so plain truthiness would read "0" as on.
+	utils.cint = lambda value=0: int(float(value or 0))
 	utils.flt = lambda value: float(value or 0)
 	utils.get_first_day = lambda _value: "2026-07-01"
 	utils.getdate = lambda value: date.fromisoformat(str(value)[:10])

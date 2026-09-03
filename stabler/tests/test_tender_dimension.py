@@ -33,6 +33,7 @@ import importlib
 import os
 import re
 import types
+import typing
 import unittest
 
 from stabler.tests.module_sandbox import ModuleSandbox
@@ -916,6 +917,140 @@ class TestPatchV103(unittest.TestCase):
 
 	def test_is_registered_in_patches_txt(self):
 		self.assertIn("stabler.patches.v103_tender_accounting_dimension", _read("patches.txt"))
+
+
+class TestListActiveTenders(unittest.TestCase):
+	"""B3 — what a picker may offer. The rule lives here, the fields stay in crm.py."""
+
+	FIELDS: typing.ClassVar = ["name", "organization", "lead_name", "status", "deal_type", "modified"]
+
+	def setUp(self):
+		self.site = _tender_site()
+		self.site.values[("CRM Deal", "OVERHEAD-1")] = {
+			"name": "OVERHEAD-1",
+			"organization": "GENEL GİDER",
+			"deal_type": "Overhead",
+			"company": "_Test Company",
+		}
+		self.site.lists["CRM Deal"] = [
+			{
+				"name": "T-OPEN",
+				"organization": "Road works",
+				"deal_type": "Tender",
+				"company": "_Test Company",
+			},
+			{"name": "T-LOST", "organization": "Bridge", "deal_type": "Tender", "company": "_Test Company"},
+		]
+		for name, stage in (("T-OPEN", "priced"), ("T-LOST", "lost")):
+			self.site.values[("CRM Deal", name)] = {
+				"company": "_Test Company",
+				"deal_type": "Tender",
+				"custom_tender_stage": stage,
+			}
+		self.site.columns.add(("CRM Deal", "deal_type"))
+		self.mod = _load(self.site)
+
+	def test_the_overhead_deal_comes_first_and_is_labelled(self):
+		# It is first because it is the answer for most expenses, and it is marked
+		# so the screen can say GENEL GİDER instead of a CRM autoname.
+		rows = self.mod.list_active_tenders("_Test Company", self.FIELDS)
+		self.assertEqual(rows[0]["name"], "OVERHEAD-1")
+		self.assertEqual(rows[0]["organization"], "GENEL GİDER")
+		self.assertEqual(rows[0]["is_overhead"], 1)
+
+	def test_excludes_a_lost_tender(self):
+		names = [r["name"] for r in self.mod.list_active_tenders("_Test Company", self.FIELDS)]
+		self.assertIn("T-OPEN", names)
+		self.assertNotIn("T-LOST", names)
+
+	def test_excludes_standard_deals_entirely(self):
+		# 551 of the 552 deals on the test site are Standard. A picker that offered
+		# them would make the ledger dimension a free-text field in practice.
+		self.site.lists["CRM Deal"].append(
+			{"name": "STD-1", "organization": "Shop", "deal_type": "Standard", "company": "_Test Company"}
+		)
+		names = [r["name"] for r in self.mod.list_active_tenders("_Test Company", self.FIELDS)]
+		self.assertNotIn("STD-1", names)
+
+	def test_asks_the_database_for_tenders_rather_than_filtering_552_deals(self):
+		# `is_active_tender` would reject a Standard deal anyway — this pins the
+		# other half, which the outcome test cannot see: the query itself must
+		# narrow to tenders. Without it every one of the 551 Standard deals on the
+		# test site is fetched and then thrown away, one `is_active_tender` read
+		# each, on every keystroke in the picker.
+		asked = {}
+		original = self.mod.frappe.get_list
+
+		def _spy(doctype, **kwargs):
+			asked.update(kwargs.get("filters") or {})
+			return original(doctype, **kwargs)
+
+		self.mod.frappe.get_list = _spy
+		try:
+			self.mod.list_active_tenders("_Test Company", self.FIELDS)
+		finally:
+			self.mod.frappe.get_list = original
+		self.assertEqual(asked.get("deal_type"), "Tender")
+		self.assertEqual(asked.get("company"), "_Test Company")
+
+	def test_offers_the_overhead_deal_even_when_no_tender_is_active(self):
+		# The empty state still has to be usable: every expense needs SOME value,
+		# and GENEL GİDER is the honest one when no tender is running.
+		self.site.lists["CRM Deal"] = []
+		rows = self.mod.list_active_tenders("_Test Company", self.FIELDS)
+		self.assertEqual([r["name"] for r in rows], ["OVERHEAD-1"])
+
+	def test_returns_nothing_extra_for_a_company_with_no_overhead_deal(self):
+		self.site.singles.pop(("CRM Deal", (("company", "_Test Company"), ("deal_type", "Overhead"))))
+		rows = self.mod.list_active_tenders("_Test Company", self.FIELDS)
+		self.assertEqual([r["name"] for r in rows], ["T-OPEN"])
+
+
+class TestWriterWiring(unittest.TestCase):
+	"""B7 — the endpoints that accept a tender must all check it the same way."""
+
+	def setUp(self):
+		self.money = _code_only(_read("api", "money.py"))
+		self.purchasing = _code_only(_read("api", "purchasing.py"))
+		self.crm = _code_only(_read("api", "crm.py"))
+
+	def test_the_expense_endpoint_checks_selectability_not_existence(self):
+		# `frappe.db.exists` accepted a lost tender, another company's tender and a
+		# Standard deal — all three post to the ledger under a dimension that has
+		# to mean one thing.
+		self.assertIn("assert_selectable_tender(deal, company)", self.money)
+
+	def test_the_expense_endpoint_still_names_an_unknown_deal(self):
+		self.assertIn('frappe.throw("Unknown deal.")', self.money)
+
+	def test_the_purchase_invoice_endpoints_take_and_check_a_tender(self):
+		for contract in (
+			"assert_selectable_tender(",
+			"def _apply_invoice_payload(",
+			'"tender_locked"',
+			'"tender_label"',
+		):
+			self.assertIn(contract, self.purchasing, f"purchasing.py is missing {contract}")
+
+	def test_the_deal_list_excludes_the_overhead_bucket(self):
+		# GENEL GİDER is a ledger bucket, not a deal. On the CRM board it would sit
+		# in Qualification forever and be counted in every pipeline figure.
+		self.assertIn('["!=", "Overhead"]', self.crm)
+
+	def test_the_deal_list_offers_the_active_tender_mode(self):
+		self.assertIn("active_tenders", self.crm)
+		self.assertIn("list_active_tenders(", self.crm)
+
+	def test_the_board_enumerations_still_select_tenders_only(self):
+		# The three places that enumerate a company's tenders must keep filtering on
+		# `deal_type = "Tender"`: `Overhead` is a third value now, and a board that
+		# stopped filtering would show GENEL GİDER as a lot.
+		tender = _code_only(_read("api", "tender.py"))
+		master = _code_only(_read("api", "tender_master.py"))
+		self.assertIn('"deal_type": "Tender"', tender)
+		self.assertIn('"deal_type": "Tender"', master)
+		self.assertNotIn('"deal_type": "Overhead"', tender)
+		self.assertNotIn('"deal_type": "Overhead"', master)
 
 
 class TestHooksRegistration(unittest.TestCase):

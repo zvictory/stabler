@@ -17,6 +17,7 @@ from frappe.utils import cint, flt, formatdate, getdate, today
 from stabler.api._money import money_epsilon
 from stabler.api.approvals import _assert_company_scope
 from stabler.api.supplier_payment_guard import assert_supplier_payment_currency
+from stabler.api.tender_dimension import assert_selectable_tender
 
 EXPORT_FORMATS = {"Excel", "CSV"}
 
@@ -3357,11 +3358,15 @@ def submit_expense_entry(
 	)
 	doc.multi_currency = 1 if _any_foreign else 0
 	if deal:
-		# Tender attribution (WP-K2). Validate existence only — the deal is a
-		# company-scoped tag, not a permission boundary; GL access is already
-		# enforced by the JE itself.
+		# Tender attribution (WP-K2, tightened by ADR-609). Existence alone is no
+		# longer enough: the deal is now an ACCOUNTING DIMENSION on every P&L row
+		# this voucher writes, so a lost tender, a Standard deal or another
+		# company's tender would all post real money under a value that has to
+		# mean one thing. `assert_selectable_tender` is the same check every other
+		# writer runs. The rows themselves are stamped by `stamp_tender`.
 		if not frappe.db.exists("CRM Deal", deal):
 			frappe.throw("Unknown deal.")
+		assert_selectable_tender(deal, company)
 		if frappe.get_meta("Journal Entry").has_field("custom_crm_deal"):
 			doc.custom_crm_deal = deal
 	if commercial_invoice:

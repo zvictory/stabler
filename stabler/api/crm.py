@@ -14,6 +14,7 @@ from stabler.api.organization import (
 	_can_access_module,
 	_user_allowed_companies,
 )
+from stabler.api.tender_dimension import list_active_tenders, tender_enabled
 
 
 def _require_crm():
@@ -206,6 +207,13 @@ def _crm_list(
 		filters[owner_field] = owner
 	if extra_filters:
 		filters.update(extra_filters)
+	# ADR-609: "GENEL GİDER" is a ledger bucket wearing a CRM Deal, not a deal. On
+	# the board it would sit in Qualification for ever and be counted in every
+	# pipeline figure. Excluded unless the caller asked for a deal_type by name.
+	# (v103 backfills NULL deal_type to Standard first — MariaDB's `!=` drops NULL
+	# rows, so without it every pre-v60 deal would vanish from the board instead.)
+	if doctype == "CRM Deal" and not filters.get("deal_type") and frappe.db.has_column(doctype, "deal_type"):
+		filters["deal_type"] = ["!=", "Overhead"]
 	or_filters = [[field, "like", f"%{search}%"] for field in search_fields] if search else None
 	kwargs = {
 		"filters": filters,
@@ -365,6 +373,42 @@ def delete_lead(name: str, company=""):
 # Deals
 # ---------------------------------------------------------------------------
 
+#: The row shape every deal list returns. Named because the tender picker
+#: (`active_tenders=1`) has to hand back the SAME shape from a different rule —
+#: two field lists would let the two modes drift into two different rows.
+_DEAL_LIST_FIELDS = [
+	"name",
+	"organization",
+	"lead_name",
+	"email",
+	"mobile_no",
+	"status",
+	"deal_owner",
+	"deal_value",
+	"currency",
+	"probability",
+	"expected_closure_date",
+	"modified",
+	"outlet_type",
+	"region",
+	"expected_monthly_volume",
+	"expected_cases_week",
+	"price_tier",
+	"needs_freezer",
+	"credit_terms_days",
+	"win_loss_reason",
+	"linked_customer",
+	"deal_type",
+	"next_action_type",
+	"next_action_at",
+	"next_action_owner",
+	"stage_entered_at",
+	"won_at",
+	"lost_at",
+	"loss_reason",
+	"forecast_category",
+]
+
 
 @frappe.whitelist()
 def list_deals(
@@ -375,49 +419,38 @@ def list_deals(
 	deal_type="",
 	page_length=50,
 	start=0,
+	active_tenders=0,
 ):
+	"""The CRM board's deal list, and (with `active_tenders`) the tender picker's.
+
+	`active_tenders=1` answers a different question from the board's: not "which
+	deals exist" but "which values may a writer put on the ledger today" — the
+	company's GENEL GİDER bucket first, then the tenders that can still receive
+	cost. It therefore ignores `status`, `deal_type` and `deal_owner`, which are
+	board filters, and it is gated on the tender MODULE as well as the CRM one.
+	"""
 	_require_crm_or_tender()
 	company = _require_crm_company(company)
 	if not frappe.has_permission("CRM Deal", "read"):
 		frappe.throw(_("Not permitted"), frappe.PermissionError)
+	# Imported here, not at module scope: the frappe-free suites stub `frappe.utils`
+	# with only the names this module needs at IMPORT time, and a new top-level
+	# import silently breaks every one of them (measured: 55 errors across two
+	# modules). Same reason `crm.py` already imports its other utils in-function.
+	from frappe.utils import cint
+
+	if cint(active_tenders):
+		if not tender_enabled(company):
+			frappe.throw(_("Not permitted"), frappe.PermissionError)
+		rows = list_active_tenders(company, _DEAL_LIST_FIELDS, search, page_length, start)
+		return {"deals": rows, "total": len(rows)}
 	extra_filters = {}
 	if deal_type:
 		extra_filters["deal_type"] = deal_type
 	rows, total = _crm_list(
 		"CRM Deal",
 		company=company,
-		fields=[
-			"name",
-			"organization",
-			"lead_name",
-			"email",
-			"mobile_no",
-			"status",
-			"deal_owner",
-			"deal_value",
-			"currency",
-			"probability",
-			"expected_closure_date",
-			"modified",
-			"outlet_type",
-			"region",
-			"expected_monthly_volume",
-			"expected_cases_week",
-			"price_tier",
-			"needs_freezer",
-			"credit_terms_days",
-			"win_loss_reason",
-			"linked_customer",
-			"deal_type",
-			"next_action_type",
-			"next_action_at",
-			"next_action_owner",
-			"stage_entered_at",
-			"won_at",
-			"lost_at",
-			"loss_reason",
-			"forecast_category",
-		],
+		fields=_DEAL_LIST_FIELDS,
 		search=search,
 		search_fields=["organization", "email", "lead_name"],
 		status=status,
