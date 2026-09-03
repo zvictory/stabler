@@ -361,8 +361,8 @@ class TestLegacyVatIsStillExcluded(unittest.TestCase):
 		self.assertNotIn("charge_type_is_vat", stored[0])
 		self.assertNotIn("charge_type_canonical", stored[0])
 
-	def test_the_editors_four_answers_capitalize_what_they_always_did(self):
-		# The four shapes the editor can now emit, read back. None of them moves
+	def test_the_editors_five_answers_capitalize_what_they_always_did(self):
+		# The five shapes the editor can now emit, read back. None of them moves
 		# money: the fix is about which flag is persisted, not about what a flag
 		# means. Every figure here is the one main produced for the same line.
 		# WHAT WOULD MAKE THIS FAIL: any of these totals changing at all.

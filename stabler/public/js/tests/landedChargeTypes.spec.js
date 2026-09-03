@@ -96,8 +96,13 @@ describe("the list is defined once, on the server", () => {
 			"legal",
 			"other",
 		]);
-		// Same guard, for the other list this spec reads out of that module:
-		// a regex that matched nothing would make the invariant below vacuous.
+		// Same guard, for the other list this spec reads out of that module. Not
+		// against an empty parse -- that fails loudly on its own, because with no
+		// aliases `readBack` is the identity and the invariant below goes red on
+		// the no-edit alias case. Against a CHANGE: the invariant models the
+		// server's forcing from this list, so a spelling added or removed there
+		// silently changes what the model claims, and this is the only assertion
+		// that notices (measured: a fourth alias fails this line and nothing else).
 		expect(VAT_ALIASES).toEqual(["vat", "value added tax", "ндс"]);
 	});
 
