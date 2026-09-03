@@ -471,3 +471,73 @@ Eski açık sorular (kayıt için, hepsi yukarıda kararlaştırıldı):
 5. Genel gider P&L'i tek "GENEL GİDER" değeri mi, alt kırılım (idari, satış, finans) mı?
 
 ADR-609 kesinleşti (2026-09-03 akşam); P4 aynı gün açıldı, P5 P4'ün birleşmesini bekler.
+
+### P4 — ADR-606 tek liste (2026-09-03 akşam)
+
+| Paket | Dal başı → main | Kanıt |
+|---|---|---|
+| **P4** ADR-606 (dokuz kanonik tip, tek sunucu listesi, okumada eşleme) | `aaf583e` → `04955d4` | 18 landed-ilişkili bench modülü `87945bb`'te OK (18/18, hiçbiri 0 test; `p4-bench-87945bb.log`); `make check` yeşil main'de `04955d4` (ruff 4, eslint 5, sfc 301/0, `Ran 4927`, `Test Files 124 passed`, `Tests 1616 passed`); tam `make test-bench` yeşil main'de `04955d4` (78 modül, hepsi OK, ZERO COVERAGE yok; `test-bench-main-04955d4.log`) |
+
+Sekiz commit: `80cbc19` (liste, alias tablosu, iki editör API'den okur, +6/−10 anahtar),
+`dfa774f` (karar b: lojistik panosu yalnız kanonik `transport` sayar, `_transport_figure`),
+`0a7326e` (P0: editör diskteki anahtarı yalnız operatör değiştirince yazar; liste isteği
+düşerse editör hata durumunda, Kaydet kapalı), `596f54e` (`import vat` alias'ı çıkarıldı;
+PO yazma yolu yalnız dokuz + `broker` + `loading`; `Storage` msgid'si geri; ikon anahtar
+seti pinlendi), `b35d5f5` (P1: KDV kutusunu kaldırmak diske ulaşır; tanınmayan tip metni
+placeholder; yorumlar koda uyduruldu; bildirimle sağlanan assertion'lar şablona bağlandı), `e300618` (P3: düzenlemesiz kaydet
+KDV bayrağını da yerinde bırakır; `is_recoverable_vat_stored`; yük anahtar seti pinlendi;
+docstring'e iki türetilmiş anahtar), `87945bb` (P0: tür değişikliği de alias bilgisini
+emekliye ayırır; kutu diske uyar; ekran = sonraki okuma değişmezi spec'lendi), `aaf583e`
+(beşinci turun iki P3'ü, yalnız metin: beş satırlık tablonun adı "four" diyordu; guard yorumu
+ölçülen gerekçeyi anlatmıyordu. Orkestratör doğrudan uyguladı, `make check` ile doğruladı,
+inceleme turu açılmadı).
+
+İnceleme turlarının hükümleri (beş tur):
+- **Disk yeniden yazılmaz, editör dahil:** ilk hâlde `<select>` kanonik anahtarı satırın
+  `type`'ına bağlıyordu; planı açıp kaydetmek `broker`→`declarant`, `loading`→`storage`
+  yazıyor, LCV'nin metin-kimliği (`lcv.py:276-279`) kopuyor ve masraf ikinci kez vouchere
+  giriyordu. Şimdi `type_canonical` gösterim anahtarı, `@change` yazar.
+- **…tek istisna, operatörün düzenlemesini diskin geri alacağı yer:** sunucu saklı yazımı
+  KDV alias'ı olan her satırda `is_recoverable_vat`'ı zorla açar (`_landed.py`); eski "VAT"
+  satırında kutuyu kaldırıp "VAT"ı geri göndermek düzenlemeyi bir sonraki okumada siliyor,
+  ekran toplamı +KDV oynarken `base_landed_total` (kazananı sıralayan rakam) yerinde
+  kalıyordu. Şimdi kutu kaldırılınca `charge_type = charge_type_canonical` (`other`) yazılır;
+  saklı yazımın KDV olup olmadığını sunucu `charge_type_is_vat` alanıyla söyler, istemci
+  alias tablosunun kopyasını tutmaz. Kutuyu geri işaretlemek hiçbir şeyi yeniden adlandırmaz.
+- **Bayrak için de aynı kural, iki disk durumunda da sabit nokta:** değerlenmiş satırdaki
+  `is_recoverable_vat` birleşik bayraktır (saklı bayrak VEYA yazım KDV alias'ı); editör onu
+  geri gönderince ilgisiz bir kaydet tablonun hükmünü diske yazıyordu (diskte `false` →
+  `true`). Reviewer'ın tek satırlık önerisi (`&& !charge_type_is_vat`) yönü tersine
+  çevirirdi (diskte `true` → `false`). Kural: yazım hâlâ alias ise diskteki bayrak geri
+  gider (`is_recoverable_vat_stored`); operatör satırı düzenlediyse görünen bayrak gider.
+  Dokunulmadan kaydedilen ve hiç kaydedilmeyen satır diskte aynı kalır.
+- **Düzeltme (orkestratörün hatası, dördüncü tur):** kuralı "alias yazımlı satırda tek
+  düzenleme kutuyu kaldırmaktır" öncülüyle dikte ettim; yanlıştı. Tür `<select>`'i ikinci
+  düzenlemedir ve `onTypeChange` alias bilgisini temizlemiyordu: "VAT"→Freight yapılan
+  satır diskteki `false`'u gönderirken kutu ekranda işaretli kalıyor, 300 sessizce
+  `base_landed_total`'a (tedarikçi sıralaması, `comparison_snapshot`) giriyordu (reviewer,
+  uçtan uca ölçüm; `e300618`'de P0). Beşinci tur: hem kutuyu kaldırmak hem tür değiştirmek
+  alias bilgisini emekliye ayırır, kutu diskteki bayrağa döner, ekranda görünen = giden
+  değişmezi her ulaşılabilir düzenleme dizisi için spec'lendi.
+- **Alias tablosu veriyi tarif eder, genişletmez:** `import vat` main'de KDV değildi;
+  eklenmesi saklı bir teklifin landed toplamını değiştirip kazananı kaydırabilirdi.
+- **Bir kiracının anahtarı başka bir kiracı için silinmez:** `Storage` msgid'si imports
+  ekranlarında (msa) `t(value)` ile dinamik çağrılıyordu; tender değişikliği başka kiracının
+  arayüzünü İngilizceye düşürüyordu. Test artık `ImportExpenses.vue` kategorilerini okuyor.
+- **Türetilmiş metin saklı alana ekilmez:** tanınmayan tip ("Local Delivery") açıklamanın
+  placeholder'ı olarak gösterilir, modele yazılmaz; ilgisiz bir kaydet `description`'ı
+  doldurmaz. Diskte adı olan satıra "Say what this charge is." sorulmaz (`needsChargeLabel`
+  `charge_type_unmapped`'i cevap sayar).
+- **Karar (b), Zafar:** lojistik panosunun nakliye rakamı yalnız kanonik `transport`;
+  eski `loading` satırları rakamdan düşer.
+- `landed_charge_types()` kapısız (derleme zamanı sabiti, kiracıya özgü hiçbir şey yok);
+  gerekçe docstring'de. İki editörde liste ve veri tek `try` içinde ardışık okunur: liste
+  düşerse editör kasıtlı olarak kapalı (seçeneksiz `<select>` kullanılamaz); yorumlar ilk
+  hâlde bağımsızlık iddia ediyordu, üçüncü turda koda uyduruldu.
+- Tekrarlayan desen: kaynak okuyan spec'lerde bildirim ya da yorumla sağlanan regex
+  (`toMatch(/needsChargeLabel\(line\)/)` fonksiyon bildirimiyle yeşil kalıyordu). Kural:
+  `<template>`'den sonra dilimle ve çizen özniteliği (`:class`, `v-if`) doğrula; reviewer'ın
+  mutasyonu (şablondaki her kullanım → `false`) kırmızıya dönmeli.
+
+Yan bulgu (P4'ün değil, önceden var): LCV satır kimliği serbest metinden türetiliyor
+(`lcv.py:276`, `lcv_math.py:53`); backlog'da.

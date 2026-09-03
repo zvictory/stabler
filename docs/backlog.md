@@ -2197,3 +2197,27 @@ yazılmış bir yorumla da geçer. Aynı tuzak ADR-605 serisinde üç kez tetikl
 `test_tender_prewin_landed_estimate.py` `code_only` soyucusu aldı, bu dosya almadı.
 İş: aynı soyucuyu buraya taşı (ya da üçünü tek yardımcıda birleştir), sonra pinlenen
 dizeyi yalnız yoruma yazıp testin kırmızıya döndüğünü göster.
+
+### LCV, bir PO landed satırının kimliğini serbest metinden türetiyor
+`hata` · ölçüldü 2026-09-03, yerel (kaynak okuma + P4 incelemesindeki fark ölçümü)
+
+`stabler/api/lcv.py:276-279`: her PO landed satırı için kimlik
+`label = charge.get("label") or charge.get("type") or "Other"`, tüketilmişlik
+`label in consumed_descriptions` (daha önce gönderilmiş Landed Cost Voucher vergi
+satırlarının açıklamaları); `lcv_math.unconsumed()` (`:251`) tüketilmiş satırı atlar.
+KDV bileşeni de metinden: `lcv_math.is_vat_component` (`:53-55`) `"vat"` alt-dizesine
+bakar.
+
+Sonuç: etiketi boş bir satırın kimliği `type` dizesidir. `type` değişirse (tip
+düzeltmesi, ya da P4'ün ilk hâlindeki gibi editörün kaydette kanonik anahtarı geri
+yazması) satır artık eşleşmez ve `create_additional_lcv` (`lcv.py:486`) aynı masrafı
+değerlemeye ve GL'ye **ikinci kez** yazar. Aynı etikete sahip iki farklı satır ise tek
+satır sayılır. Adında "vat" geçen herhangi bir bileşen (ör. "Private wharfage") LCV'den
+düşer.
+
+P4 (`feat/adr-606-charge-list`) bunu tetiklemeyecek şekilde düzeltildi (editör diskteki
+`type`'ı yalnız operatör değiştirince yazar), ama kimlik modeli aynı kaldı. İş: LCV vergi
+satırına PO satırının kalıcı bir kimliğini yaz (satır id'si ya da `type + label + amount`
+üçlüsü değil, üretilen bir `line_id`), tüketilmişliği o anahtarla eşle; KDV'yi
+`is_recoverable_vat` bayrağından oku, addan değil. DB'ye dokunur → `make test-bench`;
+`test_lcv_integration` (19 test) ve `test_lcv_unification` (3) mevcut davranışı pinliyor.
