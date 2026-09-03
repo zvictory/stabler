@@ -49,6 +49,8 @@ from stabler.api.tender_dimension import (
 	tender_enabled,
 )
 
+#: Only the name a NEWLY CREATED dimension gets. A site that already has a CRM
+#: Deal dimension keeps its own fieldname — see `_ensure_dimension`.
 DIMENSION_FIELDNAME = "tender"
 DEAL_TYPE_OPTIONS = "Standard\nTender\nOverhead"
 
@@ -82,9 +84,10 @@ def execute():
 		_report(counts, "no tender-enabled company on this site — dimension not created")
 		return counts
 
-	counts.update(_ensure_dimension())
+	created, fieldname = _ensure_dimension()
+	counts.update(created)
 	clear_dimension_cache()  # the fieldname was read (as None) before it existed
-	_assert_fields_landed()
+	_assert_fields_landed(fieldname)
 
 	for company in companies:
 		created = ensure_company_setup(company)
@@ -92,7 +95,7 @@ def execute():
 		counts["detail_rows_created"] += int(bool(created["detail_row"]))
 		counts["default_dimensions_filled"] += int(bool(created["default_dimension"]))
 
-	counts.update(backfill(companies, DIMENSION_FIELDNAME))
+	counts.update(backfill(companies, fieldname))
 	frappe.db.commit()
 	_report(counts, f"tender companies: {', '.join(companies)}")
 	return counts
@@ -136,8 +139,17 @@ def _tender_companies() -> list[str]:
 	]
 
 
-def _ensure_dimension() -> dict:
-	"""Reuse the site's CRM Deal dimension, or create it, then install its fields."""
+def _ensure_dimension() -> tuple[dict, str]:
+	"""Reuse the site's CRM Deal dimension, or create it, then install its fields.
+
+	Returns the counts AND the fieldname that is actually in force.
+	`make_dimension_in_accounting_doctypes` installs the 52 Link fields under the
+	DIMENSION's own fieldname, so on a site whose dimension was created by hand
+	under another name every later step — the landed-fields assertion and the
+	backfill's SQL — has to use that name and not `DIMENSION_FIELDNAME`. Getting
+	this wrong throws inside `bench migrate`, which writes no Patch Log row, so
+	every subsequent migrate aborts in the same place.
+	"""
 	from erpnext.accounts.doctype.accounting_dimension.accounting_dimension import (
 		make_dimension_in_accounting_doctypes,
 	)
@@ -146,6 +158,17 @@ def _ensure_dimension() -> dict:
 	existing = frappe.db.get_value("Accounting Dimension", {"document_type": DIMENSION_DOCTYPE}, "name")
 	if existing:
 		dimension = frappe.get_doc("Accounting Dimension", existing)
+		if dimension.get("disabled"):
+			# Every hook reads `dimension_fieldname()`, which filters `disabled: 0`,
+			# so a disabled dimension leaves the whole feature inert while this patch
+			# installs its fields and prints zeros. A second dimension is not an
+			# option either — erpnext's `validate_doctype` refuses a duplicate
+			# `document_type` — so the repair is a human decision, named here.
+			frappe.throw(
+				f"The CRM Deal Accounting Dimension `{existing}` is disabled. "
+				"Enable it or delete it, then run this patch again: while it is "
+				"disabled every tender hook reads no fieldname and does nothing."
+			)
 	else:
 		dimension = frappe.get_doc(
 			{
@@ -163,18 +186,16 @@ def _ensure_dimension() -> dict:
 	make_dimension_in_accounting_doctypes(doc=dimension)
 	after = frappe.db.count("Custom Field", {"fieldname": dimension.fieldname, "options": DIMENSION_DOCTYPE})
 	out["custom_fields_created"] = after - before
-	return out
+	return out, dimension.fieldname
 
 
-def _assert_fields_landed() -> None:
+def _assert_fields_landed(fieldname: str) -> None:
 	missing = [
-		doctype
-		for doctype in _REQUIRED_ON
-		if not frappe.get_meta(doctype, cached=False).has_field(DIMENSION_FIELDNAME)
+		doctype for doctype in _REQUIRED_ON if not frappe.get_meta(doctype, cached=False).has_field(fieldname)
 	]
 	if missing:
 		frappe.throw(
-			f"Tender dimension field `{DIMENSION_FIELDNAME}` is missing on: {', '.join(missing)}. "
+			f"Tender dimension field `{fieldname}` is missing on: {', '.join(missing)}. "
 			"The dimension is half-installed; do not leave it in this state."
 		)
 

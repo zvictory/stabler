@@ -1076,6 +1076,56 @@ class TestPatchV103(unittest.TestCase):
 	def test_is_registered_in_patches_txt(self):
 		self.assertIn("stabler.patches.v103_tender_accounting_dimension", _read("patches.txt"))
 
+	def _hand_made_dimension(self, fieldname: str, disabled: int = 0) -> None:
+		"""A site whose CRM Deal dimension already exists under another name."""
+		self.site.singles[("Accounting Dimension", _ANY_DIMENSION)] = "Ihale"
+		self.site.values[("Accounting Dimension", "Ihale")] = {
+			"document_type": "CRM Deal",
+			"fieldname": fieldname,
+			"disabled": disabled,
+			"dimension_defaults": [],
+		}
+		_drop_dimension(self.site)
+		if not disabled:
+			self.site.singles[("Accounting Dimension", _ENABLED_DIMENSION, "fieldname")] = fieldname
+			self.site.singles[("Accounting Dimension", _ENABLED_DIMENSION, "name")] = "Ihale"
+
+	def test_checks_and_backfills_the_fieldname_the_site_actually_uses(self):
+		"""R3. `make_dimension_in_accounting_doctypes` installs the fields under the
+		DIMENSION's fieldname, not under ours. A patch that then asserts a hardcoded
+		name throws inside `bench migrate`, which writes no Patch Log row — so every
+		later migrate on that site aborts in the same place, forever.
+		"""
+		self._hand_made_dimension("ihale")
+		patch, _mod = self._load_patch()
+		for doctype in patch._REQUIRED_ON:
+			self.site.metas[doctype] = _Meta(["ihale"])
+		self.site.rows_matching = 1
+		self.site.tables.update({"Sales Order", "Sales Order Item"})
+		self.site.columns.update(
+			{
+				("Sales Order", "ihale"),
+				("Sales Order", "custom_crm_deal"),
+				("Sales Order Item", "ihale"),
+			}
+		)
+		patch.execute()
+		statements = " ".join(statement for statement, _params in self.site.sql)
+		self.assertIn("ihale", statements, "the backfill wrote a column this site does not have")
+		self.assertNotIn("`tender`", statements, "the backfill spelled the fieldname it expected to find")
+
+	def test_refuses_a_disabled_dimension_by_name(self):
+		"""R3. `dimension_fieldname()` filters `disabled: 0`, so every hook reads
+		None and does nothing — while the patch installs 52 custom fields, prints
+		zeros and reports success. erpnext refuses a second dimension on the same
+		`document_type`, so there is nothing to create instead: name the action.
+		"""
+		self._hand_made_dimension("ihale", disabled=1)
+		patch, _mod = self._load_patch()
+		with self.assertRaises(_Thrown) as caught:
+			patch.execute()
+		self.assertIn("disabled", str(caught.exception).lower())
+
 
 class TestListActiveTenders(unittest.TestCase):
 	"""B3 — what a picker may offer. The rule lives here, the fields stay in crm.py."""
