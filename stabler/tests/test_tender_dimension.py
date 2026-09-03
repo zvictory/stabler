@@ -664,12 +664,26 @@ class TestDefaultGlTender(unittest.TestCase):
 		self.mod.default_gl_tender(row)
 		self.assertEqual(row.get("tender"), "OVERHEAD-1")
 
-	def test_survives_a_voucher_type_with_no_item_table(self):
-		# Period Closing Voucher has no `items`. Reading rows off it blindly is an
-		# exception raised inside a GL transaction — the posting, not the tag,
-		# is what would fail.
+	def test_leaves_a_period_closing_row_alone(self):
+		"""R5. The year-end close reverses every P&L account into retained earnings.
+
+		Period Closing Voucher is not one of the 52 dimension doctypes and has no
+		`items` table, so nothing about it can name a tender — and defaulting it to
+		GENEL GIDER would book the reversal of EVERY tender's profit and loss onto
+		overhead, which is a wrong closing entry rather than a missing tag. erpnext
+		exempts the same voucher from dimension validation itself (`gl_entry.py`
+		lines 98 and 200), so nothing demands a value here either.
+		"""
 		self.site.metas["Period Closing Voucher"] = _Meta(["company"])
 		row = self._row(voucher_type="Period Closing Voucher", voucher_no="PCV-1")
+		self.mod.default_gl_tender(row)
+		self.assertIsNone(row.get("tender"))
+
+	def test_survives_a_voucher_type_with_no_item_table(self):
+		# Reading rows off a voucher with no `items` table is an exception raised
+		# inside a GL transaction — the POSTING, not the tag, is what would fail.
+		self.site.metas["Landed Cost Voucher"] = _Meta(["company"])
+		row = self._row(voucher_type="Landed Cost Voucher", voucher_no="LCV-1")
 		self.mod.default_gl_tender(row)
 		self.assertEqual(row.get("tender"), "OVERHEAD-1")
 

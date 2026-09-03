@@ -51,6 +51,12 @@ _MANDATORY_CACHE = "stabler_tender_dimension_mandatory"
 _OVERHEAD_CACHE = "stabler_tender_dimension_overhead"
 _MISS = object()
 
+#: The year-end close. Not one of the 52 dimension doctypes, no `items` table,
+#: and exempted from erpnext's own dimension validation (`gl_entry.py` lines 98
+#: and 200) — so nothing here can name a tender and nothing demands one. Stamping
+#: it GENEL GIDER would book the reversal of every tender's P&L onto overhead.
+_CLOSING_VOUCHER = "Period Closing Voucher"
+
 #: Re-entry guard for `on_settings_update`; see that function.
 _SETTINGS_HOOK_FLAG = "stabler_tender_settings_hook_running"
 
@@ -561,6 +567,8 @@ def default_gl_tender(doc, method=None):
 	"""
 	fieldname = dimension_fieldname()
 	if not fieldname or doc.get("is_cancelled") or doc.get(fieldname):
+		return
+	if doc.get("voucher_type") == _CLOSING_VOUCHER:
 		return
 	if not frappe.get_meta("GL Entry").has_field(fieldname):
 		return
