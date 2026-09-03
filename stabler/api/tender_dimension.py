@@ -447,6 +447,153 @@ def default_gl_tender(doc, method=None):
 
 
 # ---------------------------------------------------------------------------
+# B6 — the backfill the patch calls
+# ---------------------------------------------------------------------------
+
+#: `custom_crm_deal` already lives on these parents (patches v28/v30/v34/v68), so
+#: their dimension value is a straight copy and their rows follow the parent.
+_LEGACY_PARENTS = (
+	("Sales Order", "Sales Order Item"),
+	("Purchase Order", "Purchase Order Item"),
+	("Supplier Quotation", "Supplier Quotation Item"),
+	("Request for Quotation", "Request for Quotation Item"),
+)
+
+#: These never carried `custom_crm_deal`, so their value is DERIVED from the
+#: document each line came from — and only when the lines agree on one tender.
+_DERIVED_PARENTS = (
+	("Sales Invoice", "Sales Invoice Item", "sales_order", "Sales Order"),
+	("Delivery Note", "Delivery Note Item", "against_sales_order", "Sales Order"),
+	("Purchase Invoice", "Purchase Invoice Item", "purchase_order", "Purchase Order"),
+)
+
+_GL_VOUCHERS = ("Journal Entry", "Sales Invoice", "Purchase Invoice", "Delivery Note")
+
+
+def _column_exists(doctype: str, column: str) -> bool:
+	"""`has_column` RAISES on a doctype whose table does not exist — probe first."""
+	try:
+		if not frappe.db.table_exists(doctype):
+			return False
+		return bool(frappe.db.has_column(doctype, column))
+	except Exception:
+		return False
+
+
+def _fill(results: dict, label: str, source: str, set_expr: str, where: str, params: dict) -> None:
+	"""Count first, then update the SAME rows.
+
+	The count is what the patch prints, so it has to be the number of rows that
+	actually changed — hence one WHERE, used twice — and a zero count issues no
+	UPDATE at all, which is what makes a re-run provably a no-op.
+	"""
+	rows = frappe.db.sql(f"SELECT COUNT(*) FROM {source} WHERE {where}", params)
+	found = int(rows[0][0]) if rows and rows[0] and rows[0][0] else 0
+	if found:
+		frappe.db.sql(f"UPDATE {source} SET {set_expr} WHERE {where}", params)
+	results[label] = found
+
+
+def backfill(companies: list[str], fieldname: str) -> dict:
+	"""Give history the dimension its documents already implied.
+
+	Raw SQL on purpose: this touches every Sales Order and GL row a tenant has
+	ever written, and running it through the document API would fire every hook,
+	re-validate every submitted voucher and bump `modified` on documents nobody
+	edited — which breaks the SPA's concurrency checks and rewrites their audit
+	trail. Nothing here is a decision: every value copied is one the document
+	already stated. Pre-P5 rows with no stated tender stay EMPTY rather than being
+	given GENEL GİDER, so P5b can report them honestly as unassigned.
+
+	Returns `{table: rows_updated}`; a second run returns zeros.
+	"""
+	results: dict = {}
+	if not companies or not fieldname:
+		return results
+	# The fieldname cannot be bound as a parameter — it is an identifier. ERPNext
+	# validates it on the Accounting Dimension, but this module is what would
+	# carry the injection if that ever stopped being true.
+	if not all(part.isidentifier() for part in [fieldname]) or not fieldname.islower():
+		frappe.throw(_("Refusing to build SQL for dimension fieldname {0}.").format(fieldname))
+
+	params = {"companies": tuple(companies)}
+	deal = LEGACY_DEAL_FIELD
+
+	for parent, child in _LEGACY_PARENTS:
+		if not _column_exists(parent, fieldname) or not _column_exists(parent, deal):
+			continue
+		_fill(
+			results,
+			parent,
+			f"`tab{parent}`",
+			f"`{fieldname}` = `{deal}`",
+			f"company IN %(companies)s AND COALESCE(`{fieldname}`, '') = '' AND COALESCE(`{deal}`, '') <> ''",
+			params,
+		)
+		if _column_exists(child, fieldname):
+			_fill(results, child, *_from_parent(parent, child, fieldname, fieldname), params)
+
+	if _column_exists("Journal Entry", deal) and _column_exists("Journal Entry Account", fieldname):
+		_fill(
+			results,
+			"Journal Entry Account",
+			*_from_parent("Journal Entry", "Journal Entry Account", fieldname, deal),
+			params,
+		)
+
+	for parent, child, link, source in _DERIVED_PARENTS:
+		if not _column_exists(parent, fieldname) or not _column_exists(source, fieldname):
+			continue
+		if not _column_exists(child, link):
+			continue
+		agreed = (
+			f"(SELECT ci.parent AS doc, MIN(s.`{fieldname}`) AS val, "
+			f"COUNT(DISTINCT s.`{fieldname}`) AS n FROM `tab{child}` ci "
+			f"JOIN `tab{source}` s ON s.name = ci.`{link}` "
+			f"WHERE ci.parenttype = '{parent}' AND COALESCE(s.`{fieldname}`, '') <> '' "
+			f"GROUP BY ci.parent)"
+		)
+		_fill(
+			results,
+			parent,
+			f"`tab{parent}` p JOIN {agreed} d ON d.doc = p.name AND d.n = 1",
+			f"p.`{fieldname}` = d.val",
+			f"p.company IN %(companies)s AND COALESCE(p.`{fieldname}`, '') = ''",
+			params,
+		)
+		if _column_exists(child, fieldname):
+			_fill(results, child, *_from_parent(parent, child, fieldname, fieldname), params)
+
+	if _column_exists("GL Entry", fieldname):
+		for voucher in _GL_VOUCHERS:
+			# A Journal Entry's document-level tender IS `custom_crm_deal`: its
+			# parent is not one of the 52 dimension doctypes, only its rows are.
+			source_field = deal if voucher == "Journal Entry" else fieldname
+			if not _column_exists(voucher, source_field):
+				continue
+			_fill(
+				results,
+				f"GL Entry ({voucher})",
+				f"`tabGL Entry` g JOIN `tab{voucher}` p ON p.name = g.voucher_no",
+				f"g.`{fieldname}` = p.`{source_field}`",
+				f"g.voucher_type = '{voucher}' AND g.company IN %(companies)s "
+				f"AND COALESCE(g.`{fieldname}`, '') = '' AND COALESCE(p.`{source_field}`, '') <> ''",
+				params,
+			)
+	return results
+
+
+def _from_parent(parent: str, child: str, fieldname: str, source_field: str) -> tuple[str, str, str]:
+	"""The (source, SET, WHERE) that copies a parent's value onto its own rows."""
+	return (
+		f"`tab{child}` c JOIN `tab{parent}` p ON p.name = c.parent AND c.parenttype = '{parent}'",
+		f"c.`{fieldname}` = p.`{source_field}`",
+		f"p.company IN %(companies)s AND COALESCE(c.`{fieldname}`, '') = '' "
+		f"AND COALESCE(p.`{source_field}`, '') <> ''",
+	)
+
+
+# ---------------------------------------------------------------------------
 # B7 — Stabler Company Modules
 # ---------------------------------------------------------------------------
 

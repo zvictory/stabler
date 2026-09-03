@@ -116,6 +116,20 @@ class _Site:
 		self.inserted = []
 		self.dimension = "tender"
 		self.columns = set()  # (doctype, column) pairs that exist
+		self.tables = set()  # doctypes whose table exists
+		self.sql = []  # every statement, in order
+		self.rows_matching = 0  # what a SELECT COUNT(*) reports
+		self.saved = []  # every doc.save()
+
+
+class _Row(dict):
+	"""A child row, which Frappe hands back with attribute access."""
+
+	def __getattr__(self, key):
+		return self.get(key)
+
+	def __setattr__(self, key, value):
+		self[key] = value
 
 
 class _Thrown(Exception):
@@ -138,8 +152,14 @@ def _load(site: _Site):
 
 	def _get_value(doctype, name_or_filters, fields=None, as_dict=False, **_kwargs):
 		if isinstance(name_or_filters, dict):
-			key = (doctype, tuple(sorted(name_or_filters.items())))
-			return site.singles.get(key)
+			# Keyed on the requested FIELD too: the same filter is used to read the
+			# dimension's `fieldname` and its `name`, and a stub that conflated the
+			# two would hide a caller asking for the wrong one.
+			where = tuple(sorted(name_or_filters.items()))
+			field_key = fields if isinstance(fields, str) else tuple(fields or ())
+			if (doctype, where, field_key) in site.singles:
+				return site.singles[(doctype, where, field_key)]
+			return site.singles.get((doctype, where))
 		site.reads.append((doctype, name_or_filters, tuple(fields or ())))
 		row = site.values.get((doctype, name_or_filters))
 		if row is None:
@@ -149,22 +169,46 @@ def _load(site: _Site):
 		picked = {f: row.get(f) for f in (fields or [])}
 		return picked if as_dict else [picked[f] for f in (fields or [])]
 
+	def _has_column(dt, col):
+		if site.tables and dt not in site.tables:
+			# Mirrors the real thing: `has_column` raises TableMissingError rather
+			# than returning False when the doctype's table does not exist.
+			raise LookupError(f"table missing: {dt}")
+		return (dt, col) in site.columns
+
+	def _sql(statement, params=None, **_kwargs):
+		site.sql.append((" ".join(str(statement).split()), params))
+		return [[site.rows_matching]] if "COUNT(*)" in statement else []
+
 	frappe.db = types.SimpleNamespace(
 		get_value=_get_value,
-		has_column=lambda dt, col: (dt, col) in site.columns,
+		has_column=_has_column,
+		table_exists=lambda dt: (dt in site.tables) if site.tables else True,
 		exists=lambda dt, name: bool(site.values.get((dt, name)) if isinstance(name, str) else None),
-		sql=lambda *_a, **_k: [],
+		count=lambda dt, filters=None: len(site.lists.get(dt, [])),
+		set_value=lambda *_a, **_k: None,
+		commit=lambda: None,
+		sql=_sql,
 	)
+	frappe.clear_cache = lambda **_k: None
 	frappe.get_meta = lambda doctype, cached=True: site.metas.get(doctype, _Meta([]))
 	frappe.get_cached_value = lambda dt, name, field: site.accounts.get(name) if dt == "Account" else None
 	frappe.get_all = lambda doctype, **kwargs: _get_all(site, doctype, **kwargs)
 	frappe.get_list = frappe.get_all
 
-	def _get_doc(payload):
-		doc = _Doc(payload.get("doctype"), **payload)
+	def _get_doc(payload, name=None):
+		if isinstance(payload, str):
+			stored = site.values.get((payload, name))
+			doc = _Doc(payload, **(stored or {}))
+			doc.name = name
+		else:
+			fields = {k: v for k, v in payload.items() if k != "doctype"}
+			doc = _Doc(payload.get("doctype"), **fields)
+			doc.name = f"{payload.get('doctype')}-NEW"
+			doc.insert = lambda **kw: site.inserted.append(({"doctype": doc.doctype, **doc}, kw))
 		doc.flags = types.SimpleNamespace()
-		doc.name = f"{payload.get('doctype')}-NEW"
-		doc.insert = lambda **kw: site.inserted.append((payload, kw))
+		doc.append = lambda table, row: doc.setdefault(table, []).append(_Row(row))
+		doc.save = lambda **kw: site.saved.append((doc.doctype, doc.name, dict(doc)))
 		return doc
 
 	frappe.get_doc = _get_doc
@@ -196,12 +240,27 @@ def _get_all(site: _Site, doctype: str, **kwargs):
 	return rows
 
 
+#: How the dimension is looked up: enabled, over CRM Deal.
+_ENABLED_DIMENSION = (("disabled", 0), ("document_type", "CRM Deal"))
+#: How the patch looks it up: any CRM Deal dimension, enabled or not.
+_ANY_DIMENSION = (("document_type", "CRM Deal"),)
+
+
+def _drop_dimension(site: _Site) -> None:
+	for key in (
+		("Accounting Dimension", _ENABLED_DIMENSION, "fieldname"),
+		("Accounting Dimension", _ENABLED_DIMENSION, "name"),
+	):
+		site.singles.pop(key, None)
+
+
 def _tender_site() -> _Site:
 	"""`_Test Company` with the tender module on and the dimension installed."""
 	site = _Site()
 	site.modules["_Test Company"] = {"tender": True}
 	site.modules["Plain Co"] = {"tender": False}
-	site.singles[("Accounting Dimension", (("disabled", 0), ("document_type", "CRM Deal")))] = "tender"
+	site.singles[("Accounting Dimension", _ENABLED_DIMENSION, "fieldname")] = "tender"
+	site.singles[("Accounting Dimension", _ENABLED_DIMENSION, "name")] = "Tender"
 	site.singles[("CRM Deal", (("company", "_Test Company"), ("deal_type", "Overhead")))] = "OVERHEAD-1"
 	site.metas["GL Entry"] = _Meta(["company", "account", "tender", "is_cancelled"])
 	site.columns.add(("CRM Deal", "custom_tender_stage"))
@@ -222,13 +281,13 @@ class TestDimensionFieldname(unittest.TestCase):
 		# every writer below is a no-op in that state, which is what keeps the
 		# feature invisible on the six non-tender sites.
 		site = _tender_site()
-		site.singles.pop(("Accounting Dimension", (("disabled", 0), ("document_type", "CRM Deal"))))
+		_drop_dimension(site)
 		mod = _load(site)
 		self.assertIsNone(mod.dimension_fieldname())
 
 	def test_honours_a_fieldname_created_by_hand(self):
 		site = _tender_site()
-		site.singles[("Accounting Dimension", (("disabled", 0), ("document_type", "CRM Deal")))] = "ihale"
+		site.singles[("Accounting Dimension", _ENABLED_DIMENSION, "fieldname")] = "ihale"
 		mod = _load(site)
 		self.assertEqual(mod.dimension_fieldname(), "ihale")
 
@@ -237,7 +296,7 @@ class TestDimensionFieldname(unittest.TestCase):
 		# dimension was created by hand as `ihale`, the document hook and the GL
 		# hook must write `ihale`. A literal anywhere in the chain fails here.
 		site = _tender_site()
-		site.singles[("Accounting Dimension", (("disabled", 0), ("document_type", "CRM Deal")))] = "ihale"
+		site.singles[("Accounting Dimension", _ENABLED_DIMENSION, "fieldname")] = "ihale"
 		site.metas["GL Entry"] = _Meta(["company", "account", "ihale", "is_cancelled"])
 		site.metas["Sales Order"] = _Meta(
 			["company", "ihale", "custom_crm_deal"], {"items": "Sales Order Item"}
@@ -570,6 +629,293 @@ class TestDefaultGlTender(unittest.TestCase):
 		with self.assertRaises(_Thrown):
 			self.mod.default_gl_tender(row)
 		self.assertEqual(self.site.inserted, [], "a GL posting created a CRM Deal")
+
+
+class TestEnsureCompanySetup(unittest.TestCase):
+	"""B1 — the per-company half: one overhead deal, one detail row."""
+
+	def setUp(self):
+		self.site = _tender_site()
+		self.site.values[("Accounting Dimension", "Tender")] = {
+			"document_type": "CRM Deal",
+			"fieldname": "tender",
+			"dimension_defaults": [],
+		}
+		self.site.lists["CRM Deal Status"] = [{"name": "Qualification"}]
+		self.mod = _load(self.site)
+
+	def test_a_company_without_the_flag_gets_nothing(self):
+		# The tenant boundary, stated as data: no detail row means no mandatory
+		# check, and no overhead deal means no CRM row on a tenant that never
+		# asked for one.
+		created = self.mod.ensure_company_setup("Plain Co")
+		self.assertEqual(created, {"overhead_deal": False, "detail_row": False, "default_dimension": False})
+		self.assertEqual(self.site.inserted, [])
+		self.assertEqual(self.site.saved, [])
+
+	def test_creates_the_overhead_deal_and_the_detail_row(self):
+		self.site.singles.pop(("CRM Deal", (("company", "_Test Company"), ("deal_type", "Overhead"))))
+		created = self.mod.ensure_company_setup("_Test Company")
+		self.assertTrue(created["overhead_deal"])
+		self.assertTrue(created["detail_row"])
+		payload = self.site.inserted[0][0]
+		self.assertEqual(payload["organization"], "GENEL GİDER")
+		self.assertEqual(payload["deal_type"], "Overhead")
+		self.assertEqual(payload["company"], "_Test Company")
+		# `ignore_mandatory` because a CRM Deal normally demands tender fields this
+		# ledger bucket must not have.
+		self.assertTrue(self.site.inserted[0][1].get("ignore_mandatory"))
+		row = self.site.saved[0][2]["dimension_defaults"][0]
+		self.assertEqual(row["company"], "_Test Company")
+		self.assertEqual(row["mandatory_for_pl"], 1)
+		self.assertEqual(row["mandatory_for_bs"], 0)
+		self.assertEqual(row["reference_document"], "CRM Deal")
+
+	def test_is_idempotent_when_the_row_already_names_a_default(self):
+		self.site.values[("Accounting Dimension", "Tender")]["dimension_defaults"] = [
+			_Row({"company": "_Test Company", "default_dimension": "OVERHEAD-1", "mandatory_for_pl": 1})
+		]
+		created = self.mod.ensure_company_setup("_Test Company")
+		self.assertEqual(created, {"overhead_deal": False, "detail_row": False, "default_dimension": False})
+		self.assertEqual(self.site.saved, [], "a second run rewrote the dimension")
+
+	def test_never_turns_the_mandatory_check_off(self):
+		# Someone unticking `mandatory_for_pl` by hand is a decision this patch may
+		# not silently make, but re-running must never make it either.
+		self.site.values[("Accounting Dimension", "Tender")]["dimension_defaults"] = [
+			_Row({"company": "_Test Company", "default_dimension": "", "mandatory_for_pl": 0})
+		]
+		self.mod.ensure_company_setup("_Test Company")
+		saved_row = self.site.saved[0][2]["dimension_defaults"][0]
+		self.assertEqual(saved_row["default_dimension"], "OVERHEAD-1")
+		self.assertEqual(saved_row["mandatory_for_pl"], 0, "the patch flipped a flag a human had cleared")
+
+
+class TestBackfill(unittest.TestCase):
+	"""B6 — the historical half. Raw SQL, no doc events, `modified` untouched."""
+
+	def setUp(self):
+		self.site = _tender_site()
+		self.site.tables = {
+			"Sales Order",
+			"Sales Order Item",
+			"Purchase Order",
+			"Purchase Order Item",
+			"Supplier Quotation",
+			"Supplier Quotation Item",
+			"Request for Quotation",
+			"Request for Quotation Item",
+			"Journal Entry",
+			"Journal Entry Account",
+			"Sales Invoice",
+			"Sales Invoice Item",
+			"Delivery Note",
+			"Delivery Note Item",
+			"Purchase Invoice",
+			"Purchase Invoice Item",
+			"GL Entry",
+		}
+		for table in self.site.tables:
+			self.site.columns.add((table, "tender"))
+			self.site.columns.add((table, "custom_crm_deal"))
+		for child, link in (
+			("Sales Invoice Item", "sales_order"),
+			("Delivery Note Item", "against_sales_order"),
+			("Purchase Invoice Item", "purchase_order"),
+		):
+			self.site.columns.add((child, link))
+		self.site.rows_matching = 3
+		self.mod = _load(self.site)
+
+	def _run(self):
+		return self.mod.backfill(["_Test Company"], "tender")
+
+	def test_reports_what_it_changed_per_table(self):
+		counts = self._run()
+		self.assertTrue(counts, "the backfill reported nothing at all")
+		self.assertEqual(set(counts.values()), {3})
+
+	def test_a_second_run_reports_zeros_and_writes_nothing(self):
+		# Idempotence is the property the deploy depends on: this patch runs on
+		# eight sites and again on every migrate.
+		self.site.rows_matching = 0
+		counts = self._run()
+		self.assertEqual(set(counts.values()), {0})
+		self.assertEqual(
+			[s for s, _p in self.site.sql if s.startswith("UPDATE")],
+			[],
+			"a no-op run still issued UPDATEs",
+		)
+
+	def test_every_update_is_counted_by_the_same_where(self):
+		# The number the patch prints has to be the number of rows that changed —
+		# a COUNT over a different WHERE is a report nobody can check.
+		self._run()
+		counts = [s for s, _p in self.site.sql if s.startswith("SELECT COUNT(*)")]
+		updates = [s for s, _p in self.site.sql if s.startswith("UPDATE")]
+		self.assertEqual(len(counts), len(updates))
+		for select, update in zip(counts, updates, strict=True):
+			# rsplit: the derived statements carry a WHERE inside their subquery too.
+			self.assertEqual(select.rsplit(" WHERE ", 1)[1], update.rsplit(" WHERE ", 1)[1])
+
+	def test_never_touches_modified(self):
+		# A backfill that bumps `modified` breaks every optimistic-concurrency
+		# check the SPA holds and rewrites the audit trail of documents nobody
+		# edited.
+		self._run()
+		for statement, _params in self.site.sql:
+			self.assertNotIn("modified", statement)
+
+	def test_scopes_every_statement_to_the_named_companies_by_parameter(self):
+		# Tenant isolation: a company list spliced into the SQL text is both a
+		# leak waiting to happen and an injection surface.
+		self._run()
+		for statement, params in self.site.sql:
+			self.assertIn("IN %(companies)s", statement)
+			self.assertEqual(params, {"companies": ("_Test Company",)})
+			self.assertNotIn("_Test Company", statement)
+
+	def test_derives_an_invoice_only_from_orders_that_agree(self):
+		# Two source orders naming two tenders leave the invoice alone: picking one
+		# would attribute the whole invoice to half of its own lines.
+		self._run()
+		derived = [s for s, _p in self.site.sql if "COUNT(DISTINCT" in s and s.startswith("UPDATE")]
+		self.assertEqual(len(derived), 3, "Sales Invoice, Delivery Note and Purchase Invoice")
+		for statement in derived:
+			self.assertIn("d.n = 1", statement)
+
+	def test_reads_the_delivery_note_link_erpnext_actually_stores(self):
+		# Delivery Note Item carries `against_sales_order`, not `sales_order`.
+		# Getting this wrong silently backfills nothing and looks like success.
+		self._run()
+		joined = " ".join(s for s, _p in self.site.sql if "Delivery Note" in s)
+		self.assertIn("against_sales_order", joined)
+
+	def test_never_writes_the_overhead_deal_onto_history(self):
+		# Pre-P5 rows stay empty so P5b can report them as "unassigned before P5".
+		# Stamping GENEL GİDER would invent a decision nobody made.
+		self._run()
+		for statement, _params in self.site.sql:
+			self.assertNotIn("GENEL", statement)
+			self.assertNotIn("Overhead", statement)
+
+	def test_skips_a_table_whose_legacy_column_never_landed(self):
+		self.site.columns = {c for c in self.site.columns if c != ("Supplier Quotation", "custom_crm_deal")}
+		self.mod.clear_dimension_cache()
+		counts = self._run()
+		self.assertNotIn("Supplier Quotation", counts)
+
+	def test_refuses_a_fieldname_that_is_not_a_plain_column(self):
+		# The fieldname is interpolated into SQL (it cannot be bound). It comes
+		# from a doctype ERPNext validates, but this module is what would carry the
+		# injection if that ever changed.
+		with self.assertRaises(_Thrown):
+			self.mod.backfill(["_Test Company"], "tender`; DROP TABLE `tabGL Entry")
+		self.assertEqual(self.site.sql, [])
+
+
+class TestPatchV103(unittest.TestCase):
+	"""B2 — the patch, run twice, against a stand-in site."""
+
+	def setUp(self):
+		self.site = _tender_site()
+		self.site.tables = {"CRM Deal", "Company", "Stabler Company Modules", "GL Entry"}
+		self.site.columns.add(("CRM Deal", "deal_type"))
+		self.site.lists["Company"] = [{"name": "_Test Company"}, {"name": "Plain Co"}]
+		self.site.lists["CRM Deal Status"] = [{"name": "Qualification"}]
+		self.site.values[("Accounting Dimension", "Tender")] = {
+			"document_type": "CRM Deal",
+			"fieldname": "tender",
+			"dimension_defaults": [_Row({"company": "_Test Company", "default_dimension": "OVERHEAD-1"})],
+		}
+		self.site.singles[("Custom Field", (("dt", "CRM Deal"), ("fieldname", "deal_type")))] = {
+			"name": "CRM Deal-deal_type",
+			"options": "Standard\nTender",
+		}
+		self.site.rows_matching = 0
+		self.landed = []
+
+	def _load_patch(self, all_fields_present=True):
+		mod = _load(self.site)
+		frappe = importlib.import_module("frappe")
+		present = ["tender"] if all_fields_present else []
+		for doctype in (
+			"GL Entry",
+			"Journal Entry Account",
+			"Sales Invoice",
+			"Purchase Invoice",
+			"Sales Order",
+			"Purchase Order",
+		):
+			self.site.metas[doctype] = _Meta(present)
+		erp = types.ModuleType("erpnext.accounts.doctype.accounting_dimension.accounting_dimension")
+		erp.make_dimension_in_accounting_doctypes = lambda doc=None: self.landed.append(doc)
+		_SANDBOX.evict("stabler.patches.v103_tender_accounting_dimension")
+		_SANDBOX.install({"erpnext.accounts.doctype.accounting_dimension.accounting_dimension": erp})
+		self.assertIs(frappe, importlib.import_module("frappe"))
+		return importlib.import_module("stabler.patches.v103_tender_accounting_dimension"), mod
+
+	def test_creates_the_dimension_and_installs_its_fields_itself(self):
+		# Outside tests `Accounting Dimension.on_update` only ENQUEUES the field
+		# creation. A patch that trusts that finishes, prints OK, and leaves the
+		# site with a dimension and no columns until a worker happens to run.
+		_drop_dimension(self.site)
+		self.site.singles[("Accounting Dimension", _ANY_DIMENSION)] = None
+		patch, _mod = self._load_patch()
+		patch.execute()
+		self.assertEqual(len(self.landed), 1, "make_dimension_in_accounting_doctypes was not called directly")
+		payload = [p for p, _kw in self.site.inserted if p.get("doctype") == "Accounting Dimension"]
+		self.assertEqual(payload[0]["label"], "Tender")
+		self.assertEqual(payload[0]["fieldname"], "tender")
+		self.assertEqual(payload[0]["document_type"], "CRM Deal")
+
+	def test_fails_loudly_when_a_field_did_not_land(self):
+		# A half-installed dimension is worse than none: `mandatory_for_pl` is on
+		# and the column the check reads does not exist.
+		self.site.singles[("Accounting Dimension", _ANY_DIMENSION)] = "Tender"
+		patch, _mod = self._load_patch(all_fields_present=False)
+		with self.assertRaises(_Thrown) as caught:
+			patch.execute()
+		self.assertIn("GL Entry", str(caught.exception))
+
+	def test_stops_before_the_dimension_on_a_site_with_no_tender_company(self):
+		# The 52 Link fields must not appear on a tenant that does not run tenders.
+		self.site.modules = {"_Test Company": {"tender": False}, "Plain Co": {"tender": False}}
+		self.site.singles[("Accounting Dimension", _ANY_DIMENSION)] = None
+		patch, _mod = self._load_patch()
+		patch.execute()
+		self.assertEqual(self.landed, [], "a non-tender site got the dimension")
+		self.assertEqual([p for p, _kw in self.site.inserted], [])
+
+	def test_widens_deal_type_before_it_needs_the_option(self):
+		# `overhead_deal(create=True)` writes deal_type "Overhead"; a Select that
+		# does not offer it stores the value and shows an empty box.
+		self.site.singles[("Accounting Dimension", _ANY_DIMENSION)] = "Tender"
+		patch, _mod = self._load_patch()
+		patch.execute()
+		self.assertIn("Overhead", patch.DEAL_TYPE_OPTIONS)
+
+	def test_a_second_run_changes_nothing(self):
+		self.site.singles[("Accounting Dimension", _ANY_DIMENSION)] = "Tender"
+		self.site.singles[("Custom Field", (("dt", "CRM Deal"), ("fieldname", "deal_type")))] = {
+			"name": "CRM Deal-deal_type",
+			"options": "Standard\nTender\nOverhead",
+		}
+		patch, _mod = self._load_patch()
+		patch.execute()
+		self.site.sql.clear()
+		self.site.inserted.clear()
+		self.site.saved.clear()
+		counts = patch.execute()
+		self.assertEqual(self.site.inserted, [], "a second run inserted a document")
+		self.assertEqual(self.site.saved, [], "a second run saved a document")
+		self.assertEqual(
+			[s for s, _p in self.site.sql if s.startswith("UPDATE")], [], "a second run issued an UPDATE"
+		)
+		self.assertTrue(all(v == 0 for v in counts.values()), f"a second run reported {counts}")
+
+	def test_is_registered_in_patches_txt(self):
+		self.assertIn("stabler.patches.v103_tender_accounting_dimension", _read("patches.txt"))
 
 
 class TestHooksRegistration(unittest.TestCase):
