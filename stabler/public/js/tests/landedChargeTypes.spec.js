@@ -38,6 +38,11 @@ const CANONICAL = [...catalogue.matchAll(/\{"key": "([a-z]+)", "label": "([^"]+)
 	([, key, label]) => ({ key, label }),
 );
 
+/** The server's VAT aliases, read from the module that defines them. */
+const VAT_ALIASES = [
+	...(catalogue.match(/_VAT_ALIASES = frozenset\(\{([^}]*)\}\)/)?.[1] || "").matchAll(/"([^"]+)"/g),
+].map(([, alias]) => alias);
+
 function braceMatched(src, from) {
 	let depth = 0;
 	for (let i = from; i < src.length; i++) {
@@ -91,6 +96,9 @@ describe("the list is defined once, on the server", () => {
 			"legal",
 			"other",
 		]);
+		// Same guard, for the other list this spec reads out of that module:
+		// a regex that matched nothing would make the invariant below vacuous.
+		expect(VAT_ALIASES).toEqual(["vat", "value added tax", "ндс"]);
 	});
 
 	it("neither editor carries a charge-type list of its own", () => {
@@ -345,6 +353,15 @@ describe("un-ticking recoverable VAT is an edit, and has to reach the store", ()
 		return row;
 	};
 
+	/** `_landed.parse_landed_charges`, for the one field under test: the flag
+	 *  comes back FORCED when the STORED spelling is an alias. Modelled here
+	 *  rather than stubbed, and from the server's own table (parsed above) so
+	 *  this spec cannot drift from the read it is claiming about. */
+	const readBack = (sent) => {
+		const spelling = String(sent.charge_type || "").trim().toLowerCase();
+		return { ...sent, is_recoverable_vat: Boolean(sent.is_recoverable_vat) || VAT_ALIASES.includes(spelling) };
+	};
+
 	/** Exactly what `parse_landed_charges` returns for a line stored as "VAT"
 	 *  with `is_recoverable_vat` false on disk: the flag comes back FORCED. */
 	const SERVER_VAT_STORED_FALSE = {
@@ -469,6 +486,104 @@ describe("un-ticking recoverable VAT is an edit, and has to reach the store", ()
 		const sent = load(editor, "savedChargeLine")(untickedRow);
 		expect(sent.is_recoverable_vat).toBe(false);
 		expect(sent.charge_type).toBe("other");
+	});
+
+	it("retires the alias fact when the officer renames the line", () => {
+		// The P0 in e300618, and the false premise under it: the un-tick was NOT
+		// the only edit available on an alias-spelled line. The <select> is the
+		// second, `needsChargeLabel` red-flags exactly these rows and invites a
+		// pick, and `onTypeChange` moved only `charge_type` — so after renaming
+		// a stored "VAT" line to Freight, `charge_type_is_vat` was a stale true
+		// and `savedChargeLine` sent the disk's false while the box on screen
+		// still read ticked. None of the nine canonical keys is a VAT alias, so
+		// the server never forces the flag again: the officer sees a line
+		// excluded from the footer and saves one that capitalizes 300 into
+		// `base_landed_total` — which is what `rank_quotations_landed` ranks and
+		// `_snapshot_rows` freezes. An award decided against a total nobody saw.
+		//
+		// So a type change retires the fact too, and the checkbox follows the
+		// disk on the way past: the officer WATCHES the box un-tick and can
+		// re-tick it if the charge really is recoverable.
+		// WHAT WOULD MAKE THIS FAIL: `onTypeChange` moving only `charge_type`.
+		const renamed = (valued) => {
+			const row = load(editor, "loadedLine")(valued);
+			row.charge_type_canonical = "transport";
+			load(editor, "onTypeChange")(row);
+			return row;
+		};
+
+		const fromFalse = renamed(SERVER_VAT_STORED_FALSE);
+		expect(fromFalse.is_recoverable_vat).toBe(false);
+		expect(fromFalse.charge_type_is_vat).toBe(false);
+		expect(load(editor, "savedChargeLine")(fromFalse)).toMatchObject({
+			charge_type: "transport",
+			is_recoverable_vat: false,
+		});
+
+		// Stored true: nothing invented, nothing lost — the box stays ticked.
+		const fromTrue = renamed(SERVER_VAT_STORED_TRUE);
+		expect(fromTrue.is_recoverable_vat).toBe(true);
+		expect(load(editor, "savedChargeLine")(fromTrue)).toMatchObject({
+			charge_type: "transport",
+			is_recoverable_vat: true,
+		});
+	});
+
+	it("shows the officer the state the next read will show them", () => {
+		// The invariant the P0 broke, stated over every edit sequence a row can
+		// reach rather than over the one that happened to be found. Not
+		// `sent === shown`: round 4 made the no-edit save on an alias-spelled
+		// line send the disk's flag while displaying the forced one, and that is
+		// correct precisely BECAUSE the read forces it again. What must hold is
+		// one step further out — the screen the officer is looking at is the
+		// screen they get back. Anything else is an estimate that changed itself
+		// while nobody was looking, and `base_landed_total` is downstream of it.
+		// WHAT WOULD MAKE THIS FAIL: any edit that leaves `charge_type_is_vat`
+		// disagreeing with the `charge_type` beside it.
+		const onVat = load(editor, "onVatChange");
+		const onType = load(editor, "onTypeChange");
+		const sequences = {
+			"no edit": () => {},
+			"un-tick": (r) => {
+				r.is_recoverable_vat = false;
+				onVat(r);
+			},
+			"un-tick, then re-tick": (r) => {
+				r.is_recoverable_vat = false;
+				onVat(r);
+				r.is_recoverable_vat = true;
+				onVat(r);
+			},
+			"type change": (r) => {
+				r.charge_type_canonical = "transport";
+				onType(r);
+			},
+			"type change, then tick": (r) => {
+				r.charge_type_canonical = "transport";
+				onType(r);
+				r.is_recoverable_vat = true;
+				onVat(r);
+			},
+			"tick, then type change": (r) => {
+				r.is_recoverable_vat = true;
+				onVat(r);
+				r.charge_type_canonical = "transport";
+				onType(r);
+			},
+		};
+		for (const [state, valued] of Object.entries({
+			"VAT, stored false": SERVER_VAT_STORED_FALSE,
+			"VAT, stored true": SERVER_VAT_STORED_TRUE,
+			"Freight, stored true": SERVER_FREIGHT_STORED_TRUE,
+		})) {
+			for (const [name, edit] of Object.entries(sequences)) {
+				const row = load(editor, "loadedLine")(valued);
+				edit(row);
+				const shown = row.is_recoverable_vat;
+				const reread = readBack(load(editor, "savedChargeLine")(row));
+				expect(reread.is_recoverable_vat, `${state} + ${name}`).toBe(shown);
+			}
+		}
 	});
 
 	it("takes the fact from the server, and does not keep a list of its own", () => {

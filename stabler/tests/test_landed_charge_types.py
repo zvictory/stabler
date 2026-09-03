@@ -371,6 +371,13 @@ class TestLegacyVatIsStillExcluded(unittest.TestCase):
 			("VAT", True, 0.0),
 			("Freight", True, 0.0),  # hand-ticked, so excluded
 			("other", False, 300.0),  # un-ticked: the type moved, and it counts
+			# The fifth shape, and the one the review's P0 was about. It is
+			# reachable ONLY through an officer's explicit pick in the <select>,
+			# with the box visibly un-ticked as they do it: `onTypeChange`
+			# retires the alias fact and puts the flag back to what the disk
+			# said. Reached any other way -- a stale `charge_type_is_vat` -- it
+			# is 300 capitalizing into a total the officer was shown as 0.
+			("transport", False, 300.0),
 		):
 			with self.subTest(charge_type=charge_type, is_recoverable_vat=flag):
 				total, _clean, _has = parse_landed_charges(

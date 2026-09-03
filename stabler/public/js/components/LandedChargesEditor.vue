@@ -110,8 +110,28 @@ function needsChargeLabel(line) {
 // The one thing that renames a stored line: the officer choosing another type.
 // Everything else — an amount, a currency, a rate — leaves `charge_type` exactly
 // as it was read. See `loadedLine`.
+//
+// Renaming an alias-spelled line also RETIRES the alias fact, because the
+// forcing that produced it is about to stop applying: none of the nine canonical
+// keys is a VAT spelling, so once the type moves the server will never turn the
+// flag on again. Leaving `charge_type_is_vat` true was a P0 — `savedChargeLine`
+// went on sending the disk's flag while the checkbox showed the forced one, so
+// renaming a stored "VAT" line to Freight saved a charge that capitalizes 300
+// into `base_landed_total` while the footer in front of the officer still read
+// 0. That is the total `rank_quotations_landed` ranks and `_snapshot_rows`
+// freezes: an award decided against a figure nobody was shown.
+//
+// The flag follows the disk rather than the display, and the officer watches the
+// box un-tick. Sending the displayed `true` instead would persist the alias
+// table's invented flag onto a line that can never be re-forced — the drift made
+// permanent rather than removed. If the charge really is recoverable VAT, the
+// box is one click away and that click is the officer's, not the table's.
 function onTypeChange(line) {
 	line.charge_type = line.charge_type_canonical;
+	if (line.charge_type_is_vat) {
+		line.is_recoverable_vat = Boolean(line.is_recoverable_vat_stored);
+		line.charge_type_is_vat = false;
+	}
 }
 
 // …and the one exception, because here leaving `charge_type` alone is what
@@ -305,12 +325,15 @@ function savedChargeLine(c) {
 		//
 		// So the same rule `charge_type` follows — hand back what was loaded
 		// unless the officer changed it. No "touched" tracking is needed to know
-		// that: on an alias-spelled line the box is displayed ticked, so the only
-		// edit available is the un-tick, and `onVatChange` clears
-		// `charge_type_is_vat` on exactly that edge, after which the displayed
-		// flag is what travels. `flag && !charge_type_is_vat` would not do — it
-		// merely inverts the drift, normalising to false the rows an older editor
-		// had already persisted as true.
+		// that, because `charge_type_is_vat` IS the tracking: it says the flag on
+		// screen is the alias table's answer and not the officer's, and BOTH
+		// edits that can make it the officer's retire it — the un-tick, in
+		// `onVatChange`, and a type change, in `onTypeChange`. After either, the
+		// displayed flag is what travels. (Round 4 recorded the un-tick as the
+		// only such edit. It was not: the <select> is right beside the box, and
+		// missing it cost a P0.) `flag && !charge_type_is_vat` would not do
+		// either — it merely inverts the drift, normalising to false the rows an
+		// older editor had already persisted as true.
 		is_recoverable_vat: c.charge_type_is_vat
 			? Boolean(c.is_recoverable_vat_stored)
 			: Boolean(c.is_recoverable_vat),
