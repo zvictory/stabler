@@ -389,7 +389,7 @@ Sunucu `_landed.py:55-57` boş tipi "General" yapar ve `:136` VAT'ı ada göre t
 gereği tek liste sunucuda tanımlanır, iki editör de onu okur; liste içeriği Zafar'dan
 (aşağıdaki soru 3). Uygulama ayrı pakette (P4), bu doküman yalnız kararı kaydeder.
 
-### ADR-609 — ÖNERİ (onay bekliyor): tender, muhasebe boyutu olsun
+### ADR-609 — KARAR (Zafar, 2026-09-03 akşam; öneri aynen kabul): tender, muhasebe boyutu olsun
 Talep (Zafar, 2026-09-03): "sistemdeki aktif tender seçilebilsin, masraf ona uygulansın;
 QuickBooks'taki Class gibi; tender bazlı P&L'i profesyonel görebilmek; genel giderler ayrı
 P&L." ERPNext'te Class'ın karşılığı **Accounting Dimension**'dır. Ölçüldü (ERPNext 16, yerel):
@@ -433,7 +433,30 @@ tarif ediyor.
 5. Veri geçişi: mevcut `custom_crm_deal` taşıyan JE/SI/PO satırlarından boyutu geriye
    dönük doldur (yama, idempotent, her sitede migrate).
 
-Açık sorular (cevapları işi değiştirir):
+Beş soru ve KARARLAR (Zafar, 2026-09-03: "5 soruya senin önerin nedir" → öneriler aynen
+kabul edildi). Ölçümler: CRM Deal `title_field = organization`, `show_title_field_in_link = 1`
+(`crm_deal.json`); `frappe.model.mapper.get_mapped_doc` aynı adlı, `no_copy` olmayan alanları
+kopyalar, SO→DN eşlemesinde yalnız `payment_terms_template` hariç (`sales_order.py:1460`).
+
+| # | Karar | Gerekçe |
+|---|---|---|
+| 1 | Boyutun `document_type` = **CRM Deal**; ayrı Tender doctype'ı yok | mevcut `custom_crm_deal` değerleri 1:1 taşınır; linklerde firma adı görünür; tender olmayan deal'ler Stabler seçicilerinde `deal_type` ile elenir; "aktif" kuralı sunucuda |
+| 2 | Zorunluluk yalnız **gelir-gider** hesaplarında (`mandatory_for_pl`); bilançoda biliniyorsa damgalanır | bilançoda zorunluluk avans/banka/stok hareketini durdurur |
+| 3 | **Tek sunucu listesi, birleşim, dokuz tip** + KDV bayrak: transport (Nakliye), customs (Gümrük vergisi), declarant (Gümrük müşaviri/broker; eski `broker` buraya), certification, insurance, storage (Depolama/terminal/yükleme; eski `loading`, "Handling & Terminal" buraya), bank, legal, other (etiket zorunlu). Eski değerler diskte kalır, **okumada** eşlenir. **Hesap eşlemesi (tip → gider hesabı) P5'te**: tüketicisi GL kaydı, o da P5'te | iki liste aynı masrafların iki anı; eşleşmezse plan-gerçek karşılaştırması tutmaz; tüketicisi olmayan eşleme spekülatif |
+| 4 | Boyut **Sales Order**'a yazılır, DN ve SI eşlemeyle miras alır; COGS GL satırı boyutu taşır. Anjan üretim maliyeti kapsam dışı | eşleyici kopyalıyor, ek kod yok; üretim maliyeti değerlemeyle teslimatta COGS'a zaten düşüyor; tender akışı yalnız mikas'ta |
+| 5 | **Tek "GENEL GİDER"** değeri; kırılım mevcut Cost Center | tender boyutuna gider kategorisi yüklemek iki kavramı karıştırır |
+
+Giriş noktaları (Zafar, 2026-09-03): yeni ekran yok — **`/money/expenses` formu** (mevcut
+Tender (Deal) seçici boyutu doldurur ve yalnız aktif tender'ları listeler; ölçüldü:
+`Expenses.vue:30,475-507` seçici var, `list_deals` `status` filtresi geçmiyor, `money.py:3365`
+yalnız varlık doğruluyor) ve **Purchase Invoice formu** (bugün alan yok; PO'dan gelen faturada
+PO'nun tender'ı dolu ve kilitli, PO'suz faturada zorunlu ya da GENEL GİDER).
+
+Paketler: **P4** = tek liste (bu bölüm, karar 3; DB değişikliği yok, `make check` yeter, landed
+bench modülleri yine de koşturulur). **P5** = boyut + Expenses/PI seçicileri + geriye dönük
+yama + hesap eşlemesi + GL'den okuyan tender P&L (DB yaması → `make test-bench`, deploy onayı).
+
+Eski açık sorular (kayıt için, hepsi yukarıda kararlaştırıldı):
 1. Boyutun `document_type`'ı: doğrudan **CRM Deal** mi (bugünkü tender kaydı), yoksa
    yalnız tender'ları taşıyan ayrı bir **Tender** doctype'ı mı? CRM Deal'de tender olmayan
    deal'ler de var; boyut listesinde onlar da görünür.
@@ -447,5 +470,4 @@ Açık sorular (cevapları işi değiştirir):
    üretimden (anjan) gelen maliyet bu kapsamda mı?
 5. Genel gider P&L'i tek "GENEL GİDER" değeri mi, alt kırılım (idari, satış, finans) mı?
 
-Karar Zafar'da; onay gelince ADR-609 kesinleşir ve P4/P5 paketleri açılır (P4 = tek liste,
-P5 = boyut + geriye dönük yama + GL'den okuyan P&L; P5 DB yaması → `make test-bench`).
+ADR-609 kesinleşti (2026-09-03 akşam); P4 aynı gün açıldı, P5 P4'ün birleşmesini bekler.
