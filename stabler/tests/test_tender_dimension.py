@@ -893,8 +893,6 @@ class TestBackfill(unittest.TestCase):
 			"Purchase Order Item",
 			"Supplier Quotation",
 			"Supplier Quotation Item",
-			"Request for Quotation",
-			"Request for Quotation Item",
 			"Journal Entry",
 			"Journal Entry Account",
 			"Sales Invoice",
@@ -919,6 +917,19 @@ class TestBackfill(unittest.TestCase):
 
 	def _run(self):
 		return self.mod.backfill(["_Test Company"], "tender")
+
+	def test_the_backfill_skips_the_doctype_that_has_no_dimension_column(self):
+		"""R10. `Request for Quotation` is not an accounting dimension doctype.
+
+		It carries `custom_crm_deal` (v34) but ERPNext never adds the dimension
+		field to it, so the copy has nowhere to land. `_column_exists` made the
+		attempt silent rather than harmless-looking, which is worse: the parent
+		read as covered.
+		"""
+		self.assertNotIn(
+			"Request for Quotation",
+			[parent for parent, _child in self.mod._LEGACY_PARENTS],
+		)
 
 	def test_reports_what_it_changed_per_table(self):
 		counts = self._run()
@@ -1329,7 +1340,6 @@ class TestHooksRegistration(unittest.TestCase):
 			"Sales Order",
 			"Purchase Order",
 			"Supplier Quotation",
-			"Request for Quotation",
 			"Journal Entry",
 			"Sales Invoice",
 			"Purchase Invoice",
@@ -1340,6 +1350,17 @@ class TestHooksRegistration(unittest.TestCase):
 			self.assertEqual(len(block), 2, f"{doctype} has no doc_events block")
 			body = block[1].split("\n\t},", 1)[0]
 			self.assertIn("stabler.api.tender_dimension.stamp_tender", body, f"{doctype} is not stamped")
+
+	def test_no_stamp_is_wired_to_a_doctype_erpnext_gives_no_dimension_field(self):
+		"""R10. Request for Quotation is not an accounting dimension doctype.
+
+		ERPNext creates a dimension's custom field only on the doctypes named by
+		its `accounting_dimension_doctypes` hook, and RFQ is not one of them —
+		`Supplier Quotation` is, RFQ never was. A `stamp_tender` there sets a
+		value on a field that does not exist and Frappe drops it on save: a
+		handler on every RFQ write, reading as coverage the ledger never had.
+		"""
+		self.assertNotIn('"Request for Quotation": {', self.hooks)
 
 	def test_the_gl_safety_net_is_registered(self):
 		self.assertIn("stabler.api.tender_dimension.default_gl_tender", self.hooks)

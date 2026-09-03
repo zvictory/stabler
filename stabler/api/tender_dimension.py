@@ -622,13 +622,15 @@ def default_gl_tender(doc, method=None):
 # B6 — the backfill the patch calls
 # ---------------------------------------------------------------------------
 
-#: `custom_crm_deal` already lives on these parents (patches v28/v30/v34/v68), so
+#: `custom_crm_deal` already lives on these parents (patches v28/v30/v68), so
 #: their dimension value is a straight copy and their rows follow the parent.
+#: `Request for Quotation` also carries `custom_crm_deal` (v34) and is still not
+#: here: ERPNext's `accounting_dimension_doctypes` does not name it, so the
+#: dimension column is never created and the copy has nowhere to land.
 _LEGACY_PARENTS = (
 	("Sales Order", "Sales Order Item"),
 	("Purchase Order", "Purchase Order Item"),
 	("Supplier Quotation", "Supplier Quotation Item"),
-	("Request for Quotation", "Request for Quotation Item"),
 )
 
 #: These never carried `custom_crm_deal`, so their value is DERIVED from the

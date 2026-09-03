@@ -244,15 +244,12 @@ doc_events = {
 			"stabler.api.sod_enforce.assert_no_sod_conflict",
 		],
 	},
-	# ADR-609: Supplier Quotation and Request for Quotation carry `custom_crm_deal`
-	# (patches v30/v34) and nothing else — these blocks exist only to carry the
-	# tender stamp onto the dimension field.
+	# ADR-609: Supplier Quotation carries `custom_crm_deal` (patch v30) and nothing
+	# else — this block exists only to carry the tender stamp onto the dimension
+	# field. Request for Quotation is NOT here: it is absent from ERPNext's
+	# `accounting_dimension_doctypes`, so the dimension field is never created on
+	# it and a stamp would be set on nothing and dropped on save.
 	"Supplier Quotation": {
-		"before_validate": [
-			"stabler.api.tender_dimension.stamp_tender",
-		],
-	},
-	"Request for Quotation": {
 		"before_validate": [
 			"stabler.api.tender_dimension.stamp_tender",
 		],
