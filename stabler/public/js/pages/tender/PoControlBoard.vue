@@ -41,8 +41,6 @@ const data = ref(null); // { lanes, cards, kpi, compare, currency }
 const workspace = ref(null);
 const selectedVendor = ref("");
 
-// Charge-type catalogue: `type` drives the icon only; `label` is free text so
-// the plan can hold literally any cost item.
 // WP-T3: the currencies a landed charge is realistically quoted in for an Uzbek
 // importer. The empty option is company currency — which is every line stored
 // before T3, and stays the default. Same shape as remittanceCurrencies.js.
@@ -63,8 +61,17 @@ function chargeIcon(v) {
 }
 // ADR-606: `other` is the only type that names no cost by itself. Flagged, never
 // blocked — the same stance the unvalued-line warning takes, for the same reason.
+// Reads the DISPLAYED type: the officer is being asked about the option in front
+// of them, not about the spelling the row happens to hold on disk.
 function needsChargeLabel(l) {
-	return l.type === "other" && !String(l.label || "").trim();
+	return l.type_canonical === "other" && !String(l.label || "").trim();
+}
+
+// The one thing that renames a stored line: the officer choosing another type.
+// Everything else — a corrected amount, a linked voucher, a rate — leaves `type`
+// exactly as it was read. See `editorLine`.
+function onTypeChange(l) {
+	l.type = l.type_canonical;
 }
 
 async function searchDeals(q) {
@@ -142,6 +149,9 @@ function openPo(name) { router.push("/purchasing/orders/" + name); }
 const editorOpen = ref(false);
 const editorSaving = ref(false);
 const editorLoading = ref(false);
+// Non-empty while the modal could not load. The plan is REPLACED on save, so an
+// editor that failed to read must not offer to write — see `openEditor`.
+const editorError = ref("");
 const editorPo = ref("");
 const editorSupplier = ref("");
 const editorBase = ref(0);
@@ -175,18 +185,22 @@ async function openEditor(card) {
 	editorOpen.value = true;
 	editorLoading.value = true;
 	editorLines.value = [];
+	editorError.value = "";
 	try {
-		// The type list travels with the charges: with no list there is nothing to
-		// pick a type from, so a failed fetch must surface here rather than leave
-		// an empty <select> on a row that already holds money.
-		const [r] = await Promise.all([
-			call("stabler.api.tender.po_landed_charges", { po: card.name }),
-			loadChargeTypes(),
-		]);
+		// Fetched one after the other, not with `Promise.all`: the list is a
+		// constant and the charges are this PO's own data, and a rejected constant
+		// must not abort the read of the data. Either failure lands in
+		// `editorError` — the review's P1: the catch used to toast and leave Save
+		// enabled over an EMPTY row array, and this save REPLACES the stored
+		// array, so one press after a transient failure wiped the plan.
+		await loadChargeTypes();
+		const r = await call("stabler.api.tender.po_landed_charges", { po: card.name });
 		editorBase.value = r?.base_total || 0;
 		editorLines.value = (r?.charges || []).map(editorLine);
 	} catch (err) {
-		toast.error(err?.message || t("Could not load landed charges."));
+		editorError.value = err?.message || t("Could not load landed charges.");
+		editorLines.value = [];
+		toast.error(editorError.value);
 	} finally {
 		editorLoading.value = false;
 	}
@@ -205,15 +219,20 @@ async function openEditor(card) {
 // `isSendable` drop the row on the next save, taking the charge out of the PO's
 // landed total with no message at all.
 //
-// ADR-606: the row binds `type_canonical`, not the stored `type`. `broker` and
-// `loading` are stored keys the one list renames to `declarant` and `storage`;
-// binding `type` would leave the <select> with no matching option, so it would
-// show its first one and the next Save would retype the line to `transport`.
-// The stored key stays on disk until the officer saves, and the seven server
-// call sites that group on it keep reading it — see `tender._parse_landed`.
+// ADR-606, and the review's P0. The row carries TWO type keys and they are not
+// the same fact: `type` is what is on disk and what `savedLine` hands back;
+// `type_canonical` is what the <select> shows, because `broker` and `loading`
+// have no option of their own any more. Binding the canonical key into `type`
+// was a rewrite of stored data BY THE CLIENT — `save_po_landed_charges` replaces
+// the whole array, so opening a plan and pressing Save for any reason renamed
+// every legacy line. `api/lcv.py` identifies an LCV row as `label or type` and a
+// label is optional, so a renamed line stops matching what an earlier LCV
+// consumed and the same charge is posted into valuation and the GL a second
+// time. Only `onTypeChange` — an explicit pick by the officer — moves a line.
 function editorLine(c) {
 	return {
-		type: c.type_canonical || c.type || "other", label: c.label || "", amount: c.amount_given || 0, actual: c.actual || null,
+		type: c.type || "other", type_canonical: c.type_canonical || c.type || "other",
+		label: c.label || "", amount: c.amount_given || 0, actual: c.actual || null,
 		tnved: c.tnved || "", supplier: c.supplier || "", supplier_name: c.supplier_name || "",
 		cif: c.cif || null, duty_pct: c.duty_pct || null, vat_pct: c.vat_pct || 12, excise_pct: c.excise_pct || 0,
 		vat_recoverable: c.vat_recoverable !== false, rate_source: "",
@@ -249,7 +268,7 @@ function isSendable(l) {
 }
 
 function addLine() {
-	editorLines.value.push({ type: "transport", label: "", amount: null, actual: null, tnved: "", supplier: "", supplier_name: "", cif: null, duty_pct: null, vat_pct: 12, excise_pct: 0, vat_recoverable: true, rate_source: "", currency: "", fx_rate: 0, rate_date: "", amount_original: null, fx_source: "", actual_voucher_type: "", actual_voucher: "", actual_label: "" });
+	editorLines.value.push({ type: "transport", type_canonical: "transport", label: "", amount: null, actual: null, tnved: "", supplier: "", supplier_name: "", cif: null, duty_pct: null, vat_pct: 12, excise_pct: 0, vat_recoverable: true, rate_source: "", currency: "", fx_rate: 0, rate_date: "", amount_original: null, fx_source: "", actual_voucher_type: "", actual_voucher: "", actual_label: "" });
 }
 function removeLine(i) {
 	editorLines.value.splice(i, 1);
@@ -377,6 +396,10 @@ function closeEditor() {
 	editorOpen.value = false;
 }
 async function saveEditor() {
+	// The button is already disabled; this is the guarantee behind it. A save
+	// after a failed load posts an empty array over a plan that read fine
+	// yesterday.
+	if (editorError.value) return;
 	editorSaving.value = true;
 	try {
 		const clean = editorLines.value.filter(isSendable).map(savedLine);
@@ -605,12 +628,18 @@ watch(() => route.query.deal, (d) => { if (d && d !== deal.value) { deal.value =
 					<div class="modal-body">
 						<div class="d-flex justify-content-between align-items-center mb-2">
 							<span class="text-secondary small">{{ t("Amounts in company currency") }} ({{ ccy }})</span>
-							<button type="button" class="btn btn-outline-secondary btn-sm" @click="addLine">
+							<button type="button" class="btn btn-outline-secondary btn-sm" :disabled="editorLoading || Boolean(editorError)" @click="addLine">
 								<i class="ti ti-plus me-1"></i>{{ t("Add cost item") }}
 							</button>
 						</div>
 
 						<div v-if="editorLoading" class="text-center py-4"><span class="spinner-border text-primary"></span></div>
+						<!-- Not an empty table: this plan is REPLACED on save, and a table with
+						     no rows is indistinguishable from a Purchase Order that has no plan. -->
+						<div v-else-if="editorError" class="alert alert-danger mb-0">
+							<i class="ti ti-alert-triangle me-1"></i>{{ editorError }}
+							<div class="small text-secondary mt-1">{{ t("Close this and open it again — nothing has been changed.") }}</div>
+						</div>
 						<table v-else class="table table-no-stripe align-middle">
 							<thead>
 								<tr>
@@ -628,8 +657,10 @@ watch(() => route.query.deal, (d) => { if (d && d !== deal.value) { deal.value =
 								<tr>
 									<td>
 										<div class="input-group input-group-sm">
-											<span class="input-group-text"><i class="ti" :class="chargeIcon(l.type)"></i></span>
-											<select v-model="l.type" class="form-select">
+											<span class="input-group-text"><i class="ti" :class="chargeIcon(l.type_canonical)"></i></span>
+											<!-- Binds the DISPLAY key; `onTypeChange` is what writes the
+											     officer's pick into the stored `type`. See `editorLine`. -->
+											<select v-model="l.type_canonical" class="form-select" @change="onTypeChange(l)">
 												<option v-for="ct in chargeTypes" :key="ct.key" :value="ct.key">{{ chargeTypeLabel(ct.key) }}</option>
 											</select>
 										</div>
@@ -649,7 +680,7 @@ watch(() => route.query.deal, (d) => { if (d && d !== deal.value) { deal.value =
 										</Typeahead>
 									</td>
 									<td>
-										<input v-model="l.label" type="text" class="form-control form-control-sm" :class="{ 'is-invalid': needsChargeLabel(l) }" :placeholder="chargeTypeLabel(l.type)">
+										<input v-model="l.label" type="text" class="form-control form-control-sm" :class="{ 'is-invalid': needsChargeLabel(l) }" :placeholder="chargeTypeLabel(l.type_canonical)">
 										<!-- ADR-606: "Other" names no cost on its own. Flagged, not blocked —
 										     the plan still saves, like a line whose rate is missing. -->
 										<div v-if="needsChargeLabel(l)" class="small text-danger mt-1">{{ t("Say what this charge is.") }}</div>
@@ -804,7 +835,8 @@ watch(() => route.query.deal, (d) => { if (d && d !== deal.value) { deal.value =
 							</tbody>
 						</table>
 
-						<div class="border-top pt-2 mt-2">
+						<!-- Zeros under a failed load read as a plan that costs nothing. -->
+						<div v-if="!editorError" class="border-top pt-2 mt-2">
 							<div class="d-flex justify-content-between small text-secondary"><span>{{ t("Goods (PO)") }}</span><span class="font-monospace">{{ formatMoney(editorBase, ccy, user.language) }}</span></div>
 							<div class="row">
 								<div class="col-6">
@@ -825,7 +857,7 @@ watch(() => route.query.deal, (d) => { if (d && d !== deal.value) { deal.value =
 					</div>
 					<div class="modal-footer py-2">
 						<button type="button" class="btn btn-outline-secondary" :disabled="editorSaving" @click="closeEditor">{{ t("Cancel") }}</button>
-						<button type="button" class="btn btn-primary" :disabled="editorSaving || editorLoading" @click="saveEditor">
+						<button type="button" class="btn btn-primary" :disabled="editorSaving || editorLoading || Boolean(editorError)" @click="saveEditor">
 							<span v-if="editorSaving" class="spinner-border spinner-border-sm me-1"></span>{{ t("Save plan") }}
 						</button>
 					</div>

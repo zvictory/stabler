@@ -40,6 +40,9 @@ const props = defineProps({
 const emit = defineEmits(["close", "saved"]);
 
 const loading = ref(false);
+// Non-empty while the modal could not load. The estimate is REPLACED on save, so
+// an editor that failed to read must not offer to write — see `load`.
+const loadError = ref("");
 const saving = ref(false);
 const charges = ref([]);
 const baseTotal = ref(props.baseGrandTotal);
@@ -49,17 +52,22 @@ const baseTotal = ref(props.baseGrandTotal);
 // before ADR-605, and stays the default. Same shape as remittanceCurrencies.js.
 const CHARGE_CURRENCIES = ["USD", "EUR", "RUB", "CNY", "TRY"];
 
-// ADR-606. A stored line names its type in whatever spelling its era used
-// ("Freight", "VAT", or free text like "Local Delivery"); the server resolves it
-// to one of the nine and says so in `charge_type_canonical`. Reading THAT is what
-// puts a 2025 quotation and a 2026 purchase order on the same option.
+// ADR-606, and the review's P0. The row carries TWO type keys and they are not
+// the same fact: `charge_type` is what is on disk ("Freight", "VAT", "General",
+// or free text like "Local Delivery") and what `savedChargeLine` hands back;
+// `charge_type_canonical` is what the <select> shows, since none of those
+// spellings has an option of its own any more. Loading the canonical key into
+// the field the save sends was a rewrite of stored data BY THE CLIENT —
+// `update_quotation_landed` replaces the whole array, so pressing Save for any
+// reason renamed every legacy line. Only `onTypeChange` moves a line.
 //
 // Named rather than inlined in `load()` so it can be exercised —
 // `landedChargeTypes.spec.js` composes it, the way `PoControlBoard`'s
 // `editorLine` is composed.
 function loadedLine(c) {
 	return {
-		charge_type: c.charge_type_canonical || "transport",
+		charge_type: c.charge_type || "",
+		charge_type_canonical: c.charge_type_canonical || "transport",
 		// An unrecognised type is the officer's own words. The server hands them
 		// back rather than swallowing them into "Other"; they belong in the box
 		// that holds words, and only when it is empty.
@@ -76,30 +84,44 @@ function loadedLine(c) {
 
 // ADR-606: `other` is the only type that names no cost by itself. Flagged, never
 // blocked — the same stance the unvalued-line warning takes, for the same reason.
+// Reads the DISPLAYED type: the officer is being asked about the option in front
+// of them, not about the spelling the row happens to hold on disk.
 function needsChargeLabel(line) {
-	return line.charge_type === "other" && !String(line.description || "").trim();
+	return line.charge_type_canonical === "other" && !String(line.description || "").trim();
+}
+
+// The one thing that renames a stored line: the officer choosing another type.
+// Everything else — an amount, a currency, a rate — leaves `charge_type` exactly
+// as it was read. See `loadedLine`.
+function onTypeChange(line) {
+	line.charge_type = line.charge_type_canonical;
 }
 
 async function load() {
 	if (!props.show || !props.quotationName) return;
 	loading.value = true;
+	loadError.value = "";
 	try {
-		const [res] = await Promise.all([
-			call("stabler.api.sourcing.get_quotation_landed", {
-				quotation: props.quotationName,
-				company: activeCompany.value,
-			}),
-			// In the same try as the charges: with no list there is nothing to pick
-			// a type from, so a failed fetch must surface, not leave an empty select.
-			loadChargeTypes(),
-		]);
+		// Fetched one after the other, not with `Promise.all`: the list is a
+		// constant and the charges are this quotation's own data, and a rejected
+		// constant must not abort the read of the data. Either failure lands in
+		// `loadError` — the review's P1: the catch used to toast and leave Save
+		// enabled over an EMPTY row array, and this save REPLACES the stored
+		// array, so one press after a transient failure wiped the estimate.
+		await loadChargeTypes();
+		const res = await call("stabler.api.sourcing.get_quotation_landed", {
+			quotation: props.quotationName,
+			company: activeCompany.value,
+		});
 		baseTotal.value = res.base_grand_total || props.baseGrandTotal;
 		charges.value = (res.charges || []).map(loadedLine);
 		if (!charges.value.length) {
 			addChargeLine();
 		}
 	} catch (err) {
-		toast.error(err?.message || t("Could not load landed charges."));
+		loadError.value = err?.message || t("Could not load landed charges.");
+		charges.value = [];
+		toast.error(loadError.value);
 	} finally {
 		loading.value = false;
 	}
@@ -110,6 +132,7 @@ watch([() => props.show, () => props.quotationName], load, { immediate: true });
 function addChargeLine() {
 	charges.value.push({
 		charge_type: "transport",
+		charge_type_canonical: "transport",
 		description: "",
 		amount: 0,
 		currency: "",
@@ -211,29 +234,40 @@ const totalDeliveredCost = computed(() => {
 	return (Number(baseTotal.value) || 0) + landedChargesTotal.value;
 });
 
+// The inverse of `loadedLine`: what a row becomes on the wire. Named so the round
+// trip can be exercised — a read must hand the editor something the editor can
+// hand back unchanged, and `charge_type` is the half the review's P0 was about.
+function savedChargeLine(c) {
+	return {
+		// The STORED spelling, never the one the <select> displayed. `onTypeChange`
+		// is what moves it, and only when the officer picks another type.
+		charge_type: c.charge_type,
+		description: c.description,
+		// Both figures travel because they are two different facts, not one
+		// fact twice: `amount` is what was typed in company currency and
+		// `amount_original` what was typed in the line's own. The server
+		// stores exactly what it is given and derives the company-currency
+		// value on every read, so sending only `amount_original` would drop
+		// the so'm figure of a half-switched line — the evidence that the
+		// line is unfinished, and the only thing left to fix it with.
+		amount: Number(c.amount || 0),
+		amount_original: c.currency ? Number(c.amount_original || 0) : null,
+		currency: c.currency || "",
+		fx_rate: Number(c.fx_rate) || 0,
+		rate_date: c.rate_date || "",
+		is_recoverable_vat: Boolean(c.is_recoverable_vat),
+	};
+}
+
 async function save() {
 	if (saving.value) return;
+	// The button is already disabled; this is the guarantee behind it. A save
+	// after a failed load posts an empty array over an estimate that read fine
+	// yesterday.
+	if (loadError.value) return;
 	saving.value = true;
 	try {
-		const validCharges = charges.value
-			.filter((c) => !isBlankLine(c))
-			.map((c) => ({
-				charge_type: c.charge_type,
-				description: c.description,
-				// Both figures travel because they are two different facts, not one
-				// fact twice: `amount` is what was typed in company currency and
-				// `amount_original` what was typed in the line's own. The server
-				// stores exactly what it is given and derives the company-currency
-				// value on every read, so sending only `amount_original` would drop
-				// the so'm figure of a half-switched line — the evidence that the
-				// line is unfinished, and the only thing left to fix it with.
-				amount: Number(c.amount || 0),
-				amount_original: c.currency ? Number(c.amount_original || 0) : null,
-				currency: c.currency || "",
-				fx_rate: Number(c.fx_rate) || 0,
-				rate_date: c.rate_date || "",
-				is_recoverable_vat: Boolean(c.is_recoverable_vat),
-			}));
+		const validCharges = charges.value.filter((c) => !isBlankLine(c)).map(savedChargeLine);
 
 		await call("stabler.api.sourcing.update_quotation_landed", {
 			quotation: props.quotationName,
@@ -269,6 +303,14 @@ async function save() {
 				<div class="modal-body">
 					<div v-if="loading" class="py-4 text-center text-secondary">
 						{{ t("Loading landed charges…") }}
+					</div>
+
+					<!-- Not an empty table: this estimate is REPLACED on save, and a table
+					     with no rows is indistinguishable from a quotation that has no
+					     estimate at all. -->
+					<div v-else-if="loadError" class="alert alert-danger mb-0">
+						<i class="ti ti-alert-triangle me-1"></i>{{ loadError }}
+						<div class="small text-secondary mt-1">{{ t("Close this and open it again — nothing has been changed.") }}</div>
 					</div>
 
 					<template v-else>
@@ -320,7 +362,9 @@ async function save() {
 								<tbody>
 									<tr v-for="(line, idx) in charges" :key="idx">
 										<td>
-											<select v-model="line.charge_type" class="form-select form-select-sm">
+											<!-- Binds the DISPLAY key; `onTypeChange` is what writes the
+											     officer's pick into the stored `charge_type`. See `loadedLine`. -->
+											<select v-model="line.charge_type_canonical" class="form-select form-select-sm" @change="onTypeChange(line)">
 												<option v-for="opt in chargeTypes" :key="opt.key" :value="opt.key">
 													{{ chargeTypeLabel(opt.key) }}
 												</option>
@@ -451,7 +495,7 @@ async function save() {
 					<button
 						type="button"
 						class="btn btn-primary"
-						:disabled="saving || loading"
+						:disabled="saving || loading || Boolean(loadError)"
 						@click="save"
 					>
 						<i class="ti ti-check me-1"></i>{{ saving ? t("Saving…") : t("Save estimate") }}

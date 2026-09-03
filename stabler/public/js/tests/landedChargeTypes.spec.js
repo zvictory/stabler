@@ -136,8 +136,8 @@ describe("a legacy line shows the type the server resolved it to", () => {
 		chargeTypes.value = CANONICAL;
 		const legacy = { charge_type: "Freight", charge_type_canonical: "transport" };
 		const loaded = load(editor, "loadedLine")(legacy);
-		expect(loaded.charge_type).toBe("transport");
-		expect(chargeTypeLabel(loaded.charge_type)).toBe("Freight / transport");
+		expect(loaded.charge_type_canonical).toBe("transport");
+		expect(chargeTypeLabel(loaded.charge_type_canonical)).toBe("Freight / transport");
 	});
 
 	it("moves a legacy PO broker line onto the declarant option", () => {
@@ -145,7 +145,7 @@ describe("a legacy line shows the type the server resolved it to", () => {
 		// person. WHAT WOULD MAKE THIS FAIL: binding `c.type` — the select would
 		// fall back to its first option and a save would silently retype the line.
 		const line = load(board, "editorLine")({ type: "broker", type_canonical: "declarant" });
-		expect(line.type).toBe("declarant");
+		expect(line.type_canonical).toBe("declarant");
 	});
 
 	it("keeps the words off an unrecognised quotation type", () => {
@@ -158,7 +158,7 @@ describe("a legacy line shows the type the server resolved it to", () => {
 			charge_type_unmapped: "Local Delivery",
 			description: "",
 		});
-		expect(loaded.charge_type).toBe("other");
+		expect(loaded.charge_type_canonical).toBe("other");
 		expect(loaded.description).toBe("Local Delivery");
 	});
 
@@ -178,8 +178,128 @@ describe("a new line starts on the same type in both editors", () => {
 		// `LandedChargesEditor` defaulted to "Freight" and the PO board to
 		// "transport" — the same default, spelled two ways, which is how the two
 		// lists stayed invisible for so long: the common case matched.
-		expect(addedLine(editor, "addChargeLine", "charges").charge_type).toBe("transport");
-		expect(addedLine(board, "addLine", "editorLines").type).toBe("transport");
+		const quotationLine = addedLine(editor, "addChargeLine", "charges");
+		expect(quotationLine.charge_type).toBe("transport");
+		expect(quotationLine.charge_type_canonical).toBe("transport");
+		const poLine = addedLine(board, "addLine", "editorLines");
+		expect(poLine.type).toBe("transport");
+		expect(poLine.type_canonical).toBe("transport");
+	});
+});
+
+describe("opening a plan and saving it does not rename what is on disk", () => {
+	// The review's P0. `save_po_landed_charges` and `update_quotation_landed`
+	// REPLACE the stored array, so whatever the editor hands back becomes the
+	// disk. The row used to be loaded with the CANONICAL key in the field the
+	// save sends, so pressing Save for any reason at all — a corrected amount, a
+	// linked invoice — rewrote every legacy `broker` to `declarant` and every
+	// `Freight` to `transport`. That is the one thing ADR-606 promised not to do,
+	// and it is not cosmetic: `api/lcv.py` identifies an LCV row as
+	// `label or type`, and a label is optional, so a renamed line stops matching
+	// the descriptions an earlier LCV already consumed and the same charge is
+	// posted into valuation and the GL a second time.
+	//
+	// So the stored key and the displayed key are two fields. The <select> binds
+	// the display one; only an explicit pick by the officer writes it into the
+	// stored one.
+	it("hands back the PO line's stored key, not the one the select showed", () => {
+		const savedLine = load(board, "savedLine");
+		for (const [stored, canonical] of [
+			["broker", "declarant"],
+			["loading", "storage"],
+			["transport", "transport"],
+		]) {
+			const row = load(board, "editorLine")({ type: stored, type_canonical: canonical, amount_given: 100 });
+			expect(savedLine(row).type, `a ${stored} line came back as something else`).toBe(stored);
+		}
+	});
+
+	it("hands back the quotation line's stored charge_type", () => {
+		const savedChargeLine = load(editor, "savedChargeLine");
+		for (const [stored, canonical] of [
+			["Freight", "transport"],
+			["Customs Duty", "customs"],
+			["VAT", "other"],
+			["General", "other"],
+			["Local Delivery", "other"],
+		]) {
+			const row = load(editor, "loadedLine")({
+				charge_type: stored,
+				charge_type_canonical: canonical,
+				amount: 100,
+			});
+			expect(savedChargeLine(row).charge_type, `a ${stored} line came back as something else`).toBe(
+				stored,
+			);
+		}
+	});
+
+	it("writes the new key only when the officer picks one", () => {
+		// The other half: a rename the officer ASKED for must reach the disk.
+		// WHAT WOULD MAKE THIS FAIL: dropping `onTypeChange`, which would leave
+		// the select purely decorative — every pick silently discarded on save.
+		const poRow = load(board, "editorLine")({ type: "broker", type_canonical: "declarant" });
+		poRow.type_canonical = "legal";
+		load(board, "onTypeChange")(poRow);
+		expect(load(board, "savedLine")(poRow).type).toBe("legal");
+
+		const quotationRow = load(editor, "loadedLine")({
+			charge_type: "Freight",
+			charge_type_canonical: "transport",
+		});
+		quotationRow.charge_type_canonical = "insurance";
+		load(editor, "onTypeChange")(quotationRow);
+		expect(load(editor, "savedChargeLine")(quotationRow).charge_type).toBe("insurance");
+	});
+
+	it("binds the select to the display key in both editors", () => {
+		// The regression is one attribute wide, so it is asserted as one.
+		expect(board).toMatch(/<select v-model="l\.type_canonical"[\s\S]{0,120}@change="onTypeChange\(l\)"/);
+		expect(editor).toMatch(
+			/<select v-model="line\.charge_type_canonical"[\s\S]{0,120}@change="onTypeChange\(line\)"/,
+		);
+	});
+});
+
+describe("a failed load never becomes an empty save", () => {
+	// Both editors used to fetch the charges and the type list with one
+	// `Promise.all`, catch, toast, and drop out of `loading` with an EMPTY row
+	// array and an enabled Save. `save_po_landed_charges` replaces the whole
+	// array, so one pressed button after a transient failure of a constant
+	// endpoint wiped a Purchase Order's landed plan — or a quotation's estimate.
+	it("keeps an explicit error state instead of an empty table", () => {
+		expect(board).toMatch(/editorError/);
+		expect(editor).toMatch(/loadError/);
+		// The table must not render on the error branch, or an empty plan is
+		// exactly what the officer sees and believes.
+		expect(board).toMatch(/v-else-if="editorError"/);
+		expect(editor).toMatch(/v-else-if="loadError"/);
+	});
+
+	it("disables Save while the load has failed", () => {
+		const poSave = board.slice(board.indexOf('@click="saveEditor"') - 300, board.indexOf('@click="saveEditor"'));
+		expect(poSave).toMatch(/:disabled="[^"]*editorError/);
+		const quotationSave = editor.slice(
+			editor.indexOf('@click="save"') - 300,
+			editor.indexOf('@click="save"'),
+		);
+		expect(quotationSave).toMatch(/:disabled="[^"]*loadError/);
+	});
+
+	it("refuses to send anything even if the button is reached", () => {
+		// A disabled attribute is a rendering, not a guarantee — the save path
+		// itself has to refuse, or a re-render race puts an empty array on disk.
+		// Read as source rather than composed: both are `async`, which
+		// `extractFunction` cannot hand to `new Function`.
+		expect(extractFunction(board, "saveEditor")).toMatch(/if \(editorError\.value\) return;/);
+		expect(extractFunction(editor, "save")).toMatch(/if \(loadError\.value\) return;/);
+	});
+
+	it("fetches the constant list separately from the PO's own data", () => {
+		// WHAT WOULD MAKE THIS FAIL: `Promise.all([charges, loadChargeTypes()])`
+		// coming back — a rejected constant then aborts the read of real data.
+		expect(board).not.toMatch(/Promise\.all\(\[[\s\S]{0,200}loadChargeTypes\(\)/);
+		expect(editor).not.toMatch(/Promise\.all\(\[[\s\S]{0,200}loadChargeTypes\(\)/);
 	});
 });
 
@@ -190,16 +310,19 @@ describe("`other` is the one type that has to be named", () => {
 		// WHAT WOULD MAKE THIS FAIL: dropping the check, or blocking the save
 		// instead — the council's rule is flag, don't block; an estimate typed
 		// under deadline must stay saveable half-finished.
+		// Asked of the DISPLAYED type, not the stored one: the officer is being
+		// asked about the option in front of them. A legacy line stored "General"
+		// shows as Other, so it is flagged; one stored "Freight" is not.
 		const quotation = load(editor, "needsChargeLabel");
-		expect(quotation({ charge_type: "other", description: "" })).toBe(true);
-		expect(quotation({ charge_type: "other", description: "port fees" })).toBe(false);
-		expect(quotation({ charge_type: "transport", description: "" })).toBe(false);
+		expect(quotation({ charge_type: "General", charge_type_canonical: "other", description: "" })).toBe(true);
+		expect(quotation({ charge_type: "other", charge_type_canonical: "other", description: "port fees" })).toBe(false);
+		expect(quotation({ charge_type: "Freight", charge_type_canonical: "transport", description: "" })).toBe(false);
 
 		const po = load(board, "needsChargeLabel");
-		expect(po({ type: "other", label: "" })).toBe(true);
-		expect(po({ type: "other", label: "   " })).toBe(true);
-		expect(po({ type: "other", label: "port fees" })).toBe(false);
-		expect(po({ type: "transport", label: "" })).toBe(false);
+		expect(po({ type: "other", type_canonical: "other", label: "" })).toBe(true);
+		expect(po({ type: "other", type_canonical: "other", label: "   " })).toBe(true);
+		expect(po({ type: "other", type_canonical: "other", label: "port fees" })).toBe(false);
+		expect(po({ type: "broker", type_canonical: "declarant", label: "" })).toBe(false);
 	});
 
 	it("says so on the row, and does not disable Save", () => {

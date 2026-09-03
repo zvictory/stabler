@@ -253,14 +253,17 @@ describe("clearing the currency keeps the number", () => {
 });
 
 describe("the line's currency and its rate travel together to the server", () => {
-	const save = editor.slice(editor.indexOf("async function save()"));
+	// ADR-606 review: the row -> wire mapping moved out of `save()` into the
+	// named `savedChargeLine`, so that the round trip `loadedLine` -> row ->
+	// `savedChargeLine` can be exercised. Same claim, read where it now lives.
+	const save = extractFunction(editor, "savedChargeLine");
 
 	it("sends the three quote fields with every line", () => {
 		// WHAT WOULD MAKE THIS FAIL: dropping any one. Without `currency` the
 		// server cannot convert; without `fx_rate` it cannot value; without
 		// `rate_date` nobody can tell which day's quote produced the figure.
 		for (const field of ["currency", "fx_rate", "rate_date"]) {
-			expect(save, `save() drops ${field}`).toMatch(new RegExp(`${field}:`));
+			expect(save, `savedChargeLine() drops ${field}`).toMatch(new RegExp(`${field}:`));
 		}
 	});
 

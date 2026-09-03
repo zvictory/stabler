@@ -304,6 +304,27 @@ class TestStoredDataIsNeverRewritten(unittest.TestCase):
 		)
 		self.assertEqual([line["type"] for line in lines], ["broker", "loading"])
 
+	def test_a_po_line_survives_the_editors_round_trip(self):
+		# The review's P0, from the server's side. `save_po_landed_charges`
+		# REPLACES the whole array, so whatever the editor hands back IS the new
+		# disk. A read must therefore give the editor the stored key and the
+		# editor must give it back -- if either half substitutes the canonical
+		# one, opening the plan and pressing Save for any reason renames every
+		# legacy line, and `api.lcv` stops recognising the charge it already
+		# vouchered (its row identity is `label or type`), so the same cost is
+		# posted into valuation and the GL a second time.
+		tender = _load_tender()
+		stored = json.dumps(
+			[{"type": "broker", "label": "", "amount": 100.0}, {"type": "loading", "amount": 200.0}]
+		)
+		read = tender._parse_landed(stored)
+		# What the editor hands back: the line it was given, minus the keys the
+		# read derives (`savedLine` sends `type`, never `type_canonical`).
+		derived = ("type_canonical", "amount_given", "unvalued")
+		sent = [{k: v for k, v in line.items() if k not in derived} for line in read]
+		dumped = json.loads(json.dumps(tender._raw_landed_lines(sent)))
+		self.assertEqual([line["type"] for line in dumped], ["broker", "loading"])
+
 
 class TestTheValuedShapeCanonicalisesWithoutMovingTheMoney(unittest.TestCase):
 	"""The PO reader gains a key; it does not lose one, and no figure moves."""
