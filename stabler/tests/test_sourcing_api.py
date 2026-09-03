@@ -399,6 +399,13 @@ class _FakeFrappe:
 			return int(row.get(field) or 0) < operand
 		if operator == "=":
 			return row.get(field) == operand
+		if operator == "!=":
+			# Modelled the way MariaDB behaves, NULL drop included: `NULL != 'x'`
+			# is NULL, not TRUE, so an unset column does NOT survive this filter.
+			# A double that answered TRUE there would hide the reason v103
+			# backfills `deal_type` before the CRM reads start excluding the
+			# GENEL GİDER bucket with `!=`.
+			return row.get(field) is not None and row.get(field) != operand
 		if operator == "like":
 			return str(operand).strip("%").lower() in str(row.get(field) or "").lower()
 		if operator == "is":

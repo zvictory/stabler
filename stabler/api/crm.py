@@ -14,7 +14,13 @@ from stabler.api.organization import (
 	_can_access_module,
 	_user_allowed_companies,
 )
-from stabler.api.tender_dimension import OVERHEAD_DEAL_TYPE, list_active_tenders, tender_enabled
+from stabler.api.tender_dimension import (
+	DIMENSION_DOCTYPE,
+	OVERHEAD_DEAL_TYPE,
+	exclude_overhead_deals,
+	list_active_tenders,
+	tender_enabled,
+)
 
 
 def _require_crm():
@@ -207,13 +213,11 @@ def _crm_list(
 		filters[owner_field] = owner
 	if extra_filters:
 		filters.update(extra_filters)
-	# ADR-609: "GENEL GİDER" is a ledger bucket wearing a CRM Deal, not a deal. On
-	# the board it would sit in Qualification for ever and be counted in every
-	# pipeline figure. Excluded unless the caller asked for a deal_type by name.
-	# (v103 backfills NULL deal_type to Standard first — MariaDB's `!=` drops NULL
-	# rows, so without it every pre-v60 deal would vanish from the board instead.)
-	if doctype == "CRM Deal" and not filters.get("deal_type") and frappe.db.has_column(doctype, "deal_type"):
-		filters["deal_type"] = ["!=", "Overhead"]
+	# ADR-609: "GENEL GİDER" is a ledger bucket wearing a CRM Deal, not a deal.
+	# `exclude_overhead_deals` carries the reasoning and the NULL caveat, and is
+	# shared with the manager cockpit so the two cannot disagree.
+	if doctype == DIMENSION_DOCTYPE:
+		exclude_overhead_deals(filters)
 	or_filters = [[field, "like", f"%{search}%"] for field in search_fields] if search else None
 	kwargs = {
 		"filters": filters,

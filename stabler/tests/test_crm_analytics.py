@@ -6,6 +6,7 @@ PYTHONPATH=$PWD python3 -m unittest stabler.tests.test_crm_analytics -v
 from __future__ import annotations
 
 import sys
+import types
 import unittest
 
 from stabler.tests.test_sourcing_api import _SANDBOX, _Doc, _FakeFrappe, _load_api
@@ -31,6 +32,16 @@ class TestCrmAnalytics(unittest.TestCase):
 	def setUpClass(cls):
 		cls.fake = _FakeFrappe()
 		_load_api(cls.fake)
+		# `stabler.api.crm_analytics` reaches `stabler.api.crm`, which imports the
+		# REAL `stabler.api.organization` -> `stabler.www.stabler` -> `frappe.sessions`,
+		# and that is a package import the fake `frappe` cannot answer. Stubbing the
+		# one module is what lets this suite run in `make check` instead of only
+		# behind a live bench.
+		organization = types.ModuleType("stabler.api.organization")
+		organization._ADMIN_ROLES = ("System Manager", "Stabler Admin")
+		organization._can_access_module = lambda *_args, **_kwargs: True
+		organization._user_allowed_companies = lambda _user: ["ACME"]
+		_SANDBOX.install({"stabler.api.organization": organization})
 		cls.frappe = sys.modules["frappe"]
 
 	def setUp(self):
@@ -59,6 +70,7 @@ class TestCrmAnalytics(unittest.TestCase):
 			company="ACME",
 			organization="Alfa Corp",
 			stage="priced",
+			deal_type="Standard",
 			contract_value=100000.0,
 			probability=75.0,
 			owner="rep1@acme.com",
@@ -70,6 +82,7 @@ class TestCrmAnalytics(unittest.TestCase):
 			company="OTHER_CO",
 			organization="Beta Corp",
 			stage="commit",
+			deal_type="Standard",
 			contract_value=500000.0,
 			probability=90.0,
 			owner="rep2@other.com",
@@ -87,6 +100,36 @@ class TestCrmAnalytics(unittest.TestCase):
 		self.assertIn("stage_counts", res)
 		self.assertIn("stage_aging", res)
 		self.assertIn("rep_workload", res)
+
+	def test_the_overhead_bucket_is_not_a_deal_in_the_cockpit(self):
+		"""R9 (ADR-609). GENEL GIDER is a ledger bucket wearing a CRM Deal.
+
+		It has no owner, no close date and never leaves its stage, so counting it
+		inflates `deal_count`, plants a permanently ageing row in `stage_aging`
+		and puts a phantom deal on a rep's workload — every cockpit number a
+		manager steers by moves. `_crm_list` already keeps it off every board;
+		the cockpit listed CRM Deal itself and so counted it.
+		"""
+		self.fake.docs[("CRM Deal", "DEAL-OVERHEAD")] = _Doc(
+			name="DEAL-OVERHEAD",
+			doctype="CRM Deal",
+			company="ACME",
+			organization="GENEL GIDER",
+			stage="qualification",
+			deal_type="Overhead",
+			contract_value=0.0,
+			probability=0.0,
+			owner="Administrator",
+			docstatus=0,
+		)
+
+		from stabler.api import crm_analytics
+
+		res = crm_analytics.get_manager_cockpit_metrics(company="ACME")
+
+		self.assertEqual(res["deal_count"], 1)
+		self.assertNotIn("qualification", res["stage_counts"])
+		self.assertNotIn("Administrator", res["rep_workload"])
 
 	def test_get_manager_cockpit_metrics_rejects_unauthorized_company(self):
 		from stabler.api import crm, crm_analytics, organization

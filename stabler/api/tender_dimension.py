@@ -243,6 +243,26 @@ def overhead_deal(company: str, create: bool = False) -> str | None:
 	return doc.name
 
 
+def exclude_overhead_deals(filters: dict) -> dict:
+	"""Keep the GENEL GİDER bucket out of a CRM Deal list read.
+
+	The bucket is a ledger row wearing a CRM Deal: no owner, no close date, and
+	it never leaves its stage. Every list that counts it reports a deal nobody
+	can work — one extra on the board, one permanently ageing row in stage aging,
+	one phantom on a rep's workload. Shared by every CRM Deal reader so the
+	boards and the manager cockpit cannot drift apart on what counts as a deal.
+
+	`!=` and not `not in`: MariaDB drops NULL rows on `!=`, which is why v103
+	backfills a NULL `deal_type` to `Standard` before this filter is ever
+	applied — without it every deal predating v60 would vanish instead. Skipped
+	when the caller named a `deal_type`, because asking for the bucket by name is
+	how the accounting code finds it.
+	"""
+	if not filters.get("deal_type") and frappe.db.has_column(DIMENSION_DOCTYPE, "deal_type"):
+		filters["deal_type"] = ["!=", OVERHEAD_DEAL_TYPE]
+	return filters
+
+
 def ensure_company_setup(company: str) -> dict:
 	"""The overhead deal and the company's Accounting Dimension Detail row.
 

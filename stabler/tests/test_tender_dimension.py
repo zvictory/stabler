@@ -1273,8 +1273,11 @@ class TestWriterWiring(unittest.TestCase):
 
 	def test_the_deal_list_excludes_the_overhead_bucket(self):
 		# GENEL GİDER is a ledger bucket, not a deal. On the CRM board it would sit
-		# in Qualification forever and be counted in every pipeline figure.
-		self.assertIn('["!=", "Overhead"]', self.crm)
+		# in Qualification forever and be counted in every pipeline figure. R9: the
+		# filter itself lives in `exclude_overhead_deals`, shared with the manager
+		# cockpit, so the two readers cannot drift apart on what counts as a deal.
+		self.assertIn("exclude_overhead_deals(filters)", self.crm)
+		self.assertIn('["!=", OVERHEAD_DEAL_TYPE]', _code_only(_read("api", "tender_dimension.py")))
 
 	def test_the_deal_list_offers_the_active_tender_mode(self):
 		self.assertIn("active_tenders", self.crm)

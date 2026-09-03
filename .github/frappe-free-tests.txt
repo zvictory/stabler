@@ -33,6 +33,7 @@ stabler.tests.test_concurrency_token_call_sites
 stabler.tests.test_container_arrival_hook
 stabler.tests.test_crm_deal_company_scope_patch
 stabler.tests.test_crm_activity_controller
+stabler.tests.test_crm_analytics
 stabler.tests.test_crm_company_scope
 stabler.tests.test_crm_daily_work_schema
 stabler.tests.test_crm_deal_trash

@@ -12,6 +12,7 @@ from frappe.utils import date_diff, flt, getdate, nowdate
 
 from stabler.api.crm import _require_crm, _require_crm_company
 from stabler.api.organization import _ADMIN_ROLES
+from stabler.api.tender_dimension import exclude_overhead_deals
 
 _CRM_MANAGER_ROLES = frozenset((*_ADMIN_ROLES, "Sales Manager", "CRM Specialist"))
 
@@ -38,6 +39,9 @@ def get_manager_cockpit_metrics(company: str, owner: str | None = None) -> dict:
 	filters = {"company": company}
 	if owner:
 		filters["owner"] = owner
+	# ADR-609: the cockpit steers on these numbers, so it must count the same
+	# deals the boards show — the GENEL GİDER bucket is not one of them.
+	exclude_overhead_deals(filters)
 
 	deals = frappe.get_list(
 		"CRM Deal",
