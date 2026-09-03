@@ -317,3 +317,62 @@ CORRECTIONS
     `work_order.py:1558-1560` → `bom.py:1427`. Sıkıştırma öncesinden taşınan, yeniden
     ölçülmemiş bir alıntıydı — Rule 0 ihlali.
 ```
+
+## 7. Uygulama durumu (2026-09-03, kurul sonrası)
+
+Kurul kararları opus alt-ajanlarına üç paket olarak devredildi (ADR-608). Her paket kendi
+worktree'sinde, dal başına test-önce, `make check` yeşil; birleştirmeden önce salt-okunur
+`stabler-diff-reviewer` turu. Aşağıdaki sayılar bu oturumda çalıştırılan komutlardan.
+
+| Paket | Dal başı → main | Kanıt |
+|---|---|---|
+| **P1** ADR-601 (`v102` Property Setter + `create_work_order` açık 0) | `e9a0082` → `451bea7` | bench modülü `test_work_order_multi_level_default_bench` genesis-test.local: 5 test OK; tam `make test-bench` 77/77 rc=0 (`main @ 451bea7`, sıkıştırma öncesi ölçüm) |
+| **P2** ADR-604 (prompt 01 drawer) | `d6c5042` → `a79149d` | `TenderMasterDrawer.vue` tgm-* 0; `ds-drawer` + `data-size="lg"`; vitest spec 18 test; `make check` yeşil |
+| **P3** ADR-605 (ön-kazanım landed) | `3081f93` → `3c50aac` | bench modülü `test_tender_prewin_landed_bench`: 10 test OK (`3081f93`; 18 landed-ilişkili bench modülü `2b2c903`'te OK); `make check` yeşil; tam `make test-bench`: 77 modül, 0 kırmızı, `Ran 0` yok, ZERO COVERAGE yok, rc=0 (`main @ 3c50aac`) |
+
+### İnceleme turlarında verilen hükümler
+- **Form sözlüğü (P2):** `ds-field` / `ds-label` / `ds-form-grid` sevk edilmiş CSS'te var (ölçüldü);
+  kontroller `.form-control` / `.form-select` kalır. Altbilgi sırası Kaydet → Vazgeç.
+- **Kayıt engellenmez (P3):** kuru olmayan masraf satırı toplam DIŞI ve işaretli; kaydetme
+  reddedilmez (kurulun "flag, don't block" hükmü).
+- **Tek kural:** `tender_landed_math.line_value(amount, amount_original, currency, fx_rate)`
+  → `(company_amount, unvalued)`; istemci aynası `composables/landedLine.js`.
+- **RAW / VALUED ayrımı:** kalıcı olan yalnız RAW (`_landed.raw_charge_line` /
+  `sanitize_charge_lines`, `tender._raw_landed_lines`); VALUED (`parse_landed_charges`,
+  `_parse_landed`) her okumada türetilir, asla yazılmaz. Üçüncü incelemede PO yolunun tek
+  adımlık olduğu bulundu (`po_landed_charges` VALUED döndürüyordu, ikinci kayıt satırı
+  düşürüyordu) — `d08523b` verilen tutarı `amount_given` ikinci anahtarında taşır;
+  ikinci adım davranışsal testle (sakla → oku → gönderilecek → sakla, aynı sütun) kapatıldı.
+- **Yüzeye çıkan çakışma:** `_parse_landed` `amount`'ı yerinde eziyordu; yedi toplama noktası
+  + `stabler/api/lcv.py:274` o anahtarı topluyor. Çözüm: verilen tutar ikinci anahtarda
+  taşınır, toplama noktaları ve `lcv.py` değişmez (`git diff 9e98559 d08523b -- stabler/api/lcv.py`
+  boş).
+- **Gerçekleşen (actual) tarafı — kurul hükmü (b):** dördüncü incelemenin P1'i: satır
+  `actual`'ı gösterirken sunucu onu `line_value(actual, actual_original, …)` ile sıfırlıyordu
+  (`actual_original`'ın hiç giriş kontrolü olmadı; `b9050c4`, 24.08). Ölçüm:
+  `landed_actual_from_voucher` yalnız `base_grand_total` / `base_paid_amount` / `total_debit`
+  döndürüyor, elle giriş kutusu şirket para biriminde → `actual` tanım gereği şirket para
+  birimidir, `line_value`'dan geçmez, `actual_original` şekilden çıkar, ölü ACTUAL altbilgi
+  dizesi beş katalogdan silinir (`2b2c903`; altıncı tur `3081f93`: `isSendable` üç rakamı da okur — yalnız `actual` taşıyan satır kayıtta silinmez). Prod'a salt-okunur sorgu bu oturumda
+  engellendi; yerine git tarihi ölçüldü: `git log --all -S 'v-model="l.actual_original"'`
+  → 0 commit, anahtar `b9050c4`'te yalnız ilklendirme/temizleme/yankı olarak girmiş — hiçbir
+  saklı satır sıfır dışı `actual_original` taşıyamaz; okuma yine de anahtarı tolere eder.
+- **Commit trailer:** CLAUDE.md sürümsüz `Co-Authored-By: Claude <noreply@anthropic.com>`
+  ister; harness bu oturumda "Claude Fable 5.1" istedi. CLAUDE.md kazandı, çakışma burada
+  kayıtlı.
+- **Delta CSS:** `TenderMasterDrawer.vue` scoped stilinde `delta.css:305` (`flex-wrap: wrap`)
+  ile aynı kural var; delta CSS uygulanınca (asama-a §10) tekrar silinir.
+
+### Yan bulgu — test sitesi hijyeni (P3'ün değil)
+`make test-bench` süpürmesinde üç mevcut modül genesis-test.local'da CRM Deal bırakıyor
+(`bench.log` zaman damgaları + `tabCRM Deal.creation` eşlemesi, ardından modül modül
+önce/sonra sayımı): `test_director_board_integration` +2, `test_tender_board_funnel_integration` +1, `test_tender_intake_master_fields_integration` +5 (modül tek başına, önce/sonra sayım); bugün 16 satır, sitede toplam 472 CRM Deal, hepsi `_Test Company`. `test_tender_prewin_landed_bench` iki yolda da temiz
+ölçüldü (yeşil koşu 8 → 8; `setUpClass` çöken sürüm 8 → 8; üç kipli sonda 0). Kayıt:
+`docs/backlog.md`.
+
+### Deploy durumu
+Hiçbir şey deploy edilmedi. `v102` yaması **Zafar'ın açık onayını** bekler: her stabler
+sitesinde `migrate` + `bench restart`; deploy sonrası taze işçi sürecinde
+`frappe.new_doc("Work Order").use_multi_level_bom == 0`; sinyal: günlük mlb=1 sayısı → 0.
+`82f9001` deploy'u da hâlâ Zafar'da. Karar verilmeyenler §6'daki gibi durur (ADR-606, delta
+CSS, kanvas "Новый заказ" akışı).

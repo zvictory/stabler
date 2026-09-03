@@ -2147,3 +2147,53 @@ STRUCTURED NEXT ACTION (dealer, point 6). 'Next action' and 'Last contact' are t
 BROKEN-PROMISE COUNTER (owner, point 6). record_promise exists but nothing counts promises. A customer saying 'I will pay Friday' for the third time is indistinguishable from a first-time promise, so no escalation can be triggered off it.
 
 These are one bead because they are one loop: secure the debt, record the contact in a countable form, escalate when the count says so.
+
+### Üç bench modülü her `make test-bench` süpürmesinde genesis-test.local'da CRM Deal bırakıyor
+`hijyen` · ölçüldü 2026-09-03, genesis-test.local, salt-okunur
+
+`IntegrationTestCase` sınıf sonunda `frappe.db.rollback()` yapar
+(`frappe/tests/classes/integration_test_case.py:72,194-196`, Frappe 16.17.5), yani
+bir modülün satır bırakması ancak testin ya da test ettiği uç noktanın **commit** etmesiyle
+olur. Üç modül bırakıyor; modül tek başına koşturulup `_Test Company` altındaki bugünkü
+CRM Deal sayısı önce/sonra sayıldı:
+
+| Modül | Koşu | Kalan CRM Deal |
+|---|---|---|
+| `stabler/tests/test_director_board_integration.py` | 3 test OK | **+2** |
+| `stabler/tests/test_tender_board_funnel_integration.py` | 6 test OK | **+1** |
+| `stabler/tests/test_tender_intake_master_fields_integration.py` | 14 test OK | **+5** |
+
+Bırakılan satırların şekli (bugünkü 16'sının hepsi): `company = _Test Company`,
+`organization = "UAT Tender Intake Master Fields Fixture"`, `owner` Administrator — üç
+modül de aynı fixture organizasyonunu kullanıyor. Birikim ölçüldü: sitede toplam **472**
+CRM Deal, hepsi `_Test Company`; gün gün 2026-09-02 → 132, 2026-08-28 → 120,
+2026-08-25 → 96 (süpürme günleri). Her tam `make test-bench` en az 8 satır ekliyor.
+
+Yeniden üretim:
+
+    bench --site genesis-test.local execute frappe.db.count --kwargs "{'dt':'CRM Deal','filters':[['organization','=','UAT Tender Intake Master Fields Fixture']]}"
+    bench --site genesis-test.local run-tests --module stabler.tests.test_tender_intake_master_fields_integration
+    # aynı sayım: +5
+
+Ölçülmeyen: hangi satırın commit ettiği (test gövdesi mi, çağrılan uç nokta mı). Aday:
+uç noktaların içindeki `frappe.db.commit()` çağrıları ve fixture'ların `frappe.db.commit()`
+kullanımı — `grep -n "db.commit()"` üç dosyada ve çağırdıkları API'lerde. Karşılaştırma:
+`stabler/tests/test_tender_prewin_landed_bench.py` (2026-09-03) aynı fixture şeklini
+kullanıyor ve iki yolda da temiz ölçüldü (yeşil koşu 8 → 8, `setUpClass` çöken sürüm
+8 → 8) — kalıp oradan alınabilir: her satır oluşturulduğu anda `addCleanup` /
+`addClassCleanup`, hiç `commit` yok.
+
+Not: satırlar silinmedi — test sitesinde, kimin bıraktığı ölçülmüş, ama bu kaydı yazan
+oturum oluşturmadı.
+
+### Kaynak-pin testleri hâlâ yorumla tatmin edilebiliyor (`test_tender_landed_vat.py`)
+`test` · ölçüldü 2026-09-03
+
+`stabler/tests/test_tender_landed_vat.py` içindeki `_func_body` gövdeyi `def` → sonraki
+`def` arası dilimliyor, yorum ve docstring soymuyor. Bu yüzden oradaki her `assertIn`
+pini — `3081f93` ile eklenen `_po_scope(po, write=False)` dahil — fonksiyon gövdesine
+yazılmış bir yorumla da geçer. Aynı tuzak ADR-605 serisinde üç kez tetiklendi (Y, AI ve
+`test_the_actual_has_no_such_original`); `test_landed_charge_currency.py` ve
+`test_tender_prewin_landed_estimate.py` `code_only` soyucusu aldı, bu dosya almadı.
+İş: aynı soyucuyu buraya taşı (ya da üçünü tek yardımcıda birleştir), sonra pinlenen
+dizeyi yalnız yoruma yazıp testin kırmızıya döndüğünü göster.
