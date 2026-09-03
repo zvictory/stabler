@@ -373,12 +373,12 @@ def _parse_landed(raw) -> list[dict]:
 		line["unvalued"] = False
 		line["amount_given"] = line["amount"]
 		# ADR-606: which of the nine types this line is, BESIDE the stored key
-		# rather than over it. `type` still says `broker` / `loading` because the
-		# seven summing call sites and `api.lcv` read it -- `tender.py`'s delivery
-		# board groups on `("transport", "loading")` and the LCV falls back to it
-		# for a row description, so overwriting it would silently drop a legacy
-		# line out of one total and de-duplicate wrongly in the other. The editor
-		# reads `type_canonical`, and a re-save is what moves a line to the new key.
+		# rather than over it. `type` still says `broker` / `loading`, because
+		# that is what is on disk and a read may not rewrite it -- and because
+		# `api.lcv` falls back to `type` for an LCV row description, where a
+		# renamed line stops matching the descriptions already consumed and the
+		# charge is offered a second time. The editor reads `type_canonical`; a
+		# re-save by the officer is what moves a line to the new key.
 		#
 		# No `type_unmapped` twin to the quotation reader's: `_raw_landed_lines`
 		# has always bounded what reaches this field to a known key, so there is
@@ -424,6 +424,25 @@ def _parse_landed(raw) -> list[dict]:
 		# unreadable; the invoice was still paid, and its figure is still company
 		# currency. Zeroing it with the plan understates what was actually spent.
 	return out
+
+
+def _transport_figure(charges: list[dict]) -> float:
+	"""The freight figure `logist_board` prints for one Purchase Order.
+
+	CANONICAL transport only (Zafar, 2026-09-03, after ADR-606). It used to sum
+	`type in ("transport", "loading")` off the STORED key; under the one list
+	`loading` is terminal handling and resolves to `storage`, so those lines now
+	leave this figure. That is the decision: a board whose freight number counts
+	something the officer cannot pick as freight describes a different freight
+	than the editor does.
+
+	Reads `type_canonical`, never the stored `type` -- the stored key stays on
+	disk untouched (ADR-606) and every other consumer keeps reading it; this is
+	the one figure that asks what the line MEANS rather than how it was spelled.
+	A function rather than an expression inline in the loop so the test that
+	fixes this decision sums the same thing the board does.
+	"""
+	return sum(c["amount"] for c in charges if c["type_canonical"] == "transport")
 
 
 _ACTUAL_VOUCHER_TYPES = ("Purchase Invoice", "Payment Entry", "Journal Entry")
@@ -2653,7 +2672,7 @@ def logist_board(company: str) -> dict:
 
 	for p in pos:
 		charges = _parse_landed(p.get("custom_landed_charges")) if has_landed else []
-		transport = sum(c["amount"] for c in charges if c["type"] in ("transport", "loading"))
+		transport = _transport_figure(charges)
 		received = flt(p.per_received) >= 100
 		eta = getdate(p.schedule_date) if p.schedule_date else None
 		deal = p.custom_crm_deal

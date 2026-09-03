@@ -313,22 +313,42 @@ class TestTheValuedShapeCanonicalisesWithoutMovingTheMoney(unittest.TestCase):
 
 	def test_a_legacy_po_line_reports_both_names(self):
 		line = self.tender._parse_landed([{"type": "broker", "amount": 100.0, "actual": 90.0}])[0]
-		self.assertEqual(line["type"], "broker")  # what the delivery board groups on
+		self.assertEqual(line["type"], "broker")  # what is on disk, and what api.lcv reads
 		self.assertEqual(line["type_canonical"], "declarant")  # what the editor shows
 		self.assertEqual(line["amount"], 100.0)
 		self.assertEqual(line["actual"], 90.0)
 
-	def test_the_delivery_boards_transport_grouping_still_sees_a_loading_line(self):
-		# `tender.py:2619` sums `c["type"] in ("transport", "loading")`. It reads
-		# the STORED key on purpose: `loading` is `storage` under the new list,
-		# and quietly folding pure storage into the delivery board's transport
-		# figure is a display change nobody asked for. Pinned so a later
-		# "cleanup" that overwrites `type` has to argue with this test.
+	def test_the_logistics_boards_freight_figure_counts_only_transport(self):
+		# Zafar, 2026-09-03, once ADR-606 had landed: the logistics board's
+		# freight figure counts CANONICAL transport and nothing else. `loading` is
+		# terminal handling under the one list -- it resolves to `storage` -- so a
+		# stored `loading` line leaves that figure. The board's number has to
+		# agree with the list the officer picks from, or the board and the editor
+		# mean different things by "freight".
+		#
+		# Behavioural, and through `_transport_figure` -- the very expression
+		# `logist_board` sums, so this test cannot drift from the board. Named
+		# rather than cited by line: the version of this test that shipped in
+		# 80cbc19 pointed at `tender.py:2619`, which was 37 lines stale already.
 		lines = self.tender._parse_landed(
-			[{"type": "loading", "amount": 200.0}, {"type": "storage", "amount": 50.0}]
+			[
+				{"type": "transport", "amount": 300.0},
+				{"type": "loading", "amount": 200.0},
+				{"type": "storage", "amount": 50.0},
+				{"type": "broker", "amount": 90.0},
+			]
 		)
-		transport = sum(c["amount"] for c in lines if c["type"] in ("transport", "loading"))
-		self.assertEqual(transport, 200.0)
+		self.assertEqual(self.tender._transport_figure(lines), 300.0)
+
+	def test_the_freight_figure_reads_the_canonical_key_not_the_stored_one(self):
+		# The stored key is still untouched on disk -- that is the ADR-606 rule,
+		# asserted in TestStoredDataIsNeverRewritten. What changed is which key
+		# the FIGURE asks. WHAT WOULD MAKE THIS FAIL: summing `c["type"]`, which
+		# both drops a line whose stored spelling only the alias table resolves
+		# and re-admits `loading`.
+		lines = self.tender._parse_landed([{"type": "loading", "amount": 200.0}])
+		self.assertEqual(lines[0]["type"], "loading")
+		self.assertEqual(self.tender._transport_figure(lines), 0.0)
 
 	def test_a_customs_line_is_still_a_customs_line(self):
 		# Three behaviours hang off this exact string: the currency conversion
