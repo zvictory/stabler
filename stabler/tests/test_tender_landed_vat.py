@@ -84,6 +84,24 @@ class TestTenderLandedVat(unittest.TestCase):
 		self.assertIn("excise", body)
 		self.assertIn("+ duty + excise", body)
 
+	def test_the_landed_read_is_gated_and_scoped(self):
+		"""ADR-605 fifth review, P3. Nothing pinned that this read is authorized.
+
+		`po_landed_charges` returns one Purchase Order's landed lines and totals, so
+		an ungated version leaks a company's cost structure — what it pays its
+		forwarder, its declarant and its bank — to any logged-in user of any tenant.
+		A Frappe-free behavioural test cannot catch that: every gate inside
+		`_po_scope` is a no-op in the sandbox by construction (`_require_company` and
+		`_assert_company_scope` are fake modules, `has_permission` returns True), so
+		deleting the call leaves those tests green. `test_landed_charge_currency.py`
+		once claimed otherwise in a comment; this is the guard that makes it true.
+
+		WHAT WOULD MAKE THIS FAIL: dropping the scope call, or widening it to
+		`write=True` and gating a read behind a permission the reader may not hold.
+		"""
+		body = _func_body(self.src, "po_landed_charges")
+		self.assertIn("_po_scope(po, write=False)", body)
+
 	def test_actual_from_voucher_gated_and_scoped(self):
 		body = _func_body(self.src, "landed_actual_from_voucher")
 		self.assertIn("_require_tender", body)

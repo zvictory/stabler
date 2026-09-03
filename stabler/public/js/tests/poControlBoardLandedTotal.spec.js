@@ -260,6 +260,22 @@ describe("what a read hands the modal is what the modal can hand back", () => {
 		}
 	});
 
+	it("keeps a line whose only figure is an actual", () => {
+		// ADR-605 fifth review, P1. `isSendable` read the two PLANNED figures only.
+		// An unplanned charge — a line added, a Purchase Invoice linked, the GL-pull
+		// button pressed — has nothing in either of them, so Save dropped it while
+		// the row above was printing the 15 500 000 the pull had just fetched and the
+		// footer was counting it "from GL". `save_po_landed_charges` replaces the
+		// whole array, so the charge left the PO, the deal's actual_landed and the
+		// realized P&L with no message. The filter was always this shape; what
+		// changed is that the actual now reads back as a real figure instead of 0.0,
+		// so what it drops is now visibly the officer's own number.
+		const invoiced = { type: "other", amount: 0, amount_original: 0, actual: 15500000 };
+		expect(actualPreview(invoiced)).toBe(15500000);
+		expect(isSendable(invoiced)).toBe(true);
+		expect(savedLine(invoiced).actual).toBe(15500000);
+	});
+
 	it("hands an invoiced actual straight back, in company currency", () => {
 		// The actual side of the same round trip. `_parse_landed` no longer converts
 		// it, so what the modal reads into its box is what the server stored and what

@@ -228,11 +228,16 @@ function savedLine(l) {
 }
 
 // `save_po_landed_charges` REPLACES the whole array, so a row this drops is a row
-// deleted. A foreign-currency line carries its figure in `amount_original` and a
-// company-currency one in `amount`; both are read, because a line that has only one
-// of them is still a line the officer typed.
+// deleted. A line carries its money in one of THREE places and any one of them is
+// enough, because a line that has only one is still a line the officer typed: the
+// planned figure in company currency (`amount`), the planned figure in the
+// forwarder's currency (`amount_original`), and what was actually paid (`actual`).
+// ADR-605 fifth review, P1: the actual was missing here, so an unplanned charge —
+// a line added, a Purchase Invoice linked, the GL-pull button pressed — was deleted
+// by the very Save that was meant to record it, while the row above it printed the
+// figure the pull had just fetched.
 function isSendable(l) {
-	return Boolean(Number(l.amount) || Number(l.amount_original));
+	return Boolean(Number(l.amount) || Number(l.amount_original) || Number(l.actual));
 }
 
 function addLine() {

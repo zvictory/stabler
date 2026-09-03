@@ -652,8 +652,11 @@ class TestThePoActualIsAlreadyCompanyCurrency(unittest.TestCase):
 		"""`po_landed_charges` itself, not a re-implementation of its sum."""
 		stored = json.dumps(self.tender._raw_landed_lines([_PO_FOREIGN_INVOICED]))
 		values = {"company": "Mikas", "custom_landed_charges": stored, "base_grand_total": 100_000_000.0}
-		# `_po_scope` is authorization, not arithmetic — but it is left running rather
-		# than stubbed out, so this test also fails if the read stops being gated.
+		# `_po_scope` runs, but every gate inside it is a no-op here by construction,
+		# so this test proves nothing about authorization — deleting the call leaves
+		# it green. It said the opposite until ADR-605's fifth review, P3. The gate is
+		# pinned where a Frappe-free test can actually hold it: `test_tender_landed_
+		# vat.TestTenderLandedVat.test_the_landed_read_is_gated_and_scoped`.
 		sys.modules["stabler.stabler.doctype.stabler_settings.stabler_settings"].module_map_for = lambda _c: {
 			"tender": 1
 		}
