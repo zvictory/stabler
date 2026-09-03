@@ -12,6 +12,7 @@ import { call } from "../../api/client.js";
 import { formatMoney } from "../../composables/money.js";
 import { formatDate, todayIso } from "../../composables/date.js";
 import { t } from "../../composables/i18n.js";
+import { convertedPreview } from "../../composables/landedLine.js";
 import { useToast } from "../../composables/useToast.js";
 import { useEscapeBack } from "../../composables/useEscapeBack.js";
 import Typeahead from "../../components/Typeahead.vue";
@@ -225,18 +226,6 @@ function customsCalc(l) {
 function applyCustoms(l) {
 	l.amount = Math.round(customsCalc(l).capitalized);
 }
-// WP-T3 --------------------------------------------------------------------
-// Mirrors tender_landed_math.converted_amount. The server derives the stored
-// figure with that rule; this is only the preview while typing, and it returns
-// null on an unusable rate for the same reason: a charge shown at its
-// unconverted number reads as CHEAP and hands the tender to the wrong vendor.
-function convertedPreview(l) {
-	if (!l.currency) return Number(l.amount) || 0;
-	const rate = Number(l.fx_rate) || 0;
-	if (rate <= 0) return null;
-	return Math.round((Number(l.amount_original) || 0) * rate * 100) / 100;
-}
-
 // The actual side of the same rule. It is deliberately NOT symmetrical with the
 // planned one: a planned line carrying a currency and no rate is an incomplete
 // plan and must be flagged, but an actual of nothing is the ordinary state of a

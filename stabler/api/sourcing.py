@@ -1331,10 +1331,16 @@ def update_quotation_landed(quotation, charges, company=None):
 	if not isinstance(parsed, list):
 		frappe.throw(_("Charges must be a list of landed charges."), frappe.ValidationError)
 
-	from stabler.api._landed import parse_landed_charges
+	from stabler.api._landed import sanitize_charge_lines
 
-	_tot, clean_charges, has_est = parse_landed_charges(parsed)
-	json_str = json.dumps(clean_charges, ensure_ascii=False) if (has_est and clean_charges) else None
+	# ADR-605 second review, P0. This used to persist `parse_landed_charges`' output
+	# -- the VALUED shape. On a half-finished currency switch that shape carries
+	# `amount: 0.0`, so saving destroyed the 3 200 000 so'm the officer had typed and
+	# the next read saw an empty line: unflagged, worth nothing, nothing to fix. A
+	# write path stores what it was GIVEN; valuing is the reader's job and is done
+	# again on every read, so a stored figure can never drift from the rule.
+	raw_lines = sanitize_charge_lines(parsed)
+	json_str = json.dumps(raw_lines, ensure_ascii=False) if raw_lines else None
 
 	frappe.db.set_value("Supplier Quotation", quotation, "custom_landed_charges", json_str)
 

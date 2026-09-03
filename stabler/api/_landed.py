@@ -12,22 +12,105 @@ import json
 from stabler.stabler.tender_landed_math import line_value
 
 
+def _charge_rows(raw_charges) -> list[dict]:
+	"""Decode a stored/posted landed payload into a list of dicts. Shared by both shapes.
+
+	Anything that is not a list of dicts is an empty set of charges, not an error:
+	this runs on stored data that predates the field and on hand-edited JSON, and a
+	read must render what it finds rather than throw on it.
+	"""
+	if not raw_charges:
+		return []
+	if isinstance(raw_charges, str):
+		try:
+			charges = json.loads(raw_charges)
+		except (ValueError, TypeError):
+			return []
+	elif isinstance(raw_charges, list):
+		charges = raw_charges
+	else:
+		return []
+	if not isinstance(charges, list):
+		return []
+	return [c for c in charges if isinstance(c, dict)]
+
+
+def raw_charge_line(c: dict) -> dict:
+	"""RAW SHAPE -- one line exactly as the officer left it. The only shape ever stored.
+
+	Sanitisation only: types, trimming, an upper-cased currency code. Nothing here
+	values anything, and in particular `amount` is passed through untouched.
+
+	ADR-605 second review, P0. `parse_landed_charges` used to be BOTH the reader and
+	the write normaliser, so `update_quotation_landed` persisted its output: a
+	half-finished currency switch (USD picked on a line already holding 3 200 000
+	so'm) was written back as `amount: 0.0, amount_original: 0.0`, and on the next
+	read that is an EMPTY line -- 0.0, unflagged. The officer's figure was destroyed
+	and every warning went quiet, in the very response the save returned. A write
+	path may not store a figure it derived; it stores what it was given, and the
+	reader derives again every time.
+	"""
+	currency = str(c.get("currency") or "").strip().upper()
+	original = c.get("amount_original")
+	charge_type = str(c.get("charge_type") or c.get("account") or "").strip()
+	return {
+		"charge_type": charge_type or "General",
+		"description": str(c.get("description") or ""),
+		# The company-currency figure AS GIVEN. On a line that names a currency this
+		# is normally 0 (the officer types into the currency box instead) -- but when
+		# it is not, that figure is the whole evidence the line is half-switched, and
+		# losing it is the defect this shape exists to prevent.
+		"amount": float(c.get("amount") or c.get("base_amount") or 0.0),
+		# Kept as None on a line with no currency so the two boxes cannot be confused
+		# for one another, and NOT coerced to 0.0 on a currency line -- "nothing typed
+		# yet" and "typed zero" read the same downstream, and only the first is a
+		# half-switch waiting to be finished.
+		"amount_original": float(original) if (currency and original is not None) else None,
+		"currency": currency,
+		"fx_rate": float(c.get("fx_rate") or 0.0),
+		# Provenance, not arithmetic: WHICH day's quote the rate is.
+		"rate_date": str(c.get("rate_date") or "").strip()[:10],
+		"is_recoverable_vat": bool(c.get("is_recoverable_vat")),
+	}
+
+
+def sanitize_charge_lines(raw_charges) -> list[dict]:
+	"""Every line of a payload in the RAW shape -- the whole job of a write path.
+
+	`update_quotation_landed` calls this and nothing else before storing. It is
+	deliberately NOT `parse_landed_charges`: see `raw_charge_line`.
+	"""
+	return [raw_charge_line(c) for c in _charge_rows(raw_charges)]
+
+
 def parse_landed_charges(raw_charges) -> tuple[float, list[dict], bool]:
-	"""Parse landed charges JSON string or list.
+	"""READ-ONLY derivation: the VALUED SHAPE of every line, and what they add up to.
 
 	Returns (total_landed_amount, clean_charges_list, has_estimate).
 	Tax Rule (IAS 2 §11): Recoverable VAT (charge_type 'VAT' or is_recoverable_vat)
 	is NOT capitalized into landed cost.
 
-	ADR-605. The total is added to a company-currency `base_grand_total`, so every
-	line must reach it in company currency. A line carries the PO-line shape:
-	`amount` is always the company-currency figure and `amount_original` the figure
-	as it was typed in the line's own `currency`; an empty `currency` means the two
-	are the same, which is every line stored before ADR-605. Deriving `amount` here
-	-- the one function every read and every write of a quotation estimate passes
-	through -- is what stops the typed figure and the summed one from disagreeing,
-	the same reason `tender._parse_landed` derives a PO line here rather than in its
-	save path.
+	NOTHING PERSISTS WHAT THIS RETURNS. It is derived fresh on every read, and the
+	write path stores `sanitize_charge_lines`' RAW shape instead -- see
+	`raw_charge_line` for the P0 that rule exists to prevent. A valued line is the
+	raw line verbatim plus three derived keys:
+
+	  `amount`             the company-currency figure AS GIVEN (raw, never derived)
+	  `amount_original`    the figure as typed in the line's own `currency` (raw)
+	  `company_amount`     DERIVED: what the line is worth in company currency
+	  `capitalized_amount` DERIVED: `company_amount` unless VAT or unvalued
+	  `unvalued`           DERIVED: whether it could be valued at all
+
+	`amount` and `company_amount` are deliberately two keys and not one. They differ
+	on exactly the lines that matter -- a currency line, where the officer types into
+	the currency box and `amount` stays 0, and a half-switched line, where `amount`
+	still holds the so'm figure and `company_amount` is 0 because nothing can value
+	it. Collapsing them is how the first review's P0 was written.
+
+	`tender._parse_landed` (the PO editor) keeps the older convention where the
+	returned `amount` IS the derived figure; seven call sites and `api.lcv` sum it.
+	Aligning the two is a separate change, not this one. Both go through
+	`line_value`, so they cannot disagree about what a line is worth.
 
 	Whether a line can be valued at all is `tender_landed_math.line_value`'s single
 	rule, shared with `tender._parse_landed` so one Purchase Order cannot show two
@@ -41,59 +124,42 @@ def parse_landed_charges(raw_charges) -> tuple[float, list[dict], bool]:
 	half-finished -- so the flag is what the editor, the comparison table, the award
 	snapshot and the pre-win bid estimate all use to name the gap.
 	"""
-	if not raw_charges:
-		return 0.0, [], False
-
-	if isinstance(raw_charges, str):
-		try:
-			charges = json.loads(raw_charges)
-		except (ValueError, TypeError):
-			return 0.0, [], False
-	elif isinstance(raw_charges, list):
-		charges = raw_charges
-	else:
-		return 0.0, [], False
-
-	if not isinstance(charges, list) or len(charges) == 0:
+	rows = _charge_rows(raw_charges)
+	if not rows:
 		return 0.0, [], False
 
 	total = 0.0
 	clean_charges = []
-	for c in charges:
-		if not isinstance(c, dict):
-			continue
-		stored_amount = float(c.get("amount") or c.get("base_amount") or 0.0)
-		charge_type = str(c.get("charge_type") or c.get("account") or "").strip()
-		is_vat = bool(c.get("is_recoverable_vat")) or charge_type.upper() in ("VAT", "VALUE ADDED TAX", "НДС")
-		currency = str(c.get("currency") or "").strip().upper()
-		fx_rate = float(c.get("fx_rate") or 0.0)
-		original = float(c.get("amount_original") or 0.0)
+	for c in rows:
+		raw = raw_charge_line(c)
+		charge_type = raw["charge_type"]
+		is_vat = raw["is_recoverable_vat"] or charge_type.upper() in ("VAT", "VALUE ADDED TAX", "НДС")
 		# One rule, stated once, shared with `tender._parse_landed` — see
 		# `tender_landed_math.line_value`. A PO customs line reaches this function
 		# with a stored amount and no currency, and keeps the figure the ГТД
 		# declares; a currency line is valued only from what was typed IN that
 		# currency, never from the company-currency figure beside it.
-		amount, unvalued = line_value(stored_amount, original, currency, fx_rate)
+		company_amount, unvalued = line_value(
+			raw["amount"], raw["amount_original"], raw["currency"], raw["fx_rate"]
+		)
 
-		capitalized_amount = 0.0 if (is_vat or unvalued) else amount
+		capitalized_amount = 0.0 if (is_vat or unvalued) else company_amount
 		total += capitalized_amount
 
+		# VALUED SHAPE = the raw line, untouched, PLUS what it is worth. The two are
+		# kept apart on purpose: `amount` is always the figure the officer gave and
+		# `company_amount` always the derived one, so no consumer can read one for
+		# the other and no writer can store a derivation by accident.
 		clean_charges.append(
-			{
-				"charge_type": charge_type or "General",
-				"description": str(c.get("description") or ""),
+			dict(
+				raw,
+				is_recoverable_vat=is_vat,
 				# 0.0 on an unvalued line is not a figure, it is the absence of one;
 				# `unvalued` is what says so. Nothing may sum it without reading that.
-				"amount": amount,
-				"is_recoverable_vat": is_vat,
-				"currency": currency,
-				"fx_rate": fx_rate,
-				# Provenance, not arithmetic: WHICH day's quote produced `amount`.
-				"rate_date": str(c.get("rate_date") or "").strip()[:10],
-				"amount_original": original if currency else None,
-				"capitalized_amount": capitalized_amount,
-				"unvalued": unvalued,
-			}
+				company_amount=company_amount,
+				capitalized_amount=capitalized_amount,
+				unvalued=unvalued,
+			)
 		)
 
 	return round(total, 6), clean_charges, True

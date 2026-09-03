@@ -15,7 +15,10 @@ only exists once the doctypes are real:
     to find out;
   * that a foreign-currency charge line survives the round trip through
     `update_quotation_landed` -> stored JSON -> `get_quotation_landed` with its
-    rate and its converted figure intact;
+    rate and its converted figure intact -- and that a HALF-SWITCHED line survives
+    it too, which is the second review's P0: the save used to persist the reader's
+    valued output, so the company-currency figure it could not value was written
+    back as 0 and the warning vanished on the next read;
   * that `deal_bid_pricing`, the endpoint BidPricing actually calls, pre-fills from
     the quotation when the lot has no Purchase Order and stops doing so the moment
     it has one.
@@ -44,6 +47,7 @@ try:
 except ImportError:  # newer frappe
 	from frappe.tests import IntegrationTestCase as FrappeTestCase
 
+from stabler.api._procurement_policy import MIN_COUNTRIES, MIN_QUOTATIONS
 from stabler.api.sourcing import get_quotation_landed, update_quotation_landed
 from stabler.api.tender import (
 	_bid_inputs,
@@ -52,6 +56,16 @@ from stabler.api.tender import (
 )
 
 _DECISION = "Tender Sourcing Decision"
+
+#: Read on Tender Sourcing Decision, and NOT on Supplier Quotation. Verified from
+#: the two doctype JSONs: the decision grants read to Sales User / Sales Manager /
+#: System Manager, and Supplier Quotation grants it to the Purchase, Stock and
+#: Manufacturing roles. A user with NO role at all cannot be used: the first thing
+#: `_quotation_landed_estimate` does is `frappe.get_list(Tender Sourcing Decision)`,
+#: which throws PermissionError under frappe v16 before the quotation is reached --
+#: so the test would pass on the wrong exception and prove nothing about the
+#: quotation read it exists to measure.
+_READS_DECISIONS_NOT_QUOTATIONS = "Sales User"
 
 
 def _tender_company() -> str | None:
@@ -88,7 +102,16 @@ class _TenderFixture(FrappeTestCase):
 		cls.company = _tender_company()
 		cls.supplier = _a_supplier()
 		cls.item = _an_item(cls.company) if cls.company else None
-		cls.ready = bool(cls.company and cls.supplier and cls.item)
+		# `CRM Deal.company` is a Stabler CUSTOM field (patch v56) — frappe-crm ships
+		# no company on the deal at all. Without it every tender endpoint here is
+		# scoped to nothing, so say that rather than failing on a NULL.
+		#
+		# `table_exists` FIRST: `has_column` raises TableMissingError rather than
+		# returning False when the doctype's table is absent, and `crm` is installed
+		# on 4 of the 7 stabler sites. On the other three this must read as "not
+		# applicable", not as an error in setUpClass.
+		cls.deal_scoped = frappe.db.table_exists("CRM Deal") and frappe.db.has_column("CRM Deal", "company")
+		cls.ready = bool(cls.company and cls.supplier and cls.item and cls.deal_scoped)
 		if not cls.ready:
 			return
 		cls.has_landed_field = frappe.db.has_column("Supplier Quotation", "custom_landed_charges")
@@ -103,11 +126,16 @@ class _TenderFixture(FrappeTestCase):
 
 	@classmethod
 	def _make_deal(cls) -> str:
+		# `organization` is a LINK to CRM Organization, not a label — a free-text
+		# value is a LinkValidationError, which is what took every class down in
+		# setUpClass. It is not reqd, and nothing under test reads it, so the lot
+		# simply has none. `status` IS reqd but `CRM Deal.validate_status` fills it
+		# on a new doc, so it is left out too rather than hard-coding a status name
+		# that varies per site.
 		doc = frappe.get_doc(
 			{
 				"doctype": "CRM Deal",
 				"company": cls.company,
-				"organization": "ADR-605 bench lot",
 			}
 		).insert(ignore_permissions=True)
 		return cls._track("CRM Deal", doc.name)
@@ -128,22 +156,48 @@ class _TenderFixture(FrappeTestCase):
 		).insert(ignore_permissions=True)
 		return cls._track("Supplier Quotation", doc.name)
 
-	@classmethod
-	def _make_decision(cls, quotation: str, *, status: str, approved_at: str | None = None) -> str:
+	def _make_decision(self, quotation: str, *, status: str, approved_at: str | None = None) -> str:
+		"""One decision, cleaned up when THIS test ends.
+
+		Instance-level on purpose. As a classmethod on `addClassCleanup` every row a
+		test created outlived it, so `test_a_draft_alone_is_enough`'s draft was still
+		standing when `test_no_decision_names_nothing` ran and that test measured the
+		previous one's fixture. frappe v16's `IntegrationTestCase` does not roll a
+		test method back on its own.
+
+		Three reqd/validated fields the first draft of this file omitted, each read
+		from `tender_sourcing_decision.json` / `.py`:
+		  * `selection_reason` is reqd -> MandatoryError;
+		  * `_require_exception_when_the_quote_set_is_short` refuses an award below
+		    MIN_QUOTATIONS/MIN_COUNTRIES without a written policy exception, and a
+		    fresh doc has both counts at 0;
+		  * `_enforce_one_way_status` refuses a document BORN approved, so an approval
+		    is always an insert-then-promote, never an insert.
+		"""
 		doc = frappe.get_doc(
 			{
 				"doctype": _DECISION,
-				"company": cls.company,
-				"deal": cls.deal,
+				"company": self.company,
+				"deal": self.deal,
 				"status": "Draft",
 				"selected_quotation": quotation,
+				"selection_reason": "ADR-605 bench fixture",
+				# At the policy minimum, so the award needs no exception. Read from
+				# `_procurement_policy` rather than written as 5/2: the constants move
+				# and a copy here would silently stop matching the gate.
+				"quotation_count": MIN_QUOTATIONS,
+				"country_count": MIN_COUNTRIES,
 			}
 		).insert(ignore_permissions=True)
-		name = cls._track(_DECISION, doc.name)
+		name = doc.name
+		self.addCleanup(frappe.delete_doc, _DECISION, name, force=True, ignore_permissions=True)
 		if status == "Approved":
-			# Set directly rather than through `approve_sourcing_decision`: the point
-			# here is the ORDERING of several approvals, and the endpoint stamps
-			# `now_datetime()` on every one of them, which would make them identical.
+			# Written straight to the row rather than through
+			# `approve_sourcing_decision`: that endpoint requires the director view and
+			# stamps `now_datetime()` on every approval, which would make the two
+			# timestamps this test orders by identical. `db.set_value` also skips
+			# `_reject_client_written_approval`, which exists to stop a CLIENT writing
+			# the stamp — not a fixture standing in for the server.
 			frappe.db.set_value(
 				_DECISION,
 				name,
@@ -154,7 +208,10 @@ class _TenderFixture(FrappeTestCase):
 
 	def setUp(self):
 		if not self.ready:
-			self.skipTest("site has no tender-enabled Company, Supplier or Item")
+			self.skipTest(
+				"site has no tender-enabled Company, Supplier, Item, or no CRM Deal.company "
+				"custom field (run migrate)"
+			)
 		frappe.set_user("Administrator")
 
 
@@ -195,29 +252,45 @@ class TestAQuotationTheSessionMayNotRead(_TenderFixture):
 
 	def test_a_denied_read_is_reported_as_denied_not_as_no_decision(self):
 		self._make_decision(self.dear, status="Draft")
-		user = _make_powerless_user()
+		user = self._make_quotation_blind_user()
 		self.addCleanup(frappe.set_user, "Administrator")
 		frappe.set_user(user)
+		# The precondition, measured rather than assumed: a site with a Custom DocPerm
+		# granting this role read on Supplier Quotation would make the test pass while
+		# exercising the permitted path. Say so instead of reporting a green.
+		if frappe.has_permission("Supplier Quotation", "read", doc=self.dear):
+			self.skipTest(
+				f"this site grants {_READS_DECISIONS_NOT_QUOTATIONS} read on Supplier Quotation "
+				"— the denied path is unreachable with this role"
+			)
 		est = _quotation_landed_estimate(self.deal, self.company)
 		self.assertTrue(est["denied"], "an unreadable quotation must not read as 'none chosen'")
 		self.assertEqual(est["quotation"], self.dear, "the officer needs to know WHICH record")
 		self.assertEqual(est["amount"], 0.0)
 
+	def _make_quotation_blind_user(self) -> str:
+		"""A session that CAN read sourcing decisions and CANNOT read quotations.
 
-def _make_powerless_user() -> str:
-	"""A session with no Supplier Quotation read right."""
-	email = "adr605-noaccess@example.com"
-	if not frappe.db.exists("User", email):
+		Not a role-less user: `_quotation_landed_estimate` reads the decision list
+		first, and frappe v16 refuses that outright for a user with no read on the
+		doctype (`db_query.py`), so the test would die before touching the quotation
+		and prove nothing. The row is deleted when the test ends -- the first draft of
+		this file left a permanent User behind on every run.
+		"""
+		email = "adr605-noaccess@example.com"
+		if frappe.db.exists("User", email):
+			frappe.delete_doc("User", email, force=True, ignore_permissions=True)
 		frappe.get_doc(
 			{
 				"doctype": "User",
 				"email": email,
 				"first_name": "ADR605",
 				"send_welcome_email": 0,
-				"roles": [],
+				"roles": [{"role": _READS_DECISIONS_NOT_QUOTATIONS}],
 			}
 		).insert(ignore_permissions=True)
-	return email
+		self.addCleanup(frappe.delete_doc, "User", email, force=True, ignore_permissions=True)
+		return email
 
 
 class TestAForeignChargeLineSurvivesTheRoundTrip(_TenderFixture):
@@ -261,6 +334,45 @@ class TestAForeignChargeLineSurvivesTheRoundTrip(_TenderFixture):
 		read_back = get_quotation_landed(self.dear, company=self.company)
 		self.assertEqual(read_back["landed_charges_total"], 15_540_000.0)
 		self.assertEqual(read_back["charges"][0]["rate_date"], "2026-09-03")
+
+	def test_the_half_switched_line_keeps_its_figure_on_disk(self):
+		"""ADR-605 second review, P0, measured against the real column.
+
+		Pick USD on a line already holding 3 200 000 so'm and save. The save path
+		must store what it was given -- the frappe-free fixed-point test pins that
+		against a fake `db.set_value`, and this pins it against the column, because
+		the failure was a WRITE and a stub cannot prove a write landed.
+
+		Reading the stored row again has to reach the same verdict: the flag is
+		derived every time and never trusted from storage, so a refresh cannot make
+		an incomplete estimate look sound.
+		"""
+		res = update_quotation_landed(
+			self.dear,
+			[
+				{
+					"charge_type": "Freight",
+					"description": "sea freight",
+					"amount": 3_200_000.0,
+					"amount_original": 0,
+					"currency": "USD",
+					"fx_rate": 0,
+				}
+			],
+			company=self.company,
+		)
+		self.addCleanup(frappe.db.set_value, "Supplier Quotation", self.dear, "custom_landed_charges", None)
+		self.assertTrue(res["has_unvalued_charges"])
+
+		stored = json.loads(frappe.db.get_value("Supplier Quotation", self.dear, "custom_landed_charges"))
+		self.assertEqual(stored[0]["amount"], 3_200_000.0, "the save destroyed the officer's figure")
+		for derived in ("company_amount", "capitalized_amount", "unvalued"):
+			self.assertNotIn(derived, stored[0], f"a derived {derived} reached the column")
+
+		read_back = get_quotation_landed(self.dear, company=self.company)
+		self.assertTrue(read_back["has_unvalued_charges"], "the flag did not survive the reload")
+		self.assertEqual(read_back["charges"][0]["amount"], 3_200_000.0)
+		self.assertEqual(read_back["charges"][0]["company_amount"], 0.0)
 
 	def test_a_line_with_no_usable_rate_is_stored_excluded_and_flagged(self):
 		"""The contract the editor now relies on: store, exclude, flag.

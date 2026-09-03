@@ -46,16 +46,30 @@ def _func_body(src: str, name: str) -> str:
 class TestParseLandedCarriesTheQuote(unittest.TestCase):
 	def setUp(self):
 		self.body = _func_body(_read(), "_parse_landed")
+		# ADR-605 second review, P0: the line's SHAPE now lives in the raw builder
+		# and only the valuation in the reader, because the save path stores the
+		# first and must never store the second.
+		self.raw = _func_body(_read(), "_raw_landed_lines")
 
 	def test_round_trips_the_three_quote_fields(self):
 		# Drop any one and the line still renders, but its provenance is gone:
 		# nobody can tell which day's rate produced the company-currency figure.
 		for field in ("currency", "fx_rate", "rate_date"):
-			self.assertIn(f'"{field}"', self.body, f"_parse_landed drops {field}")
+			self.assertIn(f'"{field}"', self.raw, f"_raw_landed_lines drops {field}")
 
 	def test_keeps_the_typed_original_beside_the_converted_figure(self):
-		self.assertIn("amount_original", self.body)
-		self.assertIn("actual_original", self.body)
+		self.assertIn("amount_original", self.raw)
+		self.assertIn("actual_original", self.raw)
+
+	def test_the_raw_builder_values_nothing(self):
+		"""The whole point of the split: the shape that is STORED is never valued.
+
+		WHAT WOULD MAKE THIS FAIL: folding the conversion back into the builder.
+		`save_po_landed_charges` persists this function's output, so a `line_value`
+		call in here puts a derived 0.0 on disk in place of the figure it was
+		derived from -- which is the P0, one layer down.
+		"""
+		self.assertNotIn("line_value", self.raw)
 
 	def test_derives_through_the_shared_rule(self):
 		self.assertIn(
@@ -93,17 +107,47 @@ class TestParseLandedCarriesTheQuote(unittest.TestCase):
 		"""
 		self.assertRegex(
 			self.body,
-			r'ctype\s*!=\s*"customs"',
+			r'!=\s*"customs"',
 			"_parse_landed converts every line type — a customs line must be left "
 			"to applyCustoms/customsCalc",
 		)
 
 	def test_reading_never_throws_on_an_unusable_rate(self):
-		self.assertNotIn(
-			"frappe.throw",
+		for name, body in (("_parse_landed", self.body), ("_raw_landed_lines", self.raw)):
+			self.assertNotIn(
+				"frappe.throw",
+				body,
+				f"{name} also serves reads; a hand-edited blob must render, not 500",
+			)
+
+
+class TestTheSaveStoresWhatItWasGiven(unittest.TestCase):
+	"""ADR-605 second review, P0. A write path may not persist a derived figure.
+
+	`save_po_landed_charges` used to dump `_parse_landed`'s output, which zeroes
+	`amount` on a line it cannot value. Its refusal catches an unusable RATE but not
+	a half-finished switch -- currency picked, rate fetched, nothing typed in it yet
+	-- so that line stored a 0.0 in place of the so'm figure beside it, and the next
+	read could not tell it from a line nobody had touched.
+	"""
+
+	def setUp(self):
+		self.body = _func_body(_read(), "save_po_landed_charges")
+
+	def test_it_dumps_the_raw_lines_not_the_valued_ones(self):
+		self.assertRegex(
 			self.body,
-			"_parse_landed also serves reads; a hand-edited blob must render, not 500",
+			r"json\.dumps\(\s*raw_lines",
+			"save_po_landed_charges persists a shape it derived — the figure it "
+			"derived FROM is then gone from storage",
 		)
+		self.assertNotRegex(self.body, r"json\.dumps\(\s*cleaned")
+
+	def test_it_still_parses_for_the_refusal(self):
+		# The valued shape is still built — the refusal below reads it. Dropping it
+		# would let an unusable rate reach storage.
+		self.assertIn("cleaned = _parse_landed", self.body)
+		self.assertIn("raw_lines = _raw_landed_lines", self.body)
 
 
 class TestSaveRefusesAnUnvaluableLine(unittest.TestCase):

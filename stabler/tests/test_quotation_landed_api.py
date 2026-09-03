@@ -225,6 +225,96 @@ class TestQuotationLandedApi(unittest.TestCase):
 		self.assertEqual(stored[0]["amount_original"], 1200.0)
 
 
+class TestTheSaveStoresTheLineAsTheOfficerLeftIt(unittest.TestCase):
+	"""ADR-605 second review, P0. Saving must not destroy what it could not value.
+
+	`parse_landed_charges` was BOTH the reader and the write normaliser, so this
+	endpoint persisted its VALUED output. For a half-finished currency switch -- USD
+	picked on a line already holding 3 200 000 so'm -- that output is
+	`amount: 0.0, amount_original: 0.0`, and re-reading THAT is an empty line:
+	unflagged, worth nothing, with nothing left on screen to fix. The officer's
+	figure was gone and every warning went quiet in the very response the save
+	returned.
+
+	These tests read the PERSISTED JSON, not the return value. A save that returns
+	the right answer and stores the wrong one is exactly the bug.
+	"""
+
+	def setUp(self):
+		self.fake = _FakeFrappe()
+		self.api = _load_sourcing(self.fake)
+		self.half_switched = {
+			"charge_type": "Freight",
+			"description": "sea freight",
+			"amount": 3_200_000.0,
+			"amount_original": 0,
+			"currency": "USD",
+			"fx_rate": 0,
+		}
+
+	def _stored(self):
+		return json.loads(self.fake.db_set_values[-1][3])
+
+	def test_the_company_currency_figure_is_still_there_after_the_save(self):
+		self.api.update_quotation_landed("SQ-001", [self.half_switched], company="ACME")
+		self.assertEqual(self._stored()[0]["amount"], 3_200_000.0)
+
+	def test_what_is_stored_is_the_raw_shape_never_the_valued_one(self):
+		# The structural claim, not an arithmetic one: the derived keys must not
+		# reach storage at all. Storing them is what let a derivation be mistaken
+		# for a source on the next read.
+		self.api.update_quotation_landed("SQ-001", [self.half_switched], company="ACME")
+		line = self._stored()[0]
+		for derived in ("company_amount", "capitalized_amount", "unvalued"):
+			self.assertNotIn(derived, line, f"the write path persisted the derived {derived}")
+
+	def test_the_flag_survives_a_reload_because_it_is_derived_again(self):
+		# `unvalued` is never trusted from storage. Reading the stored JSON has to
+		# reach the same verdict the save reported, or the warning disappears the
+		# moment the officer refreshes.
+		from stabler.api._landed import parse_landed_charges
+
+		res = self.api.update_quotation_landed("SQ-001", [self.half_switched], company="ACME")
+		self.assertTrue(res["has_unvalued_charges"])
+		total, clean, has_est = parse_landed_charges(json.dumps(self._stored()))
+		self.assertTrue(has_est)
+		self.assertEqual(total, res["landed_charges_total"])
+		self.assertTrue(clean[0]["unvalued"])
+
+	def test_saving_the_stored_line_again_changes_nothing(self):
+		"""The fixed point. Reopening the modal and pressing Save must be a no-op.
+
+		WHAT WOULD MAKE THIS FAIL: any derivation on the write path. The editor
+		reloads whatever was stored, so a save that rewrites a field turns every
+		visit into another lossy generation -- which is how 3 200 000 became 0 and
+		then stayed 0.
+		"""
+		self.api.update_quotation_landed("SQ-001", [self.half_switched], company="ACME")
+		first = self._stored()
+		self.api.update_quotation_landed("SQ-001", first, company="ACME")
+		self.assertEqual(self._stored(), first)
+
+	def test_a_valuable_line_is_stored_from_what_was_typed_not_from_the_product(self):
+		# The same rule on a healthy line: the company-currency box was never typed
+		# into, so nothing is invented for it. 15 540 000 is derived on every read.
+		self.api.update_quotation_landed(
+			"SQ-001",
+			[
+				{
+					"charge_type": "Freight",
+					"amount_original": 1200.0,
+					"currency": "USD",
+					"fx_rate": 12950.0,
+					"rate_date": "2026-09-03",
+				}
+			],
+			company="ACME",
+		)
+		line = self._stored()[0]
+		self.assertEqual(line["amount"], 0.0)
+		self.assertEqual(line["amount_original"], 1200.0)
+
+
 class TestTheAwardSnapshotRecordsAnIncompleteEstimate(unittest.TestCase):
 	"""ADR-605 review, item 4. The audit record must not look more certain than it was.
 

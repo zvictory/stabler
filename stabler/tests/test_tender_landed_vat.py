@@ -37,11 +37,16 @@ class TestTenderLandedVat(unittest.TestCase):
 		self.src = _read()
 
 	def test_parse_landed_preserves_recoverable_flag(self):
-		body = _func_body(self.src, "_parse_landed")
+		# ADR-605 second review, P0: the line SHAPE moved into `_raw_landed_lines`,
+		# which is what `save_po_landed_charges` now persists, and `_parse_landed`
+		# kept only the valuation. The round trip this test guards is therefore a
+		# property of the raw builder — and more literally so than before, since that
+		# function's output IS what reaches the column.
+		body = _func_body(self.src, "_raw_landed_lines")
 		self.assertIn(
 			"vat_recoverable",
 			body,
-			"_parse_landed must round-trip the vat_recoverable flag so the "
+			"_raw_landed_lines must round-trip the vat_recoverable flag so the "
 			"capitalize/exclude decision survives save+reload",
 		)
 		# Default True: new customs lines exclude VAT from landed cost.
@@ -95,7 +100,7 @@ class TestTenderLandedVat(unittest.TestCase):
 		self.assertIn('"found": False', body)
 
 	def test_actual_voucher_fields_round_trip(self):
-		body = _func_body(self.src, "_parse_landed")
+		body = _func_body(self.src, "_raw_landed_lines")
 		self.assertIn("actual_voucher_type", body)
 		self.assertIn("actual_voucher", body)
 

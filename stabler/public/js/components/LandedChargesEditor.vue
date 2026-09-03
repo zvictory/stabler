@@ -19,6 +19,7 @@ import { call } from "../api/client.js";
 import { formatMoney } from "../composables/money.js";
 import { todayIso } from "../composables/date.js";
 import { t } from "../composables/i18n.js";
+import { convertedPreview, unvaluedReason } from "../composables/landedLine.js";
 import { useToast } from "../composables/useToast.js";
 import MoneyInput from "./MoneyInput.vue";
 import DateInput from "./DateInput.vue";
@@ -110,31 +111,6 @@ function onTypeChange(line) {
 	}
 }
 
-// Mirrors `tender_landed_math.converted_amount`, which the server applies to the
-// stored figure. This is only the preview while typing, and it returns null on an
-// unusable rate for the same reason: a charge shown at its unconverted number
-// reads as CHEAP and hands the tender to the wrong vendor.
-function convertedPreview(line) {
-	if (!line.currency) return Number(line.amount) || 0;
-	const original = Number(line.amount_original) || 0;
-	const stored = Number(line.amount) || 0;
-	// A row the officer has only started typing is empty, not broken.
-	if (!original && !stored) return 0;
-	// Nothing typed in the named currency while a company-currency figure sits in
-	// `amount`: a half-finished currency switch. Valuing it at that figure would
-	// relabel so'm as USD; valuing it at 0 is the ADR-605 review's P0.
-	const rate = Number(line.fx_rate) || 0;
-	if (!original || rate <= 0) return null;
-	return Math.round(original * rate * 100) / 100;
-}
-
-// Which of the two remedies this line needs, so the message can name the action
-// rather than the fact. Both end the same way: or clear the currency.
-function unvaluedReason(line) {
-	if (convertedPreview(line) !== null) return "";
-	return (Number(line.amount_original) || 0) ? "rate" : "amount";
-}
-
 // `null` means the line cannot be valued at all. Counting those is the whole
 // point: adding them as zero is how a total silently shrinks.
 function priceLines(lines) {
@@ -195,6 +171,22 @@ function onChargeCurrency(line) {
 	fetchChargeRate(line);
 }
 
+// A row is dropped on save only when it is empty on EVERY field the officer can
+// fill. The old test — `Number(c.currency ? c.amount_original : c.amount) > 0 ||
+// description` — asked the wrong box the moment a currency was picked: a legacy
+// so'm line onto which USD had just been chosen still has `amount_original` null,
+// so it read as blank, was never sent, and the stored charge was deleted without a
+// word. If it was the only line, `custom_landed_charges` went NULL and the whole
+// estimate vanished. A named currency is itself a thing the officer did.
+function isBlankLine(line) {
+	return (
+		!line.currency &&
+		!(Number(line.amount) > 0) &&
+		!(Number(line.amount_original) > 0) &&
+		!String(line.description || "").trim()
+	);
+}
+
 const landedChargesTotal = computed(() => priceLines(charges.value).total);
 const unvaluedCount = computed(() => priceLines(charges.value).unvalued);
 
@@ -207,7 +199,7 @@ async function save() {
 	saving.value = true;
 	try {
 		const validCharges = charges.value
-			.filter((c) => Number(c.currency ? c.amount_original : c.amount) > 0 || c.description.trim())
+			.filter((c) => !isBlankLine(c))
 			.map((c) => ({
 				charge_type: c.charge_type,
 				description: c.description,

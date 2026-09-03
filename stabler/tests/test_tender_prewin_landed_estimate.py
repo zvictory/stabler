@@ -24,11 +24,21 @@ from __future__ import annotations
 
 import importlib
 import json
+import os
+import re
 import types
 import unittest
 from datetime import date
 
 from stabler.tests.module_sandbox import ModuleSandbox
+
+_HERE = os.path.dirname(os.path.abspath(__file__))
+_BENCH_MODULE = os.path.join(_HERE, "test_tender_prewin_landed_bench.py")
+_DECISION_JSON = os.path.normpath(
+	os.path.join(
+		_HERE, "..", "stabler", "doctype", "tender_sourcing_decision", "tender_sourcing_decision.json"
+	)
+)
 
 _SANDBOX = ModuleSandbox()
 
@@ -355,3 +365,105 @@ class TestATypedFigureIsNeverOverwritten(unittest.TestCase):
 
 if __name__ == "__main__":
 	unittest.main()
+
+
+class TestTheBenchFixtureCanActuallyInsert(unittest.TestCase):
+	"""The bench module cannot run under `make check`; its fixture can still be read.
+
+	Its first draft could not insert a single row: `Tender Sourcing Decision.
+	selection_reason` is reqd, the short-quote-set gate refuses an award whose counts
+	are 0, and `CRM Deal.organization` is a Link to CRM Organization that had been
+	handed a sentence. None of that surfaced here, because a bench module is invisible
+	to the frappe-free suite -- so the file sat in the branch looking like coverage
+	while being unable to reach its own assertions.
+
+	These read the doctype JSON and the fixture source, so the next omission is caught
+	by `make check` rather than by whoever next runs the bench.
+	"""
+
+	@staticmethod
+	def _method_body(src: str, name: str, code_only: bool = False) -> str:
+		m = re.search(rf"^\tdef {name}\(", src, re.M)
+		assert m, f"{name} is gone from the bench module — renamed?"
+		tail = src[m.start() :]
+		nxt = re.search(r"\n\tdef |\nclass |\ndef ", tail[1:])
+		body = tail[: nxt.start() + 1] if nxt else tail
+		if not code_only:
+			return body
+		# Every assertion below that BANS a spelling has to look past the prose: this
+		# method's own docstring explains the classmethod mistake by name, and a
+		# `assertNotIn("addClassCleanup")` over the raw text fails on the explanation
+		# rather than on the code.
+		body = re.sub(r'""".*?"""', "", body, flags=re.S)
+		return "\n".join(line.split("#", 1)[0] for line in body.splitlines())
+
+	def setUp(self):
+		with open(_BENCH_MODULE, encoding="utf-8") as f:
+			self.bench = f.read()
+		with open(_DECISION_JSON, encoding="utf-8") as f:
+			self.doctype = json.load(f)
+
+	def test_the_decision_fixture_sets_every_required_field(self):
+		body = self._method_body(self.bench, "_make_decision")
+		reqd = {f["fieldname"] for f in self.doctype["fields"] if f.get("reqd")}
+		# `naming_series` is supplied by `autoname: naming_series:` and carries a
+		# default; every other reqd field has to be in the payload or the insert is a
+		# MandatoryError before any assertion runs.
+		for field in sorted(reqd - {"naming_series"}):
+			self.assertIn(f'"{field}"', body, f"the bench fixture cannot insert: {field} is reqd")
+
+	def test_the_decision_fixture_clears_the_short_quote_set_gate(self):
+		"""`_require_exception_when_the_quote_set_is_short` refuses a 0/0 award.
+
+		A fresh document has both counts at 0 and no policy exception, which is BELOW
+		the procurement rule — so the controller throws and the fixture never exists.
+		Either the counts are at the minimum or an exception is written; the fixture
+		chooses the first, and reads the thresholds from their one home rather than
+		copying 5 and 2 into a place that will not follow them when they move.
+		"""
+		# `code_only`: the fixture's own comment explains the thresholds by name, so a
+		# plain `assertIn` passes on the prose after the two fields have been deleted.
+		# Measured — that is exactly what this assertion did until it was mutated.
+		body = self._method_body(self.bench, "_make_decision", code_only=True)
+		self.assertIn("MIN_QUOTATIONS", body)
+		self.assertIn("MIN_COUNTRIES", body)
+		self.assertNotRegex(body, r"quotation_count\"\s*:\s*\d")
+
+	def test_no_free_text_goes_into_a_link_field(self):
+		"""`CRM Deal.organization` is a Link to CRM Organization, not a label.
+
+		A sentence in it is a LinkValidationError in `setUpClass`, which took every
+		class in the module down before its first test.
+		"""
+		body = self._method_body(self.bench, "_make_deal")
+		self.assertNotIn('"organization"', body)
+
+	def test_rows_created_inside_a_test_are_cleaned_up_by_that_test(self):
+		"""frappe v16 rolls a CLASS back, not a test method.
+
+		`_make_decision` is called from five test methods. As a classmethod on
+		`addClassCleanup` its rows outlived the test that made them, so
+		`test_a_draft_alone_is_enough` left a standing draft for
+		`test_no_decision_names_nothing` to find — and that test asserts there is none.
+		"""
+		body = self._method_body(self.bench, "_make_decision", code_only=True)
+		self.assertIn("self.addCleanup(frappe.delete_doc", body)
+		self.assertNotIn("addClassCleanup", body)
+
+	def test_the_denied_session_can_still_read_the_decision_list(self):
+		"""A role-less user proves the wrong thing.
+
+		`_quotation_landed_estimate` reads `Tender Sourcing Decision` FIRST, and frappe
+		v16 refuses that list outright for a user with no read on the doctype — so the
+		test would die on the decision query and never reach the quotation permission
+		it exists to measure. The role must read decisions and not quotations.
+		"""
+		roles = {p.get("role") for p in self.doctype.get("permissions", []) if p.get("read")}
+		m = re.search(r'_READS_DECISIONS_NOT_QUOTATIONS = "([^"]+)"', self.bench)
+		self.assertIsNotNone(m, "the bench module no longer names the role it uses")
+		self.assertIn(
+			m.group(1),
+			roles,
+			"that role cannot read Tender Sourcing Decision — the denied test would die "
+			"on the decision query instead of the quotation read",
+		)

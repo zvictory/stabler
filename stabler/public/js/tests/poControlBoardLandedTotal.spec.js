@@ -3,6 +3,8 @@ import { readFileSync } from "fs";
 import { dirname, resolve } from "path";
 import { fileURLToPath } from "url";
 
+import { convertedPreview } from "../composables/landedLine.js";
+
 const here = dirname(fileURLToPath(import.meta.url));
 const src = readFileSync(resolve(here, "../pages/tender/PoControlBoard.vue"), "utf8");
 
@@ -47,7 +49,13 @@ function extractFunction(name) {
 
 const load = (name) => new Function(`${extractFunction(name)}\nreturn ${name};`)();
 
-const convertedPreview = load("convertedPreview");
+// `convertedPreview` is IMPORTED, not extracted: ADR-605's second review moved it
+// into `composables/landedLine.js` because this component's own copy read the rate
+// and nothing else, so a line whose currency was picked but whose figure was not
+// yet typed printed "= 0" with a good rate and no warning. `actualPreview` stays
+// local — it is deliberately asymmetric (an un-invoiced actual is the ordinary
+// state of a charge and must not raise a flag), and merging the two would put that
+// warning under every open PO.
 const actualPreview = load("actualPreview");
 const priceLines = load("priceLines");
 
@@ -59,6 +67,50 @@ const EDITED_FOREIGN = { currency: "USD", fx_rate: 12800, amount_original: 2000,
 const UNVALUED = { currency: "USD", fx_rate: 0, amount_original: 1200, amount: null, actual: null, actual_original: null };
 /** An ordinary company-currency line. */
 const HOME = { currency: "", fx_rate: 0, amount_original: null, amount: 3200000, actual: 3100000, actual_original: null };
+
+/** USD picked on a line already holding the so'm figure; the CBU rate IS good. */
+const HALF_SWITCHED = {
+	currency: "USD",
+	fx_rate: 12950,
+	amount_original: 0,
+	amount: 3200000,
+	actual: null,
+	actual_original: null,
+};
+
+describe("a currency picked before the figure is typed", () => {
+	// ADR-605 second review, P2, in the screen it was reachable from: pick USD at
+	// the row's currency select, press the CBU button, and this component's own
+	// `convertedPreview` returned `0 * 12950 = 0`. It printed "= 0", the missing-rate
+	// warning stayed hidden because the rate was not missing, and `saveEditor` stored
+	// a zero over the officer's 3 200 000. A charge that reads as free makes a vendor
+	// read as cheap.
+
+	it("cannot be valued, and says so instead of printing zero", () => {
+		expect(convertedPreview(HALF_SWITCHED)).toBe(null);
+	});
+
+	it("is counted as unvalued rather than added to the footer as nothing", () => {
+		const { total, unvalued } = priceLines([HOME, HALF_SWITCHED], convertedPreview);
+		expect(total).toBe(3200000);
+		expect(unvalued).toBe(1);
+	});
+
+	it("never relabels the company-currency figure as the new currency", () => {
+		// The opposite failure, and the reason `null` is the answer: 3 200 000 so'm
+		// multiplied by 12 950 is not a freight charge, it is a catastrophe.
+		expect(convertedPreview(HALF_SWITCHED)).not.toBe(3200000 * 12950);
+		expect(convertedPreview(HALF_SWITCHED)).not.toBe(3200000);
+	});
+
+	it("leaves the untouched currency row alone", () => {
+		// Currency picked, nothing anywhere: an empty row, not a broken one. Flagging
+		// it would park a permanent warning under every line just added.
+		expect(
+			convertedPreview({ currency: "USD", fx_rate: 0, amount_original: null, amount: null }),
+		).toBe(0);
+	});
+});
 
 describe("the landed-charge footer counts what the rows are showing", () => {
 	it("counts a freshly added foreign line at the figure its own cell prints", () => {

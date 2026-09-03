@@ -258,11 +258,19 @@ _CHARGE_TYPES = (
 )
 
 
-def _parse_landed(raw) -> list[dict]:
-	"""Parse the JSON stored in Purchase Order.custom_landed_charges into a clean
-	list of dicts (amount in company/base currency). Each line may carry a ТН ВЭД
-	(HS) code and an attributed provider (declarant / lawyer / logistician …) as a
-	Supplier link + denormalized name for display."""
+def _raw_landed_lines(raw) -> list[dict]:
+	"""RAW SHAPE -- the PO's landed lines exactly as they were given. Never valued.
+
+	This is the only shape `save_po_landed_charges` persists. ADR-605 second review,
+	P0: the save used to store `_parse_landed`'s VALUED output, which zeroes `amount`
+	on a line it cannot value -- so a half-finished currency switch (USD picked on a
+	line already holding the so'm figure, with a rate the refusal below accepts)
+	destroyed that figure on the way to disk. Valuing is the reader's job, done again
+	on every read; storing a derivation loses the thing it was derived from.
+
+	Each line may carry a ТН ВЭД (HS) code and an attributed provider (declarant /
+	lawyer / logistician …) as a Supplier link + denormalized name for display.
+	"""
 	if not raw:
 		return []
 	try:
@@ -321,6 +329,20 @@ def _parse_landed(raw) -> list[dict]:
 				"unvalued": False,
 			}
 		)
+	return out
+
+
+def _parse_landed(raw) -> list[dict]:
+	"""VALUED SHAPE -- the raw lines with `amount`/`actual` in company currency.
+
+	Derived on every read and never stored (see `_raw_landed_lines`). Unlike the
+	quotation reader, which keeps the given figure under `amount` and the derived one
+	under `company_amount`, this one overwrites `amount` in place: seven call sites
+	and `api.lcv` sum that key. Both call `line_value`, so the two cannot disagree
+	about what a line is worth; only about which key holds the answer.
+	"""
+	out = _raw_landed_lines(raw)
+	for line in out:
 		# `amount`/`actual` stay the company-currency figures every consumer sums.
 		# Deriving them here — the one chokepoint both reads and writes pass
 		# through — is what stops the two from ever disagreeing.
@@ -330,23 +352,27 @@ def _parse_landed(raw) -> list[dict]:
 		# customs value in company currency at the rate customs itself applied;
 		# re-deriving it from a CBU quote produces a figure the declaration does
 		# not agree with. `save_po_landed_charges` refuses the combination.
-		if ccy and ctype != "customs":
-			# ADR-605 review, item 6. This used to KEEP the stored figure when the
-			# rate was unusable while `_landed.parse_landed_charges` — which sums the
-			# very same JSON for the PO board (`po_control_board`) — dropped the line.
-			# One Purchase Order therefore showed two different landed totals
-			# depending on which screen asked. `line_value` is now the only rule for
-			# both: an unvaluable line is 0.0 and flagged, never a figure nobody can
-			# reproduce. `save_po_landed_charges` still REFUSES to create that state,
-			# so reaching it means hand-edited JSON — and reading must never throw.
-			amount, unvalued = line_value(out[-1]["amount"], amount_ccy, ccy, out[-1]["fx_rate"])
-			out[-1]["amount"] = amount
-			out[-1]["unvalued"] = unvalued
-			# The actual side stays deliberately asymmetric: an actual of nothing is
-			# the ordinary state of a charge not yet invoiced, so it follows the
-			# planned line's verdict rather than raising a second flag of its own.
-			actual, _ = line_value(out[-1]["actual"], actual_ccy, ccy, out[-1]["fx_rate"])
-			out[-1]["actual"] = 0.0 if unvalued else actual
+		if not (line["currency"] and line["type"] != "customs"):
+			continue
+		# ADR-605 review, item 6. This used to KEEP the stored figure when the
+		# rate was unusable while `_landed.parse_landed_charges` — which sums the
+		# very same JSON for the PO board (`po_control_board`) — dropped the line.
+		# One Purchase Order therefore showed two different landed totals
+		# depending on which screen asked. `line_value` is now the only rule for
+		# both: an unvaluable line is 0.0 and flagged, never a figure nobody can
+		# reproduce. `save_po_landed_charges` still REFUSES an unusable rate, but
+		# not a half-finished switch, so this state is reachable — and reading
+		# must never throw on it.
+		amount, unvalued = line_value(
+			line["amount"], line["amount_original"], line["currency"], line["fx_rate"]
+		)
+		line["amount"] = amount
+		line["unvalued"] = unvalued
+		# The actual side stays deliberately asymmetric: an actual of nothing is
+		# the ordinary state of a charge not yet invoiced, so it follows the
+		# planned line's verdict rather than raising a second flag of its own.
+		actual, _ = line_value(line["actual"], line["actual_original"], line["currency"], line["fx_rate"])
+		line["actual"] = 0.0 if unvalued else actual
 	return out
 
 
@@ -491,6 +517,11 @@ def save_po_landed_charges(po: str, charges) -> dict:
 	if not frappe.db.has_column("Purchase Order", "custom_landed_charges"):
 		frappe.throw(_("Run migrate to enable landed-cost planning."))
 	cleaned = _parse_landed(charges)
+	# Two independent parses of the same payload: `cleaned` is the VALUED shape the
+	# refusal below and the returned total read, `raw_lines` the RAW shape that is
+	# actually stored. Persisting `cleaned` is the P0 -- it writes back a 0.0 the
+	# next read cannot tell from an empty line.
+	raw_lines = _raw_landed_lines(charges)
 	# WP-T3: a line naming a currency with no usable rate cannot be valued, and a
 	# line that cannot be valued must not enter the total that decides which vendor
 	# wins the tender. Refused here rather than in `_parse_landed`, which also
@@ -512,7 +543,7 @@ def save_po_landed_charges(po: str, charges) -> dict:
 		"Purchase Order",
 		po,
 		"custom_landed_charges",
-		json.dumps(cleaned, ensure_ascii=False),
+		json.dumps(raw_lines, ensure_ascii=False),
 		update_modified=False,
 	)
 	base_total = flt(frappe.db.get_value("Purchase Order", po, "base_grand_total"))

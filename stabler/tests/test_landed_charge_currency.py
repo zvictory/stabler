@@ -162,7 +162,11 @@ class TestForeignLineIsConverted(unittest.TestCase):
 		total, clean, has_est = parse_landed_charges([_FOREIGN])
 		self.assertTrue(has_est)
 		self.assertEqual(total, 15_540_000.0)
-		self.assertEqual(clean[0]["amount"], 15_540_000.0)
+		self.assertEqual(clean[0]["company_amount"], 15_540_000.0)
+		# ... and the officer's own box is left alone. `amount` is the company-currency
+		# figure AS GIVEN; on a currency line that is nothing, because the figure was
+		# typed into the currency box instead.
+		self.assertEqual(clean[0]["amount"], 0.0)
 
 	def test_the_line_keeps_the_typed_figure_and_its_provenance(self):
 		# Drop any of these and the officer can no longer tell WHICH day's rate
@@ -181,7 +185,7 @@ class TestForeignLineIsConverted(unittest.TestCase):
 		vat = dict(_FOREIGN, charge_type="VAT", is_recoverable_vat=True)
 		total, clean, _has_est = parse_landed_charges([vat])
 		self.assertEqual(total, 0.0)
-		self.assertEqual(clean[0]["amount"], 15_540_000.0)
+		self.assertEqual(clean[0]["company_amount"], 15_540_000.0)
 		self.assertEqual(clean[0]["capitalized_amount"], 0.0)
 
 
@@ -219,7 +223,10 @@ class TestLegacyLinesDoNotMove(unittest.TestCase):
 		total, clean, has_est = parse_landed_charges([_LEGACY])
 		self.assertTrue(has_est)
 		self.assertEqual(total, 3_200_000.0)
+		# With no currency the given figure and the derived one are the same number.
+		# They are still two keys, because on the lines that matter they differ.
 		self.assertEqual(clean[0]["amount"], 3_200_000.0)
+		self.assertEqual(clean[0]["company_amount"], 3_200_000.0)
 		self.assertEqual(clean[0]["currency"], "")
 		self.assertFalse(clean[0]["unvalued"])
 
@@ -258,7 +265,12 @@ class TestACurrencyWithoutATypedFigure(unittest.TestCase):
 		# wrong; refusing to value the line is the only honest answer.
 		line = {"charge_type": "Freight", "amount": 3_200_000, "currency": "USD", "fx_rate": 12_950}
 		_total, clean, _has_est = parse_landed_charges([line])
-		self.assertEqual(clean[0]["amount"], 0.0)
+		self.assertEqual(clean[0]["company_amount"], 0.0)
+		# The so'm figure is NOT collateral damage. It is the only evidence the line
+		# is half-switched, it is what the officer sees when the editor reopens, and
+		# it is what the save path now stores. Zeroing it here is the second review's
+		# P0 one layer up.
+		self.assertEqual(clean[0]["amount"], 3_200_000.0)
 
 	def test_the_quotation_reports_it_so_the_ranking_cannot_hide_it(self):
 		q = calculate_quotation_landed(
@@ -297,11 +309,11 @@ class TestAPurchaseOrderLineIsNotConvertedTwice(unittest.TestCase):
 
 	def test_the_foreign_po_line_keeps_the_figure_the_po_editor_stored(self):
 		_total, clean, _has_est = parse_landed_charges([_PO_FOREIGN])
-		self.assertEqual(clean[0]["amount"], 15_360_000.0)
+		self.assertEqual(clean[0]["company_amount"], 15_360_000.0)
 
 	def test_a_customs_line_keeps_the_declared_figure(self):
 		_total, clean, _has_est = parse_landed_charges([_PO_CUSTOMS])
-		self.assertEqual(clean[0]["amount"], 4_200_000.0)
+		self.assertEqual(clean[0]["company_amount"], 4_200_000.0)
 
 
 class TestBothReadersOfAPoLineAgree(unittest.TestCase):

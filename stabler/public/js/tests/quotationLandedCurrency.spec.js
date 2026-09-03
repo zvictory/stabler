@@ -3,9 +3,13 @@ import { readFileSync } from "fs";
 import { dirname, resolve } from "path";
 import { fileURLToPath } from "url";
 
+import { convertedPreview, unvaluedReason } from "../composables/landedLine.js";
+
 const here = dirname(fileURLToPath(import.meta.url));
 const editor = readFileSync(resolve(here, "../components/LandedChargesEditor.vue"), "utf8");
 const workspace = readFileSync(resolve(here, "../pages/tender/SourcingWorkspace.vue"), "utf8");
+const board = readFileSync(resolve(here, "../pages/tender/PoControlBoard.vue"), "utf8");
+const shared = readFileSync(resolve(here, "../composables/landedLine.js"), "utf8");
 
 /**
  * ADR-605 — one landed-charge number, one currency label.
@@ -46,12 +50,21 @@ const load = (src, name, ...deps) =>
 		`${[...deps, name].map((n) => extractFunction(src, n)).join("\n")}\nreturn ${name};`,
 	)();
 
-const convertedPreview = load(editor, "convertedPreview");
-// `priceLines` calls `convertedPreview` directly rather than taking it as an
-// argument, so the total can never be computed with a different rule than the
-// cells above it — that split is exactly what P0 in the PO board was.
-const priceLines = load(editor, "priceLines", "convertedPreview");
-const unvaluedReason = load(editor, "unvaluedReason", "convertedPreview");
+// `convertedPreview` and `unvaluedReason` are IMPORTED above, from the module both
+// editors now share (`composables/landedLine.js`). They used to be extracted from
+// this component's own source, which is precisely how the PO board came to carry a
+// second, weaker copy of the same rule.
+//
+// `priceLines` stays extracted: it is not shared, because the two editors disagree
+// about what to exclude (this one skips recoverable VAT, the PO's does not). It
+// calls `convertedPreview` by name, so the real one is injected here rather than a
+// stub — a total computed with a different rule than the cells above it is the very
+// split under test.
+const priceLines = new Function(
+	"convertedPreview",
+	`${extractFunction(editor, "priceLines")}\nreturn priceLines;`,
+)(convertedPreview);
+const isBlankLine = load(editor, "isBlankLine");
 // `fetchChargeRate` is stubbed rather than extracted: it is an async network call
 // and nothing here is about the CBU fetch. What is under test is what
 // `onChargeCurrency` does to the two amount fields on the way past.
@@ -265,5 +278,132 @@ describe("the line's currency and its rate travel together to the server", () =>
 		const onCurrency = extractFunction(editor, "onChargeCurrency");
 		expect(onCurrency).toMatch(/fx_rate\s*=\s*0/);
 		expect(onCurrency).toMatch(/rate_date\s*=\s*""/);
+	});
+});
+
+describe("a line is dropped on save only when it is empty on every field", () => {
+	// ADR-605 second review, P1. The old filter was
+	// `Number(c.currency ? c.amount_original : c.amount) > 0 || c.description.trim()`.
+	// It asks the CURRENCY box the moment a currency exists — so the one row shape
+	// this whole feature is about, a legacy so'm line onto which USD has just been
+	// picked, tested as blank. It was never sent, `update_quotation_landed` replaced
+	// the stored array without it, and the charge was deleted with no message at
+	// all. If it was the only line, `custom_landed_charges` went NULL and the
+	// estimate the officer had been building simply ceased to exist.
+	const halfSwitched = {
+		currency: "USD",
+		amount: 3_200_000,
+		amount_original: null,
+		description: "",
+		charge_type: "Freight",
+	};
+
+	it("keeps the legacy line that has just been given a currency", () => {
+		expect(isBlankLine(halfSwitched)).toBe(false);
+	});
+
+	it("keeps a line that carries only a currency, before anything is typed", () => {
+		// The officer picks EUR first and types second. Dropping the row here means
+		// the pick is undone by the save with no explanation.
+		expect(isBlankLine({ currency: "EUR", amount: 0, amount_original: null, description: "" })).toBe(
+			false,
+		);
+	});
+
+	it("keeps a line that carries only a description", () => {
+		expect(
+			isBlankLine({ currency: "", amount: 0, amount_original: null, description: "port fees" }),
+		).toBe(false);
+	});
+
+	it("keeps a company-currency line and a currency line with a typed figure", () => {
+		expect(isBlankLine({ currency: "", amount: 250_000, amount_original: null, description: "" })).toBe(
+			false,
+		);
+		expect(isBlankLine({ currency: "USD", amount: 0, amount_original: 1200, description: "" })).toBe(
+			false,
+		);
+	});
+
+	it("drops the untouched row the modal adds for you", () => {
+		// `addChargeLine` pushes exactly this. Sending it would store a "General 0"
+		// charge on every save — the one thing the filter is actually for.
+		expect(
+			isBlankLine({
+				charge_type: "Freight",
+				description: "",
+				amount: 0,
+				currency: "",
+				fx_rate: 0,
+				rate_date: "",
+				amount_original: null,
+			}),
+		).toBe(true);
+	});
+
+	it("is what save() filters on", () => {
+		// WHAT WOULD MAKE THIS FAIL: a second, inline predicate in save(). The
+		// filter and the rule have to be the same thing, or fixing one leaves the
+		// other deleting rows.
+		const save = editor.slice(editor.indexOf("async function save()"));
+		expect(save).toMatch(/\.filter\(\(c\) => !isBlankLine\(c\)\)/);
+	});
+});
+
+describe("both landed editors value a line with one rule", () => {
+	// ADR-605 second review, P2. `PoControlBoard.vue` carried its own
+	// `convertedPreview` that read the rate and nothing else:
+	//
+	//     if (!l.currency) return Number(l.amount) || 0;
+	//     const rate = Number(l.fx_rate) || 0;
+	//     if (rate <= 0) return null;
+	//     return Math.round((Number(l.amount_original) || 0) * rate * 100) / 100;
+	//
+	// Pick USD on a so'm line, press the CBU button, and the rate is GOOD while
+	// `amount_original` is still empty: that arithmetic prints "= 0", the
+	// missing-rate warning never fires because no rate is missing, and the save
+	// stores nothing. Two copies of a money rule is two rules.
+
+	it("neither component defines a convertedPreview of its own", () => {
+		for (const [name, src] of [
+			["LandedChargesEditor.vue", editor],
+			["PoControlBoard.vue", board],
+		]) {
+			expect(src, `${name} still defines its own convertedPreview`).not.toMatch(
+				/function convertedPreview\s*\(/,
+			);
+		}
+	});
+
+	it("both import it from the shared module", () => {
+		expect(editor).toMatch(/import \{[^}]*convertedPreview[^}]*\} from "\.\.\/composables\/landedLine\.js"/);
+		expect(board).toMatch(
+			/import \{[^}]*convertedPreview[^}]*\} from "\.\.\/\.\.\/composables\/landedLine\.js"/,
+		);
+	});
+
+	it("refuses the half-switched PO line the old board copy valued at zero", () => {
+		// The exact row the board could reach: currency picked, rate fetched,
+		// nothing typed in that currency yet, and the so'm figure still sitting
+		// there. `null`, not 0 — a charge that reads as free makes a vendor read as
+		// cheap.
+		expect(convertedPreview({ currency: "USD", amount: 3_200_000, amount_original: 0, fx_rate: 12_950 })).toBe(
+			null,
+		);
+	});
+
+	it("still values the ordinary PO line the board has always shown", () => {
+		expect(
+			convertedPreview({ currency: "USD", amount: 0, amount_original: 1200, fx_rate: 12_800 }),
+		).toBe(15_360_000);
+		expect(convertedPreview({ currency: "", amount: 4_200_000, amount_original: null, fx_rate: 0 })).toBe(
+			4_200_000,
+		);
+	});
+
+	it("mirrors the server rule it is named after", () => {
+		// The client preview and `tender_landed_math.line_value` must reach the same
+		// verdict, or the screen promises a figure the save then refuses to store.
+		expect(shared).toMatch(/line_value/);
 	});
 });
