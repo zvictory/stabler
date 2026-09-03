@@ -116,6 +116,24 @@ def _first_deal_status() -> str | None:
 	return rows[0]["name"] if rows else None
 
 
+def _overhead_organization() -> str:
+	"""The CRM Organization the overhead deal links to, created once if missing.
+
+	`CRM Deal.organization` is a Link, not free text, so the name has to exist as
+	a document before the deal will insert — `ignore_mandatory` does not skip link
+	validation. Same resolve-or-create shape as `crm._resolve_crm_organization`,
+	kept local because `crm` already imports this module.
+	"""
+	existing = frappe.db.exists("CRM Organization", {"organization_name": OVERHEAD_ORGANIZATION})
+	if existing:
+		return existing
+	organization = frappe.new_doc("CRM Organization")
+	organization.organization_name = OVERHEAD_ORGANIZATION
+	organization.flags.ignore_permissions = 1
+	organization.insert(ignore_permissions=True)
+	return organization.name or OVERHEAD_ORGANIZATION
+
+
 def overhead_deal(company: str, create: bool = False) -> str | None:
 	"""The company's one "GENEL GİDER" deal, queried — never a hardcoded name.
 
@@ -133,7 +151,7 @@ def overhead_deal(company: str, create: bool = False) -> str | None:
 	doc = frappe.get_doc(
 		{
 			"doctype": DIMENSION_DOCTYPE,
-			"organization": OVERHEAD_ORGANIZATION,
+			"organization": _overhead_organization(),
 			"deal_type": OVERHEAD_DEAL_TYPE,
 			"company": company,
 			"status": _first_deal_status(),

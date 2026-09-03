@@ -89,6 +89,18 @@ class _Doc(dict):
 		except KeyError as exc:  # pragma: no cover - mirrors frappe's AttributeError
 			raise AttributeError(key) from exc
 
+	#: Not document fields: the identity Frappe assigns and the methods this stub binds.
+	_INTERNALS = ("doctype", "name", "flags", "insert", "append", "save")
+
+	def __setattr__(self, key, value):
+		# `doc.some_field = x` sets a FIELD in Frappe, not a python attribute -- a
+		# stub that stored it as an attribute would report an empty payload and let
+		# a hook that never filled the field pass.
+		if key in _Doc._INTERNALS:
+			object.__setattr__(self, key, value)
+		else:
+			self[key] = value
+
 
 class _Meta:
 	def __init__(self, fields: list[str], tables: dict | None = None):
@@ -177,6 +189,11 @@ def _load(site: _Site):
 			raise LookupError(f"table missing: {dt}")
 		return (dt, col) in site.columns
 
+	def _exists(dt, name):
+		if isinstance(name, dict):
+			return site.singles.get((dt, tuple(sorted(name.items()))))
+		return bool(site.values.get((dt, name)))
+
 	def _sql(statement, params=None, **_kwargs):
 		site.sql.append((" ".join(str(statement).split()), params))
 		return [[site.rows_matching]] if "COUNT(*)" in statement else []
@@ -185,7 +202,7 @@ def _load(site: _Site):
 		get_value=_get_value,
 		has_column=_has_column,
 		table_exists=lambda dt: (dt in site.tables) if site.tables else True,
-		exists=lambda dt, name: bool(site.values.get((dt, name)) if isinstance(name, str) else None),
+		exists=_exists,
 		count=lambda dt, filters=None: len(site.lists.get(dt, [])),
 		set_value=lambda *_a, **_k: None,
 		commit=lambda: None,
@@ -197,22 +214,39 @@ def _load(site: _Site):
 	frappe.get_all = lambda doctype, **kwargs: _get_all(site, doctype, **kwargs)
 	frappe.get_list = frappe.get_all
 
+	def _new_doc(doctype, **fields):
+		doc = _Doc(doctype, **fields)
+		doc.name = f"{doctype}-NEW"
+
+		def _insert(**kw):
+			# CRM Organization autonames `field:organization_name`, which is the only
+			# reason the deal's link value reads as the organization's own name.
+			if doctype == "CRM Organization" and doc.get("organization_name"):
+				doc.name = doc["organization_name"]
+			site.inserted.append(({"doctype": doc.doctype, **doc}, kw))
+
+		doc.insert = _insert
+		return doc
+
 	def _get_doc(payload, name=None):
 		if isinstance(payload, str):
 			stored = site.values.get((payload, name))
 			doc = _Doc(payload, **(stored or {}))
 			doc.name = name
 		else:
-			fields = {k: v for k, v in payload.items() if k != "doctype"}
-			doc = _Doc(payload.get("doctype"), **fields)
-			doc.name = f"{payload.get('doctype')}-NEW"
-			doc.insert = lambda **kw: site.inserted.append(({"doctype": doc.doctype, **doc}, kw))
+			doc = _new_doc(payload.get("doctype"), **{k: v for k, v in payload.items() if k != "doctype"})
 		doc.flags = types.SimpleNamespace()
 		doc.append = lambda table, row: doc.setdefault(table, []).append(_Row(row))
 		doc.save = lambda **kw: site.saved.append((doc.doctype, doc.name, dict(doc)))
 		return doc
 
+	def _bare_new_doc(doctype):
+		doc = _new_doc(doctype)
+		doc.flags = types.SimpleNamespace()
+		return doc
+
 	frappe.get_doc = _get_doc
+	frappe.new_doc = _bare_new_doc
 	frappe.logger = lambda *_a, **_k: types.SimpleNamespace(info=lambda *_x, **_y: None)
 	utils = types.ModuleType("frappe.utils")
 	utils.cint = lambda value=0: int(float(value or 0))
@@ -659,18 +693,43 @@ class TestEnsureCompanySetup(unittest.TestCase):
 		created = self.mod.ensure_company_setup("_Test Company")
 		self.assertTrue(created["overhead_deal"])
 		self.assertTrue(created["detail_row"])
-		payload = self.site.inserted[0][0]
+		deal = next((p, kw) for p, kw in self.site.inserted if p.get("doctype") == "CRM Deal")
+		payload, kwargs = deal
 		self.assertEqual(payload["organization"], "GENEL GİDER")
 		self.assertEqual(payload["deal_type"], "Overhead")
 		self.assertEqual(payload["company"], "_Test Company")
 		# `ignore_mandatory` because a CRM Deal normally demands tender fields this
 		# ledger bucket must not have.
-		self.assertTrue(self.site.inserted[0][1].get("ignore_mandatory"))
+		self.assertTrue(kwargs.get("ignore_mandatory"))
 		row = self.site.saved[0][2]["dimension_defaults"][0]
 		self.assertEqual(row["company"], "_Test Company")
 		self.assertEqual(row["mandatory_for_pl"], 1)
 		self.assertEqual(row["mandatory_for_bs"], 0)
 		self.assertEqual(row["reference_document"], "CRM Deal")
+
+	def test_creates_the_organization_the_deal_links_to(self):
+		"""`CRM Deal.organization` is a LINK to CRM Organization, not free text.
+
+		Measured on genesis-test.local 2026-09-03, running v103 for the first time:
+		inserting the deal with `organization: "GENEL GİDER"` and nothing else died
+		with `LinkValidationError: Could not find Organization: GENEL GİDER`, and
+		the patch aborted before any company was set up. `ignore_mandatory` does not
+		help — link validation is a separate pass. The organization has to exist
+		first, exactly as `crm._resolve_crm_organization` does it for every deal the
+		SPA saves.
+		"""
+		self.site.singles.pop(("CRM Deal", (("company", "_Test Company"), ("deal_type", "Overhead"))))
+		self.mod.overhead_deal("_Test Company", create=True)
+		doctypes = [payload.get("doctype") for payload, _kw in self.site.inserted]
+		self.assertEqual(doctypes, ["CRM Organization", "CRM Deal"], "the deal was inserted first")
+		self.assertEqual(self.site.inserted[0][0]["organization_name"], "GENEL GİDER")
+
+	def test_reuses_an_organization_that_already_exists(self):
+		self.site.singles[("CRM Organization", (("organization_name", "GENEL GİDER"),))] = "GENEL GİDER"
+		self.site.singles.pop(("CRM Deal", (("company", "_Test Company"), ("deal_type", "Overhead"))))
+		self.mod.overhead_deal("_Test Company", create=True)
+		doctypes = [payload.get("doctype") for payload, _kw in self.site.inserted]
+		self.assertEqual(doctypes, ["CRM Deal"], "a second organization was created")
 
 	def test_is_idempotent_when_the_row_already_names_a_default(self):
 		self.site.values[("Accounting Dimension", "Tender")]["dimension_defaults"] = [
