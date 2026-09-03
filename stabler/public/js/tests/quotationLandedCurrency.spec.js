@@ -9,7 +9,6 @@ const here = dirname(fileURLToPath(import.meta.url));
 const editor = readFileSync(resolve(here, "../components/LandedChargesEditor.vue"), "utf8");
 const workspace = readFileSync(resolve(here, "../pages/tender/SourcingWorkspace.vue"), "utf8");
 const board = readFileSync(resolve(here, "../pages/tender/PoControlBoard.vue"), "utf8");
-const shared = readFileSync(resolve(here, "../composables/landedLine.js"), "utf8");
 
 /**
  * ADR-605 — one landed-charge number, one currency label.
@@ -401,9 +400,47 @@ describe("both landed editors value a line with one rule", () => {
 		);
 	});
 
-	it("mirrors the server rule it is named after", () => {
-		// The client preview and `tender_landed_math.line_value` must reach the same
-		// verdict, or the screen promises a figure the save then refuses to store.
-		expect(shared).toMatch(/line_value/);
+	it("reaches the same verdict as line_value on every case line_value has", () => {
+		// This used to be `expect(shared).toMatch(/line_value/)`, which the module's
+		// own JSDoc satisfied — it asserted that the file MENTIONS the server rule,
+		// not that it agrees with it, and would have stayed green through any change
+		// to the arithmetic. The claim it was making is worth keeping, so it is made
+		// properly: the five cases of `TestLineValueIsTheOneRule`
+		// (test_tender_landed_math.py), each with the verdict that test asserts.
+		// `null` here is the server's `unvalued=True`; a number is its company amount.
+		const cases = [
+			["no currency: the figure is already company currency", { currency: "", amount: 3200000 }, 3200000],
+			[
+				"a currency line is valued from what was typed IN that currency",
+				{ currency: "USD", amount: 0, amount_original: 1200, fx_rate: 12950 },
+				15540000,
+			],
+			[
+				"an unusable rate leaves the line unvalued",
+				{ currency: "USD", amount: 0, amount_original: 1200, fx_rate: 0 },
+				null,
+			],
+			[
+				"a currency with no typed figure is unvalued, not zero",
+				{ currency: "USD", amount: 3200000, amount_original: 0, fx_rate: 12950 },
+				null,
+			],
+			[
+				"a currency line with nothing on either side is empty, not broken",
+				{ currency: "USD", amount: 0, amount_original: 0, fx_rate: 0 },
+				0,
+			],
+		];
+		for (const [why, line, expected] of cases) {
+			expect(convertedPreview(line), why).toBe(expected);
+		}
+	});
+
+	it("never relabels the company-currency figure as the currency just picked", () => {
+		// `line_value`'s other half: the opposite failure to valuing at 0. Asserted
+		// as its own case because both are "wrong" and only one of them looks wrong.
+		const half = { currency: "USD", amount: 3200000, amount_original: 0, fx_rate: 12950 };
+		expect(convertedPreview(half)).not.toBe(3200000 * 12950);
+		expect(convertedPreview(half)).not.toBe(3200000);
 	});
 });

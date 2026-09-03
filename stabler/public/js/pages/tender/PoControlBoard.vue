@@ -12,7 +12,7 @@ import { call } from "../../api/client.js";
 import { formatMoney } from "../../composables/money.js";
 import { formatDate, todayIso } from "../../composables/date.js";
 import { t } from "../../composables/i18n.js";
-import { convertedPreview } from "../../composables/landedLine.js";
+import { convertedPreview, unvaluedReason } from "../../composables/landedLine.js";
 import { useToast } from "../../composables/useToast.js";
 import { useEscapeBack } from "../../composables/useEscapeBack.js";
 import Typeahead from "../../components/Typeahead.vue";
@@ -183,21 +183,58 @@ async function openEditor(card) {
 	try {
 		const r = await call("stabler.api.tender.po_landed_charges", { po: card.name });
 		editorBase.value = r?.base_total || 0;
-		editorLines.value = (r?.charges || []).map((c) => ({
-			type: c.type || "other", label: c.label || "", amount: c.amount || 0, actual: c.actual || null,
-			tnved: c.tnved || "", supplier: c.supplier || "", supplier_name: c.supplier_name || "",
-			cif: c.cif || null, duty_pct: c.duty_pct || null, vat_pct: c.vat_pct || 12, excise_pct: c.excise_pct || 0,
-			vat_recoverable: c.vat_recoverable !== false, rate_source: "",
-			currency: c.currency || "", fx_rate: c.fx_rate || 0, rate_date: c.rate_date || "",
-			amount_original: c.amount_original || null, actual_original: c.actual_original || null, fx_source: "",
-			actual_voucher_type: c.actual_voucher_type || "", actual_voucher: c.actual_voucher || "", actual_label: c.actual_voucher ? c.actual_voucher : "",
-		}));
+		editorLines.value = (r?.charges || []).map(editorLine);
 	} catch (err) {
 		toast.error(err?.message || t("Could not load landed charges."));
 	} finally {
 		editorLoading.value = false;
 	}
 }
+// ── The editor's round trip ──────────────────────────────────────────────────
+// `editorLine` and `savedLine` are inverses: what a read hands the modal must be
+// something the modal can hand back unchanged. Named functions rather than inline
+// literals so the loop can be exercised — `poControlBoardLandedTotal.spec.js`
+// composes them, and `test_landed_charge_currency.py` pins the server halves
+// against the same contract.
+//
+// ADR-605 third review, P0. `amount` comes off `amount_given`, the figure the
+// officer TYPED, not off `amount` — which `_parse_landed` overwrites with the
+// derived company-currency figure, and which is 0.0 on a line nothing can value.
+// Binding that 0.0 put the officer's 3 200 000 so'm off the screen AND made
+// `isSendable` drop the row on the next save, taking the charge out of the PO's
+// landed total with no message at all.
+function editorLine(c) {
+	return {
+		type: c.type || "other", label: c.label || "", amount: c.amount_given || 0, actual: c.actual_given || null,
+		tnved: c.tnved || "", supplier: c.supplier || "", supplier_name: c.supplier_name || "",
+		cif: c.cif || null, duty_pct: c.duty_pct || null, vat_pct: c.vat_pct || 12, excise_pct: c.excise_pct || 0,
+		vat_recoverable: c.vat_recoverable !== false, rate_source: "",
+		currency: c.currency || "", fx_rate: c.fx_rate || 0, rate_date: c.rate_date || "",
+		amount_original: c.amount_original || null, actual_original: c.actual_original || null, fx_source: "",
+		actual_voucher_type: c.actual_voucher_type || "", actual_voucher: c.actual_voucher || "", actual_label: c.actual_voucher ? c.actual_voucher : "",
+	};
+}
+
+function savedLine(l) {
+	return {
+		type: l.type || "other", label: (l.label || "").trim(), amount: Number(l.amount), actual: Number(l.actual) || 0,
+		tnved: (l.tnved || "").trim(), supplier: l.supplier || "", supplier_name: l.supplier_name || "",
+		cif: Number(l.cif) || 0, duty_pct: Number(l.duty_pct) || 0, vat_pct: Number(l.vat_pct) || 0, excise_pct: Number(l.excise_pct) || 0,
+		vat_recoverable: l.vat_recoverable !== false,
+		actual_voucher_type: l.actual_voucher_type || "", actual_voucher: l.actual_voucher || "",
+		currency: l.currency || "", fx_rate: Number(l.fx_rate) || 0, rate_date: l.rate_date || "",
+		amount_original: Number(l.amount_original) || 0, actual_original: Number(l.actual_original) || 0,
+	};
+}
+
+// `save_po_landed_charges` REPLACES the whole array, so a row this drops is a row
+// deleted. A foreign-currency line carries its figure in `amount_original` and a
+// company-currency one in `amount`; both are read, because a line that has only one
+// of them is still a line the officer typed.
+function isSendable(l) {
+	return Boolean(Number(l.amount) || Number(l.amount_original));
+}
+
 function addLine() {
 	editorLines.value.push({ type: "transport", label: "", amount: null, actual: null, tnved: "", supplier: "", supplier_name: "", cif: null, duty_pct: null, vat_pct: 12, excise_pct: 0, vat_recoverable: true, rate_source: "", currency: "", fx_rate: 0, rate_date: "", amount_original: null, actual_original: null, fx_source: "", actual_voucher_type: "", actual_voucher: "", actual_label: "" });
 }
@@ -331,20 +368,7 @@ function closeEditor() {
 async function saveEditor() {
 	editorSaving.value = true;
 	try {
-		const clean = editorLines.value
-			// A foreign-currency line carries its figure in `amount_original`; the
-			// company-currency `amount` is derived server-side and is still 0 here.
-			// Filtering on `amount` alone silently dropped every such line on save.
-			.filter((l) => Number(l.amount) || Number(l.amount_original))
-			.map((l) => ({
-				type: l.type || "other", label: (l.label || "").trim(), amount: Number(l.amount), actual: Number(l.actual) || 0,
-				tnved: (l.tnved || "").trim(), supplier: l.supplier || "", supplier_name: l.supplier_name || "",
-				cif: Number(l.cif) || 0, duty_pct: Number(l.duty_pct) || 0, vat_pct: Number(l.vat_pct) || 0, excise_pct: Number(l.excise_pct) || 0,
-				vat_recoverable: l.vat_recoverable !== false,
-				actual_voucher_type: l.actual_voucher_type || "", actual_voucher: l.actual_voucher || "",
-				currency: l.currency || "", fx_rate: Number(l.fx_rate) || 0, rate_date: l.rate_date || "",
-				amount_original: Number(l.amount_original) || 0, actual_original: Number(l.actual_original) || 0,
-			}));
+		const clean = editorLines.value.filter(isSendable).map(savedLine);
 		await call("stabler.api.tender.save_po_landed_charges", { po: editorPo.value, charges: JSON.stringify(clean) });
 		toast.success(t("Landed plan saved."));
 		editorOpen.value = false;
@@ -665,8 +689,16 @@ watch(() => route.query.deal, (d) => { if (d && d !== deal.value) { deal.value =
 											<span v-if="convertedPreview(l) !== null" class="font-monospace text-secondary">
 												= {{ fmc(convertedPreview(l)) }}
 											</span>
+											<!-- The shared rule refuses a line for two different reasons, and
+											     "enter a rate" is wrong advice for one of them: a half-switched
+											     line has a perfectly good rate and no figure typed in its
+											     currency. Same two messages as the quotation editor, so the two
+											     screens ask for the same thing in the same words. -->
+											<span v-else-if="unvaluedReason(l) === 'rate'" class="text-danger">
+												<i class="ti ti-alert-triangle me-1"></i>{{ t("No rate for {ccy} — enter a rate or clear the currency", { ccy: l.currency }) }}
+											</span>
 											<span v-else class="text-danger">
-												<i class="ti ti-alert-triangle me-1"></i>{{ t("Enter an exchange rate") }}
+												<i class="ti ti-alert-triangle me-1"></i>{{ t("Enter the amount in {ccy} and a rate, or clear the currency", { ccy: l.currency }) }}
 											</span>
 										</div>
 										<div v-if="l.fx_source" class="small text-secondary text-end">{{ l.fx_source }}</div>
@@ -762,7 +794,7 @@ watch(() => route.query.deal, (d) => { if (d && d !== deal.value) { deal.value =
 								<div class="col-6">
 									<div class="d-flex justify-content-between small text-secondary"><span>{{ t("Planned") }} {{ t("Charges").toLowerCase() }}</span><span class="font-monospace">+{{ formatMoney(editorCharges, ccy, user.language) }}</span></div>
 									<div class="d-flex justify-content-between fw-bold"><span>{{ t("Landed total") }}</span><span class="font-monospace">{{ formatMoney(editorLanded, ccy, user.language) }}</span></div>
-									<div v-if="editorPlanned.unvalued" class="small text-danger"><i class="ti ti-alert-triangle me-1"></i>{{ t("Lines with no exchange rate, not in this total: {count}", { count: editorPlanned.unvalued }) }}</div>
+									<div v-if="editorPlanned.unvalued" class="small text-danger"><i class="ti ti-alert-triangle me-1"></i>{{ t("Lines that cannot be valued, not in this total: {count}", { count: editorPlanned.unvalued }) }}</div>
 									<div v-if="editorRecoverableVat" class="d-flex justify-content-between small text-green" :title="t('Recoverable input VAT — not part of landed cost')"><span><i class="ti ti-receipt-refund"></i> {{ t("VAT recoverable") }}</span><span class="font-monospace">{{ formatMoney(editorRecoverableVat, ccy, user.language) }}</span></div>
 								</div>
 								<div class="col-6">

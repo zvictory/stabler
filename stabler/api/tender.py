@@ -324,9 +324,6 @@ def _raw_landed_lines(raw) -> list[dict]:
 				"rate_date": str(it.get("rate_date") or "").strip()[:10],
 				"amount_original": amount_ccy,
 				"actual_original": actual_ccy,
-				# Always present, so no consumer has to ask whether the key exists
-				# before deciding whether the figure beside it is real.
-				"unvalued": False,
 			}
 		)
 	return out
@@ -335,14 +332,30 @@ def _raw_landed_lines(raw) -> list[dict]:
 def _parse_landed(raw) -> list[dict]:
 	"""VALUED SHAPE -- the raw lines with `amount`/`actual` in company currency.
 
-	Derived on every read and never stored (see `_raw_landed_lines`). Unlike the
-	quotation reader, which keeps the given figure under `amount` and the derived one
-	under `company_amount`, this one overwrites `amount` in place: seven call sites
-	and `api.lcv` sum that key. Both call `line_value`, so the two cannot disagree
-	about what a line is worth; only about which key holds the answer.
+	Derived on every read and never stored (see `_raw_landed_lines`). `amount` and
+	`actual` are OVERWRITTEN with the derived figures, because seven call sites and
+	`api.lcv` sum those keys; the quotation reader made the opposite choice and keeps
+	`amount` as given with the derived figure under `company_amount`. The two
+	conventions are named apart on purpose -- `amount_given` here, `company_amount`
+	there -- so no reader can mistake one module's `amount` for the other's. Both call
+	`line_value`, so they cannot disagree about what a line is worth.
+
+	`amount_given` / `actual_given` carry the figures the officer actually typed.
+	ADR-605 third review, P0: without them a read handed the editor a 0.0 for a line
+	it could not value, the editor bound that into its own row and its save filter
+	then read the same 0.0 -- so reopening a half-switched line and pressing Save
+	DELETED it, and the Purchase Order's landed total silently lost the charge.
+	Storing RAW closed the first hop; this closes the second. A read must hand back
+	something the editor can hand in again unchanged.
 	"""
 	out = _raw_landed_lines(raw)
 	for line in out:
+		# Present on every line, valued or not, so no consumer has to ask whether the
+		# key exists before deciding whether the figure beside it is real. Derived
+		# here rather than in the raw builder: a stored verdict can only go stale.
+		line["unvalued"] = False
+		line["amount_given"] = line["amount"]
+		line["actual_given"] = line["actual"]
 		# `amount`/`actual` stay the company-currency figures every consumer sums.
 		# Deriving them here — the one chokepoint both reads and writes pass
 		# through — is what stops the two from ever disagreeing.

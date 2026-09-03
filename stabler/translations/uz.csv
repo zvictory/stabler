@@ -6439,7 +6439,6 @@ from CBU,MBdan
 Currency this charge is quoted in,Xarajat ko'rsatilgan valyuta
 Rate date,Kurs sanasi
 Fetch the Central Bank rate,Markaziy bank kursini olish
-Enter an exchange rate,Kursni kiriting
 Add requirement,Talab qo'shish
 Add standard set,Standart to'plamni qo'shish
 Checklist saved,Nazorat ro'yxati saqlandi
@@ -6615,6 +6614,7 @@ This invitation reaches {countries} country(ies). On its own it cannot satisfy t
 "Asked: {count} vendor(s), {countries} country(ies)","So'raldi: {count} ta yetkazib beruvchi, {countries} ta davlat"
 "Everyone asked so far is in {countries} country(ies). More rounds, or a quotation attached from elsewhere, are what change that.",Hozirgacha so'ralganlarning hammasi {countries} ta davlatda. Buni faqat yangi bosqichlar yoki boshqa joydan biriktirilgan taklif o'zgartiradi.
 {count} of the vendors asked has no country on file and counts toward no country.,So'ralgan yetkazib beruvchilardan {count} tasining davlati kiritilmagan va hech qaysi davlatga hisoblanmaydi.
+"Lines that cannot be valued, not in this total: {count}","Baholab bo'lmaydigan qatorlar, bu summaga kirmaydi: {count}"
 "Lines with no exchange rate, not in this total: {count}","Valyuta kursi yo'q qatorlar, bu jamiga kirmaydi: {count}"
 Quotation date,Taklif sanasi
 The currency list could not be loaded — only your company's currency is available.,Valyutalar ro'yxatini yuklab bo'lmadi — faqat kompaniyangiz valyutasi mavjud.

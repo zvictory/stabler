@@ -203,9 +203,13 @@ async function save() {
 			.map((c) => ({
 				charge_type: c.charge_type,
 				description: c.description,
-				// Both figures travel: the server re-derives `amount` from
-				// `amount_original × fx_rate`, so sending only one of them would let
-				// an already-converted figure be converted again on the next save.
+				// Both figures travel because they are two different facts, not one
+				// fact twice: `amount` is what was typed in company currency and
+				// `amount_original` what was typed in the line's own. The server
+				// stores exactly what it is given and derives the company-currency
+				// value on every read, so sending only `amount_original` would drop
+				// the so'm figure of a half-switched line — the evidence that the
+				// line is unfinished, and the only thing left to fix it with.
 				amount: Number(c.amount || 0),
 				amount_original: c.currency ? Number(c.amount_original || 0) : null,
 				currency: c.currency || "",

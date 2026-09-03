@@ -176,3 +176,120 @@ describe("the footer's totals are wired to those functions, not to the derived f
 		expect(src).toMatch(/Lines with no exchange rate, not in this total: \{count\}/);
 	});
 });
+
+describe("what a read hands the modal is what the modal can hand back", () => {
+	// ADR-605 third review, P0. Storing the RAW line closed the first hop; this is
+	// the second. `po_landed_charges` returns the VALUED shape, where `amount` is the
+	// DERIVED figure and is 0.0 on a line nothing can value. The modal used to bind
+	// that 0.0 — so the officer's 3 200 000 so'm was off the screen, `isSendable` read
+	// the same 0.0 and dropped the row, and `save_po_landed_charges` replaces the
+	// whole array. The charge left the Purchase Order with no message at all, and the
+	// cheapest-vendor badge can flip on the difference.
+	//
+	// `test_landed_charge_currency.py::TestThePoRoundTripIsAFixedPoint` pins the
+	// server halves against the same contract; between them the loop is closed.
+	const editorLine = load("editorLine");
+	const savedLine = load("savedLine");
+	const isSendable = load("isSendable");
+
+	/** One half-switched line as `_parse_landed` returns it: USD picked, rate good,
+	 *  nothing typed in USD, and the so'm figure preserved under `amount_given`. */
+	const READ_HALF_SWITCHED = {
+		type: "transport",
+		label: "Freight",
+		amount: 0,
+		amount_given: 3200000,
+		actual: 0,
+		actual_given: 0,
+		currency: "USD",
+		fx_rate: 12950,
+		rate_date: "2026-09-03",
+		amount_original: 0,
+		actual_original: 0,
+		unvalued: true,
+		vat_recoverable: true,
+		vat_pct: 12,
+	};
+
+	it("reads the figure the officer typed, not the one the server derived", () => {
+		expect(editorLine(READ_HALF_SWITCHED).amount).toBe(3200000);
+	});
+
+	it("keeps the row on the next save instead of deleting the charge", () => {
+		expect(isSendable(editorLine(READ_HALF_SWITCHED))).toBe(true);
+	});
+
+	it("sends back exactly what was stored", () => {
+		const sent = savedLine(editorLine(READ_HALF_SWITCHED));
+		expect(sent.amount).toBe(3200000);
+		expect(sent.amount_original).toBe(0);
+		expect(sent.currency).toBe("USD");
+		expect(sent.fx_rate).toBe(12950);
+		expect(sent.rate_date).toBe("2026-09-03");
+	});
+
+	it("never sends a derived key back to the server", () => {
+		// `unvalued`, `amount_given` and `actual_given` are verdicts and copies the
+		// read computed. Echoing one into the payload puts it back in the column,
+		// where it can only go stale.
+		const sent = savedLine(editorLine(READ_HALF_SWITCHED));
+		for (const derived of ["unvalued", "amount_given", "actual_given"]) {
+			expect(Object.hasOwn(sent, derived), `saveEditor echoes ${derived}`).toBe(false);
+		}
+	});
+
+	it("leaves an ordinary converted line alone", () => {
+		// Nothing was typed in company currency here, so `amount_given` is 0 and the
+		// figure lives in `amount_original`. The row still has to survive the trip.
+		const read = { ...READ_HALF_SWITCHED, amount: 15540000, amount_given: 0, amount_original: 1200, unvalued: false };
+		const row = editorLine(read);
+		expect(row.amount).toBe(0);
+		expect(row.amount_original).toBe(1200);
+		expect(isSendable(row)).toBe(true);
+		expect(savedLine(row).amount_original).toBe(1200);
+	});
+
+	it("still drops a row the officer never touched", () => {
+		// The filter is not a no-op: `addLine` pushes an empty row and sending it
+		// would store a "transport 0" charge on every save.
+		expect(isSendable(editorLine({ type: "transport" }))).toBe(false);
+	});
+});
+
+describe("the modal names the remedy the line actually needs", () => {
+	// ADR-605 third review, P2. Both strings on this screen asserted a missing rate,
+	// and the shared rule refuses a half-switched line whose rate is perfectly good —
+	// so the advice was reachable and wrong.
+
+	it("asks for a rate only when the rate is what is missing", () => {
+		expect(src).toMatch(/unvaluedReason\(l\) === 'rate'/);
+		expect(src).toMatch(/No rate for \{ccy\} — enter a rate or clear the currency/);
+	});
+
+	it("asks for the amount when that is what is missing", () => {
+		expect(src).toMatch(/Enter the amount in \{ccy\} and a rate, or clear the currency/);
+		expect(src).not.toMatch(/t\("Enter an exchange rate"\)/);
+	});
+
+	it("uses the same two messages as the quotation editor", () => {
+		// One vocabulary across both landed editors, for the same reason there is one
+		// rule behind them: an officer who learns the remedy on one screen should not
+		// have to learn it again on the other.
+		const editor = readFileSync(resolve(here, "../components/LandedChargesEditor.vue"), "utf8");
+		for (const key of [
+			"No rate for {ccy} — enter a rate or clear the currency",
+			"Enter the amount in {ccy} and a rate, or clear the currency",
+		]) {
+			expect(editor).toContain(key);
+			expect(src).toContain(key);
+		}
+	});
+
+	it("does not tell the planned footer's count that a rate is missing", () => {
+		// The PLANNED footer counts whatever `convertedPreview` refuses, which is no
+		// longer only a rate problem. The ACTUAL footer beside it keeps the older
+		// wording on purpose: `actualPreview` returns null ONLY on an unusable rate.
+		expect(src).toMatch(/Lines that cannot be valued, not in this total: \{count\}[^]*?editorPlanned\.unvalued/);
+		expect(src).toMatch(/Lines with no exchange rate, not in this total: \{count\}[^]*?editorActualPriced\.unvalued/);
+	});
+});

@@ -6831,7 +6831,6 @@ from CBU,from CBU
 Currency this charge is quoted in,Currency this charge is quoted in
 Rate date,Rate date
 Fetch the Central Bank rate,Fetch the Central Bank rate
-Enter an exchange rate,Enter an exchange rate
 {0} line(s) not written off yet — not in this total.,{0} line(s) not written off yet — not in this total.
 {0} more line(s) on this order have not been assigned to an operator. The shift lead settles those.,{0} more line(s) on this order have not been assigned to an operator. The shift lead settles those.
 Add requirement,Add requirement
@@ -7009,6 +7008,7 @@ This invitation reaches {countries} country(ies). On its own it cannot satisfy t
 "Asked: {count} vendor(s), {countries} country(ies)","Asked: {count} vendor(s), {countries} country(ies)"
 "Everyone asked so far is in {countries} country(ies). More rounds, or a quotation attached from elsewhere, are what change that.","Everyone asked so far is in {countries} country(ies). More rounds, or a quotation attached from elsewhere, are what change that."
 {count} of the vendors asked has no country on file and counts toward no country.,{count} of the vendors asked has no country on file and counts toward no country.
+"Lines that cannot be valued, not in this total: {count}","Lines that cannot be valued, not in this total: {count}"
 "Lines with no exchange rate, not in this total: {count}","Lines with no exchange rate, not in this total: {count}"
 Quotation date,Quotation date
 The currency list could not be loaded — only your company's currency is available.,The currency list could not be loaded — only your company's currency is available.

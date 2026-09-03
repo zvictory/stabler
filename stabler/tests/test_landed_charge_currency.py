@@ -25,6 +25,7 @@ These pin that quotation lines now use the SAME rule and the same line shape:
 from __future__ import annotations
 
 import importlib
+import json
 import types
 import unittest
 
@@ -45,6 +46,11 @@ def tearDownModule():
 
 def _load_parse_landed():
 	"""`tender._parse_landed` against the two Frappe names it actually touches."""
+	return _load_tender()._parse_landed
+
+
+def _load_tender():
+	"""`api.tender` against the two Frappe names its landed readers actually touch."""
 	_SANDBOX.evict(
 		"stabler.api.tender",
 		"stabler.api.purchasing",
@@ -95,7 +101,7 @@ def _load_parse_landed():
 		for attr, value in attrs.items():
 			setattr(mod, attr, value)
 		_SANDBOX.install({name: mod})
-	return importlib.import_module("stabler.api.tender")._parse_landed
+	return importlib.import_module("stabler.api.tender")
 
 
 # 1 200 USD of freight at 12 950 so'm = 15 540 000 so'm.
@@ -115,11 +121,29 @@ _FOREIGN_NO_RATE = {
 }
 # Every line stored before ADR-605: a bare amount, already company currency.
 _LEGACY = {"charge_type": "Customs Duty", "amount": 3_200_000}
-# A PO landed line as `tender._parse_landed` stores it: `amount` ALREADY converted.
+# A PO landed line as it sits in the column after ADR-605's second review: the save
+# stores what it was GIVEN, so `amount` here is a figure that really was typed in
+# company currency once. It is NOT a cached conversion any more -- a fresh save of a
+# foreign line leaves `amount` at 0 (see `_PO_FOREIGN_FRESH`). Both shapes are in the
+# column on a live site, and the reader has to reach the same total for both.
 _PO_FOREIGN = {
 	"type": "transport",
 	"label": "Freight",
 	"amount": 15_360_000.0,
+	"actual": 0.0,
+	"currency": "USD",
+	"fx_rate": 12_800.0,
+	"rate_date": "2026-09-01",
+	"amount_original": 1200.0,
+	"actual_original": 0.0,
+}
+# The same charge as `_PO_FOREIGN` saved TODAY: nothing was typed in company
+# currency, so `amount` is 0 and the figure lives in `amount_original` alone. Reading
+# it must produce the same 15 360 000, or the two shapes disagree about one charge.
+_PO_FOREIGN_FRESH = {
+	"type": "transport",
+	"label": "Freight",
+	"amount": 0.0,
 	"actual": 0.0,
 	"currency": "USD",
 	"fx_rate": 12_800.0,
@@ -311,6 +335,19 @@ class TestAPurchaseOrderLineIsNotConvertedTwice(unittest.TestCase):
 		_total, clean, _has_est = parse_landed_charges([_PO_FOREIGN])
 		self.assertEqual(clean[0]["company_amount"], 15_360_000.0)
 
+	def test_the_pre_review_and_post_review_shapes_agree(self):
+		"""One charge, two stored shapes, one answer.
+
+		Before ADR-605's second review the save cached the conversion into `amount`;
+		it now stores only what was typed. Both are in the column on a live site, and
+		a reader that treated the cached figure as authoritative would price the old
+		rows off a number nobody can reproduce today.
+		"""
+		cached, _c, _e = parse_landed_charges([_PO_FOREIGN])
+		fresh, _c2, _e2 = parse_landed_charges([_PO_FOREIGN_FRESH])
+		self.assertEqual(cached, 15_360_000.0)
+		self.assertEqual(cached, fresh)
+
 	def test_a_customs_line_keeps_the_declared_figure(self):
 		_total, clean, _has_est = parse_landed_charges([_PO_CUSTOMS])
 		self.assertEqual(clean[0]["company_amount"], 4_200_000.0)
@@ -402,3 +439,123 @@ class TestTheExclusionSurvivesTheRanking(unittest.TestCase):
 
 if __name__ == "__main__":
 	unittest.main()
+
+
+#: A legacy so'm line onto which USD has been picked and a GOOD rate fetched, with
+#: nothing yet typed in USD. `save_po_landed_charges` does not refuse it -- its
+#: refusal reads the rate, and the rate is fine.
+_HALF_SWITCHED_PO = {
+	"type": "transport",
+	"label": "Freight",
+	"amount": 3_200_000.0,
+	"actual": 0.0,
+	"currency": "USD",
+	"fx_rate": 12_950.0,
+	"rate_date": "2026-09-03",
+	"amount_original": 0.0,
+	"actual_original": 0.0,
+}
+
+
+class TestThePoRoundTripIsAFixedPoint(unittest.TestCase):
+	"""ADR-605 third review, P0. Storing RAW fixed the first hop, not the second.
+
+	`save_po_landed_charges` stores the given figure, but `po_landed_charges` returns
+	`_parse_landed`'s VALUED shape, where `amount` is 0.0 on a line nothing can value.
+	The editor binds that into its own row, and its save filter then reads the same
+	0.0 -- so reopening a half-switched line and pressing Save DELETES it. The PO's
+	landed total drops by the charge, and the cheapest-vendor badge can flip on the
+	difference.
+
+	The loop has to close: what a read hands the editor must be what the editor can
+	hand back. `poControlBoardLandedTotal.spec.js` pins the client half -- which key
+	the component reads into its company-currency box -- and this pins the server
+	half, so neither can drift without the other going red.
+	"""
+
+	def setUp(self):
+		self.tender = _load_tender()
+
+	def _store(self, payload: list[dict]) -> str:
+		"""Exactly what `save_po_landed_charges` writes to the column."""
+		return json.dumps(self.tender._raw_landed_lines(payload), ensure_ascii=False)
+
+	@staticmethod
+	def _editor_would_send(line: dict) -> dict:
+		"""The payload `PoControlBoard.saveEditor` builds from one line it read.
+
+		Mirrors that function's object literal field for field. `amount` comes from
+		`amount_given` because that is the key the component binds into its
+		company-currency box -- asserted over the real source in the vitest spec, so
+		this is a contract the two tests share rather than one this file invented.
+		"""
+		return {
+			"type": line["type"],
+			"label": line["label"],
+			"amount": line["amount_given"],
+			"actual": line["actual_given"],
+			"tnved": line["tnved"],
+			"supplier": line["supplier"],
+			"supplier_name": line["supplier_name"],
+			"cif": line["cif"],
+			"duty_pct": line["duty_pct"],
+			"vat_pct": line["vat_pct"],
+			"excise_pct": line["excise_pct"],
+			"vat_recoverable": line["vat_recoverable"],
+			"actual_voucher_type": line["actual_voucher_type"],
+			"actual_voucher": line["actual_voucher"],
+			"currency": line["currency"],
+			"fx_rate": line["fx_rate"],
+			"rate_date": line["rate_date"],
+			"amount_original": line["amount_original"],
+			"actual_original": line["actual_original"],
+		}
+
+	def test_a_reopened_half_switched_line_still_carries_the_officers_figure(self):
+		read = self.tender._parse_landed(self._store([_HALF_SWITCHED_PO]))[0]
+		self.assertTrue(read["unvalued"], "the line cannot be valued and must say so")
+		self.assertEqual(read["amount"], 0.0, "the summed key stays the derived one")
+		self.assertEqual(
+			read["amount_given"],
+			3_200_000.0,
+			"the read gave the editor nothing to put in its company-currency box, so "
+			"the officer's figure is off the screen as well as out of the total",
+		)
+
+	def test_saving_a_reopened_line_again_writes_the_same_column(self):
+		first = self._store([_HALF_SWITCHED_PO])
+		read = self.tender._parse_landed(first)
+		second = self._store([self._editor_would_send(read[0])])
+		self.assertEqual(json.loads(second)[0]["amount"], 3_200_000.0)
+		self.assertEqual(second, first, "the second save is not a no-op — the line drifted")
+
+	def test_the_editor_would_still_send_the_line_at_all(self):
+		"""`saveEditor` filters on `Number(l.amount) || Number(l.amount_original)`.
+
+		Both were 0 on a reopened half-switch, so the row was not merely blank on
+		screen -- it was dropped from the payload, and `save_po_landed_charges`
+		replaces the whole array. That is how 3.2M left a Purchase Order silently.
+		"""
+		read = self.tender._parse_landed(self._store([_HALF_SWITCHED_PO]))[0]
+		sent = self._editor_would_send(read)
+		self.assertTrue(float(sent["amount"]) or float(sent["amount_original"]))
+
+	def test_an_ordinary_converted_line_round_trips_too(self):
+		line = dict(_HALF_SWITCHED_PO, amount=0.0, amount_original=1200.0)
+		first = self._store([line])
+		read = self.tender._parse_landed(first)
+		self.assertEqual(read[0]["amount"], 15_540_000.0, "the summed key is the derived one")
+		self.assertEqual(read[0]["amount_given"], 0.0, "nothing was typed in company currency")
+		self.assertEqual(self._store([self._editor_would_send(read[0])]), first)
+
+	def test_the_stored_shape_carries_no_derived_key(self):
+		"""The PO twin of `test_what_is_stored_is_the_raw_shape_never_the_valued_one`.
+
+		`unvalued` was emitted unconditionally by the raw builder and dumped straight
+		to the column -- a derived verdict frozen into storage, against the rule the
+		quotation side is already held to. It is derived on every read; a stored copy
+		can only ever go stale.
+		"""
+		stored = json.loads(self._store([_HALF_SWITCHED_PO]))[0]
+		for derived in ("unvalued", "amount_given", "actual_given"):
+			self.assertNotIn(derived, stored, f"a derived {derived} reached the column")
