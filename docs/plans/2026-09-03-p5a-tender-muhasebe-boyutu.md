@@ -506,13 +506,23 @@ answered `deal_count` 553 beside a board answering 552. A declaration-satisfiabl
 not coverage. Each reader is now DRIVEN in `stabler/tests/test_overhead_deal_readers.py`, with
 a per-module call count so a new reader cannot appear without the filter.
 
-**Test-site hygiene, measured and fixed.** Submitting a voucher commits from inside frappe, so
-the document outlived the framework's end-of-class rollback while the per-test cleanup did not.
-Six `ADR-609 bench` Journal Entries had accumulated on `genesis-test.local` across this task's
-runs; the naming series then reissued a name one leftover still pointed at, and an amendment
-test died on "This entry has already been amended" instead of the tender check it was about.
-`_erase_voucher` commits now, the six were removed by hand, and two consecutive full runs of
-the bench module are green and leave the site empty.
+**Test-site hygiene.** Six `ADR-609 bench` Journal Entries had accumulated on
+`genesis-test.local` across this task's runs; the naming series then reissued a name one
+leftover still pointed at, and an amendment test died on "This entry has already been amended"
+instead of the tender check it was about. The six were removed by hand.
+
+*Corrected in Round 3 (R20).* The explanation written here — "submitting a voucher commits
+from inside frappe" — was wrong: `money.py` has no `db.commit` on any write path, and a
+submitted voucher disappears on `frappe.db.rollback()`. What made the leftovers durable was the
+class-level `addClassCleanup(frappe.db.commit)`, which commits whatever the per-test cleanups
+failed to erase. The `frappe.db.commit()` this paragraph credited in `_erase_voucher` was
+therefore both unnecessary and harmful, and has been removed — see the Round 3 entry.
+
+"Two consecutive full runs leave the site empty" was also false. Eight of nine measured doctype
+counts are unchanged by a green run; `Stock Ledger Entry` grows by 2 (6416 -> 6418 -> 6420 ->
+6422 across four runs), because `_erase_voucher` deletes the voucher's GL rows and not the
+stock ledger rows the Delivery Note fixture writes. Recorded, not fixed: Round 3 was scoped to
+R19-R21 exactly.
 
 **Verified clean by the reviewer this round, unchanged here:** both P0 fixes live (the hook
 fires once per save; flag-off posting lands on GENEL GİDER with the cash leg NULL), the GL hook

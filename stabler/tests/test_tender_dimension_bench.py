@@ -140,11 +140,17 @@ class _Fixture(FrappeTestCase):
 	@classmethod
 	def setUpClass(cls):
 		super().setUpClass()
-		# Registered before ANY fixture, so LIFO runs it after every cleanup this
-		# class registers. Creating a Company commits from inside ERPNext's chart
-		# of accounts, so the framework's end-of-class rollback removes the
-		# CLEANUP and leaves the company standing — measured: the second run of
-		# this module died on "Duplicate entry '_ADR609 Plain Co'".
+		# The ONE commit this suite makes, and the last thing it does. Registered
+		# before any fixture, so LIFO runs it after every per-test cleanup and
+		# after every class-level erasure — and before frappe's own `_rollback_db`,
+		# which `super().setUpClass()` registered first and LIFO therefore runs
+		# last. It is needed because creating a Company commits from inside
+		# ERPNext's chart of accounts: the row is durable, so the rollback would
+		# undo the DELETE and leave the company standing. Measured: the second run
+		# of this module died on "Duplicate entry '_ADR609 Plain Co'".
+		#
+		# Nothing else here may commit. A commit inside a per-test cleanup would
+		# persist whatever that test still had pending — see `_erase_voucher`.
 		cls.addClassCleanup(frappe.db.commit)
 		frappe.set_user("Administrator")
 		clear_dimension_cache()
@@ -229,18 +235,21 @@ class _Fixture(FrappeTestCase):
 		return name
 
 	def _erase_voucher(self, doctype: str, name: str) -> None:
-		"""Cancel, delete, take the ledger rows with it, and make it stick.
+		"""Cancel, delete, and take the ledger rows with it.
 
 		`delete_linked_ledger_entries` is off on this site, so `delete_doc` alone
 		leaves the GL rows standing and the next run measures them.
 
-		The `commit` is not decoration. Submitting a voucher commits from inside
-		frappe, so the document outlives the framework's end-of-class rollback
-		while THIS cleanup — a per-test one, running inside the transaction —
-		does not. Measured: six `ADR-609 bench` Journal Entries were left on the
-		test site across earlier runs, and the naming series then reissued a name
-		one of the leftovers still pointed at, so an amendment test died on "This
-		entry has already been amended" instead of the tender check it was about.
+		It does NOT commit, and must not. Nothing on the expense path commits —
+		`money.py` has no `db.commit` on any write path, and a submitted voucher
+		disappears on `frappe.db.rollback()` — so there is nothing here that the
+		framework's rollback cannot undo. What a commit here WOULD do is persist
+		everything else then pending: the cleanup stack is LIFO, so in
+		`TestModuleFlagOff` this runs before `_set_flag(1)` and would commit
+		`enable_tender = 0` onto the real `_Test Company` row, leaving a live
+		company with the tender module silently off if the run were interrupted
+		before the class-level commit put it back. Pinned by
+		`TestSuiteHygiene.test_a_per_test_cleanup_never_commits`.
 		"""
 		if not frappe.db.exists(doctype, name):
 			return
@@ -250,7 +259,29 @@ class _Fixture(FrappeTestCase):
 			doc.cancel()
 		frappe.delete_doc(doctype, name, force=True, ignore_permissions=True)
 		frappe.db.delete("GL Entry", {"voucher_type": doctype, "voucher_no": name})
-		frappe.db.commit()
+
+
+class TestSuiteHygiene(_Fixture):
+	"""R20 — what the cleanups may and may not do to a live site."""
+
+	def test_a_per_test_cleanup_never_commits(self):
+		"""A commit inside a per-test cleanup commits EVERYTHING then pending.
+
+		The cleanup stack is LIFO, so in `TestModuleFlagOff` `_erase_voucher`
+		runs BEFORE `_set_flag(1)`: a commit there persists `enable_tender = 0`
+		on the real `_Test Company` row, and only the class-level commit puts it
+		back. A run interrupted in between leaves a live company with the tender
+		module silently off — this suite would have changed the site it measures.
+		"""
+		seen = []
+		original = frappe.db.commit
+		frappe.db.commit = lambda: seen.append("commit")
+		try:
+			name = self._expense_entry(deal=None, amount=17.0)
+			self._erase_voucher("Journal Entry", name)
+		finally:
+			frappe.db.commit = original
+		self.assertEqual(seen, [], "a per-test cleanup committed the transaction")
 
 
 class TestPatchLanded(_Fixture):
