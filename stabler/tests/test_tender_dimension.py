@@ -127,6 +127,8 @@ class _Site:
 		self.accounts = {}  # account -> report_type
 		self.lists = {}  # doctype -> list of rows
 		self.reads = []  # every frappe.db.get_value(doctype, name, ...) call
+		self.filter_reads = []  # every frappe.db.get_value(doctype, {filters}, ...) call
+		self.module_reads = []  # every module_map_for(company) call
 		self.inserted = []
 		self.dimension = "tender"
 		self.columns = set()  # (doctype, column) pairs that exist
@@ -171,6 +173,7 @@ def _load(site: _Site):
 			# two would hide a caller asking for the wrong one.
 			where = tuple(sorted(name_or_filters.items()))
 			field_key = fields if isinstance(fields, str) else tuple(fields or ())
+			site.filter_reads.append((doctype, where, field_key))
 			if (doctype, where, field_key) in site.singles:
 				return site.singles[(doctype, where, field_key)]
 			return site.singles.get((doctype, where))
@@ -255,7 +258,12 @@ def _load(site: _Site):
 	_SANDBOX.install({"frappe": frappe, "frappe.utils": utils})
 
 	settings = types.ModuleType("stabler.stabler.doctype.stabler_settings.stabler_settings")
-	settings.module_map_for = lambda company: site.modules.get(company, {})
+
+	def _module_map_for(company):
+		site.module_reads.append(company)
+		return site.modules.get(company, {})
+
+	settings.module_map_for = _module_map_for
 	_SANDBOX.install({"stabler.stabler.doctype.stabler_settings.stabler_settings": settings})
 	return importlib.import_module("stabler.api.tender_dimension")
 
@@ -280,6 +288,8 @@ def _get_all(site: _Site, doctype: str, **kwargs):
 _ENABLED_DIMENSION = (("disabled", 0), ("document_type", "CRM Deal"))
 #: How the patch looks it up: any CRM Deal dimension, enabled or not.
 _ANY_DIMENSION = (("document_type", "CRM Deal"),)
+#: The company's row on the dimension — the mandatory flag erpnext enforces.
+_DETAIL_ROW = (("company", "_Test Company"), ("parent", "Tender"))
 
 
 def _drop_dimension(site: _Site) -> None:
@@ -298,6 +308,9 @@ def _tender_site() -> _Site:
 	site.singles[("Accounting Dimension", _ENABLED_DIMENSION, "fieldname")] = "tender"
 	site.singles[("Accounting Dimension", _ENABLED_DIMENSION, "name")] = "Tender"
 	site.singles[("CRM Deal", (("company", "_Test Company"), ("deal_type", "Overhead")))] = "OVERHEAD-1"
+	# What erpnext's `validate_dimensions_for_pl_and_bs` actually reads, and
+	# therefore what the GL hook has to gate on.
+	site.singles[("Accounting Dimension Detail", _DETAIL_ROW, "mandatory_for_pl")] = 1
 	site.metas["GL Entry"] = _Meta(["company", "account", "tender", "is_cancelled"])
 	site.columns.add(("CRM Deal", "custom_tender_stage"))
 	site.columns.add(("Sales Order", "custom_crm_deal"))
@@ -377,7 +390,15 @@ class TestTenderEnabledGate(unittest.TestCase):
 		mod.stamp_tender(doc)
 		self.assertIsNone(doc.get("tender"))
 
-	def test_a_gl_row_of_a_company_without_the_flag_is_never_defaulted(self):
+	def test_a_gl_row_of_a_company_with_no_dimension_row_is_never_defaulted(self):
+		"""The tenant boundary, stated the way erpnext states it.
+
+		A company nobody set up has no Accounting Dimension Detail row, so erpnext
+		demands nothing of its P&L rows and this hook must add nothing to them —
+		whatever its module flag says. That is the same company as "no tender
+		module" today, because only `ensure_company_setup` writes the row and it is
+		gated on the flag.
+		"""
 		site = _tender_site()
 		site.accounts["Freight - PC"] = "Profit and Loss"
 		mod = _load(site)
@@ -666,6 +687,67 @@ class TestDefaultGlTender(unittest.TestCase):
 			self.mod.default_gl_tender(row)
 		self.assertEqual(self.site.inserted, [], "a GL posting created a CRM Deal")
 
+	def test_still_defaults_a_company_whose_module_flag_was_turned_off(self):
+		"""Turning `enable_tender` off must not brick the company's ledger.
+
+		`ensure_company_setup` never removes the detail row — historical GL rows
+		would be left carrying a dimension nothing declares. So erpnext's
+		`validate_dimensions_for_pl_and_bs` goes on REFUSING every P&L row without
+		a tender, because it reads that row and not our flag. Measured live: flag
+		off, untagged expense -> "Accounting Dimension Tender is required for
+		'Profit and Loss' account Tax Expense - _TC". A hook gated on the flag
+		stops filling exactly the rows erpnext still demands.
+		"""
+		self.site.modules["_Test Company"] = {"tender": False}
+		row = self._row()
+		self.mod.default_gl_tender(row)
+		self.assertEqual(row.get("tender"), "OVERHEAD-1")
+
+	def test_a_company_whose_row_is_not_mandatory_is_left_alone(self):
+		# The mirror image: nothing demands a value, so nothing is invented.
+		self.site.singles[("Accounting Dimension Detail", _DETAIL_ROW, "mandatory_for_pl")] = 0
+		row = self._row()
+		self.mod.default_gl_tender(row)
+		self.assertIsNone(row.get("tender"))
+
+	def test_asks_the_database_once_for_a_voucher_of_many_rows(self):
+		"""GL rows are inserted ONE DOCUMENT AT A TIME, so this hook runs per row.
+
+		`general_ledger.make_entry` builds a `frappe.new_doc("GL Entry")` and
+		submits it for every line, which is why the hook fires at all — and why an
+		uncached lookup is paid once per line. A reviewer instrumented it at 7.0
+		queries per row over a 20-row entry.
+		"""
+		for _index in range(20):
+			self.mod.default_gl_tender(self._row(account="Freight - _TC", voucher_no="JE-1"))
+		detail = [r for r in self.site.filter_reads if r[0] == "Accounting Dimension Detail"]
+		overhead = [r for r in self.site.filter_reads if r[0] == "CRM Deal"]
+		dimension = [r for r in self.site.filter_reads if r[0] == "Accounting Dimension"]
+		self.assertEqual(len(detail), 1, f"the mandatory row was read {len(detail)} times for one entry")
+		self.assertEqual(len(overhead), 1, f"the overhead deal was read {len(overhead)} times for one entry")
+		self.assertLessEqual(len(dimension), 2, "the dimension was re-read per row")
+
+	def test_reads_the_module_flag_once_per_company(self):
+		# `tender_enabled` costs a Company read, the Singles read and four child
+		# tables of Stabler Settings; `stamp_tender` and every writer ask for it.
+		for _ in range(5):
+			self.mod.tender_enabled("_Test Company")
+		self.assertEqual(self.site.module_reads, ["_Test Company"])
+
+	def test_forgetting_the_caches_forgets_all_of_them(self):
+		self.mod.tender_enabled("_Test Company")
+		self.mod.default_gl_tender(self._row())
+		self.mod.clear_dimension_cache()
+		self.site.module_reads.clear()
+		self.site.filter_reads.clear()
+		self.mod.tender_enabled("_Test Company")
+		self.mod.default_gl_tender(self._row())
+		self.assertEqual(self.site.module_reads, ["_Test Company"], "the module flag survived the reset")
+		self.assertTrue(
+			[r for r in self.site.filter_reads if r[0] == "Accounting Dimension Detail"],
+			"the mandatory row survived the reset",
+		)
+
 
 class TestEnsureCompanySetup(unittest.TestCase):
 	"""B1 — the per-company half: one overhead deal, one detail row."""
@@ -707,6 +789,22 @@ class TestEnsureCompanySetup(unittest.TestCase):
 		self.assertEqual(row["mandatory_for_pl"], 1)
 		self.assertEqual(row["mandatory_for_bs"], 0)
 		self.assertEqual(row["reference_document"], "CRM Deal")
+
+	def test_a_created_overhead_deal_is_visible_to_the_next_reader(self):
+		"""The read is cached per request; the CREATE happens in that same request.
+
+		`ensure_company_setup` asks for the deal, is told None, creates it, and the
+		GL hook two lines later asks again. A cache that kept the None would make
+		the hook throw "GENEL GİDER deal is missing" for a company it had just set
+		up.
+		"""
+		self.site.singles.pop(("CRM Deal", (("company", "_Test Company"), ("deal_type", "Overhead"))))
+		self.assertIsNone(self.mod.overhead_deal("_Test Company"))
+		self.site.singles[("CRM Deal", (("company", "_Test Company"), ("deal_type", "Overhead")))] = (
+			"OVERHEAD-2"
+		)
+		self.mod.overhead_deal("_Test Company", create=True)
+		self.assertEqual(self.mod.overhead_deal("_Test Company"), "OVERHEAD-2")
 
 	def test_creates_the_organization_the_deal_links_to(self):
 		"""`CRM Deal.organization` is a LINK to CRM Organization, not free text.

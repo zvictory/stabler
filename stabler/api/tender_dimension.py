@@ -43,6 +43,12 @@ LEGACY_DEAL_FIELD = "custom_crm_deal"
 _FIELDNAME_CACHE = "stabler_tender_dimension_fieldname"
 _SOURCE_CACHE = "stabler_tender_dimension_sources"
 _VOUCHER_CACHE = "stabler_tender_dimension_vouchers"
+#: Per-company, per-request. `default_gl_tender` runs once per LEDGER ROW —
+#: `general_ledger.make_entry` inserts them one document at a time — so anything
+#: it reads uncached is paid once per line: measured at 7.0 queries per row.
+_ENABLED_CACHE = "stabler_tender_dimension_enabled"
+_MANDATORY_CACHE = "stabler_tender_dimension_mandatory"
+_OVERHEAD_CACHE = "stabler_tender_dimension_overhead"
 _MISS = object()
 
 #: Re-entry guard for `on_settings_update`; see that function.
@@ -103,7 +109,14 @@ def clear_dimension_cache() -> None:
 	asked for the fieldname and been told None. Without this it would then set up
 	every company against a dimension it believes does not exist.
 	"""
-	for key in (_FIELDNAME_CACHE, _SOURCE_CACHE, _VOUCHER_CACHE):
+	for key in (
+		_FIELDNAME_CACHE,
+		_SOURCE_CACHE,
+		_VOUCHER_CACHE,
+		_ENABLED_CACHE,
+		_MANDATORY_CACHE,
+		_OVERHEAD_CACHE,
+	):
 		try:
 			delattr(frappe.local, key)
 		except AttributeError:
@@ -111,10 +124,48 @@ def clear_dimension_cache() -> None:
 
 
 def tender_enabled(company: str) -> bool:
-	"""The per-company module flag — never a tenant or site name."""
+	"""The per-company module flag — never a tenant or site name.
+
+	Cached per request: one call costs a `tabCompany` read, the `tabSingles` read
+	behind `frappe.get_single("Stabler Settings")` and four of its child tables,
+	and every writer asks for it.
+	"""
 	if not company:
 		return False
-	return bool(module_map_for(company).get("tender"))
+	cache = _cache(_ENABLED_CACHE)
+	if company not in cache:
+		cache[company] = bool(module_map_for(company).get("tender"))
+	return cache[company]
+
+
+def mandatory_for_pl(company: str) -> bool:
+	"""Whether erpnext will REFUSE a P&L row of this company without a tender.
+
+	Read from where `gl_entry.validate_dimensions_for_pl_and_bs` reads it — the
+	company's `Accounting Dimension Detail` row — and NOT from the stabler module
+	flag. The two part company the moment somebody turns `enable_tender` off:
+	`ensure_company_setup` deliberately never deletes the row (history would be
+	left carrying a dimension nothing declares), so erpnext goes on demanding a
+	value that a flag-gated hook has stopped supplying, and every P&L posting on
+	that company dies. Measured live.
+	"""
+	if not company:
+		return False
+	cache = _cache(_MANDATORY_CACHE)
+	if company in cache:
+		return cache[company]
+	dimension = frappe.db.get_value(
+		"Accounting Dimension", {"document_type": DIMENSION_DOCTYPE, "disabled": 0}, "name"
+	)
+	value = bool(dimension) and bool(
+		frappe.db.get_value(
+			"Accounting Dimension Detail",
+			{"parent": dimension, "company": company},
+			"mandatory_for_pl",
+		)
+	)
+	cache[company] = value
+	return value
 
 
 def _first_deal_status() -> str | None:
@@ -149,11 +200,19 @@ def overhead_deal(company: str, create: bool = False) -> str | None:
 	"""
 	if not company:
 		return None
-	name = frappe.db.get_value(
-		DIMENSION_DOCTYPE, {"company": company, "deal_type": OVERHEAD_DEAL_TYPE}, "name"
-	)
+	cache = _cache(_OVERHEAD_CACHE)
+	if company in cache:
+		name = cache[company]
+	else:
+		name = frappe.db.get_value(
+			DIMENSION_DOCTYPE, {"company": company, "deal_type": OVERHEAD_DEAL_TYPE}, "name"
+		)
+		cache[company] = name or None
 	if name or not create:
 		return name or None
+	# About to insert: the cached None is about to be wrong, and the very next
+	# reader is `ensure_company_setup` writing this deal onto the detail row.
+	cache.pop(company, None)
 	doc = frappe.get_doc(
 		{
 			"doctype": DIMENSION_DOCTYPE,
@@ -494,16 +553,21 @@ def default_gl_tender(doc, method=None):
 	Balance-sheet rows are left alone (decision 2): the cash leg of an expense is
 	not a tender cost, and filling it would double every tender's figure the moment
 	P5b sums the dimension.
+
+	The gate is the company's dimension row, NOT the module flag — see
+	`mandatory_for_pl`. The order below is cheapest-first on purpose: this runs
+	once per ledger row on every tenant, and the first check is a cached read that
+	answers None on every site that never ran v103.
 	"""
-	company = doc.get("company")
-	if not company or not tender_enabled(company):
-		return
 	fieldname = dimension_fieldname()
-	if not fieldname or doc.get(fieldname) or doc.get("is_cancelled"):
+	if not fieldname or doc.get("is_cancelled") or doc.get(fieldname):
 		return
 	if not frappe.get_meta("GL Entry").has_field(fieldname):
 		return
 	if frappe.get_cached_value("Account", doc.get("account"), "report_type") != "Profit and Loss":
+		return
+	company = doc.get("company")
+	if not company or not mandatory_for_pl(company):
 		return
 
 	value = _voucher_tender(doc.get("voucher_type"), doc.get("voucher_no"), fieldname)

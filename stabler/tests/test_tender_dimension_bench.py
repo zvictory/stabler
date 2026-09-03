@@ -61,6 +61,7 @@ from stabler.api.tender_dimension import (
 	dimension_fieldname,
 	ensure_company_setup,
 	overhead_deal,
+	tender_enabled,
 )
 from stabler.stabler.doctype.stabler_settings.stabler_settings import module_map_for
 
@@ -122,6 +123,10 @@ def _gl_rows(voucher_type: str, voucher_no: str, fieldname: str) -> list[dict]:
 		order_by="account asc",
 		limit_page_length=0,
 	)
+
+
+def _dimension_name() -> str | None:
+	return frappe.db.get_value("Accounting Dimension", {"document_type": DIMENSION_DOCTYPE}, "name")
 
 
 def _report_type(account: str) -> str:
@@ -346,6 +351,40 @@ class TestExpenseEntry(_Fixture):
 		standard = self._make_deal("Standard")
 		with self.assertRaises(frappe.ValidationError):
 			self._expense_entry(deal=standard)
+
+
+class TestModuleFlagOff(_Fixture):
+	"""R2 — turning `enable_tender` off must not brick a company already set up."""
+
+	def _set_flag(self, value: int) -> None:
+		settings = frappe.get_single("Stabler Settings")
+		for row in settings.company_modules:
+			if row.company == self.company:
+				row.enable_tender = value
+		settings.flags.ignore_permissions = True
+		settings.save(ignore_permissions=True)
+		clear_dimension_cache()
+
+	def test_the_ledger_still_posts_and_still_attributes_when_the_flag_goes_off(self):
+		"""erpnext reads the detail row, not our flag.
+
+		`ensure_company_setup` never deletes the row — history would be left
+		carrying a dimension nothing declares — so `mandatory_for_pl` stays on and
+		`validate_dimensions_for_pl_and_bs` goes on refusing an empty P&L row.
+		Measured before the fix: flag off, untagged expense -> "Accounting
+		Dimension Tender is required for 'Profit and Loss' account Tax Expense -
+		_TC", i.e. the company could no longer post at all.
+		"""
+		self.addCleanup(self._set_flag, 1)
+		self._set_flag(0)
+		self.assertFalse(tender_enabled(self.company), "the fixture did not actually turn the module off")
+		name = self._expense_entry(deal=None, amount=931.0)
+		gl = _gl_rows("Journal Entry", name, self.fieldname)
+		pl = [r for r in gl if _report_type(r["account"]) == "Profit and Loss"]
+		bs = [r for r in gl if _report_type(r["account"]) == "Balance Sheet"]
+		self.assertTrue(pl and bs)
+		self.assertEqual({r[self.fieldname] for r in pl}, {self.overhead})
+		self.assertEqual([r[self.fieldname] for r in bs], [None] * len(bs))
 
 
 class TestPurchaseInvoice(_Fixture):
@@ -649,6 +688,53 @@ class TestPlainCompany(_Fixture):
 			),
 			"a non-tender company was made mandatory for P&L; every posting on it would throw",
 		)
+
+	def test_turning_the_flag_on_through_the_settings_single_sets_the_company_up(self):
+		"""R1 end to end: the PARENT save is what runs the setup.
+
+		Registered on `Stabler Company Modules` the handler fired zero times — that
+		doctype is a child table and frappe never runs a child row's document
+		methods — so a company switched on from the organization screen got no
+		GENEL GIDER deal and no detail row, and its first P&L posting then died on
+		a mandatory dimension nobody had given it a value for.
+		"""
+		self.addCleanup(self._teardown_toggle)
+		settings = frappe.get_single("Stabler Settings")
+		for row in settings.company_modules:
+			if row.company == self.plain.name:
+				row.enable_tender = 1
+		settings.flags.ignore_permissions = True
+		settings.save(ignore_permissions=True)
+
+		clear_dimension_cache()
+		deal = overhead_deal(self.plain.name)
+		self.assertTrue(deal, "saving Stabler Settings did not create the company's GENEL GIDER deal")
+		row = frappe.db.get_value(
+			"Accounting Dimension Detail",
+			{"parent": _dimension_name(), "company": self.plain.name},
+			["mandatory_for_pl", "default_dimension"],
+			as_dict=True,
+		)
+		self.assertTrue(row, "saving Stabler Settings did not create the company's detail row")
+		self.assertEqual(row.mandatory_for_pl, 1)
+		self.assertEqual(row.default_dimension, deal)
+
+	def _teardown_toggle(self) -> None:
+		"""Undo the toggle and everything the hook created for it."""
+		settings = frappe.get_single("Stabler Settings")
+		for row in settings.company_modules:
+			if row.company == self.plain.name:
+				row.enable_tender = 0
+		settings.flags.ignore_permissions = True
+		settings.save(ignore_permissions=True)
+		frappe.db.delete(
+			"Accounting Dimension Detail", {"parent": _dimension_name(), "company": self.plain.name}
+		)
+		clear_dimension_cache()
+		deal = overhead_deal(self.plain.name)
+		if deal:
+			frappe.delete_doc(DIMENSION_DOCTYPE, deal, force=True, ignore_permissions=True)
+		clear_dimension_cache()
 
 	def test_the_same_expense_posts_the_same_ledger_without_the_dimension(self):
 		"""The money invariant: the field is the ONLY difference between the two."""
