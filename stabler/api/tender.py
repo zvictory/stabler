@@ -22,7 +22,7 @@ from stabler.api._bid_package import assemble_bid_package, build_bid_docx
 from stabler.api._common import _require_company
 from stabler.api.approvals import _assert_company_scope
 from stabler.api.organization import _can_access_module
-from stabler.stabler.tender_landed_math import converted_amount
+from stabler.stabler.tender_landed_math import line_value
 
 _STAGE = "Stabler SO Stage"
 
@@ -258,11 +258,19 @@ _CHARGE_TYPES = (
 )
 
 
-def _parse_landed(raw) -> list[dict]:
-	"""Parse the JSON stored in Purchase Order.custom_landed_charges into a clean
-	list of dicts (amount in company/base currency). Each line may carry a ТН ВЭД
-	(HS) code and an attributed provider (declarant / lawyer / logistician …) as a
-	Supplier link + denormalized name for display."""
+def _raw_landed_lines(raw) -> list[dict]:
+	"""RAW SHAPE -- the PO's landed lines exactly as they were given. Never valued.
+
+	This is the only shape `save_po_landed_charges` persists. ADR-605 second review,
+	P0: the save used to store `_parse_landed`'s VALUED output, which zeroes `amount`
+	on a line it cannot value -- so a half-finished currency switch (USD picked on a
+	line already holding the so'm figure, with a rate the refusal below accepts)
+	destroyed that figure on the way to disk. Valuing is the reader's job, done again
+	on every read; storing a derivation loses the thing it was derived from.
+
+	Each line may carry a ТН ВЭД (HS) code and an attributed provider (declarant /
+	lawyer / logistician …) as a Supplier link + denormalized name for display.
+	"""
 	if not raw:
 		return []
 	try:
@@ -278,7 +286,6 @@ def _parse_landed(raw) -> list[dict]:
 			ctype = "other"
 		ccy = str(it.get("currency") or "").strip().upper()[:8]
 		amount_ccy = flt(it.get("amount_original"))
-		actual_ccy = flt(it.get("actual_original"))
 		out.append(
 			{
 				"type": ctype,
@@ -311,31 +318,91 @@ def _parse_landed(raw) -> list[dict]:
 				# `rate_date` is provenance, not arithmetic: it records WHICH day's
 				# quote the rate is, so a rate carried over from another day stays
 				# visible instead of merely present.
+				# `amount_original` has no twin for the actual side. `actual_original`
+				# existed until ADR-605's fourth review and was write-only: nothing in
+				# the app could put a figure in it, because the actual has exactly two
+				# writers and both produce company currency (the row's own MoneyInput
+				# is bound `:currency="ccy"`, and `landed_actual_from_voucher` returns
+				# the linked document's BASE total). It was still read, though — and a
+				# currency line with 0 in it reads as "a currency is named and nothing
+				# was typed in it", which zeroed the actual of every foreign line.
 				"currency": ccy,
 				"fx_rate": flt(it.get("fx_rate")),
 				"rate_date": str(it.get("rate_date") or "").strip()[:10],
 				"amount_original": amount_ccy,
-				"actual_original": actual_ccy,
 			}
 		)
-		# `amount`/`actual` stay the company-currency figures every consumer sums.
-		# Deriving them here — the one chokepoint both reads and writes pass
-		# through — is what stops the two from ever disagreeing.
+	return out
+
+
+def _parse_landed(raw) -> list[dict]:
+	"""VALUED SHAPE -- the raw lines with `amount`/`actual` in company currency.
+
+	Derived on every read and never stored (see `_raw_landed_lines`). `amount` is
+	OVERWRITTEN with the derived figure, because seven call sites and `api.lcv` sum
+	that key; the quotation reader made the opposite choice and keeps `amount` as
+	given with the derived figure under `company_amount`. The two conventions are
+	named apart on purpose -- `amount_given` here, `company_amount` there -- so no
+	reader can mistake one module's `amount` for the other's. Both call `line_value`,
+	so they cannot disagree about what a line is worth.
+
+	`actual` is company currency ALREADY and is only rounded here. The two are not
+	symmetrical because their inputs are not: the planned figure can be typed in a
+	foreign currency, the actual cannot (ADR-605 fourth review, P1, below).
+
+	`amount_given` carries the figure the officer actually typed. ADR-605 third
+	review, P0: without it a read handed the editor a 0.0 for a line it could not
+	value, the editor bound that into its own row and its save filter then read the
+	same 0.0 -- so reopening a half-switched line and pressing Save DELETED it, and
+	the Purchase Order's landed total silently lost the charge. Storing RAW closed
+	the first hop; this closes the second. A read must hand back something the editor
+	can hand in again unchanged.
+	"""
+	out = _raw_landed_lines(raw)
+	for line in out:
+		# Present on every line, valued or not, so no consumer has to ask whether the
+		# key exists before deciding whether the figure beside it is real. Derived
+		# here rather than in the raw builder: a stored verdict can only go stale.
+		line["unvalued"] = False
+		line["amount_given"] = line["amount"]
+		# The actual is ALREADY company currency, on every line, and is never
+		# converted -- ADR-605 fourth review, P1. It has two writers and both produce
+		# a base-currency figure, so there was nothing for a conversion to do; what it
+		# did instead was consult `actual_original`, a key nothing could write, find 0
+		# there and answer 0.0 for every foreign-currency line. The screen went on
+		# printing the officer's figure in its own box while the footer, the deal's
+		# `actual_landed` and the actual P&L behind it all counted nothing -- so a PO
+		# over plan showed an actual UNDER plan, in green. Hence no `actual_given`
+		# twin either: `actual` is the figure as given, and stays that way.
+		line["actual"] = round(flt(line["actual"]), 2)
+		# `amount` stays the company-currency figure every consumer sums. Deriving it
+		# here — the one chokepoint both reads and writes pass through — is what
+		# stops it and the typed `amount_original` from ever disagreeing.
 		# A customs line is excluded on purpose: its amount comes from the CIF
 		# calculator (`applyCustoms`), so converting here would give it a second
 		# writer — and the conversion would be wrong anyway. The ГТД declares the
 		# customs value in company currency at the rate customs itself applied;
 		# re-deriving it from a CBU quote produces a figure the declaration does
 		# not agree with. `save_po_landed_charges` refuses the combination.
-		if ccy and ctype != "customs":
-			for field, source in (("amount", amount_ccy), ("actual", actual_ccy)):
-				converted = converted_amount(source, ccy, out[-1]["fx_rate"])
-				# None means the rate is unusable. `save_po_landed_charges` refuses to
-				# store that, so reaching it means hand-edited JSON: keep the stored
-				# figure, which was a real conversion when it was written, rather than
-				# inventing one. Reading must never throw.
-				if converted is not None:
-					out[-1][field] = converted
+		if not (line["currency"] and line["type"] != "customs"):
+			continue
+		# ADR-605 review, item 6. This used to KEEP the stored figure when the
+		# rate was unusable while `_landed.parse_landed_charges` — which sums the
+		# very same JSON for the PO board (`po_control_board`) — dropped the line.
+		# One Purchase Order therefore showed two different landed totals
+		# depending on which screen asked. `line_value` is now the only rule for
+		# both: an unvaluable line is 0.0 and flagged, never a figure nobody can
+		# reproduce. `save_po_landed_charges` still REFUSES an unusable rate, but
+		# not a half-finished switch, so this state is reachable — and reading
+		# must never throw on it.
+		amount, unvalued = line_value(
+			line["amount"], line["amount_original"], line["currency"], line["fx_rate"]
+		)
+		line["amount"] = amount
+		line["unvalued"] = unvalued
+		# `actual` is deliberately NOT touched here. An unusable rate makes the PLAN
+		# unreadable; the invoice was still paid, and its figure is still company
+		# currency. Zeroing it with the plan understates what was actually spent.
 	return out
 
 
@@ -480,6 +547,11 @@ def save_po_landed_charges(po: str, charges) -> dict:
 	if not frappe.db.has_column("Purchase Order", "custom_landed_charges"):
 		frappe.throw(_("Run migrate to enable landed-cost planning."))
 	cleaned = _parse_landed(charges)
+	# Two independent parses of the same payload: `cleaned` is the VALUED shape the
+	# refusal below and the returned total read, `raw_lines` the RAW shape that is
+	# actually stored. Persisting `cleaned` is the P0 -- it writes back a 0.0 the
+	# next read cannot tell from an empty line.
+	raw_lines = _raw_landed_lines(charges)
 	# WP-T3: a line naming a currency with no usable rate cannot be valued, and a
 	# line that cannot be valued must not enter the total that decides which vendor
 	# wins the tender. Refused here rather than in `_parse_landed`, which also
@@ -501,7 +573,7 @@ def save_po_landed_charges(po: str, charges) -> dict:
 		"Purchase Order",
 		po,
 		"custom_landed_charges",
-		json.dumps(cleaned, ensure_ascii=False),
+		json.dumps(raw_lines, ensure_ascii=False),
 		update_modified=False,
 	)
 	base_total = flt(frappe.db.get_value("Purchase Order", po, "base_grand_total"))
@@ -1074,17 +1146,118 @@ def _deal_landed(deal: str, company: str) -> tuple[float, int]:
 	return planned, count
 
 
+_SOURCING_DECISION = "Tender Sourcing Decision"
+
+
+def _pick_sourcing_decision(rows) -> dict | None:
+	"""Which of a lot's decisions names the quotation to price against. Frappe-free.
+
+	Approved before draft, then the latest `approved_at`, then the latest `modified`
+	-- the same precedence `sourcing._standing_award` applies, because a lot can be
+	awarded more than once and only the LATEST approval is in force. Inventing a
+	second ordering here would let this screen price the bid off a winner the PO
+	gate then refuses.
+
+	A draft counts, and has to: pre-win there is at most a draft, since an approval
+	is what opens the PO route (`purchasing._assert_awarded`). Requiring one would
+	leave the field blank for the whole stage this exists to serve.
+
+	The choosing is deliberately Python, not an `order_by` the database applies out
+	of reach: a frappe-free test can then exercise the real rule instead of the
+	order a stubbed `get_list` happened to return its rows in.
+	"""
+	named = [r for r in (rows or []) if r.get("selected_quotation")]
+	if not named:
+		return None
+	return max(
+		named,
+		key=lambda r: (
+			1 if str(r.get("status") or "") == "Approved" else 0,
+			str(r.get("approved_at") or ""),
+			str(r.get("modified") or ""),
+		),
+	)
+
+
+def _lot_sourcing_decision(deal: str, company: str) -> dict | None:
+	"""The decision that NAMES a quotation for this lot -- approved, else draft."""
+	rows = frappe.get_list(
+		_SOURCING_DECISION,
+		filters={"deal": deal, "company": company},
+		fields=["name", "status", "selected_quotation", "approved_at", "modified"],
+		limit_page_length=0,
+	)
+	return _pick_sourcing_decision(rows)
+
+
+def _quotation_landed_estimate(deal: str, company: str) -> dict:
+	"""Pre-win landed cost (base currency) from the quotation this lot chose.
+
+	Returns ``{"amount", "quotation", "unvalued", "denied"}``. Before a Purchase
+	Order exists there is no post-win landed figure at all, so `_bid_inputs`
+	pre-filled `landed_goods` with 0 and the officer priced the bid against a blank
+	box -- at exactly the moment Zafar's pre-win rule says the number must be quick
+	(00-SETUP.md, "The pre-win costing rule").
+
+	NEVER the cheapest bid. `Tender Sourcing Decision.cheapest_quotation` sits right
+	beside `selected_quotation`, and the cheapest is a fact about the comparison,
+	not a choice -- a lot's winner is regularly dearer for a reason the comparison
+	cannot see (technical compliance, delivery, country mix). Summing it would put a
+	figure in front of the officer that nobody selected.
+
+	`unvalued` counts the charge lines the quotation carries that no rate can value.
+	They are already excluded from `amount`, so a caller that ignores this reports a
+	confident figure that is short -- which is the ADR-605 defect wearing a
+	different hat.
+
+	`denied` distinguishes "no decision has been made" from "a decision exists and
+	this user may not read the quotation it names". Collapsing the two told a
+	sourcing officer to go and select a quotation that was already selected.
+	"""
+	empty = {"amount": 0.0, "quotation": "", "unvalued": 0, "denied": False}
+	decision = _lot_sourcing_decision(deal, company)
+	if not decision:
+		return empty
+	quotation = decision["selected_quotation"]
+	if not frappe.has_permission("Supplier Quotation", "read", doc=quotation):
+		return {"amount": 0.0, "quotation": quotation, "unvalued": 0, "denied": True}
+	has_landed = frappe.db.has_column("Supplier Quotation", "custom_landed_charges")
+	fields = ["base_grand_total", "grand_total"]
+	if has_landed:
+		fields.append("custom_landed_charges")
+	row = frappe.db.get_value("Supplier Quotation", quotation, fields, as_dict=True)
+	if not row:
+		return empty
+
+	from stabler.api._landed import parse_landed_charges
+
+	# Same reader `get_quotation_landed` uses, so the estimate offered here is the
+	# number the sourcing comparison showed -- ADR-605 included, a charge line that
+	# cannot be valued is excluded from both rather than counted in one.
+	charges_total, clean, _has_est = parse_landed_charges(
+		row.get("custom_landed_charges") if has_landed else None
+	)
+	base = flt(row.get("base_grand_total")) or flt(row.get("grand_total"))
+	return {
+		"amount": flt(base + charges_total),
+		"quotation": quotation,
+		"unvalued": sum(1 for c in clean if c.get("unvalued")),
+		"denied": False,
+	}
+
+
 def _deal_landed_estimate(deal: str) -> float:
 	"""Pre-win landed figure (base currency): the FIXED estimate a sourcing
 	officer types onto the deal's own bid pricing (CRM Deal.custom_bid_pricing
 	.landed_goods) to set the bid price -- Zafar's pre-win costing rule (no
 	customs/logistics staff, no PO, one number from experience -- 00-SETUP.md
 	"The pre-win costing rule", prompt 03). Reads the same stored field
-	_bid_inputs does (:1151-1152) without calling it: that function also
+	_bid_inputs does (its `stored` block) without calling it: that function also
 	resolves SO revenue and merges bid-price defaults, which a list row does
-	not need. Deliberately does NOT fall back to the post-win PO sum the way
-	_bid_inputs' own editor pre-fill does (:1162-1164) -- that default exists so
-	an already-won deal's editor opens on the real number instead of 0, which
+	not need. Deliberately does NOT fall back to the post-win PO sum, nor to
+	ADR-605's pre-win quotation estimate, the way _bid_inputs' own editor pre-fill
+	does -- that default exists so an already-won deal's editor opens on the real
+	number instead of 0, which
 	would make this figure equal `landed` again on every won row. 0 means
 	"nothing typed yet", not "post-win sum unavailable"."""
 	if not frappe.db.has_column("CRM Deal", "custom_bid_pricing"):
@@ -1182,16 +1355,43 @@ def _bid_inputs(deal: str, company: str) -> tuple[dict, dict]:
 				stored = {}
 	po_landed, po_count = _deal_landed(deal, company)
 	so_revenue, so_count = _deal_revenue(deal, company)
+	# ADR-605: with no PO there is no post-win landed figure, so the pre-win estimate
+	# the lot's sourcing decision already points at stands in. Only then -- once a PO
+	# exists the operational record outranks the estimate, and querying for one
+	# anyway would buy a decision read per call for a figure nothing would use.
+	est = (
+		{"amount": 0.0, "quotation": "", "unvalued": 0, "denied": False}
+		if po_count
+		else _quotation_landed_estimate(deal, company)
+	)
 	inp = dict(_BID_DEFAULTS)
 	inp.update({k: v for k, v in stored.items() if v is not None})
-	# Defaults: landed basis from the deal's POs; bid (price mode) from its SOs.
+	# Defaults: landed basis from the deal's POs, or pre-win from its chosen
+	# quotation; bid (price mode) from its SOs. A figure the officer typed is what
+	# the bid was quoted on and is never replaced -- hence the empty-only guard.
 	if inp.get("landed_goods") in (None, "", 0, 0.0):
-		inp["landed_goods"] = po_landed
+		inp["landed_goods"] = po_landed or est["amount"]
 	if inp.get("mode") == "price" and inp.get("bid_price") in (None, "", 0, 0.0):
 		inp["bid_price"] = so_revenue
 	inp["above_other"] = stored.get("above_other") or []
 	inp["below_other"] = stored.get("below_other") or []
-	return inp, {"po_landed": po_landed, "po_count": po_count, "so_revenue": so_revenue, "so_count": so_count}
+	return inp, {
+		"po_landed": po_landed,
+		"po_count": po_count,
+		"so_revenue": so_revenue,
+		"so_count": so_count,
+		# Reported even when a stored figure won, so the screen can OFFER the
+		# estimate as a link instead of forcing it over the officer's own number.
+		"quotation_landed_estimate": est["amount"],
+		"quotation_landed_source": est["quotation"],
+		# Already excluded from the amount above. A caller that ignores this
+		# shows a confident pre-win figure that is short -- ADR-605 again.
+		"quotation_landed_unvalued": est["unvalued"],
+		# "a decision exists but you may not read the quotation it names" is
+		# not "no quotation has been chosen"; telling the second story sent an
+		# officer to go and pick a quotation that was already picked.
+		"quotation_landed_denied": est["denied"],
+	}
 
 
 def _actual_block(deal: str, company: str, inp: dict, planned_pnl: dict) -> dict:

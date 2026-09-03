@@ -1048,6 +1048,11 @@ def _snapshot_rows(rows: list) -> list:
 			"base_landed_total": flt(r.get("base_landed_total")),
 			"landed_charges_total": flt(r.get("landed_charges_total")),
 			"has_landed_estimate": bool(r.get("has_landed_estimate")),
+			# ADR-605: the snapshot is what a later reader re-checks the decision
+			# against, and `base_landed_total` above is SHORT whenever this is true.
+			# Without it the audit record shows a confident delivered total and no
+			# trace that a charge line was excluded from it.
+			"has_unvalued_charges": bool(r.get("has_unvalued_charges")),
 			"cheapest": bool(r.get("cheapest")),
 			"is_cheapest_price": bool(r.get("is_cheapest_price")),
 			"is_cheapest_landed": bool(r.get("is_cheapest_landed")),
@@ -1289,12 +1294,19 @@ def get_quotation_landed(quotation, company=None):
 	return {
 		"quotation": doc.name,
 		"supplier": doc.supplier,
+		# The QUOTATION's own currency, for the header. `landed_charges_total` and
+		# `base_landed_total` below are company currency, like `base_grand_total`.
 		"currency": doc.currency,
 		"grand_total": flt(doc.grand_total),
 		"base_grand_total": base_grand_total,
 		"landed_charges_total": total_landed,
 		"base_landed_total": flt(base_grand_total + total_landed),
 		"has_landed_estimate": has_estimate,
+		# ADR-605: True when a line names a currency the rate cannot value. The
+		# estimate EXISTS, so `has_landed_estimate` stays True and the K3
+		# completeness rule sees nothing wrong -- this is the only signal that the
+		# delivered total on screen is short by whatever those lines hold.
+		"has_unvalued_charges": any(c.get("unvalued") for c in clean_charges),
 		"charges": clean_charges,
 	}
 
@@ -1319,10 +1331,16 @@ def update_quotation_landed(quotation, charges, company=None):
 	if not isinstance(parsed, list):
 		frappe.throw(_("Charges must be a list of landed charges."), frappe.ValidationError)
 
-	from stabler.api._landed import parse_landed_charges
+	from stabler.api._landed import sanitize_charge_lines
 
-	_tot, clean_charges, has_est = parse_landed_charges(parsed)
-	json_str = json.dumps(clean_charges, ensure_ascii=False) if (has_est and clean_charges) else None
+	# ADR-605 second review, P0. This used to persist `parse_landed_charges`' output
+	# -- the VALUED shape. On a half-finished currency switch that shape carries
+	# `amount: 0.0`, so saving destroyed the 3 200 000 so'm the officer had typed and
+	# the next read saw an empty line: unflagged, worth nothing, nothing to fix. A
+	# write path stores what it was GIVEN; valuing is the reader's job and is done
+	# again on every read, so a stored figure can never drift from the rule.
+	raw_lines = sanitize_charge_lines(parsed)
+	json_str = json.dumps(raw_lines, ensure_ascii=False) if raw_lines else None
 
 	frappe.db.set_value("Supplier Quotation", quotation, "custom_landed_charges", json_str)
 

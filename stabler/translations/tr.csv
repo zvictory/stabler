@@ -1,5 +1,10 @@
+"Enter the amount in {ccy} and a rate, or clear the currency",Tutarı {ccy} olarak ve bir kur girin ya da para birimini kaldırın
+Missing rate,Kur yok
+No rate for {ccy} — enter a rate or clear the currency,{ccy} için kur yok — bir kur girin ya da para birimini kaldırın
+Select a quotation for this lot in Sourcing,Bu lot için Tedarik ekranından bir teklif seçin
 "The existing material request {0} could not be withdrawn, so the plan was not saved. Sort that request out first.","Mevcut {0} malzeme talebi geri çekilemedi, bu yüzden plan kaydedilmedi. Önce o talebi çözün."
 "These materials are the other operator's to plan, not yours: {0}","Bu malzemeleri diğer operatör planlar, siz değil: {0}"
+"This lot is priced from {quotation}, which you do not have permission to read",Bu lot {quotation} teklifinden fiyatlanıyor; bu teklifi okuma yetkiniz yok
 "This order's material has already been written off per operator, but 'Allow Continuous Material Consumption' is switched off in Manufacturing Settings — finishing now would count that material a second time. Ask a manager to switch it back on.","Bu emrin malzemesi operatör bazında zaten düşülmüş, ama Üretim Ayarları'nda ""Allow Continuous Material Consumption"" kapalı — şimdi bitirmek o malzemeyi ikinci kez sayar. Bir yöneticiden tekrar açmasını isteyin."
 #,#
 % of total,Toplam %
@@ -19,9 +24,13 @@
 1:1 Foreign Postings,
 1C ClientBank Exchange format (.txt). Uzbek bank-client export.,1C ClientBank Exchange formatı (.txt). Banka-istemci dışa aktarımı.
 1C Sync Log,1C Senkronizasyon Günlüğü
+from {quotation},{quotation} teklifinden
+incomplete,eksik
+incomplete: {count} line(s) without a rate,eksik: kuru olmayan {count} satır
 {countries} countries met,{countries} ülke şartı karşılandı
 {countries} countries needed,{countries} ülke gerekli
 31–60,31–60
+{count} charge line(s) have a currency with no exchange rate and are excluded from these totals.,{count} masraf satırında kuru olmayan bir para birimi var ve bu toplamlara dahil edilmiyor.
 {min} quotes met,{min} teklif şartı karşılandı
 {min} quotes needed,{min} teklif gerekli
 61–90,61–90
@@ -6425,7 +6434,6 @@ from CBU,MB'den
 Currency this charge is quoted in,Masrafın belirtildiği para birimi
 Rate date,Kur tarihi
 Fetch the Central Bank rate,Merkez Bankası kurunu getir
-Enter an exchange rate,Bir kur girin
 Add requirement,Gereklilik ekle
 Add standard set,Standart seti ekle
 Checklist saved,Kontrol listesi kaydedildi
@@ -6601,7 +6609,7 @@ This invitation reaches {countries} country(ies). On its own it cannot satisfy t
 "Asked: {count} vendor(s), {countries} country(ies)","Soruldu: {count} tedarikçi, {countries} ülke"
 "Everyone asked so far is in {countries} country(ies). More rounds, or a quotation attached from elsewhere, are what change that.",Şu ana kadar sorulan herkes {countries} ülkede. Bunu ancak yeni turlar ya da başka yerden eklenen bir teklif değiştirir.
 {count} of the vendors asked has no country on file and counts toward no country.,Sorulan tedarikçilerden {count} tanesinin ülkesi kayıtlı değil ve hiçbir ülkeye sayılmıyor.
-"Lines with no exchange rate, not in this total: {count}","Kuru girilmemiş satırlar, bu toplama dahil değil: {count}"
+"Lines that cannot be valued, not in this total: {count}","Değerlenemeyen satırlar, bu toplama dahil değil: {count}"
 Quotation date,Teklif tarihi
 The currency list could not be loaded — only your company's currency is available.,Para birimi listesi yüklenemedi — yalnızca şirketinizin para birimi kullanılabilir.
 Handled by the {role} role.,{role} rolü tarafından yürütülür.

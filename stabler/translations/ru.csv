@@ -1,5 +1,10 @@
+"Enter the amount in {ccy} and a rate, or clear the currency",Введите сумму в {ccy} и курс либо уберите валюту
+Missing rate,Нет курса
+No rate for {ccy} — enter a rate or clear the currency,Нет курса для {ccy} — введите курс или уберите валюту
+Select a quotation for this lot in Sourcing,Выберите предложение для этого лота в разделе «Снабжение»
 "The existing material request {0} could not be withdrawn, so the plan was not saved. Sort that request out first.","Существующую заявку на материалы {0} не удалось отозвать, поэтому план не сохранён. Сначала разберитесь с этой заявкой."
 "These materials are the other operator's to plan, not yours: {0}","Эти материалы планирует другой оператор, а не вы: {0}"
+"This lot is priced from {quotation}, which you do not have permission to read","Лот оценивается по предложению {quotation}, которое вам недоступно для чтения"
 "This order's material has already been written off per operator, but 'Allow Continuous Material Consumption' is switched off in Manufacturing Settings — finishing now would count that material a second time. Ask a manager to switch it back on.","Материал этого заказа уже списан по операторам, но «Allow Continuous Material Consumption» в настройках производства выключен — завершение сейчас посчитает этот материал второй раз. Попросите руководителя включить его обратно."
 #,#
 % of total,% от итога
@@ -20,9 +25,13 @@
 1C ClientBank Exchange format (.txt). Uzbek bank-client export.,Формат 1C ClientBank Exchange (.txt). Экспорт из банк-клиента.
 1C Sync Log,Журнал синхронизации 1C
 1C:Enterprise sync log appears here.,Здесь отображается журнал синхронизации 1C:Предприятие.
+from {quotation},из {quotation}
+incomplete,неполная
+incomplete: {count} line(s) without a rate,неполная: {count} строк(и) без курса
 {countries} countries met,Требование по {countries} странам выполнено
 {countries} countries needed,Требуются поставщики из {countries} стран
 31–60,31–60
+{count} charge line(s) have a currency with no exchange rate and are excluded from these totals.,{count} строк(и) расходов имеют валюту без курса и не входят в эти итоги.
 {min} quotes met,Требование по {min} предложениям выполнено
 {min} quotes needed,Требуются {min} предложений
 61–90,61–90
@@ -6435,7 +6444,6 @@ from CBU,из ЦБ
 Currency this charge is quoted in,"Валюта, в которой указан расход"
 Rate date,Дата курса
 Fetch the Central Bank rate,Получить курс Центробанка
-Enter an exchange rate,Укажите курс
 Add requirement,Добавить требование
 Add standard set,Добавить стандартный набор
 Checklist saved,Чек-лист сохранён
@@ -6611,7 +6619,7 @@ This invitation reaches {countries} country(ies). On its own it cannot satisfy t
 "Asked: {count} vendor(s), {countries} country(ies)","Запрошено: {count} поставщик(ов), {countries} страна(стран)"
 "Everyone asked so far is in {countries} country(ies). More rounds, or a quotation attached from elsewhere, are what change that.","Все, кого запросили до сих пор, находятся в {countries} стране(ах). Это изменят только новые раунды или предложение, добавленное со стороны."
 {count} of the vendors asked has no country on file and counts toward no country.,"У {count} из запрошенных поставщиков не указана страна, и они не засчитываются ни в одну страну."
-"Lines with no exchange rate, not in this total: {count}","Строки без курса валюты, не входят в этот итог: {count}"
+"Lines that cannot be valued, not in this total: {count}","Строки, которые невозможно оценить, не входят в эту сумму: {count}"
 Quotation date,Дата предложения
 The currency list could not be loaded — only your company's currency is available.,Не удалось загрузить список валют — доступна только валюта вашей компании.
 Handled by the {role} role.,Обрабатывается ролью «{role}».

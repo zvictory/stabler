@@ -4,15 +4,25 @@
  *
  * Enforces IAS 2 §11 tax rules: recoverable VAT is kept in breakdown but excluded
  * from the capitalized landed cost total.
+ *
+ * ADR-605. `props.currency` is the COMPANY currency, because that is what every
+ * total here is in: the server adds these charges to `base_grand_total`. It used
+ * to be handed the quotation's currency, so an officer typed "1200" into a box
+ * labelled USD and 1 200 so'm reached the sum that ranks the vendors. A line may
+ * now name its own currency and rate — the same three fields a PO landed line
+ * carries — and the converted figure is shown beside what was typed.
  */
 import { computed, ref, watch } from "vue";
 import { storeToRefs } from "pinia";
 import { useSession } from "../stores/session.js";
 import { call } from "../api/client.js";
 import { formatMoney } from "../composables/money.js";
+import { todayIso } from "../composables/date.js";
 import { t } from "../composables/i18n.js";
+import { convertedPreview, unvaluedReason } from "../composables/landedLine.js";
 import { useToast } from "../composables/useToast.js";
 import MoneyInput from "./MoneyInput.vue";
+import DateInput from "./DateInput.vue";
 
 const session = useSession();
 const { activeCompany, user } = storeToRefs(session);
@@ -41,6 +51,9 @@ const CHARGE_TYPES = [
 	{ value: "VAT", label: t("Import VAT (Recoverable)") },
 	{ value: "Other", label: t("Other Charge") },
 ];
+// The same list the PO landed editor offers (PoControlBoard.vue:47) — a forwarder
+// or a declarant quotes in one of these, and an empty pick means company currency.
+const CHARGE_CURRENCIES = ["USD", "EUR", "RUB", "CNY", "TRY"];
 
 async function load() {
 	if (!props.show || !props.quotationName) return;
@@ -55,6 +68,11 @@ async function load() {
 			charge_type: c.charge_type || "Freight",
 			description: c.description || "",
 			amount: Number(c.amount || 0),
+			currency: c.currency || "",
+			fx_rate: Number(c.fx_rate || 0),
+			rate_date: c.rate_date || "",
+			amount_original: c.amount_original == null ? null : Number(c.amount_original),
+			fx_source: "",
 			is_recoverable_vat: Boolean(c.is_recoverable_vat),
 		}));
 		if (!charges.value.length) {
@@ -74,6 +92,11 @@ function addChargeLine() {
 		charge_type: "Freight",
 		description: "",
 		amount: 0,
+		currency: "",
+		fx_rate: 0,
+		rate_date: "",
+		amount_original: null,
+		fx_source: "",
 		is_recoverable_vat: false,
 	});
 }
@@ -88,12 +111,84 @@ function onTypeChange(line) {
 	}
 }
 
-const landedChargesTotal = computed(() => {
-	return charges.value.reduce((sum, c) => {
-		if (c.is_recoverable_vat || c.charge_type === "VAT") return sum;
-		return sum + (Number(c.amount) || 0);
-	}, 0);
-});
+// `null` means the line cannot be valued at all. Counting those is the whole
+// point: adding them as zero is how a total silently shrinks.
+function priceLines(lines) {
+	let total = 0;
+	let unvalued = 0;
+	for (const line of lines || []) {
+		const value = convertedPreview(line);
+		if (value === null) unvalued += 1;
+		// IAS 2 §11 and the currency rule are independent: a VAT line is still
+		// converted for display, it just never reaches the capitalized total.
+		else if (!(line.is_recoverable_vat || line.charge_type === "VAT")) total += value;
+	}
+	return { total, unvalued };
+}
+
+async function fetchChargeRate(line) {
+	line.fx_source = "";
+	if (!line.currency) return;
+	if (!line.rate_date) line.rate_date = todayIso();
+	try {
+		const raw = await call("stabler.api.money.get_exchange_rate_for_currencies", {
+			from_currency: line.currency,
+			to_currency: props.currency,
+			posting_date: line.rate_date,
+		});
+		const rate = Number(raw) || 0;
+		if (rate > 0) {
+			line.fx_rate = rate;
+			line.fx_source = t("from CBU") + " · " + line.rate_date;
+		} else {
+			line.fx_source = t("No exchange rate for this date — enter manually.");
+		}
+	} catch {
+		line.fx_source = t("No exchange rate for this date — enter manually.");
+	}
+}
+
+// A rate belongs to the currency it was quoted for. Carrying it across a currency
+// change would price this charge with another currency's quote — the transfer form
+// shipped exactly that bug (P0-TRF-1) and it inverted transfers.
+function onChargeCurrency(line) {
+	line.fx_rate = 0;
+	line.rate_date = "";
+	line.fx_source = "";
+	if (!line.currency) {
+		// Clearing the currency is one of the two remedies the row offers, and it
+		// means "this number is already in company currency" — so the figure has to
+		// survive the move. Nulling `amount_original` without carrying it across
+		// destroyed whatever the officer had typed on a line created this session.
+		line.amount = Number(line.amount_original) || Number(line.amount) || 0;
+		line.amount_original = null;
+		return;
+	}
+	// Deliberately NOT seeding `amount_original` from `amount`: that figure is
+	// company currency by construction and copying it into a USD box would relabel
+	// it. The line shows as unvalued until the officer types the figure in the
+	// currency they just named.
+	fetchChargeRate(line);
+}
+
+// A row is dropped on save only when it is empty on EVERY field the officer can
+// fill. The old test — `Number(c.currency ? c.amount_original : c.amount) > 0 ||
+// description` — asked the wrong box the moment a currency was picked: a legacy
+// so'm line onto which USD had just been chosen still has `amount_original` null,
+// so it read as blank, was never sent, and the stored charge was deleted without a
+// word. If it was the only line, `custom_landed_charges` went NULL and the whole
+// estimate vanished. A named currency is itself a thing the officer did.
+function isBlankLine(line) {
+	return (
+		!line.currency &&
+		!(Number(line.amount) > 0) &&
+		!(Number(line.amount_original) > 0) &&
+		!String(line.description || "").trim()
+	);
+}
+
+const landedChargesTotal = computed(() => priceLines(charges.value).total);
+const unvaluedCount = computed(() => priceLines(charges.value).unvalued);
 
 const totalDeliveredCost = computed(() => {
 	return (Number(baseTotal.value) || 0) + landedChargesTotal.value;
@@ -104,11 +199,22 @@ async function save() {
 	saving.value = true;
 	try {
 		const validCharges = charges.value
-			.filter((c) => Number(c.amount) > 0 || c.description.trim())
+			.filter((c) => !isBlankLine(c))
 			.map((c) => ({
 				charge_type: c.charge_type,
 				description: c.description,
+				// Both figures travel because they are two different facts, not one
+				// fact twice: `amount` is what was typed in company currency and
+				// `amount_original` what was typed in the line's own. The server
+				// stores exactly what it is given and derives the company-currency
+				// value on every read, so sending only `amount_original` would drop
+				// the so'm figure of a half-switched line — the evidence that the
+				// line is unfinished, and the only thing left to fix it with.
 				amount: Number(c.amount || 0),
+				amount_original: c.currency ? Number(c.amount_original || 0) : null,
+				currency: c.currency || "",
+				fx_rate: Number(c.fx_rate) || 0,
+				rate_date: c.rate_date || "",
 				is_recoverable_vat: c.is_recoverable_vat || c.charge_type === "VAT",
 			}));
 
@@ -175,6 +281,14 @@ async function save() {
 							</div>
 						</div>
 
+						<!-- The totals above are SHORT while any line cannot be valued, so say
+						     so where they are read, not only on the row that caused it. The
+						     estimate still saves: the server excludes and flags those lines. -->
+						<div v-if="unvaluedCount" class="alert alert-warning py-2 mb-3">
+							<i class="ti ti-alert-triangle me-1"></i>
+							{{ t("{count} charge line(s) have a currency with no exchange rate and are excluded from these totals.", { count: unvaluedCount }) }}
+						</div>
+
 						<div class="table-responsive mb-3">
 							<table class="table table-vcenter">
 								<thead>
@@ -204,11 +318,72 @@ async function save() {
 											/>
 										</td>
 										<td>
+											<!-- ADR-605: typed in the line's OWN currency and shown converted
+											     underneath. An empty pick means it is already in company
+											     currency, which is every line stored before this. -->
+											<div class="d-flex gap-1">
 												<MoneyInput
-												v-model="line.amount"
-												:currency="props.currency"
-												size="sm"
-											/>
+													v-if="line.currency"
+													v-model="line.amount_original"
+													:currency="line.currency"
+													:language="user.language"
+													size="sm"
+												/>
+												<MoneyInput
+													v-else
+													v-model="line.amount"
+													:currency="props.currency"
+													:language="user.language"
+													size="sm"
+												/>
+												<select
+													v-model="line.currency"
+													class="form-select form-select-sm"
+													style="max-width:74px"
+													:title="t('Currency this charge is quoted in')"
+													@change="onChargeCurrency(line)"
+												>
+													<option value="">{{ props.currency }}</option>
+													<option v-for="cc in CHARGE_CURRENCIES" :key="cc" :value="cc">{{ cc }}</option>
+												</select>
+											</div>
+											<div v-if="line.currency" class="input-group input-group-sm mt-1">
+												<span class="input-group-text px-1 small">1&nbsp;{{ line.currency }}</span>
+												<MoneyInput
+													v-model="line.fx_rate"
+													currency=""
+													:language="user.language"
+													:group-while-typing="true"
+													size="sm"
+												/>
+												<button
+													type="button"
+													class="btn btn-outline-secondary"
+													:title="t('Fetch the Central Bank rate')"
+													@click="fetchChargeRate(line)"
+												>
+													<i class="ti ti-refresh"></i>
+												</button>
+											</div>
+											<div v-if="line.currency" class="d-flex align-items-center justify-content-end gap-1 mt-1">
+												<span class="small text-secondary">{{ t("Rate date") }}</span>
+												<DateInput v-model="line.rate_date" size="sm" @update:model-value="fetchChargeRate(line)" />
+											</div>
+											<div v-if="line.currency" class="small text-end mt-1">
+												<span v-if="convertedPreview(line) !== null" class="font-monospace text-secondary">
+													= {{ formatMoney(convertedPreview(line), props.currency, user.language) }}
+												</span>
+												<span v-else class="text-danger">
+													<i class="ti ti-alert-triangle me-1"></i>
+													<template v-if="unvaluedReason(line) === 'rate'">
+														{{ t("No rate for {ccy} — enter a rate or clear the currency", { ccy: line.currency }) }}
+													</template>
+													<template v-else>
+														{{ t("Enter the amount in {ccy} and a rate, or clear the currency", { ccy: line.currency }) }}
+													</template>
+												</span>
+											</div>
+											<div v-if="line.fx_source" class="small text-secondary text-end">{{ line.fx_source }}</div>
 										</td>
 										<td class="text-center">
 											<input
@@ -243,7 +418,19 @@ async function save() {
 					<button type="button" class="btn btn-secondary" @click="emit('close')">
 						{{ t("Cancel") }}
 					</button>
-					<button type="button" class="btn btn-primary" :disabled="saving || loading" @click="save">
+					<!-- An unvaluable line does NOT block the save. The server stores it,
+					     excludes it from the total and returns `has_unvalued_charges`, which
+					     the comparison row, the winner selector, the award snapshot and the
+					     pre-win bid estimate all show. Blocking here would contradict that
+					     contract and make every one of those flags unreachable through the
+					     product — an estimate typed under deadline must be saveable
+					     half-finished. The alert above and the row message are the flag. -->
+					<button
+						type="button"
+						class="btn btn-primary"
+						:disabled="saving || loading"
+						@click="save"
+					>
 						<i class="ti ti-check me-1"></i>{{ saving ? t("Saving…") : t("Save estimate") }}
 					</button>
 				</div>

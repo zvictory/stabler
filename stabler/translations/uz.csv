@@ -1,5 +1,10 @@
+"Enter the amount in {ccy} and a rate, or clear the currency",{ccy} dagi summani va kursni kiriting yoki valyutani olib tashlang
+Missing rate,Kurs yo'q
+No rate for {ccy} — enter a rate or clear the currency,{ccy} uchun kurs yo'q — kurs kiriting yoki valyutani olib tashlang
+Select a quotation for this lot in Sourcing,Ushbu lot uchun Ta'minot bo'limida taklif tanlang
 "The existing material request {0} could not be withdrawn, so the plan was not saved. Sort that request out first.","Mavjud {0} material so'rovini qaytarib bo'lmadi, shuning uchun reja saqlanmadi. Avval o'sha so'rovni hal qiling."
 "These materials are the other operator's to plan, not yours: {0}","Bu materiallarni boshqa operator rejalashtiradi, siz emas: {0}"
+"This lot is priced from {quotation}, which you do not have permission to read","Bu lot {quotation} taklifi bo'yicha baholanadi, uni o'qishga ruxsatingiz yo'q"
 "This order's material has already been written off per operator, but 'Allow Continuous Material Consumption' is switched off in Manufacturing Settings — finishing now would count that material a second time. Ask a manager to switch it back on.","Bu buyurtmaning materiali operator bo'yicha allaqachon hisobdan chiqarilgan, lekin Ishlab chiqarish sozlamalarida ""Allow Continuous Material Consumption"" o'chirilgan — hozir yakunlash bu materialni ikkinchi marta hisoblaydi. Rahbardan uni qayta yoqishni so'rang."
 #,#
 % of total,Jami %
@@ -19,9 +24,13 @@
 1:1 Foreign Postings,
 1C ClientBank Exchange format (.txt). Uzbek bank-client export.,1C ClientBank Exchange formati (.txt). Bank-mijoz eksporti.
 1C Sync Log,1C Sinxronizatsiya Jurnali
+from {quotation},{quotation} dan
+incomplete,to'liq emas
+incomplete: {count} line(s) without a rate,to'liq emas: kursi yo'q {count} ta qator
 {countries} countries met,{countries} mamlakat talabi bajarildi
 {countries} countries needed,{countries} mamlakat kerak
 31–60,31–60
+{count} charge line(s) have a currency with no exchange rate and are excluded from these totals.,{count} ta xarajat qatorida kursi yo'q valyuta bor va ular ushbu jamiga kirmaydi.
 {min} quotes met,{min} ta taklif talabi bajarildi
 {min} quotes needed,{min} ta taklif kerak
 61–90,61–90
@@ -6430,7 +6439,6 @@ from CBU,MBdan
 Currency this charge is quoted in,Xarajat ko'rsatilgan valyuta
 Rate date,Kurs sanasi
 Fetch the Central Bank rate,Markaziy bank kursini olish
-Enter an exchange rate,Kursni kiriting
 Add requirement,Talab qo'shish
 Add standard set,Standart to'plamni qo'shish
 Checklist saved,Nazorat ro'yxati saqlandi
@@ -6606,7 +6614,7 @@ This invitation reaches {countries} country(ies). On its own it cannot satisfy t
 "Asked: {count} vendor(s), {countries} country(ies)","So'raldi: {count} ta yetkazib beruvchi, {countries} ta davlat"
 "Everyone asked so far is in {countries} country(ies). More rounds, or a quotation attached from elsewhere, are what change that.",Hozirgacha so'ralganlarning hammasi {countries} ta davlatda. Buni faqat yangi bosqichlar yoki boshqa joydan biriktirilgan taklif o'zgartiradi.
 {count} of the vendors asked has no country on file and counts toward no country.,So'ralgan yetkazib beruvchilardan {count} tasining davlati kiritilmagan va hech qaysi davlatga hisoblanmaydi.
-"Lines with no exchange rate, not in this total: {count}","Valyuta kursi yo'q qatorlar, bu jamiga kirmaydi: {count}"
+"Lines that cannot be valued, not in this total: {count}","Baholab bo'lmaydigan qatorlar, bu summaga kirmaydi: {count}"
 Quotation date,Taklif sanasi
 The currency list could not be loaded — only your company's currency is available.,Valyutalar ro'yxatini yuklab bo'lmadi — faqat kompaniyangiz valyutasi mavjud.
 Handled by the {role} role.,«{role}» roli tomonidan boshqariladi.

@@ -159,6 +159,192 @@ class TestQuotationLandedApi(unittest.TestCase):
 		with self.assertRaises(PermissionError):
 			self.api.get_quotation_landed("SQ-001", company="FOREIGN")
 
+	def test_a_foreign_charge_reaches_the_total_converted(self):
+		"""ADR-605: `base_grand_total` is company currency and the charges must be too.
+
+		1 200 USD of freight summed unconverted would add 1 200 to a 10 000 total.
+		The editor labelled that same 1 200 with the QUOTATION's currency, so the
+		number was right on screen and wrong in the sum that ranks the vendors.
+		"""
+		res = self.api.update_quotation_landed(
+			"SQ-001",
+			[
+				{
+					"charge_type": "Freight",
+					"amount_original": 1200.0,
+					"currency": "USD",
+					"fx_rate": 12950.0,
+					"rate_date": "2026-09-03",
+				}
+			],
+			company="ACME",
+		)
+		self.assertEqual(res["landed_charges_total"], 15_540_000.0)
+		self.assertEqual(res["base_landed_total"], 15_550_000.0)
+		self.assertFalse(res["has_unvalued_charges"])
+
+	def test_a_charge_with_no_usable_rate_is_excluded_and_reported(self):
+		"""Excluding it silently is how a landed total quietly shrinks.
+
+		The endpoint is the only place the screen learns the estimate is short:
+		`has_landed_estimate` stays True (an estimate WAS typed), so without this
+		flag the comparison shows a confidently wrong delivered total.
+		"""
+		res = self.api.update_quotation_landed(
+			"SQ-001",
+			[
+				{"charge_type": "Freight", "amount_original": 1200.0, "currency": "USD", "fx_rate": 0},
+				{"charge_type": "Handling", "amount": 250.0},
+			],
+			company="ACME",
+		)
+		self.assertEqual(res["landed_charges_total"], 250.0)
+		self.assertTrue(res["has_landed_estimate"])
+		self.assertTrue(res["has_unvalued_charges"])
+
+	def test_the_saved_line_keeps_its_currency_and_rate(self):
+		# Round-tripping them is what lets the officer reopen the modal and see
+		# WHICH rate produced the company-currency figure, instead of a bare number.
+		self.api.update_quotation_landed(
+			"SQ-001",
+			[
+				{
+					"charge_type": "Freight",
+					"amount_original": 1200.0,
+					"currency": "USD",
+					"fx_rate": 12950.0,
+					"rate_date": "2026-09-03",
+				}
+			],
+			company="ACME",
+		)
+		stored = json.loads(self.fake.db_set_values[-1][3])
+		self.assertEqual(stored[0]["currency"], "USD")
+		self.assertEqual(stored[0]["fx_rate"], 12950.0)
+		self.assertEqual(stored[0]["rate_date"], "2026-09-03")
+		self.assertEqual(stored[0]["amount_original"], 1200.0)
+
+
+class TestTheSaveStoresTheLineAsTheOfficerLeftIt(unittest.TestCase):
+	"""ADR-605 second review, P0. Saving must not destroy what it could not value.
+
+	`parse_landed_charges` was BOTH the reader and the write normaliser, so this
+	endpoint persisted its VALUED output. For a half-finished currency switch -- USD
+	picked on a line already holding 3 200 000 so'm -- that output is
+	`amount: 0.0, amount_original: 0.0`, and re-reading THAT is an empty line:
+	unflagged, worth nothing, with nothing left on screen to fix. The officer's
+	figure was gone and every warning went quiet in the very response the save
+	returned.
+
+	These tests read the PERSISTED JSON, not the return value. A save that returns
+	the right answer and stores the wrong one is exactly the bug.
+	"""
+
+	def setUp(self):
+		self.fake = _FakeFrappe()
+		self.api = _load_sourcing(self.fake)
+		self.half_switched = {
+			"charge_type": "Freight",
+			"description": "sea freight",
+			"amount": 3_200_000.0,
+			"amount_original": 0,
+			"currency": "USD",
+			"fx_rate": 0,
+		}
+
+	def _stored(self):
+		return json.loads(self.fake.db_set_values[-1][3])
+
+	def test_the_company_currency_figure_is_still_there_after_the_save(self):
+		self.api.update_quotation_landed("SQ-001", [self.half_switched], company="ACME")
+		self.assertEqual(self._stored()[0]["amount"], 3_200_000.0)
+
+	def test_what_is_stored_is_the_raw_shape_never_the_valued_one(self):
+		# The structural claim, not an arithmetic one: the derived keys must not
+		# reach storage at all. Storing them is what let a derivation be mistaken
+		# for a source on the next read.
+		self.api.update_quotation_landed("SQ-001", [self.half_switched], company="ACME")
+		line = self._stored()[0]
+		for derived in ("company_amount", "capitalized_amount", "unvalued"):
+			self.assertNotIn(derived, line, f"the write path persisted the derived {derived}")
+
+	def test_the_flag_survives_a_reload_because_it_is_derived_again(self):
+		# `unvalued` is never trusted from storage. Reading the stored JSON has to
+		# reach the same verdict the save reported, or the warning disappears the
+		# moment the officer refreshes.
+		from stabler.api._landed import parse_landed_charges
+
+		res = self.api.update_quotation_landed("SQ-001", [self.half_switched], company="ACME")
+		self.assertTrue(res["has_unvalued_charges"])
+		total, clean, has_est = parse_landed_charges(json.dumps(self._stored()))
+		self.assertTrue(has_est)
+		self.assertEqual(total, res["landed_charges_total"])
+		self.assertTrue(clean[0]["unvalued"])
+
+	def test_saving_the_stored_line_again_changes_nothing(self):
+		"""The fixed point. Reopening the modal and pressing Save must be a no-op.
+
+		WHAT WOULD MAKE THIS FAIL: any derivation on the write path. The editor
+		reloads whatever was stored, so a save that rewrites a field turns every
+		visit into another lossy generation -- which is how 3 200 000 became 0 and
+		then stayed 0.
+		"""
+		self.api.update_quotation_landed("SQ-001", [self.half_switched], company="ACME")
+		first = self._stored()
+		self.api.update_quotation_landed("SQ-001", first, company="ACME")
+		self.assertEqual(self._stored(), first)
+
+	def test_a_valuable_line_is_stored_from_what_was_typed_not_from_the_product(self):
+		# The same rule on a healthy line: the company-currency box was never typed
+		# into, so nothing is invented for it. 15 540 000 is derived on every read.
+		self.api.update_quotation_landed(
+			"SQ-001",
+			[
+				{
+					"charge_type": "Freight",
+					"amount_original": 1200.0,
+					"currency": "USD",
+					"fx_rate": 12950.0,
+					"rate_date": "2026-09-03",
+				}
+			],
+			company="ACME",
+		)
+		line = self._stored()[0]
+		self.assertEqual(line["amount"], 0.0)
+		self.assertEqual(line["amount_original"], 1200.0)
+
+
+class TestTheAwardSnapshotRecordsAnIncompleteEstimate(unittest.TestCase):
+	"""ADR-605 review, item 4. The audit record must not look more certain than it was.
+
+	`_snapshot_rows` is what a later reader re-checks the award against — a
+	regulator, an internal auditor, or the officer's own successor. It freezes
+	`base_landed_total`, and that figure is SHORT whenever a charge line could not
+	be valued. Without the flag beside it the record shows a confident delivered
+	total and no trace that anything was left out of it, which is precisely the
+	question an audit of a tender award asks.
+	"""
+
+	def setUp(self):
+		self.api = _load_sourcing(_FakeFrappe())
+
+	def test_the_flag_is_frozen_with_the_total_it_qualifies(self):
+		rows = self.api._snapshot_rows(
+			[
+				{"name": "SQ-1", "base_landed_total": 115_540_000.0, "has_unvalued_charges": True},
+				{"name": "SQ-2", "base_landed_total": 120_000_000.0, "has_unvalued_charges": False},
+			]
+		)
+		self.assertEqual(rows[0]["has_unvalued_charges"], True)
+		self.assertEqual(rows[1]["has_unvalued_charges"], False)
+
+	def test_a_row_that_never_carried_the_flag_reads_as_sound(self):
+		# Snapshots taken before ADR-605 have no such key; they must not read as
+		# incomplete just because the column is new.
+		rows = self.api._snapshot_rows([{"name": "SQ-OLD", "base_landed_total": 1.0}])
+		self.assertEqual(rows[0]["has_unvalued_charges"], False)
+
 
 if __name__ == "__main__":
 	unittest.main()

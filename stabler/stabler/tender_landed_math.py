@@ -38,3 +38,43 @@ def converted_amount(amount, currency, fx_rate) -> float | None:
 	if rate <= 0:
 		return None
 	return round(amt * rate, 2)
+
+
+def line_value(amount, amount_original, currency, fx_rate) -> tuple[float, bool]:
+	"""One landed-charge line in company currency, plus whether it could be valued.
+
+	Returns ``(company_amount, unvalued)``. This is the ONE rule; both readers of a
+	stored landed line -- `api._landed.parse_landed_charges` (quotation estimates,
+	and the PO board's own total) and `api.tender._parse_landed` (the PO editor) --
+	go through it, because until ADR-605's review they disagreed: one kept the
+	stored figure on an unusable rate and the other dropped the line, so the same
+	Purchase Order showed two landed totals depending on which screen asked.
+
+	A line that NAMES a currency is valued only from `amount_original` at its own
+	rate. `amount` is never a fallback for it: that number is company currency by
+	construction, and re-labelling it as USD is not a smaller error than dropping
+	it -- it is the ADR-605 defect with the sign reversed.
+
+	`unvalued` is True, and the amount 0.0, when the line names a currency and
+	either the rate is unusable OR nothing was typed in that currency while a
+	company-currency figure is sitting in `amount`. Both cases mean the line cannot
+	be valued; the caller must keep it out of every total AND say so on screen,
+	because a total that silently shrinks reads as CHEAP and hands the tender to
+	the wrong vendor.
+
+	A currency line with nothing on either side is an EMPTY line, not a broken one:
+	0.0, not flagged. Flagging it would park a permanent warning under every row an
+	officer has only started typing.
+	"""
+	if not currency:
+		return round(float(amount or 0), 2), False
+	original = float(amount_original or 0)
+	if not original:
+		# Nothing typed in the named currency. If a company-currency figure is
+		# sitting in `amount`, the line is a half-finished currency switch and must
+		# be flagged rather than quietly valued at that figure or at zero.
+		return (0.0, bool(float(amount or 0)))
+	converted = converted_amount(original, currency, fx_rate)
+	if converted is None:
+		return 0.0, True
+	return converted, False

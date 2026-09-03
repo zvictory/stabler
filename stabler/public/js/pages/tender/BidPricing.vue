@@ -39,7 +39,24 @@ async function prepareBidPackage() {
 		buildingPackage.value = false;
 	}
 }
-const refs = reactive({ po_landed: 0, po_count: 0, so_revenue: 0, so_count: 0 });
+const refs = reactive({
+	po_landed: 0,
+	po_count: 0,
+	so_revenue: 0,
+	so_count: 0,
+	// ADR-605: pre-win there is no PO, so the landed basis comes from the quotation
+	// the lot's sourcing decision NAMED — never the cheapest bid, which is a fact
+	// about the comparison rather than a choice anybody made.
+	quotation_landed_estimate: 0,
+	quotation_landed_source: "",
+	// Already excluded from the estimate above — showing the figure without this
+	// presents a confident pre-win price built on an estimate nobody flagged.
+	quotation_landed_unvalued: 0,
+	// "a decision exists but you may not read the quotation it names" is not "no
+	// quotation has been chosen". Telling the second story sends an officer to go
+	// and pick a quotation that was already picked.
+	quotation_landed_denied: false,
+});
 const actual = ref(null); // { invoiced, planned_landed, actual_landed, actual_revenue, pnl, ostatok_delta }
 const inp = reactive({
 	mode: "margin", margin_pct: 20, bid_price: 0, landed_goods: 0,
@@ -65,6 +82,10 @@ function apply(d) {
 	refs.po_count = d?.po_count || 0;
 	refs.so_revenue = d?.so_revenue || 0;
 	refs.so_count = d?.so_count || 0;
+	refs.quotation_landed_estimate = d?.quotation_landed_estimate || 0;
+	refs.quotation_landed_source = d?.quotation_landed_source || "";
+	refs.quotation_landed_unvalued = d?.quotation_landed_unvalued || 0;
+	refs.quotation_landed_denied = Boolean(d?.quotation_landed_denied);
 	actual.value = d?.actual || null;
 }
 
@@ -111,6 +132,10 @@ const fm = (v) => formatMoney(v, props.currency, user.value.language);
 function addLine(list) { inp[list].push({ label: "", amount: null }); }
 function rmLine(list, i) { inp[list].splice(i, 1); }
 function useLandedFromPOs() { inp.landed_goods = refs.po_landed; }
+// Deliberately a click, not a watcher. The SERVER pre-fills `landed_goods` when
+// the stored field is empty; assigning here on every load would overwrite the
+// figure the officer typed — the number the bid was actually quoted on.
+function useLandedFromQuotation() { inp.landed_goods = refs.quotation_landed_estimate; }
 function useRevenueFromSOs() { inp.mode = "price"; inp.bid_price = refs.so_revenue; }
 
 async function save() {
@@ -159,9 +184,36 @@ watch(() => props.deal, load, { immediate: true });
 					<!-- Landed basis -->
 					<label class="form-label small mb-1">{{ t("Landed cost (goods + import)") }}</label>
 					<MoneyInput v-model="inp.landed_goods" :currency="currency" :language="user.language" size="sm" />
-					<div class="form-text mb-2">
+					<!-- Post-win: the PO sum is the operational record and outranks any
+					     estimate. Pre-win (no PO) there is only the quotation the lot's
+					     sourcing decision named — and if it named none, the action that
+					     would produce one, rather than a blank box. -->
+					<div v-if="refs.po_count" class="form-text mb-2">
 						<a href="#" @click.prevent="useLandedFromPOs">{{ t("Use POs' landed") }}: {{ fm(refs.po_landed) }}</a>
 						<span class="text-secondary"> · {{ refs.po_count }} {{ t("PO") }}</span>
+					</div>
+					<!-- A decision names a quotation this user may not read. Saying
+					     "select a quotation" here would send them to do something already
+					     done, and hide the real obstacle. -->
+					<div v-else-if="refs.quotation_landed_denied" class="form-text mb-2 text-secondary">
+						<i class="ti ti-lock me-1"></i>
+						{{ t("This lot is priced from {quotation}, which you do not have permission to read", { quotation: refs.quotation_landed_source }) }}
+					</div>
+					<div v-else-if="refs.quotation_landed_source" class="form-text mb-2">
+						<a href="#" @click.prevent="useLandedFromQuotation">{{ t("Pre-win estimate") }}: {{ fm(refs.quotation_landed_estimate) }}</a>
+						<span class="text-secondary"> · {{ t("from {quotation}", { quotation: refs.quotation_landed_source }) }}</span>
+						<!-- The estimate is already SHORT by whatever those lines hold. The
+						     bid price is computed from this figure, so the gap has to be
+						     legible where the figure is offered. -->
+						<span v-if="refs.quotation_landed_unvalued" class="text-danger">
+							· {{ t("incomplete: {count} line(s) without a rate", { count: refs.quotation_landed_unvalued }) }}
+						</span>
+					</div>
+					<div v-else class="form-text mb-2 text-secondary">
+						<i class="ti ti-info-circle me-1"></i>
+						<router-link :to="{ name: 'tender-sourcing', query: { deal } }">
+							{{ t("Select a quotation for this lot in Sourcing") }}
+						</router-link>
 					</div>
 
 					<!-- Margin OR Bid price -->

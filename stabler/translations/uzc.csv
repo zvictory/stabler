@@ -1,5 +1,10 @@
+"Enter the amount in {ccy} and a rate, or clear the currency",{ccy} даги суммани ва курсни киритинг ёки валютани олиб ташланг
+Missing rate,Курс йўқ
+No rate for {ccy} — enter a rate or clear the currency,{ccy} учун курс йўқ — курс киритинг ёки валютани олиб ташланг
+Select a quotation for this lot in Sourcing,Ушбу лот учун Таъминот бўлимида таклиф танланг
 "The existing material request {0} could not be withdrawn, so the plan was not saved. Sort that request out first.","Мавжуд {0} материал сўровини қайтариб бўлмади, шунинг учун режа сақланмади. Аввал ўша сўровни ҳал қилинг."
 "These materials are the other operator's to plan, not yours: {0}","Бу материалларни бошқа оператор режалаштиради, сиз эмас: {0}"
+"This lot is priced from {quotation}, which you do not have permission to read","Бу лот {quotation} таклифи бўйича бахоланади, уни ўқишга рухсатингиз йўқ"
 "This order's material has already been written off per operator, but 'Allow Continuous Material Consumption' is switched off in Manufacturing Settings — finishing now would count that material a second time. Ask a manager to switch it back on.","Бу буюртманинг материали оператор бўйича аллақачон ҳисобдан чиқарилган, лекин Ишлаб чиқариш созламаларида ""Allow Continuous Material Consumption"" ўчирилган — ҳозир якунлаш бу материални иккинчи марта ҳисоблайди. Раҳбардан уни қайта ёқишни сўранг."
 #,#
 % of total,Жами %
@@ -19,9 +24,13 @@
 1:1 Foreign Postings,
 1C ClientBank Exchange format (.txt). Uzbek bank-client export.,1C ClientBank Exchange формати (.txt). Банк-мижоз экспорти.
 1C Sync Log,1C Синхрон журнали
+from {quotation},{quotation} дан
+incomplete,тўлиқ эмас
+incomplete: {count} line(s) without a rate,тўлиқ эмас: курси йўқ {count} та қатор
 {countries} countries met,{countries} мамлакат талаби бажарилди
 {countries} countries needed,{countries} мамлакат керак
 31–60,31–60
+{count} charge line(s) have a currency with no exchange rate and are excluded from these totals.,{count} та харажат қаторида курси йўқ валюта бор ва улар ушбу жамига кирмайди.
 {min} quotes met,{min} та таклиф талаби бажарилди
 {min} quotes needed,{min} та таклиф керак
 61–90,61–90
@@ -6430,7 +6439,6 @@ from CBU,МБдан
 Currency this charge is quoted in,Харажат кўрсатилган валюта
 Rate date,Курс санаси
 Fetch the Central Bank rate,Марказий банк курсини олиш
-Enter an exchange rate,Курсни киритинг
 Add requirement,Талаб қўшиш
 Add standard set,Стандарт тўпламни қўшиш
 Checklist saved,Назорат рўйхати сақланди
@@ -6606,7 +6614,7 @@ This invitation reaches {countries} country(ies). On its own it cannot satisfy t
 "Asked: {count} vendor(s), {countries} country(ies)","Сўралди: {count} та етказиб берувчи, {countries} та давлат"
 "Everyone asked so far is in {countries} country(ies). More rounds, or a quotation attached from elsewhere, are what change that.",Ҳозиргача сўралганларнинг ҳаммаси {countries} та давлатда. Буни фақат янги босқичлар ёки бошқа жойдан бириктирилган таклиф ўзгартиради.
 {count} of the vendors asked has no country on file and counts toward no country.,Сўралган етказиб берувчилардан {count} тасининг давлати киритилмаган ва ҳеч қайси давлатга ҳисобланмайди.
-"Lines with no exchange rate, not in this total: {count}","Валюта курси йўқ қаторлар, бу жамига кирмайди: {count}"
+"Lines that cannot be valued, not in this total: {count}","Баҳолаб бўлмайдиган қаторлар, бу суммага кирмайди: {count}"
 Quotation date,Таклиф санаси
 The currency list could not be loaded — only your company's currency is available.,Валюталар рўйхатини юклаб бўлмади — фақат компаниянгиз валютаси мавжуд.
 Handled by the {role} role.,«{role}» роли томонидан бошқарилади.

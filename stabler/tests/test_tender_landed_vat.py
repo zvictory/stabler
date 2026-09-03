@@ -37,11 +37,16 @@ class TestTenderLandedVat(unittest.TestCase):
 		self.src = _read()
 
 	def test_parse_landed_preserves_recoverable_flag(self):
-		body = _func_body(self.src, "_parse_landed")
+		# ADR-605 second review, P0: the line SHAPE moved into `_raw_landed_lines`,
+		# which is what `save_po_landed_charges` now persists, and `_parse_landed`
+		# kept only the valuation. The round trip this test guards is therefore a
+		# property of the raw builder — and more literally so than before, since that
+		# function's output IS what reaches the column.
+		body = _func_body(self.src, "_raw_landed_lines")
 		self.assertIn(
 			"vat_recoverable",
 			body,
-			"_parse_landed must round-trip the vat_recoverable flag so the "
+			"_raw_landed_lines must round-trip the vat_recoverable flag so the "
 			"capitalize/exclude decision survives save+reload",
 		)
 		# Default True: new customs lines exclude VAT from landed cost.
@@ -79,6 +84,24 @@ class TestTenderLandedVat(unittest.TestCase):
 		self.assertIn("excise", body)
 		self.assertIn("+ duty + excise", body)
 
+	def test_the_landed_read_is_gated_and_scoped(self):
+		"""ADR-605 fifth review, P3. Nothing pinned that this read is authorized.
+
+		`po_landed_charges` returns one Purchase Order's landed lines and totals, so
+		an ungated version leaks a company's cost structure — what it pays its
+		forwarder, its declarant and its bank — to any logged-in user of any tenant.
+		A Frappe-free behavioural test cannot catch that: every gate inside
+		`_po_scope` is a no-op in the sandbox by construction (`_require_company` and
+		`_assert_company_scope` are fake modules, `has_permission` returns True), so
+		deleting the call leaves those tests green. `test_landed_charge_currency.py`
+		once claimed otherwise in a comment; this is the guard that makes it true.
+
+		WHAT WOULD MAKE THIS FAIL: dropping the scope call, or widening it to
+		`write=True` and gating a read behind a permission the reader may not hold.
+		"""
+		body = _func_body(self.src, "po_landed_charges")
+		self.assertIn("_po_scope(po, write=False)", body)
+
 	def test_actual_from_voucher_gated_and_scoped(self):
 		body = _func_body(self.src, "landed_actual_from_voucher")
 		self.assertIn("_require_tender", body)
@@ -95,7 +118,7 @@ class TestTenderLandedVat(unittest.TestCase):
 		self.assertIn('"found": False', body)
 
 	def test_actual_voucher_fields_round_trip(self):
-		body = _func_body(self.src, "_parse_landed")
+		body = _func_body(self.src, "_raw_landed_lines")
 		self.assertIn("actual_voucher_type", body)
 		self.assertIn("actual_voucher", body)
 
