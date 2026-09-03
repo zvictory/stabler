@@ -613,6 +613,16 @@ async function handlePickItem({ line, item, field }) {
 
 watch(docName, loadDoc);
 
+// ADR-609: the bucket belongs to a company, so a default carried across a switch
+// is a value the server refuses on save — "Only an active tender or GENEL GİDER
+// can be selected." — on a field the user never touched. Only on a CREATE form:
+// a saved bill's tender is what its ledger already says.
+watch(activeCompany, async () => {
+	if (!isCreate.value || !form.value) return;
+	clearTender();
+	await defaultOverheadDeal();
+});
+
 onMounted(async () => {
 	await Promise.all([loadWarehouses(), loadCurrencies(), loadPriceLists(), loadTaxTemplates()]);
 	// Branch on the route param (present synchronously on a hard load), NOT the

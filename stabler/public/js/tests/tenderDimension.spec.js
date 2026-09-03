@@ -60,6 +60,17 @@ function element(src, pattern) {
 	return src.slice(at, src.indexOf(">", at) + 1);
 }
 
+describe("Purchase invoice — the tender the bill will carry", () => {
+	it("re-derives the default when the company changes on a create form", () => {
+		// Same bug as the Expenses screen: a default carried over from the previous
+		// company is a value the server refuses on save.
+		const at = invoiceCode.search(/watch\(\s*\(\)\s*=>\s*session\.company|watch\(\s*activeCompany|watch\(\s*company/);
+		expect(at, "the purchase invoice form does not watch the company").toBeGreaterThan(-1);
+		const body = invoiceCode.slice(at, invoiceCode.indexOf("});", at));
+		expect(body).toMatch(/defaultOverheadDeal|overheadDeal/);
+	});
+});
+
 describe("Expenses — the tender picker offers only what the ledger accepts", () => {
 	it("asks for active tenders, not for every deal on the board", () => {
 		// `list_deals` without this flag returns 551 Standard deals on the test
@@ -82,6 +93,28 @@ describe("Expenses — the tender picker offers only what the ledger accepts", (
 		const body = fn(expensesCode, "openEditFromDetail");
 		expect(body).toContain("listRow?.crm_deal");
 		expect(body).not.toMatch(/openCreate|defaultOverheadDeal\(\)/);
+	});
+
+	it("forgets the previous company's overhead bucket when the company changes", () => {
+		// `loadOverheadDeal` short-circuits on the cached ref, so without this a new
+		// entry created after switching company is pre-set with the PREVIOUS
+		// company's GENEL GİDER deal — and the server refuses it with "Only an
+		// active tender or GENEL GİDER can be selected." on a field the user never
+		// touched.
+		const at = expensesCode.search(/watch\(\s*activeCompany/);
+		expect(at, "the company watcher is gone").toBeGreaterThan(-1);
+		const body = expensesCode.slice(at, expensesCode.indexOf("});", at));
+		expect(body).toMatch(/overheadDeal\.value\s*=\s*null/);
+	});
+
+	it("still offers GENEL GİDER when the lookup fails", () => {
+		// Contract, "Frontend states": on a lookup error the picker stays usable
+		// with the overhead bucket. Returning [] leaves the user with an empty menu
+		// on a field the ledger will fill anyway.
+		const body = fn(expensesCode, "searchDeals");
+		const caught = body.slice(body.indexOf("catch"));
+		expect(caught).toMatch(/overheadDeal/);
+		expect(caught).not.toMatch(/return\s*\[\s*\]\s*;\s*\}?\s*$/);
 	});
 
 	it("names the empty state instead of showing an empty menu", () => {

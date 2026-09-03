@@ -498,9 +498,19 @@ async function searchDeals(q) {
 		}));
 	} catch (err) {
 		// The form still has to be postable: the entry needs SOME attribution and
-		// the user cannot fix a lookup outage. Say so and leave the field working.
+		// the user cannot fix a lookup outage. Say so, and keep offering the one
+		// value that is always valid — an empty menu would leave the user unable to
+		// state where the money is going on a field the ledger will fill anyway.
 		toast.error(err?.message || t("Could not load tenders"));
-		return [];
+		const cached = overheadDeal.value;
+		if (!cached) return [];
+		return [
+			{
+				name: cached.name,
+				label: cached.organization || cached.lead_name || cached.name,
+				is_overhead: 1,
+			},
+		];
 	}
 }
 
@@ -1018,6 +1028,11 @@ watch(activeCompany, () => {
 	expAccounts.value = [];
 	assetAccounts.value = [];
 	equityAccounts.value = [];
+	// ADR-609: the bucket belongs to a company. `loadOverheadDeal` short-circuits
+	// on this ref, so keeping it across a switch pre-fills a new entry with the
+	// PREVIOUS company's GENEL GİDER deal — which the server then refuses, on a
+	// field the user never touched.
+	overheadDeal.value = null;
 	load();
 	loadOptions();
 });
