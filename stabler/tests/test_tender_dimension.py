@@ -1275,6 +1275,29 @@ class TestWriterWiring(unittest.TestCase):
 		self.assertNotIn('"deal_type": "Overhead"', master)
 
 
+class TestTranslatedStrings(unittest.TestCase):
+	"""R6 — every string this module shows a user exists in all five catalogues.
+
+	Asserted over the SOURCE rather than as a list of keys: a list has to be
+	remembered, and the two strings this caught were added by the same branch that
+	wrote the catalogue entries for the other six.
+	"""
+
+	#: The four offered languages plus `uzc`, which is still shipped and still
+	#: translated — it left the pickers on 2026-08-28, it was not deleted.
+	LANGUAGES: typing.ClassVar = ["en", "ru", "uz", "uzc", "tr"]
+
+	def test_every_translated_string_is_in_every_catalogue(self):
+		source = _read("api", "tender_dimension.py")
+		keys = re.findall(r'_\(\s*"((?:[^"\\]|\\.)*)"', source)
+		self.assertTrue(keys, "no translated strings found — did the call shape change?")
+		catalogues = {lang: _read("translations", f"{lang}.csv") for lang in self.LANGUAGES}
+		missing = [
+			f"{lang}: {key}" for key in keys for lang, catalogue in catalogues.items() if key not in catalogue
+		]
+		self.assertEqual(missing, [], f"untranslated strings: {missing}")
+
+
 class TestHooksRegistration(unittest.TestCase):
 	"""A handler nobody calls is a handler that does not exist."""
 
