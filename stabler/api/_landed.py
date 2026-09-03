@@ -103,6 +103,8 @@ def parse_landed_charges(raw_charges) -> tuple[float, list[dict], bool]:
 	  `unvalued`           DERIVED: whether it could be valued at all
 	  `charge_type_canonical` DERIVED: ADR-606's one list (`_landed_charge_types`)
 	  `charge_type_unmapped`  DERIVED: the text that list did not recognise
+	  `charge_type_is_vat`    DERIVED: whether the STORED spelling is a VAT alias
+	  `is_recoverable_vat_stored` DERIVED: the flag AS STORED, before the forcing
 
 	ADR-606. `charge_type` itself is left EXACTLY as stored -- "Freight", "VAT",
 	"Local Delivery" -- and the canonical key sits beside it, because this is a
@@ -183,6 +185,12 @@ def parse_landed_charges(raw_charges) -> tuple[float, list[dict], bool]:
 				# the duplication ADR-606 exists to remove -- so the fact is
 				# stated here, where the table lives.
 				charge_type_is_vat=stored_is_vat,
+				# The flag AS STORED, beside the merged one above. The editor
+				# sends this back on a line it did not edit, or a save made for
+				# an unrelated reason persists the alias table's verdict into
+				# the evidence field: a row stored `{"charge_type": "VAT",
+				# "is_recoverable_vat": false}` comes back true and stays true.
+				is_recoverable_vat_stored=raw["is_recoverable_vat"],
 				# 0.0 on an unvalued line is not a figure, it is the absence of one;
 				# `unvalued` is what says so. Nothing may sum it without reading that.
 				company_amount=company_amount,

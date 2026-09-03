@@ -84,9 +84,13 @@ function loadedLine(c) {
 		amount_original: c.amount_original == null ? null : Number(c.amount_original),
 		fx_source: "",
 		is_recoverable_vat: Boolean(c.is_recoverable_vat),
-		// Derived, read-only, never sent back: whether the STORED spelling is a
-		// VAT alias. `onVatChange` is its only reader.
+		// Derived, read-only, never sent back as themselves. `is_recoverable_vat`
+		// above is the MERGED flag — what the checkbox shows — and these two say
+		// where it came from: whether the STORED spelling is a VAT alias, and
+		// what the flag was on disk before that forced it. `onVatChange` reads
+		// the first, `savedChargeLine` the second.
 		charge_type_is_vat: Boolean(c.charge_type_is_vat),
+		is_recoverable_vat_stored: Boolean(c.is_recoverable_vat_stored),
 	};
 }
 
@@ -170,6 +174,7 @@ function addChargeLine() {
 		charge_type_canonical: "transport",
 		charge_type_unmapped: "",
 		charge_type_is_vat: false,
+		is_recoverable_vat_stored: false,
 		description: "",
 		amount: 0,
 		currency: "",
@@ -292,7 +297,23 @@ function savedChargeLine(c) {
 		currency: c.currency || "",
 		fx_rate: Number(c.fx_rate) || 0,
 		rate_date: c.rate_date || "",
-		is_recoverable_vat: Boolean(c.is_recoverable_vat),
+		// The last stored key a no-edit save still moved. On a line whose stored
+		// spelling is a VAT alias the server FORCES this flag on, so sending the
+		// displayed value back wrote the alias table's verdict into the evidence
+		// field: `{"charge_type": "VAT", "is_recoverable_vat": false}` on disk
+		// became true after one save made for an unrelated reason.
+		//
+		// So the same rule `charge_type` follows — hand back what was loaded
+		// unless the officer changed it. No "touched" tracking is needed to know
+		// that: on an alias-spelled line the box is displayed ticked, so the only
+		// edit available is the un-tick, and `onVatChange` clears
+		// `charge_type_is_vat` on exactly that edge, after which the displayed
+		// flag is what travels. `flag && !charge_type_is_vat` would not do — it
+		// merely inverts the drift, normalising to false the rows an older editor
+		// had already persisted as true.
+		is_recoverable_vat: c.charge_type_is_vat
+			? Boolean(c.is_recoverable_vat_stored)
+			: Boolean(c.is_recoverable_vat),
 	};
 }
 

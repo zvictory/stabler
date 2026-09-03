@@ -335,6 +335,49 @@ class TestLegacyVatIsStillExcluded(unittest.TestCase):
 		self.assertFalse(clean[0]["is_recoverable_vat"])
 		self.assertFalse(clean[0]["charge_type_is_vat"])
 
+	def test_the_valued_line_also_carries_the_flag_AS_STORED(self):
+		# `is_recoverable_vat` on a valued line is the MERGED answer, which is
+		# what every consumer of the read wants and what the checkbox displays.
+		# It is not what the editor may send back: doing so persisted the alias
+		# table's verdict into the evidence field on the next save made for an
+		# unrelated reason. So the raw flag rides along verbatim, and the editor
+		# hands THAT back on a line it did not edit.
+		# WHAT WOULD MAKE THIS FAIL: setting it from the merged flag.
+		_total, forced = parse_landed_charges([{"charge_type": "VAT", "amount": 300.0}])[:2]
+		self.assertTrue(forced[0]["is_recoverable_vat"])
+		self.assertFalse(forced[0]["is_recoverable_vat_stored"])
+
+		_total, ticked = parse_landed_charges(
+			[{"charge_type": "Freight", "amount": 300.0, "is_recoverable_vat": True}]
+		)[:2]
+		self.assertTrue(ticked[0]["is_recoverable_vat_stored"])
+
+	def test_the_stored_flag_is_a_derivation_and_never_reaches_the_disk(self):
+		# Derived keys are read-only by construction: the write path is
+		# `sanitize_charge_lines`, and the RAW shape has no room for them.
+		# WHAT WOULD MAKE THIS FAIL: `raw_charge_line` growing the key.
+		stored = sanitize_charge_lines([{"charge_type": "VAT", "amount": 300.0}])
+		self.assertNotIn("is_recoverable_vat_stored", stored[0])
+		self.assertNotIn("charge_type_is_vat", stored[0])
+		self.assertNotIn("charge_type_canonical", stored[0])
+
+	def test_the_editors_four_answers_capitalize_what_they_always_did(self):
+		# The four shapes the editor can now emit, read back. None of them moves
+		# money: the fix is about which flag is persisted, not about what a flag
+		# means. Every figure here is the one main produced for the same line.
+		# WHAT WOULD MAKE THIS FAIL: any of these totals changing at all.
+		for charge_type, flag, expected in (
+			("VAT", False, 0.0),  # stored false, un-edited: still VAT by spelling
+			("VAT", True, 0.0),
+			("Freight", True, 0.0),  # hand-ticked, so excluded
+			("other", False, 300.0),  # un-ticked: the type moved, and it counts
+		):
+			with self.subTest(charge_type=charge_type, is_recoverable_vat=flag):
+				total, _clean, _has = parse_landed_charges(
+					[{"charge_type": charge_type, "amount": 300.0, "is_recoverable_vat": flag}]
+				)
+				self.assertEqual(total, expected)
+
 	def test_only_the_spellings_that_were_vat_before_are_vat_now(self):
 		# The alias table decides whether a stored line capitalizes, so widening
 		# it by one plausible-looking string silently restates a company's landed

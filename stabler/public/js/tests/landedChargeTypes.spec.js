@@ -273,6 +273,24 @@ describe("opening a plan and saving it does not rename what is on disk", () => {
 		const sent = load(editor, "savedChargeLine")(row);
 		expect(sent.description).toBe("");
 		expect(sent.charge_type).toBe("Local Delivery");
+		// And nothing else travels. The read adds keys to the line the write must
+		// not send back — `charge_type_canonical`, `charge_type_unmapped`,
+		// `charge_type_is_vat`, `company_amount`, `unvalued` — and this save
+		// REPLACES the stored array, so a derived key that rejoins the payload
+		// lands on disk as evidence. Asserting the exact set is the only version
+		// of this that fails; every `toBe` above passes with extras present.
+		// WHAT WOULD MAKE THIS FAIL: any key added to or dropped from the RAW
+		// shape (`_landed.raw_charge_line`) without this list moving with it.
+		expect(Object.keys(sent).sort()).toEqual([
+			"amount",
+			"amount_original",
+			"charge_type",
+			"currency",
+			"description",
+			"fx_rate",
+			"is_recoverable_vat",
+			"rate_date",
+		]);
 		// Still shown, just not as data: the template reads it as the placeholder.
 		expect(row.charge_type_unmapped).toBe("Local Delivery");
 		expect(editor.slice(editor.indexOf("<template>"))).toMatch(
@@ -325,6 +343,30 @@ describe("un-ticking recoverable VAT is an edit, and has to reach the store", ()
 		row.is_recoverable_vat = false;
 		load(editor, "onVatChange")(row);
 		return row;
+	};
+
+	/** Exactly what `parse_landed_charges` returns for a line stored as "VAT"
+	 *  with `is_recoverable_vat` false on disk: the flag comes back FORCED. */
+	const SERVER_VAT_STORED_FALSE = {
+		charge_type: "VAT",
+		charge_type_canonical: "other",
+		charge_type_unmapped: "",
+		charge_type_is_vat: true,
+		is_recoverable_vat: true,
+		is_recoverable_vat_stored: false,
+		amount: 300,
+	};
+	/** The same line as main's editor left it: the forced flag persisted. */
+	const SERVER_VAT_STORED_TRUE = { ...SERVER_VAT_STORED_FALSE, is_recoverable_vat_stored: true };
+	/** Never VAT by spelling; the officer ticked the box by hand. */
+	const SERVER_FREIGHT_STORED_TRUE = {
+		charge_type: "Freight",
+		charge_type_canonical: "transport",
+		charge_type_unmapped: "",
+		charge_type_is_vat: false,
+		is_recoverable_vat: true,
+		is_recoverable_vat_stored: true,
+		amount: 300,
 	};
 
 	const legacyVatRow = () =>
@@ -388,6 +430,45 @@ describe("un-ticking recoverable VAT is an edit, and has to reach the store", ()
 		expect(editor.slice(editor.indexOf("<template>"))).toMatch(
 			/v-model="line\.is_recoverable_vat"[\s\S]{0,200}@change="onVatChange\(line\)"/,
 		);
+	});
+
+	it("hands back the flag that was on disk, not the one the alias table forced", () => {
+		// `is_recoverable_vat` was the last stored key a no-edit save still moved.
+		// The valued line carries the MERGED flag — raw flag OR the stored
+		// spelling is an alias — because every consumer of the read needs that.
+		// Sending it back persisted the alias table's verdict into the evidence
+		// field: disk `{"charge_type": "VAT", "is_recoverable_vat": false}`, one
+		// save made for an unrelated reason, and the flag is true on disk.
+		//
+		// Not fixed by sending `flag && !charge_type_is_vat` — that only inverts
+		// the drift, normalising a row main's editor had already persisted as
+		// true back to false, so saved and never-saved rows still diverge. The
+		// rule is the one `charge_type` follows: hand back what was loaded unless
+		// the officer changed it. On an alias-spelled line the box is DISPLAYED
+		// ticked, so the only edit available is the un-tick, and `onVatChange`
+		// clears `charge_type_is_vat` on exactly that edge.
+		const saved = (valued) => load(editor, "savedChargeLine")(load(editor, "loadedLine")(valued));
+
+		// Stored false, forced true by the spelling: the disk's false goes back.
+		// WHAT WOULD MAKE THIS FAIL: sending `Boolean(c.is_recoverable_vat)`.
+		expect(saved(SERVER_VAT_STORED_FALSE).is_recoverable_vat).toBe(false);
+		expect(saved(SERVER_VAT_STORED_FALSE).charge_type).toBe("VAT");
+
+		// Stored true — a row main's editor already persisted. Still true.
+		// WHAT WOULD MAKE THIS FAIL: `flag && !c.charge_type_is_vat`.
+		expect(saved(SERVER_VAT_STORED_TRUE).is_recoverable_vat).toBe(true);
+		expect(saved(SERVER_VAT_STORED_TRUE).charge_type).toBe("VAT");
+
+		// Hand-ticked on a line that was never VAT: sent as displayed, as before.
+		expect(saved(SERVER_FREIGHT_STORED_TRUE).is_recoverable_vat).toBe(true);
+		expect(saved(SERVER_FREIGHT_STORED_TRUE).charge_type).toBe("Freight");
+
+		// And the un-tick still gets through: `onVatChange` has cleared
+		// `charge_type_is_vat`, so what is displayed is what is sent.
+		const untickedRow = untick(load(editor, "loadedLine")(SERVER_VAT_STORED_FALSE));
+		const sent = load(editor, "savedChargeLine")(untickedRow);
+		expect(sent.is_recoverable_vat).toBe(false);
+		expect(sent.charge_type).toBe("other");
 	});
 
 	it("takes the fact from the server, and does not keep a list of its own", () => {
