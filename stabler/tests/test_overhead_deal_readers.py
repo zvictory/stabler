@@ -25,6 +25,7 @@ DOM-less and bench-free: the readers run against the `test_sourcing_api` double.
 
 from __future__ import annotations
 
+import json
 import sys
 import types
 import unittest
@@ -148,6 +149,91 @@ class _Readers(unittest.TestCase):
 		flagged = {action["deal"] for action in result["actions"]}
 		self.assertIn("DEAL-WORKABLE", flagged, "the fixture no longer trips any rule")
 		self.assertNotIn("DEAL-OVERHEAD", flagged, "the engine raised an alert about the bucket")
+
+
+class _OperationsDesk(unittest.TestCase):
+	"""R17 — the tender desk means TENDERS, and the bucket is not one."""
+
+	fake = None
+
+	@classmethod
+	def setUpClass(cls):
+		cls.fake = _FakeFrappe()
+		_load_api(cls.fake)
+		organization = types.ModuleType("stabler.api.organization")
+		organization._ADMIN_ROLES = ("System Manager", "Stabler Admin")
+		organization._can_access_module = lambda *_args, **_kwargs: True
+		organization._user_allowed_companies = lambda _user: [COMPANY]
+		# `tender_desk` reaches its permission helpers through `stabler.api.tender`,
+		# which the loader stubs as an empty module; the desk needs seven names off
+		# it. Everything stubbed here is a GUARD — the rule under test is which
+		# deals the desk reads, and a guard that let the wrong ones through would
+		# be a different test.
+		tender = sys.modules["stabler.api.tender"]
+		tender._assert_company_scope = lambda *_args, **_kwargs: None
+		tender._require_company = lambda company: company
+		tender._require_tender = lambda *_args, **_kwargs: None
+		tender._require_tender_view = lambda *_args, **_kwargs: None
+		tender._tender_views = lambda _user: ["director"]
+		tender._is_tender_oversight = lambda _user: True
+		tender._parse_intake = lambda raw: json.loads(raw) if raw else {}
+		approvals = types.ModuleType("stabler.api.approvals")
+		approvals.is_approver = lambda *_args, **_kwargs: False
+		approvals.list_pending = lambda *_args, **_kwargs: {
+			"requests": [],
+			"total": 0,
+			"can_approve": False,
+		}
+		_SANDBOX.install({"stabler.api.organization": organization, "stabler.api.approvals": approvals})
+		sys.modules["frappe.utils"].now = lambda: "2026-08-02 10:00:00"
+		# Evicted, not merely imported: in the single-process registry pass another
+		# module may already have bound these to the REAL frappe.
+		_SANDBOX.evict("stabler.api.tender_desk", "stabler.api._desk_rules")
+		import stabler.api.tender_desk
+
+		cls.desk = sys.modules["stabler.api.tender_desk"]
+
+	def setUp(self):
+		self.fake.docs.clear()
+		self.fake.created.clear()
+		sys.modules["frappe"].session.user = "director@acme.com"
+		self.fake.docs[("CRM Deal", "LOT-1")] = _Doc(
+			name="LOT-1",
+			doctype="CRM Deal",
+			company=COMPANY,
+			organization="Ministry of Roads",
+			deal_type="Tender",
+			owner="rep1@acme.com",
+			docstatus=0,
+		)
+		self.fake.docs[("CRM Deal", "DEAL-OVERHEAD")] = _Doc(
+			name="DEAL-OVERHEAD",
+			doctype="CRM Deal",
+			company=COMPANY,
+			organization="GENEL GIDER",
+			deal_type="Overhead",
+			owner="Administrator",
+			docstatus=0,
+		)
+
+	def test_the_bucket_is_not_a_lot_on_anybodys_desk(self):
+		"""The desk reads CRM Deal by company alone, so the bucket arrived as work.
+
+		`assigned_to` falls back to `owner` and the result falls back to `status`,
+		so the bucket lands in `team_load` as an open lot that will never close —
+		against whoever happens to own the CRM Deal, usually Administrator.
+		Measured on the test site: Administrator's `open_lots` went 553 -> 552 once
+		the bucket was excluded. A workload board that counts a ledger row as work
+		is a workload board nobody can act on.
+		"""
+		result = self.desk.operations_desk(company=COMPANY)
+
+		self.assertEqual(
+			[row["user"] for row in result["team_load"]],
+			["rep1@acme.com"],
+			"the GENEL GİDER bucket was counted as somebody's open lot",
+		)
+		self.assertEqual([row["open_lots"] for row in result["team_load"]], [1])
 
 
 if __name__ == "__main__":

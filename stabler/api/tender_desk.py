@@ -81,9 +81,17 @@ def operations_desk(company: str, view: str | None = None, days: int = 7) -> dic
 		if frappe.db.has_column("CRM Deal", fld):
 			deal_fields.append(fld)
 
-	deals_raw = frappe.get_all(
-		"CRM Deal", filters={"company": company}, fields=deal_fields, limit_page_length=0
-	)
+	# ADR-609: this desk means TENDERS, the same set `tender.py` and
+	# `tender_master.py` read. Without the filter the GENEL GİDER bucket arrives
+	# as work: `assigned_to` falls back to `owner` and the result falls back to
+	# `status`, so it sits in `team_load` as an open lot that never closes, on
+	# whoever happens to own the CRM Deal. `has_column` for the same reason the
+	# field list above uses it — a site may predate v60.
+	deal_filters = {"company": company}
+	if frappe.db.has_column("CRM Deal", "deal_type"):
+		deal_filters["deal_type"] = "Tender"
+
+	deals_raw = frappe.get_all("CRM Deal", filters=deal_filters, fields=deal_fields, limit_page_length=0)
 
 	has_intake = "custom_tender_intake" in deal_fields
 
