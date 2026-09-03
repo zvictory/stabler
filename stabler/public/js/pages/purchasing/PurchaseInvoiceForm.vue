@@ -21,6 +21,9 @@ import LineItemsEditor from "../../components/LineItemsEditor.vue";
 import { useDocumentForm } from "../../composables/useDocumentForm.js";
 import { planRateRefresh } from "../../composables/exchangeRatePolicy.js";
 import { useBackdateGuard } from "../../composables/backdate.js";
+import { useToast } from "../../composables/useToast.js";
+
+const toast = useToast();
 
 const { canBackdate, minPostingDate } = useBackdateGuard();
 
@@ -195,6 +198,9 @@ function blankForm() {
 		custom_commercial_invoice: String(route.query.commercial_invoice || ""),
 		custom_import_truck: String(route.query.import_truck || ""),
 		custom_import_container: String(route.query.import_container || ""),
+		tender: "",
+		tender_label: "",
+		tender_locked: false,
 		items: [blankLine()],
 	};
 }
@@ -225,6 +231,12 @@ function fromDetail(d) {
 		custom_commercial_invoice: d.custom_commercial_invoice || "",
 		custom_import_truck: d.custom_import_truck || "",
 		custom_import_container: d.custom_import_container || "",
+		// ADR-609. Read as stored and never re-derived: the stored value is what
+		// the ledger already says, and recomputing it on load would rewrite the
+		// attribution of a posted bill on its next save.
+		tender: d.tender || "",
+		tender_label: d.tender_label || "",
+		tender_locked: !!d.tender_locked,
 		net_total: Number(d.net_total || 0),
 		total_taxes_and_charges: Number(d.total_taxes_and_charges || 0),
 		grand_total: Number(d.grand_total || 0),
@@ -294,6 +306,10 @@ function toPayload(m) {
 		commercial_invoice: m.custom_commercial_invoice || undefined,
 		import_truck: m.custom_import_truck || undefined,
 		import_container: m.custom_import_container || undefined,
+		// `undefined`, never "": the server reads null as "the form did not choose"
+		// and leaves the value to the purchase order or to GENEL GİDER at GL time.
+		// An empty string would be a choice to clear it.
+		tender: tenderOn.value && m.tender ? m.tender : undefined,
 		items: lines,
 	};
 }
@@ -334,6 +350,64 @@ const {
 });
 
 const docName = computed(() => (route.params.name ? String(route.params.name) : null));
+
+// --- Tender (ADR-609) -------------------------------------------------------
+// The tender is an accounting dimension: `mandatory_for_pl` is on for a tender
+// company, so every expense row of this bill WILL name a tender or GENEL GİDER
+// once it posts. This picker's only job is to show that before Save.
+const tenderOn = computed(() => session.canAccessModule("tender"));
+
+async function searchTenders(q) {
+	try {
+		const r = await call("stabler.api.crm.list_deals", {
+			company: activeCompany.value,
+			search: q,
+			active_tenders: 1,
+			page_length: 8,
+		});
+		return (r?.deals || []).map((d) => ({
+			name: d.name,
+			label: d.organization || d.lead_name || d.name,
+			is_overhead: d.is_overhead ? 1 : 0,
+		}));
+	} catch (err) {
+		// The bill still has to be postable, and the user cannot fix a lookup
+		// outage: explain, and leave the field working.
+		toast.error(err?.message || t("Could not load tenders"));
+		return [];
+	}
+}
+
+function pickTender(item) {
+	form.value.tender = item.name;
+	form.value.tender_label = item.label;
+}
+
+function clearTender() {
+	form.value.tender = "";
+	form.value.tender_label = "";
+}
+
+// A new bill with no purchase order starts on GENEL GİDER: that is where the
+// server would book its expense rows anyway, so showing anything else — or
+// nothing — would be the form disagreeing with the ledger it is about to write.
+async function defaultOverheadDeal() {
+	if (!tenderOn.value || !isCreate.value || form.value.tender || !activeCompany.value) return;
+	try {
+		const r = await call("stabler.api.crm.list_deals", {
+			company: activeCompany.value,
+			active_tenders: 1,
+			page_length: 1,
+		});
+		const overhead = (r?.deals || []).find((d) => d.is_overhead);
+		if (!overhead) return;
+		form.value.tender = overhead.name;
+		form.value.tender_label = overhead.organization || overhead.name;
+	} catch (err) {
+		// Silent: a new bill with no tender is still valid, and the GL hook fills
+		// it. A toast here would fire on a form the user has not touched yet.
+	}
+}
 
 // The posting date decides which day's rate the invoice is booked at, and the
 // currency decides which rate is even being asked for. Both are watched; what
@@ -548,6 +622,7 @@ onMounted(async () => {
 		await loadDoc();
 	} else {
 		form.value = blankForm();
+		await defaultOverheadDeal();
 	}
 });
 
@@ -804,6 +879,31 @@ async function submitDoc() {
 				<label class="form-label">{{ t("Due date") }}</label>
 				<DateInput v-if="editable" v-model="form.due_date" />
 				<div v-else class="form-control-plaintext py-1">{{ formatDateTime(form.due_date) || "—" }}</div>
+			</div>
+			<!-- ADR-609: what the ledger will say about this bill, before Save. -->
+			<div class="col-md-6" v-if="session.canAccessModule('tender')">
+				<label class="form-label">{{ t("Tender") }}</label>
+				<Typeahead
+					v-if="editable"
+					v-model="form.tender"
+					:search="searchTenders"
+					:display="form.tender_label"
+					:placeholder="t('Search a tender…')"
+					:no-results-text="t('No active tenders')"
+					:disabled="form.tender_locked"
+					open-on-focus
+					@pick="pickTender"
+					@clear="clearTender"
+				>
+					<template #option="{ item }">
+						<div class="fw-semibold">{{ item.label }}</div>
+						<div v-if="item.is_overhead" class="small text-secondary">{{ t("General overhead") }}</div>
+					</template>
+				</Typeahead>
+				<div v-else class="form-control-plaintext py-1">{{ form.tender_label || "—" }}</div>
+				<div v-if="editable && form.tender_locked" class="form-hint">
+					{{ t("Set by the purchase order") }}
+				</div>
 			</div>
 			<div class="col-md-3">
 				<label class="form-label">{{ t("Bill No.") }}</label>
