@@ -303,6 +303,13 @@ def ensure_company_setup(company: str) -> dict:
 	if created["detail_row"] or created["default_dimension"]:
 		dim.flags.ignore_permissions = 1
 		dim.save()
+		# The row erpnext reads has just changed, and `mandatory_for_pl` memoises
+		# per company per request. A `False` cached by a GL row earlier in THIS
+		# request would keep `default_gl_tender` skipping every remaining row of
+		# the company while `validate_dimensions_for_pl_and_bs` has already begun
+		# refusing them. Same reason `overhead_deal(create=True)` drops its own
+		# cache before inserting.
+		_cache(_MANDATORY_CACHE).pop(company, None)
 	return created
 
 

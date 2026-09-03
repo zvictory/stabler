@@ -243,7 +243,23 @@ def _load(site: _Site):
 			doc = _new_doc(payload.get("doctype"), **{k: v for k, v in payload.items() if k != "doctype"})
 		doc.flags = types.SimpleNamespace()
 		doc.append = lambda table, row: doc.setdefault(table, []).append(_Row(row))
-		doc.save = lambda **kw: site.saved.append((doc.doctype, doc.name, dict(doc)))
+
+		def _save(**_kw):
+			site.saved.append((doc.doctype, doc.name, dict(doc)))
+			# A saved parent means its child rows EXIST for the next reader.
+			# Modelled for this one table because `mandatory_for_pl` reads the
+			# detail row straight from the db immediately after
+			# `ensure_company_setup` writes it — a recorder that left the row
+			# invisible would make a stale-cache bug untestable.
+			if doc.doctype != "Accounting Dimension":
+				return
+			for row in doc.get("dimension_defaults") or []:
+				key = (("company", row.get("company")), ("parent", doc.name))
+				site.singles[("Accounting Dimension Detail", key, "mandatory_for_pl")] = (
+					row.get("mandatory_for_pl") or 0
+				)
+
+		doc.save = _save
 		return doc
 
 	def _bare_new_doc(doctype):
@@ -818,6 +834,31 @@ class TestEnsureCompanySetup(unittest.TestCase):
 		self.assertEqual(row["mandatory_for_pl"], 1)
 		self.assertEqual(row["mandatory_for_bs"], 0)
 		self.assertEqual(row["reference_document"], "CRM Deal")
+
+	def test_writing_the_detail_row_drops_the_cached_mandatory_answer(self):
+		"""R14. A `False` cached before the row exists outlives the row's creation.
+
+		`mandatory_for_pl` memoises per company per request. Inside ONE request
+		the sequence "a GL row asks, False is cached -> `ensure_company_setup`
+		writes the detail row -> the next GL row of the same company" leaves
+		`default_gl_tender` skipping while erpnext has already begun refusing an
+		empty P&L row: the exact P0 shape R2 closed, reopened by a stale cache.
+		Both shipping callers happen to call `clear_dimension_cache()` first —
+		this helper has to be correct without relying on that.
+		"""
+		self.site.singles.pop(("Accounting Dimension Detail", _DETAIL_ROW, "mandatory_for_pl"), None)
+		self.assertFalse(
+			self.mod.mandatory_for_pl("_Test Company"),
+			"the fixture still had the detail row, so this test caches nothing",
+		)
+
+		created = self.mod.ensure_company_setup("_Test Company")
+		self.assertTrue(created["detail_row"], "the fixture no longer makes the helper write the row")
+
+		self.assertTrue(
+			self.mod.mandatory_for_pl("_Test Company"),
+			"the stale False outlived the row that makes erpnext demand a value",
+		)
 
 	def test_the_overhead_deal_is_read_in_a_defined_order(self):
 		"""R8. Two buckets must not make attribution depend on the engine's mood.
