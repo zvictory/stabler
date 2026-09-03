@@ -46,8 +46,11 @@ _VOUCHER_CACHE = "stabler_tender_dimension_vouchers"
 _MISS = object()
 
 #: How a voucher's rows name the document the tender came from. Delivery Note
-#: items carry `against_sales_order`, not `sales_order` — measured, and the whole
-#: reason a DN's COGS row can be attributed at all.
+#: items carry `against_sales_order`, not `sales_order` — measured. It is the
+#: FALLBACK, not the usual path: erpnext's mapper copies the order's own tender
+#: onto the delivery note, and the row lookup is what still attributes a delivery
+#: that arrives with no tender of its own (measured — a mutation that removed this
+#: line survived every test until one was written for exactly that shape).
 _ITEM_SOURCES = {
 	"Sales Invoice": ("items", "sales_order", "Sales Order"),
 	"Delivery Note": ("items", "against_sales_order", "Sales Order"),
