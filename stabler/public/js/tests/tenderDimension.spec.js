@@ -53,6 +53,19 @@ function fn(src, name) {
 	throw new Error(`unterminated ${name}`);
 }
 
+/** The body of the `catch` block inside an already-extracted function body. */
+function catchBlock(body) {
+	const at = body.indexOf("catch");
+	expect(at, "the function has no catch block").toBeGreaterThan(-1);
+	const from = body.indexOf("{", at);
+	let depth = 0;
+	for (let i = from; i < body.length; i++) {
+		if (body[i] === "{") depth++;
+		else if (body[i] === "}" && --depth === 0) return body.slice(from + 1, i);
+	}
+	throw new Error("unterminated catch block");
+}
+
 /** The attributes of the first element whose opening tag matches `pattern`. */
 function element(src, pattern) {
 	const at = src.search(pattern);
@@ -203,6 +216,41 @@ describe("Purchase Invoice — a tender picker that says why it is disabled", ()
 		const body = fn(invoiceCode, "searchTenders");
 		expect(body).toContain("catch");
 		expect(body).toMatch(/toast\.(error|warning)/);
+	});
+
+	it("still offers a selectable value when the lookup fails", () => {
+		// R18. `return []` hands the user an empty menu on a field the ledger will
+		// fill anyway: the bill posts either way, but the screen has stopped saying
+		// where the money goes, and a lookup outage is not something the user can
+		// fix. Expenses.vue already keeps the one always-valid row; this screen
+		// returned nothing. The real branch is evaluated, not its spelling.
+		const failure = catchBlock(fn(invoiceCode, "searchTenders"));
+		const sent = (tender, label, cached) =>
+			new Function(
+				"err",
+				"toast",
+				"t",
+				"form",
+				"overheadDeal",
+				failure,
+			)(
+				new Error("boom"),
+				{ error: () => {} },
+				(key) => key,
+				{ value: { tender, tender_label: label } },
+				{ value: cached },
+			);
+
+		// An existing bill: the tender it already carries stays pickable.
+		expect(sent("DEAL-9", "Ministry of Roads", null)).toEqual([
+			{ name: "DEAL-9", label: "Ministry of Roads", is_overhead: 0 },
+		]);
+		// A new bill: GENEL GİDER, which is where the server books it anyway.
+		expect(sent("", "", { name: "OVH-1", organization: "GENEL GİDER" })).toEqual([
+			{ name: "OVH-1", label: "GENEL GİDER", is_overhead: 1 },
+		]);
+		// Nothing known yet is the only case where an empty menu is honest.
+		expect(sent("", "", null)).toEqual([]);
 	});
 });
 

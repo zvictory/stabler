@@ -375,9 +375,29 @@ async function searchTenders(q) {
 		}));
 	} catch (err) {
 		// The bill still has to be postable, and the user cannot fix a lookup
-		// outage: explain, and leave the field working.
+		// outage: explain, and keep offering the values that are always valid —
+		// the tender this bill already carries, and the company's GENEL GİDER
+		// bucket. An empty menu leaves the user unable to say where the money is
+		// going on a field the server will fill anyway. Same answer Expenses.vue
+		// gives; the two screens must not disagree about a failed lookup.
 		toast.error(err?.message || t("Could not load tenders"));
-		return [];
+		const rows = [];
+		if (form.value?.tender) {
+			rows.push({
+				name: form.value.tender,
+				label: form.value.tender_label || form.value.tender,
+				is_overhead: 0,
+			});
+		}
+		const cached = overheadDeal.value;
+		if (cached && cached.name !== form.value?.tender) {
+			rows.push({
+				name: cached.name,
+				label: cached.organization || cached.lead_name || cached.name,
+				is_overhead: 1,
+			});
+		}
+		return rows;
 	}
 }
 
@@ -394,6 +414,11 @@ function clearTender() {
 // A new bill with no purchase order starts on GENEL GİDER: that is where the
 // server would book its expense rows anyway, so showing anything else — or
 // nothing — would be the form disagreeing with the ledger it is about to write.
+// Kept so a failed search still has one row it can offer. Cleared with the
+// tender when the company changes — another company's bucket is a value the
+// server refuses.
+const overheadDeal = ref(null);
+
 async function defaultOverheadDeal() {
 	if (!tenderOn.value || !isCreate.value || form.value.tender || !activeCompany.value) return;
 	try {
@@ -404,6 +429,7 @@ async function defaultOverheadDeal() {
 		});
 		const overhead = (r?.deals || []).find((d) => d.is_overhead);
 		if (!overhead) return;
+		overheadDeal.value = overhead;
 		form.value.tender = overhead.name;
 		form.value.tender_label = overhead.organization || overhead.name;
 	} catch (err) {
@@ -622,6 +648,7 @@ watch(docName, loadDoc);
 // a saved bill's tender is what its ledger already says.
 watch(activeCompany, async () => {
 	if (!isCreate.value || !form.value) return;
+	overheadDeal.value = null;
 	clearTender();
 	await defaultOverheadDeal();
 });
