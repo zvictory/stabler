@@ -632,8 +632,11 @@ class TestDefaultGlTender(unittest.TestCase):
 		self.assertEqual(row.get("tender"), "OVERHEAD-1")
 
 	def test_leaves_a_balance_sheet_row_alone(self):
-		# Decision 2: the cash leg of an expense is not a tender cost. Filling it
-		# would double every tender's figure the moment P5b sums the dimension.
+		# Decision 2: the cash leg of an untagged expense is not a tender cost, so
+		# the fallback never ADDS a value to one. It does not follow that the
+		# ledger's balance-sheet rows are clean — erpnext tags both legs of a
+		# voucher that carries the dimension at document level (measured in the
+		# bench suite) — which is why P5b sums P&L accounts only.
 		row = self._row(account="Cash - _TC")
 		self.mod.default_gl_tender(row)
 		self.assertIsNone(row.get("tender"))

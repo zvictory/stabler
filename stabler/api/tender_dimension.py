@@ -597,9 +597,17 @@ def default_gl_tender(doc, method=None):
 	Landed Cost Voucher, Payment Entry, Expense Claim, a repost — and the reason
 	`mandatory_for_pl` can be switched on without taking the ledger down.
 
-	Balance-sheet rows are left alone (decision 2): the cash leg of an expense is
-	not a tender cost, and filling it would double every tender's figure the moment
-	P5b sums the dimension.
+	Balance-sheet rows are left alone (decision 2): the cash leg of an untagged
+	expense is not a tender cost, so this hook never ADDS a value to one.
+
+	That is a statement about this hook, not about the ledger. A voucher that
+	carries the dimension at DOCUMENT level is tagged by erpnext on every row it
+	posts, both legs — measured: a tagged Purchase Invoice puts the tender on
+	Creditors as well as on the expense account, and a Sales Invoice made from a
+	tagged Sales Order puts it on Debtors as well as on Sales. So the ledger DOES
+	hold tender values on balance-sheet accounts, and P5b must sum profit-and-loss
+	accounts only; a report that added up the dimension across all accounts would
+	count every tagged document twice.
 
 	The gate is the company's dimension row, NOT the module flag — see
 	`mandatory_for_pl`. The order below is cheapest-first on purpose: this runs

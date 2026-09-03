@@ -446,6 +446,27 @@ class TestPurchaseInvoice(_Fixture):
 		]
 		self.assertEqual({r[self.fieldname] for r in pl}, {self.tender})
 
+	def test_a_tagged_bill_carries_its_tender_on_the_supplier_leg_as_well(self):
+		"""R12. The hook never fills a balance-sheet row; erpnext tags both legs anyway.
+
+		`default_gl_tender` returns early on a Balance Sheet account, so nothing
+		P5a does puts a tender on the payable. erpnext does: a document-level
+		dimension is copied onto EVERY GL row the voucher posts, both legs. This
+		is measured rather than asserted in a docstring because P5b depends on
+		it — a report that summed the dimension across all accounts would count
+		this bill twice, once as expense and once as payable, and every tender's
+		figure would come out doubled.
+		"""
+		name = self._invoice(self.tender)
+		self._submit("Purchase Invoice", name)
+		bs = [
+			r
+			for r in _gl_rows("Purchase Invoice", name, self.fieldname)
+			if _report_type(r["account"]) == "Balance Sheet"
+		]
+		self.assertTrue(bs, "the bill booked no balance-sheet row")
+		self.assertEqual({r[self.fieldname] for r in bs}, {self.tender})
+
 	def test_a_lost_tender_cannot_be_sent_to_the_writer(self):
 		with self.assertRaises(frappe.ValidationError):
 			self._invoice(self.lost)
