@@ -1,9 +1,10 @@
-Enter an exchange rate or clear the currency on every flagged line,İşaretli her satırda bir kur girin ya da para birimini kaldırın
+"Enter the amount in {ccy} and a rate, or clear the currency",Tutarı {ccy} olarak ve bir kur girin ya da para birimini kaldırın
 Missing rate,Kur yok
 No rate for {ccy} — enter a rate or clear the currency,{ccy} için kur yok — bir kur girin ya da para birimini kaldırın
 Select a quotation for this lot in Sourcing,Bu lot için Tedarik ekranından bir teklif seçin
 "The existing material request {0} could not be withdrawn, so the plan was not saved. Sort that request out first.","Mevcut {0} malzeme talebi geri çekilemedi, bu yüzden plan kaydedilmedi. Önce o talebi çözün."
 "These materials are the other operator's to plan, not yours: {0}","Bu malzemeleri diğer operatör planlar, siz değil: {0}"
+"This lot is priced from {quotation}, which you do not have permission to read",Bu lot {quotation} teklifinden fiyatlanıyor; bu teklifi okuma yetkiniz yok
 "This order's material has already been written off per operator, but 'Allow Continuous Material Consumption' is switched off in Manufacturing Settings — finishing now would count that material a second time. Ask a manager to switch it back on.","Bu emrin malzemesi operatör bazında zaten düşülmüş, ama Üretim Ayarları'nda ""Allow Continuous Material Consumption"" kapalı — şimdi bitirmek o malzemeyi ikinci kez sayar. Bir yöneticiden tekrar açmasını isteyin."
 #,#
 % of total,Toplam %
@@ -24,6 +25,8 @@ Select a quotation for this lot in Sourcing,Bu lot için Tedarik ekranından bir
 1C ClientBank Exchange format (.txt). Uzbek bank-client export.,1C ClientBank Exchange formatı (.txt). Banka-istemci dışa aktarımı.
 1C Sync Log,1C Senkronizasyon Günlüğü
 from {quotation},{quotation} teklifinden
+incomplete,eksik
+incomplete: {count} line(s) without a rate,eksik: kuru olmayan {count} satır
 {countries} countries met,{countries} ülke şartı karşılandı
 {countries} countries needed,{countries} ülke gerekli
 31–60,31–60

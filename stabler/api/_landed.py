@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import json
 
-from stabler.stabler.tender_landed_math import converted_amount
+from stabler.stabler.tender_landed_math import line_value
 
 
 def parse_landed_charges(raw_charges) -> tuple[float, list[dict], bool]:
@@ -29,13 +29,17 @@ def parse_landed_charges(raw_charges) -> tuple[float, list[dict], bool]:
 	the same reason `tender._parse_landed` derives a PO line here rather than in its
 	save path.
 
-	A line naming a currency with no usable rate cannot be valued at all. It is
-	marked `unvalued` and kept out of the total, never added at its raw number
-	(1 200 USD entering a so'm total as 1 200) and never as zero: both read as
-	CHEAP and hand the tender to the wrong vendor. Unlike `save_po_landed_charges`
-	the write path does not REFUSE such a line -- a pre-win estimate is typed by one
-	officer under deadline and must be saveable half-finished -- so the flag is what
-	the editor and the comparison table use to name the gap.
+	Whether a line can be valued at all is `tender_landed_math.line_value`'s single
+	rule, shared with `tender._parse_landed` so one Purchase Order cannot show two
+	landed totals depending on which screen asked. An `unvalued` line is kept out of
+	the total, never added at its raw number (1 200 USD entering a so'm total as
+	1 200) and never as a bare zero: both read as CHEAP and hand the tender to the
+	wrong vendor.
+
+	Unlike `save_po_landed_charges` the write path does not REFUSE such a line -- a
+	pre-win estimate is typed by one officer under deadline and must be saveable
+	half-finished -- so the flag is what the editor, the comparison table, the award
+	snapshot and the pre-win bid estimate all use to name the gap.
 	"""
 	if not raw_charges:
 		return 0.0, [], False
@@ -63,15 +67,13 @@ def parse_landed_charges(raw_charges) -> tuple[float, list[dict], bool]:
 		is_vat = bool(c.get("is_recoverable_vat")) or charge_type.upper() in ("VAT", "VALUE ADDED TAX", "НДС")
 		currency = str(c.get("currency") or "").strip().upper()
 		fx_rate = float(c.get("fx_rate") or 0.0)
-		# With no currency there is nothing to convert FROM but the stored figure;
-		# `amount_original` is only meaningful once one is named. A PO customs line
-		# reaches this function with a stored amount and no currency for exactly
-		# that reason, and must keep the figure the declaration carries.
-		original = float(c.get("amount_original") or 0.0) if currency else stored_amount
-		amount = converted_amount(original, currency, fx_rate)
-		unvalued = amount is None
-		if unvalued:
-			amount = 0.0
+		original = float(c.get("amount_original") or 0.0)
+		# One rule, stated once, shared with `tender._parse_landed` — see
+		# `tender_landed_math.line_value`. A PO customs line reaches this function
+		# with a stored amount and no currency, and keeps the figure the ГТД
+		# declares; a currency line is valued only from what was typed IN that
+		# currency, never from the company-currency figure beside it.
+		amount, unvalued = line_value(stored_amount, original, currency, fx_rate)
 
 		capitalized_amount = 0.0 if (is_vat or unvalued) else amount
 		total += capitalized_amount

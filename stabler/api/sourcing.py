@@ -1048,6 +1048,11 @@ def _snapshot_rows(rows: list) -> list:
 			"base_landed_total": flt(r.get("base_landed_total")),
 			"landed_charges_total": flt(r.get("landed_charges_total")),
 			"has_landed_estimate": bool(r.get("has_landed_estimate")),
+			# ADR-605: the snapshot is what a later reader re-checks the decision
+			# against, and `base_landed_total` above is SHORT whenever this is true.
+			# Without it the audit record shows a confident delivered total and no
+			# trace that a charge line was excluded from it.
+			"has_unvalued_charges": bool(r.get("has_unvalued_charges")),
 			"cheapest": bool(r.get("cheapest")),
 			"is_cheapest_price": bool(r.get("is_cheapest_price")),
 			"is_cheapest_landed": bool(r.get("is_cheapest_landed")),

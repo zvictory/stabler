@@ -59,10 +59,28 @@ class TestParseLandedCarriesTheQuote(unittest.TestCase):
 
 	def test_derives_through_the_shared_rule(self):
 		self.assertIn(
-			"converted_amount",
+			"line_value",
 			self.body,
-			"_parse_landed must convert through tender_landed_math.converted_amount, "
-			"not with arithmetic of its own — the missing-rate stance lives there",
+			"_parse_landed must value a line through tender_landed_math.line_value, "
+			"not with arithmetic of its own — the missing-rate stance lives there, "
+			"and it is SHARED with _landed.parse_landed_charges, which sums the very "
+			"same JSON for the PO board",
+		)
+
+	def test_it_does_not_keep_a_figure_it_cannot_reproduce(self):
+		"""ADR-605 review, item 6.
+
+		This function used to keep the stored `amount` when the rate was unusable,
+		while `parse_landed_charges` dropped the line — so `po_control_board` and
+		the PO landed editor printed two different totals for one Purchase Order.
+		The stored figure was a real conversion when it was written, but nobody can
+		tell that from a row whose rate no longer values it.
+		"""
+		self.assertIn(
+			'"unvalued"',
+			self.body,
+			"_parse_landed must flag a line it cannot value, not quietly keep the "
+			"stored figure — the flag is what the board and the editor both read",
 		)
 
 	def test_a_customs_line_is_not_converted(self):

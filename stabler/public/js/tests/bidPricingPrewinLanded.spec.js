@@ -80,6 +80,50 @@ describe("the pre-win landed estimate is offered, not invented", () => {
 	});
 });
 
+describe("an estimate that is itself incomplete says so where it is offered", () => {
+	it("shows how many charge lines carry no rate", () => {
+		// ADR-605 review, item 4. Those lines are ALREADY excluded from the figure
+		// beside this label, and the bid price is computed from that figure.
+		// WHAT WOULD MAKE THIS FAIL: rendering the amount alone, which reads as a
+		// complete estimate and is short by whatever the flagged lines hold.
+		expect(src).toMatch(/refs\.quotation_landed_unvalued/);
+		expect(src).toMatch(/t\("incomplete: \{count\} line\(s\) without a rate"/);
+	});
+
+	it("keeps the warning out of the way when there is nothing to warn about", () => {
+		// WHAT WOULD MAKE THIS FAIL: an unconditional badge, which trains the
+		// officer to ignore it on the estimates that really are short.
+		expect(src).toMatch(/v-if="refs\.quotation_landed_unvalued"/);
+	});
+});
+
+describe("a quotation the user may not read is not a quotation nobody picked", () => {
+	it("says the estimate is gated rather than asking for a decision already made", () => {
+		// ADR-605 review, item 5. The permission-denied branch must come BEFORE
+		// the empty state, or a sourcing officer is told to go and select a
+		// quotation that is already selected — an instruction they cannot carry
+		// out, hiding the real obstacle.
+		// Search the ATTRIBUTE, not the bare name: `refs.quotation_landed_denied`
+		// also appears twice in <script>, above the whole template, so an index
+		// taken from the plain name is always smaller than the empty state's and
+		// the comparison can never fail. This assertion was written that way and
+		// survived the branch being moved to the bottom of the chain.
+		const denied = src.indexOf('v-else-if="refs.quotation_landed_denied"');
+		const empty = src.indexOf("Select a quotation for this lot in Sourcing");
+		expect(denied).toBeGreaterThan(-1);
+		expect(empty).toBeGreaterThan(-1);
+		expect(denied).toBeLessThan(empty);
+	});
+
+	it("names the quotation it cannot read", () => {
+		// WHAT WOULD MAKE THIS FAIL: a bare "not permitted". The officer needs to
+		// know WHICH record to ask for access to.
+		expect(src).toMatch(
+			/t\("This lot is priced from \{quotation\}, which you do not have permission to read"/,
+		);
+	});
+});
+
 describe("the card's currency is the one the estimate is denominated in", () => {
 	it("is mounted with the workspace overview currency", () => {
 		// `deal_intake` returns `default_currency` of the Company as `currency`,

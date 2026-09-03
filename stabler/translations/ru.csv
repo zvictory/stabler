@@ -1,9 +1,10 @@
-Enter an exchange rate or clear the currency on every flagged line,Укажите курс или уберите валюту в каждой отмеченной строке
+"Enter the amount in {ccy} and a rate, or clear the currency",Введите сумму в {ccy} и курс либо уберите валюту
 Missing rate,Нет курса
 No rate for {ccy} — enter a rate or clear the currency,Нет курса для {ccy} — введите курс или уберите валюту
 Select a quotation for this lot in Sourcing,Выберите предложение для этого лота в разделе «Снабжение»
 "The existing material request {0} could not be withdrawn, so the plan was not saved. Sort that request out first.","Существующую заявку на материалы {0} не удалось отозвать, поэтому план не сохранён. Сначала разберитесь с этой заявкой."
 "These materials are the other operator's to plan, not yours: {0}","Эти материалы планирует другой оператор, а не вы: {0}"
+"This lot is priced from {quotation}, which you do not have permission to read","Лот оценивается по предложению {quotation}, которое вам недоступно для чтения"
 "This order's material has already been written off per operator, but 'Allow Continuous Material Consumption' is switched off in Manufacturing Settings — finishing now would count that material a second time. Ask a manager to switch it back on.","Материал этого заказа уже списан по операторам, но «Allow Continuous Material Consumption» в настройках производства выключен — завершение сейчас посчитает этот материал второй раз. Попросите руководителя включить его обратно."
 #,#
 % of total,% от итога
@@ -25,6 +26,8 @@ Select a quotation for this lot in Sourcing,Выберите предложен�
 1C Sync Log,Журнал синхронизации 1C
 1C:Enterprise sync log appears here.,Здесь отображается журнал синхронизации 1C:Предприятие.
 from {quotation},из {quotation}
+incomplete,неполная
+incomplete: {count} line(s) without a rate,неполная: {count} строк(и) без курса
 {countries} countries met,Требование по {countries} странам выполнено
 {countries} countries needed,Требуются поставщики из {countries} стран
 31–60,31–60

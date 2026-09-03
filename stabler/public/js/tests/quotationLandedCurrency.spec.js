@@ -51,6 +51,13 @@ const convertedPreview = load(editor, "convertedPreview");
 // argument, so the total can never be computed with a different rule than the
 // cells above it — that split is exactly what P0 in the PO board was.
 const priceLines = load(editor, "priceLines", "convertedPreview");
+const unvaluedReason = load(editor, "unvaluedReason", "convertedPreview");
+// `fetchChargeRate` is stubbed rather than extracted: it is an async network call
+// and nothing here is about the CBU fetch. What is under test is what
+// `onChargeCurrency` does to the two amount fields on the way past.
+const onChargeCurrency = new Function(
+	`let fetched = null; function fetchChargeRate(l) { fetched = l; }\n${extractFunction(editor, "onChargeCurrency")}\nreturn onChargeCurrency;`,
+)();
 
 /** 1 200 USD of freight at 12 950 — the line the officer just typed. */
 const FOREIGN = { currency: "USD", fx_rate: 12950, amount_original: 1200, amount: null, is_recoverable_vat: false };
@@ -129,11 +136,33 @@ describe("an unvalued line names the action, not just the fact", () => {
 		expect(message[0]).toMatch(/clear the currency/i);
 	});
 
-	it("blocks the save while a line cannot be valued", () => {
-		// WHAT WOULD MAKE THIS FAIL: saving anyway. The server stores the line and
-		// excludes it, so the comparison would then rank on a total the officer
-		// last saw as complete.
-		expect(editor).toMatch(/:disabled="[^"]*unvaluedCount/);
+	it("still saves, because the server stores the line and flags it", () => {
+		// ADR-605 review, item 2. Blocking Save here contradicted the server's own
+		// contract — store, exclude, flag — and made `has_unvalued_charges`, the
+		// comparison badge, the winner-selector mark and the pre-win estimate's
+		// "incomplete" note all unreachable through the product: nothing carrying
+		// the flag could ever be saved. An estimate typed under deadline must be
+		// saveable half-finished.
+		// WHAT WOULD MAKE THIS FAIL: putting `unvaluedCount` back into :disabled.
+		const button = editor.slice(editor.indexOf('class="btn btn-primary"'));
+		expect(button.slice(0, 200)).not.toMatch(/unvaluedCount/);
+		// The flag has to stay visible somewhere, or excluding the line is silent.
+		expect(editor).toMatch(/v-if="unvaluedCount"/);
+	});
+
+	it("marks the winner selector option whose delivered total is short", () => {
+		// ADR-605 review, item 4. This <select> is the control that AWARDS the lot.
+		// The comparison table above it is where the officer reads; this is where
+		// they act, and the figure printed beside each supplier's name here is
+		// short by whatever that bid's unvalued lines hold.
+		// WHAT WOULD MAKE THIS FAIL: flagging only in the table, so the last thing
+		// seen before awarding is a confident number with nothing beside it.
+		const option = workspace.slice(
+			workspace.indexOf('v-model="awardForm.selected_quotation"'),
+			workspace.indexOf('t("Technical evaluation result")'),
+		);
+		expect(option).toMatch(/r\.has_unvalued_charges/);
+		expect(option).toMatch(/t\('incomplete'\)|t\("incomplete"\)/);
 	});
 
 	it("warns on the comparison row whose delivered total is short", () => {
@@ -141,6 +170,73 @@ describe("an unvalued line names the action, not just the fact", () => {
 		// alone. An estimate WAS typed, so the K3 completeness banner stays quiet
 		// while the delivered total is missing whatever the unvalued lines hold.
 		expect(workspace).toMatch(/r\.has_unvalued_charges/);
+	});
+});
+
+describe("a currency picked with nothing typed in it is not worth zero", () => {
+	/** The ADR-605 review's P0, reproduced as the officer meets it. */
+	const HALF_SWITCHED = { currency: "USD", fx_rate: 12950, amount_original: null, amount: 3200000, is_recoverable_vat: false };
+
+	it("refuses to value a line whose figure was never typed in its currency", () => {
+		// The trap: `converted_amount(0, "USD", 12950)` is 0.0, not null — so the
+		// line was valued at a bare zero, NOT flagged, and the vendor kept a
+		// landed total missing a whole charge. WHAT WOULD MAKE THIS FAIL:
+		// multiplying `amount_original` without first asking whether it exists.
+		expect(convertedPreview(HALF_SWITCHED)).toBeNull();
+		expect(priceLines([HALF_SWITCHED]).unvalued).toBe(1);
+	});
+
+	it("never re-labels the company-currency figure as the new currency", () => {
+		// The opposite failure, and just as wrong: 3 200 000 so'm shown as
+		// 3 200 000 USD, or multiplied by the rate. Both invent money.
+		const value = convertedPreview(HALF_SWITCHED);
+		expect(value).not.toBe(3200000);
+		expect(value).not.toBe(3200000 * 12950);
+	});
+
+	it("does not seed the currency box from the company-currency amount", () => {
+		// WHAT WOULD MAKE THIS FAIL: `line.amount_original = line.amount` on
+		// currency change — which silently relabels the figure and hides the P0
+		// behind a plausible-looking number.
+		const line = { currency: "USD", fx_rate: 0, rate_date: "", fx_source: "", amount: 3200000, amount_original: null };
+		onChargeCurrency(line);
+		expect(line.amount_original).toBeNull();
+	});
+
+	it("names entering the amount, not just the rate, when that is what is missing", () => {
+		// Two different broken states, two different remedies. Telling an officer
+		// to "enter a rate" when the rate is already there is a dead end.
+		expect(unvaluedReason(HALF_SWITCHED)).toBe("amount");
+		expect(unvaluedReason({ currency: "USD", fx_rate: 0, amount_original: 1200, amount: 0 })).toBe("rate");
+		expect(editor).toMatch(/t\("Enter the amount in \{ccy\} and a rate, or clear the currency"/);
+	});
+
+	it("treats a row that has only just been added as empty, not broken", () => {
+		// WHAT WOULD MAKE THIS FAIL: flagging a blank line, which parks a
+		// permanent warning under every estimate the moment a currency is picked.
+		const blank = { currency: "USD", fx_rate: 0, amount_original: null, amount: 0 };
+		expect(convertedPreview(blank)).toBe(0);
+		expect(priceLines([blank]).unvalued).toBe(0);
+	});
+});
+
+describe("clearing the currency keeps the number", () => {
+	it("carries the typed figure into the company-currency box", () => {
+		// "Clear the currency" is one of the two remedies the row prescribes, and
+		// it means "this number is already in company currency". WHAT WOULD MAKE
+		// THIS FAIL: nulling `amount_original` without carrying it across — which
+		// destroyed the figure on any line created this session, so following the
+		// screen's own advice lost the officer's work.
+		const line = { currency: "", fx_rate: 12950, rate_date: "2026-09-03", fx_source: "x", amount: 0, amount_original: 1200 };
+		onChargeCurrency(line);
+		expect(line.amount).toBe(1200);
+		expect(line.amount_original).toBeNull();
+	});
+
+	it("leaves an existing company-currency figure alone", () => {
+		const line = { currency: "", fx_rate: 0, rate_date: "", fx_source: "", amount: 3200000, amount_original: null };
+		onChargeCurrency(line);
+		expect(line.amount).toBe(3200000);
 	});
 });
 

@@ -116,9 +116,23 @@ function onTypeChange(line) {
 // reads as CHEAP and hands the tender to the wrong vendor.
 function convertedPreview(line) {
 	if (!line.currency) return Number(line.amount) || 0;
+	const original = Number(line.amount_original) || 0;
+	const stored = Number(line.amount) || 0;
+	// A row the officer has only started typing is empty, not broken.
+	if (!original && !stored) return 0;
+	// Nothing typed in the named currency while a company-currency figure sits in
+	// `amount`: a half-finished currency switch. Valuing it at that figure would
+	// relabel so'm as USD; valuing it at 0 is the ADR-605 review's P0.
 	const rate = Number(line.fx_rate) || 0;
-	if (rate <= 0) return null;
-	return Math.round((Number(line.amount_original) || 0) * rate * 100) / 100;
+	if (!original || rate <= 0) return null;
+	return Math.round(original * rate * 100) / 100;
+}
+
+// Which of the two remedies this line needs, so the message can name the action
+// rather than the fact. Both end the same way: or clear the currency.
+function unvaluedReason(line) {
+	if (convertedPreview(line) !== null) return "";
+	return (Number(line.amount_original) || 0) ? "rate" : "amount";
 }
 
 // `null` means the line cannot be valued at all. Counting those is the whole
@@ -165,8 +179,20 @@ function onChargeCurrency(line) {
 	line.fx_rate = 0;
 	line.rate_date = "";
 	line.fx_source = "";
-	if (!line.currency) line.amount_original = null;
-	else fetchChargeRate(line);
+	if (!line.currency) {
+		// Clearing the currency is one of the two remedies the row offers, and it
+		// means "this number is already in company currency" — so the figure has to
+		// survive the move. Nulling `amount_original` without carrying it across
+		// destroyed whatever the officer had typed on a line created this session.
+		line.amount = Number(line.amount_original) || Number(line.amount) || 0;
+		line.amount_original = null;
+		return;
+	}
+	// Deliberately NOT seeding `amount_original` from `amount`: that figure is
+	// company currency by construction and copying it into a USD box would relabel
+	// it. The line shows as unvalued until the officer types the figure in the
+	// currency they just named.
+	fetchChargeRate(line);
 }
 
 const landedChargesTotal = computed(() => priceLines(charges.value).total);
@@ -260,7 +286,8 @@ async function save() {
 						</div>
 
 						<!-- The totals above are SHORT while any line cannot be valued, so say
-						     so where they are read, not only on the row that caused it. -->
+						     so where they are read, not only on the row that caused it. The
+						     estimate still saves: the server excludes and flags those lines. -->
 						<div v-if="unvaluedCount" class="alert alert-warning py-2 mb-3">
 							<i class="ti ti-alert-triangle me-1"></i>
 							{{ t("{count} charge line(s) have a currency with no exchange rate and are excluded from these totals.", { count: unvaluedCount }) }}
@@ -352,7 +379,12 @@ async function save() {
 												</span>
 												<span v-else class="text-danger">
 													<i class="ti ti-alert-triangle me-1"></i>
-													{{ t("No rate for {ccy} — enter a rate or clear the currency", { ccy: line.currency }) }}
+													<template v-if="unvaluedReason(line) === 'rate'">
+														{{ t("No rate for {ccy} — enter a rate or clear the currency", { ccy: line.currency }) }}
+													</template>
+													<template v-else>
+														{{ t("Enter the amount in {ccy} and a rate, or clear the currency", { ccy: line.currency }) }}
+													</template>
 												</span>
 											</div>
 											<div v-if="line.fx_source" class="small text-secondary text-end">{{ line.fx_source }}</div>
@@ -390,14 +422,17 @@ async function save() {
 					<button type="button" class="btn btn-secondary" @click="emit('close')">
 						{{ t("Cancel") }}
 					</button>
-					<!-- Saving with an unvaluable line stores an estimate the server then
-					     ranks short, with nothing on the comparison saying which line went
-					     missing. Two ways out, both named on the row itself. -->
+					<!-- An unvaluable line does NOT block the save. The server stores it,
+					     excludes it from the total and returns `has_unvalued_charges`, which
+					     the comparison row, the winner selector, the award snapshot and the
+					     pre-win bid estimate all show. Blocking here would contradict that
+					     contract and make every one of those flags unreachable through the
+					     product — an estimate typed under deadline must be saveable
+					     half-finished. The alert above and the row message are the flag. -->
 					<button
 						type="button"
 						class="btn btn-primary"
-						:disabled="saving || loading || unvaluedCount > 0"
-						:title="unvaluedCount ? t('Enter an exchange rate or clear the currency on every flagged line') : ''"
+						:disabled="saving || loading"
 						@click="save"
 					>
 						<i class="ti ti-check me-1"></i>{{ saving ? t("Saving…") : t("Save estimate") }}

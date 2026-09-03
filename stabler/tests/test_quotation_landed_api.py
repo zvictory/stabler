@@ -225,5 +225,36 @@ class TestQuotationLandedApi(unittest.TestCase):
 		self.assertEqual(stored[0]["amount_original"], 1200.0)
 
 
+class TestTheAwardSnapshotRecordsAnIncompleteEstimate(unittest.TestCase):
+	"""ADR-605 review, item 4. The audit record must not look more certain than it was.
+
+	`_snapshot_rows` is what a later reader re-checks the award against — a
+	regulator, an internal auditor, or the officer's own successor. It freezes
+	`base_landed_total`, and that figure is SHORT whenever a charge line could not
+	be valued. Without the flag beside it the record shows a confident delivered
+	total and no trace that anything was left out of it, which is precisely the
+	question an audit of a tender award asks.
+	"""
+
+	def setUp(self):
+		self.api = _load_sourcing(_FakeFrappe())
+
+	def test_the_flag_is_frozen_with_the_total_it_qualifies(self):
+		rows = self.api._snapshot_rows(
+			[
+				{"name": "SQ-1", "base_landed_total": 115_540_000.0, "has_unvalued_charges": True},
+				{"name": "SQ-2", "base_landed_total": 120_000_000.0, "has_unvalued_charges": False},
+			]
+		)
+		self.assertEqual(rows[0]["has_unvalued_charges"], True)
+		self.assertEqual(rows[1]["has_unvalued_charges"], False)
+
+	def test_a_row_that_never_carried_the_flag_reads_as_sound(self):
+		# Snapshots taken before ADR-605 have no such key; they must not read as
+		# incomplete just because the column is new.
+		rows = self.api._snapshot_rows([{"name": "SQ-OLD", "base_landed_total": 1.0}])
+		self.assertEqual(rows[0]["has_unvalued_charges"], False)
+
+
 if __name__ == "__main__":
 	unittest.main()

@@ -883,7 +883,10 @@ watch(
 												: r.is_cheapest_price
 													? `(${t("Sticker Leader")})`
 													: ""
-										}}
+										}}<!-- ADR-605: the figure beside this supplier's name is short by
+										     whatever its unvalued lines hold. This is the control that picks
+										     the winner, so the gap must be legible HERE, not only in the
+										     comparison table above it. -->{{ r.has_unvalued_charges ? ' \u00b7 ' + t('incomplete') : '' }}
 									</option>
 								</select>
 							</div>

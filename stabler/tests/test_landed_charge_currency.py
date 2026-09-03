@@ -24,6 +24,8 @@ These pin that quotation lines now use the SAME rule and the same line shape:
 
 from __future__ import annotations
 
+import importlib
+import types
 import unittest
 
 from stabler.api._landed import (
@@ -31,6 +33,70 @@ from stabler.api._landed import (
 	parse_landed_charges,
 	rank_quotations_landed,
 )
+from stabler.tests.module_sandbox import ModuleSandbox
+
+_SANDBOX = ModuleSandbox()
+
+
+def tearDownModule():
+	"""The fakes below are process-wide -- hand ``sys.modules`` back intact."""
+	_SANDBOX.restore()
+
+
+def _load_parse_landed():
+	"""`tender._parse_landed` against the two Frappe names it actually touches."""
+	_SANDBOX.evict(
+		"stabler.api.tender",
+		"stabler.api.purchasing",
+		"frappe",
+		"frappe.utils",
+		"stabler.api.approvals",
+		"stabler.api._common",
+		"stabler.api._bid_package",
+		"stabler.api.organization",
+		"stabler.stabler.doctype.stabler_settings.stabler_settings",
+	)
+	frappe = types.ModuleType("frappe")
+	frappe._ = lambda value: value
+	frappe.PermissionError = PermissionError
+	frappe.DoesNotExistError = LookupError
+	frappe.session = types.SimpleNamespace(user="buyer@example.com")
+	frappe.db = types.SimpleNamespace(has_column=lambda *_a, **_k: False)
+	frappe.whitelist = lambda *args, **_kwargs: (lambda fn: fn) if args == () else args[0]
+	frappe.get_roles = lambda _user=None: []
+	frappe.has_permission = lambda *_a, **_k: True
+	frappe.get_list = lambda *_a, **_k: []
+	frappe.get_all = lambda *_a, **_k: []
+	frappe.throw = lambda message, exception=Exception: (_ for _ in ()).throw(exception(message))
+	utils = types.ModuleType("frappe.utils")
+	utils.flt = lambda value: float(value or 0)
+	utils.getdate = lambda value: value
+	utils.add_months = lambda value, months: value
+	utils.cint = lambda value=0: int(float(value or 0))
+	utils.today = lambda: "2026-09-03"
+	utils.now = lambda: "2026-09-03 09:00:00"
+	frappe.utils = utils
+	_SANDBOX.install({"frappe": frappe, "frappe.utils": utils})
+	for name, attrs in (
+		("stabler.api.approvals", {"_assert_company_scope": lambda _c: None}),
+		("stabler.api._common", {"_require_company": lambda _c: None}),
+		(
+			"stabler.api._bid_package",
+			{
+				"assemble_bid_package": lambda *_a, **_k: {},
+				"build_bid_docx": lambda *_a, **_k: b"",
+			},
+		),
+		("stabler.api.organization", {"_can_access_module": lambda *_a, **_k: True}),
+		("stabler.api.purchasing", {"tender_quotations": lambda _d: {"rows": []}}),
+		("stabler.stabler.doctype.stabler_settings.stabler_settings", {"module_map_for": lambda _c: {}}),
+	):
+		mod = types.ModuleType(name)
+		for attr, value in attrs.items():
+			setattr(mod, attr, value)
+		_SANDBOX.install({name: mod})
+	return importlib.import_module("stabler.api.tender")._parse_landed
+
 
 # 1 200 USD of freight at 12 950 so'm = 15 540 000 so'm.
 _FOREIGN = {
@@ -58,6 +124,19 @@ _PO_FOREIGN = {
 	"currency": "USD",
 	"fx_rate": 12_800.0,
 	"rate_date": "2026-09-01",
+	"amount_original": 1200.0,
+	"actual_original": 0.0,
+}
+# A PO line whose rate no longer values it. `amount` was a real conversion when it
+# was written, but nobody reading the row today can reproduce it.
+_STALE_PO = {
+	"type": "transport",
+	"label": "Freight",
+	"amount": 15_360_000.0,
+	"actual": 0.0,
+	"currency": "USD",
+	"fx_rate": 0.0,
+	"rate_date": "",
 	"amount_original": 1200.0,
 	"actual_original": 0.0,
 }
@@ -157,6 +236,51 @@ class TestLegacyLinesDoNotMove(unittest.TestCase):
 		self.assertEqual(total, 500.0)
 
 
+class TestACurrencyWithoutATypedFigure(unittest.TestCase):
+	"""The P0 the ADR-605 review caught, at the level a caller sees it.
+
+	Reachable straight through the product: the editor loads a legacy so'm line with
+	`amount_original: null`, the officer picks USD from the dropdown, the CBU button
+	fills a real rate -- and `converted_amount(0, "USD", 12950)` is 0.0, not None. The
+	line was therefore valued at a bare zero and NOT flagged, so `has_unvalued_charges`
+	stayed False, `estimate_complete` stayed True, `cheapest_landed` could be awarded
+	to that vendor, and the zero propagated into the pre-win bid price.
+	"""
+
+	def test_a_named_currency_with_nothing_typed_in_it_is_flagged(self):
+		line = {"charge_type": "Freight", "amount": 3_200_000, "currency": "USD", "fx_rate": 12_950}
+		total, clean, _has_est = parse_landed_charges([line])
+		self.assertEqual(total, 0.0)
+		self.assertTrue(clean[0]["unvalued"], "a bare 0.0 that nothing flags is the P0")
+
+	def test_it_does_not_relabel_the_company_currency_figure(self):
+		# The opposite failure: treating 3 200 000 so'm as 3 200 000 USD. Both are
+		# wrong; refusing to value the line is the only honest answer.
+		line = {"charge_type": "Freight", "amount": 3_200_000, "currency": "USD", "fx_rate": 12_950}
+		_total, clean, _has_est = parse_landed_charges([line])
+		self.assertEqual(clean[0]["amount"], 0.0)
+
+	def test_the_quotation_reports_it_so_the_ranking_cannot_hide_it(self):
+		q = calculate_quotation_landed(
+			{
+				"name": "SQ-1",
+				"base_grand_total": 100_000_000.0,
+				"custom_landed_charges": [
+					{"charge_type": "Freight", "amount": 3_200_000, "currency": "USD", "fx_rate": 12_950}
+				],
+			}
+		)
+		self.assertTrue(q["has_unvalued_charges"])
+		self.assertEqual(q["base_landed_total"], 100_000_000.0)
+
+	def test_a_line_with_nothing_on_either_side_is_not_flagged(self):
+		# A row the officer only just added must not park a permanent warning.
+		_total, clean, _has_est = parse_landed_charges(
+			[{"charge_type": "Freight", "currency": "USD", "fx_rate": 0, "description": "tbd"}]
+		)
+		self.assertFalse(clean[0]["unvalued"])
+
+
 class TestAPurchaseOrderLineIsNotConvertedTwice(unittest.TestCase):
 	"""`parse_landed_charges` also sums PO landed lines (`tender.po_control_board`).
 
@@ -178,6 +302,44 @@ class TestAPurchaseOrderLineIsNotConvertedTwice(unittest.TestCase):
 	def test_a_customs_line_keeps_the_declared_figure(self):
 		_total, clean, _has_est = parse_landed_charges([_PO_CUSTOMS])
 		self.assertEqual(clean[0]["amount"], 4_200_000.0)
+
+
+class TestBothReadersOfAPoLineAgree(unittest.TestCase):
+	"""ADR-605 review, item 6. One Purchase Order, two readers, one total.
+
+	`tender._parse_landed` serves the PO landed editor and `_deal_landed_split`;
+	`_landed.parse_landed_charges` sums the very same stored JSON for the PO control
+	board. They disagreed on a line naming a currency with an unusable rate -- one
+	kept the stored figure, the other dropped it -- so the same PO showed two
+	different landed totals depending on which screen the officer opened.
+
+	`save_po_landed_charges` refuses to CREATE that state, so it only arrives by
+	hand-edited JSON; that is precisely why neither reader may throw on it, and why
+	they must agree about what it is worth.
+	"""
+
+	def setUp(self):
+		self._parse_landed = _load_parse_landed()
+
+	def test_the_two_totals_match(self):
+		editor_total = sum(c["amount"] for c in self._parse_landed([_STALE_PO]))
+		board_total, _clean, _has_est = parse_landed_charges([_STALE_PO])
+		self.assertEqual(editor_total, board_total)
+		self.assertEqual(board_total, 0.0)
+
+	def test_the_two_flags_match(self):
+		editor_line = self._parse_landed([_STALE_PO])[0]
+		_total, board_lines, _has_est = parse_landed_charges([_STALE_PO])
+		self.assertTrue(editor_line["unvalued"])
+		self.assertEqual(editor_line["unvalued"], board_lines[0]["unvalued"])
+
+	def test_a_healthy_foreign_line_still_agrees(self):
+		# The rule must not have been "align by dropping everything".
+		healthy = dict(_STALE_PO, fx_rate=12_800.0)
+		editor_total = sum(c["amount"] for c in self._parse_landed([healthy]))
+		board_total, _clean, _has_est = parse_landed_charges([healthy])
+		self.assertEqual(editor_total, 15_360_000.0)
+		self.assertEqual(editor_total, board_total)
 
 
 class TestTheExclusionSurvivesTheRanking(unittest.TestCase):

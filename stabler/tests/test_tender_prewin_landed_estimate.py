@@ -56,6 +56,15 @@ _QUOTATIONS = {
 		"grand_total": 900_000_000.0,
 		"custom_landed_charges": json.dumps([{"charge_type": "Freight", "amount": 25_000_000.0}]),
 	},
+	# Same sticker price as SQ-DEAR, but its one charge line names a currency no
+	# rate can value — so the landed estimate is 900m and KNOWN to be short.
+	"SQ-BROKEN": {
+		"base_grand_total": 900_000_000.0,
+		"grand_total": 900_000_000.0,
+		"custom_landed_charges": json.dumps(
+			[{"charge_type": "Freight", "amount_original": 1200.0, "currency": "USD", "fx_rate": 0}]
+		),
+	},
 }
 
 
@@ -83,7 +92,7 @@ class _FakeDB:
 		return None
 
 
-def _load_tender(db: _FakeDB, decisions: list[dict]):
+def _load_tender(db: _FakeDB, decisions: list[dict], *, readable: bool = True):
 	"""Import tender.py against only the Frappe surface `_bid_inputs` reaches."""
 	_SANDBOX.evict(
 		"stabler.api.tender",
@@ -104,14 +113,21 @@ def _load_tender(db: _FakeDB, decisions: list[dict]):
 	frappe.db = db
 	frappe.whitelist = lambda *args, **_kwargs: (lambda fn: fn) if args == () else args[0]
 	frappe.get_roles = lambda _user=None: ["Sales Manager"]
-	frappe.has_permission = lambda *_args, **_kwargs: True
+	frappe.has_permission = lambda *_args, **_kwargs: readable
 	frappe.throw = lambda message, exception=Exception: (_ for _ in ()).throw(exception(message))
 
-	def get_list(doctype, filters=None, **_kwargs):
+	def get_list(doctype, filters=None, order_by=None, limit_page_length=None, **_kwargs):
+		"""Deliberately returns the rows UNSORTED and unlimited.
+
+		The ADR-605 review caught the earlier stub honouring neither `order_by` nor
+		`limit_page_length`, so the precedence test passed on the order the loop
+		happened to ask in rather than on any rule. `_pick_sourcing_decision` now
+		chooses in Python, and this stub hands it the rows in the worst order it
+		could get them so the choosing is what is actually under test.
+		"""
 		if doctype != "Tender Sourcing Decision":
 			return []
-		wanted = (filters or {}).get("status")
-		return [_Row(d) for d in decisions if d["status"] == wanted]
+		return [_Row(d) for d in decisions]
 
 	frappe.get_list = get_list
 	frappe.get_all = lambda *_args, **_kwargs: []
@@ -158,17 +174,44 @@ _DRAFT_ON_DEAR = {
 	"status": "Draft",
 	"selected_quotation": "SQ-DEAR",
 	"cheapest_quotation": "SQ-CHEAP",
+	"approved_at": None,
+	"modified": "2026-09-03 12:00:00",
 }
 _APPROVED_ON_CHEAP = {
 	"name": "TSD-2",
 	"status": "Approved",
 	"selected_quotation": "SQ-CHEAP",
 	"cheapest_quotation": "SQ-DEAR",
+	"approved_at": "2026-09-01 09:00:00",
+	"modified": "2026-09-01 09:00:00",
+}
+# An open draft on the OTHER bid, touched more recently than either approval.
+# It exists so the ordering tests can DISTINGUISH the rules: "newest `modified`
+# wins" and "a draft wins" both answer SQ-CHEAP here, and only "the standing
+# approval wins" answers SQ-DEAR.
+_LATER_DRAFT_ON_CHEAP = {
+	"name": "TSD-4",
+	"status": "Draft",
+	"selected_quotation": "SQ-CHEAP",
+	"cheapest_quotation": "SQ-DEAR",
+	"approved_at": None,
+	"modified": "2026-09-04 08:00:00",
 }
 
 
-def _inputs(decisions, *, stored_pricing=None):
-	tender = _load_tender(_FakeDB(stored_pricing=stored_pricing), decisions)
+# A re-award: the first winner fell through and the lot was awarded again, later.
+_REAPPROVED_ON_DEAR = {
+	"name": "TSD-3",
+	"status": "Approved",
+	"selected_quotation": "SQ-DEAR",
+	"cheapest_quotation": "SQ-CHEAP",
+	"approved_at": "2026-09-02 15:30:00",
+	"modified": "2026-09-02 15:30:00",
+}
+
+
+def _inputs(decisions, *, stored_pricing=None, readable=True):
+	tender = _load_tender(_FakeDB(stored_pricing=stored_pricing), decisions, readable=readable)
 	return tender._bid_inputs("DEAL-1", "Test Company")
 
 
@@ -220,6 +263,81 @@ class TestTheDecisionNamesTheQuotation(unittest.TestCase):
 		# every freight and duty line the officer typed.
 		_inp, refs = _inputs([_DRAFT_ON_DEAR])
 		self.assertEqual(refs["quotation_landed_estimate"] - 900_000_000.0, 25_000_000.0)
+
+
+class TestOnlyTheStandingApprovalCounts(unittest.TestCase):
+	"""ADR-605 review, item 7. The rule, not the order the rows arrived in.
+
+	`_pick_sourcing_decision` is handed every decision the lot has, unsorted, and
+	must reach the same answer `sourcing._standing_award` would: a lot can be
+	awarded more than once and only the LATEST approval is in force. Naming a
+	superseded winner here would price the bid against a vendor the PO gate refuses.
+	"""
+
+	def test_the_later_approval_wins_over_the_earlier_one(self):
+		# SQ-CHEAP was approved on the 1st, SQ-DEAR on the 2nd, and a draft on
+		# SQ-CHEAP was touched on the 4th. Only "the standing approval, latest
+		# first" answers SQ-DEAR; sorting by `modified` or preferring the draft
+		# both answer SQ-CHEAP — a winner the PO gate would refuse.
+		_inp, refs = _inputs([_APPROVED_ON_CHEAP, _REAPPROVED_ON_DEAR, _LATER_DRAFT_ON_CHEAP])
+		self.assertEqual(refs["quotation_landed_source"], "SQ-DEAR")
+
+	def test_the_answer_does_not_depend_on_the_order_the_rows_arrive_in(self):
+		# The earlier stub honoured no `order_by`, so the old precedence test was
+		# really asserting the order of a tuple in the implementation's own loop.
+		rows = [_APPROVED_ON_CHEAP, _REAPPROVED_ON_DEAR, _LATER_DRAFT_ON_CHEAP]
+		first = _inputs(rows)[1]
+		second = _inputs(list(reversed(rows)))[1]
+		self.assertEqual(first["quotation_landed_source"], second["quotation_landed_source"])
+		self.assertEqual(first["quotation_landed_source"], "SQ-DEAR")
+
+	def test_a_decision_naming_no_quotation_is_skipped_not_chosen(self):
+		# An approved decision with an empty `selected_quotation` must not shadow
+		# the draft that does name one — it would blank the field for no reason.
+		empty_approval = dict(
+			_APPROVED_ON_CHEAP,
+			name="TSD-9",
+			selected_quotation="",
+			approved_at="2026-09-09 00:00:00",
+			modified="2026-09-09 00:00:00",
+		)
+		_inp, refs = _inputs([empty_approval, _REAPPROVED_ON_DEAR])
+		self.assertEqual(refs["quotation_landed_source"], "SQ-DEAR")
+
+
+class TestAnEstimateThatIsItselfIncomplete(unittest.TestCase):
+	def test_the_unvalued_line_count_travels_with_the_figure(self):
+		"""ADR-605 review, item 4.
+
+		The chosen quotation's own charge line cannot be valued, so `amount` is
+		already short. A caller that shows the figure without this count presents a
+		confident pre-win price built on an estimate nobody flagged.
+		"""
+		_inp, refs = _inputs([{**_DRAFT_ON_DEAR, "selected_quotation": "SQ-BROKEN"}])
+		self.assertEqual(refs["quotation_landed_unvalued"], 1)
+		self.assertEqual(refs["quotation_landed_estimate"], 900_000_000.0)
+
+	def test_a_sound_estimate_reports_nothing_to_flag(self):
+		_inp, refs = _inputs([_DRAFT_ON_DEAR])
+		self.assertEqual(refs["quotation_landed_unvalued"], 0)
+
+
+class TestAQuotationTheUserMayNotRead(unittest.TestCase):
+	def test_a_denied_read_is_not_the_same_as_no_decision(self):
+		"""ADR-605 review, item 5.
+
+		Collapsing the two told a sourcing officer to "select a quotation for this
+		lot" when one had already been selected — an instruction they cannot carry
+		out, and which hides the real obstacle, a permission.
+		"""
+		_inp, refs = _inputs([_DRAFT_ON_DEAR], readable=False)
+		self.assertTrue(refs["quotation_landed_denied"])
+		self.assertEqual(refs["quotation_landed_source"], "SQ-DEAR")
+		self.assertEqual(refs["quotation_landed_estimate"], 0.0)
+
+	def test_no_decision_at_all_is_not_reported_as_denied(self):
+		_inp, refs = _inputs([])
+		self.assertFalse(refs["quotation_landed_denied"])
 
 
 class TestATypedFigureIsNeverOverwritten(unittest.TestCase):

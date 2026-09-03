@@ -49,6 +49,13 @@ const refs = reactive({
 	// about the comparison rather than a choice anybody made.
 	quotation_landed_estimate: 0,
 	quotation_landed_source: "",
+	// Already excluded from the estimate above — showing the figure without this
+	// presents a confident pre-win price built on an estimate nobody flagged.
+	quotation_landed_unvalued: 0,
+	// "a decision exists but you may not read the quotation it names" is not "no
+	// quotation has been chosen". Telling the second story sends an officer to go
+	// and pick a quotation that was already picked.
+	quotation_landed_denied: false,
 });
 const actual = ref(null); // { invoiced, planned_landed, actual_landed, actual_revenue, pnl, ostatok_delta }
 const inp = reactive({
@@ -77,6 +84,8 @@ function apply(d) {
 	refs.so_count = d?.so_count || 0;
 	refs.quotation_landed_estimate = d?.quotation_landed_estimate || 0;
 	refs.quotation_landed_source = d?.quotation_landed_source || "";
+	refs.quotation_landed_unvalued = d?.quotation_landed_unvalued || 0;
+	refs.quotation_landed_denied = Boolean(d?.quotation_landed_denied);
 	actual.value = d?.actual || null;
 }
 
@@ -183,9 +192,22 @@ watch(() => props.deal, load, { immediate: true });
 						<a href="#" @click.prevent="useLandedFromPOs">{{ t("Use POs' landed") }}: {{ fm(refs.po_landed) }}</a>
 						<span class="text-secondary"> · {{ refs.po_count }} {{ t("PO") }}</span>
 					</div>
+					<!-- A decision names a quotation this user may not read. Saying
+					     "select a quotation" here would send them to do something already
+					     done, and hide the real obstacle. -->
+					<div v-else-if="refs.quotation_landed_denied" class="form-text mb-2 text-secondary">
+						<i class="ti ti-lock me-1"></i>
+						{{ t("This lot is priced from {quotation}, which you do not have permission to read", { quotation: refs.quotation_landed_source }) }}
+					</div>
 					<div v-else-if="refs.quotation_landed_source" class="form-text mb-2">
 						<a href="#" @click.prevent="useLandedFromQuotation">{{ t("Pre-win estimate") }}: {{ fm(refs.quotation_landed_estimate) }}</a>
 						<span class="text-secondary"> · {{ t("from {quotation}", { quotation: refs.quotation_landed_source }) }}</span>
+						<!-- The estimate is already SHORT by whatever those lines hold. The
+						     bid price is computed from this figure, so the gap has to be
+						     legible where the figure is offered. -->
+						<span v-if="refs.quotation_landed_unvalued" class="text-danger">
+							· {{ t("incomplete: {count} line(s) without a rate", { count: refs.quotation_landed_unvalued }) }}
+						</span>
 					</div>
 					<div v-else class="form-text mb-2 text-secondary">
 						<i class="ti ti-info-circle me-1"></i>
