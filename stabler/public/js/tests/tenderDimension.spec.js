@@ -151,6 +151,34 @@ describe("Purchase Invoice — a tender picker that says why it is disabled", ()
 		expect(fn(invoiceCode, "toPayload")).toMatch(/tender:/);
 	});
 
+	it("lets an existing bill have its tender removed, not only replaced", () => {
+		// `tender: undefined` is dropped from the JSON body, so the server reads
+		// "the form did not choose" and keeps whatever the bill already carried: a
+		// manually chosen tender could be swapped but never cleared, and the user
+		// watches the field they emptied come back on reload. On CREATE undefined
+		// is still right — nothing was chosen, and the PO or GENEL GİDER decides.
+		// On UPDATE an empty picker IS a choice, and "" is how it is expressed.
+		const line = fn(invoiceCode, "toPayload")
+			.split("\n")
+			.find((each) => /^\s*tender:/.test(each));
+		expect(line, "toPayload no longer sends a tender").toBeTruthy();
+		const expression = line.replace(/^\s*tender:\s*/, "").replace(/,\s*$/, "");
+		// The real expression, evaluated — not its spelling, which is free to change.
+		const sent = (tender, isCreate, on = true) =>
+			new Function(
+				"m",
+				"tenderOn",
+				"isCreate",
+				`return (${expression});`,
+			)({ tender }, { value: on }, { value: isCreate });
+
+		expect(sent("DEAL-1", true)).toBe("DEAL-1");
+		expect(sent("DEAL-1", false)).toBe("DEAL-1");
+		expect(sent("", true)).toBe(undefined);
+		expect(sent("", false)).toBe("");
+		expect(sent("DEAL-1", false, false)).toBe(undefined);
+	});
+
 	it("disables the picker when the purchase order decided the value", () => {
 		const tag = element(invoiceCode, /<Typeahead[^>]*v-model="form\.tender"/);
 		expect(tag).toMatch(/:disabled="[^"]*tender_locked/);

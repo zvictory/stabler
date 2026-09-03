@@ -306,10 +306,13 @@ function toPayload(m) {
 		commercial_invoice: m.custom_commercial_invoice || undefined,
 		import_truck: m.custom_import_truck || undefined,
 		import_container: m.custom_import_container || undefined,
-		// `undefined`, never "": the server reads null as "the form did not choose"
-		// and leaves the value to the purchase order or to GENEL GİDER at GL time.
-		// An empty string would be a choice to clear it.
-		tender: tenderOn.value && m.tender ? m.tender : undefined,
+		// On CREATE `undefined`, never "": the server reads null as "the form did
+		// not choose" and leaves the value to the purchase order or to GENEL GİDER
+		// at GL time. On UPDATE an empty picker IS a choice — the user cleared a
+		// tender they had chosen — and "" is the only way to say so: `undefined`
+		// is dropped from the JSON body, so the bill would keep the old value and
+		// the field the user emptied would come back on reload.
+		tender: tenderOn.value ? m.tender || (isCreate.value ? undefined : "") : undefined,
 		items: lines,
 	};
 }
