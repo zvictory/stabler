@@ -286,7 +286,6 @@ def _raw_landed_lines(raw) -> list[dict]:
 			ctype = "other"
 		ccy = str(it.get("currency") or "").strip().upper()[:8]
 		amount_ccy = flt(it.get("amount_original"))
-		actual_ccy = flt(it.get("actual_original"))
 		out.append(
 			{
 				"type": ctype,
@@ -319,11 +318,18 @@ def _raw_landed_lines(raw) -> list[dict]:
 				# `rate_date` is provenance, not arithmetic: it records WHICH day's
 				# quote the rate is, so a rate carried over from another day stays
 				# visible instead of merely present.
+				# `amount_original` has no twin for the actual side. `actual_original`
+				# existed until ADR-605's fourth review and was write-only: nothing in
+				# the app could put a figure in it, because the actual has exactly two
+				# writers and both produce company currency (the row's own MoneyInput
+				# is bound `:currency="ccy"`, and `landed_actual_from_voucher` returns
+				# the linked document's BASE total). It was still read, though — and a
+				# currency line with 0 in it reads as "a currency is named and nothing
+				# was typed in it", which zeroed the actual of every foreign line.
 				"currency": ccy,
 				"fx_rate": flt(it.get("fx_rate")),
 				"rate_date": str(it.get("rate_date") or "").strip()[:10],
 				"amount_original": amount_ccy,
-				"actual_original": actual_ccy,
 			}
 		)
 	return out
@@ -332,21 +338,25 @@ def _raw_landed_lines(raw) -> list[dict]:
 def _parse_landed(raw) -> list[dict]:
 	"""VALUED SHAPE -- the raw lines with `amount`/`actual` in company currency.
 
-	Derived on every read and never stored (see `_raw_landed_lines`). `amount` and
-	`actual` are OVERWRITTEN with the derived figures, because seven call sites and
-	`api.lcv` sum those keys; the quotation reader made the opposite choice and keeps
-	`amount` as given with the derived figure under `company_amount`. The two
-	conventions are named apart on purpose -- `amount_given` here, `company_amount`
-	there -- so no reader can mistake one module's `amount` for the other's. Both call
-	`line_value`, so they cannot disagree about what a line is worth.
+	Derived on every read and never stored (see `_raw_landed_lines`). `amount` is
+	OVERWRITTEN with the derived figure, because seven call sites and `api.lcv` sum
+	that key; the quotation reader made the opposite choice and keeps `amount` as
+	given with the derived figure under `company_amount`. The two conventions are
+	named apart on purpose -- `amount_given` here, `company_amount` there -- so no
+	reader can mistake one module's `amount` for the other's. Both call `line_value`,
+	so they cannot disagree about what a line is worth.
 
-	`amount_given` / `actual_given` carry the figures the officer actually typed.
-	ADR-605 third review, P0: without them a read handed the editor a 0.0 for a line
-	it could not value, the editor bound that into its own row and its save filter
-	then read the same 0.0 -- so reopening a half-switched line and pressing Save
-	DELETED it, and the Purchase Order's landed total silently lost the charge.
-	Storing RAW closed the first hop; this closes the second. A read must hand back
-	something the editor can hand in again unchanged.
+	`actual` is company currency ALREADY and is only rounded here. The two are not
+	symmetrical because their inputs are not: the planned figure can be typed in a
+	foreign currency, the actual cannot (ADR-605 fourth review, P1, below).
+
+	`amount_given` carries the figure the officer actually typed. ADR-605 third
+	review, P0: without it a read handed the editor a 0.0 for a line it could not
+	value, the editor bound that into its own row and its save filter then read the
+	same 0.0 -- so reopening a half-switched line and pressing Save DELETED it, and
+	the Purchase Order's landed total silently lost the charge. Storing RAW closed
+	the first hop; this closes the second. A read must hand back something the editor
+	can hand in again unchanged.
 	"""
 	out = _raw_landed_lines(raw)
 	for line in out:
@@ -355,10 +365,19 @@ def _parse_landed(raw) -> list[dict]:
 		# here rather than in the raw builder: a stored verdict can only go stale.
 		line["unvalued"] = False
 		line["amount_given"] = line["amount"]
-		line["actual_given"] = line["actual"]
-		# `amount`/`actual` stay the company-currency figures every consumer sums.
-		# Deriving them here — the one chokepoint both reads and writes pass
-		# through — is what stops the two from ever disagreeing.
+		# The actual is ALREADY company currency, on every line, and is never
+		# converted -- ADR-605 fourth review, P1. It has two writers and both produce
+		# a base-currency figure, so there was nothing for a conversion to do; what it
+		# did instead was consult `actual_original`, a key nothing could write, find 0
+		# there and answer 0.0 for every foreign-currency line. The screen went on
+		# printing the officer's figure in its own box while the footer, the deal's
+		# `actual_landed` and the actual P&L behind it all counted nothing -- so a PO
+		# over plan showed an actual UNDER plan, in green. Hence no `actual_given`
+		# twin either: `actual` is the figure as given, and stays that way.
+		line["actual"] = round(flt(line["actual"]), 2)
+		# `amount` stays the company-currency figure every consumer sums. Deriving it
+		# here — the one chokepoint both reads and writes pass through — is what
+		# stops it and the typed `amount_original` from ever disagreeing.
 		# A customs line is excluded on purpose: its amount comes from the CIF
 		# calculator (`applyCustoms`), so converting here would give it a second
 		# writer — and the conversion would be wrong anyway. The ГТД declares the
@@ -381,11 +400,9 @@ def _parse_landed(raw) -> list[dict]:
 		)
 		line["amount"] = amount
 		line["unvalued"] = unvalued
-		# The actual side stays deliberately asymmetric: an actual of nothing is
-		# the ordinary state of a charge not yet invoiced, so it follows the
-		# planned line's verdict rather than raising a second flag of its own.
-		actual, _ = line_value(line["actual"], line["actual_original"], line["currency"], line["fx_rate"])
-		line["actual"] = 0.0 if unvalued else actual
+		# `actual` is deliberately NOT touched here. An unusable rate makes the PLAN
+		# unreadable; the invoice was still paid, and its figure is still company
+		# currency. Zeroing it with the plan understates what was actually spent.
 	return out
 
 

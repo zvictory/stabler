@@ -53,20 +53,20 @@ const load = (name) => new Function(`${extractFunction(name)}\nreturn ${name};`)
 // into `composables/landedLine.js` because this component's own copy read the rate
 // and nothing else, so a line whose currency was picked but whose figure was not
 // yet typed printed "= 0" with a good rate and no warning. `actualPreview` stays
-// local — it is deliberately asymmetric (an un-invoiced actual is the ordinary
-// state of a charge and must not raise a flag), and merging the two would put that
-// warning under every open PO.
+// local, and is NOT a currency rule at all: the actual is company currency at both
+// of its sources — the row's own `MoneyInput` is bound `:currency="ccy"`, and
+// `landed_actual_from_voucher` returns the linked document's BASE total.
 const actualPreview = load("actualPreview");
 const priceLines = load("priceLines");
 
 /** 1 200 USD at 12 800 — the line the officer just added, not yet saved. */
-const FRESH_FOREIGN = { currency: "USD", fx_rate: 12800, amount_original: 1200, amount: null, actual: null, actual_original: null };
+const FRESH_FOREIGN = { currency: "USD", fx_rate: 12800, amount_original: 1200, amount: null, actual: null };
 /** The same line after the server has valued it, then re-typed by the user. */
-const EDITED_FOREIGN = { currency: "USD", fx_rate: 12800, amount_original: 2000, amount: 12800000, actual: null, actual_original: null };
+const EDITED_FOREIGN = { currency: "USD", fx_rate: 12800, amount_original: 2000, amount: 12800000, actual: null };
 /** Currency chosen, no rate yet: not valuable, and not zero either. */
-const UNVALUED = { currency: "USD", fx_rate: 0, amount_original: 1200, amount: null, actual: null, actual_original: null };
+const UNVALUED = { currency: "USD", fx_rate: 0, amount_original: 1200, amount: null, actual: null };
 /** An ordinary company-currency line. */
-const HOME = { currency: "", fx_rate: 0, amount_original: null, amount: 3200000, actual: 3100000, actual_original: null };
+const HOME = { currency: "", fx_rate: 0, amount_original: null, amount: 3200000, actual: 3100000 };
 
 /** USD picked on a line already holding the so'm figure; the CBU rate IS good. */
 const HALF_SWITCHED = {
@@ -75,7 +75,6 @@ const HALF_SWITCHED = {
 	amount_original: 0,
 	amount: 3200000,
 	actual: null,
-	actual_original: null,
 };
 
 describe("a currency picked before the figure is typed", () => {
@@ -149,10 +148,25 @@ describe("the landed-charge footer counts what the rows are showing", () => {
 		expect(priceLines([FRESH_FOREIGN], actualPreview).unvalued).toBe(0);
 	});
 
-	it("cannot value an actual that was recorded in a currency with no rate", () => {
-		const recorded = { ...UNVALUED, actual_original: 900 };
-		expect(actualPreview(recorded)).toBeNull();
-		expect(priceLines([recorded], actualPreview).unvalued).toBe(1);
+	it("counts an invoiced foreign line at the figure its own row prints", () => {
+		// ADR-605 fourth review, P1. The row renders `l.actual` — the officer's box
+		// and the GL pull both write company currency there — while the footer ran
+		// the same line through a currency conversion keyed on `actual_original`,
+		// which no control on this screen has ever written. So the row printed
+		// 15 500 000 and the footer under it printed 0, with no warning, and the
+		// plan-vs-actual colour read GREEN for a PO that is over plan.
+		const invoiced = { ...FRESH_FOREIGN, actual: 15500000 };
+		expect(actualPreview(invoiced)).toBe(15500000);
+		expect(priceLines([invoiced], actualPreview).total).toBe(15500000);
+		expect(priceLines([invoiced], actualPreview).unvalued).toBe(0);
+	});
+
+	it("does not withhold the actual because the PLAN cannot be valued", () => {
+		// The invoice was paid whatever the plan's rate says. Zeroing it here would
+		// understate what was spent on a line already flagged for its plan.
+		const paid = { ...UNVALUED, actual: 15500000 };
+		expect(actualPreview(paid)).toBe(15500000);
+		expect(priceLines([paid], convertedPreview).unvalued).toBe(1);
 	});
 });
 
@@ -166,14 +180,23 @@ describe("the footer's totals are wired to those functions, not to the derived f
 		expect(src).toMatch(/priceLines\(editorLines\.value, actualPreview\)/);
 	});
 
-	it("tells the user what the total left out, on both halves of the footer", () => {
+	it("tells the user what the PLANNED total left out", () => {
 		// A total that is merely CORRECT about what it could value, while silently
-		// dropping what it could not, is the same lie in a quieter voice. Both
-		// halves must surface the count, and severity here is carried by three
-		// codes at once — colour, icon and word — not by colour alone.
-		const warnings = src.match(/v-if="editor(Planned|ActualPriced)\.unvalued"/g) || [];
-		expect(warnings).toHaveLength(2);
-		expect(src).toMatch(/Lines with no exchange rate, not in this total: \{count\}/);
+		// dropping what it could not, is the same lie in a quieter voice. Severity
+		// is carried by three codes at once — colour, icon and word — not by colour.
+		expect(src).toMatch(
+			/v-if="editorPlanned\.unvalued" class="small text-danger"><i class="ti ti-alert-triangle/,
+		);
+	});
+
+	it("makes no such claim about the ACTUAL half, because it has nothing to drop", () => {
+		// ADR-605 fourth review, P1. The actual is company currency at both of its
+		// sources, so `actualPreview` never refuses a line and that count was
+		// structurally zero — a warning that could not fire, standing in for one
+		// that was needed. The figures it was silently omitting were the ones the
+		// conversion zeroed, and the cure was to stop converting.
+		expect(src).not.toMatch(/editorActualPriced\.unvalued/);
+		expect(src).not.toMatch(/Lines with no exchange rate, not in this total/);
 	});
 });
 
@@ -200,12 +223,10 @@ describe("what a read hands the modal is what the modal can hand back", () => {
 		amount: 0,
 		amount_given: 3200000,
 		actual: 0,
-		actual_given: 0,
 		currency: "USD",
 		fx_rate: 12950,
 		rate_date: "2026-09-03",
 		amount_original: 0,
-		actual_original: 0,
 		unvalued: true,
 		vat_recoverable: true,
 		vat_pct: 12,
@@ -229,13 +250,24 @@ describe("what a read hands the modal is what the modal can hand back", () => {
 	});
 
 	it("never sends a derived key back to the server", () => {
-		// `unvalued`, `amount_given` and `actual_given` are verdicts and copies the
-		// read computed. Echoing one into the payload puts it back in the column,
-		// where it can only go stale.
+		// `unvalued` and `amount_given` are a verdict and a copy the read computed.
+		// Echoing one into the payload puts it back in the column, where it can only
+		// go stale. `actual_original` is here for the opposite reason: nothing can
+		// write it, so sending it keeps a key alive that the server once divided by.
 		const sent = savedLine(editorLine(READ_HALF_SWITCHED));
-		for (const derived of ["unvalued", "amount_given", "actual_given"]) {
+		for (const derived of ["unvalued", "amount_given", "actual_given", "actual_original"]) {
 			expect(Object.hasOwn(sent, derived), `saveEditor echoes ${derived}`).toBe(false);
 		}
+	});
+
+	it("hands an invoiced actual straight back, in company currency", () => {
+		// The actual side of the same round trip. `_parse_landed` no longer converts
+		// it, so what the modal reads into its box is what the server stored and what
+		// the next save returns — the fixed point the planned side already has.
+		const read = { ...READ_HALF_SWITCHED, amount_original: 1200, actual: 15500000, unvalued: false };
+		const row = editorLine(read);
+		expect(row.actual).toBe(15500000);
+		expect(savedLine(row).actual).toBe(15500000);
 	});
 
 	it("leaves an ordinary converted line alone", () => {
@@ -287,9 +319,7 @@ describe("the modal names the remedy the line actually needs", () => {
 
 	it("does not tell the planned footer's count that a rate is missing", () => {
 		// The PLANNED footer counts whatever `convertedPreview` refuses, which is no
-		// longer only a rate problem. The ACTUAL footer beside it keeps the older
-		// wording on purpose: `actualPreview` returns null ONLY on an unusable rate.
+		// longer only a rate problem.
 		expect(src).toMatch(/Lines that cannot be valued, not in this total: \{count\}[^]*?editorPlanned\.unvalued/);
-		expect(src).toMatch(/Lines with no exchange rate, not in this total: \{count\}[^]*?editorActualPriced\.unvalued/);
 	});
 });

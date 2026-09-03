@@ -6615,7 +6615,6 @@ This invitation reaches {countries} country(ies). On its own it cannot satisfy t
 "Everyone asked so far is in {countries} country(ies). More rounds, or a quotation attached from elsewhere, are what change that.",Hozirgacha so'ralganlarning hammasi {countries} ta davlatda. Buni faqat yangi bosqichlar yoki boshqa joydan biriktirilgan taklif o'zgartiradi.
 {count} of the vendors asked has no country on file and counts toward no country.,So'ralgan yetkazib beruvchilardan {count} tasining davlati kiritilmagan va hech qaysi davlatga hisoblanmaydi.
 "Lines that cannot be valued, not in this total: {count}","Baholab bo'lmaydigan qatorlar, bu summaga kirmaydi: {count}"
-"Lines with no exchange rate, not in this total: {count}","Valyuta kursi yo'q qatorlar, bu jamiga kirmaydi: {count}"
 Quotation date,Taklif sanasi
 The currency list could not be loaded — only your company's currency is available.,Valyutalar ro'yxatini yuklab bo'lmadi — faqat kompaniyangiz valyutasi mavjud.
 Handled by the {role} role.,«{role}» roli tomonidan boshqariladi.

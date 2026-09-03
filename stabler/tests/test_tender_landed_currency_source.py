@@ -35,21 +35,30 @@ def _read() -> str:
 		return f.read()
 
 
-def _func_body(src: str, name: str) -> str:
+def _func_body(src: str, name: str, code_only: bool = False) -> str:
 	m = re.search(rf"^def {name}\(", src, re.M)
 	assert m, f"function {name} not found"
 	tail = src[m.start() :]
 	nxt = re.search(r"\n(?:@frappe\.whitelist\(\)|def )", tail[1:])
-	return tail[: nxt.start() + 1] if nxt else tail
+	body = tail[: nxt.start() + 1] if nxt else tail
+	if not code_only:
+		return body
+	# Every assertion that BANS a spelling has to look past the prose, or it passes
+	# the moment someone EXPLAINS the mistake in a comment. Both functions below now
+	# carry a comment naming `actual_original` and saying why it is gone -- against
+	# the raw text, `assertNotIn("actual_original", ...)` fails on that explanation
+	# and would have passed on the field itself if the comment were deleted.
+	body = re.sub(r'""".*?"""', "", body, flags=re.S)
+	return "\n".join(line.split("#", 1)[0] for line in body.splitlines())
 
 
 class TestParseLandedCarriesTheQuote(unittest.TestCase):
 	def setUp(self):
-		self.body = _func_body(_read(), "_parse_landed")
+		self.body = _func_body(_read(), "_parse_landed", code_only=True)
 		# ADR-605 second review, P0: the line's SHAPE now lives in the raw builder
 		# and only the valuation in the reader, because the save path stores the
 		# first and must never store the second.
-		self.raw = _func_body(_read(), "_raw_landed_lines")
+		self.raw = _func_body(_read(), "_raw_landed_lines", code_only=True)
 
 	def test_round_trips_the_three_quote_fields(self):
 		# Drop any one and the line still renders, but its provenance is gone:
@@ -59,7 +68,21 @@ class TestParseLandedCarriesTheQuote(unittest.TestCase):
 
 	def test_keeps_the_typed_original_beside_the_converted_figure(self):
 		self.assertIn("amount_original", self.raw)
-		self.assertIn("actual_original", self.raw)
+
+	def test_the_actual_has_no_such_original(self):
+		"""ADR-605 fourth review, P1. `actual_original` was write-only and was read.
+
+		The planned figure can be typed in a foreign currency, so `amount_original`
+		earns its place. The actual cannot: the row's box is bound to the company
+		currency and the GL pull returns a base total, so nothing on any screen could
+		ever put a figure in `actual_original` -- while `_parse_landed` went on
+		dividing the actual by whether it held one, and zeroed every foreign line.
+
+		WHAT WOULD MAKE THIS FAIL: re-adding the field without adding a control that
+		writes it. A key only the reader believes in is worse than no key at all.
+		"""
+		self.assertNotIn("actual_original", self.raw)
+		self.assertNotIn("actual_original", self.body)
 
 	def test_the_raw_builder_values_nothing(self):
 		"""The whole point of the split: the shape that is STORED is never valued.

@@ -205,12 +205,12 @@ async function openEditor(card) {
 // landed total with no message at all.
 function editorLine(c) {
 	return {
-		type: c.type || "other", label: c.label || "", amount: c.amount_given || 0, actual: c.actual_given || null,
+		type: c.type || "other", label: c.label || "", amount: c.amount_given || 0, actual: c.actual || null,
 		tnved: c.tnved || "", supplier: c.supplier || "", supplier_name: c.supplier_name || "",
 		cif: c.cif || null, duty_pct: c.duty_pct || null, vat_pct: c.vat_pct || 12, excise_pct: c.excise_pct || 0,
 		vat_recoverable: c.vat_recoverable !== false, rate_source: "",
 		currency: c.currency || "", fx_rate: c.fx_rate || 0, rate_date: c.rate_date || "",
-		amount_original: c.amount_original || null, actual_original: c.actual_original || null, fx_source: "",
+		amount_original: c.amount_original || null, fx_source: "",
 		actual_voucher_type: c.actual_voucher_type || "", actual_voucher: c.actual_voucher || "", actual_label: c.actual_voucher ? c.actual_voucher : "",
 	};
 }
@@ -223,7 +223,7 @@ function savedLine(l) {
 		vat_recoverable: l.vat_recoverable !== false,
 		actual_voucher_type: l.actual_voucher_type || "", actual_voucher: l.actual_voucher || "",
 		currency: l.currency || "", fx_rate: Number(l.fx_rate) || 0, rate_date: l.rate_date || "",
-		amount_original: Number(l.amount_original) || 0, actual_original: Number(l.actual_original) || 0,
+		amount_original: Number(l.amount_original) || 0,
 	};
 }
 
@@ -236,7 +236,7 @@ function isSendable(l) {
 }
 
 function addLine() {
-	editorLines.value.push({ type: "transport", label: "", amount: null, actual: null, tnved: "", supplier: "", supplier_name: "", cif: null, duty_pct: null, vat_pct: 12, excise_pct: 0, vat_recoverable: true, rate_source: "", currency: "", fx_rate: 0, rate_date: "", amount_original: null, actual_original: null, fx_source: "", actual_voucher_type: "", actual_voucher: "", actual_label: "" });
+	editorLines.value.push({ type: "transport", label: "", amount: null, actual: null, tnved: "", supplier: "", supplier_name: "", cif: null, duty_pct: null, vat_pct: 12, excise_pct: 0, vat_recoverable: true, rate_source: "", currency: "", fx_rate: 0, rate_date: "", amount_original: null, fx_source: "", actual_voucher_type: "", actual_voucher: "", actual_label: "" });
 }
 function removeLine(i) {
 	editorLines.value.splice(i, 1);
@@ -263,18 +263,16 @@ function customsCalc(l) {
 function applyCustoms(l) {
 	l.amount = Math.round(customsCalc(l).capitalized);
 }
-// The actual side of the same rule. It is deliberately NOT symmetrical with the
-// planned one: a planned line carrying a currency and no rate is an incomplete
-// plan and must be flagged, but an actual of nothing is the ordinary state of a
-// charge that has not been invoiced yet — flagging it would park a permanent
-// warning under every open PO.
+// The actual side is NOT the planned rule with different fields — it is not a
+// currency rule at all. The actual has exactly two writers and both produce company
+// currency: this row's own MoneyInput, bound `:currency="ccy"`, and the GL pull,
+// which returns the linked document's BASE total. So there is nothing to convert
+// and nothing that can fail to convert; it never returns null, and the footer under
+// it needs no unvalued count. ADR-605 fourth review, P1: converting it anyway read
+// an `actual_original` no control could write, found 0, and reported every invoiced
+// foreign line as costing nothing.
 function actualPreview(l) {
-	if (!l.currency) return Number(l.actual) || 0;
-	const original = Number(l.actual_original) || 0;
-	if (!original) return 0;
-	const rate = Number(l.fx_rate) || 0;
-	if (rate <= 0) return null;
-	return Math.round(original * rate * 100) / 100;
+	return Number(l.actual) || 0;
 }
 
 // `null` means the line cannot be valued at all. Counting those is the whole
@@ -315,7 +313,7 @@ function onChargeCurrency(l) {
 	l.fx_rate = 0;
 	l.rate_date = "";
 	l.fx_source = "";
-	if (!l.currency) { l.amount_original = null; l.actual_original = null; }
+	if (!l.currency) { l.amount_original = null; }
 	else fetchChargeRate(l);
 }
 // WP-T2: pull duty/excise/VAT from the real HS Duty Rate engine when a ТН ВЭД
@@ -803,7 +801,6 @@ watch(() => route.query.deal, (d) => { if (d && d !== deal.value) { deal.value =
 									<div class="d-flex justify-content-between fw-bold"><span>{{ t("Actual landed") }}</span>
 										<span class="font-monospace" :class="editorActual && editorActualLanded > editorLanded ? 'text-red' : (editorActual ? 'text-green' : '')">{{ formatMoney(editorActualLanded, ccy, user.language) }}</span>
 									</div>
-									<div v-if="editorActualPriced.unvalued" class="small text-danger"><i class="ti ti-alert-triangle me-1"></i>{{ t("Lines with no exchange rate, not in this total: {count}", { count: editorActualPriced.unvalued }) }}</div>
 								</div>
 							</div>
 						</div>

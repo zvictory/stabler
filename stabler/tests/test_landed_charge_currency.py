@@ -26,6 +26,7 @@ from __future__ import annotations
 
 import importlib
 import json
+import sys
 import types
 import unittest
 
@@ -135,7 +136,6 @@ _PO_FOREIGN = {
 	"fx_rate": 12_800.0,
 	"rate_date": "2026-09-01",
 	"amount_original": 1200.0,
-	"actual_original": 0.0,
 }
 # The same charge as `_PO_FOREIGN` saved TODAY: nothing was typed in company
 # currency, so `amount` is 0 and the figure lives in `amount_original` alone. Reading
@@ -149,7 +149,6 @@ _PO_FOREIGN_FRESH = {
 	"fx_rate": 12_800.0,
 	"rate_date": "2026-09-01",
 	"amount_original": 1200.0,
-	"actual_original": 0.0,
 }
 # A PO line whose rate no longer values it. `amount` was a real conversion when it
 # was written, but nobody reading the row today can reproduce it.
@@ -162,7 +161,6 @@ _STALE_PO = {
 	"fx_rate": 0.0,
 	"rate_date": "",
 	"amount_original": 1200.0,
-	"actual_original": 0.0,
 }
 # A customs line carries no currency by construction: `save_po_landed_charges`
 # refuses the combination, because the ГТД declares the customs value in company
@@ -453,7 +451,20 @@ _HALF_SWITCHED_PO = {
 	"fx_rate": 12_950.0,
 	"rate_date": "2026-09-03",
 	"amount_original": 0.0,
-	"actual_original": 0.0,
+}
+#: A foreign-currency freight line whose invoice HAS arrived: 1 200 USD planned at
+#: 12 800, and 15 500 000 so'm actually paid. The actual is company currency by
+#: construction -- the editor's box is `:currency="ccy"` and `landed_actual_from_
+#: voucher` returns only base-currency totals -- so it is never converted.
+_PO_FOREIGN_INVOICED = {
+	"type": "transport",
+	"label": "Freight",
+	"amount": 0.0,
+	"actual": 15_500_000.0,
+	"currency": "USD",
+	"fx_rate": 12_800.0,
+	"rate_date": "2026-09-01",
+	"amount_original": 1200.0,
 }
 
 
@@ -493,7 +504,7 @@ class TestThePoRoundTripIsAFixedPoint(unittest.TestCase):
 			"type": line["type"],
 			"label": line["label"],
 			"amount": line["amount_given"],
-			"actual": line["actual_given"],
+			"actual": line["actual"],
 			"tnved": line["tnved"],
 			"supplier": line["supplier"],
 			"supplier_name": line["supplier_name"],
@@ -508,7 +519,6 @@ class TestThePoRoundTripIsAFixedPoint(unittest.TestCase):
 			"fx_rate": line["fx_rate"],
 			"rate_date": line["rate_date"],
 			"amount_original": line["amount_original"],
-			"actual_original": line["actual_original"],
 		}
 
 	def test_a_reopened_half_switched_line_still_carries_the_officers_figure(self):
@@ -559,3 +569,110 @@ class TestThePoRoundTripIsAFixedPoint(unittest.TestCase):
 		stored = json.loads(self._store([_HALF_SWITCHED_PO]))[0]
 		for derived in ("unvalued", "amount_given", "actual_given"):
 			self.assertNotIn(derived, stored, f"a derived {derived} reached the column")
+
+	def test_an_invoiced_foreign_line_keeps_its_actual_across_the_round_trip(self):
+		"""ADR-605 fourth review, P1. The actual has to survive both hops too.
+
+		The planned side was fixed by handing the editor `amount_given`; the actual
+		side needed the opposite fix, because `actual` was being CONVERTED on read
+		against an `actual_original` that no control has ever written. A reopened
+		invoiced line therefore printed the officer's figure in its box while the
+		footer under it printed nothing.
+		"""
+		first = self._store([_PO_FOREIGN_INVOICED])
+		self.assertEqual(json.loads(first)[0]["actual"], 15_500_000.0, "the save lost the actual")
+		read = self.tender._parse_landed(first)
+		self.assertEqual(read[0]["actual"], 15_500_000.0, "the read zeroed the actual")
+		self.assertEqual(self._store([self._editor_would_send(read[0])]), first)
+
+	def test_the_stored_shape_carries_no_currency_field_for_the_actual(self):
+		"""`actual_original` was write-only and load-bearing in the wrong direction.
+
+		Introduced with the currency work, it never got an input control: the manual
+		box is `v-model="l.actual"` at the company currency and `landed_actual_from_
+		voucher` returns `base_grand_total` / `base_paid_amount` / `total_debit`. So
+		it was 0 on every line, and the read fed that 0 to `line_value`, which reads
+		"a currency is named and nothing was typed in it" and answers 0.0 -- zeroing
+		the actual of EVERY foreign-currency line, silently, in the deal's actual
+		landed cost and its actual profit. A key nothing can write must not be a key
+		something divides by.
+		"""
+		stored = json.loads(self._store([_PO_FOREIGN_INVOICED]))[0]
+		self.assertNotIn("actual_original", stored)
+
+
+class _Row(dict):
+	"""A `frappe._dict`-alike: `_deal_landed_split` reads rows both ways."""
+
+	__getattr__ = dict.__getitem__
+
+	def __init__(self, **kwargs):
+		super().__init__(**kwargs)
+
+
+class TestThePoActualIsAlreadyCompanyCurrency(unittest.TestCase):
+	"""ADR-605 fourth review, P1. The actual is base currency at every source.
+
+	Both writers put a company-currency figure in `actual`: the modal's own
+	`MoneyInput` is bound `:currency="ccy"`, and `landed_actual_from_voucher` pulls
+	the BASE total of the linked Purchase Invoice / Payment Entry / Journal Entry.
+	Converting it is therefore never right, and the conversion that was there
+	answered 0.0 for every currency line -- so a PO over plan showed an actual
+	landed cost UNDER plan, in green.
+	"""
+
+	def setUp(self):
+		self.tender = _load_tender()
+
+	def _read(self, line: dict) -> dict:
+		return self.tender._parse_landed([line])[0]
+
+	def test_a_currency_line_keeps_the_figure_that_was_recorded(self):
+		self.assertEqual(self._read(_PO_FOREIGN_INVOICED)["actual"], 15_500_000.0)
+
+	def test_the_planned_side_of_the_same_line_is_still_converted(self):
+		# The asymmetry is the point, not an oversight: `amount_original` HAS a
+		# control (the row's own foreign-currency box), `actual_original` never did.
+		self.assertEqual(self._read(_PO_FOREIGN_INVOICED)["amount"], 15_360_000.0)
+
+	def test_an_unusable_rate_does_not_take_the_actual_down_with_it(self):
+		# The plan cannot be valued, but the invoice was still paid and its figure is
+		# still company currency. Zeroing it here would understate what was spent.
+		line = dict(_PO_FOREIGN_INVOICED, fx_rate=0.0)
+		read = self._read(line)
+		self.assertTrue(read["unvalued"])
+		self.assertEqual(read["amount"], 0.0)
+		self.assertEqual(read["actual"], 15_500_000.0)
+
+	def test_a_company_currency_line_is_unaffected(self):
+		line = {"type": "transport", "label": "Freight", "amount": 3_200_000, "actual": 3_100_000}
+		self.assertEqual(self._read(line)["actual"], 3_100_000.0)
+
+	def test_the_board_total_the_screen_prints_includes_it(self):
+		"""`po_landed_charges` itself, not a re-implementation of its sum."""
+		stored = json.dumps(self.tender._raw_landed_lines([_PO_FOREIGN_INVOICED]))
+		values = {"company": "Mikas", "custom_landed_charges": stored, "base_grand_total": 100_000_000.0}
+		# `_po_scope` is authorization, not arithmetic — but it is left running rather
+		# than stubbed out, so this test also fails if the read stops being gated.
+		sys.modules["stabler.stabler.doctype.stabler_settings.stabler_settings"].module_map_for = lambda _c: {
+			"tender": 1
+		}
+		self.tender.frappe.db.exists = lambda *_a, **_k: True
+		self.tender.frappe.db.has_column = lambda *_a, **_k: True
+		self.tender.frappe.db.get_value = lambda _dt, _name, field: values.get(field, "UZS")
+		out = self.tender.po_landed_charges("PUR-ORD-0001")
+		self.assertEqual(out["actual_total"], 15_500_000.0)
+		self.assertEqual(out["actual_landed"], 115_500_000.0)
+
+	def test_the_deals_actual_landed_cost_includes_it(self):
+		"""One hop further out: `_deal_landed_split` feeds `_actual_block`'s
+		`actual_landed`, which feeds the actual P&L. A zeroed actual charge there is
+		not a display bug -- it overstates realized profit by the whole amount."""
+		stored = json.dumps(self.tender._raw_landed_lines([_PO_FOREIGN_INVOICED]))
+		row = _Row(name="PUR-ORD-0001", base_grand_total=100_000_000.0, custom_landed_charges=stored)
+		self.tender.frappe.db.has_column = lambda *_a, **_k: True
+		self.tender.frappe.get_list = lambda *_a, **_k: [row]
+		planned, actual, count = self.tender._deal_landed_split("CRM-DEAL-0001", "Mikas")
+		self.assertEqual(count, 1)
+		self.assertEqual(planned, 115_360_000.0)
+		self.assertEqual(actual, 115_500_000.0)

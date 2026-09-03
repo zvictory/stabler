@@ -7009,7 +7009,6 @@ This invitation reaches {countries} country(ies). On its own it cannot satisfy t
 "Everyone asked so far is in {countries} country(ies). More rounds, or a quotation attached from elsewhere, are what change that.","Everyone asked so far is in {countries} country(ies). More rounds, or a quotation attached from elsewhere, are what change that."
 {count} of the vendors asked has no country on file and counts toward no country.,{count} of the vendors asked has no country on file and counts toward no country.
 "Lines that cannot be valued, not in this total: {count}","Lines that cannot be valued, not in this total: {count}"
-"Lines with no exchange rate, not in this total: {count}","Lines with no exchange rate, not in this total: {count}"
 Quotation date,Quotation date
 The currency list could not be loaded — only your company's currency is available.,The currency list could not be loaded — only your company's currency is available.
 Handled by the {role} role.,Handled by the {role} role.
