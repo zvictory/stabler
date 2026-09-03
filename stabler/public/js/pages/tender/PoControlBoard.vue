@@ -13,6 +13,7 @@ import { formatMoney } from "../../composables/money.js";
 import { formatDate, todayIso } from "../../composables/date.js";
 import { t } from "../../composables/i18n.js";
 import { convertedPreview, unvaluedReason } from "../../composables/landedLine.js";
+import { chargeTypeLabel, chargeTypes, loadChargeTypes } from "../../composables/landedChargeTypes.js";
 import { useToast } from "../../composables/useToast.js";
 import { useEscapeBack } from "../../composables/useEscapeBack.js";
 import Typeahead from "../../components/Typeahead.vue";
@@ -47,29 +48,23 @@ const selectedVendor = ref("");
 // before T3, and stays the default. Same shape as remittanceCurrencies.js.
 const CHARGE_CURRENCIES = ["USD", "EUR", "RUB", "CNY", "TRY"];
 
-const CHARGE_TYPES = [
-	{ v: "transport", icon: "ti-truck" },
-	{ v: "customs", icon: "ti-building-bank" },
-	{ v: "certification", icon: "ti-certificate" },
-	{ v: "insurance", icon: "ti-shield" },
-	{ v: "storage", icon: "ti-building-warehouse" },
-	{ v: "declarant", icon: "ti-file-invoice" },
-	{ v: "legal", icon: "ti-scale" },
-	{ v: "broker", icon: "ti-user-dollar" },
-	{ v: "loading", icon: "ti-forklift" },
-	{ v: "bank", icon: "ti-cash" },
-	{ v: "other", icon: "ti-dots" },
-];
-function chargeLabel(v) {
-	return {
-		transport: t("Transport"), customs: t("Customs"), certification: t("Certification"),
-		insurance: t("Insurance"), storage: t("Storage"), declarant: t("Declarant"),
-		legal: t("Legal / lawyer"), broker: t("Broker"),
-		loading: t("Loading / unloading"), bank: t("Bank / transfer"), other: t("Other"),
-	}[v] || v;
-}
+// ADR-606: the TYPES come from the server (`composables/landedChargeTypes.js`) —
+// this component used to carry eleven of its own while the quotation editor
+// carried six different ones for the same costs. What stays here is the
+// iconography, which is a presentation of that list and not a second copy of it:
+// keyed by canonical key, and `landedChargeTypes.spec.js` requires an icon for
+// every key the server ships, so a tenth type cannot render blank.
 function chargeIcon(v) {
-	return (CHARGE_TYPES.find((c) => c.v === v) || { icon: "ti-dots" }).icon;
+	return {
+		transport: "ti-truck", customs: "ti-building-bank", declarant: "ti-file-invoice",
+		certification: "ti-certificate", insurance: "ti-shield", storage: "ti-building-warehouse",
+		bank: "ti-cash", legal: "ti-scale", other: "ti-dots",
+	}[v] || "ti-dots";
+}
+// ADR-606: `other` is the only type that names no cost by itself. Flagged, never
+// blocked — the same stance the unvalued-line warning takes, for the same reason.
+function needsChargeLabel(l) {
+	return l.type === "other" && !String(l.label || "").trim();
 }
 
 async function searchDeals(q) {
@@ -181,7 +176,13 @@ async function openEditor(card) {
 	editorLoading.value = true;
 	editorLines.value = [];
 	try {
-		const r = await call("stabler.api.tender.po_landed_charges", { po: card.name });
+		// The type list travels with the charges: with no list there is nothing to
+		// pick a type from, so a failed fetch must surface here rather than leave
+		// an empty <select> on a row that already holds money.
+		const [r] = await Promise.all([
+			call("stabler.api.tender.po_landed_charges", { po: card.name }),
+			loadChargeTypes(),
+		]);
 		editorBase.value = r?.base_total || 0;
 		editorLines.value = (r?.charges || []).map(editorLine);
 	} catch (err) {
@@ -203,9 +204,16 @@ async function openEditor(card) {
 // Binding that 0.0 put the officer's 3 200 000 so'm off the screen AND made
 // `isSendable` drop the row on the next save, taking the charge out of the PO's
 // landed total with no message at all.
+//
+// ADR-606: the row binds `type_canonical`, not the stored `type`. `broker` and
+// `loading` are stored keys the one list renames to `declarant` and `storage`;
+// binding `type` would leave the <select> with no matching option, so it would
+// show its first one and the next Save would retype the line to `transport`.
+// The stored key stays on disk until the officer saves, and the seven server
+// call sites that group on it keep reading it — see `tender._parse_landed`.
 function editorLine(c) {
 	return {
-		type: c.type || "other", label: c.label || "", amount: c.amount_given || 0, actual: c.actual || null,
+		type: c.type_canonical || c.type || "other", label: c.label || "", amount: c.amount_given || 0, actual: c.actual || null,
 		tnved: c.tnved || "", supplier: c.supplier || "", supplier_name: c.supplier_name || "",
 		cif: c.cif || null, duty_pct: c.duty_pct || null, vat_pct: c.vat_pct || 12, excise_pct: c.excise_pct || 0,
 		vat_recoverable: c.vat_recoverable !== false, rate_source: "",
@@ -622,7 +630,7 @@ watch(() => route.query.deal, (d) => { if (d && d !== deal.value) { deal.value =
 										<div class="input-group input-group-sm">
 											<span class="input-group-text"><i class="ti" :class="chargeIcon(l.type)"></i></span>
 											<select v-model="l.type" class="form-select">
-												<option v-for="ct in CHARGE_TYPES" :key="ct.v" :value="ct.v">{{ chargeLabel(ct.v) }}</option>
+												<option v-for="ct in chargeTypes" :key="ct.key" :value="ct.key">{{ chargeTypeLabel(ct.key) }}</option>
 											</select>
 										</div>
 									</td>
@@ -640,7 +648,12 @@ watch(() => route.query.deal, (d) => { if (d && d !== deal.value) { deal.value =
 											<template #option="{ item }">{{ item.supplier_name || item.name }}</template>
 										</Typeahead>
 									</td>
-									<td><input v-model="l.label" type="text" class="form-control form-control-sm" :placeholder="chargeLabel(l.type)"></td>
+									<td>
+										<input v-model="l.label" type="text" class="form-control form-control-sm" :class="{ 'is-invalid': needsChargeLabel(l) }" :placeholder="chargeTypeLabel(l.type)">
+										<!-- ADR-606: "Other" names no cost on its own. Flagged, not blocked —
+										     the plan still saves, like a line whose rate is missing. -->
+										<div v-if="needsChargeLabel(l)" class="small text-danger mt-1">{{ t("Say what this charge is.") }}</div>
+									</td>
 									<td>
 										<!-- WP-T3: a charge quoted in the forwarder's own currency. A customs
 										     line is excluded — its amount comes from the customs value, which the

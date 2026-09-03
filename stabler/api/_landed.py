@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import json
 
+from stabler.api._landed_charge_types import is_vat_charge_type, resolve_charge_type
 from stabler.stabler.tender_landed_math import line_value
 
 
@@ -87,8 +88,8 @@ def parse_landed_charges(raw_charges) -> tuple[float, list[dict], bool]:
 	"""READ-ONLY derivation: the VALUED SHAPE of every line, and what they add up to.
 
 	Returns (total_landed_amount, clean_charges_list, has_estimate).
-	Tax Rule (IAS 2 §11): Recoverable VAT (charge_type 'VAT' or is_recoverable_vat)
-	is NOT capitalized into landed cost.
+	Tax Rule (IAS 2 §11): Recoverable VAT (a line stored under the type VAT used to
+	be, or is_recoverable_vat) is NOT capitalized into landed cost.
 
 	NOTHING PERSISTS WHAT THIS RETURNS. It is derived fresh on every read, and the
 	write path stores `sanitize_charge_lines`' RAW shape instead -- see
@@ -100,6 +101,13 @@ def parse_landed_charges(raw_charges) -> tuple[float, list[dict], bool]:
 	  `company_amount`     DERIVED: what the line is worth in company currency
 	  `capitalized_amount` DERIVED: `company_amount` unless VAT or unvalued
 	  `unvalued`           DERIVED: whether it could be valued at all
+	  `charge_type_canonical` DERIVED: ADR-606's one list (`_landed_charge_types`)
+	  `charge_type_unmapped`  DERIVED: the text that list did not recognise
+
+	ADR-606. `charge_type` itself is left EXACTLY as stored -- "Freight", "VAT",
+	"Local Delivery" -- and the canonical key sits beside it, because this is a
+	read: rewriting the stored string here would put a derivation where the
+	evidence was, which is the mistake `raw_charge_line` above exists to prevent.
 
 	`amount` and `company_amount` are deliberately two keys and not one. They differ
 	on exactly the lines that matter -- a currency line, where the officer types into
@@ -133,7 +141,12 @@ def parse_landed_charges(raw_charges) -> tuple[float, list[dict], bool]:
 	for c in rows:
 		raw = raw_charge_line(c)
 		charge_type = raw["charge_type"]
-		is_vat = raw["is_recoverable_vat"] or charge_type.upper() in ("VAT", "VALUE ADDED TAX", "НДС")
+		# ADR-606: VAT stopped being a type and became the flag, so the alias
+		# table is what recognises a legacy VAT line now -- and it forces the flag
+		# rather than merely renaming the line, or recoverable input tax would
+		# start capitalizing into the landed cost of the goods.
+		canonical, unmapped = resolve_charge_type(charge_type)
+		is_vat = raw["is_recoverable_vat"] or is_vat_charge_type(charge_type)
 		# One rule, stated once, shared with `tender._parse_landed` — see
 		# `tender_landed_math.line_value`. A PO customs line reaches this function
 		# with a stored amount and no currency, and keeps the figure the ГТД
@@ -154,6 +167,11 @@ def parse_landed_charges(raw_charges) -> tuple[float, list[dict], bool]:
 			dict(
 				raw,
 				is_recoverable_vat=is_vat,
+				# ADR-606: which of the nine types this line is, and -- when the
+				# stored string was none of them -- the words it was written in,
+				# so the editor can keep them instead of showing a bare "Other".
+				charge_type_canonical=canonical,
+				charge_type_unmapped=unmapped,
 				# 0.0 on an unvalued line is not a figure, it is the absence of one;
 				# `unvalued` is what says so. Nothing may sum it without reading that.
 				company_amount=company_amount,

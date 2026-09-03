@@ -20,6 +20,7 @@ import { formatMoney } from "../composables/money.js";
 import { todayIso } from "../composables/date.js";
 import { t } from "../composables/i18n.js";
 import { convertedPreview, unvaluedReason } from "../composables/landedLine.js";
+import { chargeTypeLabel, chargeTypes, loadChargeTypes } from "../composables/landedChargeTypes.js";
 import { useToast } from "../composables/useToast.js";
 import MoneyInput from "./MoneyInput.vue";
 import DateInput from "./DateInput.vue";
@@ -43,38 +44,57 @@ const saving = ref(false);
 const charges = ref([]);
 const baseTotal = ref(props.baseGrandTotal);
 
-const CHARGE_TYPES = [
-	{ value: "Freight", label: t("Freight & Logistics") },
-	{ value: "Customs Duty", label: t("Customs Duty & Tariff") },
-	{ value: "Handling & Terminal", label: t("Handling & Terminal Fees") },
-	{ value: "Insurance", label: t("Cargo Insurance") },
-	{ value: "VAT", label: t("Import VAT (Recoverable)") },
-	{ value: "Other", label: t("Other Charge") },
-];
-// The same list the PO landed editor offers (PoControlBoard.vue:47) — a forwarder
-// or a declarant quotes in one of these, and an empty pick means company currency.
+// The currencies a landed charge is realistically quoted in for an Uzbek
+// importer. The empty option is company currency — which is every line stored
+// before ADR-605, and stays the default. Same shape as remittanceCurrencies.js.
 const CHARGE_CURRENCIES = ["USD", "EUR", "RUB", "CNY", "TRY"];
+
+// ADR-606. A stored line names its type in whatever spelling its era used
+// ("Freight", "VAT", or free text like "Local Delivery"); the server resolves it
+// to one of the nine and says so in `charge_type_canonical`. Reading THAT is what
+// puts a 2025 quotation and a 2026 purchase order on the same option.
+//
+// Named rather than inlined in `load()` so it can be exercised —
+// `landedChargeTypes.spec.js` composes it, the way `PoControlBoard`'s
+// `editorLine` is composed.
+function loadedLine(c) {
+	return {
+		charge_type: c.charge_type_canonical || "transport",
+		// An unrecognised type is the officer's own words. The server hands them
+		// back rather than swallowing them into "Other"; they belong in the box
+		// that holds words, and only when it is empty.
+		description: c.description || c.charge_type_unmapped || "",
+		amount: Number(c.amount || 0),
+		currency: c.currency || "",
+		fx_rate: Number(c.fx_rate || 0),
+		rate_date: c.rate_date || "",
+		amount_original: c.amount_original == null ? null : Number(c.amount_original),
+		fx_source: "",
+		is_recoverable_vat: Boolean(c.is_recoverable_vat),
+	};
+}
+
+// ADR-606: `other` is the only type that names no cost by itself. Flagged, never
+// blocked — the same stance the unvalued-line warning takes, for the same reason.
+function needsChargeLabel(line) {
+	return line.charge_type === "other" && !String(line.description || "").trim();
+}
 
 async function load() {
 	if (!props.show || !props.quotationName) return;
 	loading.value = true;
 	try {
-		const res = await call("stabler.api.sourcing.get_quotation_landed", {
-			quotation: props.quotationName,
-			company: activeCompany.value,
-		});
+		const [res] = await Promise.all([
+			call("stabler.api.sourcing.get_quotation_landed", {
+				quotation: props.quotationName,
+				company: activeCompany.value,
+			}),
+			// In the same try as the charges: with no list there is nothing to pick
+			// a type from, so a failed fetch must surface, not leave an empty select.
+			loadChargeTypes(),
+		]);
 		baseTotal.value = res.base_grand_total || props.baseGrandTotal;
-		charges.value = (res.charges || []).map((c) => ({
-			charge_type: c.charge_type || "Freight",
-			description: c.description || "",
-			amount: Number(c.amount || 0),
-			currency: c.currency || "",
-			fx_rate: Number(c.fx_rate || 0),
-			rate_date: c.rate_date || "",
-			amount_original: c.amount_original == null ? null : Number(c.amount_original),
-			fx_source: "",
-			is_recoverable_vat: Boolean(c.is_recoverable_vat),
-		}));
+		charges.value = (res.charges || []).map(loadedLine);
 		if (!charges.value.length) {
 			addChargeLine();
 		}
@@ -89,7 +109,7 @@ watch([() => props.show, () => props.quotationName], load, { immediate: true });
 
 function addChargeLine() {
 	charges.value.push({
-		charge_type: "Freight",
+		charge_type: "transport",
 		description: "",
 		amount: 0,
 		currency: "",
@@ -105,12 +125,6 @@ function removeChargeLine(idx) {
 	charges.value.splice(idx, 1);
 }
 
-function onTypeChange(line) {
-	if (line.charge_type === "VAT") {
-		line.is_recoverable_vat = true;
-	}
-}
-
 // `null` means the line cannot be valued at all. Counting those is the whole
 // point: adding them as zero is how a total silently shrinks.
 function priceLines(lines) {
@@ -121,7 +135,10 @@ function priceLines(lines) {
 		if (value === null) unvalued += 1;
 		// IAS 2 §11 and the currency rule are independent: a VAT line is still
 		// converted for display, it just never reaches the capitalized total.
-		else if (!(line.is_recoverable_vat || line.charge_type === "VAT")) total += value;
+		// ADR-606: the flag is the whole rule now — VAT stopped being a type, and
+		// the server turns the flag ON for every line that was stored as one, so
+		// a legacy VAT line arrives here with the checkbox already ticked.
+		else if (!line.is_recoverable_vat) total += value;
 	}
 	return { total, unvalued };
 }
@@ -215,7 +232,7 @@ async function save() {
 				currency: c.currency || "",
 				fx_rate: Number(c.fx_rate) || 0,
 				rate_date: c.rate_date || "",
-				is_recoverable_vat: c.is_recoverable_vat || c.charge_type === "VAT",
+				is_recoverable_vat: Boolean(c.is_recoverable_vat),
 			}));
 
 		await call("stabler.api.sourcing.update_quotation_landed", {
@@ -303,9 +320,9 @@ async function save() {
 								<tbody>
 									<tr v-for="(line, idx) in charges" :key="idx">
 										<td>
-											<select v-model="line.charge_type" class="form-select form-select-sm" @change="onTypeChange(line)">
-												<option v-for="opt in CHARGE_TYPES" :key="opt.value" :value="opt.value">
-													{{ opt.label }}
+											<select v-model="line.charge_type" class="form-select form-select-sm">
+												<option v-for="opt in chargeTypes" :key="opt.key" :value="opt.key">
+													{{ chargeTypeLabel(opt.key) }}
 												</option>
 											</select>
 										</td>
@@ -314,8 +331,14 @@ async function save() {
 												v-model="line.description"
 												type="text"
 												class="form-control form-control-sm"
+												:class="{ 'is-invalid': needsChargeLabel(line) }"
 												:placeholder="t('Optional details (e.g. FOB shipping, duty rate)')"
 											/>
+											<!-- ADR-606: "Other" names no cost on its own. Flagged, not
+											     blocked — the save still goes through, like an unvalued line. -->
+											<div v-if="needsChargeLabel(line)" class="small text-danger mt-1">
+												{{ t("Say what this charge is.") }}
+											</div>
 										</td>
 										<td>
 											<!-- ADR-605: typed in the line's OWN currency and shown converted

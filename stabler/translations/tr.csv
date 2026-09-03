@@ -150,6 +150,7 @@ Receivable as of {0},{0} itibarıyla alacak
 Refresh the rate for this date,Bu tarih için kuru yenile
 Remittance engine,Transfer motoru
 Same as your last transfer,Son transferinizdeki gibi
+Say what this charge is.,Bu masrafın ne olduğunu yazın.
 Select at least one Work Order.,En az bir iş emri seçin.
 Select Warehouse,Depo seçin
 Selected work orders: {0},Seçilen iş emri: {0}
@@ -643,7 +644,6 @@ Balanced,Dengeli
 "Balances, advances and payments appear here.",
 "Balances, salaries, advances and payments appear here.","Bakiyeler, maaşlar, avanslar ve ödemeler burada görünür."
 Bank,Banka
-Bank / transfer,Banka / transfer
 Bank account,Banka hesabı
 Bank Account '{0}' not found.,
 Bank account does not belong to company '{0}'.,
@@ -652,6 +652,7 @@ Bank Agreed,Banka (anlaşılan)
 Bank Agreed + Cash Agreed must equal Agreed Total.,Banka + Nakit (anlaşılan) toplam anlaşılan tutara eşit olmalı.
 Bank amount,Banka tutarı
 Bank and cash amounts are not equal — recorded as entered.,
+Bank charges,Banka masrafları
 Bank due,Banka ödemesi
 Bank paid,Banka ödenen
 Bank Payment,Banka Ödemesi
@@ -758,7 +759,6 @@ Boxes × box weight ≠ quantity,Koli × koli ağırlığı ≠ miktar
 Branch,
 Brand,Marka
 Break minutes,
-Broker,Broker
 BRV Multiplier,BRV Çarpanı
 BRV used,Kullanılan BRV
 BRV Used (UZS),Kullanılan BRV (UZS)
@@ -853,7 +853,6 @@ Car / Item,Araç / Kalem
 Car item is required.,Araç kalemi gereklidir.
 Card not recognized,Kart tanınmadı
 Cargo,Kargo
-Cargo Insurance,Kargo Sigortası
 Carrier,Taşıyıcı
 Carrier & Driver,Taşıyıcı ve sürücü
 Carrier / carrier invoice,Taşıyıcı / taşıyıcı faturası
@@ -1394,6 +1393,7 @@ Customer receivables grouped by aging buckets.,
 "Customer, item, trend, and salesperson reports from submitted invoices.",
 Customers,Müşteriler
 Customs,Gümrük
+Customs broker / declarant,Gümrük müşaviri / broker
 Customs charges,Gümrük masrafları
 Customs clearance,Gümrük işlemi
 Customs Clearance Date,Gümrük İşlemleri Tarihi
@@ -1408,7 +1408,7 @@ Customs declaration {name} exists — an official declaration is never deleted f
 Customs Declarations,
 Customs declarations,Gümrük beyannameleri
 Customs declarations pending,Bekleyen gümrük beyannameleri
-Customs Duty & Tariff,Gümrük Vergisi ve Harçlar
+Customs duty,Gümrük vergisi
 Customs fee applied.,Gümrük ücreti uygulandı.
 Customs Fee Multiplier,Gümrük Ücreti Çarpanı
 Customs Fee Override (UZS),Gümrük Ücreti Geçersiz Kılma (UZS)
@@ -2276,8 +2276,8 @@ Freezer pending,Dondurucu bekliyor
 Freezer push,Dondurucular
 Freezer ROI,Dondurucu ROI
 Freight,Navlun
-Freight & Logistics,Navlun ve Lojistik
 Freight & Transport,Navlun & Taşıma
+Freight / transport,Navlun / nakliye
 Freight Booking,Nakliye Rezervasyonu
 Freight booking,Nakliye rezervasyonu
 Freight Booking {0} belongs to another company.,{0} nakliye rezervasyonu başka bir şirkete ait.
@@ -2407,7 +2407,6 @@ half-day,yarım gün
 Half-day & Presence,
 Half-day threshold (min),
 Handling,Elleçleme
-Handling & Terminal Fees,Terminal ve Elleçleme Ücretleri
 Header,Başlık
 Header Details,Başlık bilgileri
 Heavy conditions,
@@ -2468,7 +2467,6 @@ Import Orders,
 Import orders,İthalat siparişleri
 Import outlet locations,Nokta konumlarını içe aktar
 Import Truck,İthalat Kamyonu
-Import VAT (Recoverable),İthalat KDVsi (İndirilecek)
 Import {0} lines,{0} satırı içe aktar
 Imported,İçe aktarıldı
 Imported {0} of {1} lines ({2} duplicates skipped).,{1} satırdan {0} içe aktarıldı ({2} yinelenen atlandı).
@@ -2799,7 +2797,6 @@ List rate,Liste fiyatı
 Load Available Lines,Uygun satırları yükle
 Loaded,Yüklendi
 Loading,Yükleniyor
-Loading / unloading,Yükleme / boşaltma
 Loading FX account balances…,
 Loading imports flow…,İthalat akışı yükleniyor…
 Loading invoices,
@@ -3693,7 +3690,6 @@ OT flag,
 OT method,
 OT threshold (min),
 Other,Diğer
-Other Charge,Diğer Gider
 Other cost,Diğer masraf
 Other costs (before profit),Diğer masraflar (kârdan önce)
 Other expenses,Diğer giderler
@@ -5096,7 +5092,7 @@ Stopped,Durduruldu
 Stop,Durdur
 Stop this Work Order? You can resume it later.,Bu İş Emri durdurulsun mu? Daha sonra devam edebilirsiniz.
 Stop Work Order,İş emrini durdur
-Storage,Depolama
+Storage / terminal / handling,Depolama / terminal / yükleme
 Storefront,Mağaza Vitrini
 Stream,Akış
 Stuck (min),Takılı (dk)
