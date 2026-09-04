@@ -505,3 +505,64 @@ toplam ölçülüyor ve **fark** iddia ediliyor.
 **Değiştirilmedi (sözleşme gereği kayda geçiriliyor):** belge tarafı ekran başına
 ikinci kez hesaplanıyor (§5.2/6); yükleniyor durumu bir spinner satırı (§6); boyut
 sütununda index yok — şema değişikliği P5b'nin dışında, backlog'a.
+
+### 2026-09-04 — inceleme turu 2'nin düzeltmeleri (bir turun geri alınması dâhil)
+
+**(a) Açılış kaydı filtresi KALDIRILDI — 1. turda eklenmesi talimatı orkestratörden
+geldi ve gerekçesi tersti.**
+
+1. turda `_ledger_rows`'a `is_opening = 'No'` yüklemi eklendi ve gerekçesi
+"`financial_statements.py:555` açılış satırlarını düşürür, sitenin K/Z'siyle aynı
+satırları okuyalım" diye yazıldı. Ölçüm bunun tam tersini söylüyor:
+
+- `financial_statements.py:444` ve `:515` — `ignore_opening_entries` varsayılanı **False**.
+- True olduğu iki yer var: **bilanço** dalı (`:453` → `:480`) ve **Mizan**
+  (`trial_balance.py:114`).
+- **Kâr/Zarar tablosu** (`profit_and_loss_statement.py:37-54`) `get_data`'ya yalnız
+  `ignore_closing_entries=True` geçiriyor; `ignore_opening_entries`'e dokunmuyor.
+
+Yani `:555`'teki `if ignore_opening_entries and not ignore_is_opening:` koşulu K/Z
+raporunda **hiç çalışmıyor**: sitenin kendi Kâr/Zarar'ı açılış satırlarını **içeriyor**.
+1. turda eklenen yüklem bu ekranı sitenin K/Z'siyle uyumlu hâle getirmiyordu —
+tam tersine, **ondan ayırıyordu**; docstring'in iddia ettiği şeyin zıddı.
+
+Yüklem ve `Accounts Settings.ignore_is_opening_check_for_reporting` okuması tamamen
+kaldırıldı. Satır kümesi artık **Kâr/Zarar tablosunun** kümesi, Mizan'ınki değil.
+
+**Bu kaydın amacı budur.** Yanlış iddia `1043cf1` commit mesajında da duruyor ve orada
+kalacak — tarih yeniden yazılmaz; düzeltme burasıdır. Talimatı veren orkestratördü,
+uygulayıcı değil; ama iddiayı ERPNext kaynağına karşı doğrulamadan docstring'e yazmak
+uygulayıcının payıdır. İkinci tur kaynağı okudu ve yakaladı.
+
+**(b) Finance book filtresi EKLENDİ** (`AND (g.finance_book IS NULL OR g.finance_book = '')`).
+`financial_statements.py:626-632` — bu `else` kolu **korumasız**, yani K/Z her koşuda
+uyguluyor; finance-book filtresi verilmediğinde `cstr(filters.finance_book)` boş
+dizeye indiğinden koşul aynen yukarıdaki yükleme iniyor. İkinci bir defter tutan bir
+sitede o satırlar aksi hâlde olağan satırların yanına toplanır ve tender **iki defteri
+birden** rapor ederdi.
+
+Kalan üç filtre ve hepsinin sahibi: iptal (`is_cancelled = 0`), kapanış fişi
+(`:596-598`), finance book (`:626-632`). Üçü de K/Z'nin; hiçbiri icat değil.
+
+**(c) Bench testi yeni gerçeğe göre yazıldı.** `TestLedgerFilters` artık dört satır
+kuruyor: PCV geliri (DIŞARIDA), finance-book gideri (DIŞARIDA), açılış gideri
+(**İÇERİDE** — `flags.from_repost` ile yazılıyor, çünkü `gl_entry.py::check_pl_account`
+olağan yolda K/Z hesabına açılış satırı yazdırmıyor; repost/veri göçü tek yol) ve
+olağan gider (İÇERİDE). Üç mutasyon, üç kırmızı:
+
+- kapanış yüklemi silindi → `9000000.0 != 0.0` (yılın kapanan geliri tender'ın geliri oldu);
+- finance-book yüklemi silindi → `9000321.0 != 5000321.0`;
+- `is_opening = 'No'` yüklemi **yeniden eklendi** → `321.0 != 5000321.0`. Üçüncüsü
+  geri alma işlemini çivileyen testtir: filtreyi tekrar ekleyen biri kırmızı görür.
+
+**(d) Spec çivisi.** `loadLedger`'ın girişte `ledgerFailed.value = false` yaptığı
+iddiası eklendi. İnceleyen ölçtü: o satırı silmek 21 spec'in hepsini yeşil bırakıyordu,
+oysa `v-if="ledgerFailed"` tabloyu çizen `v-else-if="ledger"`'a üstün geldiği için
+**başarılı bir Retry** rakamları yükleyip uyarı bandosunu üstlerinde bırakıyordu —
+oturum boyunca. Silme mutasyonu artık tam olarak bu testi kırmızıya çeviriyor.
+Kırmızı satır: `expected 'function loadLedger() {…' to match /ledgerFailed\.value\s*=\s*false/`,
+ve yalnız o test düşüyor — kapatılan boşluk tam olarak bu.
+
+**Bu turun kabul ölçütleri.** `make check` yeşil; bench modülü 9 test, skip yok;
+`stabler.tests.test_tender_gl` 25 test (saf katman bu turda değişmedi — kural değişikliği
+yok, yalnız hangi SATIRLARIN okunduğu değişti, ki o da `tender_gl.py`'de yaşıyor).
