@@ -710,3 +710,31 @@ yeşil `Ran 9 tests in 4.640s OK`; kırmızı 1 ve 2 aynı iki sayıyla, mutasyo
 öncesi ve sonrası aynı. Dosyalar git dışında, `.worktrees/p5b-evidence-2026-09-04/` (gitignore'lu, yerel):
 `provenance.txt`, `green.log`, `red1.log`, `red2.log`, `red*_mutation.diff`, `orphans_*.json`, ayrıca
 `stabler` sitesi envanteri ve çalıştırılmamış temizlik önerisi.
+
+### 2026-09-04 — yön (2): orkestratör iki P2'yi kapattı, kırmızı-önce
+
+**(g) Zafar'ın kararı ve düzeltmeler.** Zafar yol (2)'yi seçti: iki P2'yi orkestratör kapatır, sonra
+`make test-bench` ve push. Değişen tek dosya `stabler/tests/test_tender_gl_bench.py`:
+
+- **`exists` koruması.** `TestLedgerFilters.setUpClass` artık `ADR609 P5B Default Book` varsa önce
+  şirketin `default_finance_book`'u ona işaret ediyorsa NULL'a çeker, sonra `force=True` ile siler ve
+  yeniden yaratır — modülün kendi emsali `test_tender_dimension_bench.py:828-831`. Kırmızı doğru sebeple:
+  `genesis-test.local`'a modülün kendi adıyla bayat bir Finance Book satırı konuldu (13:36), korumasız
+  `a3d45a3` koşuldu: `Ran 8 tests … FAILED (errors=1)`, `Duplicate entry 'ADR609 P5B Default Book' for
+  key 'PRIMARY'`, `DuplicateEntryError`; bayat satır koşudan sonra da yerindeydi. Korumalı kod aynı bayat
+  satıra karşı: `Ran 9 tests in 4.925s OK`; sonrasında Finance Book listesi boş,
+  `_Test Company.default_finance_book` NULL, yetim sayımı 44 — koruma bayat satırı tüketti, kendi satırını
+  da temizledi. Loglar `.worktrees/p5b-evidence-2026-09-04/` altında (`red3_stale_book_unguarded.log`,
+  `green_guarded_stale_row.log`).
+- **Yorum.** `:406-408`'deki "deleting a Finance Book the company still points at raises
+  `LinkExistsError`" kaldırıldı; doğru gerekçe yazıldı: geri yükleme en son kaydedilir ki LIFO onu defter
+  satırı silinmeden ve `_Fixture`'ın tek commit'inden önce çalıştırsın; `force=True` bağ denetimini atlar
+  (`frappe/model/delete_doc.py:170-173`), sıralama hata fırlatmakla ilgili değil. Aynı yanlış cümle üçüncü
+  turun (b) paragrafında ("ters sırada `LinkExistsError`") ve `30af816`'nın mesajında duruyor; ikisi de
+  tarih, bu satır düzeltmedir.
+- **Orkestratörün kendi düzeltmesi.** Bu dilim boyunca "test-bench kilidi boş" derken repo kökündeki yolu
+  yokladım; kilit `Makefile:304`'e göre `$(LOCAL_BENCH)/.stabler-test-bench.lock`. Doğru yol 13:36'dan
+  itibaren ölçülüyor; `bench.log`'a göre eşzamanlı bir süpürme hiç olmadı — iddia ölçülmemişti, zararsızdı.
+
+Kapılar: frappe-free `Ran 25 tests … OK`, vitest `Tests 21 passed`, `git diff --check` temiz; `make check`
+bu dosyanın commit'inden önce koşuldu, satırları commit mesajında.

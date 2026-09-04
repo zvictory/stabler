@@ -399,13 +399,21 @@ class TestLedgerFilters(_LedgerFixture):
 		# no default book the P&L's two arms select the same rows, so the wrong arm
 		# can be copied and every test still passes. The fixture supplies the
 		# difference the site does not have.
-		book = frappe.get_doc({"doctype": "Finance Book", "finance_book_name": "ADR609 P5B Default Book"})
+		book_name = "ADR609 P5B Default Book"
+		if frappe.db.exists("Finance Book", book_name):
+			# A previous run that died between the insert and its cleanup. The name is
+			# this module's own, so removing it is finishing that run's rollback — the
+			# company pointer first, so the restore below captures the true prior value.
+			if frappe.db.get_value("Company", cls.company, "default_finance_book") == book_name:
+				frappe.db.set_value("Company", cls.company, "default_finance_book", None)
+			frappe.delete_doc("Finance Book", book_name, force=True, ignore_permissions=True)
+		book = frappe.get_doc({"doctype": "Finance Book", "finance_book_name": book_name})
 		book.flags.ignore_permissions = True
 		book.insert()
 		cls.default_book = cls._track("Finance Book", book.name)
-		# Registered AFTER the delete, so LIFO restores the company FIRST: deleting a
-		# Finance Book the company still points at raises `LinkExistsError`. Both run
-		# before `_Fixture`'s single commit, so the committed company is the original.
+		# Registered AFTER the delete, so LIFO runs the restore FIRST — before the book
+		# row goes and before `_Fixture`'s single commit — so the committed company is
+		# the original. (`force=True` skips link checks; the order is not about errors.)
 		cls.addClassCleanup(
 			frappe.db.set_value,
 			"Company",
