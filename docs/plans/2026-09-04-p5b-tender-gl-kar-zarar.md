@@ -438,3 +438,70 @@ ya da kodun sözleşmeyle çeliştiği ölçümlerdir (Rule 1: kod gerçektir).
   ekleyip geri aldı; `git status` ile dosyanın el değmemiş olduğu doğrulandı).
 - `npx vitest run … bidPricingLedger.spec.js`: `Tests 21 passed (21)`,
   21 mutasyonun 21'i kırmızı görüldü.
+
+### 2026-09-04 — inceleme turu 1'in düzeltmeleri
+
+**P1 — sözleşme düzeltmesi (§5.2/4 ve §7).** Dondurulmuş sözleşme `is_cancelled = 0`'ı
+**tek** filtre olarak adlandırıyor. Eksik: ERPNext'in kendi K/Z okuyucusunun dışladığı
+iki satır türü tender'ın K/Z'sine giriyordu.
+
+- **Period Closing Voucher.** Mali yıl kapanışı her K/Z bakiyesinin tersini geçmiş
+  yıllar kârına yazar ve `update_default_dimensions`
+  (`erpnext/accounts/doctype/period_closing_voucher/period_closing_voucher.py:264`)
+  **her** muhasebe boyutunu o satırlara damgalar — P5a boyut yaptığı için tender dâhil.
+  Naif okumada kapanmış bir tender'ın **her kovası ~0'a** iner ve dört mutabakat
+  farkının hepsi belge tarafının negatifi olur. Ekranda bozuk görünen hiçbir şey yok;
+  tender sadece "hiç kazanmadım, hiç harcamadım" der.
+- **Açılış kaydı.** `financial_statements.py:555` (`is_opening == "No"`), site
+  `Accounts Settings.ignore_is_opening_check_for_reporting`'i açmadıysa.
+
+Her iki yüklem de `erpnext/accounts/report/financial_statements.py`'den **kopyalandı**,
+icat edilmedi (`:598` kapanış, `:547/555` açılış). Gerekçe: kritik hata bu ekranla
+sitenin kendi Kâr/Zarar raporunun **aynı satırlar hakkında** anlaşmazlığa düşmesidir;
+o noktada ikisine de güvenilemez ve hangisinin yanlış olduğunu söyleyen hiçbir şey yoktur.
+
+Testi yazarken ölçülen, kayda değer bir gerçek: **olağan yazma yolunda ERPNext K/Z
+hesabına açılış satırı zaten yazdırmıyor** — `gl_entry.py::check_pl_account`,
+`is_opening = "Yes"` + `report_type = "Profit and Loss"` için throw ediyor. Yani
+açılış yüklemi *canlı bir hatanın* düzeltmesi değil, **derinlemesine savunma**: o
+doğrulamayı atlayan yolları kapatıyor (repost, kapanış fişi, veri göçü) ve okuyucuyu
+ERPNext'in okuyucusuyla aynı satır kümesinde tutuyor. Kapanış yüklemi savunma değil —
+o satırlar gerçek ve bugün tender'ı taşıyorlar.
+
+Test (`TestLedgerFilters`) GL Entry belgelerini doğrudan `general_ledger.make_entry`
+gibi kuruyor; gerçek bir Period Closing Voucher bir `WHERE` yan tümcesini ölçmek için
+**sitenin mali yılını kapatırdı**. İki fikstür ayrıntısı zorunlu çıktı:
+`voucher_no` bir Dynamic Link olduğu için `flags.ignore_links`, ve açılış satırı için
+`flags.from_repost` (yukarıdaki `check_pl_account` yüzünden — satırın var olabildiği
+tek yol).
+
+Mutasyon kanıtı — iki yüklem, iki kırmızı:
+`tender_gl.py` kapanış yüklemi silindi → `9000000.0 != 0.0 : the year-end close was
+read as this tender's revenue`; açılış yüklemi silindi → `5000321.0 != 321.0 : an
+opening balance was read as a tender cost`.
+
+**P2 — i18n.** Beş katalogda da ölçülen iki eksik anahtar eklendi:
+"Unsafe dimension fieldname" (P5a kardeşi beş dilde varken bu İngilizce reddediyordu)
+ve "Expense Claim" (tender taşıyabilen bir `voucher_type`; fiş tablosunda çevrilmiş
+altı kardeşinin yanında ham basılacaktı). **"Period Closing Voucher" bilinçli olarak
+eklenmedi** — P1'den sonra o satırlar okuyucuya ulaşmıyor, katalog girdisi ekranın
+tutamayacağı bir söz olurdu.
+
+**P3 — hata bandosu aynı cümleyi iki kez söylüyordu.** `ledgerError` tek başına iki iş
+yapıyordu: *başarısız oldu mu* ve *sunucu ne dedi*. Şablon jenerik cümleyi zaten
+detayın üstünde bastığı için, detayın aynı cümleye düşmesi `message` taşımayan bir
+hatada (ağ kopması, iptal edilen fetch) cümleyi ikinci kez — bu kez sunucunun kendi
+açıklaması kılığında — bastırıyordu. `ledgerFailed` (boolean) + `ledgerErrorDetail`
+(boşsa hiç render edilmeyen string) olarak ayrıldı. Spec isimlere değil davranışa
+bağlı kaldı: jenerik cümlenin **tam bir kez** geçtiği, detayın koşullu olduğu ve
+catch'in `t()`'ye geri düşmediği iddia ediliyor. Üç mutasyon, üç kırmızı.
+
+**P3 — paylaşılan deal üzerinde mutlak iddia.** `test_a_bill_with_no_tender_stays_out…`
+GENEL GİDER'in gider toplamının tam `777.0` olmasını bekliyordu; o deal şirketin
+tamamı tarafından paylaşılıyor ve bir temizliği atlatan herhangi bir overhead satırı
+testi kodla ilgisi olmayan bir nedenle kırmızıya çevirirdi. Artık fikstürden önceki
+toplam ölçülüyor ve **fark** iddia ediliyor.
+
+**Değiştirilmedi (sözleşme gereği kayda geçiriliyor):** belge tarafı ekran başına
+ikinci kez hesaplanıyor (§5.2/6); yükleniyor durumu bir spinner satırı (§6); boyut
+sütununda index yok — şema değişikliği P5b'nin dışında, backlog'a.
