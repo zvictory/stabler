@@ -6712,3 +6712,20 @@ Only an active tender or GENEL GİDER can be selected.,Yalnızca aktif bir ihale
 GENEL GİDER deal is missing for {0}; save Stabler Settings or run patch v103.,{0} için GENEL GİDER kaydı yok; Stabler Settings'i kaydedin veya v103 yamasını çalıştırın.
 Refusing to build SQL for dimension fieldname {0}.,{0} boyut alanı için SQL oluşturulmadı.
 The GENEL GİDER deal type is set by the system and cannot be chosen here.,"GENEL GİDER kayıt türünü sistem belirler, buradan seçilemez."
+Ledger vs documents,Defter ve belgeler
+Ledger (GL),Defter (GL)
+Cost of goods and landed charges,Satılan malın maliyeti ve ithalat masrafları
+Tender expenses,İhale giderleri
+Operating result,Faaliyet sonucu
+Stock on hand for this tender,Bu ihale için stoktaki mal
+Loading ledger…,Defter yükleniyor…
+Retry,Yeniden dene
+Could not load the ledger view.,Defter görünümü yüklenemedi.
+Ledger view unavailable: the tender dimension is not set up for this company. Save Stabler Settings with the tender module on to create it.,Defter görünümü kullanılamıyor: bu şirket için tender boyutu tanımlı değil. Oluşturmak için tender modülü açık şekilde Stabler Ayarları'nı kaydedin.
+"No ledger entry carries this tender yet. Post or tag an invoice, delivery or expense to see the ledger side.","Bu ihaleyi taşıyan bir muhasebe kaydı henüz yok. Defter tarafını görmek için bir fatura, sevkiyat veya gideri kaydedin ya da etiketleyin."
+Nothing invoiced yet — the documents side reads 0.,Henüz fatura kesilmedi — belgeler tarafı 0 gösteriyor.
+Landed charges show a credit surplus: the bill that capitalized them is booked to another tender or to GENEL GİDER. Re-tag that bill.,İthalat masraflarında alacak fazlası var: bunları maliyete ekleyen fatura başka bir ihaleye ya da GENEL GİDER'e yazılmış. O faturayı yeniden etiketleyin.
+Goods received for this tender and not yet delivered reach cost of goods on delivery.,"Bu ihale için teslim alınan ve henüz sevk edilmeyen mallar, sevkiyatta satılan malın maliyetine geçer."
+No documents-side figures for this deal.,Bu iş için belge tarafında rakam yok.
+Unsafe dimension fieldname,Güvenli olmayan boyut alan adı
+Expense Claim,Masraf Talebi

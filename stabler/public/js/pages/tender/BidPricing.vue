@@ -101,6 +101,85 @@ async function load() {
 	}
 }
 
+// ADR-609 P5b — the SAME tender, read from the general ledger. The block above is
+// derived from documents (a PO's total, an SO's invoiced share, the JEs carrying
+// `custom_crm_deal`); this one sums the GL rows P5a stamped with the tender. Both
+// stay on screen through the transition — the council's decision is that neither
+// source is hidden while they still disagree.
+//
+// Its own request, its own error, its own busy flag: the pricing card is the
+// officer's working tool and a ledger endpoint that falls over must not take it
+// down with it.
+const ledger = ref(null);
+const ledgerLoading = ref(false);
+// Two values, not one. WHETHER it failed decides the banner; WHAT the server
+// said is an optional extra line. Collapsing them meant defaulting the detail to
+// the banner's own sentence, so an error carrying no message printed that
+// sentence twice — the second time dressed as the server's explanation of itself.
+const ledgerFailed = ref(false);
+const ledgerErrorDetail = ref("");
+
+async function loadLedger() {
+	if (!props.deal) return;
+	ledgerLoading.value = true;
+	ledgerFailed.value = false;
+	ledgerErrorDetail.value = "";
+	try {
+		ledger.value = await call("stabler.api.tender_gl.tender_gl_pnl", { deal: props.deal });
+	} catch (err) {
+		// Stale figures under an error banner are worse than none: they read as
+		// current and there is nothing on screen to say which attempt produced them.
+		ledger.value = null;
+		ledgerFailed.value = true;
+		ledgerErrorDetail.value = err?.message || "";
+	} finally {
+		ledgerLoading.value = false;
+	}
+}
+
+// The server freezes the order and sends a `key`; the label is resolved here so
+// the four strings are literal `t()` calls the harvester can see.
+function ledgerLabel(key) {
+	if (key === "revenue") return t("Net revenue");
+	if (key === "landed") return t("Cost of goods and landed charges");
+	if (key === "expenses") return t("Tender expenses");
+	return t("Operating result");
+}
+
+// What a difference MEANS is per row: a ledger holding more revenue than the
+// documents knew about is good news, a ledger holding more cost is not. One rule
+// for every row paints an overrun green on three lines out of four.
+function deltaClass(r) {
+	if (!r.delta) return "text-secondary";
+	const better = r.key === "revenue" || r.key === "result" ? r.delta > 0 : r.delta < 0;
+	return better ? "text-green" : "text-red";
+}
+
+// Notes travel as codes so the server never ships prose. Each sentence names the
+// repair, because "landed_credit_surplus" tells the reader nothing.
+function ledgerNote(code) {
+	if (code === "not_invoiced") return t("Nothing invoiced yet — the documents side reads 0.");
+	if (code === "landed_credit_surplus")
+		return t(
+			"Landed charges show a credit surplus: the bill that capitalized them is booked to another tender or to GENEL GİDER. Re-tag that bill.",
+		);
+	if (code === "stock_on_hand")
+		return t("Goods received for this tender and not yet delivered reach cost of goods on delivery.");
+	if (code === "no_documents") return t("No documents-side figures for this deal.");
+	return "";
+}
+
+// The landed row compares ONE document figure against TWO buckets — the goods
+// reach cost of goods on delivery, the charges sit in landed — so its breakdown
+// is both of them, or it never adds up to the line above it.
+function ledgerAccounts(key) {
+	const b = ledger.value?.buckets || {};
+	if (key === "revenue") return b.revenue?.rows || [];
+	if (key === "landed") return [...(b.cogs?.rows || []), ...(b.landed?.rows || [])];
+	if (key === "expenses") return b.expenses?.rows || [];
+	return [];
+}
+
 // Local mirror of the backend P&L waterfall (instant feedback; Save persists).
 const num = (v) => { const n = Number(v); return isFinite(n) ? n : 0; };
 const pnl = computed(() => {
@@ -158,6 +237,8 @@ async function save() {
 }
 
 watch(() => props.deal, load, { immediate: true });
+// Beside `load`, never inside it: the pricing data must not wait on the ledger.
+watch(() => props.deal, loadLedger, { immediate: true });
 </script>
 
 <template>
@@ -312,6 +393,74 @@ watch(() => props.deal, load, { immediate: true });
 								<tr class="fw-bold"><td>{{ t("Остаток (net remaining)") }}</td><td class="text-end font-monospace">{{ fm(pnl.ost) }}</td><td class="text-end font-monospace">{{ fm(actual.pnl.ostatok) }}</td><td class="text-end font-monospace" :class="actual.ostatok_delta < 0 ? 'text-red' : 'text-green'">{{ actual.ostatok_delta > 0 ? '+' : '' }}{{ fm(actual.ostatok_delta) }}</td></tr>
 							</tbody>
 						</table>
+					</div>
+					<!-- Ledger vs documents (ADR-609 P5b) — the tender read from the GL,
+					     beside the document-derived block above, difference and reason per line. -->
+					<div class="mt-3 border rounded p-2">
+						<div class="d-flex align-items-center mb-1">
+							<span class="fw-semibold small">{{ t("Ledger vs documents") }}</span>
+							<button type="button" class="btn btn-outline-secondary btn-sm ms-auto" :disabled="ledgerLoading" @click="loadLedger">{{ t("Refresh") }}</button>
+						</div>
+
+						<div v-if="ledgerFailed" class="alert alert-warning py-2 mb-0 small">
+							<div>{{ t("Could not load the ledger view.") }}</div>
+							<div v-if="ledgerErrorDetail" class="text-secondary">{{ ledgerErrorDetail }}</div>
+							<button type="button" class="btn btn-outline-secondary btn-sm mt-2" @click="loadLedger">{{ t("Retry") }}</button>
+						</div>
+						<div v-else-if="ledgerLoading" class="text-secondary small py-2">
+							<span class="spinner-border spinner-border-sm me-1"></span>{{ t("Loading ledger…") }}
+						</div>
+						<!-- "Not set up" and "nothing posted yet" both render four zeroes and mean
+						     opposite things: one is a broken install, the other an early tender. -->
+						<div v-else-if="ledger && !ledger.available" class="alert alert-secondary py-2 mb-0 small">
+							{{ t("Ledger view unavailable: the tender dimension is not set up for this company. Save Stabler Settings with the tender module on to create it.") }}
+						</div>
+						<template v-else-if="ledger">
+							<div v-if="!ledger.row_count" class="text-secondary small mb-2">
+								{{ t("No ledger entry carries this tender yet. Post or tag an invoice, delivery or expense to see the ledger side.") }}
+							</div>
+							<table class="table table-no-stripe table-sm mb-0">
+								<thead><tr><th></th><th class="text-end">{{ t("Documents") }}</th><th class="text-end">{{ t("Ledger (GL)") }}</th><th class="text-end">{{ t("Δ") }}</th></tr></thead>
+								<tbody>
+									<template v-for="r in ledger.reconciliation" :key="r.key">
+										<tr :class="r.key === 'result' ? 'fw-bold border-top' : ''">
+											<td>{{ ledgerLabel(r.key) }}</td>
+											<td class="text-end font-monospace">{{ fm(r.documents) }}</td>
+											<td class="text-end font-monospace">{{ fm(r.gl) }}</td>
+											<td class="text-end font-monospace" :class="deltaClass(r)">{{ fm(r.delta) }}</td>
+										</tr>
+										<tr v-for="a in ledgerAccounts(r.key)" :key="r.key + a.account" class="text-secondary small">
+											<td class="ps-4">{{ a.account_name }}</td>
+											<td class="text-end font-monospace">—</td>
+											<td class="text-end font-monospace">{{ fm(a.amount) }}</td>
+											<td></td>
+										</tr>
+										<tr v-for="n in r.notes" :key="r.key + n" class="text-secondary small">
+											<td colspan="4" class="ps-4">{{ ledgerNote(n) }}</td>
+										</tr>
+									</template>
+									<!-- An asset, not a cost: it becomes cost of goods on delivery. -->
+									<tr v-if="ledger.stock_on_hand > 0" class="text-secondary small">
+										<td>{{ t("Stock on hand for this tender") }}</td>
+										<td class="text-end font-monospace">—</td>
+										<td class="text-end font-monospace">{{ fm(ledger.stock_on_hand) }}</td>
+										<td></td>
+									</tr>
+								</tbody>
+							</table>
+							<!-- Where the figures came from. Every P&L row's contribution to the
+							     result is credit - debit, so this column sums to the result above. -->
+							<table v-if="ledger.by_voucher.length" class="table table-no-stripe table-sm mb-0 mt-2">
+								<thead><tr><th>{{ t("Voucher type") }}</th><th class="text-end">{{ t("Count") }}</th><th class="text-end">{{ t("Net") }}</th></tr></thead>
+								<tbody>
+									<tr v-for="v in ledger.by_voucher" :key="v.voucher_type" class="text-secondary small">
+										<td>{{ t(v.voucher_type) }}</td>
+										<td class="text-end font-monospace">{{ v.count }}</td>
+										<td class="text-end font-monospace">{{ fm(v.net) }}</td>
+									</tr>
+								</tbody>
+							</table>
+						</template>
 					</div>
 					<div class="text-end mt-3">
 						<button type="button" class="btn btn-outline-secondary me-2" :disabled="buildingPackage" @click="prepareBidPackage">

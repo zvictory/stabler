@@ -295,3 +295,4 @@ stabler.tests.test_landed_charge_currency
 stabler.tests.test_landed_charge_types
 stabler.tests.test_tender_prewin_landed_estimate
 stabler.tests.test_tender_dimension
+stabler.tests.test_tender_gl
