@@ -702,3 +702,11 @@ hermetiklik. Orkestratör skill §6: üçüncü döngüden sonra dur, kanıtı y
 (1) dördüncü düzeltme döngüsü; (2) orkestratör iki P2'yi kendisi kapatır, hermetiklik ayrı kırmızı-önce
 iş olur; (3) P2'ler backlog'a, birleştirme şimdi. Birleştirme, `make test-bench` ve push yapılmadı —
 talimat "PASS gelince" idi, PASS gelmedi.
+
+**(f) (b)'nin kanıtı iz kaydıyla yeniden alındı** (13:24, kuşkucu geçişinin itirazı üzerine: ilk koşuların
+atılabilir worktree'si silinmişti, loglar kaynaksızdı). `PYTHONPATH=<worktree>` altında `stabler.__file__`
+ve `frappe.get_app_path("stabler")` worktree'yi gösteriyor (kaydedildi); worktree HEAD `770d9c5`, ağaç temiz;
+yeşil `Ran 9 tests in 4.640s OK`; kırmızı 1 ve 2 aynı iki sayıyla, mutasyon diff'leri saklandı; yetim sayımı
+öncesi ve sonrası aynı. Dosyalar git dışında, `.worktrees/p5b-evidence-2026-09-04/` (gitignore'lu, yerel):
+`provenance.txt`, `green.log`, `red1.log`, `red2.log`, `red*_mutation.diff`, `orphans_*.json`, ayrıca
+`stabler` sitesi envanteri ve çalıştırılmamış temizlik önerisi.
