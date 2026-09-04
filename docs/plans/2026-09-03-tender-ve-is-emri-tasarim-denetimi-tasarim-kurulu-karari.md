@@ -541,3 +541,69 @@ inceleme turu açılmadı).
 
 Yan bulgu (P4'ün değil, önceden var): LCV satır kimliği serbest metinden türetiliyor
 (`lcv.py:276`, `lcv_math.py:53`); backlog'da.
+
+### P5a — the tender as an Accounting Dimension (ADR-609, slice A)
+
+| Contract | Branch | Merge | Test site |
+|---|---|---|---|
+| `docs/plans/2026-09-03-p5a-tender-muhasebe-boyutu.md` (frozen `5f78809`, corrected `8079d8e` and in its Log) | `feat/adr-609-tender-dimension`, 21 commits `6dc1a2f → 4c6ee0e` | `16ae676` (`--no-ff`; the contract's Log conflicted with main's `8079d8e`, resolved with the branch's version, 0 deletions) | migrated at `16ae676` (v103 via patches.txt, 24 counters at zero, Patch Log row written); `make test-bench`: RED at `16ae676` on two bench-listed modules, GREEN at `a370b87` — 78 modules, `OK`, `measured: main @ a370b87 on genesis-test.local` |
+
+**What landed.** `stabler/api/tender_dimension.py` (helpers, active-tender rule, `stamp_tender` on nine voucher
+types, `default_gl_tender` on every GL row, backfill, `on_settings_update`), patch `v103_tender_accounting_dimension`
+(widens `deal_type` everywhere; creates the CRM Deal dimension, its 52 fields, one GENEL GİDER deal and a
+`mandatory_for_pl` detail row per tender-enabled company; backfills history from `custom_crm_deal`), writers
+(`submit_expense_entry`, `create/update_purchase_invoice`, `purchase_invoice_detail`), pickers
+(`list_deals(active_tenders=1)`, `_crm_list`/cockpit exclusion), `Expenses.vue`, `PurchaseInvoiceForm.vue`, five CSVs,
+frappe-free `test_tender_dimension`, bench `test_tender_dimension_bench`, `tenderDimension.spec.js`.
+
+**Review rounds.** Round 1 (reviewer, 76 tool uses): 2 P0, 2 P1, 5 P2, 5 P3 — the dead child-table hook; turning the
+flag OFF after setup bricked the ledger because erpnext reads the detail row while the hook read the module flag; the
+patch hardcoded the fieldname of a dimension it reused; 7.0 uncached queries per GL row, six of them paid by
+non-tender tenants; Period Closing Voucher rows stamped GENEL GİDER; `deal_type = Overhead` client-writable; the
+cockpit counted the bucket; dead RFQ wiring; paginate-before-filter; a false balance-sheet docstring. The orchestrator's
+own read added the un-clearable PI tender (`undefined` vs `""`) and, after reading the fixes, the missing
+`_MANDATORY_CACHE` invalidation. Fixed as R1–R14 in 11 commits. Round 2 (105 tool uses): no P0; 1 P1 — `amend_expense_entry` re-asserted an
+unchanged tender, so a lost tender's expense could not be corrected, and the throw landed after `source.cancel()`;
+3 P2 — `crm_metrics` and `crm_automation` still counted the bucket, `operations_desk` carried it as an open lot,
+the bill form's search error path still emptied the picker. Fixed as R15–R18. Round 3 (107 tool uses): 1 P0 — R17, dictated by the orchestrator as "filter
+`deal_type = Tender` as `tender.py` does", hid 484 untyped lots from the operations desk (553 → 1, not 552);
+1 P2 — a `frappe.db.commit()` in the bench cleanup rested on the false claim that submit commits and could
+persist a pending `enable_tender = 0`; 1 P3 — the amend relaxation keyed off a client-passable kwarg. Fixed as
+R19–R21, the third and last correction cycle. Round 4 (71 tool uses): PASS at P0–P2, two P3 (a docstring count of
+"twelve" that measures 14, and the tender board's empty-set fallback showing the bucket) → backlog.
+
+**Rulings.** (1) The GL hook gates on the company's Accounting Dimension Detail row — the same row
+`validate_dimensions_for_pl_and_bs` reads — not on the module flag; two sources of truth for "is a value demanded"
+is what produced the P0. (2) GENEL GİDER is a ledger default applied per P&L row, never written by a hook at document
+level; the SPA default on a new expense or bill is an explicit choice the screen shows, by contract. (3) Tagged
+vouchers carry the tender on both legs (erpnext `get_gl_dict`), so **P5b must sum P&L accounts only**. (4) The
+overhead deal is found by `deal_type`, never by name, ordered by `creation`; `save_deal` refuses the type.
+
+**The orchestrator's errors, five this slice, one class.** Each was a path or a fact written into a
+decision-complete contract without measuring it, and each was implemented literally: (1) "patches.txt has no
+`[post_model_sync]` marker" (it does, line 41); (2) `Stabler Company Modules` as the hook doctype (a child table,
+`istable: 1`); (3) Request for Quotation among the doctypes that receive the dimension field (not one of the 52);
+(4) two of the four recorded in the contract Log; (5) the R17 instruction "as `tender.py` does" — `tender.py` unions
+five criteria and a lot made through the tender screens stays `Standard`. An unmeasured premise inside a review
+finding is still an unmeasured premise. The fix for the class is the one the orchestrator skill already states:
+grep the definition before freezing the line.
+
+**Recurring pattern, third slice running.** `test_turning_the_module_on_sets_the_company_up` grepped `hooks.py` for
+the handler string and could not fail while the hook fired zero times; a second test pinned the dead RFQ block.
+Declaration-satisfiable assertions pass the gate and prove nothing — the reviewer's live probe is what caught it.
+
+**After the merge.** The first full sweep failed the known-red ratchet on `test_crm_automation` (its fake-frappe
+deals carried no `deal_type`, and the double now drops NULL on `!=` as MariaDB does) and
+`test_crm_deal_trash_integration` (a Payment Ledger row of an erased P5a fixture still named a rolled-back deal
+whose reissued name the trash test's fresh deal inherited — `_erase_voucher` swept GL rows only). Both modules are
+bench-listed, so neither `make check` nor the implementer's single-module probes could have run them: the
+orchestrator fixed both in `a370b87` (test files only, red-first) and deleted the 171 + 44 tender-bearing
+orphan ledger rows from the test site. The delegation ended at the third cycle with the branch PASSed; the
+last mile was the orchestrator's, and is recorded as such.
+
+**Not verified / left open.** Production: nothing deployed; the P5b contract (GL-based tender P&L reconciled against
+`_actual_block`, charge-type → expense account mapping) is not written; six pre-existing untranslated `_()` strings in
+`crm.py` (backlog); test-site hygiene beyond P5a's own rows — 11 000 ledger rows without a voucher since 2026-08-15 and a UAT fixture
+module leaking ~8 CRM Deals per run — is in the backlog, not fixed.
+Deploy: v102, `82f9001`, P1–P5a all await Zafar's approval — `migrate` on every stabler site, `bench restart`,
+`clear-cache` for the translations.

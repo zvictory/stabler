@@ -2221,3 +2221,36 @@ satırına PO satırının kalıcı bir kimliğini yaz (satır id'si ya da `type
 üçlüsü değil, üretilen bir `line_id`), tüketilmişliği o anahtarla eşle; KDV'yi
 `is_recoverable_vat` bayrağından oku, addan değil. DB'ye dokunur → `make test-bench`;
 `test_lcv_integration` (19 test) ve `test_lcv_unification` (3) mevcut davranışı pinliyor.
+
+## 2026-09-04 — six `_()` strings in `stabler/api/crm.py` are in no catalogue
+
+Measured on main `8079d8e` (`grep -cF` per string: source hit, `en.csv` 0): "Multiple Parent Tenders match
+tender number {0}.", "Please select a valid deal status." (2 sites), "An owner is required for an open deal.",
+"A dated next action is required for an open deal.", "A valid CRM reference is required." (2 sites), "Deal
+status is required.". All are `frappe.throw` messages a CRM user sees in the SPA; a ru/uz/tr user gets English.
+Found by the P5a implementer while landing ADR-609's own keys (all five-way complete). Pre-existing, out of P5a's
+scope, not fixed. Fix: add the six keys to en/ru/uz/uzc/tr.csv (LF, existing rows untouched) — `stabler-i18n` skill.
+
+## 2026-09-04 — P5a review P3s left open (ADR-609)
+
+- `stabler/api/tender.py:3036` (`crm_board`) and `:3904` (`tender_flow`): when `_tender_deal_names` is empty the
+  fallback lists CRM Deals by company alone, so a tender company that has just been switched on — the moment
+  `ensure_company_setup` creates its GENEL GİDER bucket and before any lot exists — sees the bucket as a card and a
+  funnel row. Self-heals with the first lot; mikas is not affected today. Fix: wrap both fallbacks in
+  `exclude_overhead_deals({"company": company})`. Measured by the round-4 reviewer with `_tender_deal_names`
+  monkeypatched to `set()`: 553 cards, bucket on the board.
+- `stabler/api/crm.py:1468` `delete_deal_status` counts the bucket (`db.count("CRM Deal", {"status": name})` →
+  553 on the test site); arguably correct — the bucket does hold that status — but undocumented.
+
+## 2026-09-04 — genesis-test.local: ledger rows that outlive their voucher, and a fixture module that leaks deals
+
+- `delete_linked_ledger_entries` is off on the test site, so `frappe.delete_doc` on a voucher keeps its GL,
+  Payment Ledger and Stock Ledger rows. Measured 2026-09-04: Payment Ledger Entry rows whose voucher no longer
+  exists — Payment Entry 4788, Sales Invoice 5218, Purchase Invoice 1233 (oldest 2026-08-15); cancelled Delivery
+  Note Stock Ledger rows without a voucher 5260. Harmless until a row LINKS something: the 171 PLE and 44 GL rows
+  carrying a `tender` blocked `test_crm_deal_trash_integration` after the naming series reissued a rolled-back
+  deal's name (deleted 2026-09-04, `_erase_voucher` now sweeps all three ledgers). The 11 000 untyped orphans remain;
+  a sweep of "ledger rows whose voucher does not exist" would be one query per table, on the TEST site only.
+- Some UAT fixture module creates CRM Deals named organization "UAT Tender Intake Master Fields Fixture" and never
+  deletes them: 96 on 2026-09-03 (CRM-DEAL-2026-00459…00554) and 8 on 2026-09-04 (00559…00566), ~8 per run. Find
+  the module (`grep -rn "UAT Tender Intake Master Fields Fixture" stabler/tests`) and give it a cleanup.

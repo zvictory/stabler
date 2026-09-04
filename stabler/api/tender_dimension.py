@@ -257,11 +257,16 @@ def exclude_overhead_deals(filters: dict) -> dict:
 	No two of them may disagree about what a deal is, and they did: `crm_metrics`
 	answered `deal_count` 553 while the board beside it answered 552.
 
-	The other twelve `CRM Deal` list sites in `stabler/api` need nothing: they
-	either resolve deals the caller already named (`name in [...]`, for labels) or
-	are already narrowed by a filter the bucket cannot satisfy — `linked_customer
-	is set`, an `email_id`, a `custom_parent_tender`, or `deal_type = "Tender"`.
-	Adding the filter there would be noise, not safety.
+	The other `CRM Deal` list sites in `stabler/api` (fourteen when measured on
+	2026-09-04 — do not trust the number, grep `get_all`/`get_list("CRM Deal")`)
+	fall in three groups. Most resolve deals the caller already named (`name in
+	[...]`, for labels) or are narrowed by a filter the bucket cannot satisfy —
+	`linked_customer is set`, an `email_id`, a `custom_parent_tender`, or
+	`deal_type = "Tender"`. `crm.delete_deal_status` counts the bucket among the
+	deals holding a status, which is correct: it does hold one. The empty-set
+	fallbacks of `tender.crm_board` and `tender.tender_flow` list by company alone
+	and DO show the bucket on a company that has no lot yet — recorded in
+	`docs/backlog.md` (2026-09-04), not fixed here.
 
 	`!=` and not `not in`: MariaDB drops NULL rows on `!=`, which is why v103
 	backfills a NULL `deal_type` to `Standard` before this filter is ever

@@ -571,3 +571,18 @@ keyed off `amended_from`, so naming a cancelled voucher that carried a finished 
 new expense against it. The relaxation is now carried on `frappe.local`, raised by
 `amend_expense_entry` alone. The general rule: *permission to skip a check may never travel in
 the payload that the check is protecting against.*
+
+### Round 4 review and merge — 2026-09-04
+
+PASS at P0–P2 on `3963f6f` (reviewer, 71 tool uses). Two P3 left open and moved to `docs/backlog.md`: the
+`exclude_overhead_deals` docstring counted "twelve" other readers where the measured number is 14 (three of
+them — `delete_deal_status` and the two `tender.py` empty-set fallbacks — match none of its four reasons), and
+those fallbacks put the bucket on the tender board of a company with no lot yet. Merged into main as `16ae676`
+(`--no-ff`; this Log conflicted with main's cherry-picked `8079d8e` and was resolved with the branch's version).
+`bench --site genesis-test.local migrate` ran v103 through `patches.txt` with all 24 counters at zero. The first
+full `make test-bench` on the merged tree was RED on two bench-listed modules the branch could never run —
+`test_crm_automation` (fake deals without `deal_type`, dropped by the double's honest `!=`) and
+`test_crm_deal_trash_integration` (a Payment Ledger row of an erased P5a fixture still naming a rolled-back
+deal whose reissued name the trash test inherited; `_erase_voucher` swept GL rows only). Both fixed by the
+orchestrator in `a370b87`, test files only, red first; 171 PLE and 44 GL tender-bearing orphan rows deleted from
+the test site. Second sweep GREEN: 78 modules, `measured: main @ a370b87`. Not deployed.
