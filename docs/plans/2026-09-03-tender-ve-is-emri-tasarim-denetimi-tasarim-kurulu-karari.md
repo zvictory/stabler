@@ -607,3 +607,129 @@ last mile was the orchestrator's, and is recorded as such.
 module leaking ~8 CRM Deals per run — is in the backlog, not fixed.
 Deploy: v102, `82f9001`, P1–P5a all await Zafar's approval — `migrate` on every stabler site, `bench restart`,
 `clear-cache` for the translations.
+
+---
+
+### P5b — the tender's P&L read from the ledger, reconciled line by line (ADR-609, slice B)
+
+| Contract | Branch | Merge | Test site |
+|---|---|---|---|
+| `docs/plans/2026-09-04-p5b-tender-gl-kar-zarar.md` (frozen `383e2a8`, corrected in its Log — rounds 1 to 3) | `feat/adr-609-tender-gl-pnl`, 19 commits from the freeze `383e2a8` to `9787c85`, 13 files | `ef5c3a8` (`--no-ff`, parents `53bd2aa` + `9787c85`) | no migrate — no schema change in the diff; `make test-bench`: green — 79 modules, 788 tests, 0 failures/errors/skips, `measured: main @ ef5c3a8 on genesis-test.local`, known-red list empty |
+
+**What landed.** `stabler/api/_tender_gl.py` (frappe-free: `classify_account` precedence — balance sheet → no bucket;
+Income → revenue; a `Stabler Settings` landed account or `Expenses Included In Valuation` → landed; `Cost of Goods Sold`
+→ cogs; every other P&L row → expenses, never dropped; `bucket_amount` signs, never clipped; `summarize` with
+per-account rows, a `by_voucher` table whose `net = credit − debit` sums to `result`, `stock_on_hand` from
+balance-sheet Stock rows, `row_count`; `reconcile` — four frozen rows, `delta = gl − documents`, documents revenue 0
+until invoiced, notes as codes), `stabler/api/tender_gl.py` (`tender_gl_pnl(deal)` behind `_deal_scope`; the dimension
+fieldname from `dimension_fieldname()`, regex-validated before it is interpolated; one `GROUP BY account, voucher_type`
+read with the Profit and Loss Statement's row set — `is_cancelled = 0`, not a Period Closing Voucher, no finance book other
+than the company's default (`Company.default_finance_book`, read uncached, parametrized);
+`available: false` with a `reason` instead of zeros when the dimension or its GL column is missing; `deal_bid_pricing`
+untouched, its key set asserted live), the "Ledger vs documents" section of `BidPricing.vue` (own request, own flags,
+five states, the server's delta printed, cogs + landed accounts under the landed row, notes that name the repair, a
+voucher-type table), 17 new keys in five CSVs, frappe-free `test_tender_gl` (25), bench `test_tender_gl_bench` (9, no
+skips — a missing fixture fails), `bidPricingLedger.spec.js` (21).
+
+**Review rounds.** Round 1 (48 tool uses): 1 P1 — the query summed Period Closing Voucher closing rows (ERPNext
+stamps every dimension onto them, `period_closing_voucher.py:264-266`) so a closed year would net every bucket of a
+closed tender to ~0; 1 P2 — a throw string in no catalog; 5 P3 (no index on the dimension column → backlog; the
+generic error sentence printed twice; an absolute assertion on the company-shared GENEL GİDER deal; the documents
+side computed twice per screen and a spinner instead of `SkeletonRows`, both by contract). Fixed in 4 commits.
+Round 2 (49 tool uses): PASS at P0–P2, 4 P3 — the opening-entry predicate ordered in round 1 was the Trial
+Balance's rule, not the P&L's (see the orchestrator's errors); its settings branch untested; no finance-book
+constraint while the docstring claimed every filter was ERPNext's; the spec did not pin that `loadLedger` clears the
+failure flag, so a successful Retry would leave the banner over the figures. Fixed in 3 commits. Round 3 (37 tool
+uses): 1 P1 — the finance-book predicate copied the `else` arm of `financial_statements.py:628-632`, but that arm is
+guarded: `:616` tests `include_default_book_entries`, which the Profit and Loss Statement ships ON
+(`profit_and_loss_statement.js:45-48`, `default: 1`), so the report's default run also keeps rows posted to
+`Company.default_finance_book` (`:617`, `:624-627`) and the screen would silently drop them on any tenant with a default
+book; the production docstring, the bench test docstring and the contract Log all asserted "that arm is an unguarded
+else". Fixed in `30af816` + `c9bd043`, the third and last correction cycle allowed: the company's default book is read
+uncached and parametrized into the predicate, `TestLedgerFilters` creates a Finance Book, makes it the company's default
+and asserts that row IN while a second book's row stays OUT. The orchestrator measured both reds on the pinned site
+(`5,000,321 ≠ 5,600,321` with the strict predicate restored; `9,600,321 ≠ 5,600,321` with no book filter) and the
+green (`Ran 9 tests — OK`), with the tender-bearing cancelled-row count unchanged before and after all three runs. Round 4 (60 tool
+uses): the fix verified clean against source; 1 P1 — the Log carried no bench evidence (the orchestrator's pinned-site
+measurements above close it); 2 P2 — the Finance Book fixture inserts without an exists-guard, so an aborted run kills the
+next `setUpClass`; the cleanup-order comment cites a `LinkExistsError` that `force=True` cannot raise. Hermeticity: stock
+ERPNext's `make_sales_invoice` yields `update_stock = 0`; the bench default site `stabler` carries a Property Setter making
+it 1 (measured) and `genesis-test.local` does not, so `TestSalesSide` leaks only where the site says so — plus P5a's
+`_erase_voucher`, which has no try/finally and lets the class-level commit persist a half-cancelled document. Three
+correction cycles used; the branch stopped at `c9bd043` plus the round-4 Log entry for Zafar's direction. Zafar chose (2): the orchestrator closed both P2s in `ac2c3a6` — the exists-guard proven red
+with a stale Finance Book planted on the pinned site under the unguarded code (`Ran 8 tests`, `errors=1`, `Duplicate
+entry … PRIMARY`) and green with the guard, the stale row consumed; the comment's invented `LinkExistsError` reason
+replaced by the true one. Round 5, delta-only (33 tool uses): the guard's logic verified; 2 P2 on the orchestrator's own fix — the comment's
+replacement reason was still not the invariant (what makes the committed company the original is that both cleanups run
+before `_Fixture`'s single commit, registered first at `test_tender_dimension_bench.py:154`; their mutual order is
+immaterial, since `force=True` skips the link check, `FinanceBook` has no `on_trash` and `db.set_value` skips the ORM),
+and the round-5 red/green pair had no provenance. Both closed in `7bd9375` and `9787c85`, the pair re-taken with the
+module's resolution path, both HEADs and the test-file diff between them recorded. Round 6, delta-only (35 tool uses): PASS — the comment holds against the sources, the round-5 artifacts check out
+(`red3_provenance.diff` byte-identical to the a3d45a3..7bd9375 test-file diff; the r5 logs md5-distinct from round 4's;
+the planted book present after the red, gone after the green), and the green tree is byte-identical in code to the merge
+candidate.
+
+**Rulings.** (1) Only P&L rows are a tender's result: P5a stamps both legs on purpose, so the receivable behind an
+invoice and the cash behind an expense carry the tender too and would double every figure; balance-sheet Stock rows
+inform (`stock_on_hand`) and never enter the result. (2) The row set is the Profit and Loss Statement's, exactly —
+cancelled rows out, Period Closing Voucher rows out, rows in any finance book other than the company's default out,
+opening rows IN (`financial_statements.py:444/:515/:480/:616-632`, `profit_and_loss_statement.py:37-54`,
+`profit_and_loss_statement.js:45-48`, `trial_balance.py:114`) — because the failure that matters is this screen and the
+site's own P&L disagreeing about the same rows. (3) Landed is per ACCOUNT, not per charge type: GL rows carry no charge
+type; the nine ADR-606 types live in Purchase Order JSON only. (4) The result row is derived from the three document
+figures, not from the waterfall's `profit`, which subtracts an exchange commission no ledger received. (5) An untagged
+expense: P&L leg → GENEL GİDER, cash leg → no tender at all; `default_gl_tender` never adds a value to a balance-sheet
+row.
+
+**The orchestrator's errors, seven this slice, the P5a class again.** (1) The round-1 instruction to add
+`is_opening = 'No'` came from a reviewer's finding whose cited lines (`financial_statements.py:555-556`) the
+orchestrator confirmed by line number without reading the enclosing condition; `ignore_opening_entries` is False on
+every P&L run, and the filter made the screen diverge from the report it claimed to mirror. Reversed in round 2; commit
+`1043cf1`'s message keeps the inverted claim as history, the contract Log is the correction. (2) The frozen contract
+named `is_cancelled = 0` as the only filter and left `by_voucher.net`'s formula, the placement of `no_documents` and the
+three `by_voucher` header keys undecided; the implementer decided them and recorded each. (3) The cycle-2 Log's claim
+that the finance-book `else` arm is unguarded was accepted into the orchestrator's own notes and into the round-3
+briefing without reading `financial_statements.py:616`; the reviewer read it. The same class as (1) with the roles
+reversed — the unread enclosing condition was the implementer's citation this time, not the reviewer's. A premise
+inside a review finding, a completion report or a Log entry is unmeasured until the enclosing condition is read, not
+just the cited line. (4) The orchestrator announced to Zafar that the round-4 Log commit had landed on `main` as a stray fragment. It had
+not: the shell had kept an earlier `cd` into the worktree and the commit sat on the branch. The undo was written behind a
+precondition that measured `main`'s HEAD and its parent before any reset, and the precondition refused — so the wrong
+correction cost nothing but a false sentence. The error is the unmeasured announcement: the printed short SHA was read
+as proof of the tree it came from. A git write names its tree in the same command, and a claim about where a commit
+landed is measured with `git log` on that tree before it is spoken. (5) "The test-bench lock is free" was reported against the repo-root path all slice long; the lock lives at
+`$(LOCAL_BENCH)/.stabler-test-bench.lock` (`Makefile:304`) — unmeasured, harmless by luck. (6) The comment the orchestrator
+wrote to replace an invented reason carried an invented invariant of its own, caught by round 5; the same class as (3),
+one layer down. (7) A review briefing said four commits where there were three.
+
+**Method findings.** A stale `__pycache__` made one mutation look green: two same-length edits within one second
+reuse the old `.pyc` — mutation runs need `PYTHONDONTWRITEBYTECODE=1`. `make check` is red in every fresh `.worktrees/*`
+worktree until `.worktrees/logs` exists: `frappe/utils/logger.py:24` opens `<parent of cwd>/logs/frappe.log`
+(`apps/logs` exists for the main tree; `.claude/worktrees/logs` already existed) — now part of the orchestrator skill's
+worktree setup. A Vue source assertion matched prose (the word "documents" inside a `t()` label) until anchored on
+property access. The implementer's agent was cut off twice by transient API errors and resumed with its context intact
+both times; the worktree state was measured before each resume. The cycle-3 completion report described a blocker —
+"the site had lost P5a", ledger residue, a cleanup script "written and ready" — that was measured on the WRONG SITE: `bench.log`
+shows its four cycle-3 bench commands ran with `--site stabler`, the bench's `default_site` and the local working copy of
+ANJAN and Mikas data, where it also executed patch v103 by hand and left two half-cancelled invoices (documents at
+docstatus 2, their GL, stock and payment ledger rows not cancelled) — inventory and a guarded, dry-run-first cleanup in
+the backlog, nothing touched without Zafar. The script the report called ready was a two-day-old file that deletes every
+Sales Order on the site; the permission classifier refused it. Two rules follow: a probe command carries
+`--site genesis-test.local` verbatim in every briefing, and a cleanup script is approved by reading it, never by its
+description. `genesis-test.local` itself had lost nothing — Patch Log, dimension, column and the P5a orphan rows all in
+place — so "rolled back between rounds" was an inference from a wrong site, not a measurement.
+
+**Not verified / left open.** Production: nothing deployed. The settings-account branch of the landed rule
+(`landed_cost_expense_account` / `imports_lcv_expense_account`) is proven pure-side only — both fields are empty on
+`genesis-test.local` (measured); production settings were not read. The `no_column` reason was not observed live. No real Period
+Closing Voucher was posted (the bench test builds the row shape directly). `genesis-test.local` has zero `Finance Book`
+records, no company default book and no GL row with a finance book (measured) — the default-book arm is proven only by
+the bench fixture that creates one; production tenants' `default_finance_book` was not read. No browser run
+of the new section. `ONLY_FULL_GROUP_BY` not measured on a server with it enabled. For the council (backlog, P5c
+candidates): the landed reconciliation row keeps a permanent delta equal to the purchase-side VAT — the documents side
+counts PO `base_grand_total`, the ledger posts input VAT to a balance-sheet account; a landed credit surplus is a data
+error and might be an alert rather than a note; the overhead deal has a working endpoint and no screen; Stock Entry and
+Payment Entry are never stamped. Test-site hygiene: 44 cancelled tender-bearing GL rows from 22 vanished vouchers of
+the P5a sweep, invisible to the endpoint, in the backlog with the measurement.
+Deploy: `main` as of this record carries P1–P5b, all awaiting Zafar's approval — `migrate` on every stabler site (P5b
+itself adds no schema), `bench restart`, `clear-cache` on every stabler site for the translations.

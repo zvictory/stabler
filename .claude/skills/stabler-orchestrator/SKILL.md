@@ -96,7 +96,15 @@ Zafar for the missing business decision.
 git checkout main && git pull --ff-only
 git worktree add -b feat/<tenant-or-module>-<topic> .worktrees/agy-<task> main
 ln -s "$(git rev-parse --show-toplevel)/node_modules" .worktrees/agy-<task>/node_modules
+mkdir -p .worktrees/logs   # frappe/utils/logger.py:24 opens <parent of cwd>/logs/frappe.log; without it `make check` is red on unrelated tests (measured 2026-09-04)
 ```
+
+**Every bench command names the site.** The bench's `default_site` (and `sites/currentsite.txt`) is `stabler`, a
+local copy of ANJAN and Mikas data — an unqualified `bench run-tests`, or a briefing that says "run the probe"
+without the command, lands there and WRITES fixtures into tenant data. Measured 2026-09-04: a delegated cycle
+ran four commands with `--site stabler`, executed a patch by hand and left two half-cancelled invoices (backlog,
+"the `stabler` site carries a bench probe's residue"). Write `--site genesis-test.local` into the command you hand
+over, every time, and read a proposed cleanup script before approving it — never its description.
 
 `fix/…` and `chore/…` for the other two kinds. `.worktrees/` is gitignored
 (`.gitignore:11`), so the worktree never enters a commit. **One writing agent per

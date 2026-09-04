@@ -2254,3 +2254,114 @@ scope, not fixed. Fix: add the six keys to en/ru/uz/uzc/tr.csv (LF, existing row
 - Some UAT fixture module creates CRM Deals named organization "UAT Tender Intake Master Fields Fixture" and never
   deletes them: 96 on 2026-09-03 (CRM-DEAL-2026-00459…00554) and 8 on 2026-09-04 (00559…00566), ~8 per run. Find
   the module (`grep -rn "UAT Tender Intake Master Fields Fixture" stabler/tests`) and give it a cleanup.
+
+## 2026-09-04 — `make check` is red in a fresh `.worktrees/*` worktree until `.worktrees/logs` exists
+
+Measured during P5b in `.worktrees/p5b-tender-gl`: `test_bulk_operator_assign` fell with six
+`FileNotFoundError`s while the code under test was byte-identical to `main` (`git diff 53bd2aa..HEAD --
+stabler/api/manufacturing.py` empty) and green there. Cause `frappe/utils/logger.py:24`:
+`os.path.join("..", "logs", logfile)` — relative to the process cwd. From `apps/stabler` that is `apps/logs/`
+(exists); from `.worktrees/<x>` it is `.worktrees/logs/` (did not). `mkdir .worktrees/logs` fixed it; the
+directory sits under `.gitignore:11`'s `.worktrees/` rule. The orchestrator skill's §3 worktree setup now
+carries the `mkdir -p`. `.claude/worktrees/logs` already existed, so agents in `.claude/worktrees/*` never saw it.
+Open: the Makefile's worktree guard could create the directory itself.
+
+## 2026-09-04 — no index on `GL Entry.<tender>` (ADR-609 P5b review P3)
+
+Measured on genesis-test.local: Custom Field `GL Entry-tender` has `search_index = 0`; `show index from
+tabGL Entry` lists account, against_voucher, company, cost_center, creation, is_cancelled, name, party,
+party_type, posting_date, to_rename, voucher_detail_no, voucher_no, voucher_type — no `tender`. ERPNext's
+dimension Custom Field carries no `search_index` (`accounting_dimension.py:114-136`). `tender_gl_pnl` asks
+`WHERE g.tender = … AND g.company = …` on every BidPricing open; on a single-company site the `company` index
+is not selective, so it is a `tabGL Entry` scan. 32 350 GL rows on the test site; measure mikas's row count
+at deploy time and decide there. Fix is schema (outside P5b): `search_index = 1` on the Custom Field, or an
+explicit `frappe.db.add_index("GL Entry", ["tender"])` patch — migrate on every stabler site, `make test-bench`.
+
+## 2026-09-04 — genesis-test.local: the P5a sweep's 44 cancelled tender rows, and which step's commit kept them
+
+Follow-up to "ledger rows that outlive their voucher" above, with the mechanism measured. 44 GL rows with
+`is_cancelled = 1` and `tender = CRM-DEAL-2026-00555`, `creation` 08:28:53–08:29:19 on 2026-09-04 — the
+window of the P5a `make test-bench` sweep, before P5b's first probe. 22 vouchers (18 Sales Invoice, 3 Purchase
+Invoice, 1 Delivery Note), none exists; 20 of the 22 have no `Deleted Document` row, and the 2 that do were
+created 08:28:17–08:28:20, before these GL rows — older vouchers that had carried the same reissued names. So
+the rows were committed, the voucher deletion was committed, the GL deletion was not. `_erase_voucher`
+(`test_tender_dimension_bench.py:237`) sweeps the three ledgers with `frappe.db.delete`; `_Fixture.setUpClass`
+commits once at class end (`:154`). Which class leaves them is not measured: take `select count(*)` before and
+after the next sweep. Invisible to `tender_gl_pnl` (`is_cancelled = 0`). Unchanged at 44 through every P5b probe
+(measured before and after each run on 2026-09-04) and 88 after the 14:10 full sweep on `main @ ef5c3a8` — another
+44 under the same reissued name `CRM-DEAL-2026-00555`, with the deal series moved 574 → 582 (the UAT fixture's ~8
+deals per run, entry above). So the P5b module is not the source; a full sweep adds 44 cancelled rows each time.
+
+## 2026-09-04 — `TestSalesSide` is hermetic only where the site's `update_stock` default is 0 (ADR-609 P5b)
+
+`stabler/tests/test_tender_gl_bench.py::TestSalesSide` picks customer, item and warehouse from whatever the
+site holds and builds its invoice through `make_sales_invoice`. In stock ERPNext that yields `update_stock = 0`
+(`sales_invoice.json` default "0"; the SO→SI map carries no such field). On a site whose Customize Form sets
+`Sales Invoice.update_stock` default to 1 — measured 2026-09-04: the bench default site `stabler` has that
+Property Setter, genesis-test.local does not — the invoice moves stock, Stabler's own hook fires
+(`hooks.py:166-171` → `close_billed_so.on_si_submit` → `_maybe_close` → `update_status("Closed")` when fully
+billed, `close_billed_so.py:63-65, :141-149`), and the inherited `_erase_voucher` cannot cancel the order:
+`sales_order.py:539-540` throws AFTER `super().on_cancel()` has written `docstatus = 2`. `_erase_voucher`
+(`test_tender_dimension_bench.py:254-267`) has no try/finally, so the raise skips the delete and all three
+ledger sweeps, and the class-level commit (`:154`; also `integration_test_case.py:65` at every class start)
+makes the half-cancelled document permanent: docstatus 2 with GL/SLE/PLE rows at `is_cancelled = 0`, which
+`tender_gl_pnl` then reads as live postings. `revert_series_if_last` (`delete_doc.py:240-241`) hands the
+fixture deal's name to the next run, which inherits the rows. Fix inside P5b's own file: `_LedgerFixture`
+builds its own Customer, Item, Warehouse and Material Receipt through `_track`/`_erase_voucher` (the branch of
+contract §10.3 the implementation did not take) and wraps `_erase_voucher` so a failed step is reported, not
+aborted. A non-stock item is not an option: the COGS test asserts a real cost row and `stock_on_hand < 0`.
+Red-first: reproduce with a Property Setter on the test site, then remove it.
+
+## 2026-09-04 — the `stabler` site (bench `default_site`) carries a bench probe's residue
+
+During P5b's third correction cycle the implementer agent ran four commands with `--site stabler`
+(bench.log 12:46:41, 12:48:03, 12:48:32, 12:48:59) instead of the pinned `genesis-test.local`. `stabler` is
+`common_site_config.json`'s `default_site` and `sites/currentsite.txt`: the local working copy with companies
+ANJAN (2026-02-11) and Mikas (2026-08-02), 44 users, 86 025 GL rows, 7 240 Sales Invoices, Patch Log at v100
+(2026-08-27). Left there, measured 13:06:
+- `stabler.patches.v103_tender_accounting_dimension` executed by hand (not in Patch Log): Accounting
+  Dimension `Tender` 12:48:04, 57 Custom Fields 12:48:05–22, `CRM-DEAL-2026-00014` (Mikas overhead deal), one
+  Accounting Dimension Detail row. The next `migrate` re-runs v101–v103 per Patch Log; all three are meant to be
+  idempotent — not measured.
+- Two `TestSalesSide` runs (mechanism: entry above): `ACC-SINV-2026-07434`, `ACC-SINV-2026-07435` docstatus 2 /
+  status Unpaid / update_stock 1 / customer "O'zbekiston temir yo'llari AJ [DEMO]", each with 4 GL rows at
+  `is_cancelled 0` (Debtors - MIK +1 000, Sales - MIK −1 000, Stock In Hand - MIK −57 832.17, Cost of Goods
+  Sold - MIK +57 832.17), 1 SLE at `is_cancelled 0` (UAT-IMP-BEEF-TRIM-01 @ Stores - MIK, −1), 1 PLE;
+  `SAL-ORD-2026-05894`, `05895` docstatus 2 / status Closed; Bin 20 000 → 19 998; 2 Repost Item Valuation
+  rows; series `CRM-DEAL-2026-` at 14 while the GL rows carry the deleted `CRM-DEAL-2026-00015` — the next
+  deal opened on that site takes the name and inherits the 8 rows.
+- Documents cancelled, ledgers not: that site's P&L, stock balance and receivables are off by exactly these two
+  invoices until cleaned.
+
+Cleanup proposal, NOT executed, needs Zafar: `.worktrees/p5b-evidence-2026-09-04/stabler_residue_cleanup.py`
+— verifies each named record against the inventory (eight guards, aborts on any mismatch), deletes only them
+(GL 8, PLE 2, SLE 2, the two invoices and two orders with their items, the 2 RIV rows), then
+`erpnext.stock.stock_balance.repost_stock("UAT-IMP-BEEF-TRIM-01", "Stores - MIK")` rebuilds the Bin from SLE.
+Opens with `DRY_RUN = True`. `Accounts Settings.delete_linked_ledger_entries` is 0 there, so `delete_doc`
+alone would leave the ledger rows. Series numbers are not rolled back. The v103 schema is a separate decision:
+P5a's deploy brings it anyway; to undo, delete Accounting Dimension `Tender` (it removes its 57 Custom Fields;
+the columns stay) and `CRM-DEAL-2026-00014`.
+
+Two rules from the incident. The implementer's report described `scratchpad/cleanup.py` as "deletes the
+GL/PLE/SLE rows, force-deletes the four documents, calls repost_stock"; the file at that path was two days old
+and did `frappe.get_all("Sales Order")` → cancel and force-delete EVERY order on the site (5 843, 5 760
+submitted) — the permission classifier refused it. A cleanup script is approved by reading it, never by its
+description. And a probe command carries `--site genesis-test.local` verbatim in every briefing; a bench whose
+default site holds tenant data turns an unqualified `bench run-tests` into a write on that data. Candidates:
+a Makefile `probe` target with the site hardcoded (`PYTHONPATH=$(WT) bench --site genesis-test.local run-tests
+--module $(MODULE)`), and/or `default_site` → genesis-test.local (Zafar's environment decision).
+
+## 2026-09-04 — P5c candidates (ADR-609, for the council)
+
+- **Permanent VAT delta on the landed reconciliation row.** The documents side (`_deal_landed_split`,
+  `tender.py:1177`) counts PO `base_grand_total` (purchase VAT included); the ledger posts input VAT to a
+  balance-sheet tax account, never to P&L. After full delivery the landed row keeps a delta equal to purchase
+  VAT and the screen does not name it. Options: documents side moves to `base_net_total`, or a `purchase_tax`
+  note explains the remainder. Not P5b's error — `_actual_block`'s old definition; the contract reconciled it as is.
+- **Landed credit surplus: alert or note?** It always means an invoice tagged to the wrong tender — a data error
+  to repair, not information to read. Today a grey sentence.
+- **GENEL GİDER (overhead deal) P&L screen.** `tender_gl_pnl` works for the overhead deal; no screen opens it.
+- **Stock Entry stamping.** `Stock Entry.tender` exists, no `stamp_tender` hook; material issues stay untagged
+  unless stamped by hand.
+- **Payment Entry.** Translated, may appear in `by_voucher`, but nothing writes a tender on it — a stamping
+  decision, not reporting.
