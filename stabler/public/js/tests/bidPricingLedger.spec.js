@@ -93,7 +93,8 @@ describe("the ledger side is a second request that cannot take the pricing card 
 		expect(fn).toMatch(/try\s*\{/);
 		expect(fn).toMatch(/catch\s*\(/);
 		expect(fn).toMatch(/finally\s*\{/);
-		expect(fn).toMatch(/ledgerError\.value\s*=/);
+		expect(fn).toMatch(/ledgerFailed\.value\s*=\s*true/);
+		expect(fn).toMatch(/ledgerErrorDetail\.value\s*=/);
 	});
 
 	it("is triggered beside `load`, not from inside it", () => {
@@ -178,7 +179,18 @@ describe("every state of the section names what to do about it", () => {
 		// usually transient and the officer has no other route to this figure.
 		expect(ledgerSection).toMatch(/t\("Could not load the ledger view\."\)/);
 		expect(ledgerSection).toMatch(/t\("Retry"\)/);
-		expect(ledgerSection).toMatch(/ledgerError/);
+		// The server's own detail, and ONLY when there is one. `err.message` is
+		// routinely empty (a network drop, an aborted fetch); defaulting it to the
+		// generic sentence printed that sentence twice, the second time dressed as
+		// the server's explanation of itself.
+		expect(ledgerSection).toMatch(/v-if="ledgerErrorDetail"/);
+		expect(ledgerSection).toMatch(/\{\{ ledgerErrorDetail \}\}/);
+		const generic = ledgerSection.match(/t\("Could not load the ledger view\."\)/g) || [];
+		expect(generic, "the generic sentence is rendered more than once").toHaveLength(1);
+		// The defect itself, pinned where it was written.
+		expect(extractFunction("loadLedger")).not.toMatch(
+			/ledgerErrorDetail\.value\s*=[^;\n]*\|\|\s*t\(/,
+		);
 	});
 
 	it("says it is loading rather than showing an empty table", () => {

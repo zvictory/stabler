@@ -112,19 +112,26 @@ async function load() {
 // down with it.
 const ledger = ref(null);
 const ledgerLoading = ref(false);
-const ledgerError = ref("");
+// Two values, not one. WHETHER it failed decides the banner; WHAT the server
+// said is an optional extra line. Collapsing them meant defaulting the detail to
+// the banner's own sentence, so an error carrying no message printed that
+// sentence twice — the second time dressed as the server's explanation of itself.
+const ledgerFailed = ref(false);
+const ledgerErrorDetail = ref("");
 
 async function loadLedger() {
 	if (!props.deal) return;
 	ledgerLoading.value = true;
-	ledgerError.value = "";
+	ledgerFailed.value = false;
+	ledgerErrorDetail.value = "";
 	try {
 		ledger.value = await call("stabler.api.tender_gl.tender_gl_pnl", { deal: props.deal });
 	} catch (err) {
 		// Stale figures under an error banner are worse than none: they read as
 		// current and there is nothing on screen to say which attempt produced them.
 		ledger.value = null;
-		ledgerError.value = err?.message || t("Could not load the ledger view.");
+		ledgerFailed.value = true;
+		ledgerErrorDetail.value = err?.message || "";
 	} finally {
 		ledgerLoading.value = false;
 	}
@@ -395,9 +402,9 @@ watch(() => props.deal, loadLedger, { immediate: true });
 							<button type="button" class="btn btn-outline-secondary btn-sm ms-auto" :disabled="ledgerLoading" @click="loadLedger">{{ t("Refresh") }}</button>
 						</div>
 
-						<div v-if="ledgerError" class="alert alert-warning py-2 mb-0 small">
+						<div v-if="ledgerFailed" class="alert alert-warning py-2 mb-0 small">
 							<div>{{ t("Could not load the ledger view.") }}</div>
-							<div class="text-secondary">{{ ledgerError }}</div>
+							<div v-if="ledgerErrorDetail" class="text-secondary">{{ ledgerErrorDetail }}</div>
 							<button type="button" class="btn btn-outline-secondary btn-sm mt-2" @click="loadLedger">{{ t("Retry") }}</button>
 						</div>
 						<div v-else-if="ledgerLoading" class="text-secondary small py-2">
