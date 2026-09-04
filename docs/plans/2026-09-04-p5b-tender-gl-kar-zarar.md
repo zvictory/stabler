@@ -738,3 +738,30 @@ yeşil `Ran 9 tests in 4.640s OK`; kırmızı 1 ve 2 aynı iki sayıyla, mutasyo
 
 Kapılar: frappe-free `Ran 25 tests … OK`, vitest `Tests 21 passed`, `git diff --check` temiz; `make check`
 bu dosyanın commit'inden önce koşuldu, satırları commit mesajında.
+
+### 2026-09-04 — beşinci inceleme turu: yorumun yeni gerekçesi de gerekçe değildi, ve tur 5'in kanıtı izsizdi
+
+**(h) Tur 5 bulguları (`stabler-diff-reviewer`, 33 araç kullanımı) ve düzeltmeleri.** Koruma mantığı
+doğrulandı (geri yükleme `:422`'de değerini `:408`'deki temizlemeden sonra, `:424`'teki atamadan önce
+yakalıyor; `!= book_name` dalı gerçek bir önceki defteri rahat bırakıyor). İki P2, ikisi de orkestratörün
+dördüncü tur düzeltmesinde:
+
+- **P2 — yorum.** "LIFO geri yüklemeyi defter satırı silinmeden önce koşturur, bu yüzden commit edilen
+  şirket orijinaldir" cümlesi de yanlış bir değişmez anlatıyordu. Doğrusu, kaynaktan ölçülmüş: sonucu veren
+  şey iki temizliğin de `_Fixture`'ın tek commit'inden önce koşmasıdır (`test_tender_dimension_bench.py:154`
+  commit'i ilk kaydeder, LIFO onu en sona bırakır; `integration_test_case.py:72`'nin `_rollback_db`'si ondan
+  da sonra). İki temizliğin birbirine göre sırası önemsizdir: `force=True` bağ denetimini atlar
+  (`delete_doc.py:170-173`), `FinanceBook` denetleyicisinin gövdesi `pass` (on_trash yok), autoname alan
+  tabanlı (seri işlemi yok), `frappe.db.set_value` ORM tetikleyicilerini çağırmaz (`database.py:945`
+  docstring). Yorum buna göre yeniden yazıldı; aynı yanlış cümle `ac2c3a6`'nın mesajında ve (g)'de tarih
+  olarak duruyor.
+- **P2 — kanıt izi.** (g)'deki kırmızı/yeşil çift kaynaksız kalmıştı: kırmızı silinmiş bir atılabilir
+  kopyadan koşmuştu ve `red3_mutation.diff` yoktu; yeşil koşunun modül yolu kaydedilmemişti
+  (`provenance.txt` 13:24'e ve `770d9c5`'e aitti). Hafifletici, inceleyicinin kendi ölçümü: kırmızının
+  traceback'i düzeltme öncesi dosyanın `book.insert()` satırına (404) düşüyor; `stale_check_2.json` →
+  `stale_check_3.json` bayat satırı tüketen bir koşuyu sarıyor, ki korumasız kod bunu yapamaz. Eksik olan
+  kayıt, olgu değil. Çift bu commit'ten sonra iz kaydıyla yeniden alınıyor: `provenance_round5.txt`
+  (`stabler.__file__`, `frappe.get_app_path`, HEAD'ler, porcelain), `red3_provenance.diff` (korumasız
+  `a3d45a3` ile yeşil HEAD arasındaki test dosyası farkı), loglar; sonuçlar bir sonraki kayıtta.
+- **Brifing düzeltmesi.** İnceleyiciye "dört commit" dendi; `c9bd043..ac2c3a6` üç commit (`770d9c5`,
+  `a3d45a3`, `ac2c3a6`). Orkestratörün sayım hatası.

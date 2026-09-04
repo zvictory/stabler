@@ -411,9 +411,12 @@ class TestLedgerFilters(_LedgerFixture):
 		book.flags.ignore_permissions = True
 		book.insert()
 		cls.default_book = cls._track("Finance Book", book.name)
-		# Registered AFTER the delete, so LIFO runs the restore FIRST — before the book
-		# row goes and before `_Fixture`'s single commit — so the committed company is
-		# the original. (`force=True` skips link checks; the order is not about errors.)
+		# Both cleanups must run before `_Fixture`'s single commit — registered first
+		# there (test_tender_dimension_bench.py:154), so LIFO runs it last — and that is
+		# what makes the committed company the original. Their order relative to each
+		# other is immaterial: `force=True` skips the link check (delete_doc.py:170-173),
+		# `FinanceBook` has no `on_trash`, and `db.set_value` skips the ORM, so neither
+		# cleanup ever validates the pointer.
 		cls.addClassCleanup(
 			frappe.db.set_value,
 			"Company",
