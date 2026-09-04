@@ -56,10 +56,33 @@ def _landed_accounts() -> frozenset:
 def _ledger_rows(deal: str, company: str, fieldname: str) -> list[dict]:
 	"""One grouped read: account x voucher type, for this tender, this company.
 
-	`is_cancelled = 0` and nothing else. A cancelled voucher's reversal rows are
-	cancelled too, so their net effect is already nil; the filter is there to keep
-	the counts and the account list honest rather than to change a total.
+	Three filters, and every one of them is ERPNext's, copied rather than
+	invented. The failure that matters is this screen and the site's own Profit
+	and Loss disagreeing about the same ledger rows: at that point neither can be
+	trusted and nothing on either screen says which is wrong.
+
+	  * `is_cancelled = 0`. A cancelled voucher's reversal rows are cancelled too,
+	    so their net effect is already nil; the filter keeps the counts and the
+	    account list honest rather than changing a total.
+	  * **Not a Period Closing Voucher** (`financial_statements.py:598`). Closing
+	    the fiscal year posts the reverse of every P&L balance into retained
+	    earnings, and `period_closing_voucher.update_default_dimensions`
+	    (`period_closing_voucher.py:264`) stamps every accounting dimension onto
+	    those rows — the tender included, since P5a made it one. Read naively,
+	    every bucket of a closed tender nets to ~0 and all four reconciliation
+	    deltas become the negative of the documents side. Nothing looks broken.
+	    The tender simply reports that it earned and spent nothing.
+	  * **Not an opening entry** (`financial_statements.py:555`), unless the site
+	    has set `Accounts Settings.ignore_is_opening_check_for_reporting` — in
+	    which case ERPNext keeps those rows and so must we, or the two readers
+	    part company on the sites that flipped the flag precisely so they would
+	    not. An opening balance is carried IN, not traded.
 	"""
+	# Same single, same name, same polarity as `financial_statements.py:547`.
+	ignore_is_opening = frappe.db.get_single_value(
+		"Accounts Settings", "ignore_is_opening_check_for_reporting"
+	)
+	opening = "" if ignore_is_opening else "AND g.is_opening = 'No'"
 	return frappe.db.sql(
 		f"""
 		SELECT g.account, a.account_name, a.report_type, a.root_type, a.account_type,
@@ -69,6 +92,8 @@ def _ledger_rows(deal: str, company: str, fieldname: str) -> list[dict]:
 		WHERE g.`{fieldname}` = %(deal)s
 		  AND g.company = %(company)s
 		  AND g.is_cancelled = 0
+		  AND g.voucher_type != 'Period Closing Voucher'
+		  {opening}
 		GROUP BY g.account, g.voucher_type, a.account_name, a.report_type, a.root_type, a.account_type
 		""",
 		{"deal": deal, "company": company},

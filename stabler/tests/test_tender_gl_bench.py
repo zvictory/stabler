@@ -46,7 +46,7 @@ from frappe.utils import flt, today
 from stabler.api._tender_gl import BUCKETS
 from stabler.api.tender import deal_bid_pricing
 from stabler.api.tender_gl import tender_gl_pnl
-from stabler.tests.test_tender_dimension_bench import _Fixture, _gl_rows, _report_type
+from stabler.tests.test_tender_dimension_bench import _an_account, _Fixture, _gl_rows, _report_type
 
 #: `deal_bid_pricing`'s top-level keys as P5a left them: the four the function
 #: names plus everything `_bid_inputs` returns as `refs`. Measured on main @
@@ -143,6 +143,11 @@ class TestExpenseSide(_LedgerFixture):
 		leaked into a tender's buckets, every tender in the company would carry
 		the whole company's overhead and no tender would ever look profitable.
 		"""
+		# GENEL GİDER is ONE deal shared by the whole company, and it is where every
+		# untagged posting on this site lands — including any that outlived a
+		# cleanup. An absolute assertion on its total measures the site's history
+		# rather than this test; only the DELTA is this expense.
+		before = tender_gl_pnl(self.overhead)["buckets"]["expenses"]["total"]
 		name = self._expense_entry(deal=None, amount=777.0)
 		rows = _gl_rows("Journal Entry", name, self.fieldname)
 		# Measured, and exactly what `default_gl_tender` documents: it never ADDS a
@@ -162,8 +167,8 @@ class TestExpenseSide(_LedgerFixture):
 		self.assertEqual(gl["buckets"]["expenses"]["total"], 0.0)
 		self.assertEqual(gl["result"], 0.0)
 
-		overhead = tender_gl_pnl(self.overhead)
-		self.assertEqual(overhead["buckets"]["expenses"]["total"], 777.0, "GENEL GIDER did not receive it")
+		after = tender_gl_pnl(self.overhead)["buckets"]["expenses"]["total"]
+		self.assertEqual(round(after - before, 2), 777.0, "GENEL GIDER did not receive it")
 
 
 class TestUnavailable(_LedgerFixture):
@@ -328,4 +333,142 @@ class TestSalesSide(_LedgerFixture):
 		self.assertEqual(self._bucket_accounts(gl) & {r["account"] for r in stock}, set())
 		self.assertLess(
 			gl["stock_on_hand"], 0.0, "the stock leg did not reduce stock on hand; an asset was left standing"
+		)
+
+
+class TestLedgerFilters(_LedgerFixture):
+	"""The two kinds of row ERPNext's own P&L refuses to read, and this one must too.
+
+	Both are invisible until a fiscal year is closed on a live site, and both are
+	silent when they arrive: the figures stay plausible, they just stop being the
+	tender's trading result.
+
+	  * A **Period Closing Voucher** posts the reverse of every P&L balance into
+	    retained earnings, and `update_default_dimensions`
+	    (`period_closing_voucher.py:264`) stamps every accounting dimension onto
+	    those rows — the tender included, since P5a made it a dimension. Summed
+	    naively, a closed tender's every bucket nets to ~0 and all four deltas
+	    become the negative of the documents side. Nothing looks broken; the
+	    tender simply reports that it earned and spent nothing.
+	  * An **opening entry** carries a balance INTO the period. It is not
+	    trading, and `financial_statements.py:555` drops it — unless the site has
+	    set `Accounts Settings.ignore_is_opening_check_for_reporting`, in which
+	    case ERPNext keeps it and so must we.
+
+	    Measured while writing this test: on the ORDINARY write path ERPNext will
+	    not create such a row at all — `check_pl_account` throws for a P&L account
+	    with `is_opening = "Yes"`. So this half of the filter is defence in depth
+	    rather than a live defect: it covers the paths that skip that validation
+	    (a repost, a closing voucher, a data migration), and it keeps this screen
+	    reading the same rows as the site's own Profit and Loss. The closing
+	    voucher half is NOT defensive — those rows are real, and they carry the
+	    tender today.
+
+	The rule is mirrored rather than invented, because the failure that matters
+	is this screen and the site's own Profit and Loss disagreeing about the same
+	rows — at which point neither can be trusted and there is no way to tell
+	which is wrong.
+
+	Built as GL Entry documents directly, the way `general_ledger.make_entry`
+	does, because a real Period Closing Voucher would close the site's fiscal
+	year to measure a WHERE clause.
+	"""
+
+	@classmethod
+	def setUpClass(cls):
+		super().setUpClass()
+		cls.income = _an_account(cls.company, root_type="Income")
+		# A P&L row without one is refused by `pl_must_have_cost_center`.
+		cls.cost_center = frappe.db.get_value("Cost Center", {"company": cls.company, "is_group": 0}, "name")
+		if not (cls.income and cls.cost_center):
+			raise AssertionError(
+				f"cannot post a P&L row on this site: income={cls.income!r} cost_center={cls.cost_center!r}"
+			)
+
+	def _post_row(
+		self, *, account, voucher_type, voucher_no, debit=0.0, credit=0.0, is_opening="No", from_repost=False
+	):
+		"""One submitted GL row carrying the tender, erased when the test ends."""
+		currency = frappe.db.get_value("Account", account, "account_currency") or self.currency
+		row = frappe.new_doc("GL Entry")
+		row.update(
+			{
+				"account": account,
+				"company": self.company,
+				"posting_date": today(),
+				"debit": debit,
+				"credit": credit,
+				"debit_in_account_currency": debit,
+				"credit_in_account_currency": credit,
+				"account_currency": currency,
+				"cost_center": self.cost_center,
+				"voucher_type": voucher_type,
+				"voucher_no": voucher_no,
+				"is_opening": is_opening,
+				# Set explicitly: `default_gl_tender` deliberately skips a closing
+				# voucher, so on a real site this value arrives from ERPNext's own
+				# `update_default_dimensions` — which is exactly the row shape here.
+				self.fieldname: self.tender,
+			}
+		)
+		row.flags.ignore_permissions = 1
+		row.flags.notify_update = False
+		# `check_pl_account` REFUSES a P&L account on an opening row — measured, and
+		# a good thing. It is skipped for a repost (`gl_entry.py` validate guards on
+		# `flags.from_repost`) and for a closing voucher, which is precisely why the
+		# opening row below is written the way a repost writes it: that is the only
+		# path such a row exists on, and the only case where the filter earns its keep.
+		row.flags.from_repost = from_repost
+		# `voucher_no` is a Dynamic Link, so a synthetic name is refused. Creating a
+		# real Period Closing Voucher instead would CLOSE THE SITE'S FISCAL YEAR to
+		# measure a WHERE clause; the row shape is what this test is about, and it
+		# is identical either way.
+		row.flags.ignore_links = True
+		row.submit()
+		self.addCleanup(
+			frappe.db.delete, "GL Entry", {"voucher_type": voucher_type, "voucher_no": voucher_no}
+		)
+		return row.name
+
+	def test_a_year_end_close_and_an_opening_balance_stay_out_of_the_tenders_result(self):
+		"""WHAT WOULD MAKE THIS FAIL: either predicate dropped from `_ledger_rows`.
+
+		The closing row is deliberately far larger than the trading row, so a
+		version that reads it does not merely drift — it reports the tender's
+		revenue as the whole year's closed-out income.
+		"""
+		self._post_row(
+			account=self.income,
+			voucher_type="Period Closing Voucher",
+			voucher_no="ADR609-P5B-PCV",
+			credit=9_000_000.0,
+		)
+		self._post_row(
+			account=self.expense,
+			voucher_type="Journal Entry",
+			voucher_no="ADR609-P5B-OPENING",
+			debit=5_000_000.0,
+			is_opening="Yes",
+			from_repost=True,
+		)
+		self._post_row(
+			account=self.expense,
+			voucher_type="Journal Entry",
+			voucher_no="ADR609-P5B-ORDINARY",
+			debit=321.0,
+		)
+
+		gl = tender_gl_pnl(self.tender)
+		self.assertEqual(
+			gl["buckets"]["revenue"]["total"], 0.0, "the year-end close was read as this tender's revenue"
+		)
+		self.assertEqual(
+			gl["buckets"]["expenses"]["total"], 321.0, "an opening balance was read as a tender cost"
+		)
+		self.assertEqual(gl["result"], -321.0)
+		self.assertEqual(gl["row_count"], 1, "a row ERPNext's own P&L excludes reached a bucket")
+		self.assertEqual(
+			[v["voucher_type"] for v in gl["by_voucher"]],
+			["Journal Entry"],
+			"an excluded voucher type was listed as a source of these figures",
 		)
