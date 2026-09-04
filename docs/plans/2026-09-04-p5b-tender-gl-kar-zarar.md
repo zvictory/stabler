@@ -350,3 +350,91 @@ Tam `make test-bench` yalnız `main`'de, merge sonrası, orkestratör tarafında
   etkin; `Stabler Settings` LCV hesapları boş; EIV ve COGS hesapları `_TC`'de birer.
 - Worktree: `.worktrees/p5b-tender-gl` @ `feat/adr-609-tender-gl-pnl` (main'den), `node_modules` symlink'li.
 - Uygulayıcı: opus alt-ajan (GL/para → opus; model-routing kuralı). İnceleme: `stabler-diff-reviewer`.
+
+### 2026-09-04 — uygulama (opus alt-ajan, `.worktrees/p5b-tender-gl`)
+
+Sözleşme birebir uygulandı. Aşağıdakiler ya sözleşmenin karar vermediği yerler
+ya da kodun sözleşmeyle çeliştiği ölçümlerdir (Rule 1: kod gerçektir).
+
+**Sözleşmenin karara bağlamadığı, uygulamada karar verilenler**
+
+1. `by_voucher[].net` — §5.1 anahtarı donduruyor, formülü değil. Seçilen:
+   `credit − debit`. Gerekçe: bir P&L satırının **sonuca katkısı** kovası ne
+   olursa olsun `credit − debit`'tir (gelir alacağı ekler, gider borcu düşer), bu
+   yüzden sütun toplamı `result`'a **birebir** eşit çıkar. Testle sabitlendi
+   (`test_only_profit_and_loss_rows_reach_the_voucher_summary`); tabloyu
+   dekoratif olmaktan çıkaran tek özellik bu.
+2. `no_documents` notunun **yeri** — §5.1 "notes'a eklenir" diyor, hangi satıra
+   demiyor. Gelir satırına konuldu, `not_invoiced` ile birlikte (ikisi de
+   doğrudur; okuyucu tabloyu yukarıdan aşağı okur ve ilk satırda karşılaşır).
+3. `result` **yuvarlanmış** kova toplamlarından hesaplanıyor. §7 "her toplam
+   round(,2), satır içi toplama yuvarlanmamış" diyor; sonuç satırı için
+   yuvarlanmamış toplam kullanılsaydı ekranda görünen dört sütun beşinciye
+   toplanmayabilirdi (kuruş farkı) ve kontrol eden okuyucu haklı çıkardı.
+
+**Sözleşmeden sapma (tek)**
+
+4. §5.2'nin SQL'ine `GROUP BY`'a `a.account_name, a.report_type, a.root_type,
+   a.account_type` eklendi. `a.name = g.account` üzerinden fonksiyonel bağımlı
+   oldukları için gruplama **değişmez**; amaç `ONLY_FULL_GROUP_BY` açık bir
+   MariaDB'de sorgunun reddedilmemesi. Başka hiçbir şey değişmedi.
+
+**Ölçümler (sözleşmedeki ifadeleri düzelten / tamamlayan)**
+
+5. §8.2/7'nin dondurduğu `deal_bid_pricing` anahtar kümesi **doğru** — canlı
+   dönüşten ölçüldü, 13 anahtar, birebir aynı.
+6. §8.2/4 "damgasız fatura GENEL GİDER'e gider" — yarısı doğru. Ölçüm: damgasız
+   bir JE'nin **P&L bacağı** GENEL GİDER'i taşır, **kasa bacağı hiçbir şey
+   taşımaz** (`tender` NULL). `default_gl_tender` bir bilanço satırına asla değer
+   EKLEMEZ (kendi docstring'i böyle diyor, madde 2). Testin iddiası buna göre
+   yazıldı: P&L bacağı = overhead **ve** hiçbir satır bu tender'ı taşımıyor.
+7. §8.2/2'nin varsaydığı şey doğrulandı: `_TC`'de teslimat notunun gider hesabı
+   gerçekten `account_type = "Cost of Goods Sold"`, yani teslimatın maliyeti
+   mutabakatın **landed** satırına (cogs + landed) katılıyor, tender giderlerini
+   şişirmiyor. Bu bir varsayım değil artık, ölçüm.
+8. §9 listesi eksikti: `by_voucher` tablosunun başlıkları için "Voucher type",
+   "Count", "Net" gerekiyor. Üçü de beş katalogda **zaten var**, yeniden
+   kullanıldı; yeni anahtar sayısı 15.
+
+**Ortam bulgusu — bir sonraki worktree'yi de vuracak**
+
+9. `.worktrees/` altındaki **her** worktree'de `make check` kırmızıydı:
+   `test_bulk_operator_assign` altı hatayla düşüyordu. Sebep P5b değil —
+   `frappe.logger()` log dosyasını `<cwd'nin üstü>/logs/frappe.log` olarak açıyor;
+   ana ağaçta bu `apps/logs` (var), worktree'de `.worktrees/logs` (yoktu) →
+   `FileNotFoundError`. Test edilen kod ana ağaçla **byte-identical**
+   (`git diff 53bd2aa..HEAD -- stabler/api/manufacturing.py …` boş) ve aynı modül
+   ana ağaçta yeşil. `mkdir .worktrees/logs` ile geçildi; dizin `.gitignore`'un
+   `.worktrees/` kuralı altında, depoya hiçbir şey girmiyor. Makefile'ın
+   `node_modules` symlink'i için yaptığı gibi, bu da worktree kurulumunun bir
+   parçası olarak yazılmalı.
+
+**Mutasyon kanıtı — yöntem notu**
+
+10. İlk mutasyon turunda bir mutasyon "yeşil kaldı" göründü. Sebep testin zayıf
+    olması değil, **bayat `__pycache__`**: iki ardışık mutasyon aynı saniyede
+    aynı BOYUTTA dosya ürettiğinden (`return debit - credit` /
+    `return credit - debit`, ikisi de 21 karakter) CPython'un (mtime, size)
+    geçersizleştirmesi eski `.pyc`'i yeniden kullandı. Koşum
+    `PYTHONDONTWRITEBYTECODE=1` ile tekrarlandı, mutasyon kırmızı oldu. Kayda
+    geçiriliyor: bu tuzak mutasyon kanıtını sessizce yalana çevirir.
+11. Bir Vue iddiası ilk yazımında **düzyazıyla** eşleşiyordu — bölümün başlığı
+    `t("Ledger vs documents")` "documents" kelimesini içeriyor, dolayısıyla
+    "para hücreleri `fm()`'den geçer" iddiası hiçbir şey ölçmüyordu. Nokta ile
+    çapalandı (`\.(documents|gl|delta|amount|stock_on_hand|net)\b`).
+12. Vitest'te bölüm, kendi HTML yorumu ile kartın aksiyon çubuğu arasından
+    dilimleniyor; dosya sonuna kadar dilimlenseydi "Save bid pricing" primary'si
+    her buton iddiasının içine girerdi.
+
+**Sayılar (komut çıktılarından)**
+
+- `make test`: `frappe-free modules: 284` (main'de 283 → kabul ölçütü 1).
+- `make check`: `Test Files 126 passed (126)` · `Tests 1657 passed (1657)` ·
+  `OK — pre-push gate passed.`
+- `python3 -m unittest stabler.tests.test_tender_gl`: `Ran 25 tests … OK`,
+  25 mutasyonun 25'i kırmızı görüldü.
+- bench probe `stabler.tests.test_tender_gl_bench`: `Ran 8 tests in 4.565s … OK`,
+  8 mutasyonun 8'i kırmızı görüldü (biri `tender.py`'ye geçici olarak bir anahtar
+  ekleyip geri aldı; `git status` ile dosyanın el değmemiş olduğu doğrulandı).
+- `npx vitest run … bidPricingLedger.spec.js`: `Tests 21 passed (21)`,
+  21 mutasyonun 21'i kırmızı görüldü.
