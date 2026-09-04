@@ -6732,3 +6732,5 @@ Nothing invoiced yet — the documents side reads 0.,Ҳали ҳисоб-фак�
 Landed charges show a credit surplus: the bill that capitalized them is booked to another tender or to GENEL GİDER. Re-tag that bill.,Етказиб бериш харажатларида кредит ортиқчаси бор: уларни капиталлаштирган ҳисоб бошқа тендерга ёки GENEL GİDER'га ёзилган. Ўша ҳисобни қайта белгиланг.
 Goods received for this tender and not yet delivered reach cost of goods on delivery.,Ушбу тендер учун қабул қилинган ва ҳали етказилмаган товарлар етказиб берилганда таннархга тушади.
 No documents-side figures for this deal.,Бу битим учун ҳужжатлар томонидан рақамлар йўқ.
+Unsafe dimension fieldname,Хавфсиз бўлмаган ўлчов майдони номи
+Expense Claim,Харажат аризаси

@@ -6732,3 +6732,5 @@ Nothing invoiced yet — the documents side reads 0.,Hali hisob-faktura chiqaril
 Landed charges show a credit surplus: the bill that capitalized them is booked to another tender or to GENEL GİDER. Re-tag that bill.,Yetkazib berish xarajatlarida kredit ortiqchasi bor: ularni kapitallashtirgan hisob boshqa tenderga yoki GENEL GİDER'ga yozilgan. O'sha hisobni qayta belgilang.
 Goods received for this tender and not yet delivered reach cost of goods on delivery.,Ushbu tender uchun qabul qilingan va hali yetkazilmagan tovarlar yetkazib berilganda tannarxga tushadi.
 No documents-side figures for this deal.,Bu bitim uchun hujjatlar tomonidan raqamlar yo'q.
+Unsafe dimension fieldname,Xavfsiz bo'lmagan o'lchov maydoni nomi
+Expense Claim,Xarajat arizasi
