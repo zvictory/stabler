@@ -765,3 +765,15 @@ dördüncü tur düzeltmesinde:
   `a3d45a3` ile yeşil HEAD arasındaki test dosyası farkı), loglar; sonuçlar bir sonraki kayıtta.
 - **Brifing düzeltmesi.** İnceleyiciye "dört commit" dendi; `c9bd043..ac2c3a6` üç commit (`770d9c5`,
   `a3d45a3`, `ac2c3a6`). Orkestratörün sayım hatası.
+
+**(i) (g)'nin çifti iz kaydıyla yeniden alındı** (13:50, `genesis-test.local`, `.worktrees/p5b-evidence-2026-09-04/`
+altında `provenance_round5.txt`, `red3_unguarded_r5.log`, `green_guarded_r5.log`, `red3_provenance.diff`,
+`whichstabler_*.json`, `stale_*_r5*.json`). Bayat satır eklendi (Finance Book listesi
+`["ADR609 P5B Default Book"]`). Kırmızı: atılabilir kopya HEAD `a3d45a3`, ağaç temiz, dosyada `exists`
+koruması yok (grep 0), `PYTHONPATH` altında `stabler.__file__` kopyayı gösteriyor; `Ran 8 tests in 6.266s`,
+`FAILED (errors=1)`, `Duplicate entry 'ADR609 P5B Default Book' for key 'PRIMARY'`; koşudan sonra bayat satır
+yerinde. Yeşil: worktree HEAD `7bd9375`, ağaç temiz, `stabler.__file__` worktree'yi gösteriyor;
+`Ran 9 tests in 5.166s OK`, atlanan test yok; koşudan sonra Finance Book listesi boş,
+`_Test Company.default_finance_book` NULL, yetim sayımı 44 (`CRM-DEAL-2026-00555`, iptal). İki ağaç arasındaki
+test dosyası farkı `red3_provenance.diff` (33 satır). `7bd9375`'in commit'inden önceki `make check`:
+`frappe-free modules: 284`, `Test Files 126 passed`, `Tests 1657 passed`, `OK — pre-push gate passed`.
