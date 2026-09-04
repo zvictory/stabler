@@ -56,33 +56,41 @@ def _landed_accounts() -> frozenset:
 def _ledger_rows(deal: str, company: str, fieldname: str) -> list[dict]:
 	"""One grouped read: account x voucher type, for this tender, this company.
 
-	Three filters, and every one of them is ERPNext's, copied rather than
-	invented. The failure that matters is this screen and the site's own Profit
-	and Loss disagreeing about the same ledger rows: at that point neither can be
-	trusted and nothing on either screen says which is wrong.
+	The row set is the **Profit and Loss Statement's**, exactly — not the Trial
+	Balance's. Both call `set_gl_entries_by_account` and differ only in the flags
+	they pass, so "which report are we" is the whole decision here. The failure
+	that matters is this screen and the site's own P&L disagreeing about the same
+	ledger rows: at that point neither can be trusted, and nothing on either
+	screen says which is wrong.
+
+	Three filters, and every one of them is the P&L's, copied rather than invented:
 
 	  * `is_cancelled = 0`. A cancelled voucher's reversal rows are cancelled too,
 	    so their net effect is already nil; the filter keeps the counts and the
 	    account list honest rather than changing a total.
-	  * **Not a Period Closing Voucher** (`financial_statements.py:598`). Closing
-	    the fiscal year posts the reverse of every P&L balance into retained
-	    earnings, and `period_closing_voucher.update_default_dimensions`
+	  * **Not a Period Closing Voucher** (`financial_statements.py:596-598`, under
+	    the `ignore_closing_entries=True` the P&L passes). Closing the fiscal year
+	    posts the reverse of every P&L balance into retained earnings, and
+	    `period_closing_voucher.update_default_dimensions`
 	    (`period_closing_voucher.py:264`) stamps every accounting dimension onto
 	    those rows — the tender included, since P5a made it one. Read naively,
 	    every bucket of a closed tender nets to ~0 and all four reconciliation
 	    deltas become the negative of the documents side. Nothing looks broken.
 	    The tender simply reports that it earned and spent nothing.
-	  * **Not an opening entry** (`financial_statements.py:555`), unless the site
-	    has set `Accounts Settings.ignore_is_opening_check_for_reporting` — in
-	    which case ERPNext keeps those rows and so must we, or the two readers
-	    part company on the sites that flipped the flag precisely so they would
-	    not. An opening balance is carried IN, not traded.
+	  * **No finance book** (`financial_statements.py:626-632`). That arm is an
+	    unguarded `else`, so the P&L applies it on every run; with no finance-book
+	    filter it reduces to exactly the predicate below. A site that keeps a
+	    second book would otherwise have both sets summed into one bucket.
+
+	There is deliberately NO `is_opening` predicate. `ignore_opening_entries`
+	defaults to False (`financial_statements.py:444`, `:515`) and the P&L never
+	sets it (`profit_and_loss_statement.py:37-54` passes only
+	`ignore_closing_entries=True`) — it is the BALANCE SHEET branch (`:480`) and
+	the Trial Balance (`trial_balance.py:114`) that turn it on. An opening row on
+	a P&L account is rare, because `gl_entry.py::check_pl_account` refuses one on
+	the ordinary write path, but a repost or a migration can leave one and the
+	site's P&L counts it. So must this.
 	"""
-	# Same single, same name, same polarity as `financial_statements.py:547`.
-	ignore_is_opening = frappe.db.get_single_value(
-		"Accounts Settings", "ignore_is_opening_check_for_reporting"
-	)
-	opening = "" if ignore_is_opening else "AND g.is_opening = 'No'"
 	return frappe.db.sql(
 		f"""
 		SELECT g.account, a.account_name, a.report_type, a.root_type, a.account_type,
@@ -93,7 +101,7 @@ def _ledger_rows(deal: str, company: str, fieldname: str) -> list[dict]:
 		  AND g.company = %(company)s
 		  AND g.is_cancelled = 0
 		  AND g.voucher_type != 'Period Closing Voucher'
-		  {opening}
+		  AND (g.finance_book IS NULL OR g.finance_book = '')
 		GROUP BY g.account, g.voucher_type, a.account_name, a.report_type, a.root_type, a.account_type
 		""",
 		{"deal": deal, "company": company},

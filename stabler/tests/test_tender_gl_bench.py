@@ -337,41 +337,46 @@ class TestSalesSide(_LedgerFixture):
 
 
 class TestLedgerFilters(_LedgerFixture):
-	"""The two kinds of row ERPNext's own P&L refuses to read, and this one must too.
+	"""The row set this screen reads is the Profit and Loss Statement's, exactly.
 
-	Both are invisible until a fiscal year is closed on a live site, and both are
-	silent when they arrive: the figures stay plausible, they just stop being the
-	tender's trading result.
+	Not the Trial Balance's, and that distinction is the whole test. Both reports
+	call `set_gl_entries_by_account`, and they pass it different flags:
 
-	  * A **Period Closing Voucher** posts the reverse of every P&L balance into
-	    retained earnings, and `update_default_dimensions`
+	  * `profit_and_loss_statement.py:37-54` passes `ignore_closing_entries=True`
+	    and nothing else, so `ignore_opening_entries` keeps its default False
+	    (`financial_statements.py:444`, `:515`) and the site's own P&L **includes**
+	    opening rows;
+	  * `trial_balance.py:114` passes `ignore_opening_entries=True`, and the
+	    balance-sheet branch sets it at `:480`. Those are the readers that drop
+	    opening rows, and this screen is neither of them.
+
+	Three filters remain, and every one is the P&L's:
+
+	  * **cancelled** — a cancelled voucher's reversal rows are cancelled too, so
+	    the net effect is already nil; the filter keeps the counts honest.
+	  * **not a Period Closing Voucher** (`financial_statements.py:596-598`, under
+	    `ignore_closing_entries=True`). Closing the year posts the reverse of every
+	    P&L balance into retained earnings, and `update_default_dimensions`
 	    (`period_closing_voucher.py:264`) stamps every accounting dimension onto
-	    those rows — the tender included, since P5a made it a dimension. Summed
-	    naively, a closed tender's every bucket nets to ~0 and all four deltas
-	    become the negative of the documents side. Nothing looks broken; the
-	    tender simply reports that it earned and spent nothing.
-	  * An **opening entry** carries a balance INTO the period. It is not
-	    trading, and `financial_statements.py:555` drops it — unless the site has
-	    set `Accounts Settings.ignore_is_opening_check_for_reporting`, in which
-	    case ERPNext keeps it and so must we.
+	    those rows — the tender included, since P5a made it one. Read naively, a
+	    closed tender's every bucket nets to ~0 and all four reconciliation deltas
+	    become the negative of the documents side. Nothing looks broken. The tender
+	    simply reports that it earned and spent nothing.
+	  * **no finance book** (`financial_statements.py:626-632`). That arm is an
+	    unguarded `else`, so the P&L applies it on EVERY run: with no finance-book
+	    filter it reduces to `finance_book IS NULL OR finance_book = ''`. On a site
+	    that keeps a second book, its rows would otherwise be summed alongside the
+	    ordinary ones and the tender would report both sets of books at once.
 
-	    Measured while writing this test: on the ORDINARY write path ERPNext will
-	    not create such a row at all — `check_pl_account` throws for a P&L account
-	    with `is_opening = "Yes"`. So this half of the filter is defence in depth
-	    rather than a live defect: it covers the paths that skip that validation
-	    (a repost, a closing voucher, a data migration), and it keeps this screen
-	    reading the same rows as the site's own Profit and Loss. The closing
-	    voucher half is NOT defensive — those rows are real, and they carry the
-	    tender today.
-
-	The rule is mirrored rather than invented, because the failure that matters
-	is this screen and the site's own Profit and Loss disagreeing about the same
-	rows — at which point neither can be trusted and there is no way to tell
-	which is wrong.
+	The opening row below is IN, and that is the point of it. It is posted with
+	`flags.from_repost` because the ordinary write path will not create one at
+	all — `gl_entry.py::check_pl_account` throws for `is_opening = "Yes"` on a P&L
+	account — so a repost or a data migration is the only way such a row exists.
+	Rare, but when it exists the site's P&L counts it and so must this screen.
 
 	Built as GL Entry documents directly, the way `general_ledger.make_entry`
-	does, because a real Period Closing Voucher would close the site's fiscal
-	year to measure a WHERE clause.
+	does, because a real Period Closing Voucher would close the site's fiscal year
+	to measure a WHERE clause.
 	"""
 
 	@classmethod
@@ -386,7 +391,16 @@ class TestLedgerFilters(_LedgerFixture):
 			)
 
 	def _post_row(
-		self, *, account, voucher_type, voucher_no, debit=0.0, credit=0.0, is_opening="No", from_repost=False
+		self,
+		*,
+		account,
+		voucher_type,
+		voucher_no,
+		debit=0.0,
+		credit=0.0,
+		is_opening="No",
+		from_repost=False,
+		finance_book=None,
 	):
 		"""One submitted GL row carrying the tender, erased when the test ends."""
 		currency = frappe.db.get_value("Account", account, "account_currency") or self.currency
@@ -405,6 +419,7 @@ class TestLedgerFilters(_LedgerFixture):
 				"voucher_type": voucher_type,
 				"voucher_no": voucher_no,
 				"is_opening": is_opening,
+				"finance_book": finance_book,
 				# Set explicitly: `default_gl_tender` deliberately skips a closing
 				# voucher, so on a real site this value arrives from ERPNext's own
 				# `update_default_dimensions` — which is exactly the row shape here.
@@ -430,12 +445,14 @@ class TestLedgerFilters(_LedgerFixture):
 		)
 		return row.name
 
-	def test_a_year_end_close_and_an_opening_balance_stay_out_of_the_tenders_result(self):
-		"""WHAT WOULD MAKE THIS FAIL: either predicate dropped from `_ledger_rows`.
+	def test_the_reader_keeps_exactly_the_rows_the_sites_own_p_and_l_keeps(self):
+		"""WHAT WOULD MAKE THIS FAIL: any of the three predicates dropped — or an
+		`is_opening` predicate ADDED, which is how this screen last diverged.
 
-		The closing row is deliberately far larger than the trading row, so a
-		version that reads it does not merely drift — it reports the tender's
-		revenue as the whole year's closed-out income.
+		The two excluded rows are deliberately far larger than the two kept ones,
+		so a version that reads them does not merely drift: it reports a year of
+		closed-out income as this tender's revenue, or a second set of books as
+		its costs.
 		"""
 		self._post_row(
 			account=self.income,
@@ -443,6 +460,14 @@ class TestLedgerFilters(_LedgerFixture):
 			voucher_no="ADR609-P5B-PCV",
 			credit=9_000_000.0,
 		)
+		self._post_row(
+			account=self.expense,
+			voucher_type="Journal Entry",
+			voucher_no="ADR609-P5B-FB",
+			debit=4_000_000.0,
+			finance_book="ADR609 P5B Book",
+		)
+		# IN. The site's own P&L counts it, so this screen must too.
 		self._post_row(
 			account=self.expense,
 			voucher_type="Journal Entry",
@@ -463,12 +488,19 @@ class TestLedgerFilters(_LedgerFixture):
 			gl["buckets"]["revenue"]["total"], 0.0, "the year-end close was read as this tender's revenue"
 		)
 		self.assertEqual(
-			gl["buckets"]["expenses"]["total"], 321.0, "an opening balance was read as a tender cost"
+			gl["buckets"]["expenses"]["total"],
+			5_000_321.0,
+			"the ledger read is no longer the rows the site's own P&L keeps: an opening row was "
+			"dropped (it should be kept) or a finance-book row was summed (it should not)",
 		)
-		self.assertEqual(gl["result"], -321.0)
-		self.assertEqual(gl["row_count"], 1, "a row ERPNext's own P&L excludes reached a bucket")
+		self.assertEqual(gl["result"], -5_000_321.0)
 		self.assertEqual(
 			[v["voucher_type"] for v in gl["by_voucher"]],
 			["Journal Entry"],
 			"an excluded voucher type was listed as a source of these figures",
+		)
+		self.assertEqual(
+			gl["by_voucher"][0]["count"],
+			2,
+			"the finance-book row was counted as a source of the tender's costs",
 		)
