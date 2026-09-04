@@ -2338,7 +2338,8 @@ Cleanup proposal, NOT executed, needs Zafar: `.worktrees/p5b-evidence-2026-09-04
 (GL 8, PLE 2, SLE 2, the two invoices and two orders with their items, the 2 RIV rows), then
 `erpnext.stock.stock_balance.repost_stock("UAT-IMP-BEEF-TRIM-01", "Stores - MIK")` rebuilds the Bin from SLE.
 Opens with `DRY_RUN = True`. `Accounts Settings.delete_linked_ledger_entries` is 0 there, so `delete_doc`
-alone would leave the ledger rows. Series numbers are not rolled back. The v103 schema is a separate decision:
+alone would leave the ledger rows. Series numbers ARE rolled back when the deleted name is the series' last
+(`delete_doc.py:240-241`; the earlier "not rolled back" here was wrong — see the outcome below). The v103 schema is a separate decision:
 P5a's deploy brings it anyway; to undo, delete Accounting Dimension `Tender` (it removes its 57 Custom Fields;
 the columns stay) and `CRM-DEAL-2026-00014`.
 
@@ -2350,6 +2351,42 @@ description. And a probe command carries `--site genesis-test.local` verbatim in
 default site holds tenant data turns an unqualified `bench run-tests` into a write on that data. Candidates:
 a Makefile `probe` target with the site hardcoded (`PYTHONPATH=$(WT) bench --site genesis-test.local run-tests
 --module $(MODULE)`), and/or `default_site` → genesis-test.local (Zafar's environment decision).
+
+**Outcome, 2026-09-04 16:35–16:54 — cleaned, approved by Zafar step by step** (evidence in
+`.worktrees/p5b-evidence-2026-09-04/`: `stabler_residue_cleanup_v3.py`, `cleanup_v3_run.log`,
+`cleanup_v3_postcheck.json`, `cleanup_v3_rq_after.json`, `process_riv.py`, `cleanup_v3_process_riv.log`,
+`cleanup_v3_gl_after.json`).
+- **v1 was unsafe as documented.** It said `bench console < file`; `bench console` is IPython reading stdin cell by
+  cell and IPython swallows `SystemExit`, so neither a failed guard nor `DRY_RUN` would have stopped the delete
+  cells after it. Measured on genesis-test.local: `print("A"); raise SystemExit(0); print("B")` on stdin printed
+  both. v2 runs as a plain `env/bin/python` process (`frappe.init` + `connect`, cwd `sites/`), where `SystemExit`
+  ends the script (measured). v2's live run failed at the Repost Item Valuation delete — both RIVs were submitted
+  and `delete_doc` checks that regardless of `force` (`delete_doc.py:162`) — and died before `commit`, so MariaDB
+  rolled everything back (re-measured from a fresh process: every count, the Bin and both series unchanged). v3
+  asserts `docstatus 1` in the RIV guard and cancels each RIV through the ORM before deleting it.
+- **Deleted, committed, re-measured from a fresh process:** the two invoices, two orders and two RIVs are gone,
+  their GL/PLE/SLE rows are 0, no GL row carries `CRM-DEAL-2026-00015` any more; Sales Invoices 7 240 → 7 238,
+  Sales Orders 5 843 → 5 841; a `Deleted Document` row per record; series `ACC-SINV-2026-` 7435 → 7434 and
+  `SAL-ORD-2026-` 5895 → 5894 (the next documents reuse 07435 / 05895, 07434 / 05894 stay gaps). `delete_doc`
+  queued six `delete_dynamic_links` jobs; no worker runs on this bench, so they wait with the two
+  `make_dimension_in_accounting_doctypes` jobs the 12:48 patch run left in `long`.
+- **`repost_stock` does not rebuild the Bin synchronously** — the proposal above said it would. It queues a
+  Repost Item Valuation from 1900-01-01 (`stock_balance.repost_actual_qty` → `create_repost_item_valuation_entry`)
+  and updates only reserved/ordered/indented/planned. The Bin stayed at 19 998 against an SLE balance of 20 000
+  until RIV `go8cnongti` was processed, with approval, through ERPNext's own `repost()`: Bin 20 000 /
+  1 156 643 457.60, equal to the SLE; the two Purchase Receipts' SLE rows unchanged.
+- **The repost also rewrote the nine GL rows of `MAT-PRE-2026-00003` / `00004`.** ERPNext deletes and re-creates
+  a voucher's GL only when the stored rows differ from `get_gl_entries()` in count, account set or amount at
+  precision (`accounts/utils.py:1652-1690`, `compare_existing_and_expected_gle` `:1815`), so a difference
+  existed — and the before-rows were NOT captured (the snapshot kept only the count), so what it was is unknown.
+  After-state is consistent: each voucher balanced; Stock In Hand debit = net total + landed cost = Σ qty ×
+  valuation_rate (806 485 675.20 and 537 657 116.80); credits Stock Received But Not Billed + Expenses Included
+  In Valuation; three rows of ~1e-8 float dust (two Round Off, one COGS) — a count mismatch on such dust rows is
+  the plausible cause, unproven. Both are local UAT receipts (2026-08-09/10) with no Purchase Invoice.
+  **Rule:** before any repost, write the affected vouchers' full GL rows (name, account, debit, credit,
+  cost_center) to a file — never just a count — or the rewrite cannot be audited afterwards.
+- **Still open from this entry:** the v103 schema on `stabler` (P5a's deploy brings it anyway); the two queued
+  dimension jobs; the `probe` target / `default_site` candidates above.
 
 ## 2026-09-04 — P5c candidates (ADR-609, for the council)
 
