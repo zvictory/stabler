@@ -644,3 +644,61 @@ onayına bırakıldı.
 (şirketin varsayılan defterindeki satır düşürüldü). Kırmızı 2 (yüklem tamamen
 kaldırıldığında olmayan defterin toplanması) **alınamadı** — yukarıdaki sızıntı
 temizlenene kadar bench ölçümü güvenilir değil.
+
+### 2026-09-04 — dördüncü inceleme turu: kanıt pinlenmiş sitede alındı, üçüncü döngü yanlış sitede koşmuştu, döngü sınırı doldu
+
+**(a) Tur 4 bulguları (`stabler-diff-reviewer`, 60 araç kullanımı).** P1 düzeltmesi kaynağa
+karşı temiz: `tender_gl.py:115` yüklemi `financial_statements.py:624-627` ile birebir
+(`filters.finance_book` boş → `cstr(None) == ""`), `:616` koruyucu, `profit_and_loss_statement.js:45,48`
+`default: 1`; `company_fb` bağlı parametre (`:118`), `frappe.db.get_value` + `or ""` (`:104`); başka
+satır-kümesi filtresi oynamadı; Log salt-ekleme; yalnızca §4 dosyaları; imzalar tam. Bulgular:
+**P1** — §10.3'ün bench kanıtı Log'da yok; (c) "alınamadı" diyor. **P2** —
+`test_tender_gl_bench.py:402-405` Finance Book `insert()` öncesinde `frappe.db.exists` koruması yok
+(`autoname: field:finance_book_name`, unique); yarıda kesilen bir koşu satırı bırakır, sonraki
+`setUpClass` `DuplicateEntryError` ile düşer — modülün kendi emsali `test_tender_dimension_bench.py:828-831`.
+**P2** — `:406-408` yorumu `force=True` ile fırlayamayacak bir `LinkExistsError` gerekçesi veriyor
+(`frappe/model/delete_doc.py:170-173`); sıralama doğru, gerekçe uydurma; aynı cümle `30af816`'nın
+mesajında ve yukarıdaki Log (b)'de. Doğru gerekçe: geri yükleme en son kaydedilir ki LIFO onu defter
+satırı silinmeden ve `_Fixture`'ın tek commit'inden önce çalıştırsın; commit edilen şirket orijinal kalsın.
+
+**(b) Kanıt, orkestratör tarafından pinlenmiş sitede alındı** (`genesis-test.local`, `PYTHONPATH`
+`c9bd043`'te atılabilir bir worktree'ye, `PYTHONDONTWRITEBYTECODE=1`). Yeşil: `Ran 9 tests in 13.131s`
+`OK`. Kırmızı 1 (sıkı `= ''` geri konuldu): `FAILED (failures=1)`, `5000321.0 != 5600321.0`. Kırmızı 2
+(defter filtresi kaldırıldı): `FAILED (failures=1)`, `9600321.0 != 5600321.0`. Üç koşunun öncesi ve
+sonrası aynı: tender taşıyan GL satırları yalnızca `CRM-DEAL-2026-00555` altında 44 iptal satır (P5a
+süpürmesinin yetimleri), Finance Book listesi boş, `_Test Company.default_finance_book` NULL, seri 574 —
+modül bu sitede kalıntı bırakmıyor. Tur 4'ün P1'i böylece ölçümle kapandı; (c)'deki "alınamadı"
+tarih olarak duruyor.
+
+**(c) Üçüncü döngünün bench komutları yanlış sitede koştu.** `bench.log`: 12:46:41, 12:48:32, 12:48:59
+`bench --site stabler run-tests --module stabler.tests.test_tender_gl_bench`; 12:48:03
+`bench --site stabler execute stabler.patches.v103_tender_accounting_dimension.execute`. `stabler`,
+`common_site_config.json`'daki `default_site` ve `sites/currentsite.txt`; ANJAN ve Mikas verisi taşıyan
+yerel çalışma kopyası (86.025 GL satırı, 7.240 satış faturası, Patch Log v100'de). Yukarıdaki (b)/(c)
+paragraflarının "site P5a'yı kaybetmiş / iki şirkette de varsayılan defter yok" ölçümleri o siteye aittir;
+`genesis-test.local` hiçbir şey kaybetmemişti (Patch Log'da v102 ve v103, 01:58:24'teki `migrate` ile;
+boyut, sütun ve 44 yetim satır yerinde). O sitede bırakılanlar — v103'ün elle koşulması (boyut, 57 Custom
+Field, `CRM-DEAL-2026-00014`), iki yarım-iptal fatura (`ACC-SINV-2026-07434/07435`: docstatus 2, 8 GL + 2
+SLE + 2 PLE satırı `is_cancelled 0`), iki Closed+iptal sipariş, `UAT-IMP-BEEF-TRIM-01 @ Stores - MIK`
+20.000 → 19.998 — envanteriyle backlog'da; korumalı, DRY_RUN öncelikli temizlik önerisi yazıldı,
+**çalıştırılmadı**. Raporun "yazıldı, hazır" dediği `cleanup.py` 2026-09-02 tarihli ve sitedeki bütün
+Sales Order'ları iptal edip silen bir dosyaydı; izin sınıflandırıcısı reddetmişti. İki kural: probe komutu
+her brifingde `--site genesis-test.local` ile yazılır; bir temizlik betiği tanımıyla değil okunarak onaylanır.
+
+**(d) Hermetiklik teşhisinin ölçülmüş hâli.** İnceleyici zincirin üçüncü halkasını kaynaktan çürüttü:
+stok ERPNext'te `make_sales_invoice` `update_stock=0` üretir (`sales_invoice.json` default "0"; SO→SI
+eşlemesi alanı taşımaz). Ölçüm: `stabler` sitesinde `Property Setter` `Sales Invoice.update_stock`
+`default = "1"` → `frappe.new_doc("Sales Invoice").update_stock == 1`; `genesis-test.local`'da böyle bir
+ayar yok → 0. Yani (c)'deki zincir o sitede site özelleştirmesiyle gerçek, pinlenmiş sitede yok. Siteden
+bağımsız kusur ayrı: `_erase_voucher` (`test_tender_dimension_bench.py:254-267`) try/finally'siz; iptal
+yarıda kesilirse sınıf düzeyi commit (`:154`; ayrıca `integration_test_case.py:65` her sınıf başında
+commit) docstatus 2 / `is_cancelled 0` şeklini kalıcılaştırır; `revert_series_if_last`
+(`delete_doc.py:240-241`) seriyi bilerek geri sayar ve ad yeniden dağıtılır. Düzeltme yolu P5b'nin kendi
+dosyasında: `_LedgerFixture` kendi Customer/Item/Warehouse/Stock Entry'sini kurar (§10.3'ün zaten
+söylediği dal) ve `_erase_voucher`'ı sarmalayarak her adımı raporlar.
+
+**(e) Döngü sayacı 3/3; dal `c9bd043` + bu kayıtta bırakıldı.** Açık kalan: (a)'daki iki P2 ve (d)'deki
+hermetiklik. Orkestratör skill §6: üçüncü döngüden sonra dur, kanıtı yaz, Zafar'a sor. Seçenekler:
+(1) dördüncü düzeltme döngüsü; (2) orkestratör iki P2'yi kendisi kapatır, hermetiklik ayrı kırmızı-önce
+iş olur; (3) P2'ler backlog'a, birleştirme şimdi. Birleştirme, `make test-bench` ve push yapılmadı —
+talimat "PASS gelince" idi, PASS gelmedi.
