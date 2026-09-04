@@ -362,11 +362,15 @@ class TestLedgerFilters(_LedgerFixture):
 	    closed tender's every bucket nets to ~0 and all four reconciliation deltas
 	    become the negative of the documents side. Nothing looks broken. The tender
 	    simply reports that it earned and spent nothing.
-	  * **no finance book** (`financial_statements.py:626-632`). That arm is an
-	    unguarded `else`, so the P&L applies it on EVERY run: with no finance-book
-	    filter it reduces to `finance_book IS NULL OR finance_book = ''`. On a site
-	    that keeps a second book, its rows would otherwise be summed alongside the
-	    ordinary ones and the tender would report both sets of books at once.
+	  * **the books a default P&L run reads** (`financial_statements.py:616-632`).
+	    Not "no finance book": that `if/else` is a FORK, and the Profit and Loss
+	    Statement ships `include_default_book_entries` with `default: 1`
+	    (`profit_and_loss_statement/profit_and_loss_statement.js:45-48`), so a
+	    default run takes the FIRST arm (`:624-627`) — no book, the empty book, and
+	    the company's default book (`:617`). The `else` at `:628-632` is what a
+	    reader sees only after unchecking that box. A site that keeps a SECOND book
+	    must not have its rows summed alongside the ordinary ones; a site that keeps
+	    a DEFAULT book must not have its rows dropped. Both are one predicate.
 
 	The opening row below is IN, and that is the point of it. It is posted with
 	`flags.from_repost` because the ordinary write path will not create one at
@@ -389,6 +393,27 @@ class TestLedgerFilters(_LedgerFixture):
 			raise AssertionError(
 				f"cannot post a P&L row on this site: income={cls.income!r} cost_center={cls.cost_center!r}"
 			)
+		# The site has no default finance book — and that absence is what hid the
+		# bug. Measured 2026-09-04 on this site: no `Finance Book` row exists, no GL
+		# row carries one, and both companies' `default_finance_book` is NULL. With
+		# no default book the P&L's two arms select the same rows, so the wrong arm
+		# can be copied and every test still passes. The fixture supplies the
+		# difference the site does not have.
+		book = frappe.get_doc({"doctype": "Finance Book", "finance_book_name": "ADR609 P5B Default Book"})
+		book.flags.ignore_permissions = True
+		book.insert()
+		cls.default_book = cls._track("Finance Book", book.name)
+		# Registered AFTER the delete, so LIFO restores the company FIRST: deleting a
+		# Finance Book the company still points at raises `LinkExistsError`. Both run
+		# before `_Fixture`'s single commit, so the committed company is the original.
+		cls.addClassCleanup(
+			frappe.db.set_value,
+			"Company",
+			cls.company,
+			"default_finance_book",
+			frappe.db.get_value("Company", cls.company, "default_finance_book"),
+		)
+		frappe.db.set_value("Company", cls.company, "default_finance_book", cls.default_book)
 
 	def _post_row(
 		self,
@@ -446,13 +471,15 @@ class TestLedgerFilters(_LedgerFixture):
 		return row.name
 
 	def test_the_reader_keeps_exactly_the_rows_the_sites_own_p_and_l_keeps(self):
-		"""WHAT WOULD MAKE THIS FAIL: any of the three predicates dropped — or an
-		`is_opening` predicate ADDED, which is how this screen last diverged.
+		"""WHAT WOULD MAKE THIS FAIL: any of the three predicates dropped, the
+		finance-book one NARROWED to `= ''`, or an `is_opening` predicate ADDED —
+		the last two are how this screen has already diverged twice.
 
-		The two excluded rows are deliberately far larger than the two kept ones,
-		so a version that reads them does not merely drift: it reports a year of
-		closed-out income as this tender's revenue, or a second set of books as
-		its costs.
+		The excluded rows are deliberately far larger than the ordinary one, so a
+		version that reads them does not merely drift: it reports a year of
+		closed-out income as this tender's revenue, or a second set of books as its
+		costs. The default-book row is large for the mirror reason — dropping it
+		does not shave a rounding error off the total, it loses a posting.
 		"""
 		self._post_row(
 			account=self.income,
@@ -466,6 +493,16 @@ class TestLedgerFilters(_LedgerFixture):
 			voucher_no="ADR609-P5B-FB",
 			debit=4_000_000.0,
 			finance_book="ADR609 P5B Book",
+		)
+		# IN. A default P&L run keeps the COMPANY'S DEFAULT book beside the bookless
+		# rows, and reading only the bookless ones silently loses every posting a
+		# site with a default book makes — which, on such a site, is most of them.
+		self._post_row(
+			account=self.expense,
+			voucher_type="Journal Entry",
+			voucher_no="ADR609-P5B-DEFAULT-FB",
+			debit=600_000.0,
+			finance_book=self.default_book,
 		)
 		# IN. The site's own P&L counts it, so this screen must too.
 		self._post_row(
@@ -489,11 +526,12 @@ class TestLedgerFilters(_LedgerFixture):
 		)
 		self.assertEqual(
 			gl["buckets"]["expenses"]["total"],
-			5_000_321.0,
+			5_600_321.0,
 			"the ledger read is no longer the rows the site's own P&L keeps: an opening row was "
-			"dropped (it should be kept) or a finance-book row was summed (it should not)",
+			"dropped or the company's default finance book was dropped (both should be kept), "
+			"or a NON-default finance book was summed (it should not)",
 		)
-		self.assertEqual(gl["result"], -5_000_321.0)
+		self.assertEqual(gl["result"], -5_600_321.0)
 		self.assertEqual(
 			[v["voucher_type"] for v in gl["by_voucher"]],
 			["Journal Entry"],
@@ -501,6 +539,7 @@ class TestLedgerFilters(_LedgerFixture):
 		)
 		self.assertEqual(
 			gl["by_voucher"][0]["count"],
-			2,
-			"the finance-book row was counted as a source of the tender's costs",
+			3,
+			"the row count no longer matches the P&L's: the non-default finance book was "
+			"counted in, or the default one was counted out",
 		)

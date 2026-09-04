@@ -77,10 +77,20 @@ def _ledger_rows(deal: str, company: str, fieldname: str) -> list[dict]:
 	    every bucket of a closed tender nets to ~0 and all four reconciliation
 	    deltas become the negative of the documents side. Nothing looks broken.
 	    The tender simply reports that it earned and spent nothing.
-	  * **No finance book** (`financial_statements.py:626-632`). That arm is an
-	    unguarded `else`, so the P&L applies it on every run; with no finance-book
-	    filter it reduces to exactly the predicate below. A site that keeps a
-	    second book would otherwise have both sets summed into one bucket.
+	  * **The books a default P&L run reads** (`financial_statements.py:616-632`).
+	    That `if/else` is a FORK, not an unguarded arm, and the guard at `:616` is
+	    `include_default_book_entries` — which the Profit and Loss Statement ships
+	    checked (`profit_and_loss_statement/profit_and_loss_statement.js:45-48`,
+	    `default: 1`). So a default run takes the FIRST arm (`:624-627`): rows with
+	    no book, rows with the empty book, and rows in the COMPANY'S DEFAULT book
+	    (`:617`). The `else` at `:628-632` is what a reader sees only after
+	    unchecking that box. Reading the `else` costs a site with a default finance
+	    book every posting it makes; reading neither costs a site with a second set
+	    of books the separation between them.
+	    `company_fb` is read with `frappe.db.get_value`, not the `get_cached_value`
+	    of `:617`: one query per screen open buys a value a test can change without
+	    an explicit cache invalidation, and correctness that depends on remembering
+	    to invalidate is the kind that stops being correct.
 
 	There is deliberately NO `is_opening` predicate. `ignore_opening_entries`
 	defaults to False (`financial_statements.py:444`, `:515`) and the P&L never
@@ -91,6 +101,7 @@ def _ledger_rows(deal: str, company: str, fieldname: str) -> list[dict]:
 	the ordinary write path, but a repost or a migration can leave one and the
 	site's P&L counts it. So must this.
 	"""
+	company_fb = frappe.db.get_value("Company", company, "default_finance_book") or ""
 	return frappe.db.sql(
 		f"""
 		SELECT g.account, a.account_name, a.report_type, a.root_type, a.account_type,
@@ -101,10 +112,10 @@ def _ledger_rows(deal: str, company: str, fieldname: str) -> list[dict]:
 		  AND g.company = %(company)s
 		  AND g.is_cancelled = 0
 		  AND g.voucher_type != 'Period Closing Voucher'
-		  AND (g.finance_book IS NULL OR g.finance_book = '')
+		  AND (g.finance_book IS NULL OR g.finance_book IN ('', %(company_fb)s))
 		GROUP BY g.account, g.voucher_type, a.account_name, a.report_type, a.root_type, a.account_type
 		""",
-		{"deal": deal, "company": company},
+		{"deal": deal, "company": company, "company_fb": company_fb},
 		as_dict=True,
 	)
 
