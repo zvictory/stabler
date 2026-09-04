@@ -566,3 +566,81 @@ ve yalnız o test düşüyor — kapatılan boşluk tam olarak bu.
 **Bu turun kabul ölçütleri.** `make check` yeşil; bench modülü 9 test, skip yok;
 `stabler.tests.test_tender_gl` 25 test (saf katman bu turda değişmedi — kural değişikliği
 yok, yalnız hangi SATIRLARIN okunduğu değişti, ki o da `tender_gl.py`'de yaşıyor).
+
+---
+
+### 2026-09-04 — üçüncü inceleme turu: finance-book yüklemi yanlış kolu kopyalamıştı
+
+**(a) Düzeltme, ve kaynağın kendisinden ölçülmüş hâli.** İkinci turda eklenen
+finance-book yüklemi `financial_statements.py`'nin `else` kolunu kopyaladı. O kol
+**korumalı**: `:616` `if filters.get("include_default_book_entries"):` ve Kâr/Zarar
+raporu bu filtreyi **işaretli** gönderiyor
+(`profit_and_loss_statement/profit_and_loss_statement.js:45-48`, `default: 1`).
+Dolayısıyla varsayılan bir K/Z koşusu **birinci** kolu alıyor (`:624-627`):
+`finance_book IN (cstr(filters.finance_book), cstr(company_fb), '')` veya NULL —
+yani defteri olmayan satırlar, boş defterli satırlar **ve şirketin varsayılan
+defteri** (`:617`). `:628-632`'deki `else`, kullanıcı o kutunun işaretini
+kaldırdığında görülen şey.
+
+Bu, birinci turdaki açılış filtresiyle **aynı sınıftan** bir hata: ERPNext kaynağı
+hakkında bir iddia, korumaya bakılmadan üç ayrı yere yazıldı — üretim docstring'i
+(`tender_gl.py`), bench testi docstring'i (`test_tender_gl_bench.py`) ve bu Log'un
+(b) maddesi. Üçü de bu turda düzeltildi; (b) maddesindeki
+"`financial_statements.py:626-632`" alıntısı **iki kolun ortasından** geçiyordu ve
+o hâliyle yanlıştı. Yanlış bir kaynak alıntısı docstring'de bırakılmadı.
+
+Yeni yüklem:
+
+    AND (g.finance_book IS NULL OR g.finance_book IN ('', %(company_fb)s))
+
+`company_fb` **parametre**, ve `frappe.db.get_value` ile okunuyor — `:617`'nin
+`get_cached_value`'su ile değil. Ekran açılışı başına bir sorgu, karşılığında testin
+alanı değiştirip açık bir cache temizliği yazmadan görebildiği bir değer. Şirketin
+varsayılan defteri yoksa `IN ('', '')` bugünkü yükleme iniyor; bu sitede öyle.
+
+**(b) Testin göremediği şey, sitenin kendisiydi.** Ölçüldü (2026-09-04, `stabler`
+sitesi): hiç `Finance Book` kaydı yok, hiçbir GL satırı defter taşımıyor ve her iki
+şirketin de `default_finance_book`'u NULL. **Varsayılan defter yokken K/Z'nin iki
+kolu aynı satırları seçiyor** — yani yanlış kol kopyalanabilir ve bütün testler yine
+yeşil kalır. Bu yüzden `TestLedgerFilters.setUpClass` artık eksik olan farkı kendisi
+kuruyor: gerçek bir `Finance Book` yaratıyor, şirkete varsayılan olarak veriyor, ve
+sınıf temizliğinde **önce şirketi geri alıp sonra defteri siliyor** (ters sırada
+`LinkExistsError`). Beşinci satır — şirketin varsayılan defterine yazılmış 600.000 —
+**İÇERİDE**; olmayan defterli 4.000.000'lık satır hâlâ DIŞARIDA.
+
+**(c) Bu turda ölçülemeyen şey, ve neden.** Bench kanıtı bu turda **alınamadı**;
+sebebi iki ayrı ortam bulgusu ve ikisi de gürültüyle bildiriliyor:
+
+1. **Site P5a'yı kaybetmişti.** `tabAccounting Dimension` boş, `GL Entry`'de tender
+   kolonu yok, `tabPatch Log`'da v101/v102/v103 hiç yok (son migrate 2026-08-27,
+   v100'de duruyor). İkinci turda 9 test yeşil koşmuştu; arada site geri alınmış.
+   Fixture kurulur ya da yüksek sesle düşer kuralı gereği v103 kendi docstring'indeki
+   komutla yeniden çalıştırıldı (`dimension_created=1`, `custom_fields_created=57`).
+2. **`TestSalesSide` hermetik değil ve siteye kalıcı satır sızdırıyor.** Sınıf,
+   müşteriyi ve stoğu sitede ne varsa oradan seçiyor; bugünkü seçim
+   (`UAT-IMP-BEEF-TRIM-01` / `Stores - MIK`) `make_sales_invoice` üzerinden
+   `update_stock=1` bir fatura üretiyor, o da Stabler'ın **kendi** kancasını
+   tetikliyor: `hooks.py:170` → `close_billed_so.on_si_submit` → tamamen faturalanan
+   satış siparişine `update_status("Closed")`. Bundan sonra `_erase_voucher` siparişi
+   iptal edemiyor ("Closed order cannot be cancelled"), temizlik zinciri belgeleri
+   ayakta bırakıyor ve `_Fixture`'ın sınıf düzeyindeki tek `frappe.db.commit`'i
+   enkazı **kalıcı** yapıyor. Ölçülen sonuç: iki koşudan 8 canlı GL satırı, iki
+   yarım-iptal Satış Faturası, iki `status='Closed' docstatus=2` sipariş ve
+   `Bin.actual_qty`'de 2 birimlik açık. Sipariş adı yeniden kullanıldığı için
+   (`CRM-DEAL-2026-00015`) artık **her** sonraki koşu bir öncekinin satırlarını
+   ölçüyor: ikinci koşuda `TestLedgerFilters` bile "yılın kapanan geliri" iddiasını
+   1000.0 != 0.0 ile düşürdü — sızıntı yüzünden, kod yüzünden değil.
+
+   Bu, P5b'nin bench modülünde **P1 sınıfı bir kusur** ve bu turun kapsamında değil:
+   kendi kırmızı-önce döngüsünü hak ediyor. Kapsam dışı olduğu için düzeltilmedi,
+   sessizce de geçilmedi.
+
+Artıkların silinmesi izin sınıflandırıcısı tarafından reddedildi (canlı bir siteden
+kayıt silme). Etrafından dolaşılmadı; temizlik ve ardından bench kanıtı Zafar'ın
+onayına bırakıldı.
+
+**Bu turun ölçülen kanıtı.** Kırmızı 1 alındı — düzeltme öncesi, tam da
+"sıkı yüklem geri konduğunda" beklenen hâl: `AssertionError: 5000321.0 != 5600321.0`
+(şirketin varsayılan defterindeki satır düşürüldü). Kırmızı 2 (yüklem tamamen
+kaldırıldığında olmayan defterin toplanması) **alınamadı** — yukarıdaki sızıntı
+temizlenene kadar bench ölçümü güvenilir değil.
