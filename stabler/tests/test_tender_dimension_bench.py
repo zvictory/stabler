@@ -235,7 +235,7 @@ class _Fixture(FrappeTestCase):
 		return name
 
 	def _erase_voucher(self, doctype: str, name: str) -> None:
-		"""Cancel, delete, and take the ledger rows with it.
+		"""Cancel, delete, and take the ledger rows with it — GL, payment AND stock.
 
 		`delete_linked_ledger_entries` is off on this site, so `delete_doc` alone
 		leaves the GL rows standing and the next run measures them.
@@ -258,7 +258,13 @@ class _Fixture(FrappeTestCase):
 			doc.flags.ignore_permissions = True
 			doc.cancel()
 		frappe.delete_doc(doctype, name, force=True, ignore_permissions=True)
-		frappe.db.delete("GL Entry", {"voucher_type": doctype, "voucher_no": name})
+		# All three ledgers, not just the general one. `delete_doc` leaves them all
+		# behind on this site, and a Payment Ledger row that outlives its voucher
+		# still LINKS the deal it named — measured: 171 such rows blocked the
+		# deletion of a later test deal that had inherited the same reissued name
+		# (`test_erasing_a_bill_takes_its_payment_ledger_rows_with_it`).
+		for ledger in ("GL Entry", "Payment Ledger Entry", "Stock Ledger Entry"):
+			frappe.db.delete(ledger, {"voucher_type": doctype, "voucher_no": name})
 
 
 class TestSuiteHygiene(_Fixture):
@@ -549,6 +555,34 @@ class TestPurchaseInvoice(_Fixture):
 		)
 		self.addCleanup(self._erase_voucher, "Purchase Invoice", result["name"])
 		return result["name"]
+
+	def test_erasing_a_bill_takes_its_payment_ledger_rows_with_it(self):
+		"""Suite hygiene: an erased voucher must leave NO ledger row behind.
+
+		`delete_linked_ledger_entries` is off on this site, so `delete_doc` keeps a
+		voucher's GL, Payment Ledger and Stock Ledger rows, and the class-level
+		commit then makes them durable. Measured 2026-09-04 on genesis-test.local:
+		171 Payment Ledger Entry rows and 44 GL Entry rows carrying a `tender`
+		whose voucher no longer existed. The damage is not cosmetic: the CRM Deal
+		they named had been rolled back with the naming series, so the SAME name
+		was reissued to the next test deal — and `delete_doc` on that deal then
+		hit the orphan row (`LinkExistsError` … linked with Payment Ledger Entry),
+		turning `test_crm_deal_trash_integration` red in `make test-bench`.
+		"""
+		name = self._invoice(None)
+		self._submit("Purchase Invoice", name)
+		self.assertGreater(
+			frappe.db.count("Payment Ledger Entry", {"voucher_no": name}),
+			0,
+			"a submitted bill writes a Creditors row to the payment ledger; without it this test proves nothing",
+		)
+		self._erase_voucher("Purchase Invoice", name)
+		for ledger in ("GL Entry", "Payment Ledger Entry", "Stock Ledger Entry"):
+			self.assertEqual(
+				frappe.db.count(ledger, {"voucher_type": "Purchase Invoice", "voucher_no": name}),
+				0,
+				f"{ledger} rows of an erased voucher survived — the next reissued name will inherit them",
+			)
 
 	def test_an_untagged_bill_puts_its_expense_on_genel_gider(self):
 		name = self._invoice(None)

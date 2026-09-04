@@ -62,6 +62,11 @@ class TestCrmAutomation(unittest.TestCase):
 			deadline="2026-08-03",  # <= 2 days from today (2026-08-02)
 			last_activity_date="2026-07-28",  # 5 days ago (> 3 days stale)
 			custom_parent_tender="TND-AUTO",
+			# `deal_type` is what every live row carries after v103 backfilled NULL to
+			# Standard; the readers filter `deal_type != "Overhead"` and the double drops
+			# NULL rows on `!=` exactly as MariaDB does, so a fixture without a type is
+			# a row that cannot exist on a migrated site — and vanishes from every list.
+			deal_type="Standard",
 			docstatus=0,
 		)
 		self.fake.docs[("CRM Deal", "DEAL-AUTO-FOREIGN")] = _Doc(
@@ -70,6 +75,7 @@ class TestCrmAutomation(unittest.TestCase):
 			company="OTHER_CO",
 			stage="go",
 			deadline="2026-08-03",
+			deal_type="Standard",
 			docstatus=0,
 		)
 
