@@ -6722,3 +6722,18 @@ Only an active tender or GENEL GİDER can be selected.,Можно выбрать
 GENEL GİDER deal is missing for {0}; save Stabler Settings or run patch v103.,Сделка GENEL GİDER отсутствует для {0}; сохраните Stabler Settings или выполните патч v103.
 Refusing to build SQL for dimension fieldname {0}.,Отказ от построения SQL для поля измерения {0}.
 The GENEL GİDER deal type is set by the system and cannot be chosen here.,Тип сделки GENEL GİDER задаётся системой и не выбирается здесь.
+Ledger vs documents,Главная книга и документы
+Ledger (GL),Главная книга (GL)
+Cost of goods and landed charges,Себестоимость товаров и расходы на доставку
+Tender expenses,Расходы по тендеру
+Operating result,Операционный результат
+Stock on hand for this tender,Остаток товара по этому тендеру
+Loading ledger…,Загрузка главной книги…
+Retry,Повторить
+Could not load the ledger view.,Не удалось загрузить данные главной книги.
+Ledger view unavailable: the tender dimension is not set up for this company. Save Stabler Settings with the tender module on to create it.,"Главная книга недоступна: аналитика «Тендер» не настроена для этой компании. Сохраните настройки Stabler с включённым модулем тендеров, чтобы создать её."
+"No ledger entry carries this tender yet. Post or tag an invoice, delivery or expense to see the ledger side.","Ни одна проводка ещё не относится к этому тендеру. Проведите или отметьте счёт, отгрузку или расход, чтобы увидеть сторону главной книги."
+Nothing invoiced yet — the documents side reads 0.,Счета ещё не выставлены — сторона документов показывает 0.
+Landed charges show a credit surplus: the bill that capitalized them is booked to another tender or to GENEL GİDER. Re-tag that bill.,"По расходам на доставку кредитовое сальдо: счёт, который их капитализировал, отнесён к другому тендеру или к GENEL GİDER. Переотметьте этот счёт."
+Goods received for this tender and not yet delivered reach cost of goods on delivery.,"Товары, полученные по этому тендеру и ещё не отгруженные, попадут в себестоимость при отгрузке."
+No documents-side figures for this deal.,Для этой сделки нет данных со стороны документов.

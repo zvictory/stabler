@@ -6717,3 +6717,18 @@ Only an active tender or GENEL GİDER can be selected.,Faqat faol tender yoki GE
 GENEL GİDER deal is missing for {0}; save Stabler Settings or run patch v103.,{0} uchun GENEL GİDER bitimi yo‘q; Stabler Settings’ni saqlang yoki v103 patchini ishga tushiring.
 Refusing to build SQL for dimension fieldname {0}.,{0} o‘lchov maydoni uchun SQL tuzishdan bosh tortildi.
 The GENEL GİDER deal type is set by the system and cannot be chosen here.,"GENEL GİDER bitim turini tizim belgilaydi, bu yerdan tanlanmaydi."
+Ledger vs documents,Bosh kitob va hujjatlar
+Ledger (GL),Bosh kitob (GL)
+Cost of goods and landed charges,Tovarlar tannarxi va yetkazib berish xarajatlari
+Tender expenses,Tender xarajatlari
+Operating result,Operatsion natija
+Stock on hand for this tender,Ushbu tender bo'yicha ombordagi qoldiq
+Loading ledger…,Bosh kitob yuklanmoqda…
+Retry,Qayta urinish
+Could not load the ledger view.,Bosh kitob ma'lumotlarini yuklab bo'lmadi.
+Ledger view unavailable: the tender dimension is not set up for this company. Save Stabler Settings with the tender module on to create it.,Bosh kitob ko'rinishi mavjud emas: bu kompaniya uchun «Tender» o'lchovi sozlanmagan. Uni yaratish uchun tender moduli yoqilgan holda Stabler sozlamalarini saqlang.
+"No ledger entry carries this tender yet. Post or tag an invoice, delivery or expense to see the ledger side.","Hali birorta ham o'tkazma bu tenderga tegishli emas. Bosh kitob tomonini ko'rish uchun hisob-faktura, yetkazib berish yoki xarajatni o'tkazing yoki belgilang."
+Nothing invoiced yet — the documents side reads 0.,Hali hisob-faktura chiqarilmagan — hujjatlar tomoni 0 ko'rsatadi.
+Landed charges show a credit surplus: the bill that capitalized them is booked to another tender or to GENEL GİDER. Re-tag that bill.,Yetkazib berish xarajatlarida kredit ortiqchasi bor: ularni kapitallashtirgan hisob boshqa tenderga yoki GENEL GİDER'ga yozilgan. O'sha hisobni qayta belgilang.
+Goods received for this tender and not yet delivered reach cost of goods on delivery.,Ushbu tender uchun qabul qilingan va hali yetkazilmagan tovarlar yetkazib berilganda tannarxga tushadi.
+No documents-side figures for this deal.,Bu bitim uchun hujjatlar tomonidan raqamlar yo'q.
