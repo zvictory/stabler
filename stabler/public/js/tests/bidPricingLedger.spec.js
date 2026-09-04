@@ -83,6 +83,12 @@ describe("the ledger side is a second request that cannot take the pricing card 
 		expect(fn).toMatch(/ledgerLoading\.value\s*=\s*true/);
 		expect(fn).toMatch(/ledgerLoading\.value\s*=\s*false/);
 		expect(fn).not.toMatch(/[^r]\bloading\.value/);
+		// And the FAILURE flag is cleared on entry, not only set on failure.
+		// `v-if="ledgerFailed"` wins over the `v-else-if="ledger"` that renders the
+		// table, so without this a successful Retry loads the figures and leaves the
+		// warning banner standing over them — for the rest of the session. Every
+		// other assertion in this file stays green while that happens.
+		expect(fn).toMatch(/ledgerFailed\.value\s*=\s*false/);
 	});
 
 	it("catches its own failure instead of letting it escape", () => {
