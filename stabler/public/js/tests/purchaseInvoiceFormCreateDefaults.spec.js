@@ -11,13 +11,15 @@ const src = readFileSync(resolve(here, "../pages/purchasing/PurchaseInvoiceForm.
  * warned "You have unsaved changes" on navigating away with nothing typed.
  *
  * `useDirtyGuard` (composables/useDirtyGuard.js) takes its dirty snapshot the
- * instant it is set up — a `watch(model, ..., { immediate: true })` against a
- * pristine string that starts as `""`, so it fires `true` synchronously, before
- * `onMounted` even runs. Nothing re-baselines it for a CREATE form until a
- * successful save. `defaultOverheadDeal()` (PurchaseInvoiceForm.vue:431-448)
- * writes the GENEL GİDER default into `form.tender`/`tender_label` from
- * `onMounted`, asynchronously, well after that broken baseline was taken — so
- * the default's own write reads as a user edit forever after.
+ * instant it is set up — synchronously, before `onMounted` even runs — and
+ * nothing re-baselines it for a CREATE form until a successful save. (Until
+ * 53462cb that snapshot was `""`, which flagged every CREATE form dirty on its
+ * own; the composable now seeds it from the blank form itself, covered by
+ * useDirtyGuardBaseline.spec.js. This spec is about what that fix cannot
+ * reach.) `defaultOverheadDeal()` (PurchaseInvoiceForm.vue:432-449) writes the
+ * GENEL GİDER default into `form.tender`/`tender_label` from `onMounted`,
+ * asynchronously, well after that baseline was taken — so the default's own
+ * write reads as a user edit forever after.
  *
  * `applyCreateDefaults` re-baselines once the default has landed, but only when
  * nothing else moved during that same network round trip: a real edit typed
