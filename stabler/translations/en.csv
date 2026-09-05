@@ -7149,3 +7149,10 @@ Scope,Scope
 Price,Price
 Only submitted purchase orders can be received.,Only submitted purchase orders can be received.
 Nothing left to receive on this purchase order.,Nothing left to receive on this purchase order.
+Row {0}: po_detail is required.,Row {0}: po_detail is required.
+Row {0}: qty must be greater than zero.,Row {0}: qty must be greater than zero.
+These order rows have nothing pending to receive: {0},These order rows have nothing pending to receive: {0}
+Warehouse is required — a receipt moves stock into it.,Warehouse is required — a receipt moves stock into it.
+Row {0}: rate cannot be negative.,Row {0}: rate cannot be negative.
+"Stock UOM is Kg for imports, so by weight spreads the charges across the kilograms received. By line value spreads them in proportion to each line's amount. ERPNext calls these two bases Qty and Amount.","Stock UOM is Kg for imports, so by weight spreads the charges across the kilograms received. By line value spreads them in proportion to each line's amount. ERPNext calls these two bases Qty and Amount."
+By weight spreads the charges across the received quantity in stock UOM. By line value spreads them in proportion to each line's amount. ERPNext calls these two bases Qty and Amount.,By weight spreads the charges across the received quantity in stock UOM. By line value spreads them in proportion to each line's amount. ERPNext calls these two bases Qty and Amount.

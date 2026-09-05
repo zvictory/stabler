@@ -5627,7 +5627,7 @@ Unknown Proforma Invoice(s): {0},Номаълум проформа(лар): {0}
 Unknown Proforma Invoice: {0},Номаълум проформа: {0}
 Unknown Purchase Invoice: {0},
 Unknown Purchase Order for this company: {0},Ушбу компания учун номаълум харид буюртмаси: {0}
-Unknown Purchase Order: {0},
+Unknown Purchase Order: {0},Номаълум харид буюртмаси: {0}
 Unknown purchase order: {0},Номаълум харид буюртмаси: {0}
 Unknown Purchase Receipt: {0},
 Unknown report: {0},
@@ -6756,3 +6756,10 @@ Price,Нарх
 Only submitted purchase orders can be received.,Фақат топширилган харид буюртмалари қабул қилиниши мумкин.
 Nothing left to receive on this purchase order.,Ушбу харид буюртмасида қабул қилинадиган нарса қолмади.
 Evidence,Тасдиқловчи ҳужжат
+Row {0}: po_detail is required.,{0}-қатор: po_detail талаб қилинади.
+Row {0}: qty must be greater than zero.,{0}-қатор: миқдор нолдан катта бўлиши керак.
+These order rows have nothing pending to receive: {0},Буюртманинг ушбу қаторларида қабул қилинадиган нарса қолмади: {0}
+Warehouse is required — a receipt moves stock into it.,Омбор мажбурий — товар қабули захирани унга киритади.
+Row {0}: rate cannot be negative.,{0}-қатор: нарх манфий бўлиши мумкин эмас.
+"Stock UOM is Kg for imports, so by weight spreads the charges across the kilograms received. By line value spreads them in proportion to each line's amount. ERPNext calls these two bases Qty and Amount.","Импорт учун захира ўлчов бирлиги кг, шунинг учун «Оғирлик бўйича» харажатларни қабул қилинган килограммлар бўйича тақсимлайди. «Қатор суммаси бўйича» уларни ҳар бир қатор суммасига мутаносиб тақсимлайди. ERPNext бу икки асосни Qty ва Amount деб атайди."
+By weight spreads the charges across the received quantity in stock UOM. By line value spreads them in proportion to each line's amount. ERPNext calls these two bases Qty and Amount.,«Оғирлик бўйича» харажатларни захира ўлчов бирлигидаги қабул қилинган миқдор бўйича тақсимлайди. «Қатор суммаси бўйича» уларни ҳар бир қатор суммасига мутаносиб тақсимлайди. ERPNext бу икки асосни Qty ва Amount деб атайди.

@@ -5622,7 +5622,7 @@ Unknown Proforma Invoice(s): {0},Bilinmeyen proforma(lar): {0}
 Unknown Proforma Invoice: {0},Bilinmeyen proforma: {0}
 Unknown Purchase Invoice: {0},
 Unknown Purchase Order for this company: {0},Bu şirket için bilinmeyen Satın Alma Siparişi: {0}
-Unknown Purchase Order: {0},
+Unknown Purchase Order: {0},Bilinmeyen Satın Alma Siparişi: {0}
 Unknown purchase order: {0},Bilinmeyen satın alma siparişi: {0}
 Unknown Purchase Receipt: {0},
 Unknown report: {0},
@@ -6751,3 +6751,10 @@ Price,Fiyat
 Only submitted purchase orders can be received.,Yalnızca onaylanmış satın alma siparişleri teslim alınabilir.
 Nothing left to receive on this purchase order.,Bu satın alma siparişinde teslim alınacak bir şey kalmadı.
 Evidence,Kanıt
+Row {0}: po_detail is required.,Satır {0}: po_detail gereklidir.
+Row {0}: qty must be greater than zero.,Satır {0}: miktar sıfırdan büyük olmalıdır.
+These order rows have nothing pending to receive: {0},Bu sipariş satırlarında teslim alınacak bir şey kalmadı: {0}
+Warehouse is required — a receipt moves stock into it.,Depo zorunludur — mal kabul fişi stoğu depoya taşır.
+Row {0}: rate cannot be negative.,Satır {0}: fiyat negatif olamaz.
+"Stock UOM is Kg for imports, so by weight spreads the charges across the kilograms received. By line value spreads them in proportion to each line's amount. ERPNext calls these two bases Qty and Amount.",İthalatta stok birimi kg olduğundan «Ağırlığa göre» masrafları teslim alınan kilogramlara dağıtır. «Satır tutarına göre» ise masrafları her satırın tutarıyla orantılı dağıtır. ERPNext bu iki dağıtım esasını Qty ve Amount olarak adlandırır.
+By weight spreads the charges across the received quantity in stock UOM. By line value spreads them in proportion to each line's amount. ERPNext calls these two bases Qty and Amount.,«Ağırlığa göre» masrafları stok birimindeki teslim alınan miktara dağıtır. «Satır tutarına göre» ise masrafları her satırın tutarıyla orantılı dağıtır. ERPNext bu iki dağıtım esasını Qty ve Amount olarak adlandırır.
