@@ -290,7 +290,7 @@ Add PO link,SS bağlantısı ekle
 Add Price,Fiyat Ekle
 Add punch,
 Add quotation,Teklif ekle
-Add Row,
+Add Row,Satır ekle
 Add row,Satır ekle
 Add stage,Aşama ekle
 Add subcategory,Alt kategori ekle
@@ -533,7 +533,7 @@ ARCA,ARCA
 ARCA Payment Events,ARCA Ödeme Olayları
 Are you sure you want to cancel this document? This action is irreversible.,
 Are you sure you want to delete this draft? This cannot be undone.,
-Are you sure you want to submit this document? This will finalize transactions.,
+Are you sure you want to submit this document? This will finalize transactions.,"Bu belgeyi onaylamak istediğinizden emin misiniz? Bu, işlemleri sonuçlandıracaktır."
 Arrival,Varış
 Arrival date,Varış tarihi
 Arrival time,Varış saati
@@ -698,14 +698,14 @@ Bidding,İhale
 Bill,Fatura
 Bill #,Fatura No
 Bill / invoice number printed on supplier document,Tedarikçi belgesinde yazan fatura numarası
-Bill Date,
+Bill Date,Fatura Tarihi
 Bill date,Fatura tarihi
-Bill No.,
+Bill No.,Fatura No
 Bill number or supplier…,
 Bill or supplier… ⌘K,Fatura veya tedarikçi… ⌘K
 Bill {0},Fatura {0}
 Billed,Faturalandı
-Billed amt,
+Billed amt,Faturalanan
 Billed goods,Faturalanan ürün
 Billing,Faturalama
 Bills,Faturalar
@@ -1681,7 +1681,7 @@ Document not found.,
 Document or company…,
 Document removed.,Belge kaldırıldı.
 Document requirements,Belge gereksinimleri
-Document saved successfully.,
+Document saved successfully.,Belge kaydedildi.
 document set complete,belge seti tam
 Document status,Belge durumu
 Document submitted successfully.,
@@ -1941,7 +1941,7 @@ Exchange fee,Borsa komisyonu
 Exchange rate,Döviz kuru
 Exchange rate ({0}),
 Exchange rate must be greater than zero.,Döviz kuru sıfırdan büyük olmalıdır.
-Exchange rate preview,
+Exchange rate preview,Döviz kuru önizlemesi
 Exchange Rate Revaluation,
 Exchange rate staleness,
 Exchange rate unavailable — enter it manually.,Döviz kuru bulunamadı — elle girin.
@@ -2301,7 +2301,7 @@ From → To,Kaynak → Hedef
 Frozen accounts modifier role,
 Frozen days cannot be negative.,
 Frozen up to (date),
-Fulfilment & Billing,
+Fulfilment & Billing,Yerine Getirme ve Faturalama
 Full name,Tam ad
 Full name (optional — filled automatically on save),
 Full screen,Tam ekran
@@ -2652,7 +2652,7 @@ Keep typing to narrow…,Daraltmak için yazmaya devam edin…
 Keeps the audit trail; amend to correct.,Denetim izini korur; düzeltmek için amend edin.
 Kg,Kg
 kg,kg
-Kind,
+Kind,Tür
 Kiosk login is not configured on this site.,Bu sitede kiosk girişi yapılandırılmamış.
 KPI,KPI
 KPI performance (%),KPI performansı (%)
@@ -2748,7 +2748,7 @@ Lifetime Sales,
 Lifetime sales,Toplam satış
 Light,
 line,satır
-Line details,
+Line details,Satır ayrıntıları
 Line Operator Kiosk,Hat operatörü kiosku
 Line total,Satır toplamı
 Line total (UZS),Satır toplamı (UZS)
@@ -3083,8 +3083,8 @@ New Proforma,Yeni Proforma
 New Promo Plan,Yeni Promosyon Planı
 New Promo Scheme,Yeni Promosyon Şeması
 New purchase bill,Yeni alış faturası
-New Purchase Invoice,
-New purchase invoice,
+New Purchase Invoice,Yeni Satın Alma Faturası
+New purchase invoice,Yeni satın alma faturası
 New Purchase Order,
 New purchase order,Yeni satın alma siparişi
 New Quotation,
@@ -3271,7 +3271,7 @@ No items.,Kalem yok.
 No journal entries in this range,Bu aralıkta yevmiye kaydı yok
 No landed cost vouchers yet.,Henüz varış maliyeti fişi yok.
 No landed-cost bills,İndirilmiş maliyet faturası yok
-No landed-cost lines have been found.,
+No landed-cost lines have been found.,Navlun maliyeti satırı bulunamadı.
 No lanes. Click + to add.,Şerit yok. Eklemek için + tıklayın.
 No leads,Potansiyel yok
 No leave requests,İzin talebi yok
@@ -3671,7 +3671,7 @@ Order #,Sipariş no
 Order Date,Sipariş Tarihi
 Order date,Sipariş tarihi
 Order number or supplier…,
-Ordered,
+Ordered,Sipariş edilen
 Orders,Siparişler
 orders,
 Orders with advance,Avanslı siparişler
@@ -3795,7 +3795,7 @@ Partial,Kısmi
 Partial compliance,Kısmi uygunluk
 Partial Result,Kısmi sonuç
 Partially approved — awaiting level {0},
-Partially billed — {pct}% invoiced.,
+Partially billed — {pct}% invoiced.,Kısmen faturalandı — %{pct}.
 Partially Completed,Kısmen tamamlandı
 Partially Paid,Kısmen ödendi
 Partially received,Kısmen alındı
@@ -4219,7 +4219,7 @@ Purchase Receipt,Mal Kabul Fişi
 Purchase receipt,Satın alma makbuzu
 Purchase Receipt cancelled.,
 Purchase Receipt must be Submitted to create a Landed Cost Voucher.,
-Purchase Receipt submitted.,
+Purchase Receipt submitted.,Mal kabul fişi gönderildi.
 Purchase Receipts,Mal Kabulleri
 Purchase receipts,Satın alma makbuzları
 Purchases,Alımlar
@@ -4854,7 +4854,7 @@ Seller TIN,
 Send currency,Gönderilen para birimi
 Send invite,Davet gönder
 Send password reset email to ,Şifre sıfırlama e-postası gönder: 
-Send to Didox,
+Send to Didox,Didox'a gönder
 Sender name,Gönderen adı
 Sender pays,Gönderen öder
 Sending recorded on the RFQ timeline.,Gönderim RFQ zaman çizelgesine kaydedildi.
@@ -5114,7 +5114,7 @@ Submit a leave request on behalf of an employee.,Bir çalışan adına izin tale
 Submit a request to track equipment service tickets.,Ekipman servis taleplerini takip etmek için bir talep gönderin.
 Submit and release this Work Order?,Bu İş Emri onaylanıp serbest bırakılsın mı?
 Submit BOM?,
-Submit document?,
+Submit document?,Belge onaylansın mı?
 Submit expense,Masrafı onayla
 Submit failed.,Onaylama başarısız oldu.
 Submit GRN,GRN’i gönder
@@ -5198,7 +5198,7 @@ Target temp min (°C),Min. sıcaklık (°C)
 Target total,Hedef toplam
 Target WIP Warehouse,
 Task,Görev
-Tax amount,
+Tax amount,Vergi tutarı
 Tax ID,Vergi Kimlik No
 Tax rates,Vergi oranları
 Tax template,Vergi şablonu
@@ -5674,7 +5674,7 @@ Unverified tick,Doğrulanmamış onay
 UOM,Ölçü Birimi
 Upcoming,Yaklaşan
 Update draft decision,Taslak kararı güncelle
-Update stock,
+Update stock,Stoğu güncelle
 Update tokens,
 updated,
 Updated,Güncellendi
@@ -5956,7 +5956,7 @@ You do not have permission to view landed-cost figures. Ask an imports manager o
 You do not have permission to view the ledger for this transfer. Only the Remittance Auditor role can read it.,Bu transferin muhasebe kayıtlarını görme yetkiniz yok. Bunları yalnızca Remittance Auditor rolü okuyabilir.
 You have already approved level {0} for this request.,
 You have no approval requests,Onay talebiniz yok
-You have unsaved changes. Leaving this page will discard them.,
+You have unsaved changes. Leaving this page will discard them.,Kaydedilmemiş değişiklikleriniz var. Bu sayfadan ayrılırsanız kaybolacaklar.
 "You must hold an HR Manager, System Manager, or Stabler Admin role to lock a payroll period.",
 You need a payroll/HR role to manage employee advances.,Avansları yönetmek için bordro/İK rolü gerekir.
 You need a payroll/HR role to run salary payments.,
@@ -6729,3 +6729,25 @@ Goods received for this tender and not yet delivered reach cost of goods on deli
 No documents-side figures for this deal.,Bu iş için belge tarafında rakam yok.
 Unsafe dimension fieldname,Güvenli olmayan boyut alan adı
 Expense Claim,Masraf Talebi
+Commercial Invoice (Import Attribution),Ticari Fatura (İthalat Eşleştirmesi)
+Add Item,Ürün ekle
+New Item,Yeni ürün
+Search…,Ara…
+PO Created,Sipariş oluşturuldu
+No expenses in this range,Bu tarih aralığında gider yok
+Record an outgoing payment to start tracking spend.,Harcamaları takip etmeye başlamak için giden bir ödeme kaydedin.
+Spread the charges over,Masrafları dağıtma yöntemi
+By line value,Satır tutarına göre
+"The voucher is created as a draft. Review it under Existing vouchers, then submit it there to post the valuation.",Fiş taslak olarak oluşturulur. Onu «Mevcut fişler» bölümünde bulup maliyeti kaydetmek için orada onaylayın.
+Estimated Total,Tahmini Tutar
+Lot / Deal,Lot / Anlaşma
+Parent Tender,Ana İhale
+Total delivered cost,Toplam teslim maliyeti
+Charge type,Masraf türü
+We kindly ask you to quote your prices and delivery terms for the following items.,Aşağıdaki kalemler için fiyat ve teslimat koşullarınızı belirtmenizi rica ederiz.
+Received ({0}),Teslim alınan ({0})
+Scope,Kapsam
+Price,Fiyat
+Only submitted purchase orders can be received.,Yalnızca onaylanmış satın alma siparişleri teslim alınabilir.
+Nothing left to receive on this purchase order.,Bu satın alma siparişinde teslim alınacak bir şey kalmadı.
+Evidence,Kanıt

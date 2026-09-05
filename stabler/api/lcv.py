@@ -351,6 +351,10 @@ def get_landed_cost_review(document_type: str, document_name: str, rate=None):
 				"receipt_status": "Completed" if pr.docstatus == 1 else "Draft",
 				"completion_date": str(pr.posting_date) if pr.posting_date else None,
 				"received_total_kg": sum(flt(d.qty) for d in pr.items),
+				# Unlike the GRN-Checklist route, a plain Purchase Receipt is not
+				# guaranteed to be Kg -- read the real transaction UOM the qty above
+				# was summed in, the same "first line" convention `warehouse` uses.
+				"received_uom": pr.items[0].uom if pr.items else "",
 				"received_total_boxes": 0,
 			},
 			"purchase_receipts": [

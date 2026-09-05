@@ -8,6 +8,7 @@ import { t } from "../../composables/i18n.js";
 import { formatDate } from "../../composables/date.js";
 import { formatMoney } from "../../composables/money.js";
 import { unitCostAnalysis as computeUnitCostAnalysis } from "../../composables/landedCostPerKg.js";
+import { distributionLabel, receivedLabel } from "../../composables/landedCostLabels.js";
 import { useToast } from "../../composables/useToast.js";
 import { useConfirm } from "../../composables/useConfirm.js";
 import { useEscapeBack } from "../../composables/useEscapeBack.js";
@@ -75,15 +76,6 @@ async function load(rate) {
 function recompute() {
 	const r = Number(rateOverride.value);
 	load(r > 0 ? r : undefined);
-}
-
-// "Qty" / "Amount" are ERPNext's raw field values and are sent back untouched;
-// only the label an accountant reads is translated. Anything else is echoed as
-// the server spelled it, the way every other server-supplied label here is.
-function distributionLabel(method) {
-	if (method === "Qty") return t("By weight (kg)");
-	if (method === "Amount") return t("By line value");
-	return method;
 }
 
 const distributionOptions = computed(() => {
@@ -276,7 +268,7 @@ watch(documentName, () => load());
 								<dd class="col-6">{{ data.grn.warehouse || "—" }}</dd>
 								<dt class="col-6 text-secondary">{{ t("Completion date") }}</dt>
 								<dd class="col-6">{{ formatDate(data.grn.completion_date) }}</dd>
-								<dt class="col-6 text-secondary">{{ t("Received (kg)") }}</dt>
+								<dt class="col-6 text-secondary">{{ receivedLabel(data.grn.received_uom) }}</dt>
 								<dd class="col-6 font-monospace">{{ Number(data.grn.received_total_kg || 0).toFixed(0) }}</dd>
 								<dt class="col-6 text-secondary">{{ t("Status") }}</dt>
 								<dd class="col-6"><StatusBadge :doctype="documentType" :status="data.grn.receipt_status" /></dd>

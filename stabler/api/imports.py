@@ -3690,7 +3690,7 @@ def get_landed_cost_review(grn_checklist: str, rate=None):
 
 	from stabler.stabler.doctype.customs_declaration.customs_declaration import approved_gtd_for_ci
 	from stabler.stabler.imports_module import hooks as imports_hooks
-	from stabler.stabler.imports_module import lcv_math
+	from stabler.stabler.imports_module import lcv_math, receipt_math
 
 	grn = frappe.get_doc("GRN Checklist", grn_checklist)
 	company_currency = frappe.get_cached_value("Company", grn.company, "default_currency") or "UZS"
@@ -3906,6 +3906,10 @@ def get_landed_cost_review(grn_checklist: str, rate=None):
 			"receipt_status": grn.receipt_status,
 			"completion_date": str(grn.completion_date) if grn.completion_date else None,
 			"received_total_kg": flt(grn.received_total_kg),
+			# Deliberately not read off any item -- this whole route pins stock UOM
+			# to Kg by construction (receipt_math.STOCK_UOM, conversion_factor 1),
+			# unlike the generic Purchase Receipt route in api/lcv.py.
+			"received_uom": receipt_math.STOCK_UOM,
 			"received_total_boxes": cint(grn.received_total_boxes),
 		},
 		"purchase_receipts": purchase_receipts,

@@ -2488,15 +2488,15 @@ def create_purchase_receipt_from_po(name: str, items=None):
 	_assert_can_read("Purchase Order", name)
 	po = frappe.get_doc("Purchase Order", name)
 	if po.docstatus != 1:
-		frappe.throw("Only submitted purchase orders can be received.")
+		frappe.throw(_("Only submitted purchase orders can be received."))
 
 	if isinstance(items, str):
 		try:
 			items = json.loads(items)
 		except Exception:
-			frappe.throw("Invalid items payload.")
+			frappe.throw(_("Invalid items payload."))
 	if items is not None and (not isinstance(items, list) or not items):
-		frappe.throw("Invalid items payload.")
+		frappe.throw(_("Invalid items payload."))
 
 	from erpnext.buying.doctype.purchase_order.purchase_order import (
 		make_purchase_receipt as _make_pr,
@@ -2504,7 +2504,7 @@ def create_purchase_receipt_from_po(name: str, items=None):
 
 	doc = _make_pr(name)
 	if not doc.get("items"):
-		frappe.throw("Nothing left to receive on this purchase order.")
+		frappe.throw(_("Nothing left to receive on this purchase order."))
 
 	if items:
 		requested: dict[str, float] = {}
