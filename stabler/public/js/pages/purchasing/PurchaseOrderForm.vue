@@ -87,7 +87,10 @@ async function loadDealLabel(dealName) {
 		return;
 	}
 	try {
-		const d = await call("stabler.api.crm.get_deal", { name: dealName });
+		const d = await call("stabler.api.crm.get_deal", {
+			name: dealName,
+			company: activeCompany.value,
+		});
 		dealLabel.value = d ? dealOptionLabel(d) : dealName;
 	} catch {
 		dealLabel.value = dealName;
