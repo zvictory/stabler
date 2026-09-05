@@ -256,7 +256,10 @@ async function loadAll() {
 
 function openAddQuotation(rfq = "") {
 	entryQuotationName.value = "";
-	entryRfq.value = rfq || "";
+	// Bound bare as `@click="openAddQuotation"` on the header button, so Vue hands
+	// this the MouseEvent — which is not an RFQ. Only a string (the `?rfq=` deep
+	// link) pre-selects one; anything else opens a blank entry.
+	entryRfq.value = typeof rfq === "string" ? rfq : "";
 	entryOpen.value = true;
 }
 
