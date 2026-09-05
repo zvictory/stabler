@@ -346,6 +346,7 @@ const {
 	amend,
 	remove,
 	can,
+	reset,
 } = useDocumentForm({
 	doctype: "Purchase Invoice",
 	detailApi: "stabler.api.purchasing.purchase_invoice_detail",
@@ -444,6 +445,26 @@ async function defaultOverheadDeal() {
 	} catch (err) {
 		// Silent: a new bill with no tender is still valid, and the GL hook fills
 		// it. A toast here would fire on a form the user has not touched yet.
+	}
+}
+
+// UAT 2026-09-05, step 18b: an untouched new bill already warned "unsaved
+// changes" on leaving, because useDirtyGuard takes its snapshot the instant
+// the form is set up — before defaultOverheadDeal's async write ever lands —
+// so the default's own write to `tender`/`tender_label` read as a user edit.
+// Re-baselines once the default has resolved, but only when nothing else
+// moved meanwhile: a real edit typed during that same network round trip
+// must stay dirty, or the reset would silently launder it away.
+async function applyCreateDefaults() {
+	const before = JSON.stringify(form.value);
+	await defaultOverheadDeal();
+	const withDefaultApplied = JSON.stringify({
+		...JSON.parse(before),
+		tender: form.value.tender,
+		tender_label: form.value.tender_label,
+	});
+	if (withDefaultApplied === JSON.stringify(form.value)) {
+		reset(form.value);
 	}
 }
 
@@ -671,7 +692,7 @@ onMounted(async () => {
 		await loadDoc();
 	} else {
 		form.value = blankForm();
-		await defaultOverheadDeal();
+		await applyCreateDefaults();
 	}
 });
 

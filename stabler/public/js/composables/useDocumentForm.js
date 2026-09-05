@@ -325,6 +325,13 @@ export function useDocumentForm({
 		loadError,
 		error,
 		isDirty,
+		// Exposed so a page can re-baseline the dirty snapshot itself after
+		// applying a server-side default to a CREATE form the user has not
+		// touched yet (e.g. PurchaseInvoiceForm's GENEL GİDER tender default,
+		// which lands asynchronously in onMounted, after the guard's own
+		// snapshot). Every internal caller above (load/save/amend/remove)
+		// already used this; it just was not part of the public return.
+		reset,
 		isCreate,
 		editable,
 		docstatus,
