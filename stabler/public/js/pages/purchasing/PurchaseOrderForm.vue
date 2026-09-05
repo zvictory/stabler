@@ -177,6 +177,19 @@ function fromDetail(d) {
 		set_warehouse: d.set_warehouse || "",
 		transaction_date: d.transaction_date || "",
 		schedule_date: d.schedule_date || "",
+		// Read-only server facts the view reads off the model — `canReceive`,
+		// `canCreateInvoice`, the KPI strip, the receipts banner and the receive
+		// dialog. `toPayload` never sends them back. Dropping them here left every
+		// submitted order without Receive / Create Invoice and with "—" for each
+		// KPI (measured 2026-09-05, RU walk, screen 14c).
+		docstatus: d.docstatus ?? 0,
+		status: d.status || "",
+		net_total: Number(d.net_total || 0),
+		grand_total: Number(d.grand_total || 0),
+		per_received: Number(d.per_received || 0),
+		per_billed: Number(d.per_billed || 0),
+		purchase_invoices: d.purchase_invoices || [],
+		purchase_receipts: d.purchase_receipts || [],
 		remarks: d.remarks || d.terms || "",
 		items: (d.items || []).map((it) => {
 			const rate = Number(it.rate || 0);
@@ -185,6 +198,10 @@ function fromDetail(d) {
 			const listRate = isArtifact ? 0 : plr;
 			return {
 				item_code: it.item_code,
+				// The row name is the `po_detail` the receive dialog posts; received_qty
+				// is what it subtracts to get the pending qty (and the per-line badge).
+				name: it.name,
+				received_qty: Number(it.received_qty || 0),
 				item_name: it.item_name,
 				custom_line_note: it.custom_line_note || "",
 				uom: it.uom || "",
