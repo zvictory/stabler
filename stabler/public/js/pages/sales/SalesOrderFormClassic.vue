@@ -280,6 +280,7 @@ const {
 	amend,
 	remove,
 	can,
+	reset,
 } = useDocumentForm({
 	doctype: "Sales Order",
 	detailApi: "stabler.api.sales.sales_order_detail",
@@ -727,13 +728,27 @@ async function prefillNewForCustomer(customerName) {
 	}
 }
 
+// 53462cb follow-up (UAT 2026-09-05): the dirty guard's baseline is the blank
+// form as constructed before loadWarehouses() resolved — set_warehouse "" and a
+// first line with warehouse "". The create branch below then rebuilds the form
+// with "Tayyor Mahsulot" in both places, and those writes read as a user edit:
+// an untouched "New sales order" warned "Discard unsaved changes?" on leaving.
+// Same fix as PurchaseInvoiceForm's applyCreateDefaults(): re-baseline once the
+// default has been applied. No before/after diff here — `form.value =
+// blankForm()` replaces the whole model, so there is nothing typed left to
+// launder, and nothing awaits between the writes and the reset.
+function applyCreateDefaults() {
+	form.value = blankForm();
+	form.value.set_warehouse = defaultWarehouseName();
+	reset(form.value);
+}
+
 watch(docName, loadDoc);
 
 onMounted(async () => {
 	await Promise.all([loadWarehouses(), loadPriceLists(), loadCurrencies(), loadAgreements()]);
 	if (!docName.value) {
-		form.value = blankForm();
-		form.value.set_warehouse = defaultWarehouseName();
+		applyCreateDefaults();
 		const newFor = route.query?.new_for || route.query?.customer;
 		if (newFor) await prefillNewForCustomer(String(newFor));
 		if (route.query?.crm_deal) form.value.crm_deal = String(route.query.crm_deal);
