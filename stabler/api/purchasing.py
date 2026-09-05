@@ -2484,7 +2484,7 @@ def create_purchase_receipt_from_po(name: str, items=None):
 	Rows not listed are dropped; requested qty is capped at the pending qty.
 	"""
 	if not name or not frappe.db.exists("Purchase Order", name):
-		frappe.throw(f"Unknown Purchase Order: {name}")
+		frappe.throw(_("Unknown Purchase Order: {0}").format(name))
 	_assert_can_read("Purchase Order", name)
 	po = frappe.get_doc("Purchase Order", name)
 	if po.docstatus != 1:
@@ -2511,16 +2511,18 @@ def create_purchase_receipt_from_po(name: str, items=None):
 		for idx, row in enumerate(items, start=1):
 			po_detail = (row or {}).get("po_detail")
 			if not po_detail:
-				frappe.throw(f"Row {idx}: po_detail is required.")
+				frappe.throw(_("Row {0}: po_detail is required.").format(idx))
 			qty = flt(row.get("qty"))
 			if qty <= 0:
-				frappe.throw(f"Row {idx}: qty must be greater than zero.")
+				frappe.throw(_("Row {0}: qty must be greater than zero.").format(idx))
 			requested[po_detail] = qty
 
 		mapped = {r.purchase_order_item: r for r in doc.items}
 		unknown = [d for d in requested if d not in mapped]
 		if unknown:
-			frappe.throw("These order rows have nothing pending to receive: " + ", ".join(unknown))
+			frappe.throw(
+				_("These order rows have nothing pending to receive: {0}").format(", ".join(unknown))
+			)
 
 		kept = []
 		for po_detail, qty in requested.items():
@@ -2558,34 +2560,34 @@ def create_purchase_receipt(
 	_require_company(company)
 	_assert_company_scope(company)  # tenant isolation: reject a foreign company arg
 	if not supplier:
-		frappe.throw("Supplier is required.")
+		frappe.throw(_("Supplier is required."))
 	if not frappe.db.exists("Supplier", supplier):
-		frappe.throw(f"Unknown supplier: {supplier}")
+		frappe.throw(_("Unknown supplier: {0}").format(supplier))
 	if not set_warehouse:
-		frappe.throw("Warehouse is required — a receipt moves stock into it.")
+		frappe.throw(_("Warehouse is required — a receipt moves stock into it."))
 	if not frappe.db.exists("Warehouse", set_warehouse):
-		frappe.throw(f"Unknown warehouse: {set_warehouse}")
+		frappe.throw(_("Unknown warehouse: {0}").format(set_warehouse))
 
 	if isinstance(items, str):
 		try:
 			items = json.loads(items)
 		except Exception:
-			frappe.throw("Invalid items payload.")
+			frappe.throw(_("Invalid items payload."))
 	if not isinstance(items, list) or not items:
-		frappe.throw("At least one item is required.")
+		frappe.throw(_("At least one item is required."))
 
 	cleaned: list[dict] = []
 	for idx, row in enumerate(items, start=1):
 		code = (row or {}).get("item_code")
 		if not code:
-			frappe.throw(f"Row {idx}: item is required.")
+			frappe.throw(_("Row {0}: item is required.").format(idx))
 		if not frappe.db.exists("Item", code):
-			frappe.throw(f"Row {idx}: unknown item '{code}'.")
+			frappe.throw(_("Row {0}: unknown item '{1}'.").format(idx, code))
 		qty = flt(row.get("qty"))
 		if qty <= 0:
-			frappe.throw(f"Row {idx}: qty must be greater than zero.")
+			frappe.throw(_("Row {0}: qty must be greater than zero.").format(idx))
 		if row.get("rate") not in (None, "") and flt(row.get("rate")) < 0:
-			frappe.throw(f"Row {idx}: rate cannot be negative.")
+			frappe.throw(_("Row {0}: rate cannot be negative.").format(idx))
 		cleaned.append(
 			{
 				"item_code": code,

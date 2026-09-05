@@ -141,3 +141,93 @@ describe("H.3 -- receivedLabel shows the line's real UOM", () => {
 		expect(receivedLabel("Nos")).not.toMatch(/kg/i);
 	});
 });
+
+/**
+ * H.2 follow-up (2026-09-05) -- the receipt-creation refusals in
+ * api/purchasing.py. 628b204 wrapped four frappe.throw() calls in
+ * create_purchase_receipt_from_po; the rest of that function and the whole of
+ * its sibling create_purchase_receipt still raised raw f-strings, so a Russian
+ * operator read "Row 2: qty must be greater than zero." in English whatever
+ * language the request carried. Two things must hold for the fix to be real:
+ *   1. every frappe.throw() in those two functions hands its text to _() as a
+ *      string literal -- an f-string is interpolated before _() sees it, so no
+ *      catalogue row can ever match it (tests/test_api_refusals_are_not_mute.py
+ *      pins the same rule for _validation_error);
+ *   2. every key those _() calls produce has a non-empty target in all five
+ *      catalogues -- otherwise _() falls through to English exactly as before.
+ * The two LandedCostReview.vue distribution hints ride along: t()-wrapped since
+ * the page was written, but never given a row in any catalogue, en.csv included.
+ */
+const purchasingApi = readFileSync(resolve(here, "../../../api/purchasing.py"), "utf8");
+
+function pyFunction(name) {
+	const start = purchasingApi.indexOf(`\ndef ${name}(`);
+	expect(start, `api/purchasing.py has no ${name}`).toBeGreaterThan(-1);
+	const rest = purchasingApi.slice(start + 1);
+	// The body ends at the next column-0 def (with or without its decorator);
+	// nested defs are tab-indented and never match.
+	const end = rest.search(/\n(?:@frappe\.whitelist\(\)\n)?def /);
+	return end === -1 ? rest : rest.slice(0, end);
+}
+
+const RECEIPT_FUNCTIONS = ["create_purchase_receipt_from_po", "create_purchase_receipt"];
+
+describe("H.2 follow-up -- receipt-creation refusals are translatable", () => {
+	const keys = [
+		// create_purchase_receipt_from_po -- the three keys 628b204 already wrapped are
+		// pinned here too, so this list is that function's complete key set
+		"Unknown Purchase Order: {0}",
+		"Only submitted purchase orders can be received.",
+		"Invalid items payload.",
+		"Nothing left to receive on this purchase order.",
+		"Row {0}: po_detail is required.",
+		"Row {0}: qty must be greater than zero.",
+		"These order rows have nothing pending to receive: {0}",
+		// create_purchase_receipt
+		"Supplier is required.",
+		"Unknown supplier: {0}",
+		"Warehouse is required — a receipt moves stock into it.",
+		"Unknown warehouse: {0}",
+		"At least one item is required.",
+		"Row {0}: item is required.",
+		"Row {0}: unknown item '{1}'.",
+		"Row {0}: rate cannot be negative.",
+		// LandedCostReview.vue distribution hint -- t()-wrapped, never catalogued
+		"Stock UOM is Kg for imports, so by weight spreads the charges across the kilograms received. By line value spreads them in proportion to each line's amount. ERPNext calls these two bases Qty and Amount.",
+		"By weight spreads the charges across the received quantity in stock UOM. By line value spreads them in proportion to each line's amount. ERPNext calls these two bases Qty and Amount.",
+	];
+
+	for (const fn of RECEIPT_FUNCTIONS) {
+		it(`${fn} hands every frappe.throw() a _() literal, never an f-string or a concatenation`, () => {
+			const body = pyFunction(fn);
+			const calls = [...body.matchAll(/frappe\.throw\(\s*(\S*)/g)];
+			expect(
+				calls.length,
+				`${fn} has no frappe.throw() at all -- did the function move?`
+			).toBeGreaterThan(0);
+			for (const [call, head] of calls) {
+				expect(/^(?:frappe\.)?_\(/.test(head), `${fn}: ${call.trim()} bypasses _()`).toBe(true);
+			}
+		});
+
+		it(`${fn} raises only keys this spec pins to the catalogues`, () => {
+			const literals = [...pyFunction(fn).matchAll(/_\("((?:[^"\\]|\\.)*)"\)/g)].map((m) => m[1]);
+			expect(literals.length, `${fn} has no _() literal to check`).toBeGreaterThan(0);
+			for (const key of literals) {
+				expect(
+					keys,
+					`${fn} raises ${JSON.stringify(key)} but the key list above does not pin it`
+				).toContain(key);
+			}
+		});
+	}
+
+	for (const lang of ["en", "ru", "uz", "uzc", "tr"]) {
+		it(`${lang}.csv has a non-empty target for every key`, () => {
+			const rows = loadCatalog(lang);
+			for (const key of keys) {
+				expect(rows.get(key), `${lang}.csv has no target for ${JSON.stringify(key)}`).toBeTruthy();
+			}
+		});
+	}
+});
