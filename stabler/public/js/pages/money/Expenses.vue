@@ -1186,6 +1186,12 @@ watch(activeCompany, () => {
 						<div class="datagrid-title">{{ t("Memo") }}</div>
 						<div class="datagrid-content">{{ detail.user_remark }}</div>
 					</div>
+					<!-- ADR-609, read-only: which tender/deal this expense was booked to.
+					     No control, no editing here — the deal picker below is create/edit only. -->
+					<div v-if="detail.tender" class="datagrid-item">
+						<div class="datagrid-title">{{ t("Tender") }}</div>
+						<div class="datagrid-content">{{ detail.tender_label || detail.tender }}</div>
+					</div>
 				</div>
 
 				<h6 class="text-uppercase text-secondary small mb-2">{{ t("Postings") }}</h6>
