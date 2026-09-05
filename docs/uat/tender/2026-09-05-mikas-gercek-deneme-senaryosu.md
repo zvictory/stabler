@@ -347,6 +347,14 @@ her biri ayrı, test-önce bir iş.
 4. **P1 — Sourcing başlığı "Добавить предложение" MouseEvent'i RFQ sanır.** `SourcingWorkspace.vue:455`
    `@click="openAddQuotation"` → `:257 openAddQuotation(rfq = "")` → `get_rfq` 404 "RFQ not found: {isTrusted…}"
    (`sourcing.py:346/607`). Geçici çözüm B4'te.
+   **Düzeltildi 2026-09-05** (dal `fix/sourcing-add-quotation-event`): `openAddQuotation` artık yalnız string bir
+   RFQ adını ön seçim sayar (`typeof rfq === "string" ? rfq : ""`); başlık düğmesinin çıplak `@click`'iyle gelen
+   MouseEvent boş giriş açar, `?rfq=` derin bağlantısı (`:405`) adı geçirmeye devam eder. Yeni spec
+   `sourcingAddQuotationEvent.spec.js` işlevi kaynaktan çıkarıp çalıştırır; MouseEvent iddiası eski kodda düşer
+   (`entryRfq` nesne oluyordu), derin bağlantı iddiası düzeltmenin fazla ileri gitmediğini korur. Canlı doğrulama
+   (yerel site, yeni bundle, CRM-DEAL-2026-00015): "Добавить предложение" → çekmece "Новое предложение
+   поставщика" açıldı, `get_quotation_defaults` gövdesi `deal` + `company` (rfq yok) ile 200, kalem ön dolu, hata
+   ve toast yok. Çekmece "Закрыть" ile kapatıldı, kayıt yazılmadı.
 5. **P2 — `?rfq=` aynı rotada çekmeceyi açmaz.** `SourcingWorkspace.vue:401-407` yalnız `onMounted`'ta okur;
    hash değişimi bileşeni yeniden kurmaz. RFQ detayından gelince çalışır (rota değişir).
 6. **P2 — Fişten fatura sonrası liste taslağı açmaz.** `PurchaseReceipts.vue:220`
