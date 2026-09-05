@@ -626,6 +626,19 @@ class TestListRfqs(unittest.TestCase):
 		self.api.list_rfqs("LOT-A", company="ACME")
 		self.assertEqual(self.fake.last_filters.get("docstatus"), ["<", 2])
 
+	def test_rows_carry_sent_count(self):
+		"""Same P3 fix as `list_all_rfqs`: this endpoint has no row-builder loop
+		today, so `sent_count` must be post-processed onto its rows too."""
+		self.fake.docs[("Communication", "COMM-1")] = _Doc(
+			name="COMM-1",
+			reference_doctype="Request for Quotation",
+			reference_name="RFQ-1",
+			communication_type="Communication",
+			sent_or_received="Sent",
+		)
+		result = self.api.list_rfqs("LOT-A", company="ACME")
+		self.assertEqual(result["rows"][0]["sent_count"], 1)
+
 	def test_reads_through_the_permission_filtered_query(self):
 		"""`get_all` would leak RFQs of lots this user may not see."""
 		self.api.list_rfqs("LOT-A", company="ACME")
@@ -853,6 +866,23 @@ class TestListAllRfqs(unittest.TestCase):
 		self.assertEqual(by_name["RFQ-1"]["supplier_count"], 2)
 		self.assertEqual(by_name["RFQ-1"]["quotation_count"], 3)  # 2 drafts + 1 submitted on LOT-A
 		self.assertEqual(by_name["RFQ-1"]["deal_label"], "Alfa Rail Lot")
+
+	def test_rows_carry_sent_count(self):
+		"""P3: the list page rendered `docstatus` alone (Draft/Submitted/
+		Cancelled), so an RFQ `mark_rfq_sent` had already handed to suppliers
+		still read "Draft" here while the detail page read "Sent" for the same
+		document. `sent_count` is what lets the row agree with the detail."""
+		self.fake.docs[("Communication", "COMM-1")] = _Doc(
+			name="COMM-1",
+			reference_doctype="Request for Quotation",
+			reference_name="RFQ-1",
+			communication_type="Communication",
+			sent_or_received="Sent",
+		)
+		res = self.api.list_all_rfqs(company="ACME")
+		by_name = {row["name"]: row for row in res["rows"]}
+		self.assertEqual(by_name["RFQ-1"]["sent_count"], 1)
+		self.assertEqual(by_name["RFQ-OTHER-LOT"]["sent_count"], 0)
 
 	def test_deal_filter_narrows_to_one_lot(self):
 		res = self.api.list_all_rfqs(company="ACME", deal="LOT-A")
@@ -1130,6 +1160,72 @@ class TestRfqSentSummary(unittest.TestCase):
 			self.api._rfq_sent_summary("RFQ-1"),
 			{"sent_count": 0, "sent_on": ""},
 		)
+
+
+class TestRfqSentCounts(unittest.TestCase):
+	"""Review follow-up (P3): `_rfq_sent_summary` answers "was THIS RFQ sent" for
+	the detail page; the list page needs the same fact for every row on the page
+	without one Communication query per row. `_rfq_sent_counts` is that batched
+	sibling — same Communication signal, counted the way `_rfq_supplier_counts`
+	batches the supplier count."""
+
+	def setUp(self):
+		self.fake = _FakeFrappe()
+		self.api = _load_api(self.fake)
+
+	def test_an_rfq_never_marked_sent_counts_zero(self):
+		self.assertEqual(self.api._rfq_sent_counts(["RFQ-1"]), {"RFQ-1": 0})
+
+	def test_counts_each_named_rfq_from_one_query(self):
+		self.fake.docs[("Communication", "COMM-1")] = _Doc(
+			name="COMM-1",
+			reference_doctype="Request for Quotation",
+			reference_name="RFQ-1",
+			communication_type="Communication",
+			sent_or_received="Sent",
+		)
+		self.fake.docs[("Communication", "COMM-2")] = _Doc(
+			name="COMM-2",
+			reference_doctype="Request for Quotation",
+			reference_name="RFQ-1",
+			communication_type="Communication",
+			sent_or_received="Sent",
+		)
+		self.fake.docs[("Communication", "COMM-3")] = _Doc(
+			name="COMM-3",
+			reference_doctype="Request for Quotation",
+			reference_name="RFQ-OTHER-LOT",
+			communication_type="Communication",
+			sent_or_received="Sent",
+		)
+		self.assertEqual(
+			self.api._rfq_sent_counts(["RFQ-1", "RFQ-OTHER-LOT", "RFQ-CANCELLED"]),
+			{"RFQ-1": 2, "RFQ-OTHER-LOT": 1, "RFQ-CANCELLED": 0},
+		)
+		self.assertIn("Communication", self.fake.list_calls)
+
+	def test_a_reply_or_an_unnamed_rfqs_send_is_not_counted(self):
+		"""Same exclusions as `_rfq_sent_summary`: a reply is not a send, and an
+		RFQ outside the requested batch must not leak into it."""
+		self.fake.docs[("Communication", "COMM-REPLY")] = _Doc(
+			name="COMM-REPLY",
+			reference_doctype="Request for Quotation",
+			reference_name="RFQ-1",
+			communication_type="Communication",
+			sent_or_received="Received",
+		)
+		self.fake.docs[("Communication", "COMM-UNLISTED")] = _Doc(
+			name="COMM-UNLISTED",
+			reference_doctype="Request for Quotation",
+			reference_name="RFQ-OTHER-COMPANY",
+			communication_type="Communication",
+			sent_or_received="Sent",
+		)
+		self.assertEqual(self.api._rfq_sent_counts(["RFQ-1"]), {"RFQ-1": 0})
+
+	def test_empty_names_short_circuits_without_a_query(self):
+		self.assertEqual(self.api._rfq_sent_counts([]), {})
+		self.assertNotIn("Communication", self.fake.list_calls)
 
 
 class TestRfqPatch(unittest.TestCase):

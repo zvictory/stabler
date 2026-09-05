@@ -363,12 +363,17 @@ class DealDisplayLabelTest(unittest.TestCase):
 		self.assertEqual(label, "Aziz Karimov · CRM-DEAL-2026-00099")
 
 	def test_falls_back_to_the_deal_id_when_neither_name_is_set(self):
+		# Review follow-up (P3): the fallback chain's last resort is the deal id
+		# itself, so the naive `f"{name_part} · {deal}"` printed it twice —
+		# "CRM-DEAL-2026-00100 · CRM-DEAL-2026-00100". The bare id is what
+		# `dealOptionLabel` in PurchaseOrderForm.vue already renders for this
+		# exact case; the two must not disagree on the same degenerate deal.
 		sales = _load_sales()
 		sales.frappe.db.get_value = lambda dt, name, fields, as_dict=False: {}
 
 		label = sales._deal_display_label("CRM-DEAL-2026-00100")
 
-		self.assertEqual(label, "CRM-DEAL-2026-00100 · CRM-DEAL-2026-00100")
+		self.assertEqual(label, "CRM-DEAL-2026-00100")
 
 	def test_no_deal_is_the_empty_string_not_a_bare_separator(self):
 		sales = _load_sales()

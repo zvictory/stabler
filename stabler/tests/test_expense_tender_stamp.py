@@ -45,14 +45,33 @@ from __future__ import annotations
 import importlib
 import types
 import unittest
+from pathlib import Path
 
 from stabler.tests.module_sandbox import ModuleSandbox
 
 _SANDBOX = ModuleSandbox()
 
+# Source-level read for WiringNotDroppedTest below — same idiom as
+# test_related_documents_contract.py's SALES/`_endpoint_region`.
+_ROOT = Path(__file__).resolve().parents[1]
+MONEY_SOURCE = (_ROOT / "api" / "money.py").read_text(encoding="utf-8")
+
 
 def tearDownModule():
 	_SANDBOX.restore()
+
+
+def _journal_entry_detail_region() -> str:
+	"""`journal_entry_detail`'s body, up to the next whitelisted function.
+
+	No fixed character window: a window would shift the moment a helper is
+	added above or below this one, same lesson as
+	test_related_documents_contract.py's `_endpoint_region`.
+	"""
+	start = MONEY_SOURCE.index("def journal_entry_detail")
+	end = MONEY_SOURCE.find("@frappe.whitelist()", start)
+	assert end > start, "no whitelist boundary found after journal_entry_detail"
+	return MONEY_SOURCE[start:end]
 
 
 def _load_money():
@@ -218,12 +237,15 @@ class DealDisplayLabelTest(unittest.TestCase):
 		)
 
 	def test_falls_back_to_the_deal_id_when_neither_name_is_set(self):
+		# Review follow-up (P3): the naive `f"{name_part} · {deal}"` prints the
+		# id twice once the fallback chain bottoms out at the deal id itself —
+		# "CRM-DEAL-2026-00100 · CRM-DEAL-2026-00100". The bare id is what
+		# `dealOptionLabel` in PurchaseOrderForm.vue already renders for this
+		# exact case.
 		money = _load_money()
 		money.frappe.db.get_value = lambda dt, name, fields, as_dict=False: {}
 
-		self.assertEqual(
-			money._deal_display_label("CRM-DEAL-2026-00100"), "CRM-DEAL-2026-00100 · CRM-DEAL-2026-00100"
-		)
+		self.assertEqual(money._deal_display_label("CRM-DEAL-2026-00100"), "CRM-DEAL-2026-00100")
 
 	def test_no_deal_is_the_empty_string(self):
 		money = _load_money()
@@ -232,6 +254,31 @@ class DealDisplayLabelTest(unittest.TestCase):
 		)
 
 		self.assertEqual(money._deal_display_label(""), "")
+
+
+class JournalEntryDetailWiringNotDroppedTest(unittest.TestCase):
+	"""Review follow-up (P2): the module docstring above says the wiring that
+	adds `_je_tender_stamp`'s result to `journal_entry_detail`'s returned dict
+	is "two lines, read alongside this test in code review" — which is exactly
+	the gap. The two helpers are tested directly above; the two-line CALL SITE
+	that actually puts their result on the response was never itself under
+	test, and could silently drop back out (a merge, a copy-paste of the dict
+	literal) with nothing here to notice. Source-level on purpose, same shape
+	as test_related_documents_contract.py's `_endpoint_region`.
+	"""
+
+	def test_the_response_carries_the_tender_and_its_label(self):
+		body = _journal_entry_detail_region()
+		self.assertIn(
+			'"tender": _tender',
+			body,
+			"journal_entry_detail's response dropped the tender field",
+		)
+		self.assertIn(
+			'"tender_label": _tender_label',
+			body,
+			"journal_entry_detail's response dropped the tender_label field",
+		)
 
 
 class RegistrationTest(unittest.TestCase):

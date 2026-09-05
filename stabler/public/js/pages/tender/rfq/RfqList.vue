@@ -11,7 +11,7 @@ import { formatDate } from "../../../composables/date.js";
 import { t } from "../../../composables/i18n.js";
 import { useAutoRefresh } from "../../../composables/useAutoRefresh.js";
 import { useToast } from "../../../composables/useToast.js";
-import { getDocstatusLabel, getStatusBadgeClass } from "../../../composables/status.js";
+import { rfqStatusBadge } from "../../../composables/rfqStatus.js";
 import { buildTenderQuery } from "../../../composables/useTenderContext.js";
 import EmptyState from "../../../components/EmptyState.vue";
 import ListToolbar from "../../../components/ListToolbar.vue";
@@ -128,8 +128,8 @@ function openNew() {
 								</span>
 							</td>
 							<td>
-								<span class="badge" :class="getStatusBadgeClass('Request for Quotation', r.docstatus)">
-									{{ getDocstatusLabel(r.docstatus) }}
+								<span class="badge" :class="rfqStatusBadge(r).badgeClass">
+									{{ rfqStatusBadge(r).label }}
 								</span>
 							</td>
 						</tr>

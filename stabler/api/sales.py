@@ -1664,7 +1664,10 @@ def _deal_display_label(deal: str) -> str:
 		return ""
 	info = frappe.db.get_value("CRM Deal", deal, ["organization", "lead_name"], as_dict=True) or {}
 	name_part = info.get("organization") or info.get("lead_name") or deal
-	return f"{name_part} · {deal}"
+	# The fallback chain's last resort IS the deal id, so name_part can equal
+	# deal — printing "CRM-DEAL-X · CRM-DEAL-X" otherwise. Matches
+	# `dealOptionLabel` in PurchaseOrderForm.vue for the same degenerate case.
+	return f"{name_part} · {deal}" if name_part != deal else deal
 
 
 @frappe.whitelist()

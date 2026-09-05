@@ -1,11 +1,12 @@
 <script setup>
 import { computed, nextTick, onBeforeUnmount, ref, watch } from "vue";
+import { t } from "../composables/i18n.js";
 
 const props = defineProps({
 	modelValue: { type: [String, Number, null], default: "" },
 	search: { type: Function, required: true },
 	display: { type: String, default: "" },
-	placeholder: { type: String, default: "Search…" },
+	placeholder: { type: String, default: "" },
 	size: { type: String, default: "md" },
 	disabled: { type: Boolean, default: false },
 	minChars: { type: Number, default: 1 },
@@ -258,7 +259,7 @@ function onKeydown(e) {
 					v-model="query"
 					type="text"
 					:class="inputClass"
-					:placeholder="placeholder"
+					:placeholder="placeholder || t('Search…')"
 					:disabled="disabled"
 					autocomplete="off"
 					@input="onSearch"

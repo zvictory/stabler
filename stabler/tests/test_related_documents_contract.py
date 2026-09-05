@@ -75,6 +75,16 @@ def _endpoint_region() -> str:
 	return SALES[start:end]
 
 
+def _sales_invoice_detail_region() -> str:
+	"""sales_invoice_detail gövdesi — bir sonraki whitelist'e kadar. Aynı sınır
+	tekniği `_endpoint_region` ile: sabit bir karakter penceresi KULLANMA.
+	"""
+	start = SALES.index("def sales_invoice_detail")
+	end = SALES.find("@frappe.whitelist()", start)
+	assert end > start, "sales_invoice_detail'den sonra whitelist sınırı bulunamadı"
+	return SALES[start:end]
+
+
 def _linked_doctypes() -> set[str]:
 	m = re.search(r"_LINKED_DOCTYPES\s*=\s*frozenset\(\s*\{(.*?)\}\s*\)", SALES, re.S)
 	assert m, "_LINKED_DOCTYPES api/sales.py'de bulunamadı"
@@ -151,6 +161,40 @@ class RelatedDocumentsContract(unittest.TestCase):
 						f"{doctype} drawer dalında ama {page.name} `?open=` okumuyor — "
 						"rozet listeye gidip hiçbir şey yapmaz",
 					)
+
+
+class WiringLinesSurviveARefactorTest(unittest.TestCase):
+	"""Review follow-up (P2): three one-line wiring calls that a merge or a
+	careless refactor could silently drop, each with a helper that still works
+	fine on its own and no test that would notice the call site going missing —
+	the line inside `get_linked_documents` that folds "created from" links
+	(PR/PI made from a PO, SI made from an SO) into the response, and the two
+	dict keys that stamp the tender a Sales Invoice was booked to onto
+	`sales_invoice_detail`'s response (ADR-609, WP G.18).
+	"""
+
+	def test_get_linked_documents_calls_add_upstream_item_links(self):
+		body = _endpoint_region()
+		self.assertIn(
+			"_add_upstream_item_links(doctype, name, out)",
+			body,
+			"get_linked_documents artık _add_upstream_item_links'i çağırmıyor — "
+			"bir PO'dan gelen PR/PI, bir SO'dan gelen SI için 'created from' "
+			"bağlantısı sessizce kaybolur",
+		)
+
+	def test_sales_invoice_detail_stamps_the_tender_it_was_booked_to(self):
+		body = _sales_invoice_detail_region()
+		self.assertIn(
+			'"tender": _tender',
+			body,
+			"sales_invoice_detail dönüşünden tender alanı düşmüş",
+		)
+		self.assertIn(
+			'"tender_label"',
+			body,
+			"sales_invoice_detail dönüşünden tender_label alanı düşmüş",
+		)
 
 
 if __name__ == "__main__":

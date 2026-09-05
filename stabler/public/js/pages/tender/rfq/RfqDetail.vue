@@ -12,7 +12,7 @@ import { formatDate, formatDateTime } from "../../../composables/date.js";
 import { t } from "../../../composables/i18n.js";
 import { useAutoRefresh } from "../../../composables/useAutoRefresh.js";
 import { useToast } from "../../../composables/useToast.js";
-import { getDocstatusLabel, getStatusBadgeClass } from "../../../composables/status.js";
+import { rfqStatusBadge } from "../../../composables/rfqStatus.js";
 import { buildTenderQuery } from "../../../composables/useTenderContext.js";
 import EmptyState from "../../../components/EmptyState.vue";
 import Select from "../../../components/Select.vue";
@@ -61,31 +61,9 @@ useAutoRefresh(load);
 
 const respondedCount = computed(() => (rfq.value?.suppliers || []).filter((s) => s.responded).length);
 
-/**
- * The header badge for an RFQ that is still a draft doubles as the "did we
- * send it" signal. `mark_rfq_sent` (sourcing.py) never submits the RFQ — the
- * draft-and-stop philosophy — so `docstatus` alone cannot tell "drafted" from
- * "drafted and handed to suppliers" apart; that gap is UAT G.13. `get_rfq`
- * now carries `sent_count`/`sent_on`, read back from the Communications
- * `mark_rfq_sent` writes, and this is the one place that turns them into a
- * badge.
- */
-function rfqStatusBadge(doc) {
-	const docstatus = Number(doc?.docstatus) || 0;
-	if (docstatus === 0 && Number(doc?.sent_count) > 0) {
-		// STATUS_MAP (composables/status.js) has no "Sent" entry for this
-		// doctype, and getStatusBadgeClass ignores doctype whenever `status`
-		// is a number — so a docstatus alone could never resolve to it. This
-		// borrows the same positive class family the suppliers table below
-		// already uses for "Received" (bg-green-lt text-green).
-		return { label: t("Sent"), badgeClass: "bg-green-lt text-green" };
-	}
-	return {
-		label: getDocstatusLabel(docstatus),
-		badgeClass: getStatusBadgeClass("Request for Quotation", docstatus),
-	};
-}
-
+// The header badge is `rfqStatusBadge` from composables/rfqStatus.js, shared
+// with RfqList.vue so the two screens cannot disagree about the same RFQ
+// (review follow-up, P2/P3) — see that module for the "Sent" gap it closes.
 const statusBadge = computed(() => rfqStatusBadge(rfq.value));
 
 function fmtRate(v) {

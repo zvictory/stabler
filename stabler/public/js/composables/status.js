@@ -398,7 +398,15 @@ export const STATUS_MAP = {
 		0: "bg-yellow-lt", // Draft
 		1: "bg-green-lt",  // Submitted / Active
 		2: "bg-red-lt",    // Cancelled
-	}
+	},
+	// A draft RFQ that has been handed to suppliers (mark_rfq_sent logs a
+	// Communication; it never submits the RFQ -- draft-and-stop). `status` is
+	// the string "Sent" here, never a docstatus, so this needs its own entry:
+	// getStatusBadgeClass's docstatus branch only fires for a NUMBER status.
+	// composables/rfqStatus.js is the one reader.
+	"Request for Quotation": {
+		Sent: "bg-green-lt",
+	},
 };
 
 export function getStatusBadgeClass(doctype, status) {
