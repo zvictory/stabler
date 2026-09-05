@@ -331,6 +331,19 @@ her biri ayrı, test-önce bir iş.
    `:429-435 canCreateInvoice` ve `:583-595` KPI'ları bu alanları okur → gönderilmiş PO'da "Приёмка" /
    "Создать счёт" yok, KPI "—" (`14c`). **3b (gözlem):** Classic SO detayında da "К ВЫПЛАТЕ ВСЕГО —", "ИТОГО —"
    (`13c`); aynı sınıf, kaynağı okunmadı.
+   **Düzeltildi 2026-09-05** (dal `fix/po-form-server-facts`): `fromDetail` artık sunucunun salt-okunur
+   gerçeklerini modele taşır — `docstatus`, `status`, `net_total`, `grand_total`, `per_received`, `per_billed`,
+   `purchase_invoices`, `purchase_receipts` ve satırlarda `name` (mal kabul diyaloğunun gönderdiği `po_detail`;
+   sunucu bunu zorunlu tutar: `create_purchase_receipt_from_po` "po_detail is required") ile `received_qty`.
+   `toPayload` bunları geri göndermez; kirlilik koruması yükleme sonrası `reset(model)` ile sıfırlandığı için
+   sahte "kaydedilmemiş değişiklik" doğmaz. Yeni spec `purchaseOrderFormServerFacts.spec.js` `fromDetail`'i
+   gerçek `grossRate` ile çalıştırır; dört iddiası da eski kodda `undefined` ile düşer, yenide geçer. Canlı
+   doğrulama (yerel site, yeni bundle): `PUR-ORD-2026-00008` → KPI 96 500,00 $ / 100 % / 0 %,
+   "Создать счёт-фактуру" düğmesi görünür, mal kabul şeridi MAT-PRE-2026-00003/00004; `PUR-ORD-2026-00009` →
+   214 800 000,00 сўм / 100 % / 100 %, bağlı fatura şeridi; iki kapı da doğru şekilde kapalı.
+   **3b kaynağı okundu:** `SalesOrderFormClassic.vue:156-197 fromDetail` de `net_total`/`grand_total`/
+   `per_delivered`/`per_billed` döndürmez; şablon `:1068-1084`, `:1230-1252` ve `:832` bunları okur → aynı sınıf,
+   düzeltilmedi (oradaki kapılar motorun `docstatus.value`'sunu okuduğu için yalnız KPI'lar boş kalır).
 4. **P1 — Sourcing başlığı "Добавить предложение" MouseEvent'i RFQ sanır.** `SourcingWorkspace.vue:455`
    `@click="openAddQuotation"` → `:257 openAddQuotation(rfq = "")` → `get_rfq` 404 "RFQ not found: {isTrusted…}"
    (`sourcing.py:346/607`). Geçici çözüm B4'te.
@@ -370,6 +383,12 @@ her biri ayrı, test-önce bir iş.
 20. **P2 — Direktör paneli ↔ genel bakış kazanılan sayısı.** 2 / %66,7 ↔ 3 / %75 aynı anda (`25b`, `01b`).
     Kaynağı okunmadı (pencere ya da Tender Master filtresi olabilir — doğrulanmadı).
 21. **P2 — Toast tekrarı.** "Перемещено в Выиграно" ×2 (C1); daha önce ×3 İngilizce toast (C4/C5).
+22. **P1 — PI detayı: aynı `fromDetail` sınıfı, "Make payment" ve iade düğmeleri hiç görünmez.**
+    `PurchaseInvoiceForm.vue:209-274 fromDetail` `docstatus` ve `status` döndürmez; `:672-679 canPay`
+    (`form.value.docstatus === 1 && PAYABLE_STATUSES.has(form.value.status)`) ve `:697-703 canReturn` bunları
+    okur. Canlı ölçüm 2026-09-05: gönderilmiş, "Не оплачено" `ACC-PINV-2026-00883` detayında yalnız "Назад" ve
+    "Отмена"; ödeme bu ekrandan kaydedilemez. PO düzeltmesi (§G.3) yapılırken bulundu; aynı iki satırlık
+    düzeltme sınıfı, düzeltilmedi.
 
 ## H. Bulgular — arayüz metni ve katalog
 
