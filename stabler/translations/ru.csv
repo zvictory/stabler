@@ -291,7 +291,7 @@ Add PO link,Добавить связь с заказом
 Add Price,Добавить цену
 Add punch,
 Add quotation,Добавить предложение
-Add Row,
+Add Row,Добавить строку
 Add row,Добавить строку
 Add stage,Добавить этап
 Add subcategory,Добавить подкатегорию
@@ -537,7 +537,7 @@ ARCA Payment Events,Платежи ARCA
 ARCA payment webhook events appear here.,Здесь отображаются события вебхуков платежей ARCA.
 Are you sure you want to cancel this document? This action is irreversible.,
 Are you sure you want to delete this draft? This cannot be undone.,
-Are you sure you want to submit this document? This will finalize transactions.,
+Are you sure you want to submit this document? This will finalize transactions.,"Вы уверены, что хотите провести этот документ? Это завершит операции."
 Arrival,Прибытие
 Arrival date,Дата прибытия
 Arrival time,Время прибытия
@@ -704,14 +704,14 @@ Bidding,Подача заявки
 Bill,Счёт
 Bill #,Счет №
 Bill / invoice number printed on supplier document,"Номер счета / накладной, указанный в документе поставщика"
-Bill Date,
+Bill Date,Дата выставления счета
 Bill date,Дата счета
-Bill No.,
+Bill No.,Номер счета
 Bill number or supplier…,
 Bill or supplier… ⌘K,Счёт или поставщик… ⌘K
 Bill {0},Счёт {0}
 Billed,Выставлен счет
-Billed amt,
+Billed amt,Выставлено
 Billed goods,Проведённый товар
 Billing,Выставление счёта
 Bills,Счета
@@ -1688,7 +1688,7 @@ Document not found.,
 Document or company…,
 Document removed.,Документ удален.
 Document requirements,Требования к документам
-Document saved successfully.,
+Document saved successfully.,Документ сохранён.
 document set complete,комплект документов собран
 Document status,Документы
 Document submitted successfully.,
@@ -1949,7 +1949,7 @@ Exchange fee,Биржевая комиссия
 Exchange rate,Обменный курс
 Exchange rate ({0}),
 Exchange rate must be greater than zero.,Курс валюты должен быть больше нуля.
-Exchange rate preview,
+Exchange rate preview,Предпросмотр обменного курса
 Exchange Rate Revaluation,
 Exchange rate staleness,
 Exchange rate unavailable — enter it manually.,Обменный курс недоступен — введите его вручную.
@@ -2308,7 +2308,7 @@ From → To,С → По
 Frozen accounts modifier role,
 Frozen days cannot be negative.,
 Frozen up to (date),
-Fulfilment & Billing,
+Fulfilment & Billing,Исполнение и выставление счёта
 Full name,Полное имя
 Full name (optional — filled automatically on save),
 Full screen,Полный экран
@@ -2659,7 +2659,7 @@ Keep typing to narrow…,Продолжайте вводить для уточн
 Keeps the audit trail; amend to correct.,Сохраняет аудит-след; для исправления — корректировка.
 Kg,Кг
 kg,кг
-Kind,
+Kind,Вид
 Kiosk login is not configured on this site.,Вход через киоск не настроен на этом сайте.
 KPI,KPI
 KPI performance (%),Выполнение KPI (%)
@@ -2755,7 +2755,7 @@ Lifetime Sales,
 Lifetime sales,Продажи за всё время
 Light,
 line,строка
-Line details,
+Line details,Детали строки
 Line Operator Kiosk,Киоск оператора линии
 Line total,Итого по строке
 Line total (UZS),Итого по строке (UZS)
@@ -3090,8 +3090,8 @@ New Proforma,Новая проформа
 New Promo Plan,Новый план промо
 New Promo Scheme,Новая схема промо
 New purchase bill,Новая счёт-фактура покупки
-New Purchase Invoice,
-New purchase invoice,
+New Purchase Invoice,Новая счёт-фактура покупки
+New purchase invoice,Новая счёт-фактура покупки
 New Purchase Order,
 New purchase order,Новый заказ на покупку
 New Quotation,
@@ -3105,7 +3105,7 @@ New Revaluation,
 New route,Новый маршрут
 New Rule Set,
 New rule set,
-New Sales Order,
+New Sales Order,Новый заказ продажи
 New sales order,Новый заказ на продажу
 New Sales Return,
 New Scheme,Новая схема
@@ -3278,7 +3278,7 @@ No items.,Нет позиций.
 No journal entries in this range,Записей в журнале в этом диапазоне нет
 No landed cost vouchers yet.,Пока нет ваучеров себестоимости.
 No landed-cost bills,Нет счетов себестоимости
-No landed-cost lines have been found.,
+No landed-cost lines have been found.,Строки затрат на доставку не найдены.
 No lanes. Click + to add.,Нет полос. Нажмите + для добавления.
 No leads,Нет лидов
 No leave requests,Нет заявок на отпуск
@@ -3678,7 +3678,7 @@ Order #,Заказ №
 Order Date,Дата заказа
 Order date,Дата заказа
 Order number or supplier…,
-Ordered,
+Ordered,Заказано
 Orders,Заказы
 orders,
 Orders with advance,Заказы с авансом
@@ -3803,7 +3803,7 @@ Partial,Частично
 Partial compliance,Частичное соответствие
 Partial Result,Частичный результат
 Partially approved — awaiting level {0},
-Partially billed — {pct}% invoiced.,
+Partially billed — {pct}% invoiced.,Выставлено частично — {pct}%.
 Partially Completed,Частично выполнено
 Partially Paid,Частично оплачено
 Partially received,Частично получено
@@ -4228,7 +4228,7 @@ Purchase Receipt,Приёмка товара
 Purchase receipt,Приходная накладная
 Purchase Receipt cancelled.,
 Purchase Receipt must be Submitted to create a Landed Cost Voucher.,
-Purchase Receipt submitted.,
+Purchase Receipt submitted.,Приёмка товара проведена.
 Purchase Receipts,Приёмки товара
 Purchase receipts,Приходы
 Purchases,Закупки
@@ -4863,7 +4863,7 @@ Seller TIN,
 Send currency,Валюта отправки
 Send invite,Отправить приглашение
 Send password reset email to ,Отправить письмо для сброса пароля на 
-Send to Didox,
+Send to Didox,Отправить в Didox
 Sender name,Имя отправителя
 Sender pays,Отправитель платит
 Sending recorded on the RFQ timeline.,Отправка зафиксирована в истории RFQ.
@@ -5123,7 +5123,7 @@ Submit a leave request on behalf of an employee.,Подайте заявку о�
 Submit a request to track equipment service tickets.,Отправьте запрос для отслеживания заявок на обслуживание оборудования.
 Submit and release this Work Order?,Провести и запустить этот производственный заказ?
 Submit BOM?,
-Submit document?,
+Submit document?,Провести документ?
 Submit expense,Отправить расход
 Submit failed.,Ошибка отправки.
 Submit GRN,Провести приёмку
@@ -5207,7 +5207,7 @@ Target temp min (°C),Мин. темп. (°C)
 Target total,Целевая сумма
 Target WIP Warehouse,
 Task,Задача
-Tax amount,
+Tax amount,Сумма налога
 Tax ID,ИНН
 Tax rates,Ставки налогов
 Tax template,Шаблон налогов
@@ -5684,7 +5684,7 @@ Unverified tick,Неподтвержденная галочка
 UOM,Ед. изм.
 Upcoming,Предстоящие
 Update draft decision,Обновить черновик решения
-Update stock,
+Update stock,Обновить запасы
 Update tokens,
 updated,
 Updated,Обновлено
@@ -5967,7 +5967,7 @@ You do not have permission to view landed-cost figures. Ask an imports manager o
 You do not have permission to view the ledger for this transfer. Only the Remittance Auditor role can read it.,У вас нет прав на просмотр проводок по этому переводу. Читать их может только роль Remittance Auditor.
 You have already approved level {0} for this request.,
 You have no approval requests,У вас нет заявок на согласование
-You have unsaved changes. Leaving this page will discard them.,
+You have unsaved changes. Leaving this page will discard them.,"У вас есть несохранённые изменения. Если вы покинете страницу, они будут потеряны."
 "You must hold an HR Manager, System Manager, or Stabler Admin role to lock a payroll period.",
 You need a payroll/HR role to manage employee advances.,Для управления авансами нужна роль расчётчика/HR.
 You need a payroll/HR role to run salary payments.,
@@ -6739,3 +6739,25 @@ Goods received for this tender and not yet delivered reach cost of goods on deli
 No documents-side figures for this deal.,Для этой сделки нет данных со стороны документов.
 Unsafe dimension fieldname,Небезопасное имя поля аналитики
 Expense Claim,Авансовый отчёт
+Commercial Invoice (Import Attribution),Коммерческий инвойс (привязка импорта)
+Add Item,Добавить товар
+New Item,Новый товар
+Search…,Поиск…
+PO Created,Заказ создан
+No expenses in this range,Нет расходов за этот период
+Record an outgoing payment to start tracking spend.,"Зафиксируйте исходящий платёж, чтобы начать учёт расходов."
+Spread the charges over,Распределить расходы по
+By line value,По сумме строки
+"The voucher is created as a draft. Review it under Existing vouchers, then submit it there to post the valuation.","Ваучер создаётся как черновик. Найдите его в разделе «Существующие ваучеры» и проведите его там, чтобы зафиксировать стоимость."
+Estimated Total,Ориентировочная сумма
+Lot / Deal,Лот / Сделка
+Parent Tender,Родительский тендер
+Total delivered cost,Итоговая стоимость с доставкой
+Charge type,Тип расхода
+We kindly ask you to quote your prices and delivery terms for the following items.,Просим вас указать цены и условия поставки по следующим позициям.
+Received ({0}),Принято ({0})
+Scope,Область
+Price,Цена
+Only submitted purchase orders can be received.,Только проведённые заказы на покупку могут быть приняты.
+Nothing left to receive on this purchase order.,На этом заказе на покупку больше нечего принимать.
+Evidence,Подтверждение

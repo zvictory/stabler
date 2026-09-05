@@ -290,7 +290,7 @@ Add PO link,ХБ боғланишини қўшиш
 Add Price,Нарх қўшиш
 Add punch,
 Add quotation,Таклиф қўшиш
-Add Row,
+Add Row,Қатор қўшиш
 Add row,Қатор қўшиш
 Add stage,Босқич қўшиш
 Add subcategory,Қуйи турғун қўшиш
@@ -534,7 +534,7 @@ ARCA,ARCA
 ARCA Payment Events,ARCA Тўлов воқеалари
 Are you sure you want to cancel this document? This action is irreversible.,
 Are you sure you want to delete this draft? This cannot be undone.,
-Are you sure you want to submit this document? This will finalize transactions.,
+Are you sure you want to submit this document? This will finalize transactions.,Ушбу ҳужжатни тасдиқламоқчимисиз? Бу операцияларни якунлайди.
 Arrival,Келиш
 Arrival date,Келиш санаси
 Arrival time,Келиш вақти
@@ -700,14 +700,14 @@ Bidding,Таклиф топшириш
 Bill,Ҳисоб
 Bill #,Ҳисоб #
 Bill / invoice number printed on supplier document,Сатувчи хужжатида чоп этилган ҳисоб / инвойс рақами
-Bill Date,
+Bill Date,Ҳисоб санаси
 Bill date,Ҳисоб саны
-Bill No.,
+Bill No.,Ҳисоб рақами
 Bill number or supplier…,
 Bill or supplier… ⌘K,Ҳисоб-фактура ёки етказиб берувчи… ⌘K
 Bill {0},Ҳисоб-фактура {0}
 Billed,Ҳисоб оқилди
-Billed amt,
+Billed amt,Ҳисоб чиқарилган
 Billed goods,Ҳисобланган маҳсулот
 Billing,Ҳисоб-фактура
 Bills,Ҳисоблар
@@ -1683,7 +1683,7 @@ Document not found.,
 Document or company…,
 Document removed.,Ҳужжат ўчирилди.
 Document requirements,Hujjat talapları
-Document saved successfully.,
+Document saved successfully.,Ҳужжат сақланди.
 document set complete,ҳужжатлар тўплами тўлиқ
 Document status,Ҳужжатлар ҳолати
 Document submitted successfully.,
@@ -1943,7 +1943,7 @@ Exchange fee,Биржа комиссияси
 Exchange rate,Алмашта нарх
 Exchange rate ({0}),
 Exchange rate must be greater than zero.,Валюта курси нолдан катта бўлиши керак.
-Exchange rate preview,
+Exchange rate preview,Валюта курсини кўриб чиқиш
 Exchange Rate Revaluation,
 Exchange rate staleness,
 Exchange rate unavailable — enter it manually.,Алмашта нарх мавжуд эмас — уни қўлда киритинг.
@@ -2303,7 +2303,7 @@ From → To,Дан → Гача
 Frozen accounts modifier role,
 Frozen days cannot be negative.,
 Frozen up to (date),
-Fulfilment & Billing,
+Fulfilment & Billing,Бажарилиши ва ҳисоб-фактура
 Full name,Тўлиқ исм
 Full name (optional — filled automatically on save),
 Full screen,Тўлиқ экран
@@ -2654,7 +2654,7 @@ Keep typing to narrow…,Торайтириш учун ёзишда давом �
 Keeps the audit trail; amend to correct.,Аудит изи сақланади; тузатиш учун amend қилинг.
 Kg,Кг
 kg,кг
-Kind,
+Kind,Тури
 Kiosk login is not configured on this site.,Бу сайтда киоск логин созланмаган.
 KPI,KPI
 KPI performance (%),KPI бажарилиши (%)
@@ -2750,7 +2750,7 @@ Lifetime Sales,
 Lifetime sales,Умумий савдо
 Light,
 line,Қатор
-Line details,
+Line details,Қатор тафсилотлари
 Line Operator Kiosk,Линия оператори киоски
 Line total,Қатор жами
 Line total (UZS),Қатор жами (UZS)
@@ -3085,8 +3085,8 @@ New Proforma,Янги проформа
 New Promo Plan,Янги ҳамёнч режаси
 New Promo Scheme,Янги ҳамёнч схемаси
 New purchase bill,Янги қарз счёти
-New Purchase Invoice,
-New purchase invoice,
+New Purchase Invoice,Янги харид ҳисоб-фактураси
+New purchase invoice,Янги харид ҳисоб-фактураси
 New Purchase Order,
 New purchase order,Янги сотиб олиш буйртмаси
 New Quotation,
@@ -3100,7 +3100,7 @@ New Revaluation,
 New route,Янги маршрут
 New Rule Set,
 New rule set,
-New Sales Order,
+New Sales Order,Янги сотув буюртмаси
 New sales order,Янги сотув буйртмаси
 New Sales Return,
 New Scheme,Янги схема
@@ -3273,7 +3273,7 @@ No items.,Позициялар йўқ.
 No journal entries in this range,Бу диапазонда журнал ёзувлари йўқ
 No landed cost vouchers yet.,Ҳозирча таннарх ваучерлари йўқ.
 No landed-cost bills,Таннарх ҳисоб-фактуралари йўқ
-No landed-cost lines have been found.,
+No landed-cost lines have been found.,Етказиш харажатлари қаторлари топилмади.
 No lanes. Click + to add.,Йўлаклар йўқ. Қўшиш учун + босинг.
 No leads,Лидлар йўқ
 No leave requests,Таътил аризалари йўқ
@@ -3673,7 +3673,7 @@ Order #,Буюртма №
 Order Date,Буюртма санаси
 Order date,Буюртма санаси
 Order number or supplier…,
-Ordered,
+Ordered,Буюртма қилинган
 Orders,Буюртмалар
 orders,
 Orders with advance,Авансли буюртмалар
@@ -3798,7 +3798,7 @@ Partial,Қисман
 Partial compliance,Қисман мос келади
 Partial Result,Қисмий натижа
 Partially approved — awaiting level {0},
-Partially billed — {pct}% invoiced.,
+Partially billed — {pct}% invoiced.,Қисман ҳисоб-фактура чиқарилган — {pct}%.
 Partially Completed,Қисман бажарилди
 Partially Paid,Қисман тўланган
 Partially received,Қисман қабул қилинган
@@ -4222,7 +4222,7 @@ Purchase Receipt,Товар қабул қилиш
 Purchase receipt,Харид квитанцияси
 Purchase Receipt cancelled.,
 Purchase Receipt must be Submitted to create a Landed Cost Voucher.,
-Purchase Receipt submitted.,
+Purchase Receipt submitted.,Товар қабул қилиш тасдиқланди.
 Purchase Receipts,Товар қабул қилиш ҳужжатлари
 Purchase receipts,Харид тушумлари
 Purchases,Харидлар
@@ -4858,7 +4858,7 @@ Seller TIN,
 Send currency,Жўнатиш валютаси
 Send invite,Таклифни юбориш
 Send password reset email to ,Паролни тиклаш учун электрон почта юбориш 
-Send to Didox,
+Send to Didox,Didox'га юбориш
 Sender name,Жўнатувчи исми
 Sender pays,Жўнатувчи тўлайди
 Sending recorded on the RFQ timeline.,Юбориш RFQ вақт чизиғига ёзилди.
@@ -5118,7 +5118,7 @@ Submit a leave request on behalf of an employee.,Ходим номидан ар�
 Submit a request to track equipment service tickets.,Жиҳоз хизмати билетларини кўзатиш учун сўров тасдиқланг.
 Submit and release this Work Order?,Бу буюртмани тасдиқлаш ва ишга туширишми?
 Submit BOM?,
-Submit document?,
+Submit document?,Ҳужжатни тасдиқлайсизми?
 Submit expense,Харажатни тасдиқлаш
 Submit failed.,Тасдиқлаш бажарилмади.
 Submit GRN,Қабулни тасдиқлаш
@@ -5202,7 +5202,7 @@ Target temp min (°C),Мин. ҳарорат (°C)
 Target total,Мақсадли жами
 Target WIP Warehouse,
 Task,Вазифа
-Tax amount,
+Tax amount,Солиқ суммаси
 Tax ID,Солиқ ID
 Tax rates,Солиқ ставкалари
 Tax template,Солиқ шаблони
@@ -5679,7 +5679,7 @@ Unverified tick,Тасдиқланмаган белги
 UOM,Ўлчов бирлиги
 Upcoming,Келаётган
 Update draft decision,Қарор қораламасини янгилаш
-Update stock,
+Update stock,Захирани янгилаш
 Update tokens,
 updated,
 Updated,Янгиланган
@@ -5962,7 +5962,7 @@ You do not have permission to view landed-cost figures. Ask an imports manager o
 You do not have permission to view the ledger for this transfer. Only the Remittance Auditor role can read it.,Бу ўтказма бўйича бухгалтерия ёзувларини кўришга рухсатингиз йўқ. Уларни фақат Remittance Auditor роли ўқий олади.
 You have already approved level {0} for this request.,
 You have no approval requests,Сизда тасдиқ сўровлари йўқ
-You have unsaved changes. Leaving this page will discard them.,
+You have unsaved changes. Leaving this page will discard them.,"Сақланмаган ўзгаришларингиз бор. Саҳифадан чиқсангиз, улар йўқолади."
 "You must hold an HR Manager, System Manager, or Stabler Admin role to lock a payroll period.",
 You need a payroll/HR role to manage employee advances.,Авансларни бошқариш учун ойлик/HR роли керак.
 You need a payroll/HR role to run salary payments.,
@@ -6734,3 +6734,25 @@ Goods received for this tender and not yet delivered reach cost of goods on deli
 No documents-side figures for this deal.,Бу битим учун ҳужжатлар томонидан рақамлар йўқ.
 Unsafe dimension fieldname,Хавфсиз бўлмаган ўлчов майдони номи
 Expense Claim,Харажат аризаси
+Commercial Invoice (Import Attribution),Тижорат инвойси (импорт боғланиши)
+Add Item,Товар қўшиш
+New Item,Янги товар
+Search…,Қидириш…
+PO Created,Буюртма яратилди
+No expenses in this range,Ушбу даврда харажатлар йўқ
+Record an outgoing payment to start tracking spend.,Харажатларни кузатишни бошлаш учун чиқувчи тўловни қайд этинг.
+Spread the charges over,Харажатларни тақсимлаш асоси
+By line value,Қатор суммаси бўйича
+"The voucher is created as a draft. Review it under Existing vouchers, then submit it there to post the valuation.",Ваучер қоралама сифатида яратилади. Уни «Мавжуд ваучерлар» бўлимида топинг ва таннархни якунлаш учун шу ерда тасдиқланг.
+Estimated Total,Тахминий сумма
+Lot / Deal,Лот / Битим
+Parent Tender,Бош тендер
+Total delivered cost,Етказиб бериш билан жами таннарх
+Charge type,Харажат тури
+We kindly ask you to quote your prices and delivery terms for the following items.,Қуйидаги товарлар бўйича нарх ва етказиб бериш шартларингизни билдиришингизни сўраймиз.
+Received ({0}),Қабул қилинди ({0})
+Scope,Қамров
+Price,Нарх
+Only submitted purchase orders can be received.,Фақат топширилган харид буюртмалари қабул қилиниши мумкин.
+Nothing left to receive on this purchase order.,Ушбу харид буюртмасида қабул қилинадиган нарса қолмади.
+Evidence,Тасдиқловчи ҳужжат

@@ -406,6 +406,7 @@ const grandTotal = computed(() => {
 								v-model="line.item_code"
 								:display="line.item_code ? `${line.item_code} — ${line.item_name || ''}` : ''"
 								:search="searchItems"
+								:placeholder="t('Search…')"
 								@pick="(item) => handlePickItem(line, item, idx)"
 								@clear="() => { line.item_code = ''; line.item_name = ''; line.uom = ''; }"
 							>
