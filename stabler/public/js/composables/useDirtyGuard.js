@@ -16,7 +16,12 @@ import { useConfirm } from "./useConfirm.js";
 import { t } from "./i18n.js";
 
 export function useDirtyGuard(modelRef, getPristineSnapshot) {
-	const pristineString = ref("");
+	// Baseline from the model's OWN construction-time value, not "" — with the
+	// deep `immediate` watcher below, "" made isDirty true for every CREATE
+	// form before the user touched anything (nothing calls reset() until the
+	// first save; useDocumentForm.js:142), so "Discard unsaved changes?" fired
+	// on navigating straight off a blank "New ..." form. Measured 2026-09-05.
+	const pristineString = ref(JSON.stringify(modelRef.value));
 	const { confirm } = useConfirm();
 
 	function reset(customSnapshot = null) {
