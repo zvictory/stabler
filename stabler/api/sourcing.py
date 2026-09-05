@@ -797,6 +797,35 @@ def _deal_labels(deals: list[str]) -> dict[str, str]:
 	return labels
 
 
+def _rfq_sent_summary(name: str) -> dict:
+	"""How many times, and when most recently, this RFQ was marked sent.
+
+	`mark_rfq_sent` never touches the RFQ or its supplier rows. ERPNext's own
+	`Request for Quotation Supplier.email_sent` is not a usable substitute: it
+	is wired to the standard "Send Emails" button (`depends_on: eval:doc.
+	docstatus >= 1`), a flow this module deliberately bypasses -- the RFQ never
+	submits here, so that field would sit at its default "0" forever. The
+	Communication `mark_rfq_sent` inserts is the only durable trace of the act,
+	so this reads it back with the same fields that identify it as one: the
+	reference to THIS RFQ, and the type/direction stamped on every insert.
+	"""
+	rows = frappe.get_all(
+		"Communication",
+		filters={
+			"reference_doctype": "Request for Quotation",
+			"reference_name": name,
+			"communication_type": "Communication",
+			"sent_or_received": "Sent",
+		},
+		fields=["creation"],
+		order_by="creation desc",
+	)
+	return {
+		"sent_count": len(rows),
+		"sent_on": str(rows[0].get("creation") or "") if rows else "",
+	}
+
+
 @frappe.whitelist()
 def list_all_rfqs(company=None, deal=None, search=None, limit=200):
 	"""All requests for quotation across the selected company's tender lots."""
@@ -896,6 +925,8 @@ def get_rfq(name, company=None):
 			}
 		)
 
+	sent_summary = _rfq_sent_summary(doc.name)
+
 	return {
 		"name": doc.name,
 		"deal": deal,
@@ -903,6 +934,12 @@ def get_rfq(name, company=None):
 		"company": selected_company,
 		"status": doc.status,
 		"docstatus": int(doc.docstatus or 0),
+		# Whether the invitation went out, straight from the Communications
+		# `mark_rfq_sent` writes — `docstatus` alone stays 0 (draft-and-stop),
+		# so without this the detail screen has no way to tell "drafted" from
+		# "drafted and handed to suppliers" apart.
+		"sent_count": sent_summary["sent_count"],
+		"sent_on": sent_summary["sent_on"],
 		"transaction_date": str(doc.transaction_date or ""),
 		"schedule_date": str(doc.schedule_date or ""),
 		# The unit `target_rate` below is written in. Empty means the intake never

@@ -962,6 +962,32 @@ class TestGetRfq(unittest.TestCase):
 		res = self.api.get_rfq("RFQ-1", company="ACME")
 		self.assertEqual(res["target_currency"], "")
 
+	def test_reports_it_was_never_marked_sent(self):
+		"""UAT G.13 (RU walk, steps 06d/06e): `mark_rfq_sent` writes a
+		Communication, not a field on the RFQ itself, so the detail screen has
+		nothing to read unless `get_rfq` reports the fact explicitly. Before this
+		key existed the badge stayed "Draft" forever, sent or not."""
+		res = self.api.get_rfq("RFQ-1", company="ACME")
+		self.assertEqual(res["sent_count"], 0)
+		self.assertEqual(res["sent_on"], "")
+
+	def test_reports_it_was_marked_sent_without_submitting_it(self):
+		"""Sending stays a human act recorded on the timeline; it must not
+		silently submit the RFQ (the draft-and-stop philosophy `mark_rfq_sent`
+		documents) even though the badge now has something new to say."""
+		self.fake.docs[("Communication", "COMM-1")] = _Doc(
+			name="COMM-1",
+			reference_doctype="Request for Quotation",
+			reference_name="RFQ-1",
+			communication_type="Communication",
+			sent_or_received="Sent",
+			creation="2026-08-02 10:00:00",
+		)
+		res = self.api.get_rfq("RFQ-1", company="ACME")
+		self.assertEqual(res["sent_count"], 1)
+		self.assertEqual(res["sent_on"], "2026-08-02 10:00:00")
+		self.assertEqual(res["docstatus"], 0)
+
 	def test_rejects_an_rfq_of_another_company(self):
 		with self.assertRaises(PermissionError):
 			self.api.get_rfq("RFQ-OTHER-COMPANY", company="ACME")
@@ -1037,6 +1063,73 @@ class TestMarkRfqSent(unittest.TestCase):
 	def test_rejects_an_rfq_of_another_company(self):
 		with self.assertRaises(PermissionError):
 			self.api.mark_rfq_sent("RFQ-OTHER-COMPANY", company="ACME", channel="email")
+
+
+class TestRfqSentSummary(unittest.TestCase):
+	"""`_rfq_sent_summary` is what `get_rfq` asks to answer the UAT gap: the RFQ
+	detail screen kept its "Draft" badge after `mark_rfq_sent` ran, because
+	nothing on the RFQ document or its supplier rows records the act — only the
+	Communication `mark_rfq_sent` inserts does. ERPNext's own
+	`Request for Quotation Supplier.email_sent` is not it: that field is wired
+	to the standard "Send Emails" button (`depends_on: eval:doc.docstatus >= 1`)
+	which this module deliberately bypasses, and `mark_rfq_sent` never writes it."""
+
+	def setUp(self):
+		self.fake = _FakeFrappe()
+		self.api = _load_api(self.fake)
+
+	def test_an_rfq_never_marked_sent_reports_nothing(self):
+		self.assertEqual(
+			self.api._rfq_sent_summary("RFQ-1"),
+			{"sent_count": 0, "sent_on": ""},
+		)
+
+	def test_reports_the_count_and_the_latest_of_several_sends(self):
+		self.fake.docs[("Communication", "COMM-OLD")] = _Doc(
+			name="COMM-OLD",
+			reference_doctype="Request for Quotation",
+			reference_name="RFQ-1",
+			communication_type="Communication",
+			sent_or_received="Sent",
+			creation="2026-08-02 10:00:00",
+		)
+		self.fake.docs[("Communication", "COMM-NEW")] = _Doc(
+			name="COMM-NEW",
+			reference_doctype="Request for Quotation",
+			reference_name="RFQ-1",
+			communication_type="Communication",
+			sent_or_received="Sent",
+			creation="2026-08-02 15:30:00",
+		)
+		self.assertEqual(
+			self.api._rfq_sent_summary("RFQ-1"),
+			{"sent_count": 2, "sent_on": "2026-08-02 15:30:00"},
+		)
+
+	def test_a_reply_or_another_rfqs_send_is_not_counted(self):
+		"""Only the act `mark_rfq_sent` itself records may count. A future
+		supplier reply logged as a Communication on the same RFQ, or a send
+		recorded against a different RFQ, must not inflate this one's count."""
+		self.fake.docs[("Communication", "COMM-REPLY")] = _Doc(
+			name="COMM-REPLY",
+			reference_doctype="Request for Quotation",
+			reference_name="RFQ-1",
+			communication_type="Communication",
+			sent_or_received="Received",
+			creation="2026-08-02 11:00:00",
+		)
+		self.fake.docs[("Communication", "COMM-OTHER-RFQ")] = _Doc(
+			name="COMM-OTHER-RFQ",
+			reference_doctype="Request for Quotation",
+			reference_name="RFQ-OTHER-COMPANY",
+			communication_type="Communication",
+			sent_or_received="Sent",
+			creation="2026-08-02 12:00:00",
+		)
+		self.assertEqual(
+			self.api._rfq_sent_summary("RFQ-1"),
+			{"sent_count": 0, "sent_on": ""},
+		)
 
 
 class TestRfqPatch(unittest.TestCase):
