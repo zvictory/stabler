@@ -257,6 +257,12 @@ onMounted(loadDoc);
 						<span class="text-secondary font-monospace small">· {{ form.customer }}</span>
 					</div>
 				</div>
+				<!-- ADR-609, read-only: which tender/deal this invoice was booked to.
+				     No control, no editing here — see SalesInvoiceForm.vue's scope note. -->
+				<div v-if="form.tender" class="datagrid-item">
+					<div class="datagrid-title">{{ t("Tender") }}</div>
+					<div class="datagrid-content">{{ form.tender_label || form.tender }}</div>
+				</div>
 				<div class="datagrid-item">
 					<div class="datagrid-title">{{ t("Currency") }}</div>
 					<div class="datagrid-content font-monospace">{{ form.currency }}</div>

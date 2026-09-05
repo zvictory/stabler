@@ -23,6 +23,7 @@ from stabler.api._pricing import gross_rate, net_rate
 from stabler.api._sales_margin import attach_margins
 from stabler.api.approvals import _assert_company_scope
 from stabler.api.organization import module_map_for
+from stabler.api.tender_dimension import dimension_fieldname
 from stabler.stabler.customer_hierarchy import (
 	ERR_ALLOC_EMPTY,
 	ERR_ALLOC_EXCEEDS,
@@ -1649,6 +1650,23 @@ def _edo_status(invoice_name: str) -> dict | None:
 	}
 
 
+def _deal_display_label(deal: str) -> str:
+	""" "<organization or lead_name> · <deal name>" for a CRM Deal, or "" for none.
+
+	Not `tender_dimension.tender_label()`: that one shows organization only (or
+	the deal name when organization is blank) and is what PurchaseInvoiceForm.vue
+	already renders — a separate, existing decision this does not touch. A deal
+	with no organization (a lead-only CRM Deal) still needs a name on screen, so
+	this falls back to `lead_name` before the bare deal id, and always keeps the
+	deal name visible alongside it.
+	"""
+	if not deal:
+		return ""
+	info = frappe.db.get_value("CRM Deal", deal, ["organization", "lead_name"], as_dict=True) or {}
+	name_part = info.get("organization") or info.get("lead_name") or deal
+	return f"{name_part} · {deal}"
+
+
 @frappe.whitelist()
 def sales_invoice_detail(name: str):
 	if not name:
@@ -1662,6 +1680,12 @@ def sales_invoice_detail(name: str):
 			return ""
 		return frappe.get_cached_value("Item", code, "custom_dimension_mode") or ""
 
+	# ADR-609. Read-only here: the tender/deal a document was booked to (WP G.18).
+	# `dimension_fieldname()` is None on a site with no CRM Deal accounting
+	# dimension at all, in which case there is nothing to read off the doc.
+	_tender_field = dimension_fieldname()
+	_tender = (doc.get(_tender_field) or "") if _tender_field else ""
+
 	return {
 		"name": doc.name,
 		"modified": str(doc.modified),
@@ -1669,6 +1693,8 @@ def sales_invoice_detail(name: str):
 		"due_date": str(doc.due_date) if doc.due_date else None,
 		"customer": doc.customer,
 		"customer_name": doc.customer_name,
+		"tender": _tender,
+		"tender_label": _deal_display_label(_tender),
 		# The screen reads this back into its price-list control. Without it the
 		# control loads blank, which its rate-refresh reads as a change, and every
 		# stored line rate is overwritten with today's list price on open.
@@ -4105,7 +4131,68 @@ def get_linked_documents(doctype: str, name: str):
 
 	if doctype == "Payment Entry":
 		_add_payment_entry_references(name, out)
+	_add_upstream_item_links(doctype, name, out)
 	return out
+
+
+# "Created from": doctypes whose own item rows carry a Link field pointing AT
+# an upstream document — Purchase Receipt Item.purchase_order, Purchase Invoice
+# Item.purchase_order/.purchase_receipt, Sales Invoice Item.sales_order. Frappe's
+# walker (get_linked_doctypes/get_linked_docs, used above) only ever answers
+# "who points at me" — the direction that already surfaces a Purchase Invoice
+# raised against a Purchase Receipt. It cannot walk the opposite way, so the
+# receipt/invoice screen showed nothing for the order it was itself created
+# from: a Purchase Receipt made from a Purchase Order, a Purchase Invoice made
+# from a Purchase Order or Purchase Receipt, a Sales Invoice made from a Sales
+# Order all came back missing exactly the document named in the UAT report.
+#
+# A flat table of (subject doctype, its item-table fieldname, doctype that
+# field points at) rows — not a subject-keyed doctype allow-list: every ref_dt
+# pulled out of it is re-checked against _LINKED_DOCTYPES below before use,
+# same as _add_payment_entry_references already does, so this table can never
+# itself drift into a second, competing set of "which doctypes are OK" (see
+# test_related_documents_contract.py's test_subject_and_result_filters_are_one_set,
+# which pins _LINKED_DOCTYPES as the one place that question is answered).
+_UPSTREAM_ITEM_LINKS: tuple[tuple[str, str, str], ...] = (
+	("Purchase Receipt", "purchase_order", "Purchase Order"),
+	("Purchase Invoice", "purchase_order", "Purchase Order"),
+	("Purchase Invoice", "purchase_receipt", "Purchase Receipt"),
+	("Sales Invoice", "sales_order", "Sales Order"),
+)
+
+
+def _add_upstream_item_links(doctype: str, name: str, out: dict) -> None:
+	"""Fold a document's own "created from" links into the result.
+
+	The opposite direction from every other entry `get_linked_documents` builds:
+	those are documents that point AT the subject; these are read off the
+	subject's OWN item rows and point AWAY from it. Same permission discipline
+	as `_add_payment_entry_references` — the caller proved read access to the
+	subject, which says nothing about the upstream document.
+	"""
+	links = [(fieldname, ref_dt) for subject, fieldname, ref_dt in _UPSTREAM_ITEM_LINKS if subject == doctype]
+	if not links:
+		return
+	rows = frappe.get_all(
+		f"{doctype} Item",
+		filters={"parent": name, "parenttype": doctype},
+		fields=[fieldname for fieldname, _dt in links],
+	)
+	if not rows:
+		return
+	for fieldname, ref_dt in links:
+		if ref_dt not in _LINKED_DOCTYPES:
+			continue
+		existing = {r["name"] for r in out.get(ref_dt, [])}
+		for ref_name in {row.get(fieldname) for row in rows if row.get(fieldname)}:
+			if ref_name in existing:
+				continue
+			existing.add(ref_name)
+			if not frappe.has_permission(ref_dt, "read", doc=ref_name):
+				continue
+			out.setdefault(ref_dt, []).append(
+				{"name": ref_name, "docstatus": frappe.db.get_value(ref_dt, ref_name, "docstatus")}
+			)
 
 
 def _add_payment_entry_references(name: str, out: dict) -> None:
