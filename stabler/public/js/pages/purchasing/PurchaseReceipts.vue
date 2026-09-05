@@ -208,6 +208,15 @@ async function cancelDoc() {
 	}
 }
 
+// The invoices list (PurchaseInvoices.vue) only ever reads from_date/to_date/
+// tender_only off its query string, so pushing it an `?open=` param used to
+// land the user on the plain list instead of the bill they just created (UAT
+// 2026-09-05, step 18c). Same route PurchaseInvoiceForm.vue itself pushes to
+// after its own create.
+function purchaseInvoiceFormPath(name) {
+	return "/purchasing/invoices/" + name;
+}
+
 async function createBill() {
 	if (!detail.value?.name) return;
 	actionError.value = "";
@@ -217,7 +226,7 @@ async function createBill() {
 			name: detail.value.name,
 		});
 		if (res?.name) {
-			router.push({ path: "/purchasing/invoices", query: { open: res.name } });
+			router.push(purchaseInvoiceFormPath(res.name));
 		}
 	} catch (err) {
 		actionError.value = err?.message || "Failed to create bill.";
