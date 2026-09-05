@@ -66,6 +66,7 @@ async function searchDeals(q) {
 	const r = await call("stabler.api.crm.list_deals", {
 		company: activeCompany.value,
 		search: q,
+		active_tenders: 1,
 		page_length: 8,
 	});
 	return (r?.deals || []).map((d) => ({ name: d.name, label: dealOptionLabel(d) }));
@@ -375,6 +376,16 @@ async function handlePickItem({ line, item, field }) {
 watch(docName, loadDoc);
 // Catches the module flag arriving AFTER mount — see `applyQueryDeal` above.
 watch(tenderOn, applyQueryDeal);
+// `queryDealApplied` is instance-scoped, but App.vue's `<router-view>` has no
+// `:key` — navigating from `/purchasing/orders/new?deal=A` to `...?deal=B`
+// reuses this same instance, so the latch stays shut and B is silently
+// dropped. Re-open it when the query param itself changes to a new value.
+watch(() => route.query?.deal, (v, old) => {
+	if (v && v !== old) {
+		queryDealApplied = false;
+		applyQueryDeal();
+	}
+});
 
 onMounted(async () => {
 	await Promise.all([loadWarehouses(), loadPriceLists(), loadCurrencies()]);

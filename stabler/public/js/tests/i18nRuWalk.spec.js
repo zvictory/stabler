@@ -131,7 +131,9 @@ describe("H.3 -- distributionLabel is unit-neutral for Qty", () => {
 
 describe("H.3 -- receivedLabel shows the line's real UOM", () => {
 	it("fills the placeholder with whatever UOM the payload sent", () => {
-		expect(receivedLabel("Kg")).toBe("Received (Kg)");
+		// "Litre", not "Kg": kg is special-cased below (review follow-up, P3) —
+		// this test is only about the generic placeholder-fill path.
+		expect(receivedLabel("Litre")).toBe("Received (Litre)");
 	});
 
 	it("is not hardcoded to Kg -- a Nos-denominated receipt reads Nos", () => {
@@ -139,5 +141,34 @@ describe("H.3 -- receivedLabel shows the line's real UOM", () => {
 		// Purchase Receipt whose items are counted, not weighed.
 		expect(receivedLabel("Nos")).toBe("Received (Nos)");
 		expect(receivedLabel("Nos")).not.toMatch(/kg/i);
+	});
+});
+
+/**
+ * Review follow-up (P3): `receivedLabel` still had two edge cases the H.3 fix
+ * above did not cover. An empty UOM (no line has one yet) filled the
+ * placeholder with nothing -- "Received ()". And "Kg", the exact literal
+ * `received_uom` pins on the imports/GRN-Checklist route
+ * (receipt_math.STOCK_UOM), filled the SAME generic placeholder key
+ * ("Received ({0})") -- a key that IS translated on a non-English locale, so
+ * the raw Latin "Kg" landed inside an otherwise-Cyrillic string:
+ * "Принято (Kg)". "Received (kg)" is a separate, fully-translated key
+ * GRNChecklistDetail.vue already renders for this exact UOM; reusing it
+ * (rather than filling the placeholder) is what keeps the string one
+ * language throughout.
+ */
+describe("H.3 -- receivedLabel's edge cases (review follow-up, P3)", () => {
+	it("says plain 'Received' for an empty UOM, not 'Received ()'", () => {
+		expect(receivedLabel("")).toBe("Received");
+		expect(receivedLabel(undefined)).toBe("Received");
+	});
+
+	it("reuses the fully-translated 'Received (kg)' key for the imports route's pinned Kg UOM", () => {
+		expect(receivedLabel("Kg")).toBe("Received (kg)");
+	});
+
+	it("matches kg case-insensitively, not only the exact pinned casing", () => {
+		expect(receivedLabel("kg")).toBe("Received (kg)");
+		expect(receivedLabel("KG")).toBe("Received (kg)");
 	});
 });

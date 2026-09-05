@@ -30,7 +30,20 @@ export function distributionLabel(method) {
 	return method;
 }
 
-/** "Received (Kg)" / "Received (Nos)" -- the unit is data, never assumed. */
+/**
+ * "Received (Kg)" / "Received (Nos)" -- the unit is data, never assumed.
+ *
+ * Two edge cases the generic placeholder fill gets wrong (review follow-up,
+ * P3): an empty UOM (no line has one yet) filled the placeholder with
+ * nothing -- "Received ()" -- so it is named plainly instead. And "kg", the
+ * exact literal `received_uom` pins on the imports/GRN-Checklist route
+ * (receipt_math.STOCK_UOM), reuses the separate, fully-translated
+ * "Received (kg)" key GRNChecklistDetail.vue already renders, rather than
+ * filling the translated "Received ({0})" placeholder with an untranslated
+ * raw "Kg" -- which produced a half-Latin "Принято (Kg)" on a Cyrillic locale.
+ */
 export function receivedLabel(uom) {
-	return t("Received ({0})", [uom || ""]);
+	if (!uom) return t("Received");
+	if (String(uom).toLowerCase() === "kg") return t("Received (kg)");
+	return t("Received ({0})", [uom]);
 }

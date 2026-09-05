@@ -503,6 +503,11 @@ def list_rfqs(deal, company=None):
 		order_by="transaction_date desc",
 		limit_page_length=0,
 	)
+	# `docstatus` alone cannot tell "drafted" from "drafted and handed to
+	# suppliers" apart (mark_rfq_sent never submits) -- see rfqStatus.js.
+	sent_counts = _rfq_sent_counts([row["name"] for row in rows])
+	for row in rows:
+		row["sent_count"] = sent_counts.get(row["name"], 0)
 	# Built from `rows`, so a cancelled RFQ is out of the reach for the same
 	# reason it is out of the list — otherwise the badge tells the "we asked N
 	# suppliers" story this filter exists to refuse.
@@ -826,6 +831,31 @@ def _rfq_sent_summary(name: str) -> dict:
 	}
 
 
+def _rfq_sent_counts(names: list[str]) -> dict[str, int]:
+	"""How many times EACH of these RFQs was marked sent, in one query.
+
+	The list-page sibling of `_rfq_sent_summary`: same Communication signal,
+	batched the way `_rfq_supplier_counts` batches the supplier count, so a
+	list page does not pay one Communication query per row.
+	"""
+	counts = {name: 0 for name in names}
+	if not names:
+		return counts
+	rows = frappe.get_all(
+		"Communication",
+		filters={
+			"reference_doctype": "Request for Quotation",
+			"reference_name": ["in", names],
+			"communication_type": "Communication",
+			"sent_or_received": "Sent",
+		},
+		fields=["reference_name"],
+	)
+	for row in rows:
+		counts[row["reference_name"]] = counts.get(row["reference_name"], 0) + 1
+	return counts
+
+
 @frappe.whitelist()
 def list_all_rfqs(company=None, deal=None, search=None, limit=200):
 	"""All requests for quotation across the selected company's tender lots."""
@@ -853,12 +883,16 @@ def list_all_rfqs(company=None, deal=None, search=None, limit=200):
 	supplier_counts = _rfq_supplier_counts([row["name"] for row in rows])
 	quotation_counts = _deal_quotation_counts(deals)
 	labels = _deal_labels(deals)
+	# Same signal RfqDetail's header badge reads (rfqStatus.js): without it this
+	# list showed "Draft" for an RFQ the detail page already read as "Sent".
+	sent_counts = _rfq_sent_counts([row["name"] for row in rows])
 	for row in rows:
 		deal_name = row.get(_RFQ_DEAL_FIELD) or ""
 		row["deal"] = deal_name
 		row["deal_label"] = labels.get(deal_name, deal_name)
 		row["supplier_count"] = supplier_counts.get(row["name"], 0)
 		row["quotation_count"] = quotation_counts.get(deal_name, 0)
+		row["sent_count"] = sent_counts.get(row["name"], 0)
 	return {"rows": rows, "count": len(rows)}
 
 

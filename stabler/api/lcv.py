@@ -339,6 +339,14 @@ def get_landed_cost_review(document_type: str, document_name: str, rate=None):
 				}
 			)
 
+		# Unlike the GRN-Checklist route, a plain Purchase Receipt is not
+		# guaranteed to be Kg. The old "first line" convention (matching
+		# `warehouse` below) silently reported one line's UOM for the whole
+		# receipt's `received_total_kg` sum even when lines disagreed; blank
+		# out rather than name a unit that is not true of every line summed.
+		uoms = {d.uom for d in pr.items if d.uom}
+		received_uom = uoms.pop() if len(uoms) == 1 else ""
+
 		return {
 			"grn": {
 				"name": pr.name,
@@ -351,10 +359,7 @@ def get_landed_cost_review(document_type: str, document_name: str, rate=None):
 				"receipt_status": "Completed" if pr.docstatus == 1 else "Draft",
 				"completion_date": str(pr.posting_date) if pr.posting_date else None,
 				"received_total_kg": sum(flt(d.qty) for d in pr.items),
-				# Unlike the GRN-Checklist route, a plain Purchase Receipt is not
-				# guaranteed to be Kg -- read the real transaction UOM the qty above
-				# was summed in, the same "first line" convention `warehouse` uses.
-				"received_uom": pr.items[0].uom if pr.items else "",
+				"received_uom": received_uom,
 				"received_total_boxes": 0,
 			},
 			"purchase_receipts": [

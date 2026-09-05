@@ -10,8 +10,11 @@ built on, and the DRAFT payload shape.
 from __future__ import annotations
 
 import unittest
+from pathlib import Path
 
 from stabler.stabler.imports_module import lcv_math
+
+_LCV_API_SOURCE = (Path(__file__).resolve().parents[1] / "api" / "lcv.py").read_text(encoding="utf-8")
 
 
 def _line(component, currency, amount, include=1, lcv_ref=None, name=None):
@@ -638,6 +641,39 @@ class LockingDocstatusTest(unittest.TestCase):
 		# The SQL predicate in stabler/api/lcv.py binds this value; if it drifts,
 		# the query silently starts locking on the wrong state.
 		self.assertEqual(lcv_math.LOCKING_DOCSTATUS, 1)
+
+
+class ReceivedUomIsTheSharedUomOrBlankTest(unittest.TestCase):
+	"""Review follow-up (P3): `get_landed_cost_review`'s `received_uom` used to
+	be `pr.items[0].uom` -- the FIRST line's unit, unconditionally, even when
+	other lines on the same receipt carry a different one. Unlike the
+	GRN-Checklist/imports route (pins every line to Kg by construction, see
+	`receipt_math.STOCK_UOM`), a plain Purchase Receipt carries no such
+	guarantee, so silently reporting one line's UOM for the whole receipt's
+	`received_total_kg` sum can name the wrong unit.
+
+	Source-level, not a frappe-free unit test through `get_landed_cost_review`
+	itself: that function reads straight off `frappe.get_doc("Purchase
+	Receipt", ...).items` real child-table rows, plus GTD linkage, the
+	existing-LCV lookup and `lcv_math.aggregate_components` -- faking all of
+	that credibly to exercise one derived field is disproportionate. The
+	frappe-free `stabler.tests.test_lcv_math` module (this file) covers pure
+	`lcv_math` helpers directly; `get_landed_cost_review` as a whole is
+	covered end-to-end by the bench-backed `test_lcv_integration.py` (not in
+	`.github/frappe-free-tests.txt`).
+	"""
+
+	def test_uses_the_shared_uom_when_every_line_agrees(self):
+		self.assertIn("uoms = {d.uom for d in pr.items if d.uom}", _LCV_API_SOURCE)
+
+	def test_blanks_out_when_lines_disagree_on_uom(self):
+		self.assertIn('received_uom = uoms.pop() if len(uoms) == 1 else ""', _LCV_API_SOURCE)
+
+	def test_no_longer_hardcodes_the_first_lines_uom(self):
+		# The exact old line, pinned so a revert is caught even if a future
+		# edit reformats the fix above into different (but still correct)
+		# syntax that the two positive assertions would not otherwise notice.
+		self.assertNotIn('"received_uom": pr.items[0].uom if pr.items else ""', _LCV_API_SOURCE)
 
 
 if __name__ == "__main__":

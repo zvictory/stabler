@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { readFileSync } from "fs";
 import { dirname, resolve } from "path";
 import { fileURLToPath } from "url";
-import { nextTick, ref, watch } from "vue";
+import { nextTick, reactive, ref, watch } from "vue";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const src = readFileSync(resolve(here, "../pages/purchasing/PurchaseOrderForm.vue"), "utf8");
@@ -69,6 +69,24 @@ function buildDealOptionLabel() {
 	return factory();
 }
 
+// P3: `queryDealApplied` is instance-scoped and App.vue renders `<router-view>`
+// with no `:key`, so navigating from one `?deal=` link to another re-uses this
+// component instance — the latch must re-open when the query param itself
+// changes to a different value. Extracted (not hand-rolled) so the test
+// exercises the exact watcher the fix registers, brace/paren-matched the same
+// way `extractFunction` lifts a function body.
+function extractDealQueryWatch() {
+	const at = src.indexOf("watch(() => route.query?.deal");
+	expect(at, "the route-query deal watcher is gone — has it moved or been renamed?").toBeGreaterThan(-1);
+	const parenStart = src.indexOf("(", at);
+	let depth = 0;
+	for (let i = parenStart; i < src.length; i++) {
+		if (src[i] === "(") depth++;
+		else if (src[i] === ")" && --depth === 0) return src.slice(at, i + 1) + ";";
+	}
+	throw new Error("unterminated watch(() => route.query?.deal ...)");
+}
+
 // Models the real onMounted/watch sequence for UAT G.7: `tenderOn` is a
 // `computed` over session module data that is not always resolved by the time
 // this component mounts, so `applyQueryDeal` has to be re-runnable — once,
@@ -86,11 +104,15 @@ function buildQueryDealHarness({
 	const applyLiteral = extractFunction("applyQueryDeal");
 	const watchAt = src.indexOf("watch(tenderOn, applyQueryDeal)");
 	expect(watchAt, "the tenderOn watcher is gone — has it moved or been renamed?").toBeGreaterThan(-1);
+	const dealQueryWatchLiteral = extractDealQueryWatch();
 
 	const docName = ref(docNameValue);
 	const form = ref({ deal: "" });
 	const tenderOn = ref(tenderOnValue);
-	const route = { query: { deal: queryDeal } };
+	// `reactive`, not a plain object: the fix's `watch(() => route.query?.deal, ...)`
+	// needs a real reactive dependency to trigger on, same as vue-router's own
+	// `route` — a plain object mutation would be invisible to Vue's watcher.
+	const route = reactive({ query: { deal: queryDeal } });
 	const labelCalls = [];
 	async function loadDealLabel(dealName) {
 		labelCalls.push(dealName);
@@ -109,7 +131,7 @@ function buildQueryDealHarness({
 		"loadDealLabel",
 		"watch",
 		"createFormReadyValue",
-		`let queryDealApplied = false;\nlet createFormReady = createFormReadyValue;\n${resolveLiteral}\n${applyLiteral}\nwatch(tenderOn, applyQueryDeal);\nreturn { applyQueryDeal, markFormReplaced: () => { form.value = { deal: "" }; createFormReady = true; } };`
+		`let queryDealApplied = false;\nlet createFormReady = createFormReadyValue;\n${resolveLiteral}\n${applyLiteral}\nwatch(tenderOn, applyQueryDeal);\n${dealQueryWatchLiteral}\nreturn { applyQueryDeal, markFormReplaced: () => { form.value = { deal: "" }; createFormReady = true; } };`
 	);
 	const { applyQueryDeal, markFormReplaced } = factory(
 		docName,
@@ -120,7 +142,7 @@ function buildQueryDealHarness({
 		watch,
 		createFormReadyValue
 	);
-	return { docName, form, tenderOn, applyQueryDeal, markFormReplaced, labelCalls };
+	return { docName, form, tenderOn, route, applyQueryDeal, markFormReplaced, labelCalls };
 }
 
 const baseModel = () => ({
@@ -154,6 +176,18 @@ describe("PurchaseOrderForm carries a tender lot to create_purchase_order (KOP-0
 		const toPayload = buildToPayload(false);
 		const payload = toPayload({ ...baseModel(), deal: "CRM-DEAL-2026-00107" });
 		expect(payload.deal).toBeUndefined();
+	});
+});
+
+// Review follow-up (P1): without `active_tenders: 1`, `list_deals` takes the
+// all-deals branch (`_crm_list`, search_fields organization/email/lead_name) —
+// the id-search fix landed only in `list_active_tenders`, which this picker
+// never reaches without the flag — and offers every Standard deal on the
+// board, not just active tenders. Same shape as tenderDimension.spec.js:91
+// for Expenses.vue's searchDeals.
+describe("PurchaseOrderForm's deal picker only offers active tenders (P1)", () => {
+	it("asks for active tenders, not for every deal on the CRM board", () => {
+		expect(extractFunction("searchDeals")).toContain("active_tenders: 1");
 	});
 });
 
@@ -287,5 +321,40 @@ describe("PurchaseOrderForm does not lose ?deal= when tenderOn flips true mid-Pr
 		await h.applyQueryDeal();
 		expect(h.form.value.deal).toBe("CRM-DEAL-2026-00107");
 		expect(h.labelCalls).toEqual(["CRM-DEAL-2026-00107"]);
+	});
+});
+
+// P3: `queryDealApplied` is instance-scoped, but App.vue's `<router-view>` has
+// no `:key` (App.vue:28), so navigating from `/purchasing/orders/new?deal=A` to
+// `...?deal=B` reuses this same instance — the latch never re-opens and B is
+// silently dropped.
+describe("PurchaseOrderForm re-applies ?deal= when the query itself changes to a new deal (P3)", () => {
+	it("re-opens the latch when the query deal changes to a different value", async () => {
+		const h = buildQueryDealHarness({ tenderOnValue: true, queryDeal: "CRM-DEAL-2026-00107" });
+		await h.applyQueryDeal(); // the onMounted call, first navigation
+		expect(h.form.value.deal).toBe("CRM-DEAL-2026-00107");
+
+		// Second navigation to the SAME route component with a DIFFERENT ?deal= —
+		// router-view has no :key, so this is the same component instance seeing
+		// its route props change, exactly like vue-router replaces `route.query`.
+		h.route.query = { deal: "CRM-DEAL-2026-00222" };
+		await nextTick();
+		expect(h.form.value.deal).toBe("CRM-DEAL-2026-00222");
+		expect(h.labelCalls).toEqual(["CRM-DEAL-2026-00107", "CRM-DEAL-2026-00222"]);
+	});
+
+	it("does not re-apply when the query deal is unchanged", async () => {
+		const h = buildQueryDealHarness({ tenderOnValue: true, queryDeal: "CRM-DEAL-2026-00107" });
+		await h.applyQueryDeal();
+		h.labelCalls.length = 0;
+
+		// A navigation that replaces the query object (vue-router does this on
+		// every route change) but leaves `deal` at the same value — e.g. an
+		// unrelated query param changed — must not re-fight a deal the user may
+		// since have cleared.
+		h.route.query = { deal: "CRM-DEAL-2026-00107", other: "x" };
+		await nextTick();
+		expect(h.form.value.deal).toBe("CRM-DEAL-2026-00107");
+		expect(h.labelCalls).toEqual([]);
 	});
 });
