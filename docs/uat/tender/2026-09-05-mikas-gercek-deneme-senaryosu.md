@@ -344,6 +344,13 @@ her biri ayrı, test-önce bir iş.
    **3b kaynağı okundu:** `SalesOrderFormClassic.vue:156-197 fromDetail` de `net_total`/`grand_total`/
    `per_delivered`/`per_billed` döndürmez; şablon `:1068-1084`, `:1230-1252` ve `:832` bunları okur → aynı sınıf,
    düzeltilmedi (oradaki kapılar motorun `docstatus.value`'sunu okuduğu için yalnız KPI'lar boş kalır).
+   **3b düzeltildi 2026-09-05** (dallar `fix/so-classic-server-facts`, `fix/so-modern-server-facts`): iki SO
+   formunun `fromDetail`'i de artık `status`, `net_total`, `grand_total`, `advance_paid`, `per_delivered`,
+   `per_billed`, `billing_status`, `has_reservations`, `sales_invoices` ve satırlarda `name`, `billed_amt`
+   taşır; Modern form aynı sınıftı, yürüyüşte açılmamıştı. Spec'ler `salesOrderClassicServerFacts.spec.js` ve
+   `salesOrderModernServerFacts.spec.js` eski kodda `undefined` ile düşer, yenide geçer. Canlı doğrulama (yerel
+   site, bundle `7XN3WRNQ`): `SAL-ORD-2026-05895` detayında teslim/faturalama yüzdeleri 100 %, toplam
+   222 000 000,00 сўм, bağlı fatura şeridinde `ACC-SINV-2026-07435`.
 4. **P1 — Sourcing başlığı "Добавить предложение" MouseEvent'i RFQ sanır.** `SourcingWorkspace.vue:455`
    `@click="openAddQuotation"` → `:257 openAddQuotation(rfq = "")` → `get_rfq` 404 "RFQ not found: {isTrusted…}"
    (`sourcing.py:346/607`). Geçici çözüm B4'te.
@@ -357,12 +364,33 @@ her biri ayrı, test-önce bir iş.
    ve toast yok. Çekmece "Закрыть" ile kapatıldı, kayıt yazılmadı.
 5. **P2 — `?rfq=` aynı rotada çekmeceyi açmaz.** `SourcingWorkspace.vue:401-407` yalnız `onMounted`'ta okur;
    hash değişimi bileşeni yeniden kurmaz. RFQ detayından gelince çalışır (rota değişir).
+   **Düzeltildi 2026-09-05** (dal `fix/sourcing-rfq-query-kicker-toast`): `onMounted` okuması yerine
+   `watch(() => route.query?.rfq, …, { immediate: true })` — aynı rotada hash değişince de çekmeceyi açar ve
+   `router.replace` ile `rfq`'yu adresten siler (`deal` kalır). Spec `sourcingRfqQueryWatch.spec.js`. Canlı
+   doğrulama (yerel site): sayfa içinden `/tender/sourcing?deal=CRM-DEAL-2026-00015&rfq=PUR-RFQ-2026-00001`
+   → çekmece 0,6 s'de açık, adres `#/tender/sourcing?deal=CRM-DEAL-2026-00015`. Yalnız `?rfq=` (deal'siz)
+   çekmeceyi açmaz — çekmece `entryOpen && deal` ister; RFQ detayındaki düğme iki parametreyi de gönderir.
 6. **P2 — Fişten fatura sonrası liste taslağı açmaz.** `PurchaseReceipts.vue:220`
    `router.push({ path: "/purchasing/invoices", query: { open: res.name } })`; `PurchaseInvoices.vue:26-28` yalnız
    `from_date/to_date/tender_only` okur (`18c`).
+   **Düzeltildi 2026-09-05** (dal `fix/pi-form-defaults-and-receipt-flow`): fişten fatura oluşturulunca
+   `PurchaseReceipts.vue` liste + `?open=` yerine `purchaseInvoiceFormPath(name)` = `/purchasing/invoices/<ad>`
+   ile doğrudan taslak forma gider. Spec `purchaseReceiptsCreateBillNav.spec.js`. Tarayıcıda yeniden
+   üretilmedi (yeni fatura yazmak gerekir); spec kaynaktan çıkarılan işlevi çalıştırır.
 7. **P2 — PO ihale seçicisi.** `PurchaseOrderForm.vue:54-61` etiket `d.organization || d.lead_name || d.name`
    (anlaşma adı yok, `active_tenders` yok); `crm.list_deals` `search_fields` organization/email/lead_name — anlaşma
    adıyla arama yok; `:89-92, :329` `?deal=` ön-doldurma çalışmadı (ölçüldü). Aynı kurumun 5 kartı ayırt edilemez.
+   **Kısmen düzeltildi 2026-09-05** (dal `fix/po-deal-picker`): etiket `dealOptionLabel(d)` =
+   `<kurum|lead> · <anlaşma adı>` (liste ve kilitli alan tek kural); `list_active_tenders`
+   (`tender_dimension.py`) `name`/`organization`/`lead_name` üzerinden `or_filters` ile anlaşma adıyla da arar;
+   `?deal=` ön-doldurması `tenderOn` geç gelse de bir kez uygulanır (`createFormReady` kapısı: izleyici
+   `blankForm()`'dan önce yazamaz). Spec `purchaseOrderTenderDeal.spec.js`, test
+   `stabler/tests/test_tender_dimension.py`. Canlı doğrulama (yerel site):
+   `/purchasing/orders/new?deal=CRM-DEAL-2026-00015` → seçici doldu ama **ham id gösterdi**: `loadDealLabel`
+   `crm.get_deal`'i `company` göndermeden çağırır, sunucu "Требуется компания." fırlatır, `catch` id'ye düşer
+   (`PurchaseOrderForm.vue:90`; aynı hata `Expenses.vue:562`). Ayrıca `searchDeals` hâlâ `crm.list_deals`'i
+   `active_tenders: 1` olmadan çağırır, yani ad araması bu ekrana ulaşmaz (inceleme bulgusu A). İkisi takip
+   dallarında (`fix/review-followups-2026-09-05`, `fix/deal-label-company-arg`); birleşince bu not güncellenir.
 8. **P2 — Belge sayısı üç ekranda üç değer.** Belge merkezi 7 gereksinim (`custom_tender_intake.documents`);
    PO kontrol Обзор "Документы 0/5"; PO kontrol "Документы" sekmesi "Пока нет требований" (`04e`). Kaynak
    alanlar farklı (Tender Master ↔ lot intake); hangisi doğru — karar gerekir.
@@ -370,6 +398,13 @@ her biri ayrı, test-önce bir iş.
    `readiness_pct = … if required > 0 else 100`.
 10. **P2 — Dokunulmamış yeni fatura "kaydedilmemiş değişiklik" uyarısı verir.** `PurchaseInvoiceForm.vue:423`
     GENEL GİDER varsayılanı forma yazılır → dirty (`18b`). Uyarı metni de İngilizce.
+    **Düzeltildi 2026-09-05** (dallar `fix/pi-form-defaults-and-receipt-flow`, `fix/dirty-guard-create-baseline`):
+    (a) `PurchaseInvoiceForm.vue` `applyCreateDefaults()` GENEL GİDER varsayılanını yazdıktan sonra, başka şey
+    değişmediyse `reset(form)` ile temiz taban alır (`useDocumentForm` artık `reset`'i dışa verir). (b) Kök
+    neden daha genişti: `useDirtyGuard.js:19` tabanı `""` ile başlatıyordu, her yeni form ilk karede kirliydi —
+    artık `JSON.stringify(model)`. Spec'ler `purchaseInvoiceFormCreateDefaults.spec.js`,
+    `useDirtyGuardBaseline.spec.js`. Canlı doğrulama (yerel site, bundle `7XN3WRNQ`): dokunulmamış yeni PO ve
+    yeni PI sayfalarından çıkışta modal yok.
 11. **P2 — K/Z defter tablosu.** (a) Belge tarafı gelir 198 214 285,71 = 222 000 000 / 1,12, fatura vergisiz
     (`tender_gl.py:145 tender_gl_pnl` reconciliation; sabit KDV varsayımı — kod okunmadı). (b) `by_voucher.count`
     GL satırı sayar ("Счёт продажи 2"), sütun başlığı "КОЛИЧЕСТВО" belge adedi gibi okunur.
@@ -377,6 +412,12 @@ her biri ayrı, test-önce bir iş.
     tarihler null, toplam 0 ile açtı; PO kontrol "Детали тендера" bu boş kaydı okur.
 13. **P2 — RFQ "gönderildi" rozeti.** `mark_rfq_sent` Communication yazar (`sourcing.py:958`), detay rozeti
     "Черновик" kalır (`06d`, `06e`).
+    **Düzeltildi 2026-09-05** (dal `fix/rfq-sent-badge`): `get_rfq` gönderilmiş Communication sayısını ve son
+    gönderimi döndürür (`_rfq_sent_summary`: `reference_doctype/name`, `sent_or_received = Sent`);
+    `RfqDetail.vue` taslak + `sent_count > 0` ise "Sent" rozeti ve `sent_on` tarihini basar, gönderim sonrası
+    `load()` ile yeniler. Test `stabler/tests/test_sourcing_api.py`, spec `rfqSentBadge.spec.js`. Canlı
+    doğrulama (yerel site): `PUR-RFQ-2026-00001` → `sent_count 1`, detay rozeti "Отправлен". Liste rozeti ve
+    `STATUS_MAP` girişi takip dalında (inceleme bulguları C, D).
 14. **P2 — Kanban kazanım sonrası türetimi** (E.8'e bağlı): PO/fiş/fatura varken kart "Закупки"de (`12a`).
 15. **P2 — Mikas'ta SO'ya giden buton yok.** `prepare_so_from_deal` çağrısı yalnız `crm/Deals.vue:537`;
     ihale kanbanı çekmecesinde "Sözleşme oluştur" yok; `enable_crm 0` olan Mikas rotayı elle yazmak zorunda.
@@ -384,13 +425,32 @@ her biri ayrı, test-önce bir iş.
     "Closed 0" (`13d`). Kaynağı okunmadı.
 17. **P2 — "СВЯЗАННЫЕ ДОКУМЕНТЫ —"** PR çekmecesi (PO bağlı), PI detayı (PR+PO bağlı), SI detayı (SO bağlı) —
     hepsinde boş (`16d`, `18f`, `21b`).
+    **Düzeltildi 2026-09-05** (dal `fix/linked-docs-and-tender-stamp`): `get_linked_documents` yalnız belgeye
+    bağlanan aşağı akışı biliyordu; `_add_upstream_item_links` satır bağlarını (`PR.items.purchase_order`,
+    `PI.items.purchase_order/purchase_receipt`, `SI.items.sales_order`) okuma izniyle ekler. Test
+    `stabler/tests/test_related_documents_upstream_links.py`. Canlı doğrulama (yerel site):
+    `ACC-SINV-2026-07435` → "Sales Orders · SAL-ORD-2026-05895"; `ACC-PINV-2026-00883` → PO
+    `PUR-ORD-2026-00009` + PR `MAT-PRE-2026-00005`. Grup başlıkları ("Sales Orders", "Purchase Orders")
+    `RelatedDocuments.vue:28` `t()`'siz — Rusça ekranda İngilizce kalır (§H.2 sınıfı, düzeltilmedi). PR
+    çekmecesine tarayıcıda yeniden bakılmadı.
 18. **P2 — İhale damgası görünmez.** Gider detayı (`19d`) ve satış faturası formu (`SalesInvoiceForm.vue`
     "tender" içermez) hangi ihaleye yazıldığını göstermez; satın alma faturası gösterir ama kurum adıyla.
+    **Düzeltildi 2026-09-05** (dal `fix/linked-docs-and-tender-stamp`): `sales_invoice_detail` ve
+    `journal_entry_detail` `tender` + `tender_label` döndürür (`_deal_display_label`; JE'de `custom_crm_deal`
+    sütunu `has_column` korumalı); `SalesInvoiceForm.vue` ve `Expenses.vue` detayı salt-okunur "Tender" satırı
+    gösterir (`v-if` — damgasız belgede satır yok). Test `stabler/tests/test_expense_tender_stamp.py`, spec
+    `tenderStampReadOnly.spec.js`. Canlı doğrulama (yerel site): SI `ACC-SINV-2026-07435` "Тендер ·
+    O'zbekiston temir yo'llari AJ [DEMO] · CRM-DEAL-2026-00015"; `journal_entry_detail("ACC-JV-2026-07011")`
+    aynı etiketle döner. Etiket kuralı §H.1 kararına bağlı.
 19. **P2 — Teslimat sekmesi irsaliyesiz teslimi saymaz.** `update_stock=1` fatura stoku düşürdü, sekme
     "ДОСТАВКА Нет связанных документов" (`16e`).
 20. **P2 — Direktör paneli ↔ genel bakış kazanılan sayısı.** 2 / %66,7 ↔ 3 / %75 aynı anda (`25b`, `01b`).
     Kaynağı okunmadı (pencere ya da Tender Master filtresi olabilir — doğrulanmadı).
 21. **P2 — Toast tekrarı.** "Перемещено в Выиграно" ×2 (C1); daha önce ×3 İngilizce toast (C4/C5).
+    **Düzeltildi 2026-09-05** (dal `fix/sourcing-rfq-query-kicker-toast`): `TenderCrm.vue` `onDrop` kart başına
+    `movingCards` kilidi tutar — aynı kart için ikinci `drop` olayı iyimser güncellemeye ve toast'a ulaşmaz;
+    kilit `finally`'de kalkar. Spec `tenderCrmMoveToast.spec.js`. Tarayıcıda sürükle-bırakla yeniden
+    üretilmedi. C4/C5'teki üçlü İngilizce toast ayrı kaynak; bakılmadı.
 22. **P1 — PI detayı: aynı `fromDetail` sınıfı, "Make payment" ve iade düğmeleri hiç görünmez.**
     `PurchaseInvoiceForm.vue:209-274 fromDetail` `docstatus` ve `status` döndürmez; `:672-679 canPay`
     (`form.value.docstatus === 1 && PAYABLE_STATUSES.has(form.value.status)`) ve `:697-703 canReturn` bunları
@@ -428,7 +488,18 @@ her biri ayrı, test-önce bir iş.
    (`RfqPrint.vue:86`), `create_purchase_receipt_from_po` ham `frappe.throw` metinleri (`purchasing.py:2476`).
    Ayrıca "Поражений" (hal eki; "Проиграно" beklenir). "Юк хати" (`Yuk xati`) Özbekçe belge adı — bilinçli
    anahtar, Rusça ekranda yabancı duruyor.
+   **Kısmen düzeltildi 2026-09-05** (dal `fix/i18n-ru-walk`): ele alınan anahtarlar beş katalogda
+   eklendi/dolduruldu (satır silinmedi; kapsam `i18nRuWalk.spec.js`'te sayılır); `purchasing.py:2491-2507` ham
+   `frappe.throw` metinleri `_()`'ya alındı; `LineItemsEditor.vue` "Search…" `t()`'ye; landed cost incelemesinde
+   dağıtım etiketi `landedCostLabels.js`'ten. Canlı doğrulama (yerel site, önbellek temizlendi): yeni satın alma
+   faturasında "Номер счета", "Дата выставления счета", "Обновить запасы". Doğrulanmayanlar: modal ve toast
+   metinleri; "Поражений" stabler'ın CSV'siyle düzelmez — kaynak crm/erpnext'in `_()` kataloğu, uygulama yükleme
+   sırası `frappe, stabler, crm, hrms, erpnext` ve sonraki uygulama anahtarı ezer; RelatedDocuments grup
+   başlıkları (§G.17).
 3. **Sabit birim:** landed cost incelemesi "Принято (кг)" — kalem birimi ne olsa "kg".
+   **Düzeltildi 2026-09-05** (dal `fix/i18n-ru-walk`): `LandedCostReview.vue` başlığı `receivedLabel(uom)` =
+   `t("Received ({0})", [uom])` ile fişin gerçek birimini yazar; `api/imports.py` ve `api/lcv.py` satırlara
+   `received_uom` ekler (lcv: ilk kalemin birimi). Boş/karışık birim dalları takip dalında (inceleme bulgusu G).
 4. Toast tekrarı (§G.21).
 5. Katalog: `tr.csv` "Issues" → "Sorunlar" (§E.4).
 
