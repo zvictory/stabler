@@ -403,12 +403,31 @@ async function approveDecision() {
 
 onMounted(() => {
 	if (deal.value) loadAll();
-	if (route.query?.rfq) {
-		const rfqParam = String(route.query.rfq);
-		openAddQuotation(rfqParam);
-		router.replace({ query: { ...route.query, rfq: undefined } });
-	}
 });
+
+/**
+ * The `?rfq=` deep link pre-selects an RFQ in the "Add quotation" drawer.
+ * Reading it only from `onMounted` worked when arriving from another route,
+ * but not for a query-only change on THIS route (e.g. a link back to this
+ * same workspace with a different `?rfq=`) — Vue Router does not recreate
+ * the component for that, so `onMounted` never re-runs. Kept as one pure
+ * function so "does this query value name an RFQ to open" is decided in one
+ * place and is testable without mounting.
+ */
+function rfqNameFromQuery(rfqQueryValue) {
+	return rfqQueryValue ? String(rfqQueryValue) : "";
+}
+
+watch(
+	() => route.query?.rfq,
+	(rfqQueryValue) => {
+		const rfqName = rfqNameFromQuery(rfqQueryValue);
+		if (!rfqName) return;
+		openAddQuotation(rfqName);
+		router.replace({ query: { ...route.query, rfq: undefined } });
+	},
+	{ immediate: true }
+);
 
 watch(
 	() => route.query.deal,
