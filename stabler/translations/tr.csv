@@ -2589,7 +2589,7 @@ is locked from edits.,düzenlemeye kilitli.
 Issue,Sorun
 Issue credit note,Alacak dekontu düzenle
 Issue date,Veriliş tarihi
-Issue debit note,
+Issue debit note,Borç dekontu düzenle
 Issue is required.,Sorun zorunludur.
 Issue type,Talep türü
 Issued,Düzenlendi
@@ -2857,7 +2857,7 @@ Lowest total delivered cost including freight and customs,Navlun ve gümrük dah
 Mahsulot nomi,Mahsulot nomi
 Maintenance Visit,Bakım ziyareti
 Make default BOM for this item,Bu ürün için varsayılan BOM yap
-Make payment,
+Make payment,Ödeme yap
 Male,Erkek
 Manage and track all tender deals across pipeline stages,Tüm ihale süreçlerini aşamalar halinde yönetin
 Manage categories,Kategorileri yönet
