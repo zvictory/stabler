@@ -334,6 +334,7 @@ const {
 	saving: actionRunning,
 	loadError,
 	error: actionError,
+	isDirty,
 	isCreate,
 	editable,
 	docstatus,
@@ -676,12 +677,25 @@ watch(docName, loadDoc);
 // is a value the server refuses on save — "Only an active tender or GENEL GİDER
 // can be selected." — on a field the user never touched. Only on a CREATE form:
 // a saved bill's tender is what its ledger already says.
-watch(activeCompany, async () => {
+//
+// The new company's default is one more write after the dirty baseline — the
+// applyCreateDefaults race again — so a form the user had NOT touched is
+// re-baselined once it lands. Decided from isDirty as it stood BEFORE
+// clearTender(): the clear is itself a write the guard flags, and re-baselining
+// a form that already carried a typed supplier would launder that edit away.
+async function handleCompanySwitch() {
 	if (!isCreate.value || !form.value) return;
+	const wasClean = !isDirty.value;
 	overheadDeal.value = null;
 	clearTender();
-	await defaultOverheadDeal();
-});
+	if (wasClean) {
+		await applyCreateDefaults();
+	} else {
+		await defaultOverheadDeal();
+	}
+}
+
+watch(activeCompany, handleCompanySwitch);
 
 onMounted(async () => {
 	await Promise.all([loadWarehouses(), loadCurrencies(), loadPriceLists(), loadTaxTemplates()]);

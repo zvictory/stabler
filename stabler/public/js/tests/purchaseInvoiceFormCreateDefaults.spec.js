@@ -109,3 +109,104 @@ describe("PurchaseInvoiceForm.applyCreateDefaults re-baselines the dirty guard a
 		expect(resets).toHaveLength(1);
 	});
 });
+
+// handleCompanySwitch closes over `isCreate`, `form`, `isDirty`, `overheadDeal`,
+// `clearTender`, `applyCreateDefaults` and `defaultOverheadDeal`; hand it fakes
+// of each, in that order.
+function buildHandleCompanySwitch() {
+	return new AsyncFunction(
+		"isCreate",
+		"form",
+		"isDirty",
+		"overheadDeal",
+		"clearTender",
+		"applyCreateDefaults",
+		"defaultOverheadDeal",
+		`${extractFunction("handleCompanySwitch")}\nreturn handleCompanySwitch();`
+	);
+}
+
+/**
+ * The same race one interaction later: the ADR-609 `watch(activeCompany, ...)`
+ * clears the tender on a CREATE form and fetches the new company's GENEL GİDER
+ * — one more default write after the dirty baseline, so an untouched new bill
+ * went dirty again on the switch alone.
+ *
+ * The re-baseline is gated on whether the form was clean BEFORE the switch.
+ * Re-using applyCreateDefaults unconditionally would fold a supplier the user
+ * had already typed into the new baseline and silently launder that edit away.
+ */
+describe("PurchaseInvoiceForm.handleCompanySwitch re-baselines only a form that was clean before the switch", () => {
+	function fakes({ dirty }) {
+		const form = {
+			value: { supplier: "", tender: "CRM-DEAL-A", tender_label: "GENEL GİDER A" },
+		};
+		const calls = [];
+		return {
+			form,
+			calls,
+			isCreate: { value: true },
+			isDirty: { value: dirty },
+			overheadDeal: { value: { name: "CRM-DEAL-A" } },
+			clearTender: () => {
+				calls.push("clearTender");
+				form.value.tender = "";
+				form.value.tender_label = "";
+			},
+			applyCreateDefaults: async () => calls.push("applyCreateDefaults"),
+			defaultOverheadDeal: async () => calls.push("defaultOverheadDeal"),
+		};
+	}
+
+	function run(f) {
+		return buildHandleCompanySwitch()(
+			f.isCreate,
+			f.form,
+			f.isDirty,
+			f.overheadDeal,
+			f.clearTender,
+			f.applyCreateDefaults,
+			f.defaultOverheadDeal
+		);
+	}
+
+	it("untouched form: drops the old company's bucket and re-baselines through applyCreateDefaults", async () => {
+		const f = fakes({ dirty: false });
+		await run(f);
+		expect(f.calls).toEqual(["clearTender", "applyCreateDefaults"]);
+		expect(f.overheadDeal.value).toBeNull();
+	});
+
+	it("form the user already edited: applies the new default but never re-baselines — the edit must stay dirty", async () => {
+		const f = fakes({ dirty: true });
+		await run(f);
+		expect(f.calls).toEqual(["clearTender", "defaultOverheadDeal"]);
+	});
+
+	it("decides from isDirty as it stood BEFORE clearTender — the clear is a write the guard flags, not a user edit", async () => {
+		const f = fakes({ dirty: false });
+		// Mirrors useDirtyGuard's deep watcher: the moment clearTender() writes,
+		// the form differs from its baseline and isDirty reads true.
+		let cleared = false;
+		const clearTender = f.clearTender;
+		f.clearTender = () => {
+			cleared = true;
+			clearTender();
+		};
+		f.isDirty = {
+			get value() {
+				return cleared;
+			},
+		};
+		await run(f);
+		expect(f.calls).toEqual(["clearTender", "applyCreateDefaults"]);
+	});
+
+	it("saved bill (not a CREATE form): touches nothing — its tender is what the ledger already says", async () => {
+		const f = fakes({ dirty: false });
+		f.isCreate.value = false;
+		await run(f);
+		expect(f.calls).toEqual([]);
+		expect(f.form.value.tender).toBe("CRM-DEAL-A");
+	});
+});
