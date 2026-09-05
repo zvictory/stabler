@@ -320,7 +320,11 @@ def _load_purchasing(db: _FakeDB):
 	common.check_concurrency = lambda *_args, **_kwargs: None
 
 	approvals = types.ModuleType("stabler.api.approvals")
-	approvals._assert_company_scope = lambda company: company
+	# The real helper (`stabler/api/approvals.py`) only ASSERTS and returns None.
+	# Until 2026-09-05 this stub returned the company, which hid an endpoint that
+	# read the selected company from it: in production every quotation compared
+	# against None and was refused as "from another company".
+	approvals._assert_company_scope = lambda company: None
 
 	settings = types.ModuleType("stabler.stabler.doctype.stabler_settings.stabler_settings")
 	settings.module_map_for = lambda c: {"tender": True, "purchasing": True}
@@ -408,6 +412,20 @@ class TestCreatePoFromQuotation(unittest.TestCase):
 	def test_rejects_foreign_company(self):
 		with self.assertRaises(PermissionError):
 			self.purchasing.create_po_from_quotation("SQ-OTHER-CO", company="ACME")
+
+	def test_company_comes_from_require_company_not_from_the_scope_assertion(self):
+		"""`_assert_company_scope` is an assertion: by contract it returns None
+		(`stabler/api/approvals.py`). The endpoint once read the selected company
+		from its return value, so `sq.company != None` held for every quotation
+		and the awarded bid was refused with "Quotation does not belong to the
+		selected company." — measured 2026-09-05 on the Mikas walk, hidden here
+		by a stub that returned the company. The assertion must still run, and
+		it must see the resolved company, not the raw argument."""
+		seen: list = []
+		self.purchasing._assert_company_scope = lambda company: seen.append(company)
+		res = self.purchasing.create_po_from_quotation("SQ-VALID", company="ACME")
+		self.assertEqual(seen, ["ACME"])
+		self.assertEqual(self.db.docs[("Purchase Order", res["name"])]["company"], "ACME")
 
 	def test_rejects_cancelled_quotation(self):
 		with self.assertRaises(ValueError):

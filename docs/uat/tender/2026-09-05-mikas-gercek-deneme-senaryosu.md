@@ -303,6 +303,11 @@ her biri ayrı, test-önce bir iş.
    `stabler/tests/test_po_from_quotation.py:323` `approvals._assert_company_scope = lambda company: company`
    monkeypatch'i hatayı testten gizler. `sourcing.py:69-76`'nın kullandığı `tender_master.require_selected_company`
    şirketi döndürür — düzeltme ve testin monkeypatch'ini kaldırma birlikte.
+   **Düzeltildi 2026-09-05** (dal `fix/po-from-quotation-company-scope`): şirket `_require_company`'den alınır,
+   `_assert_company_scope` yalnız doğrular; stub gerçek sözleşmeyi (None) yansıtır; yeni test
+   `test_company_comes_from_require_company_not_from_the_scope_assertion` eski kodda aynı mesajla düşer, yenide geçer.
+   Canlı doğrulama: yerel sitede `create_po_from_quotation("PUR-SQTN-2026-00047", "Mikas")` artık 403 yerine mevcut
+   PO'yu (`PUR-ORD-2026-00009`, `existing: True`) döndürür; yeni kayıt yazılmadı.
 2. **P1 — PO kontrol "Финансы": ödenmemiş her zaman 0.** `stabler/api/tender.py:911`
    `fields.extend(["outstanding_amount", "base_outstanding_amount"])` — `base_outstanding_amount` sütunu
    Purchase Invoice ve Sales Invoice'ta **yok** (ölçüm: `select base_outstanding_amount …` → 1054 Unknown column;

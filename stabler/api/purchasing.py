@@ -3553,8 +3553,11 @@ def create_po_from_quotation(quotation: str, company: str | None = None) -> dict
 	decision actually selected this quotation.
 	Idempotent: returns existing draft PO if one already exists for this lot + supplier.
 	"""
-	_require_company(company)
-	selected_company = _assert_company_scope(company)
+	# `_assert_company_scope` asserts and returns None (stabler/api/approvals.py);
+	# the company itself comes from `_require_company`. Reading it from the
+	# assertion compared every quotation against None and refused them all.
+	selected_company = _require_company(company)
+	_assert_company_scope(selected_company)  # tenant isolation: reject a foreign company arg
 
 	if not frappe.db.exists("Supplier Quotation", quotation):
 		frappe.throw(_("Supplier Quotation not found: {0}").format(quotation), frappe.DoesNotExistError)
