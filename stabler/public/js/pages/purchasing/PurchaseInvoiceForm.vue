@@ -211,6 +211,15 @@ function fromDetail(d) {
 	// foreign-currency PIs; (plr × conversion_rate ≈ rate) means no real discount was set.
 	const cr = d.currency !== d.base_currency ? Number(d.conversion_rate || 0) : 0;
 	return {
+		// Read-only server facts the view reads off the model — `canPay` and
+		// `canReturn` compare `docstatus`/`status`, `<PaymentModal>` records against
+		// `name` guarded by `modified`, the debit note and the print link use `name`.
+		// `toPayload` never sends them back. Dropping them here left every submitted
+		// bill without Make payment / Issue debit note (measured 2026-09-05).
+		name: d.name || "",
+		modified: d.modified || "",
+		docstatus: d.docstatus ?? 0,
+		status: d.status || "",
 		supplier: d.supplier,
 		supplier_name: d.supplier_name || d.supplier,
 		posting_date: d.posting_date || today,

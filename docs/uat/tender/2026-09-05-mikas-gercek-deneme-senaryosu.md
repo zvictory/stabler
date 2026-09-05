@@ -389,6 +389,17 @@ her biri ayrı, test-önce bir iş.
     okur. Canlı ölçüm 2026-09-05: gönderilmiş, "Не оплачено" `ACC-PINV-2026-00883` detayında yalnız "Назад" ve
     "Отмена"; ödeme bu ekrandan kaydedilemez. PO düzeltmesi (§G.3) yapılırken bulundu; aynı iki satırlık
     düzeltme sınıfı, düzeltilmedi.
+    **Düzeltildi 2026-09-05** (dal `fix/pi-form-server-facts`): `fromDetail` artık `docstatus`, `status`, `name` ve
+    `modified`'ı modele taşır. Kapılar ilk ikisini okur; `PaymentModal` (`invoice-name`, `modified`), iade gönderimi
+    (`purchase_invoice: form.value.name`) ve yazdır bağlantısı `name`'i okur — dördü de düşüyordu, yani düğme
+    görünse bile ödeme boş bir ada yazılacaktı. Yeni spec `purchaseInvoiceFormServerFacts.spec.js` `fromDetail`'i
+    gerçek `grossRate` ile çalıştırır; üç iddiası da eski kodda düşer, yenide geçer. Canlı doğrulama (yerel site,
+    yeni bundle): `ACC-PINV-2026-00883` detayında "Make payment" ve "Issue debit note" göründü; düğme modalı
+    "Выплатить поставщику · ACC-PINV-2026-00883", tedarikçi ve ödenmemiş 214 800 000,00 сўм ile açtı (ödeme
+    gönderilmedi, Отмена ile kapatıldı); yazdır bağlantısı `#/purchasing/invoices/ACC-PINV-2026-00883/print`.
+    İki etiketin ru/uz/uzc/tr çevirileri kataloglarda anahtar olarak vardı ama boştu — düğmeler hiç görünmediği
+    için fark edilmemişti; dolduruldu (ru: Оплатить / Выпустить дебет-ноту, mevcut "Issue credit note"
+    kalıbıyla).
 
 ## H. Bulgular — arayüz metni ve katalog
 
