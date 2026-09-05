@@ -76,11 +76,18 @@ function element(src, pattern) {
 describe("Purchase invoice — the tender the bill will carry", () => {
 	it("re-derives the default when the company changes on a create form", () => {
 		// Same bug as the Expenses screen: a default carried over from the previous
-		// company is a value the server refuses on save.
+		// company is a value the server refuses on save. Since the wasClean gate
+		// (UAT 2026-09-05 follow-up) the watch delegates to handleCompanySwitch(),
+		// which purchaseInvoiceFormCreateDefaults.spec.js runs for real on both
+		// branches — here the watch only has to reach the handler, and the handler
+		// the default.
 		const at = invoiceCode.search(/watch\(\s*\(\)\s*=>\s*session\.company|watch\(\s*activeCompany|watch\(\s*company/);
 		expect(at, "the purchase invoice form does not watch the company").toBeGreaterThan(-1);
-		const body = invoiceCode.slice(at, invoiceCode.indexOf("});", at));
-		expect(body).toMatch(/defaultOverheadDeal|overheadDeal/);
+		const statement = invoiceCode.slice(at, invoiceCode.indexOf(";", at));
+		expect(statement).toMatch(/handleCompanySwitch/);
+		expect(fn(invoiceCode, "handleCompanySwitch")).toMatch(
+			/defaultOverheadDeal|applyCreateDefaults/
+		);
 	});
 });
 
