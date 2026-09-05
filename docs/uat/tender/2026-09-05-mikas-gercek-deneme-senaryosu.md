@@ -314,6 +314,18 @@ her biri ayrı, test-önce bir iş.
    DocField ve Custom Field'da yok). `:1108-1118` `flt(None) = 0` toplar; `ap_paid = ap_total − 0`.
    `tender_workspace("CRM-DEAL-2026-00015")` ölçümü: ap_total 214 800 000, ap_outstanding 0, ap_paid 214 800 000;
    ar aynı — iki fatura da Unpaid. Ekran: `24b`.
+   **Düzeltildi 2026-09-05** (dal `fix/tender-finance-outstanding`): sorgu var olmayan sütunu değil
+   `outstanding_amount`, `conversion_rate` ve `party_account_currency`'yi ister; `_base_outstanding_amount`
+   ERPNext kuralıyla şirket para birimine çevirir — taraf hesabı fatura para birimindeyse faturanın kuruyla
+   çarpar, değilse tutar zaten şirket para birimindedir (`calculate_outstanding_amount`,
+   erpnext/controllers/taxes_and_totals.py). Hata hiç görünmüyordu çünkü `frappe.get_list` bilinmeyen alanı
+   sessizce düşürür (ölçüm: dönen satırda anahtar yok, istisna yok). Yeni testler
+   `test_workspace_finance_outstanding_survives_frappe_dropping_the_column_it_never_had` ve
+   `test_document_row_states_outstanding_in_company_currency_the_way_erpnext_keeps_it` eski kodda
+   `(0.0, 100.0) != (100, 0)` ve `0.0 != 260000` ile düşer, yenide geçer. Canlı doğrulama:
+   `tender_workspace("CRM-DEAL-2026-00015")` → ap_outstanding 214 800 000 / ap_paid 0, ar_outstanding
+   222 000 000 / ar_paid 0; gerçek USD fatura `ACC-PINV-2026-00882`: 3 800 × 11 960,18 → 45 448 684 =
+   `base_grand_total`. `make test-bench` çalıştırılmadı: iki test modülü de frappe-free, bench'e özel test yok.
 3. **P1 — PO detayı `fromDetail` docstatus/per_received/grand_total'ı düşürür.**
    `PurchaseOrderForm.vue:159-190` yalnız supplier/currency/…/items döndürür; `:374-380 canReceive`,
    `:429-435 canCreateInvoice` ve `:583-595` KPI'ları bu alanları okur → gönderilmiş PO'da "Приёмка" /

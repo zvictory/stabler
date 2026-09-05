@@ -246,6 +246,94 @@ class TestTenderDashboardBehaviour(unittest.TestCase):
 		self.assertEqual(result["purchase_execution"]["invoices"][0]["purchase_order"], "PO-1")
 		self.assertEqual(result["sales_execution"]["invoices"][0]["sales_order"], "SO-1")
 
+	def test_workspace_finance_outstanding_survives_frappe_dropping_the_column_it_never_had(self):
+		"""Neither invoice DocType has a `base_outstanding_amount` column, and
+		`frappe.get_list` does not fail when asked for one: the unknown field is dropped
+		from the SELECT, `flt(None)` read every invoice as fully paid, and the PO control
+		board's Finance tab showed "Outstanding: 0" against two Unpaid invoices (measured
+		2026-09-05 on CRM-DEAL-2026-00015: ap_total 214 800 000, ap_outstanding 0,
+		ap_paid 214 800 000).  The fake below answers like Frappe does — only the
+		requested fields the row actually has."""
+		db = _FakeDB({"DEAL-1": {}})
+		tender = _load_tender(db, ["Accounts User"])
+		invoice = {
+			"posting_date": "2026-07-03",
+			"status": "Unpaid",
+			"currency": "UZS",
+			"conversion_rate": 1,
+			"party_account_currency": "UZS",
+		}
+		rows = {
+			"Purchase Order": [
+				_Row(name="PO-1", transaction_date="2026-07-01", status="To Receive", grand_total=100)
+			],
+			"Purchase Invoice": [
+				_Row(name="PINV-1", grand_total=100, base_grand_total=100, outstanding_amount=100, **invoice)
+			],
+			"Purchase Invoice Item": [_Row(parent="PINV-1", purchase_order="PO-1")],
+			"Sales Order": [
+				_Row(
+					name="SO-1", transaction_date="2026-07-01", status="To Deliver and Bill", grand_total=160
+				)
+			],
+			"Sales Invoice": [
+				_Row(name="SINV-1", grand_total=160, base_grand_total=160, outstanding_amount=160, **invoice)
+			],
+			"Sales Invoice Item": [_Row(parent="SINV-1", sales_order="SO-1")],
+		}
+
+		def get_list(doctype, fields=None, **_kwargs):
+			wanted = set(fields or [])
+			return [
+				_Row({key: value for key, value in row.items() if key in wanted})
+				for row in rows.get(doctype, [])
+			]
+
+		def has_column(doctype, field):
+			return (doctype, field) in {
+				("CRM Deal", "custom_tender_intake"),
+				("Purchase Order", "custom_crm_deal"),
+				("Sales Order", "custom_crm_deal"),
+			}
+
+		with (
+			patch.object(tender.frappe.db, "has_column", has_column),
+			patch.object(tender.frappe, "get_list", get_list),
+			patch.object(tender, "deal_intake", return_value={"currency": "UZS"}),
+			patch.object(tender, "_bid_inputs", return_value=({}, {})),
+			patch.object(tender, "_compute_bid_pnl", return_value={"profit": 0}),
+		):
+			finance = tender.tender_workspace("DEAL-1")["finance"]
+
+		self.assertEqual((finance["ap_outstanding"], finance["ap_paid"]), (100, 0))
+		self.assertEqual((finance["ar_outstanding"], finance["ar_paid"]), (160, 0))
+
+	def test_document_row_states_outstanding_in_company_currency_the_way_erpnext_keeps_it(self):
+		"""`outstanding_amount` is denominated in `party_account_currency` (the field's own
+		DocType option): the invoice currency when the payable/receivable account is held
+		in it, otherwise the company currency already — `calculate_outstanding_amount`,
+		erpnext/controllers/taxes_and_totals.py.  Only the first case converts, at the
+		invoice's own booking rate, so an unpaid invoice's outstanding equals its
+		`base_grand_total` and `ap_paid` comes out as 0 rather than the whole total."""
+		tender = _load_tender(_FakeDB(), ["Accounts User"])
+		usd_invoice = {
+			"name": "PINV-USD",
+			"posting_date": "2026-07-03",
+			"currency": "USD",
+			"grand_total": 100,
+			"base_grand_total": 1_300_000,
+			"conversion_rate": 13_000,
+		}
+
+		def base_outstanding(**row) -> float:
+			normalized = tender._document_row(
+				_Row(**usd_invoice, **row), "posting_date", "purchase_order", "PO-1"
+			)
+			return normalized["base_outstanding_amount"]
+
+		self.assertEqual(base_outstanding(outstanding_amount=20, party_account_currency="USD"), 260_000)
+		self.assertEqual(base_outstanding(outstanding_amount=260_000, party_account_currency="UZS"), 260_000)
+
 	def test_workspace_finance_deduplicates_multi_order_invoices_in_base_currency(self):
 		db = _FakeDB()
 		tender = _load_tender(db, ["Accounts User"])

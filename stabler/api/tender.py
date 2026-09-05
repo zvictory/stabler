@@ -868,6 +868,25 @@ def _deal_link_field(doctype: str) -> str | None:
 	return None
 
 
+def _base_outstanding_amount(row) -> float:
+	"""Company-currency outstanding of an invoice row.
+
+	Neither invoice DocType has a `base_outstanding_amount` column, and asking
+	`frappe.get_list` for one does not fail: the unknown field is dropped from the
+	SELECT and every invoice read back as fully paid (measured 2026-09-05 on the PO
+	control board's Finance tab).  `outstanding_amount` is denominated in
+	`party_account_currency` — the invoice currency when the payable/receivable
+	account is held in it, otherwise the company currency already
+	(`calculate_outstanding_amount`, erpnext/controllers/taxes_and_totals.py) — so
+	only the first case converts, at the invoice's own booking rate.
+	"""
+	outstanding = flt(row.get("outstanding_amount"))
+	party_account_currency = row.get("party_account_currency") or row.get("currency")
+	if party_account_currency != row.get("currency"):
+		return outstanding
+	return outstanding * (flt(row.get("conversion_rate")) or 1.0)
+
+
 def _document_row(row, date_field: str, link_field: str, linked_name: str) -> dict:
 	"""Normalize ERPNext document rows for the SPA's chain component."""
 	return {
@@ -878,7 +897,7 @@ def _document_row(row, date_field: str, link_field: str, linked_name: str) -> di
 		"grand_total": flt(row.get("grand_total")),
 		"outstanding_amount": flt(row.get("outstanding_amount")),
 		"base_grand_total": flt(row.get("base_grand_total")),
-		"base_outstanding_amount": flt(row.get("base_outstanding_amount")),
+		"base_outstanding_amount": _base_outstanding_amount(row),
 		"currency": row.get("currency") or "",
 		link_field: linked_name,
 	}
@@ -908,7 +927,7 @@ def _linked_document_rows(
 		return []
 	fields = ["name", date_field, "docstatus", "status", "grand_total", "base_grand_total", "currency"]
 	if include_outstanding:
-		fields.extend(["outstanding_amount", "base_outstanding_amount"])
+		fields.extend(["outstanding_amount", "conversion_rate", "party_account_currency"])
 	parents = frappe.get_list(
 		parent_doctype,
 		filters={"company": company, "docstatus": ["<", 2]},
