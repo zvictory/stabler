@@ -1299,6 +1299,34 @@ class TestListActiveTenders(unittest.TestCase):
 		self.assertEqual(asked.get("deal_type"), "Tender")
 		self.assertEqual(asked.get("company"), "_Test Company")
 
+	def test_search_also_matches_the_deals_own_id(self):
+		"""UAT G.7. A rep who has the deal's own id — copied from another screen,
+		or from a `?deal=` link — must be able to find it here by typing it.
+
+		Before this fix the query's `or_filters` covered only `organization` and
+		`lead_name`, the two DISPLAY fields, and never the row's own `name`:
+		typing `CRM-DEAL-2026-00015` into the picker matched nothing even though
+		that exact deal was sitting in the unfiltered list one call away.
+		"""
+		asked = {}
+		original = self.mod.frappe.get_list
+
+		def _spy(doctype, **kwargs):
+			if kwargs.get("or_filters"):
+				asked["or_filters"] = kwargs["or_filters"]
+			return original(doctype, **kwargs)
+
+		self.mod.frappe.get_list = _spy
+		try:
+			self.mod.list_active_tenders("_Test Company", self.FIELDS, search="CRM-DEAL-2026-00015")
+		finally:
+			self.mod.frappe.get_list = original
+
+		searched_fields = {clause[0] for clause in asked.get("or_filters", [])}
+		self.assertIn(
+			"name", searched_fields, "search must also match the deal's own id, not only its labels"
+		)
+
 	def test_offers_the_overhead_deal_even_when_no_tender_is_active(self):
 		# The empty state still has to be usable: every expense needs SOME value,
 		# and GENEL GİDER is the honest one when no tender is running.

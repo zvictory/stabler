@@ -432,7 +432,12 @@ def list_active_tenders(
 		"limit_page_length": 500,
 	}
 	if search:
-		kwargs["or_filters"] = [[field, "like", f"%{search}%"] for field in ("organization", "lead_name")]
+		# UAT G.7: `name` alongside the two display fields, so a rep who has the
+		# deal's own id (a `?deal=` link, another screen) can find it by typing
+		# it — not only by the buyer's organization or lead name.
+		kwargs["or_filters"] = [
+			[field, "like", f"%{search}%"] for field in ("name", "organization", "lead_name")
+		]
 	# `get_list`, not `get_all`: role and user permissions belong inside the query.
 	for row in frappe.get_list(DIMENSION_DOCTYPE, **kwargs):
 		if not is_active_tender(row["name"], company):
