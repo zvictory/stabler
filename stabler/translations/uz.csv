@@ -5627,7 +5627,7 @@ Unknown Proforma Invoice(s): {0},Noma’lum proforma(lar): {0}
 Unknown Proforma Invoice: {0},Noma’lum proforma: {0}
 Unknown Purchase Invoice: {0},
 Unknown Purchase Order for this company: {0},Ushbu kompaniya uchun noma’lum xarid buyurtmasi: {0}
-Unknown Purchase Order: {0},
+Unknown Purchase Order: {0},Noma’lum xarid buyurtmasi: {0}
 Unknown purchase order: {0},Noma'lum xarid buyurtmasi: {0}
 Unknown Purchase Receipt: {0},
 Unknown report: {0},
@@ -6756,3 +6756,10 @@ Price,Narx
 Only submitted purchase orders can be received.,Faqat topshirilgan xarid buyurtmalari qabul qilinishi mumkin.
 Nothing left to receive on this purchase order.,Ushbu xarid buyurtmasida qabul qilinadigan narsa qolmadi.
 Evidence,Tasdiqlovchi hujjat
+Row {0}: po_detail is required.,{0}-qator: po_detail talab qilinadi.
+Row {0}: qty must be greater than zero.,{0}-qator: miqdor noldan katta bo'lishi kerak.
+These order rows have nothing pending to receive: {0},Buyurtmaning ushbu qatorlarida qabul qilinadigan narsa qolmadi: {0}
+Warehouse is required — a receipt moves stock into it.,Ombor majburiy — tovar qabuli zaxirani unga kiritadi.
+Row {0}: rate cannot be negative.,{0}-qator: narx manfiy bo'lishi mumkin emas.
+"Stock UOM is Kg for imports, so by weight spreads the charges across the kilograms received. By line value spreads them in proportion to each line's amount. ERPNext calls these two bases Qty and Amount.","Import uchun zaxira o'lchov birligi kg, shuning uchun «Og'irlik bo'yicha» xarajatlarni qabul qilingan kilogrammlar bo'yicha taqsimlaydi. «Qator summasi bo'yicha» ularni har bir qator summasiga mutanosib taqsimlaydi. ERPNext bu ikki asosni Qty va Amount deb ataydi."
+By weight spreads the charges across the received quantity in stock UOM. By line value spreads them in proportion to each line's amount. ERPNext calls these two bases Qty and Amount.,«Og'irlik bo'yicha» xarajatlarni zaxira o'lchov birligidagi qabul qilingan miqdor bo'yicha taqsimlaydi. «Qator summasi bo'yicha» ularni har bir qator summasiga mutanosib taqsimlaydi. ERPNext bu ikki asosni Qty va Amount deb ataydi.
