@@ -8,7 +8,7 @@ import { useRoute, useRouter } from "vue-router";
 import { useSession } from "../../../stores/session.js";
 import { call } from "../../../api/client.js";
 import { formatMoney } from "../../../composables/money.js";
-import { formatDate } from "../../../composables/date.js";
+import { formatDate, formatDateTime } from "../../../composables/date.js";
 import { t } from "../../../composables/i18n.js";
 import { useAutoRefresh } from "../../../composables/useAutoRefresh.js";
 import { useToast } from "../../../composables/useToast.js";
@@ -61,6 +61,33 @@ useAutoRefresh(load);
 
 const respondedCount = computed(() => (rfq.value?.suppliers || []).filter((s) => s.responded).length);
 
+/**
+ * The header badge for an RFQ that is still a draft doubles as the "did we
+ * send it" signal. `mark_rfq_sent` (sourcing.py) never submits the RFQ — the
+ * draft-and-stop philosophy — so `docstatus` alone cannot tell "drafted" from
+ * "drafted and handed to suppliers" apart; that gap is UAT G.13. `get_rfq`
+ * now carries `sent_count`/`sent_on`, read back from the Communications
+ * `mark_rfq_sent` writes, and this is the one place that turns them into a
+ * badge.
+ */
+function rfqStatusBadge(doc) {
+	const docstatus = Number(doc?.docstatus) || 0;
+	if (docstatus === 0 && Number(doc?.sent_count) > 0) {
+		// STATUS_MAP (composables/status.js) has no "Sent" entry for this
+		// doctype, and getStatusBadgeClass ignores doctype whenever `status`
+		// is a number — so a docstatus alone could never resolve to it. This
+		// borrows the same positive class family the suppliers table below
+		// already uses for "Received" (bg-green-lt text-green).
+		return { label: t("Sent"), badgeClass: "bg-green-lt text-green" };
+	}
+	return {
+		label: getDocstatusLabel(docstatus),
+		badgeClass: getStatusBadgeClass("Request for Quotation", docstatus),
+	};
+}
+
+const statusBadge = computed(() => rfqStatusBadge(rfq.value));
+
 function fmtRate(v) {
 	// The rate is the tender INTAKE's estimate, written in the intake's own
 	// currency — routinely USD while the company's books are UZS. Passing "" here
@@ -98,6 +125,11 @@ async function markSent() {
 			channel: sendChannel.value,
 			company: activeCompany.value,
 		});
+		// Re-fetch rather than patch `rfq.value` locally: `mark_rfq_sent`'s own
+		// response carries no `sent_count`/`sent_on` (it answers with the
+		// Communication it created, not the summary), and `load` is already
+		// this page's one way of asking the server what changed.
+		await load();
 		toast.success(t("Sending recorded on the RFQ timeline."));
 	} catch (err) {
 		toast.error(err?.message || t("Could not record the sending."));
@@ -144,8 +176,13 @@ async function markSent() {
 			<div class="card mb-3">
 				<div class="card-body py-2">
 					<div class="d-flex flex-wrap gap-4 align-items-center">
-						<span class="badge" :class="getStatusBadgeClass('Request for Quotation', rfq.docstatus)">
-							{{ getDocstatusLabel(rfq.docstatus) }}
+						<span class="d-flex align-items-center gap-2">
+							<span class="badge" :class="statusBadge.badgeClass">
+								{{ statusBadge.label }}
+							</span>
+							<span v-if="rfq.docstatus === 0 && rfq.sent_count > 0" class="small text-secondary">
+								{{ formatDateTime(rfq.sent_on) }}
+							</span>
 						</span>
 						<span class="small text-secondary">
 							{{ t("Raised") }}: <strong>{{ formatDate(rfq.transaction_date) }}</strong>

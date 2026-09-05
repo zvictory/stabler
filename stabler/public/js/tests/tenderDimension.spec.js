@@ -204,11 +204,14 @@ describe("Purchase Invoice — a tender picker that says why it is disabled", ()
 	it("defaults a new invoice with no order to the overhead deal", () => {
 		// Defining the helper is not the behaviour — mounting a blank form has to
 		// CALL it, or the field renders empty while the server books the bill to
-		// overhead anyway.
+		// overhead anyway. Wrapped in applyCreateDefaults() since UAT 2026-09-05
+		// step 18b (purchaseInvoiceFormCreateDefaults.spec.js proves that wrapper
+		// still awaits defaultOverheadDeal()) — the mount hook itself only needs
+		// to reach one or the other.
 		const at = invoiceCode.indexOf("onMounted(");
 		expect(at, "the mount hook is gone").toBeGreaterThan(-1);
 		const mounted = invoiceCode.slice(at, invoiceCode.indexOf("\n});", at));
-		expect(mounted).toMatch(/defaultOverheadDeal\(\)/);
+		expect(mounted).toMatch(/defaultOverheadDeal\(\)|applyCreateDefaults\(\)/);
 		expect(mounted).toMatch(/blankForm\(\)/);
 	});
 

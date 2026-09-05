@@ -165,8 +165,33 @@ function fromDetail(d) {
 		delivery_date: d.delivery_date || "",
 		remarks: d.remarks || "",
 		agreement: d.custom_agreement || "",
+		// Read-only server facts the view reads straight off `form`/`form.value` —
+		// NOT off the composable's own `docstatus`/`status` refs (those are set
+		// independently from `detail.docstatus`/`detail.status` in useDocumentForm's
+		// `load()` and were never broken). `canCloseSo`, `whyStillOpen` and
+		// `canCreateInvoice` compare `status`/`billing_status`/`per_billed`; the
+		// read-only KPI datagrid and the Fulfilment & Billing card format
+		// `net_total`/`grand_total`/`advance_paid`/`per_delivered`/`per_billed`; the
+		// reservation badge and "Linked invoices" banner read `has_reservations` and
+		// `sales_invoices`. `toPayload` never sends any of these back. Dropping them
+		// here left a Closed, 100%-delivered, 100%-billed order showing 0 / 0% on
+		// every KPI and no badge or banner (measured 2026-09-05, UAT G.3b,
+		// SAL-ORD-2026-05895).
+		status: d.status || "",
+		net_total: Number(d.net_total || 0),
+		grand_total: Number(d.grand_total || 0),
+		advance_paid: Number(d.advance_paid || 0),
+		per_delivered: Number(d.per_delivered || 0),
+		per_billed: Number(d.per_billed || 0),
+		billing_status: d.billing_status || "",
+		has_reservations: !!d.has_reservations,
+		sales_invoices: d.sales_invoices || [],
 		items: (d.items || []).map((it) => ({
 			item_code: it.item_code,
+			// The row name is what the Fulfilment & Billing table's `v-for` keys on
+			// (SalesOrderFormClassic.vue:1269); without it every row shares the same
+			// `undefined` key.
+			name: it.name,
 			item_name: it.item_name,
 			custom_line_note: it.custom_line_note || "",
 			uom: it.uom || "",
@@ -189,6 +214,9 @@ function fromDetail(d) {
 			availabilityLoading: false,
 			reserved_qty: it.reserved_qty || 0,
 			delivered_qty: it.delivered_qty || 0,
+			// The Fulfilment & Billing card's per-line table reads this
+			// (SalesOrderFormClassic.vue:1273).
+			billed_amt: it.billed_amt || 0,
 			price_list_rate: it.price_list_rate || 0,
 			amount: it.amount || 0,
 		})),

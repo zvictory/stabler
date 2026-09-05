@@ -1215,6 +1215,39 @@ def _account_title(account: str | None) -> str | None:
 	return frappe.get_cached_value("Account", account, "account_name")
 
 
+def _deal_display_label(deal: str) -> str:
+	""" "<organization or lead_name> · <deal name>" for a CRM Deal, or "" for none.
+
+	Duplicated from `stabler.api.sales._deal_display_label` rather than shared:
+	this file already keeps its own small per-doctype helpers (`_account_title`,
+	`_party_title`) instead of a cross-module utility for a two-line lookup.
+	"""
+	if not deal:
+		return ""
+	info = frappe.db.get_value("CRM Deal", deal, ["organization", "lead_name"], as_dict=True) or {}
+	name_part = info.get("organization") or info.get("lead_name") or deal
+	return f"{name_part} · {deal}"
+
+
+def _je_tender_stamp(doc) -> tuple[str, str]:
+	"""The tender (CRM Deal) a Journal Entry is booked to, and its display label.
+
+	Read from the legacy `custom_crm_deal` field, not the ADR-609 accounting
+	dimension: Journal Entry's PARENT never got that field (only its `Journal
+	Entry Account` rows did — the dimension doctype list names `Journal Entry
+	Account`, not `Journal Entry`), so there is no document-level dimension value
+	to read here. `list_bank_entries` already reads this exact column for the
+	Expenses list's tender tag ("Tender tag (WP-K2)" above); `custom_crm_deal`
+	is a Custom Field a site may not carry, hence `has_column` before touching it
+	— the same reason `tender.py`'s `has_column("Sales Invoice", "custom_crm_deal")`
+	guards its own read.
+	"""
+	if not frappe.db.has_column("Journal Entry", "custom_crm_deal"):
+		return "", ""
+	deal = doc.get("custom_crm_deal") or ""
+	return deal, _deal_display_label(deal)
+
+
 @frappe.whitelist()
 def journal_entry_detail(name: str):
 	if not name:
@@ -1222,6 +1255,7 @@ def journal_entry_detail(name: str):
 	_assert_can_read("Journal Entry", name)
 	doc = frappe.get_doc("Journal Entry", name)
 	base_currency = frappe.db.get_value("Company", doc.company, "default_currency") or ""
+	_tender, _tender_label = _je_tender_stamp(doc)
 	# JE.total_debit/total_credit on the parent doc are base-currency totals.
 	# Per-row values come in both account-currency (what the user entered) and
 	# base-currency (what hits GL). Expose BOTH explicitly so the UI never has
@@ -1242,6 +1276,8 @@ def journal_entry_detail(name: str):
 		"company": doc.company,
 		"docstatus": doc.docstatus,
 		"modified": str(doc.modified),
+		"tender": _tender,
+		"tender_label": _tender_label,
 		"accounts": [
 			{
 				"account": a.account,

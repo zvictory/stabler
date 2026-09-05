@@ -51,13 +51,24 @@ const currencySymbol = computed(() => {
 const tenderOn = computed(() => session.canAccessModule("tender"));
 const dealLabel = ref("");
 
+// Same buyer, several tenders (UAT G.7): `organization` alone collapsed every
+// deal of one buyer onto one label — five cards all reading "Mikas Savdo". The
+// deal's own id is always unique, so it is appended rather than swapped in: a
+// rep still recognises the buyer name at a glance, and can now tell the cards
+// apart. One function so the search dropdown and the locked label can never
+// drift onto two different rules for the same deal.
+function dealOptionLabel(d) {
+	const primary = d?.organization || d?.lead_name || "";
+	return primary ? `${primary} · ${d.name}` : d?.name || "";
+}
+
 async function searchDeals(q) {
 	const r = await call("stabler.api.crm.list_deals", {
 		company: activeCompany.value,
 		search: q,
 		page_length: 8,
 	});
-	return (r?.deals || []).map((d) => ({ name: d.name, label: d.organization || d.lead_name || d.name }));
+	return (r?.deals || []).map((d) => ({ name: d.name, label: dealOptionLabel(d) }));
 }
 
 function pickDeal(item) {
@@ -77,7 +88,7 @@ async function loadDealLabel(dealName) {
 	}
 	try {
 		const d = await call("stabler.api.crm.get_deal", { name: dealName });
-		dealLabel.value = d?.organization || d?.lead_name || dealName;
+		dealLabel.value = d ? dealOptionLabel(d) : dealName;
 	} catch {
 		dealLabel.value = dealName;
 	}
@@ -89,6 +100,35 @@ async function loadDealLabel(dealName) {
 function resolveDealFromQuery(queryDeal, tenderModuleOn) {
 	if (!tenderModuleOn || !queryDeal) return "";
 	return String(queryDeal);
+}
+
+// `tenderOn` reads session module data that is not always resolved by the time
+// this component mounts (UAT G.7: opening a `?deal=` link showed no deal in the
+// picker) — the boot company and the SPA's active company need not be the same
+// on the very first render. So the query is applied the FIRST time tenderOn is
+// seen true, whether that is at mount (below) or later (the `watch` beside
+// `loadDoc`), and only once: a company switch that flips tenderOn off-and-on
+// again must not re-fight a deal the user has since cleared.
+//
+// That "first time seen true" can land WHILE onMounted's own
+// `Promise.all([loadWarehouses(), ...])` is still pending — session boot
+// resolving in parallel — i.e. before the create branch below has replaced
+// `form.value` with `blankForm()`. Applying the deal there would write onto
+// the pre-mount model and latch `queryDealApplied`, and the `blankForm()`
+// assignment that follows would silently discard that write with no way left
+// to re-apply it. `createFormReady` gates `applyQueryDeal` on the create
+// branch having actually run `form.value = blankForm()` first, so the watcher
+// can only ever write onto the model the form is actually going to keep.
+let queryDealApplied = false;
+let createFormReady = false;
+
+async function applyQueryDeal() {
+	if (queryDealApplied || docName.value || !tenderOn.value || !createFormReady) return;
+	const resolved = resolveDealFromQuery(route.query?.deal, tenderOn.value);
+	if (!resolved) return;
+	queryDealApplied = true;
+	form.value.deal = resolved;
+	await loadDealLabel(resolved);
 }
 
 async function loadWarehouses() {
@@ -333,6 +373,8 @@ async function handlePickItem({ line, item, field }) {
 }
 
 watch(docName, loadDoc);
+// Catches the module flag arriving AFTER mount — see `applyQueryDeal` above.
+watch(tenderOn, applyQueryDeal);
 
 onMounted(async () => {
 	await Promise.all([loadWarehouses(), loadPriceLists(), loadCurrencies()]);
@@ -343,8 +385,8 @@ onMounted(async () => {
 		await loadDoc();
 	} else {
 		form.value = blankForm();
-		form.value.deal = resolveDealFromQuery(route.query?.deal, tenderOn.value);
-		if (form.value.deal) await loadDealLabel(form.value.deal);
+		createFormReady = true;
+		await applyQueryDeal();
 	}
 });
 

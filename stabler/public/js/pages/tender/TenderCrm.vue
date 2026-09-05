@@ -46,6 +46,12 @@ const dealQuotations = ref(null);
 // Drag and drop state
 const dragCardName = ref("");
 const dragOverLane = ref("");
+// A move in flight, by card name. `card.stage === targetLaneId` alone is not
+// enough to stop a stray second drop of the same card: `load()` hands back a
+// brand new `cards` array with brand new objects, so a repeat lands on a
+// fresh object still at the pre-move stage and passes that check again.
+// Measured 2026-09-05 RU walk: one drag → "Moved to {0}" toasted twice.
+const movingCards = new Set();
 
 /* Delete yalnız gözetim rollerinde: atama (assign_tender) ile aynı politika.
  * Backend (crm.delete_deal) _require_crm_or_tender + link kontrolleriyle korur;
@@ -317,9 +323,14 @@ async function onDrop(targetLaneId) {
 		return;
 	}
 
+	// Locked on the NAME, before `cards` is even read, so a stray repeat is
+	// refused even if a reload in between swapped in a fresh card object.
+	if (movingCards.has(name)) return;
+
 	const card = cards.value.find((c) => c.name === name);
 	if (!card || card.stage === targetLaneId) return;
 
+	movingCards.add(name);
 	const prevStage = card.stage;
 	card.stage = targetLaneId; // Optimistic update
 
@@ -330,6 +341,8 @@ async function onDrop(targetLaneId) {
 	} catch (err) {
 		card.stage = prevStage; // Rollback
 		toast.error(err?.message || t("Move failed."));
+	} finally {
+		movingCards.delete(name);
 	}
 }
 

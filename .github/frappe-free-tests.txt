@@ -185,6 +185,8 @@ stabler.tests.test_expense_form_source
 stabler.tests.test_lifetime_currency_source
 stabler.tests.test_freight_attribution_source
 stabler.tests.test_related_documents_contract
+stabler.tests.test_related_documents_upstream_links
+stabler.tests.test_expense_tender_stamp
 stabler.tests.test_document_form_tdz
 stabler.tests.test_sales_order_fx_guard
 stabler.tests.test_sales_order_action_bar

@@ -114,6 +114,17 @@ onMounted(async () => {
 	}
 });
 
+/**
+ * The kicker's label half. The caller's `dealLabel` can be, and routinely is,
+ * the same string as `deal` itself — SourcingWorkspace.vue falls back to the
+ * deal id when it has nothing better — and printing that as " · <same id>"
+ * told the reader nothing they didn't already see. Only show it when it is
+ * both present and actually different.
+ */
+function kickerLabel(dealName, label) {
+	return label && label !== dealName ? ` · ${label}` : "";
+}
+
 const minValidTill = computed(() => {
 	if (form.value.transaction_date) {
 		return form.value.transaction_date;
@@ -242,7 +253,7 @@ async function submitQuotation() {
 	<aside class="ds-drawer" data-size="lg" role="dialog" aria-modal="true" aria-labelledby="qed-title">
 		<header class="ds-drawer-head">
 			<div>
-				<div class="ds-drawer-kicker">{{ deal }}{{ dealLabel ? ` · ${dealLabel}` : "" }}</div>
+				<div class="ds-drawer-kicker">{{ deal }}{{ kickerLabel(deal, dealLabel) }}</div>
 				<div id="qed-title" class="ds-drawer-title">
 					{{ form.name ? t("Edit supplier quotation") : t("New supplier quotation") }}
 				</div>
