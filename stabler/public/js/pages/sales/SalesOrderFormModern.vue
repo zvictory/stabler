@@ -863,17 +863,46 @@ async function prefillNewForCustomer(customerName) {
 
 // 53462cb follow-up (UAT 2026-09-05): the dirty guard's baseline is the blank
 // form as constructed before loadWarehouses() resolved — set_warehouse "" and a
-// first line with warehouse "". The create branch below then rebuilds the form
-// with "Tayyor Mahsulot" in both places, and those writes read as a user edit:
-// an untouched "New sales order" warned "Discard unsaved changes?" on leaving.
-// Same fix as PurchaseInvoiceForm's applyCreateDefaults(): re-baseline once the
-// default has been applied. No before/after diff here — `form.value =
-// blankForm()` replaces the whole model, so there is nothing typed left to
-// launder, and nothing awaits between the writes and the reset.
-function applyCreateDefaults() {
+// first line with warehouse "". The create branch then rebuilds the form with
+// "Tayyor Mahsulot" in both places and, on a deep link, applies the route
+// prefills — default writes after the baseline, read as a user edit: an
+// untouched "New sales order" warned "Discard unsaved changes?" on leaving.
+// Same fix as PurchaseInvoiceForm's applyCreateDefaults(): re-baseline once
+// the defaults have been applied. The customer lookup is a network round trip
+// the user can type through, so the reset is skipped when anything OUTSIDE the
+// prefilled fields moved meanwhile — a remark typed during the lookup must stay
+// dirty, or the reset would launder it away.
+async function applyCreateDefaults() {
 	form.value = blankForm();
 	form.value.set_warehouse = defaultWarehouseName();
-	reset(form.value);
+	const before = JSON.parse(JSON.stringify(form.value));
+	await applyRoutePrefills();
+	// Everything the route prefills write: pickCustomer() and the two query
+	// fields. A field pickCustomer() starts writing but is not listed here
+	// fails safe — the form just stays dirty, as before this fix.
+	const prefillFields = [
+		"customer",
+		"customer_name",
+		"currency",
+		"price_list",
+		"customer_outstanding",
+		"customer_outstanding_currency",
+		"crm_deal",
+		"agreement",
+	];
+	const editedMeanwhile = Object.keys({ ...before, ...form.value }).some(
+		(key) =>
+			!prefillFields.includes(key) &&
+			JSON.stringify(form.value[key]) !== JSON.stringify(before[key])
+	);
+	if (!editedMeanwhile) reset(form.value);
+}
+
+async function applyRoutePrefills() {
+	const newFor = route.query?.new_for || route.query?.customer;
+	if (newFor) await prefillNewForCustomer(String(newFor));
+	if (route.query?.crm_deal) form.value.crm_deal = String(route.query.crm_deal);
+	if (route.query?.agreement) form.value.agreement = String(route.query.agreement);
 }
 
 watch(docName, loadDoc);
@@ -882,11 +911,7 @@ onMounted(async () => {
 	await Promise.all([loadWarehouses(), loadPriceLists(), loadCurrencies()]);
 	await fetchExchangeRate();
 	if (!docName.value) {
-		applyCreateDefaults();
-		const newFor = route.query?.new_for || route.query?.customer;
-		if (newFor) await prefillNewForCustomer(String(newFor));
-		if (route.query?.crm_deal) form.value.crm_deal = String(route.query.crm_deal);
-		if (route.query?.agreement) form.value.agreement = String(route.query.agreement);
+		await applyCreateDefaults();
 	} else {
 		await loadDoc();
 	}
