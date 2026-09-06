@@ -3,6 +3,7 @@
 Tarih: 2026-09-05. Hazırlayan: Claude (ölçerek), onay ve yürütme: Zafar.
 Kapsam: ADR-609 P1–P5b `main`'de ve prod'da (Zafar 2026-09-04 deploy etti; deploy sonrası
 doğrulama çıktıları henüz bu dosyaya işlenmedi — `.worktrees/p5b-evidence-2026-09-04/deploy-runbook-2026-09-04.md` §3).
+§G/§H düzeltmeleri 2026-09-06'da prod'da (damga `598fad2`, bundle `C37U2XQP`); deploy sonrası duman testi §F'de.
 
 **Kural:** her adımın bir ekran görüntüsü vardır. Ekranı OLAN adımlar yerel `stabler` sitesinde
 (Mikas kopyası) yürünerek çekildi; ekranı OLMAYAN adımlar için tasarım mockup'ı vardır.
@@ -275,7 +276,8 @@ kod hatası değil).
 3. **Prompt 03–12 tasarım göçü** — ADR §2.1 envanterindeki ekranlar `ds-*` katmanına taşınmadı.
 4. **Katalog:** `tr.csv` "Issues" → "Sorunlar" (stok çıkışı yerine "problemler"); mockup "Çıkışlar" yazıyor.
 5. **Deploy doğrulaması** — 2026-09-04 deploy'unun §3 kontrolleri (DDL, Patch Log, çeviri önbelleği, P5b uç
-   noktası, ekran smoke, ikinci tenant, drift, loglar) bu dosyaya henüz işlenmedi.
+   noktası, ekran smoke, ikinci tenant, drift, loglar) bu dosyaya henüz işlenmedi. 2026-09-06 deploy'unun (G/H
+   düzeltmeleri) duman testi işlendi: §F.
 6. **Gider "Выплатить с" listesinde öz sermaye hesapları** (`money.equity_accounts`) — ortak cebinden ödeme
    senaryosu için bilinçli mi, Zafar karar verir.
 7. **Sevk irsaliyesi** — SPA irsaliye açmaz; teslim satış faturasının `update_stock=1`'i ile olur. Mikas'ın
@@ -288,6 +290,26 @@ kod hatası değil).
 Yerel döngü ✓ (kusurlarıyla) — §G.1 (P0) düzeltilmeden prod'da C3 "tekliften PO" adımı **çalışmaz**; elle PO
 geçici çözümü prod'da da geçerlidir. Aynı adımlar `mikas` prod sitesinde **Mikas kullanıcılarıyla** (rol
 kapıları!) yürünür; ajan prod'a yazmaz. Her adımın ekran görüntüsü bu klasöre `prod-NN-*.png` adıyla eklenir.
+
+**Deploy ve duman testi 2026-09-06.** §G/§H düzeltmeleri (`f3dd3c8` → `598fad2`, migrate yok) Zafar tarafından
+`deploy_stabler.sh` ile prod'a alındı; ardından salt okunur duman testi ölçüldü, tam kayıt
+`docs/plans/2026-09-06-prod-deploy-hazirligi.md` §8. Bu dosyayı ilgilendiren sonuçlar:
+- **mikas prod** (gerçek oturum, şirket Mikas; kullanıcının arayüz dili İngilizce, RU metinler bu yüzden yalnız
+  yapı olarak doğrulandı): G.13 gerçek RFQ `PUR-RFQ-2026-00005` ile liste ve detayda "Sent" `bg-green-lt`;
+  G.7 `?deal=CRM-DEAL-2026-00107` → `"Toshkent Metropoliteni" Duk · CRM-DEAL-2026-00107` (ham id değil);
+  G.10 dokunulmamış yeni PI ve PO'dan çıkışta uyarı yok; H.2 Typeahead yer tutucuları `t()` üzerinden.
+  `?deal=` ile ön dolu PO'dan çıkışta "Discard unsaved changes?" çıkıyor (G.7'deki açık karar, değişmedi).
+- **anjan prod** (ihale kapalı): PINV `ACC-PINV-2026-02100` (ilk yükleme ve tam yeniden yükleme), SINV
+  `ACC-SINV-2026-18500`, PO `PUR-ORD-2026-00006-1`, teklif `SAL-QTN-2026-00002`, ödeme `ACC-PAY-2026-17659`
+  doğrudan URL ile dolu açıldı (G.3'ün PO alanları tek tek ölçülmedi); G.17 SINV'de bağlı SO (yukarı akış
+  bağı), PINV'de 5 Payment Entry listelendi; G.22 PINV detayında "Make payment" ve "Issue debit note"
+  görünür; G.18 "Tender" satırı damgasız belgede yok (`v-if`, beklenen).
+- **Sunucu**: RU "Bill No." → "Номер счета" stabler taşıyan 8 sitede (H.2 katalog eklemeleri Redis'te);
+  mikas `list_all_rfqs` satırlarında `sent_count`; hata günlüklerinde traceback yok; `stabler.payments.log`
+  restart'tan sonra 5 ödeme (biri Zafar'ın, qudratulloh hesabıyla), veritabanındaki 5 Payment Entry ile birebir.
+- **Prod'da ölçülemeyenler**: G.18 gerçek bir mikas faturası/gideriyle (mikas prod'da hiç PO/SI/PI yok);
+  RU arayüz metinleri (dil ayarı bir yazma işlemi, değiştirilmedi); rol kapıları (yürüyüş Mikas
+  kullanıcılarıyla yapılmadı — yukarıdaki plan geçerli).
 
 ---
 
@@ -402,6 +424,8 @@ her biri ayrı, test-önce bir iş.
    site, bundle `ET37PR7B`): `/purchasing/orders/new?deal=CRM-DEAL-2026-00015` seçicisi "O'zbekiston temir
    yo'llari AJ [DEMO] · CRM-DEAL-2026-00015" gösterir. Karar gerekir: ön dolumla açılan formdan çıkışta
    "kaydedilmemiş değişiklik" uyarısı çıkar; bitmiş ihaleye `?deal=` ile gelinebilir ama seçici onu sunmaz.
+   **Prod'da doğrulandı 2026-09-06** (mikas, bundle `C37U2XQP`): `/purchasing/orders/new?deal=CRM-DEAL-2026-00107`
+   → `"Toshkent Metropoliteni" Duk · CRM-DEAL-2026-00107`; çıkışta uyarı penceresi (açık karar) — §F.
 8. **P2 — Belge sayısı üç ekranda üç değer.** Belge merkezi 7 gereksinim (`custom_tender_intake.documents`);
    PO kontrol Обзор "Документы 0/5"; PO kontrol "Документы" sekmesi "Пока нет требований" (`04e`). Kaynak
    alanlar farklı (Tender Master ↔ lot intake); hangisi doğru — karar gerekir.
@@ -416,6 +440,7 @@ her biri ayrı, test-önce bir iş.
     artık `JSON.stringify(model)`. Spec'ler `purchaseInvoiceFormCreateDefaults.spec.js`,
     `useDirtyGuardBaseline.spec.js`. Canlı doğrulama (yerel site, bundle `7XN3WRNQ`): dokunulmamış yeni PO ve
     yeni PI sayfalarından çıkışta modal yok.
+    **Prod'da doğrulandı 2026-09-06** (mikas): dokunulmamış yeni PI ve yeni PO'dan çıkışta modal yok — §F.
 11. **P2 — K/Z defter tablosu.** (a) Belge tarafı gelir 198 214 285,71 = 222 000 000 / 1,12, fatura vergisiz
     (`tender_gl.py:145 tender_gl_pnl` reconciliation; sabit KDV varsayımı — kod okunmadı). (b) `by_voucher.count`
     GL satırı sayar ("Счёт продажи 2"), sütun başlığı "КОЛИЧЕСТВО" belge adedi gibi okunur.
@@ -438,6 +463,8 @@ her biri ayrı, test-önce bir iş.
     `PUR-RFQ-2026-00001 … Отправлен [badge bg-green-lt]`, detay rozeti aynı sınıfla. Bench kanıtı: `make
     test-bench` main `ac81631` üzerinde (başında ve sonunda aynı sha) 79 modül, çıkış 0, FAIL/ERROR yok —
     D, F ve G böylece bench'te de ölçüldü.
+    **Prod'da doğrulandı 2026-09-06** (mikas, gerçek kayıt): `PUR-RFQ-2026-00005` (taslak, 3 gönderim) liste ve
+    detayda "Sent" `bg-green-lt`; `list_all_rfqs` satırlarında `sent_count` — §F.
 14. **P2 — Kanban kazanım sonrası türetimi** (E.8'e bağlı): PO/fiş/fatura varken kart "Закупки"de (`12a`).
 15. **P2 — Mikas'ta SO'ya giden buton yok.** `prepare_so_from_deal` çağrısı yalnız `crm/Deals.vue:537`;
     ihale kanbanı çekmecesinde "Sözleşme oluştur" yok; `enable_crm 0` olan Mikas rotayı elle yazmak zorunda.
@@ -453,6 +480,9 @@ her biri ayrı, test-önce bir iş.
     `PUR-ORD-2026-00009` + PR `MAT-PRE-2026-00005`. Grup başlıkları ("Sales Orders", "Purchase Orders")
     `RelatedDocuments.vue:28` `t()`'siz — Rusça ekranda İngilizce kalır (§H.2 sınıfı, düzeltilmedi). PR
     çekmecesine tarayıcıda yeniden bakılmadı.
+    **Prod'da doğrulandı 2026-09-06** (anjan, gerçek kayıtlar): `ACC-SINV-2026-18500` → bağlı SO (yukarı akış
+    bağı, düzeltmenin yolu); `ACC-PINV-2026-02100` → 5 Payment Entry (bu kayıtta PO/PR bağı yok, yukarı akış
+    ölçülmedi). Mikas prod'da fatura yok — §F.
 18. **P2 — İhale damgası görünmez.** Gider detayı (`19d`) ve satış faturası formu (`SalesInvoiceForm.vue`
     "tender" içermez) hangi ihaleye yazıldığını göstermez; satın alma faturası gösterir ama kurum adıyla.
     **Düzeltildi 2026-09-05** (dal `fix/linked-docs-and-tender-stamp`): `sales_invoice_detail` ve
@@ -466,6 +496,8 @@ her biri ayrı, test-önce bir iş.
     yazmaz (`sales.py`, `money.py`; testler `test_related_documents_upstream_links.py`,
     `test_expense_tender_stamp.py`); `get_linked_documents`, `sales_invoice_detail` ve `journal_entry_detail`
     bağlama satırları kaynak düzeyinde testlendi (inceleme bulgusu E).
+    **Prod 2026-09-06**: ölçülemedi — mikas prod'da damgalı fatura/gider yok; anjan'da (ihale kapalı) satır
+    beklendiği gibi yok — §F.
 19. **P2 — Teslimat sekmesi irsaliyesiz teslimi saymaz.** `update_stock=1` fatura stoku düşürdü, sekme
     "ДОСТАВКА Нет связанных документов" (`16e`).
 20. **P2 — Direktör paneli ↔ genel bakış kazanılan sayısı.** 2 / %66,7 ↔ 3 / %75 aynı anda (`25b`, `01b`).
@@ -492,6 +524,8 @@ her biri ayrı, test-önce bir iş.
     İki etiketin ru/uz/uzc/tr çevirileri kataloglarda anahtar olarak vardı ama boştu — düğmeler hiç görünmediği
     için fark edilmemişti; dolduruldu (ru: Оплатить / Выпустить дебет-ноту, mevcut "Issue credit note"
     kalıbıyla).
+    **Prod'da doğrulandı 2026-09-06** (anjan): `ACC-PINV-2026-02100` detayında "Make payment" ve "Issue debit
+    note" görünür — §F.
 
 ## H. Bulgular — arayüz metni ve katalog
 
@@ -525,6 +559,9 @@ her biri ayrı, test-önce bir iş.
    `noResultsText` varsayılanı hâlâ İngilizce (ajanın bulgusu, ayrı görev). Sekme başlığı "New Purchase Order ·
    Stabler" RU ekranda İngilizce (yeni gözlem, aynı sınıf). purchasing.py'deki kalan ham `frappe.throw` metinlerini
    başka bir oturum `_()`'ya aldı (`fix/i18n-purchasing-receipt-throws`, main `da73ae8`).
+   **Prod 2026-09-06**: RU "Bill No." → "Номер счета" 8 sitede Redis'ten okundu; ekran metinleri RU olarak
+   doğrulanamadı (prod kullanıcısının dili İngilizce); Typeahead yer tutucuları `t()` üzerinden geliyor.
+   `noResultsText` varsayılanı da main `ee7e787` ile `t("No matches found")` oldu ve bu sürümle prod'da — §F.
 3. **Sabit birim:** landed cost incelemesi "Принято (кг)" — kalem birimi ne olsa "kg".
    **Düzeltildi 2026-09-05** (dal `fix/i18n-ru-walk`): `LandedCostReview.vue` başlığı `receivedLabel(uom)` =
    `t("Received ({0})", [uom])` ile fişin gerçek birimini yazar; `api/imports.py` ve `api/lcv.py` satırlara
