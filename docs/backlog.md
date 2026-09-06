@@ -2457,7 +2457,7 @@ language change is a write.
   before `git worktree remove`; the main tree's `node_modules`, the symlinks' target, kept its 144 entries).
   `fix/rfq-sent-badge`'s worktree was still `locked` by "claude agent … pid 36806" — that pid is this session's own
   harness process, the subagent had finished on 2026-09-05 and the lock was never released, so it was unlocked and
-  removed like the rest. The eleven merged `fix/*` branches were kept (`git branch -d` is the follow-up if wanted).
+  removed like the rest. The eleven merged `fix/*` branches were then deleted with `git branch -d` (Zafar, same day).
   Left untouched: `.claude/worktrees/{compassionate-meitner-6f9f80,ecstatic-wiles-18bdc4,sweet-spence-b4bcf6}`
   (other sessions' worktrees; `sweet-spence` is dirty) and the older `.worktrees/*` entries (`feat/remittance-*`,
   `feat/imports-lcv-cancel-action`, `fix/pi-receipt-link`, `fix/si-custom-boxes`, `fix/ci-expense-real-records`),
