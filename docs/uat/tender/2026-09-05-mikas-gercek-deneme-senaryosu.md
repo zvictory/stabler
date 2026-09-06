@@ -391,6 +391,17 @@ her biri ayrı, test-önce bir iş.
    (`PurchaseOrderForm.vue:90`; aynı hata `Expenses.vue:562`). Ayrıca `searchDeals` hâlâ `crm.list_deals`'i
    `active_tenders: 1` olmadan çağırır, yani ad araması bu ekrana ulaşmaz (inceleme bulgusu A). İkisi takip
    dallarında (`fix/review-followups-2026-09-05`, `fix/deal-label-company-arg`); birleşince bu not güncellenir.
+   **Tamamlandı 2026-09-06** (`fix/deal-label-company-arg` → main `cf450b6`; `fix/review-followups-2026-09-05` →
+   main `ac81631`): `loadDealLabel` iki formda da `company: activeCompany.value` gönderir (spec
+   `dealLabelCompanyArg.spec.js`; stub sunucu kapısını taklit eder, eski kodda dört iddia "Received:
+   CRM-DEAL-2026-00015" ile düşer). `searchDeals` `active_tenders: 1` ister — id araması bu seçiciye ulaşır ve
+   seçici PI/gider seçicileriyle aynı kurala bağlanır: `is_active_tender` kaybedilmiş ihaleyi ve bütün gönderilmiş
+   SO'ları Closed/Cancelled olan kazanılmış ihaleyi sunmaz. Yerel veride 00015'in tek SO'su Closed, bu yüzden
+   seçici artık yalnız GENEL GİDER'i listeler (`list_deals(active_tenders=1)` → total 1). Aynı bileşen örneğinde
+   ikinci bir `?deal=` bağlantısı için `route.query.deal` izleyicisi mandalı yeniden açar. Canlı doğrulama (yerel
+   site, bundle `ET37PR7B`): `/purchasing/orders/new?deal=CRM-DEAL-2026-00015` seçicisi "O'zbekiston temir
+   yo'llari AJ [DEMO] · CRM-DEAL-2026-00015" gösterir. Karar gerekir: ön dolumla açılan formdan çıkışta
+   "kaydedilmemiş değişiklik" uyarısı çıkar; bitmiş ihaleye `?deal=` ile gelinebilir ama seçici onu sunmaz.
 8. **P2 — Belge sayısı üç ekranda üç değer.** Belge merkezi 7 gereksinim (`custom_tender_intake.documents`);
    PO kontrol Обзор "Документы 0/5"; PO kontrol "Документы" sekmesi "Пока нет требований" (`04e`). Kaynak
    alanlar farklı (Tender Master ↔ lot intake); hangisi doğru — karar gerekir.
@@ -418,6 +429,15 @@ her biri ayrı, test-önce bir iş.
     `load()` ile yeniler. Test `stabler/tests/test_sourcing_api.py`, spec `rfqSentBadge.spec.js`. Canlı
     doğrulama (yerel site): `PUR-RFQ-2026-00001` → `sent_count 1`, detay rozeti "Отправлен". Liste rozeti ve
     `STATUS_MAP` girişi takip dalında (inceleme bulguları C, D).
+    **Tamamlandı 2026-09-06** (`fix/review-followups-2026-09-05` → main `ac81631`): rozet
+    `composables/rfqStatus.js`'e taşındı, sınıfını `STATUS_MAP["Request for Quotation"].Sent` üzerinden
+    `getStatusBadgeClass` verir (sabit `text-green` kalktı); `list_rfqs`/`list_all_rfqs` satırlara toplu
+    `_rfq_sent_counts` ile `sent_count` yazar, `RfqList.vue` aynı rozeti basar. Testler `test_sourcing_api.py`
+    (eski kodda `KeyError: 'sent_count'`, `_rfq_sent_counts` yok), spec `rfqSentBadge.spec.js` gerçek
+    `getStatusBadgeClass` ile. Canlı doğrulama (yerel site, bundle `V4VWOKYM`, Mikas): liste satırı
+    `PUR-RFQ-2026-00001 … Отправлен [badge bg-green-lt]`, detay rozeti aynı sınıfla. Bench kanıtı: `make
+    test-bench` main `ac81631` üzerinde (başında ve sonunda aynı sha) 79 modül, çıkış 0, FAIL/ERROR yok —
+    D, F ve G böylece bench'te de ölçüldü.
 14. **P2 — Kanban kazanım sonrası türetimi** (E.8'e bağlı): PO/fiş/fatura varken kart "Закупки"de (`12a`).
 15. **P2 — Mikas'ta SO'ya giden buton yok.** `prepare_so_from_deal` çağrısı yalnız `crm/Deals.vue:537`;
     ihale kanbanı çekmecesinde "Sözleşme oluştur" yok; `enable_crm 0` olan Mikas rotayı elle yazmak zorunda.
@@ -442,6 +462,10 @@ her biri ayrı, test-önce bir iş.
     `tenderStampReadOnly.spec.js`. Canlı doğrulama (yerel site): SI `ACC-SINV-2026-07435` "Тендер ·
     O'zbekiston temir yo'llari AJ [DEMO] · CRM-DEAL-2026-00015"; `journal_entry_detail("ACC-JV-2026-07011")`
     aynı etiketle döner. Etiket kuralı §H.1 kararına bağlı.
+    **Ek 2026-09-06** (`fix/review-followups-2026-09-05`): `_deal_display_label` kurum ve lead yoksa id'yi iki kez
+    yazmaz (`sales.py`, `money.py`; testler `test_related_documents_upstream_links.py`,
+    `test_expense_tender_stamp.py`); `get_linked_documents`, `sales_invoice_detail` ve `journal_entry_detail`
+    bağlama satırları kaynak düzeyinde testlendi (inceleme bulgusu E).
 19. **P2 — Teslimat sekmesi irsaliyesiz teslimi saymaz.** `update_stock=1` fatura stoku düşürdü, sekme
     "ДОСТАВКА Нет связанных документов" (`16e`).
 20. **P2 — Direktör paneli ↔ genel bakış kazanılan sayısı.** 2 / %66,7 ↔ 3 / %75 aynı anda (`25b`, `01b`).
@@ -496,10 +520,19 @@ her biri ayrı, test-önce bir iş.
    metinleri; "Поражений" stabler'ın CSV'siyle düzelmez — kaynak crm/erpnext'in `_()` kataloğu, uygulama yükleme
    sırası `frappe, stabler, crm, hrms, erpnext` ve sonraki uygulama anahtarı ezer; RelatedDocuments grup
    başlıkları (§G.17).
+   **Ek 2026-09-06** (`fix/review-followups-2026-09-05`): `Typeahead.vue` varsayılan yer tutucusu `t("Search…")`
+   oldu (spec `typeaheadPlaceholder.spec.js`); yeni PO'da üç seçici de "Поиск…" ailesinde okunur. Aynı bileşende
+   `noResultsText` varsayılanı hâlâ İngilizce (ajanın bulgusu, ayrı görev). Sekme başlığı "New Purchase Order ·
+   Stabler" RU ekranda İngilizce (yeni gözlem, aynı sınıf). purchasing.py'deki kalan ham `frappe.throw` metinlerini
+   başka bir oturum `_()`'ya aldı (`fix/i18n-purchasing-receipt-throws`, main `da73ae8`).
 3. **Sabit birim:** landed cost incelemesi "Принято (кг)" — kalem birimi ne olsa "kg".
    **Düzeltildi 2026-09-05** (dal `fix/i18n-ru-walk`): `LandedCostReview.vue` başlığı `receivedLabel(uom)` =
    `t("Received ({0})", [uom])` ile fişin gerçek birimini yazar; `api/imports.py` ve `api/lcv.py` satırlara
    `received_uom` ekler (lcv: ilk kalemin birimi). Boş/karışık birim dalları takip dalında (inceleme bulgusu G).
+   **Tamamlandı 2026-09-06** (`fix/review-followups-2026-09-05` → main `ac81631`): boş birim "Received", "kg"
+   (büyük/küçük harf fark etmez) çevrili "Received (kg)" anahtarı, diğerleri `Received ({0})`; `lcv.py` bütün
+   satırlar aynı birimdeyse onu, değilse boş döndürür. Spec `i18nRuWalk.spec.js`, test `test_lcv_math.py`
+   (kaynak düzeyi). Tarayıcıda yeniden bakılmadı.
 4. Toast tekrarı (§G.21).
 5. Katalog: `tr.csv` "Issues" → "Sorunlar" (§E.4).
 
