@@ -2452,12 +2452,16 @@ language change is a write.
 - **Prod drift.** `make prod-drift`: 4 files on prod that are in no commit —
   `stabler/public/js/pages/tender/{TenderCrmWrapper,TenderExecutionFlow,TenderExecutiveKpis,TenderTrendChart}.vue`;
   rsync runs without `--delete`, esbuild never imports them. Removal = backup, `ls`, remove — with Zafar.
-- **Stale worktrees.** `git worktree list` shows eleven `.claude/worktrees/agent-*` worktrees on branches already
-  merged to main (`fix/po-deal-picker` … `fix/linked-docs-and-tender-stamp`, `fix/review-followups-2026-09-05`,
-  `fix/deal-label-company-arg`; `fix/rfq-sent-badge` is `locked`), plus older `.worktrees/*` entries
-  (`feat/remittance-*`, `feat/imports-lcv-cancel-action`, `fix/pi-receipt-link`, `fix/si-custom-boxes`,
-  `fix/ci-expense-real-records`) whose merge state was not checked today. Removal only with Zafar:
-  `git branch --merged main` first, then `git worktree remove`.
+- **Stale worktrees — the `agent-*` half is done.** Removed 2026-09-06 on Zafar's instruction: the eleven
+  `.claude/worktrees/agent-*` worktrees (each re-checked merged into main and `status --porcelain` empty right
+  before `git worktree remove`; the main tree's `node_modules`, the symlinks' target, kept its 144 entries).
+  `fix/rfq-sent-badge`'s worktree was still `locked` by "claude agent … pid 36806" — that pid is this session's own
+  harness process, the subagent had finished on 2026-09-05 and the lock was never released, so it was unlocked and
+  removed like the rest. The eleven merged `fix/*` branches were kept (`git branch -d` is the follow-up if wanted).
+  Left untouched: `.claude/worktrees/{compassionate-meitner-6f9f80,ecstatic-wiles-18bdc4,sweet-spence-b4bcf6}`
+  (other sessions' worktrees; `sweet-spence` is dirty) and the older `.worktrees/*` entries (`feat/remittance-*`,
+  `feat/imports-lcv-cancel-action`, `fix/pi-receipt-link`, `fix/si-custom-boxes`, `fix/ci-expense-real-records`),
+  whose merge state was not checked.
 - **G.3 on prod.** The PO detail opened populated on anjan, but the `fromDetail` facts the fix restored
   (docstatus, per_received, grand_total) were not read field by field.
 - **Two sessions started separately** for "Fix useDirtyGuard baseline" and "Wrap remaining untranslated throws":
