@@ -120,3 +120,49 @@ tar ile geri gelir → geri alımdan sonra her sitede yeniden `clear-cache`, yok
 - `?deal=` ön dolumuyla açılan PO'dan çıkışta "kaydedilmemiş değişiklik" uyarısı çıkar.
 - RU ekranda kalan İngilizceler: "New Purchase Order · Stabler" sekme başlığı, RelatedDocuments grup
   başlıkları ("Sales Orders"), "Поражений" (crm/erpnext kataloğundan gelir, stabler CSV'si ezmez).
+
+## 8. Duman testi sonuçları (2026-09-06, deploy sonrası, salt okunur)
+
+Zafar `deploy_stabler.sh`'i çalıştırdı; aşağısı restart'tan ~40 dk sonra ölçüldü. Prod'a hiçbir şey
+yazılmadı; tarayıcı kontrolleri gerçek oturumda, yalnızca okuma ve gezinme ile yapıldı.
+
+| Kontrol | Sonuç |
+|---|---|
+| `apps/stabler/.stabler-migrated-sha` | `598fad2` = HEAD; migrate çalışmadı (beklenen, §2) |
+| Bundle | `stabler.bundle.C37U2XQP.js`; `.map` sayısı 0 |
+| `node_modules/.stabler-deps-md5` | deploy öncesiyle aynı → npm install atlandı (doğru) |
+| `supervisorctl status` | tüm programlar RUNNING; web/socketio ve worker'lar restart'tan sonra ayakta |
+| Probe `frappe.client.get_count` (anjan) | 1 |
+| `_load_translations("ru")["Bill No."]` | stabler taşıyan 8 sitenin hepsinde "Номер счета" (Redis temizlenmiş) |
+| mikas `list_all_rfqs` | 1 satır, anahtarlar arasında `sent_count` var |
+| `logs/web.error.log`, `logs/worker.error.log` | restart sonrası yalnızca gunicorn'un olağan yeniden başlama satırları, traceback yok; worker günlüğü 2026-09-04'ten beri değişmemiş |
+| `make prod-drift` | deploy öncesiyle aynı 4 dosya (prod'da fazla duran eski dosyalar) |
+
+**Tarayıcı, mikas** (şirket Mikas; prod kullanıcısının arayüz dili İngilizce, bu yüzden RU metin
+kontrolleri yapılmadı — yapı kontrolleri yapıldı):
+
+| Kontrol | Sonuç |
+|---|---|
+| RFQ listesi, `PUR-RFQ-2026-00005` (docstatus 0, 3 gönderim) | rozet "Sent" `bg-green-lt` |
+| RFQ detayı, aynı kayıt | başlık rozeti "Sent" `bg-green-lt`, yanında gönderim zamanı |
+| `#/purchasing/orders/new?deal=CRM-DEAL-2026-00107` | deal alanı `"Toshkent Metropoliteni" Duk · CRM-DEAL-2026-00107` — ham kimlik değil; `get_deal` artık `company` ile çağrılıyor |
+| Dokunulmamış yeni PI'dan çıkış | uyarı penceresi yok |
+| Dokunulmamış yeni PO'dan çıkış | uyarı penceresi yok; Typeahead yer tutucuları `t()` üzerinden ("Search…") |
+| `?deal=` ile ön dolu PO'dan çıkış | "Discard unsaved changes?" penceresi çıkar (§7'deki açık karar, değişmedi) |
+| Konsol | izleme başladıktan sonra hata kaydı yok |
+
+**Tarayıcı, anjan** (doğrudan URL; hepsi kayıt adıyla dolu açıldı, "New …" değil, `.alert-danger` yok):
+`#/purchasing/invoices/ACC-PINV-2026-02100` — bir kez ilk yükleme, bir kez tam yeniden yükleme —,
+`#/sales/invoices/ACC-SINV-2026-18500`, `#/purchasing/orders/PUR-ORD-2026-00006-1`,
+`#/sales/quotations/SAL-QTN-2026-00002`, `#/money/payments/ACC-PAY-2026-17659`. "Related documents"
+bloğu PINV'de 5 Payment Entry, SINV'de bağlı Sales Order listeliyor; "Tender" satırı damgasız belgede
+görünmüyor (`v-if`).
+
+**Yapılamayanlar**
+- `stabler.payments.log` kontrolü bir ödeme kaydı gerektirir → Zafar.
+- mikas prod'da hiç Purchase Order, Sales Invoice ve Purchase Invoice yok; ilişkili belge bloğu ve
+  "Tender" damgası gerçek kayıtla yalnızca anjan'da (damgasız) görüldü.
+- RU arayüz metinleri: kullanıcının dil ayarı bir yazma işlemi olduğu için değiştirilmedi.
+
+**Not, gelecek duman testleri için**: `bench execute` boş sonucu (`[]`, `0`) hiç yazdırmaz (`if ret:`);
+boş çıktı "hata" değil "kayıt yok" demektir — hata olsa stderr'de görünür.
