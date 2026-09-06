@@ -11,7 +11,7 @@ const props = defineProps({
 	disabled: { type: Boolean, default: false },
 	minChars: { type: Number, default: 1 },
 	debounce: { type: Number, default: 200 },
-	noResultsText: { type: String, default: "No matches found" },
+	noResultsText: { type: String, default: "" },
 	menuMinWidth: { type: String, default: "100%" },
 	// Namespace for a caller that needs to restyle the popover (e.g. lay the rows out
 	// as a table). The menu is teleported to <body>, so the parent's scoped CSS can't
@@ -293,7 +293,7 @@ function onKeydown(e) {
 					<span class="small">Searching…</span>
 				</div>
 				<div v-else-if="!options.length" class="stbl-menu-empty small">
-					<i class="ti ti-search-off me-1"></i>{{ noResultsText }}
+					<i class="ti ti-search-off me-1"></i>{{ noResultsText || t('No matches found') }}
 				</div>
 				<!-- Column headings for a caller that renders its options as table rows.
 				     Only when there is something to head. -->
