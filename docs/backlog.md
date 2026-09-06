@@ -2402,3 +2402,76 @@ a Makefile `probe` target with the site hardcoded (`PYTHONPATH=$(WT) bench --sit
   unless stamped by hand.
 - **Payment Entry.** Translated, may appear in `by_voucher`, but nothing writes a tender on it — a stamping
   decision, not reporting.
+
+## 2026-09-06 — Mikas UAT fix wave: what reached prod, what prod showed, what stays open
+
+**Landed on main (`f3dd3c8` → `7426d77`).** The 2026-09-05 Russian-UI walk of the Mikas tender cycle
+(`docs/uat/tender/2026-09-05-mikas-gercek-deneme-senaryosu.md`: 22 code findings §G, 3 catalogue findings §H) was
+worked off as fourteen fix branches — five merged on 2026-09-05 (`3bd14b0` po-from-quotation company scope,
+`a3d7c2f` finance-tab outstanding, `3435bd0`/`be40ab0` PO/PI `fromDetail` facts, `ebd2e07` sourcing Add-quotation
+event) and nine through a scripted `--no-ff` chain with `make check` after every merge (`fa736ff` … `f5c4863`) —
+then three follow-ups: the adversarial review's items A–H (`353be73` → `ac81631`), the deal-label `company`
+argument (`1ae8729` → `cf450b6`) and Typeahead's `noResultsText` through `t()` (`8023de2` → `ee7e787`). A second
+session landed the remaining receipt-creation `frappe.throw` texts (`2f7265b` → `da73ae8`) and the SO/PI
+create-form dirty baselines (`0bc04da`, `fcbd478`, `f860e84`) in the same window; merges went `origin/main` → main,
+never rebase, after two non-fast-forward rejections. `make test-bench` ran green in the main tree on `f5c4863` and
+`ac81631`; everything after is frontend or docs. Per-finding fix and verification notes live next to each finding
+in the UAT note; the review items sit under G.7, G.13, G.17, G.18, H.2, H.3.
+
+**Deployed.** Zafar ran `deploy_stabler.sh` on 2026-09-06 (restart ≈ 12:02 CEST): stamp `598fad2`, bundle
+`C37U2XQP`, no migrate (the gate found no schema change), npm install skipped (deps stamp equal), clear-cache on
+every discovered stabler site. Plan, preconditions and the smoke record: `docs/plans/2026-09-06-prod-deploy-hazirligi.md`
+(§8). Everything measured was green — RU "Bill No." → "Номер счета" read back from Redis on all 8 stabler sites;
+mikas `list_all_rfqs` rows carry `sent_count`; no tracebacks; `make prod-drift` unchanged; on mikas prod the real
+`PUR-RFQ-2026-00005` shows "Sent" `bg-green-lt` on list and detail, `?deal=CRM-DEAL-2026-00107` labels the deal
+`"Toshkent Metropoliteni" Duk · CRM-DEAL-2026-00107`, untouched new PI/PO leave without a modal; on anjan five
+record forms open populated by direct URL (PINV also after a full reload), PINV detail shows "Make payment" /
+"Issue debit note", SINV lists its Sales Order; `stabler.payments.log` has five post-restart payments, one-to-one
+with the database (one of them Zafar's, under the `qudratulloh` account). **Not measurable on prod:** the tender
+stamp on a real document — mikas prod has **zero** Purchase Orders, Sales Invoices and Purchase Invoices
+(`frappe.get_all`, 2026-09-06), i.e. the tender owner tenant has not started operating in the SPA; the §F prod walk
+with Mikas users and their role gates is still ahead. RU screen text — the prod user's language is English and a
+language change is a write.
+
+**Open, each measured:**
+- **PO picker hides finished tenders.** `is_active_tender` (`stabler/api/tender_dimension.py:337`) drops lost deals
+  and won deals whose submitted Sales Orders are all Closed/Cancelled; `searchDeals` now asks `active_tenders: 1`, so
+  the PO picker follows the PI/expense rule. A finished tender is reachable through `?deal=` but never offered.
+  Decision for Zafar: which documents may still be raised against a finished tender.
+- **`?deal=` prefill counts as dirty.** `PurchaseOrderForm.vue:129` `applyQueryDeal` writes the deal after the
+  create baseline was taken (`useDirtyGuard.js:24` baselines the model's construction-time value), so leaving shows
+  "Discard unsaved changes?" — measured on mikas prod. Fix candidate: re-baseline after the prefill the way
+  `PurchaseInvoiceForm.vue` `applyCreateDefaults` does with `reset(form)`. Decision first: is a prefilled form dirty?
+- **English left in the RU UI.** `RelatedDocuments.vue:30-36` group labels ("Sales Orders", "Purchase Orders",
+  "Payment Entries") are a plain map without `t()`; the document title "New Purchase Order · Stabler"; and
+  "Поражений", which comes from crm/erpnext's own catalogue — app load order `frappe, stabler, crm, hrms, erpnext`,
+  the later app wins, so stabler's CSV cannot override it.
+- **Commit trailer.** CLAUDE.md prescribes the unversioned `Co-Authored-By: Claude <noreply@anthropic.com>`; the
+  harness injects `Claude Fable 5.1 <…>`; today's main commits carry the harness form (`598fad2`, `f860e84`, …).
+  One of the two rules has to give — Zafar's call, flagged twice today.
+- **Prod drift.** `make prod-drift`: 4 files on prod that are in no commit —
+  `stabler/public/js/pages/tender/{TenderCrmWrapper,TenderExecutionFlow,TenderExecutiveKpis,TenderTrendChart}.vue`;
+  rsync runs without `--delete`, esbuild never imports them. Removal = backup, `ls`, remove — with Zafar.
+- **Stale worktrees.** `git worktree list` shows eleven `.claude/worktrees/agent-*` worktrees on branches already
+  merged to main (`fix/po-deal-picker` … `fix/linked-docs-and-tender-stamp`, `fix/review-followups-2026-09-05`,
+  `fix/deal-label-company-arg`; `fix/rfq-sent-badge` is `locked`), plus older `.worktrees/*` entries
+  (`feat/remittance-*`, `feat/imports-lcv-cancel-action`, `fix/pi-receipt-link`, `fix/si-custom-boxes`,
+  `fix/ci-expense-real-records`) whose merge state was not checked today. Removal only with Zafar:
+  `git branch --merged main` first, then `git worktree remove`.
+- **G.3 on prod.** The PO detail opened populated on anjan, but the `fromDetail` facts the fix restored
+  (docstatus, per_received, grand_total) were not read field by field.
+- **Two sessions started separately** for "Fix useDirtyGuard baseline" and "Wrap remaining untranslated throws":
+  both are already on main (`53462cb`; `2f7265b` plus the create-form baseline commits). They must pull main before
+  touching anything, or they will redo landed work.
+
+**Pitfalls measured on the way (for the next smoke run):**
+- `bench execute` prints nothing for a falsy result — `frappe/commands/utils.py` guards the print with `if ret:` —
+  so an empty list or `0` looks like a silent failure once stderr is hidden. Empty stdout means "no rows"; a real
+  error is on stderr. `bench execute stabler.api.tender_dimension.list_active_tenders` also needs its `fields`
+  argument; `stabler.api.crm.list_deals` with `active_tenders=1` answers the same question.
+- The Chrome DevTools MCP failed all day with "browser already running for chrome-devtools-mcp/chrome-profile"; the
+  smoke ran through claude-in-chrome against Zafar's real Chrome — read-only navigation, every opened tab closed.
+- A same-document hash change is not a reload; the direct-URL smoke forced full loads with a throwaway query
+  string (`/stabler?smoke=N#/...`).
+- zsh: `$B:path` is a history modifier (write `${B}:path`); `git rev-parse --short a b` errors, pipe through
+  `cut -c1-7`; a `"a b"` string is one git argument.
