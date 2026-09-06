@@ -137,6 +137,7 @@ yazılmadı; tarayıcı kontrolleri gerçek oturumda, yalnızca okuma ve gezinme
 | mikas `list_all_rfqs` | 1 satır, anahtarlar arasında `sent_count` var |
 | `logs/web.error.log`, `logs/worker.error.log` | restart sonrası yalnızca gunicorn'un olağan yeniden başlama satırları, traceback yok; worker günlüğü 2026-09-04'ten beri değişmemiş |
 | `make prod-drift` | deploy öncesiyle aynı 4 dosya (prod'da fazla duran eski dosyalar) |
+| `logs/stabler.payments.log` (anjan, 13:15 kutu saati) | restart'tan sonra 5 ödeme (anjan kullanıcılarının gerçek kayıtları), her biri input → computed → ok, hata aşaması yok; veritabanındaki 5 Payment Entry ile birebir (17659–17663, hepsi docstatus 1); diğer 7 sitede bugün ödeme yok |
 
 **Tarayıcı, mikas** (şirket Mikas; prod kullanıcısının arayüz dili İngilizce, bu yüzden RU metin
 kontrolleri yapılmadı — yapı kontrolleri yapıldı):
@@ -159,7 +160,6 @@ bloğu PINV'de 5 Payment Entry, SINV'de bağlı Sales Order listeliyor; "Tender"
 görünmüyor (`v-if`).
 
 **Yapılamayanlar**
-- `stabler.payments.log` kontrolü bir ödeme kaydı gerektirir → Zafar.
 - mikas prod'da hiç Purchase Order, Sales Invoice ve Purchase Invoice yok; ilişkili belge bloğu ve
   "Tender" damgası gerçek kayıtla yalnızca anjan'da (damgasız) görüldü.
 - RU arayüz metinleri: kullanıcının dil ayarı bir yazma işlemi olduğu için değiştirilmedi.
